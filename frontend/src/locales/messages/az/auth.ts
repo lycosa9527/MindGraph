@@ -47,7 +47,7 @@ export default {
     "auth.modal.phone11Digits": "Etibarlı 11 rəqəmli nömrə daxil edin",
     "auth.modal.phonePlaceholder11": "11 rəqəmli mobil nömrə",
     "auth.modal.phoneRegisteredPlaceholder": "Qeydiyyatdan keçmiş nömrə",
-    "auth.modal.productTitle": "Mind Platform",
+    "auth.modal.productTitle": "迈特教研",
     "auth.modal.registerFailed": "Qeydiyyat alınmadı",
     "auth.modal.registerSuccess": "Qeydiyyat uğurlu. Daxil olun.",
     "auth.modal.registering": "Qeydiyyat...",

@@ -1,7 +1,7 @@
 /** Azerbaijani UI — common */
 export default {
     "app.aiDisclaimer": "Content is AI-generated; please verify carefully.",
-    "app.brandName": "MindGraph",
+    "app.brandName": "Mind Platform",
     "app.browserLocale.body": "Brauzeriniz {name} üstünlük verir. Tətbiq interfeysini uyğunlaşdıraq?",
     "app.browserLocale.dontAsk": "Bir daha soruşma",
     "app.browserLocale.keepChinese": "Çin dilində saxla",
@@ -79,7 +79,7 @@ export default {
     "meta.pageTitle.course": "Kurs",
     "meta.pageTitle.dashboardLogin": "İdarə paneli girişi",
     "meta.pageTitle.debateverse": "DebateVerse",
-    "meta.pageTitle.default": "MindGraph",
+    "meta.pageTitle.default": "Mind Platform",
     "meta.pageTitle.demoLogin": "Demo girişi",
     "meta.pageTitle.gewe": "Gewe",
     "meta.pageTitle.knowledgeSpace": "Bilik məkanı",
@@ -87,7 +87,7 @@ export default {
     "meta.pageTitle.libraryBookmark": "Əlfəcin",
     "meta.pageTitle.libraryViewer": "Library viewer",
     "meta.pageTitle.login": "Daxil ol",
-    "meta.pageTitle.main": "MindGraph",
+    "meta.pageTitle.main": "Mind Platform",
     "meta.pageTitle.mindgraph": "MindGraph",
     "meta.pageTitle.mindmate": "MindMate",
     "meta.pageTitle.notFound": "Səhifə tapılmadı",

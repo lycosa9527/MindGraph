@@ -63,14 +63,14 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
     # Don't include frontend timestamp to avoid duplication
     message = req.message
 
-    # Security: Sanitize message to prevent log injection
-    # Remove control characters and limit length
-    message = ''.join(char for char in message if ord(char) >= 32 or char in '\n\r\t')
-    if len(message) > 10000:  # Limit message length
+    # Security: Sanitize message to prevent log injection.
+    # Strip all control characters including newlines/tabs so callers cannot
+    # forge multi-line log entries or inject fake log records.
+    message = ''.join(char for char in message if ord(char) >= 32)
+    if len(message) > 10000:
         message = message[:10000] + "... [truncated]"
 
-    # Log with clean formatting
-    frontend_logger.log(level, message)
+    frontend_logger.log(level, "[FRONTEND] %s", message)
 
     return {'status': 'logged'}
 
@@ -130,13 +130,11 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
         # Don't include frontend timestamp to avoid duplication
         message = log_entry.message
 
-        # Security: Sanitize message to prevent log injection
-        # Remove control characters and limit length
-        message = ''.join(char for char in message if ord(char) >= 32 or char in '\n\r\t')
-        if len(message) > 10000:  # Limit message length
+        # Security: Sanitize message to prevent log injection.
+        message = ''.join(char for char in message if ord(char) >= 32)
+        if len(message) > 10000:
             message = message[:10000] + "... [truncated]"
 
-        # Log to backend console
-        frontend_logger.log(level, message)
+        frontend_logger.log(level, "[FRONTEND] %s", message)
 
     return {'status': 'logged', 'count': req.batch_size}

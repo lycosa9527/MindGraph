@@ -540,3 +540,20 @@ class WorkshopJoinOrganizationRequest(BaseModel):
     """Body for POST /api/workshop/join-organization (校内 join by diagram)."""
 
     diagram_id: str = Field(..., min_length=10, max_length=40)
+
+
+class SnapshotTakeRequest(BaseModel):
+    """Request body for POST /api/diagrams/{id}/snapshots."""
+
+    spec: Dict[str, Any] = Field(
+        ..., description="Diagram specification to snapshot (llm_results excluded)"
+    )
+
+    class Config:
+        """Configuration for SnapshotTakeRequest model."""
+
+        json_schema_extra = {
+            "example": {
+                "spec": {"topic": "Central Topic", "children": []}
+            }
+        }

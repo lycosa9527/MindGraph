@@ -10,6 +10,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
+import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
@@ -37,6 +38,7 @@ const allTabsConfig = [
   { name: 'roles', labelKey: 'admin.roleControl', icon: 'UserFilled', adminOnly: true },
   { name: 'tokens', labelKey: 'admin.tokens', icon: 'Ticket', adminOnly: true },
   { name: 'library', labelKey: 'admin.library', icon: 'Reading', adminOnly: true },
+  { name: 'database', labelKey: 'admin.database.tab', icon: 'Coin', adminOnly: true },
   { name: 'gewe', labelKey: 'admin.geweWechat', icon: 'ChatLineRound', adminOnly: true },
 ]
 
@@ -72,11 +74,11 @@ watch(activeTab, (tab) => {
 </script>
 
 <template>
-  <div class="admin-page flex-1 flex flex-col bg-stone-50 overflow-hidden">
+  <div class="admin-page flex-1 flex flex-col bg-gray-50 overflow-hidden">
     <div
-      class="admin-header h-14 px-4 flex items-center justify-between bg-white border-b border-stone-200"
+      class="admin-header h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200"
     >
-      <h1 class="text-sm font-semibold text-stone-900">
+      <h1 class="text-sm font-semibold text-gray-900">
         {{ isAdmin ? t('admin.title') : t('admin.orgManagement') }}
       </h1>
     </div>
@@ -125,6 +127,10 @@ watch(activeTab, (tab) => {
 
           <template v-else-if="activeTab === 'library'">
             <AdminLibraryTab />
+          </template>
+
+          <template v-else-if="activeTab === 'database'">
+            <AdminDatabaseTab />
           </template>
 
           <template v-else-if="activeTab === 'gewe'">

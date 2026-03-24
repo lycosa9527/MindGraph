@@ -47,7 +47,7 @@ export default {
     "auth.modal.phone11Digits": "Enter a valid 11-digit phone number",
     "auth.modal.phonePlaceholder11": "11-digit mobile number",
     "auth.modal.phoneRegisteredPlaceholder": "Registered phone number",
-    "auth.modal.productTitle": "Mind Platform",
+    "auth.modal.productTitle": "迈特教研",
     "auth.modal.registerFailed": "Registration failed",
     "auth.modal.registerSuccess": "Registration successful. Please sign in.",
     "auth.modal.registering": "Registering...",

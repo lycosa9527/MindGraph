@@ -18,7 +18,7 @@ import json
 import logging
 import time
 
-from fastapi import APIRouter, HTTPException, Depends
+from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 
 from agents.core.workflow import agent_graph_workflow_with_styles
@@ -26,6 +26,7 @@ from models import GenerateRequest, LLMHealthResponse, Messages, get_request_lan
 from models.domain.auth import User
 from services.llm import llm_service
 from utils.auth import get_current_user, get_current_user_or_api_key
+from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +74,7 @@ async def get_llm_metrics(
         logger.error("Error getting LLM metrics: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Failed to retrieve metrics: {str(e)}"
+            detail="Failed to retrieve metrics"
         ) from e
 
 
@@ -145,15 +146,16 @@ async def llm_health_check(
         logger.error("LLM health check error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Health check failed: {str(e)}"
+            detail="Health check failed"
         ) from e
 
 
 @router.post('/generate_multi_parallel')
 async def generate_multi_parallel(
     req: GenerateRequest,
+    request: Request,
     x_language: Optional[str] = None,
-    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Generate diagram using PARALLEL multi-LLM approach.
@@ -191,6 +193,10 @@ async def generate_multi_parallel(
         }
     """
     lang = get_request_language(x_language)
+
+    # Rate limiting: 20 requests per minute per user/IP (each call fires 4 LLMs)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('generate_multi_parallel', identifier, max_requests=20, window_seconds=60)
 
     prompt = req.prompt.strip()
     if not prompt:
@@ -299,15 +305,16 @@ async def generate_multi_parallel(
         logger.error("[generate_multi_parallel] Error: %s", e, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=Messages.error("generation_failed", lang, str(e))
+            detail=Messages.error("internal_error", lang)
         ) from e
 
 
 @router.post('/generate_multi_progressive')
 async def generate_multi_progressive(
     req: GenerateRequest,
+    request: Request,
     x_language: Optional[str] = None,
-    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    current_user: Optional[User] = Depends(get_current_user_or_api_key)
 ):
     """
     Progressive parallel generation - send results as each LLM completes.
@@ -323,6 +330,10 @@ async def generate_multi_progressive(
     """
     # Get language for error messages
     lang = get_request_language(x_language)
+
+    # Rate limiting: 20 requests per minute per user/IP (each call fires 4 LLMs)
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('generate_multi_progressive', identifier, max_requests=20, window_seconds=60)
 
     # Validate prompt
     prompt = req.prompt.strip()
@@ -422,7 +433,7 @@ async def generate_multi_progressive(
 
         except Exception as e:
             logger.error("[generate_multi_progressive] Error: %s", e, exc_info=True)
-            yield f"data: {json.dumps({'event': 'error', 'message': str(e)})}\n\n"
+            yield f"data: {json.dumps({'event': 'error', 'message': 'Internal server error'})}\n\n"
 
     # Return SSE stream
     return StreamingResponse(

@@ -27,19 +27,20 @@ import uuid
 from pathlib import Path
 from typing import Dict, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import StreamingResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 from sqlalchemy.orm import Session
 
 from clients.tts_realtime_client import AudioFormat, SessionMode, TTSRealtimeClient
 from config.database import get_db
 from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSession
 from prompts.debateverse import get_position_generation_prompt
-from routers.auth.dependencies import get_current_user_optional
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.features.dashscope_tts import get_tts_service
 from services.features.debateverse_service import DebateVerseService
 from services.llm import llm_service
+from utils.auth import get_current_user
 
 
 logger = logging.getLogger(__name__)
@@ -55,33 +56,85 @@ MAX_BUFFER_SIZE = 200  # Maximum buffer size (force send even without sentence e
 # Request/Response Models
 # ============================================================================
 
+_ALLOWED_DEBATE_FORMATS = frozenset({'us_parliamentary', 'british_parliamentary', 'lincoln_douglas'})
+_ALLOWED_STAGES = frozenset({
+    'setup', 'coin_toss', 'opening', 'rebuttal', 'cross_exam', 'closing', 'judgment', 'completed'
+})
+_ALLOWED_MODELS = frozenset({'qwen', 'deepseek', 'kimi', 'doubao'})
+_ALLOWED_ROLES = frozenset({'debater', 'judge', 'viewer'})
+_ALLOWED_SIDES = frozenset({'affirmative', 'negative'})
+
+
 class CreateSessionRequest(BaseModel):
     """Request model for creating a debate session."""
 
-    topic: str
-    llm_assignments: Dict[str, str]  # {role: model_id}
-    format: Optional[str] = 'us_parliamentary'
-    language: Optional[str] = 'zh'
+    topic: str = Field(..., min_length=1, max_length=500)
+    llm_assignments: Dict[str, str] = Field(...)
+    format: Optional[str] = Field('us_parliamentary')
+    language: Optional[str] = Field('zh')
+
+    @field_validator('format')
+    @classmethod
+    def validate_format(cls, value: Optional[str]) -> Optional[str]:
+        """Allow only known debate formats."""
+        if value and value not in _ALLOWED_DEBATE_FORMATS:
+            raise ValueError(f"format must be one of: {', '.join(_ALLOWED_DEBATE_FORMATS)}")
+        return value
+
+    @field_validator('llm_assignments')
+    @classmethod
+    def validate_llm_assignments(cls, value: Dict[str, str]) -> Dict[str, str]:
+        """Validate that model IDs are from the allowed set."""
+        for model_id in value.values():
+            if model_id not in _ALLOWED_MODELS:
+                raise ValueError(
+                    f"Invalid model '{model_id}'. Allowed: {', '.join(_ALLOWED_MODELS)}"
+                )
+        return value
 
 
 class JoinSessionRequest(BaseModel):
     """Request model for joining a debate session."""
 
-    role: Optional[str] = None  # 'debater', 'judge', 'viewer'
-    side: Optional[str] = None  # 'affirmative' or 'negative' (if debater)
-    position: Optional[int] = None  # 1 or 2 (if debater)
+    role: Optional[str] = Field(None)
+    side: Optional[str] = Field(None)
+    position: Optional[int] = Field(None, ge=1, le=2)
+
+    @field_validator('role')
+    @classmethod
+    def validate_role(cls, value: Optional[str]) -> Optional[str]:
+        """Allow only known roles."""
+        if value and value not in _ALLOWED_ROLES:
+            raise ValueError(f"role must be one of: {', '.join(_ALLOWED_ROLES)}")
+        return value
+
+    @field_validator('side')
+    @classmethod
+    def validate_side(cls, value: Optional[str]) -> Optional[str]:
+        """Allow only known sides."""
+        if value and value not in _ALLOWED_SIDES:
+            raise ValueError(f"side must be one of: {', '.join(_ALLOWED_SIDES)}")
+        return value
 
 
 class SendMessageRequest(BaseModel):
     """Request model for sending a message in a debate session."""
 
-    content: str
+    content: str = Field(..., min_length=1, max_length=5000)
 
 
 class AdvanceStageRequest(BaseModel):
     """Request model for advancing debate stage."""
 
-    new_stage: str
+    new_stage: str = Field(...)
+
+    @field_validator('new_stage')
+    @classmethod
+    def validate_new_stage(cls, value: str) -> str:
+        """Allow only known stage values."""
+        if value not in _ALLOWED_STAGES:
+            raise ValueError(f"new_stage must be one of: {', '.join(_ALLOWED_STAGES)}")
+        return value
 
 
 # ============================================================================
@@ -393,7 +446,7 @@ async def stream_debater_response(
         raise
     except Exception as e:
         logger.error("[DEBATEVERSE] Streaming error: %s", e, exc_info=True)
-        yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
+        yield f'data: {json.dumps({"type": "error", "error": "Internal server error"})}\n\n'
     finally:
         await asyncio.to_thread(db.close)
 
@@ -406,11 +459,9 @@ async def stream_debater_response(
 async def create_session(
     request: CreateSessionRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
-    """Create a new debate session."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    """Create a new debate session. Requires authentication."""
 
     try:
         service = DebateVerseService("", db)  # Will be set after creation
@@ -430,16 +481,16 @@ async def create_session(
         }
     except Exception as e:
         logger.error("Error creating debate session: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=str(e)) from e
+        raise HTTPException(status_code=500, detail="Failed to create debate session") from e
 
 
 @router.get("/sessions/{session_id}")
 def get_session(
     session_id: str,
     db: Session = Depends(get_db),
-    _current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
-    """Get debate session with messages and participants."""
+    """Get debate session with messages and participants. Requires authentication."""
     session = db.query(DebateSession).filter_by(id=session_id).first()
     if not session:
         raise HTTPException(status_code=404, detail="Session not found")
@@ -494,9 +545,14 @@ def get_session(
 async def coin_toss(
     session_id: str,
     db: Session = Depends(get_db),
-    _current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
-    """Execute coin toss to determine speaking order."""
+    """Execute coin toss to determine speaking order. Requires authentication."""
+    session = db.query(DebateSession).filter_by(id=session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this session")
     service = DebateVerseService(session_id, db)
     result = service.coin_toss()
 
@@ -509,27 +565,32 @@ async def coin_toss(
 @router.get("/sessions/{session_id}/generate-positions")
 def generate_positions(
     session_id: str,
+    request: Request,
     language: str = Query('zh', description="Language for position generation"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
     """
     Generate debate positions using Doubao LLM with SSE streaming.
-
-    Uses the topic from the session (session_id already contains the topic).
-    The user's topic/statement is included in the prompt to generate positions.
-
-    Yields SSE-formatted chunks:
-    - {"type": "token", "content": "..."} - Position content tokens
-    - {"type": "done"} - Stream complete
-    - {"type": "error", "error": "..."} - Error occurred
+    Requires authentication. Rate limited to 30 requests/min per user.
     """
+    identifier = get_rate_limit_identifier(current_user, request)
+
     async def generate():
         try:
-            # Get session - session_id already contains the topic
+            # Rate limit: 30 LLM streaming requests per minute per user
+            await check_endpoint_rate_limit(
+                'debateverse_positions', identifier, max_requests=30, window_seconds=60
+            )
+
+            # Get session and verify ownership
             session = db.query(DebateSession).filter_by(id=session_id).first()
             if not session:
                 yield f'data: {json.dumps({"type": "error", "error": "Session not found"})}\n\n'
+                return
+
+            if session.user_id != current_user.id:
+                yield f'data: {json.dumps({"type": "error", "error": "Not authorized"})}\n\n'
                 return
 
             # Get topic from session (this is the user's statement/topic)
@@ -553,7 +614,7 @@ def generate_positions(
                 max_tokens=1000,
                 enable_thinking=False,
                 yield_structured=True,
-                user_id=current_user.id if current_user else None,
+                user_id=current_user.id,
                 request_type='debateverse',
                 endpoint_path=f'/api/debateverse/sessions/{session_id}/generate-positions'
             ):
@@ -569,9 +630,12 @@ def generate_positions(
         except asyncio.CancelledError:
             logger.info("[DEBATEVERSE] Position generation cancelled for session %s", session_id)
             raise
+        except HTTPException as e:
+            logger.warning("[DEBATEVERSE] Position generation rejected: %s", e.detail)
+            yield f'data: {json.dumps({"type": "error", "error": e.detail})}\n\n'
         except Exception as e:
             logger.error("[DEBATEVERSE] Position generation error: %s", e, exc_info=True)
-            yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
+            yield f'data: {json.dumps({"type": "error", "error": "Internal server error"})}\n\n'
         finally:
             db.close()
 
@@ -591,9 +655,14 @@ async def advance_stage(
     session_id: str,
     request: AdvanceStageRequest,
     db: Session = Depends(get_db),
-    _current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
-    """Advance debate to next stage (judge only)."""
+    """Advance debate to next stage. Requires authentication and session ownership."""
+    session = db.query(DebateSession).filter_by(id=session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to modify this session")
     service = DebateVerseService(session_id, db)
     success = service.advance_stage(request.new_stage)
 
@@ -608,11 +677,9 @@ def send_user_message(
     session_id: str,
     request: SendMessageRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
-    """Send a user message in the debate session."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    """Send a user message in the debate session. Requires authentication."""
 
 
     # Get session
@@ -670,7 +737,7 @@ def trigger_next(
     session_id: str = Query(...),
     language: str = Query('zh'),
     db: Session = Depends(get_db),
-    _current_user = Depends(get_current_user_optional)
+    current_user = Depends(get_current_user)
 ):
     """
     Trigger next conversation in debate.
@@ -731,12 +798,24 @@ async def stream_debater(
     session_id: str,
     participant_id: int,
     stage: str,
+    request: Request,
     language: str = 'zh',
-    _db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional)
+    db: Session = Depends(get_db),
+    current_user = Depends(get_current_user)
 ):
-    """Stream debater response for a specific participant."""
-    user_id = current_user.id if current_user else None
+    """Stream debater response. Requires authentication and session ownership."""
+    # Verify session ownership before triggering LLM streaming
+    session = db.query(DebateSession).filter_by(id=session_id).first()
+    if not session:
+        raise HTTPException(status_code=404, detail="Session not found")
+    if session.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this session")
+
+    # Rate limit: 60 streaming requests per minute per user
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        'debateverse_stream', identifier, max_requests=60, window_seconds=60
+    )
 
     return StreamingResponse(
         stream_debater_response(
@@ -744,7 +823,7 @@ async def stream_debater(
             participant_id=participant_id,
             stage=stage,
             language=language,
-            user_id=user_id
+            user_id=current_user.id
         ),
         media_type="text/event-stream",
         headers={
@@ -758,13 +837,11 @@ async def stream_debater(
 @router.get("/sessions")
 def list_sessions(
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user_optional),
+    current_user = Depends(get_current_user),
     limit: int = 20,
     offset: int = 0
 ):
-    """List user's debate sessions."""
-    if not current_user:
-        raise HTTPException(status_code=401, detail="Authentication required")
+    """List user's debate sessions. Requires authentication."""
 
     sessions = db.query(DebateSession).filter_by(
         user_id=current_user.id

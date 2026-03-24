@@ -5,6 +5,27 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.54.0] - 2026-03-25
+
+### Added
+- **Diagram Snapshots — point-in-time restore**: New `DiagramSnapshot` model (`models/domain/diagram_snapshots.py`) stores up to 10 immutable JSONB copies of a diagram spec (LLM results excluded). Backend CRUD endpoints (`POST/GET/DELETE /api/diagrams/{id}/snapshots`, `POST .../recall`) with rate limiting, ownership checks, and automatic gap-free renumbering on delete/eviction. Frontend `useSnapshotHistory` composable, toolbar "Snapshot" button in More Apps, and numbered version badges in `CanvasTopBar` with click-to-recall and Ctrl+click-to-delete.
+- **Admin Database Management tab**: New admin-only panel tab (`AdminDatabaseTab.vue`) backed by `routers/admin/database.py` and `services/admin/` (SQLite merge service, PG export/import service). Features: PostgreSQL table stats, backup-folder SQLite file scanning/analysis/merge with ID remapping, PG dump export/restore, and orphaned-record detection/cleanup. Full i18n coverage (en/zh/az).
+- **Auto-save UX — dirty/saving indicators & relative timestamps**: `useDiagramAutoSave` now exposes `isDirty` and `isSaving` reactive flags with a typed `SaveFlushResult` return. Periodic 30-second interval save catches position/style-only edits via a new `getFullFingerprint` (includes node positions and styles). Save status badge shows color-coded state (blue = saving, amber = unsaved, gray = saved) with relative time labels ("Saved just now", "Saved Xs ago", "Saved Nmin ago"). Manual Ctrl+S shows success/failure notifications.
+- **Element Plus programmatic-API styles**: Explicit CSS imports for `ElMessage`, `ElMessageBox`, `ElNotification`, and `ElLoading` in `main.ts` so programmatic calls render correctly with `unplugin-vue-components`.
+
+### Changed
+- **Security — authentication required on health endpoints**: `/health/websocket`, `/health/redis`, `/health/database`, `/health/all`, and `/health/processes` now require a valid JWT via `get_current_user`.
+- **Security — DebateVerse hardening**: All endpoints migrated from `get_current_user_optional` to mandatory `get_current_user`; session ownership checks (403) added to coin-toss, advance-stage, stream-debater, and position-generation; request models use Pydantic `Field` validators with allow-listed formats, stages, models, roles, sides, and message length caps; rate limiting on LLM-streaming endpoints (30–60 req/min).
+- **Security — AskOnce hardening**: `/askonce/stream/{model}` now requires authentication (was optional) with per-user rate limiting (60 req/min); model listing no longer exposes internal `model_name`.
+- **Security — multi-LLM generation rate limiting**: `generate_multi_parallel` and `generate_multi_progressive` rate-limited to 20 req/min per user; error responses replaced with generic "Internal server error" (no stack traces).
+- **Security — SSE & frontend logging**: SSE error payloads no longer expose `error_type` or raw exception text. Frontend log endpoint strips all control characters including `\n\r\t` (prevents log-line forging) and prefixes entries with `[FRONTEND]`.
+- **Security — SSRF prevention**: Removed `localhost` and `127.0.0.1` from the image-proxy allowed-domain whitelist.
+- **Security — health stats**: Database URL no longer included in health-check response payloads.
+- **Health Monitor — direct function calls**: Replaced `httpx`-based localhost HTTP polling with direct calls to internal health-check functions (`_check_application_health`, `_check_redis_health`, `_check_database_health`, `_check_processes_health`), eliminating HTTP/auth overhead, the `httpx` dependency, and CLOSE_WAIT socket accumulation.
+- **Router registration ordering**: Vue SPA catch-all route moved to the very last position; admin and feature API routers now register before it, fixing potential route shadowing.
+- **Brand rename**: Page title changed from "MindGraph Pro" to "Mind Platform"; `app.brandName` and several `meta.pageTitle.*` i18n keys updated (en/zh/az).
+- **CanvasTopBar filename display**: Long filenames truncated to 15 characters with an ellipsis; full name shown on tooltip hover.
+
 ## [5.53.0] - 2026-03-24
 
 ### Added

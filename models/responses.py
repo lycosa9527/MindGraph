@@ -446,3 +446,63 @@ class ChunkTestResultResponse(BaseModel):
     progress_percent: Optional[int] = None
     completed_methods: Optional[List[str]] = None
     created_at: str
+
+
+# ============================================================================
+# DIAGRAM SNAPSHOT RESPONSE MODELS
+# ============================================================================
+
+class SnapshotMetadata(BaseModel):
+    """Lightweight metadata for a single diagram snapshot (no spec)."""
+
+    id: int = Field(..., description="Snapshot primary key")
+    version_number: int = Field(..., description="Version number within the diagram (1–10)")
+    created_at: datetime = Field(..., description="When the snapshot was taken")
+
+    class Config:
+        """Configuration for SnapshotMetadata JSON schema."""
+
+        json_schema_extra = {
+            "example": {
+                "id": 1,
+                "version_number": 1,
+                "created_at": "2026-03-24T10:00:00"
+            }
+        }
+
+
+class SnapshotListResponse(BaseModel):
+    """List of snapshot metadata for a diagram."""
+
+    snapshots: List[SnapshotMetadata] = Field(
+        default_factory=list, description="Snapshots ordered by version_number ascending"
+    )
+
+    class Config:
+        """Configuration for SnapshotListResponse JSON schema."""
+
+        json_schema_extra = {
+            "example": {
+                "snapshots": [
+                    {"id": 1, "version_number": 1, "created_at": "2026-03-24T10:00:00"},
+                    {"id": 2, "version_number": 2, "created_at": "2026-03-24T10:05:00"}
+                ]
+            }
+        }
+
+
+class SnapshotRecallResponse(BaseModel):
+    """Full spec returned when recalling a snapshot."""
+
+    version_number: int = Field(..., description="The version that was recalled")
+    spec: Dict[str, Any] = Field(..., description="Diagram specification at that version")
+
+    class Config:
+        """Configuration for SnapshotRecallResponse JSON schema."""
+
+        json_schema_extra = {
+            "example": {
+                "version_number": 1,
+                "spec": {"topic": "Central Topic", "children": []}
+            }
+        }

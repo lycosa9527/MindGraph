@@ -19,7 +19,7 @@ export default {
     "sidebar.bookmarks.pageN": "第 {n} 页",
     "sidebar.bookmarks.title": "最近书签",
     "sidebar.bookmarks.unknownDoc": "未知文档",
-    "sidebar.brandTitle": "Mind思维平台",
+    "sidebar.brandTitle": "迈特教研",
     "sidebar.chatHistory.deleteConfirm": "确定要删除这个对话吗？此操作不可撤销。",
     "sidebar.chatHistory.deleteTitle": "删除对话",
     "sidebar.chatHistory.empty": "暂无对话记录",

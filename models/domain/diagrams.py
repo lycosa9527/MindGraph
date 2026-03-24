@@ -77,8 +77,11 @@ class Diagram(Base):
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )
 
-    # Relationship
+    # Relationships
     user: Mapped["User"] = relationship("User", back_populates="diagrams")
+    snapshots: Mapped[list["DiagramSnapshot"]] = relationship(
+        "DiagramSnapshot", back_populates="diagram", cascade="all, delete-orphan"
+    )
 
     # Composite index for efficient queries
     __table_args__ = (

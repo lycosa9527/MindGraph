@@ -18,7 +18,12 @@ from routers import (
     auth,
     public_dashboard,
 )
-from routers.admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
+from routers.admin import (
+    database_router as admin_database,
+    env_router as admin_env,
+    logs_router as admin_logs,
+    realtime_router as admin_realtime,
+)
 from routers.core import pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
@@ -96,8 +101,9 @@ def register_routers(app: FastAPI) -> None:
     1. Health check endpoints (no prefix)
     2. Core API routes (must be before vue_spa catch-all)
     3. Feature routers with feature flags (must be before vue_spa)
-    4. Vue SPA catch-all route (must be last)
-    5. Other feature routers (after vue_spa)
+    4. Admin routers (must be before vue_spa)
+    5. Remaining feature routers with API endpoints (before vue_spa)
+    6. Vue SPA catch-all route (MUST be last)
     
     Args:
         app: FastAPI application instance
@@ -172,16 +178,15 @@ def register_routers(app: FastAPI) -> None:
         else:
             logger.debug("[RouterRegistration] Workshop Chat feature disabled via FEATURE_WORKSHOP_CHAT flag")
 
-    # Vue SPA handles all page routes (v5.0.0+) - MUST be registered AFTER API routes
-    app.include_router(vue_spa)
-
-    # Feature routers registered after vue_spa
+    # Admin routers (must be before vue_spa catch-all)
     app.include_router(admin_env)  # Admin environment settings management
     app.include_router(admin_logs)  # Admin log streaming
     app.include_router(admin_realtime)  # Admin realtime user activity monitoring
+    app.include_router(admin_database)  # Admin database management (merge, export/import)
+
+    # Feature routers with API endpoints (must be before vue_spa catch-all)
     app.include_router(voice)  # VoiceAgent (real-time voice conversation)
     app.include_router(update_notification)  # Update notification system
-    # Public dashboard endpoints
     app.include_router(public_dashboard.router, prefix="/api/public", tags=["Public Dashboard"])
     app.include_router(school_zone)  # School Zone (organization-scoped sharing)
     app.include_router(askonce)  # AskOnce (多应) - Multi-LLM streaming chat
@@ -203,3 +208,6 @@ def register_routers(app: FastAPI) -> None:
             )
         else:
             logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
+
+    # Vue SPA catch-all - MUST be registered LAST (after all API routes)
+    app.include_router(vue_spa)

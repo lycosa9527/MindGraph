@@ -10,6 +10,7 @@ import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 
 import {
   ArrowDownUp,
   Brush,
+  Camera,
   ChevronDown,
   Image as ImageIcon,
   Layers,
@@ -43,6 +44,7 @@ import {
   type StylePresetColors,
 } from '@/config/colorPalette'
 import { useDiagramStore, useUIStore } from '@/stores'
+import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramNode } from '@/types'
 import { type BorderStyleType, getBorderStyleProps } from '@/utils/borderStyleUtils'
 
@@ -65,6 +67,7 @@ const emit = defineEmits<{
 
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
+const savedDiagramsStore = useSavedDiagramsStore()
 
 const collabCanvas = inject<
   | {
@@ -249,7 +252,7 @@ type MoreAppItem = {
   iconBg: string
   iconColor: string
   handlerKey?: MoreAppHandlerKey
-  appKey?: 'waterfall' | 'learning_sheet'
+  appKey?: 'waterfall' | 'learning_sheet' | 'snapshot'
 }
 
 // More apps items (hide waterfall for concept_map — dedicated concept generation button)
@@ -280,6 +283,14 @@ const moreApps = computed((): MoreAppItem[] => {
       desc: t('canvas.toolbar.moreAppLearningSheetDesc'),
       iconBg: 'bg-purple-100',
       iconColor: 'text-purple-600',
+    },
+    {
+      appKey: 'snapshot',
+      name: t('canvas.toolbar.moreAppSnapshot'),
+      icon: Camera,
+      desc: t('canvas.toolbar.moreAppSnapshotDesc'),
+      iconBg: 'bg-amber-100',
+      iconColor: 'text-amber-600',
     },
   ]
   const withoutWaterfall = isConceptMap.value
@@ -1321,6 +1332,18 @@ async function handleMoreApp(app: MoreAppItem) {
         notify.success(t('canvas.toolbar.switchedLearningSheetMode'))
       }
     }
+    return
+  }
+  if (app.appKey === 'snapshot') {
+    if (!diagramStore.data?.nodes?.length) {
+      notify.warning(t('canvas.toolbar.createDiagramFirst'))
+      return
+    }
+    if (!savedDiagramsStore.activeDiagramId) {
+      notify.warning(t('canvas.toolbar.snapshotSaveFirst'))
+      return
+    }
+    eventBus.emit('snapshot:requested', {})
     return
   }
   notify.info(t('canvas.toolbar.featureInDevelopment', { name: app.name }))

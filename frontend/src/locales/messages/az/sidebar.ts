@@ -19,7 +19,7 @@ export default {
     "sidebar.bookmarks.pageN": "Page {n}",
     "sidebar.bookmarks.title": "Recent Bookmarks",
     "sidebar.bookmarks.unknownDoc": "Unknown Document",
-    "sidebar.brandTitle": "Mind Platform",
+    "sidebar.brandTitle": "迈特教研",
     "sidebar.chatHistory.deleteConfirm": "Are you sure you want to delete this conversation? This cannot be undone.",
     "sidebar.chatHistory.deleteTitle": "Delete Conversation",
     "sidebar.chatHistory.empty": "No conversations yet",

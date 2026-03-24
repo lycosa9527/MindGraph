@@ -196,8 +196,7 @@ async def ai_assistant_stream(
             logger.error("[STREAM] Full traceback: %s", traceback.format_exc())
             error_data = {
                 'event': 'error',
-                'error': str(e),
-                'error_type': type(e).__name__,
+                'error': 'Internal server error',
                 'timestamp': int(time.time() * 1000)
             }
             yield f"data: {json.dumps(error_data)}\n\n"

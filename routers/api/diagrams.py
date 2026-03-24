@@ -20,25 +20,38 @@ Proprietary License
 from datetime import datetime
 
 import io
+import json
 import logging
 from typing import Optional
 
-from fastapi import APIRouter, Body, Depends, HTTPException, Query, Request
+from fastapi import APIRouter, Body, Depends, HTTPException, Path, Query, Request
 from fastapi.responses import Response
 import qrcode
 from qrcode import constants as qrcode_constants
 from PIL import Image
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
+from models.domain.diagram_snapshots import DiagramSnapshot
+from models.domain.diagrams import Diagram
 from models.requests.requests_diagram import (
     DiagramCreateRequest,
     DiagramUpdateRequest,
+    SnapshotTakeRequest,
     WorkshopJoinOrganizationRequest,
     WorkshopStartRequest,
 )
-from models.responses import DiagramListItem, DiagramListResponse, DiagramResponse
+from models.responses import (
+    DiagramListItem,
+    DiagramListResponse,
+    DiagramResponse,
+    SnapshotListResponse,
+    SnapshotMetadata,
+    SnapshotRecallResponse,
+)
+from services.redis.cache._redis_diagram_cache_helpers import MAX_SPEC_SIZE_KB
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.workshop import workshop_service
 from utils.auth import get_current_user
@@ -666,3 +679,259 @@ async def generate_qrcode(
     except Exception as e:
         logger.error("[Diagrams] Error generating QR code: %s", e, exc_info=True)
         raise HTTPException(status_code=500, detail="Failed to generate QR code") from e
+
+
+# ============================================================================
+# DIAGRAM SNAPSHOT ENDPOINTS
+# ============================================================================
+
+_SNAPSHOT_MAX = 10
+
+
+@router.post("/diagrams/{diagram_id}/snapshots", response_model=SnapshotMetadata)
+async def take_snapshot(
+    diagram_id: str,
+    req: SnapshotTakeRequest,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Take a snapshot of the current diagram spec.
+
+    Stores an immutable copy of the diagram content (without LLM results).
+    Max 10 snapshots per diagram; the oldest is removed and the remaining
+    versions are renumbered when the limit is reached.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
+    )
+
+    diagram = db.query(Diagram).filter_by(
+        id=diagram_id, user_id=current_user.id, is_deleted=False
+    ).first()
+    if not diagram:
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    # Strip llm_results unconditionally — snapshots are diagram content only.
+    spec = {k: v for k, v in req.spec.items() if k != "llm_results"}
+
+    # Guard against oversized specs (same limit as diagram saves).
+    spec_size_kb = len(json.dumps(spec).encode()) / 1024
+    if spec_size_kb > MAX_SPEC_SIZE_KB:
+        raise HTTPException(
+            status_code=413,
+            detail=(
+                f"Snapshot spec too large ({spec_size_kb:.1f} KB > {MAX_SPEC_SIZE_KB} KB)"
+            ),
+        )
+
+    existing = (
+        db.query(DiagramSnapshot)
+        .filter_by(diagram_id=diagram_id)
+        .order_by(DiagramSnapshot.version_number.asc())
+        .all()
+    )
+
+    if len(existing) >= _SNAPSHOT_MAX:
+        oldest = existing[0]
+        db.delete(oldest)
+        db.flush()
+        for snap in existing[1:]:
+            snap.version_number -= 1
+        db.flush()
+        new_version = _SNAPSHOT_MAX
+    else:
+        new_version = len(existing) + 1
+
+    snapshot = DiagramSnapshot(
+        diagram_id=diagram_id,
+        user_id=current_user.id,
+        version_number=new_version,
+        spec=spec,
+    )
+    db.add(snapshot)
+    try:
+        db.commit()
+    except IntegrityError:
+        db.rollback()
+        logger.warning(
+            "[Snapshots] Concurrent snapshot conflict for diagram %s user %s",
+            diagram_id, current_user.id
+        )
+        raise HTTPException(
+            status_code=409,
+            detail="Another snapshot was taken at the same time. Please try again."
+        ) from None
+    db.refresh(snapshot)
+
+    logger.info(
+        "[Snapshots] User %s took snapshot v%d for diagram %s",
+        current_user.id, new_version, diagram_id
+    )
+    return SnapshotMetadata(
+        id=snapshot.id,
+        version_number=snapshot.version_number,
+        created_at=snapshot.created_at,
+    )
+
+
+@router.get("/diagrams/{diagram_id}/snapshots", response_model=SnapshotListResponse)
+async def list_snapshots(
+    diagram_id: str,
+    request: Request,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    List all snapshots for a diagram (metadata only, no spec).
+
+    Returns snapshots ordered by version_number ascending (oldest first).
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
+    )
+
+    diagram = db.query(Diagram).filter_by(
+        id=diagram_id, user_id=current_user.id, is_deleted=False
+    ).first()
+    if not diagram:
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    rows = (
+        db.query(DiagramSnapshot)
+        .filter_by(diagram_id=diagram_id)
+        .order_by(DiagramSnapshot.version_number.asc())
+        .all()
+    )
+    return SnapshotListResponse(
+        snapshots=[
+            SnapshotMetadata(
+                id=r.id,
+                version_number=r.version_number,
+                created_at=r.created_at,
+            )
+            for r in rows
+        ]
+    )
+
+
+@router.delete(
+    "/diagrams/{diagram_id}/snapshots/{version_number}",
+    response_model=SnapshotListResponse,
+)
+async def delete_snapshot(
+    diagram_id: str,
+    version_number: int = Path(..., ge=1, le=10),
+    request: Request = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Delete a specific snapshot and renumber remaining versions gap-free.
+
+    Returns the updated snapshot list so the frontend can refresh badges
+    without an extra round-trip.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
+    )
+
+    diagram = db.query(Diagram).filter_by(
+        id=diagram_id, user_id=current_user.id, is_deleted=False
+    ).first()
+    if not diagram:
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    snapshot = (
+        db.query(DiagramSnapshot)
+        .filter_by(diagram_id=diagram_id, version_number=version_number)
+        .first()
+    )
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    if snapshot.user_id != current_user.id:
+        raise HTTPException(
+            status_code=403,
+            detail="Not authorized to delete this snapshot",
+        )
+
+    db.delete(snapshot)
+    db.flush()
+
+    remaining = (
+        db.query(DiagramSnapshot)
+        .filter_by(diagram_id=diagram_id)
+        .order_by(DiagramSnapshot.version_number.asc())
+        .all()
+    )
+    for idx, snap in enumerate(remaining, start=1):
+        if snap.version_number != idx:
+            snap.version_number = idx
+    db.commit()
+
+    logger.info(
+        "[Snapshots] User %s deleted snapshot v%d for diagram %s (%d remaining)",
+        current_user.id, version_number, diagram_id, len(remaining),
+    )
+    return SnapshotListResponse(
+        snapshots=[
+            SnapshotMetadata(
+                id=s.id,
+                version_number=s.version_number,
+                created_at=s.created_at,
+            )
+            for s in remaining
+        ]
+    )
+
+
+@router.post(
+    "/diagrams/{diagram_id}/snapshots/{version_number}/recall",
+    response_model=SnapshotRecallResponse,
+)
+async def recall_snapshot(
+    diagram_id: str,
+    version_number: int = Path(..., ge=1, le=10),
+    request: Request = None,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Return the full spec for a specific snapshot version.
+
+    The caller is responsible for loading the returned spec into the canvas.
+    This endpoint does not modify the diagram or its snapshots.
+    """
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit(
+        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
+    )
+
+    diagram = db.query(Diagram).filter_by(
+        id=diagram_id, user_id=current_user.id, is_deleted=False
+    ).first()
+    if not diagram:
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
+    snapshot = (
+        db.query(DiagramSnapshot)
+        .filter_by(diagram_id=diagram_id, version_number=version_number)
+        .first()
+    )
+    if not snapshot:
+        raise HTTPException(status_code=404, detail="Snapshot not found")
+    if snapshot.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized to access this snapshot")
+
+    logger.info(
+        "[Snapshots] User %s recalled snapshot v%d for diagram %s",
+        current_user.id, version_number, diagram_id
+    )
+    return SnapshotRecallResponse(
+        version_number=snapshot.version_number,
+        spec=snapshot.spec,
+    )

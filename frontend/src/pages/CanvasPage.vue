@@ -19,6 +19,7 @@
  * - Auto-updates if diagram is already in library; auto-saves new if slots available
  */
 import { computed, nextTick, onMounted, onUnmounted, provide, ref, watch } from 'vue'
+
 import { useRoute, useRouter } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
@@ -47,10 +48,11 @@ import {
   useInlineRecommendationsCoordinator,
   useLanguage,
   useNotifications,
+  useSnapshotHistory,
   useWorkshop,
 } from '@/composables'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
-import { IMPORT_SPEC_KEY } from '@/config'
+import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
@@ -83,6 +85,8 @@ const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const notify = useNotifications()
+
+const snapshotHistory = useSnapshotHistory()
 
 // Singletons must be created during setup (not in onMounted); they use useI18n / onUnmounted.
 getPanelCoordinator()
@@ -190,22 +194,53 @@ const canvasPageRef = ref<HTMLElement | null>(null)
 // Auto-save: event-driven, config-based (useDiagramAutoSave)
 const diagramAutoSave = useDiagramAutoSave()
 
-// Auto-save status text next to file name (slot-full message or "已自动保存 12:34")
-const autoSavedStatusText = computed(() => {
-  if (!authStore.isAuthenticated) return null
-  // Slots full + new diagram (not saved): show space-full message
-  if (savedDiagramsStore.isSlotsFullyUsed && !savedDiagramsStore.activeDiagramId) {
-    return t('editor.slotsFull')
+// Tick counter for relative time reactivity (increments every RELATIVE_TIME_TICK_MS)
+const relativeTimeTick = ref(0)
+let relativeTimeTimer: ReturnType<typeof setInterval> | null = null
+
+onMounted(() => {
+  relativeTimeTimer = setInterval(() => {
+    relativeTimeTick.value++
+  }, SAVE.RELATIVE_TIME_TICK_MS)
+})
+onUnmounted(() => {
+  if (relativeTimeTimer) {
+    clearInterval(relativeTimeTimer)
+    relativeTimeTimer = null
   }
-  const at = diagramAutoSave.lastSavedAt.value
-  if (!at) return null
-  const timeStr = at.toLocaleTimeString(intlLocaleForUiCode(currentLanguage.value as LocaleCode), {
+})
+
+function formatRelativeTime(date: Date): string {
+  // Force reactivity via tick counter
+  void relativeTimeTick.value
+  const diffMs = Date.now() - date.getTime()
+  const diffSec = Math.floor(diffMs / 1000)
+  if (diffSec < 10) return t('editor.savedJustNow')
+  if (diffSec < 60) return t('editor.savedSecondsAgo', { n: diffSec })
+  const diffMin = Math.floor(diffSec / 60)
+  if (diffMin < 60) return t('editor.savedMinutesAgo', { n: diffMin })
+  const timeStr = date.toLocaleTimeString(intlLocaleForUiCode(currentLanguage.value as LocaleCode), {
     hour: '2-digit',
     minute: '2-digit',
-    second: '2-digit',
     hour12: false,
   })
   return t('editor.autoSavedAt').replace('{time}', timeStr)
+}
+
+// Auto-save status text next to file name
+const autoSavedStatusText = computed(() => {
+  if (!authStore.isAuthenticated) return null
+  if (savedDiagramsStore.isSlotsFullyUsed && !savedDiagramsStore.activeDiagramId) {
+    return t('editor.slotsFull')
+  }
+  if (diagramAutoSave.isSaving.value) return t('editor.saving')
+  const at = diagramAutoSave.lastSavedAt.value
+  if (!at) {
+    if (diagramAutoSave.isDirty.value) return t('editor.unsavedChanges')
+    return null
+  }
+  if (diagramAutoSave.isDirty.value) return t('editor.unsavedChanges')
+  return formatRelativeTime(at)
 })
 
 // When slots full + new diagram, clicking status should open slot management modal
@@ -783,8 +818,17 @@ function handleClearNodeTextKey() {
   }
 }
 
-function handleSaveKey() {
-  diagramAutoSave.flush()
+async function handleSaveKey() {
+  if (!authStore.isAuthenticated) {
+    notify.warning(t('editor.saveNeedsLogin'))
+    return
+  }
+  const result = await diagramAutoSave.flush()
+  if (result.saved) {
+    notify.success(t('editor.savedSuccess'))
+  } else if (result.reason === 'skipped_slots_full') {
+    eventBus.emit('canvas:show_slot_full_modal', {} as never)
+  }
 }
 
 useEditorShortcuts({
@@ -949,6 +993,9 @@ watch(
   async (newId, oldId) => {
     if (newId && typeof newId === 'string' && newId !== oldId) {
       await loadDiagramFromLibrary(newId)
+    } else if (!newId && oldId) {
+      // Route dropped the diagramId — clear stale snapshot badges
+      snapshotHistory.clearSnapshots()
     }
   }
 )
@@ -1031,6 +1078,40 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
           diagram.diagram_type
       )
     }
+    snapshotHistory.setActiveVersion(null)
+    await snapshotHistory.loadSnapshots(diagramId)
+  }
+}
+
+async function handleSnapshotRecall(versionNumber: number): Promise<void> {
+  const diagramId = savedDiagramsStore.activeDiagramId
+  const diagramType = diagramStore.type
+  if (!diagramId || !diagramType) return
+
+  await diagramAutoSave.flush()
+
+  const spec = await snapshotHistory.recallSnapshot(diagramId, versionNumber)
+  if (!spec) {
+    notify.error(t('canvas.topBar.snapshotRecallFailed'))
+    return
+  }
+
+  diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
+  llmResultsStore.clearCache()
+  eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
+  diagramStore.loadFromSpec(spec, diagramType)
+  snapshotHistory.setActiveVersion(versionNumber)
+}
+
+async function handleSnapshotDelete(versionNumber: number): Promise<void> {
+  const diagramId = savedDiagramsStore.activeDiagramId
+  if (!diagramId) return
+
+  const deleted = await snapshotHistory.deleteSnapshot(diagramId, versionNumber)
+  if (deleted) {
+    notify.success(t('canvas.topBar.snapshotDeleted', { n: versionNumber }))
+  } else {
+    notify.error(t('canvas.topBar.snapshotDeleteFailed'))
   }
 }
 
@@ -1041,6 +1122,24 @@ onMounted(async () => {
 
   // Initialize inline recommendations coordinator (topic updates, pane click, etc.)
   inlineRecCoordinator.setup()
+
+  // Snapshot: capture current diagram spec to DB
+  eventBus.onWithOwner(
+    'snapshot:requested',
+    async () => {
+      const diagramId = savedDiagramsStore.activeDiagramId
+      if (!diagramId) return
+      const spec = diagramStore.getSpecForSave()
+      if (!spec) return
+      const result = await snapshotHistory.takeSnapshot(diagramId, spec)
+      if (result) {
+        notify.success(t('canvas.toolbar.snapshotTaken', { n: result.version_number }))
+      } else {
+        notify.error(t('canvas.toolbar.snapshotFailed'))
+      }
+    },
+    'CanvasPage'
+  )
 
   // Tab while editing: concept map topic → focus validation; other diagrams → inline recommendations
   eventBus.onWithOwner(
@@ -1220,6 +1319,7 @@ onUnmounted(() => {
     document.exitFullscreen().catch(() => {})
   }
 
+  diagramAutoSave.flush()
   diagramAutoSave.teardown()
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
@@ -1229,6 +1329,7 @@ onUnmounted(() => {
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()
   savedDiagramsStore.clearActiveDiagram()
+  snapshotHistory.clearSnapshots()
   useLLMResultsStore().reset()
   // Reset panels (nodePalette, property, mindmate) to avoid memory leaks from
   // canvas-specific data (suggestions, nodeData)
@@ -1254,8 +1355,14 @@ onUnmounted(() => {
       v-if="!isPresentationMode"
       :auto-saved-status="autoSavedStatusText"
       :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
+      :is-dirty="diagramAutoSave.isDirty.value"
+      :is-saving="diagramAutoSave.isSaving.value"
       :focus-question="conceptMapFocusQuestionDisplay"
+      :snapshots="snapshotHistory.snapshots.value"
+      :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
       @save-requested="handleSaveKey"
+      @snapshot-recall="handleSnapshotRecall"
+      @snapshot-delete="handleSnapshotDelete"
     />
 
     <!-- Collaboration strip when fullscreen presentation hides the top bar -->

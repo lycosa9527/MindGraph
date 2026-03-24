@@ -22,11 +22,10 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
 
-# Allowed domains for image proxying (security whitelist)
+# Allowed domains for image proxying (security whitelist).
+# IMPORTANT: never add localhost / 127.x.x.x here — that enables SSRF.
 ALLOWED_DOMAINS = [
     "mg.mindspringedu.com",
-    "localhost",
-    "127.0.0.1",
 ]
 
 

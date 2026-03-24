@@ -7,6 +7,8 @@
  * - State-driven guards (auth, isGenerating, suppress window)
  * - Content fingerprint computed + watch (Vue deep watch gives same ref for
  *   in-place mutations; computed fingerprint yields proper old/new on change)
+ * - Periodic interval save to catch position/style-only edits
+ * - isDirty / isSaving flags for UI feedback
  *
  * Usage:
  *   const autoSave = useDiagramAutoSave({ getDiagramTitle, onSaved })
@@ -28,25 +30,35 @@ import { useLanguage } from './useLanguage'
 
 type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 
+interface NodeLike {
+  id?: string
+  text?: string
+  data?: { label?: string }
+  position?: { x?: number; y?: number }
+  style?: unknown
+}
+
+interface ConnectionLike {
+  id?: string
+  source?: string
+  target?: string
+  label?: string
+  arrowheadDirection?: string
+}
+
 function getContentFingerprint(data: DiagramDataLike): string {
   if (!data) return ''
   const nodes = data.nodes || []
   const conns = data.connections || []
   const nodeContent = (n: unknown) => {
-    const node = n as { id?: string; text?: string; data?: { label?: string } }
+    const node = n as NodeLike
     return JSON.stringify({
       id: node.id,
       text: node.text ?? node.data?.label ?? '',
     })
   }
   const connContent = (c: unknown) => {
-    const conn = c as {
-      id?: string
-      source?: string
-      target?: string
-      label?: string
-      arrowheadDirection?: string
-    }
+    const conn = c as ConnectionLike
     return JSON.stringify({
       id: conn.id,
       source: conn.source,
@@ -58,6 +70,42 @@ function getContentFingerprint(data: DiagramDataLike): string {
   const nodeFingerprints = nodes.map(nodeContent).sort()
   const connFingerprints = conns.map(connContent).sort()
   return JSON.stringify({ nodes: nodeFingerprints, conns: connFingerprints })
+}
+
+function getFullFingerprint(data: DiagramDataLike): string {
+  if (!data) return ''
+  const nodes = data.nodes || []
+  const conns = data.connections || []
+  const nodeFull = (n: unknown) => {
+    const node = n as NodeLike
+    const posKey = node.position
+      ? `${Math.round(node.position.x ?? 0)},${Math.round(node.position.y ?? 0)}`
+      : ''
+    return JSON.stringify({
+      id: node.id,
+      text: node.text ?? node.data?.label ?? '',
+      pos: posKey,
+      style: node.style ?? null,
+    })
+  }
+  const connFull = (c: unknown) => {
+    const conn = c as ConnectionLike
+    return JSON.stringify({
+      id: conn.id,
+      source: conn.source,
+      target: conn.target,
+      label: conn.label,
+      arrowheadDirection: conn.arrowheadDirection,
+    })
+  }
+  const nodeFingerprints = nodes.map(nodeFull).sort()
+  const connFingerprints = conns.map(connFull).sort()
+  return JSON.stringify({ nodes: nodeFingerprints, conns: connFingerprints })
+}
+
+export interface SaveFlushResult {
+  saved: boolean
+  reason?: 'success' | 'skipped_guards' | 'skipped_slots_full' | 'skipped_empty' | 'error'
 }
 
 export interface UseDiagramAutoSaveOptions {
@@ -75,10 +123,15 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const authStore = useAuthStore()
   const getDiagramSpec = useDiagramSpecForSave()
 
-  let timer: ReturnType<typeof setTimeout> | null = null
+  let debounceTimer: ReturnType<typeof setTimeout> | null = null
+  let intervalTimer: ReturnType<typeof setInterval> | null = null
   let suppressTimer: ReturnType<typeof setTimeout> | null = null
   const isSuppressed = ref(false)
   const lastSavedAt = ref<Date | null>(null)
+  const isDirty = ref(false)
+  const isSaving = ref(false)
+
+  let lastSavedFullFingerprint = ''
 
   const diagramTypeForName = computed(
     () => (diagramStore.type as string) || (route.query.type as string) || null
@@ -102,24 +155,45 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       !!diagramStore.data
   )
 
-  function cancelTimer(): void {
-    if (timer) {
-      clearTimeout(timer)
-      timer = null
+  function cancelDebounce(): void {
+    if (debounceTimer) {
+      clearTimeout(debounceTimer)
+      debounceTimer = null
     }
   }
 
-  async function performSave(): Promise<void> {
-    if (!canSave.value) return
+  function startInterval(): void {
+    if (intervalTimer) return
+    intervalTimer = setInterval(() => {
+      if (!canSave.value || !isDirty.value) return
+      const currentFull = getFullFingerprint(diagramStore.data as DiagramDataLike)
+      if (currentFull === lastSavedFullFingerprint) {
+        isDirty.value = false
+        return
+      }
+      performSave()
+    }, SAVE.MAX_SAVE_INTERVAL_MS)
+  }
+
+  function stopInterval(): void {
+    if (intervalTimer) {
+      clearInterval(intervalTimer)
+      intervalTimer = null
+    }
+  }
+
+  async function performSave(): Promise<SaveFlushResult> {
+    if (!canSave.value) return { saved: false, reason: 'skipped_guards' }
 
     const base = diagramStore.getSpecForSave()
     if (base) llmResultsStore.updateCurrentModelSpec(base)
     const spec = getDiagramSpec()
-    if (!spec) return
+    if (!spec) return { saved: false, reason: 'skipped_empty' }
 
     const diagramType = diagramStore.type
-    if (!diagramType) return
+    if (!diagramType) return { saved: false, reason: 'skipped_empty' }
 
+    isSaving.value = true
     try {
       const result = await savedDiagramsStore.autoSaveDiagram(
         getTitle(),
@@ -132,6 +206,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
       if (result.success) {
         lastSavedAt.value = new Date()
+        lastSavedFullFingerprint = getFullFingerprint(diagramStore.data as DiagramDataLike)
+        isDirty.value = false
         diagramStore.resetSessionEditCount()
         llmResultsStore.updateCurrentModelSpec(spec)
         options.onSaved?.({
@@ -141,20 +217,39 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
         if (result.action === 'saved' && result.diagramId) {
           router.replace({ path: '/canvas', query: { diagramId: result.diagramId } })
         }
+        return { saved: true, reason: 'success' }
       }
+
+      if (result.action === 'skipped' && result.error === 'No available slots') {
+        return { saved: false, reason: 'skipped_slots_full' }
+      }
+      return { saved: false, reason: 'error' }
     } catch (error) {
       console.error('[useDiagramAutoSave] Save error:', error)
+      return { saved: false, reason: 'error' }
+    } finally {
+      isSaving.value = false
     }
   }
 
   function trigger(): void {
-    cancelTimer()
-    timer = setTimeout(performSave, SAVE.AUTO_SAVE_DEBOUNCE_MS)
+    cancelDebounce()
+    isDirty.value = true
+    debounceTimer = setTimeout(performSave, SAVE.AUTO_SAVE_DEBOUNCE_MS)
   }
 
-  function flush(): void {
-    cancelTimer()
-    performSave()
+  async function flush(): Promise<SaveFlushResult> {
+    cancelDebounce()
+    if (!authStore.isAuthenticated) {
+      return { saved: false, reason: 'skipped_guards' }
+    }
+    if (
+      !savedDiagramsStore.activeDiagramId &&
+      savedDiagramsStore.isSlotsFullyUsed
+    ) {
+      return { saved: false, reason: 'skipped_slots_full' }
+    }
+    return performSave()
   }
 
   const contentFingerprint = computed(() =>
@@ -163,11 +258,9 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   const stopContentWatch = watch(contentFingerprint, (newFP, oldFP) => {
     if (!newFP || oldFP === undefined || newFP === oldFP) return
-    // Content change from model switch: save-before-replace already saved user edits.
-    // Do not overwrite with the new model's result. Cancel any pending save.
     if (llmResultsStore.contentChangeIsFromModelSwitch) {
       llmResultsStore.contentChangeIsFromModelSwitch = false
-      cancelTimer()
+      cancelDebounce()
       return
     }
     if (!llmResultsStore.isGenerating && !isSuppressed.value) trigger()
@@ -183,14 +276,16 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   }
 
   function setSuppressFromLibrary(): void {
-    cancelTimer()
+    cancelDebounce()
+    isDirty.value = false
+    lastSavedFullFingerprint = getFullFingerprint(diagramStore.data as DiagramDataLike)
     setSuppressWindow(SAVE.SUPPRESS_AFTER_LOAD_MS)
   }
 
   const stopIsGenerating = watch(
     () => llmResultsStore.isGenerating,
     (isGen) => {
-      if (isGen) cancelTimer()
+      if (isGen) cancelDebounce()
     }
   )
 
@@ -216,8 +311,19 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     }
   )
 
+  const stopPositionChanged = eventBus.on('diagram:position_changed', () => {
+    isDirty.value = true
+  })
+
+  const stopStyleChanged = eventBus.on('diagram:style_changed', () => {
+    isDirty.value = true
+  })
+
+  startInterval()
+
   function teardown(): void {
-    cancelTimer()
+    cancelDebounce()
+    stopInterval()
     if (suppressTimer) {
       clearTimeout(suppressTimer)
       suppressTimer = null
@@ -228,6 +334,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     stopLoadedFromLibrary()
     stopWorkshopSnapshot()
     stopOperationCompleted()
+    stopPositionChanged()
+    stopStyleChanged()
   }
 
   onUnmounted(teardown)
@@ -237,8 +345,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     flush,
     performSave,
     setSuppressFromLibrary,
-    cancelTimer,
+    cancelTimer: cancelDebounce,
     teardown,
     lastSavedAt,
+    isDirty,
+    isSaving,
   }
 }

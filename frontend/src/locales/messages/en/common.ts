@@ -1,7 +1,7 @@
 /** English UI — common */
 export default {
     "app.aiDisclaimer": "Content is AI-generated; please verify carefully.",
-    "app.brandName": "MindGraph",
+    "app.brandName": "Mind Platform",
     "app.browserLocale.body": "Your browser prefers {name}. Switch the app interface to match?",
     "app.browserLocale.dontAsk": "Don't ask again",
     "app.browserLocale.keepChinese": "Keep Chinese",
@@ -79,7 +79,7 @@ export default {
     "meta.pageTitle.course": "Course",
     "meta.pageTitle.dashboardLogin": "Dashboard login",
     "meta.pageTitle.debateverse": "DebateVerse",
-    "meta.pageTitle.default": "MindGraph",
+    "meta.pageTitle.default": "Mind Platform",
     "meta.pageTitle.demoLogin": "Demo login",
     "meta.pageTitle.gewe": "Gewe",
     "meta.pageTitle.knowledgeSpace": "Knowledge space",
@@ -87,7 +87,7 @@ export default {
     "meta.pageTitle.libraryBookmark": "Bookmark",
     "meta.pageTitle.libraryViewer": "Library viewer",
     "meta.pageTitle.login": "Sign in",
-    "meta.pageTitle.main": "MindGraph",
+    "meta.pageTitle.main": "Mind Platform",
     "meta.pageTitle.mindgraph": "MindGraph",
     "meta.pageTitle.mindmate": "MindMate",
     "meta.pageTitle.notFound": "Page not found",

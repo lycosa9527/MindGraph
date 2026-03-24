@@ -15,17 +15,19 @@ import logging
 from typing import Dict, Any
 
 import psutil
-from fastapi import APIRouter, HTTPException, Query
+from fastapi import APIRouter, Depends, HTTPException, Query
 from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from config.settings import config
 from config.database import check_integrity, engine, DATABASE_URL
+from models.domain.auth import User
 from models.responses import DatabaseHealthResponse
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
 from services.infrastructure.recovery.database_check_state import get_database_check_state_manager
 from services.llm import llm_service
 from services.redis.redis_client import is_redis_available, RedisOps
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -229,14 +231,10 @@ async def _check_database_health() -> Dict[str, Any]:
                         size_row = result.fetchone()
                         if size_row:
                             current_stats = {
-                                "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
                                 "size": size_row[0] if size_row else "unknown"
                             }
                 else:
-                    # For other databases, just show connection URL (masked)
-                    current_stats = {
-                        "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL
-                    }
+                    current_stats = {}
             except Exception as e:  # pylint: disable=broad-except
                 logger.debug("Failed to get database stats: %s", e)
                 # Stats are optional, continue without them
@@ -392,17 +390,20 @@ async def health_check():
 
 
 @router.get("/health/websocket")
-async def websocket_metrics_check():
+async def websocket_metrics_check(
+    _current_user: User = Depends(get_current_user)
+):
     """
     WebSocket counters (per process) and optional Redis aggregate active count.
-
-    Intended for operators; does not expose secrets.
+    Requires authentication.
     """
     return get_ws_metrics_snapshot()
 
 
 @router.get("/health/redis")
-async def redis_health_check():
+async def redis_health_check(
+    _current_user: User = Depends(get_current_user)
+):
     """
     Redis health check endpoint.
 
@@ -479,13 +480,10 @@ def _sync_database_health_check() -> Dict[str, Any]:
                 size_row = result.fetchone()
                 if size_row:
                     current_stats = {
-                        "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
                         "size": size_row[0] if size_row else "unknown",
                     }
         else:
-            current_stats = {
-                "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
-            }
+            current_stats = {}
     except Exception as exc:  # pylint: disable=broad-except
         logger.debug("Failed to get database stats: %s", exc)
 
@@ -497,7 +495,9 @@ def _sync_database_health_check() -> Dict[str, Any]:
 
 
 @router.get("/health/database", response_model=DatabaseHealthResponse)
-async def database_health_check():
+async def database_health_check(
+    _current_user: User = Depends(get_current_user)
+):
     """
     Database health check endpoint.
 
@@ -543,13 +543,14 @@ async def database_health_check():
         logger.error("Database health check error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Database health check failed: {exc}",
+            detail="Database health check failed",
         ) from exc
 
 
 @router.get("/health/all")
 async def comprehensive_health_check(
-    include_llm: bool = Query(False, description="Include LLM service health checks (makes actual API calls)")
+    include_llm: bool = Query(False, description="Include LLM service health checks (makes actual API calls)"),
+    _current_user: User = Depends(get_current_user)
 ):
     """
     Comprehensive health check endpoint that checks all system components.
@@ -683,7 +684,9 @@ async def comprehensive_health_check(
 
 
 @router.get("/health/processes")
-async def processes_health_check():
+async def processes_health_check(
+    _current_user: User = Depends(get_current_user)
+):
     """
     Process monitor health check endpoint.
 

@@ -83,6 +83,15 @@ except Exception as e:
     logger.debug("[Database] Error registering diagram models: %s", e)
 
 try:
+    from models.domain.diagram_snapshots import DiagramSnapshot
+    _ = DiagramSnapshot.__tablename__
+    logger.debug("[Database] DiagramSnapshot model imported and registered for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import diagram snapshot models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering diagram snapshot models: %s", e)
+
+try:
     from models.domain.debateverse import (
         DebateSession, DebateParticipant, DebateMessage, DebateJudgment
     )

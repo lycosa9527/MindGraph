@@ -48,6 +48,7 @@ import {
   useNotifications,
   useWorkshop,
 } from '@/composables'
+import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { FOCUS_MODELS, type FocusModel } from '@/composables/conceptMapFocusQuestionApi'
 import { getLLMColor } from '@/config/llmModelColors'
@@ -67,12 +68,20 @@ const notify = useNotifications()
 const props = defineProps<{
   autoSavedStatus?: string | null
   slotFullAndNewDiagram?: boolean
+  isDirty?: boolean
+  isSaving?: boolean
   /** Concept map: focus question (standard mode), shown centered in the bar */
   focusQuestion?: string | null
+  /** Snapshot badges to display next to the filename */
+  snapshots?: SnapshotMetadata[]
+  /** Currently active (recalled) snapshot version */
+  activeSnapshotVersion?: number | null
 }>()
 
 const emit = defineEmits<{
   saveRequested: []
+  snapshotRecall: [versionNumber: number]
+  snapshotDelete: [versionNumber: number]
 }>()
 
 const route = useRoute()
@@ -413,8 +422,8 @@ async function handleReset() {
   <div
     class="canvas-top-bar absolute top-0 left-0 right-0 z-30 w-full h-12 px-3 flex items-center shadow-sm border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
   >
-    <!-- Left section: Back + Menu bar -->
-    <div class="flex items-center gap-1 shrink-0 min-w-0 max-w-[min(300px,40vw)] z-10">
+    <!-- Left section: Back + filename + save status -->
+    <div class="flex items-center gap-1 shrink-0 min-w-0 z-10">
       <!-- Back button -->
       <ElTooltip
         :content="t('canvas.topBar.back')"
@@ -433,7 +442,7 @@ async function handleReset() {
       <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1" />
 
       <!-- File name (editable) + auto-save status -->
-      <div class="flex items-center gap-2 ml-2">
+      <div class="flex items-center gap-2 ml-2 min-w-0">
         <ElInput
           v-if="isFileNameEditing"
           ref="fileNameInputRef"
@@ -445,19 +454,27 @@ async function handleReset() {
         />
         <ElTooltip
           v-else
-          :content="t('canvas.topBar.editFilename')"
+          :content="fileName"
           placement="bottom"
         >
           <span
-            class="text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700"
+            class="file-name-label text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
             @click="handleFileNameClick"
           >
-            {{ fileName }}
+            {{ fileName.length > 15 ? fileName.slice(0, 15) + '…' : fileName }}
           </span>
         </ElTooltip>
+
         <span
           v-if="props.autoSavedStatus"
-          class="auto-saved-status text-xs text-gray-500 dark:text-gray-400 shrink-0 cursor-pointer hover:text-gray-700 dark:hover:text-gray-300 transition-colors"
+          class="auto-saved-status text-xs shrink-0 cursor-pointer transition-colors whitespace-nowrap"
+          :class="[
+            props.isSaving
+              ? 'text-blue-500 dark:text-blue-400'
+              : props.isDirty
+                ? 'text-amber-500 dark:text-amber-400'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+          ]"
           :title="
             props.slotFullAndNewDiagram
               ? t('canvas.topBar.autoSaveTitleSlotFull')
@@ -468,6 +485,34 @@ async function handleReset() {
           {{ props.autoSavedStatus }}
         </span>
       </div>
+    </div>
+
+    <!-- Spacer pushes snapshot badges toward the right -->
+    <div class="flex-1 min-w-0" />
+
+    <!-- Snapshot version badges: adaptive, pushed right -->
+    <div
+      v-if="props.snapshots?.length"
+      class="flex items-center gap-1.5 shrink-0 z-10 mr-3"
+    >
+      <ElTooltip
+        v-for="snap in props.snapshots"
+        :key="snap.version_number"
+        :content="t('canvas.topBar.snapshotBadgeTooltip', { n: snap.version_number })"
+        placement="bottom"
+      >
+        <span
+          class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 cursor-pointer transition-colors select-none"
+          :class="snap.version_number === props.activeSnapshotVersion
+            ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
+            : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'"
+          @click="(e: MouseEvent) => e.ctrlKey || e.metaKey
+            ? emit('snapshotDelete', snap.version_number)
+            : emit('snapshotRecall', snap.version_number)"
+        >
+          {{ snap.version_number }}
+        </span>
+      </ElTooltip>
     </div>
 
     <!-- Center: focus question + 3-LLM validation (concept map) -->
@@ -523,7 +568,7 @@ async function handleReset() {
     </div>
 
     <!-- Right section: Online collaboration + participants + teaching design + export -->
-    <div class="ml-auto flex items-center gap-4 shrink-0 z-10">
+    <div class="flex items-center gap-4 shrink-0 z-10">
       <ElTooltip
         :content="t('canvas.topBar.collabTooltip')"
         placement="bottom"
@@ -780,6 +825,11 @@ async function handleReset() {
 
 .file-name-input {
   width: 180px;
+}
+
+.file-name-label {
+  max-width: 15ch;
+  display: inline-block;
 }
 
 .file-name-input :deep(.el-input__inner) {

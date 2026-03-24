@@ -266,5 +266,5 @@ async def generate_graph(
         )
         raise HTTPException(
             status_code=500,
-            detail=Messages.error("generation_failed", lang, str(e))
+            detail=Messages.error("internal_error", lang)
         ) from e

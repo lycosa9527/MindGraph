@@ -1,7 +1,7 @@
 /** Chinese UI — common */
 export default {
     "app.aiDisclaimer": "内容由AI生成，请仔细甄别",
-    "app.brandName": "MindGraph",
+    "app.brandName": "迈特教研",
     "app.browserLocale.body": "检测到浏览器语言为 {name}，是否将界面切换为对应语言？",
     "app.browserLocale.dontAsk": "不再提示",
     "app.browserLocale.keepChinese": "保持中文",
@@ -79,7 +79,7 @@ export default {
     "meta.pageTitle.course": "课程",
     "meta.pageTitle.dashboardLogin": "仪表盘登录",
     "meta.pageTitle.debateverse": "思辨场",
-    "meta.pageTitle.default": "MindGraph",
+    "meta.pageTitle.default": "迈特教研",
     "meta.pageTitle.demoLogin": "演示登录",
     "meta.pageTitle.gewe": "Gewe",
     "meta.pageTitle.knowledgeSpace": "知识空间",
@@ -87,7 +87,7 @@ export default {
     "meta.pageTitle.libraryBookmark": "书签",
     "meta.pageTitle.libraryViewer": "阅读",
     "meta.pageTitle.login": "登录",
-    "meta.pageTitle.main": "MindGraph",
+    "meta.pageTitle.main": "迈特教研",
     "meta.pageTitle.mindgraph": "MindGraph",
     "meta.pageTitle.mindmate": "MindMate",
     "meta.pageTitle.notFound": "页面未找到",

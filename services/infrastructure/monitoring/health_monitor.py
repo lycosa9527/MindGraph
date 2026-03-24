@@ -1,11 +1,11 @@
 """
 Health Monitor Service for MindGraph Application
 
-Monitors overall server health by periodically calling /health/all endpoint
-and sends SMS alerts to admin phones when failures are detected.
+Monitors overall server health by periodically calling internal health check
+functions and sends SMS alerts to admin phones when failures are detected.
 
 Features:
-- Periodic health monitoring via HTTP endpoint (configurable interval)
+- Periodic health monitoring via direct function calls (configurable interval)
 - SMS alerts for unhealthy/degraded status
 - Cooldown mechanism (prevents alert spam)
 - Multi-worker coordination via Redis distributed lock
@@ -20,14 +20,11 @@ Proprietary License
 """
 
 import asyncio
-import json
 import logging
 import os
 import time
 from dataclasses import dataclass
 from typing import Dict, Optional, Any
-
-import httpx
 
 try:
     from services.redis.redis_client import get_redis, is_redis_available
@@ -68,12 +65,7 @@ HEALTH_MONITOR_ENABLED = os.getenv("HEALTH_MONITOR_ENABLED", "true").lower() in 
 HEALTH_MONITOR_INTERVAL_SECONDS = int(os.getenv("HEALTH_MONITOR_INTERVAL_SECONDS", "900"))
 HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS = int(os.getenv("HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS", "1800"))
 HEALTH_MONITOR_FAILURE_THRESHOLD = int(os.getenv("HEALTH_MONITOR_FAILURE_THRESHOLD", "1"))
-HEALTH_MONITOR_TIMEOUT_SECONDS = int(os.getenv("HEALTH_MONITOR_TIMEOUT_SECONDS", "30"))
 HEALTH_MONITOR_STARTUP_DELAY_SECONDS = int(os.getenv("HEALTH_MONITOR_STARTUP_DELAY_SECONDS", "10"))
-
-# Get server port from environment
-SERVER_PORT = int(os.getenv("PORT", "9527"))
-HEALTH_ENDPOINT_URL = f"http://localhost:{SERVER_PORT}/health/all"
 
 # Redis keys for distributed coordination
 MONITOR_LOCK_KEY = "health_monitor:lock"
@@ -119,10 +111,11 @@ class HealthStatus:
 
 class HealthMonitor:
     """
-    Monitors overall server health by periodically calling /health/all endpoint.
+    Monitors overall server health by periodically calling internal health
+    check functions (application, Redis, database, processes).
 
     Features:
-    - Periodic health checks via HTTP endpoint
+    - Periodic health checks via direct function calls (no HTTP/auth overhead)
     - SMS alerts for unhealthy/degraded status
     - Cooldown mechanism (prevents alert spam)
     - Multi-worker coordination via Redis distributed lock
@@ -133,28 +126,6 @@ class HealthMonitor:
         self.status = HealthStatus(status="unknown")
         self._monitoring_task: Optional[asyncio.Task] = None
         self._shutdown_event = asyncio.Event()
-        self._http_client: Optional[httpx.AsyncClient] = None
-
-    async def _get_http_client(self) -> httpx.AsyncClient:
-        """Get or create async HTTP client.
-
-        Uses HTTP/1.1 and disables keepalive to prevent CLOSE_WAIT accumulation
-        when workers call localhost:9527 - the server may close connections
-        before the client, leaving sockets in CLOSE_WAIT.
-        """
-        if self._http_client is None or self._http_client.is_closed:
-            self._http_client = httpx.AsyncClient(
-                timeout=httpx.Timeout(HEALTH_MONITOR_TIMEOUT_SECONDS),
-                http2=False,
-                limits=httpx.Limits(max_keepalive_connections=0),
-            )
-        return self._http_client
-
-    async def _close_http_client(self) -> None:
-        """Close HTTP client"""
-        if self._http_client and not self._http_client.is_closed:
-            await self._http_client.aclose()
-            self._http_client = None
 
     async def _acquire_monitor_lock(self) -> bool:
         """
@@ -382,7 +353,11 @@ class HealthMonitor:
 
     async def _check_health(self) -> tuple[str, Optional[str], Optional[Dict[str, Any]]]:
         """
-        Check server health by calling /health/all endpoint.
+        Check server health by directly calling internal health check functions.
+
+        Calls the same check functions used by the ``/health/all`` endpoint but
+        bypasses HTTP and JWT authentication, which is unnecessary for an
+        in-process monitor.
 
         Returns:
             Tuple of (status, error_message, response_data)
@@ -391,58 +366,91 @@ class HealthMonitor:
             response_data: Parsed JSON response if available, None otherwise
         """
         try:
-            client = await self._get_http_client()
-            response = await client.get(HEALTH_ENDPOINT_URL)
+            # pylint: disable=import-outside-toplevel
+            from routers.core.health import (
+                _check_application_health,
+                _check_redis_health,
+                _check_database_health,
+                _check_processes_health,
+                _update_overall_status,
+            )
 
-            if response.status_code == 200:
-                try:
-                    data = response.json()
-                    overall_status = data.get("status", "unknown")
-                    if overall_status == "healthy":
-                        return "healthy", None, data
-                    elif overall_status == "degraded":
-                        return "degraded", None, data
-                    else:
-                        return "unhealthy", f"Status: {overall_status}", data
-                except (ValueError, json.JSONDecodeError) as e:
-                    await response.aread()
-                    return "error", f"Failed to parse JSON response: {e}", None
+            overall_status = "healthy"
+            overall_status_code = 200
+            checks: Dict[str, Any] = {}
+            errors: list[str] = []
 
-            elif response.status_code == 503:
-                try:
-                    data = response.json()
-                    overall_status = data.get("status", "unknown")
-                    if overall_status == "unhealthy":
-                        return "unhealthy", f"HTTP 503 - Status: {overall_status}", data
-                    else:
-                        return "degraded", f"HTTP 503 - Status: {overall_status}", data
-                except (ValueError, json.JSONDecodeError):
-                    await response.aread()
-                    return "degraded", "HTTP 503 - Service Unavailable", None
+            tasks = [
+                _check_application_health(),
+                _check_redis_health(),
+                _check_database_health(),
+                _check_processes_health(),
+            ]
+            results = await asyncio.gather(*tasks, return_exceptions=True)
+            check_names = ["application", "redis", "database", "processes"]
 
-            elif response.status_code == 500:
-                try:
-                    data = response.json()
-                    error_msg = data.get("errors", ["Unknown error"])
-                    if isinstance(error_msg, list) and error_msg:
-                        error_msg = error_msg[0]
-                    return "unhealthy", f"HTTP 500 - {error_msg}", data
-                except (ValueError, json.JSONDecodeError):
-                    await response.aread()
-                    return "unhealthy", "HTTP 500 - Internal Server Error", None
+            for check_name, result in zip(check_names, results):
+                if isinstance(result, Exception):
+                    logger.error(
+                        "[HealthMonitor] %s check raised exception: %s",
+                        check_name, result, exc_info=True,
+                    )
+                    checks[check_name] = {"status": "error", "error": str(result)}
+                    overall_status, overall_status_code = _update_overall_status(
+                        overall_status, overall_status_code, "error",
+                    )
+                    errors.append(f"{check_name} check failed: {result}")
+                    continue
 
-            else:
-                await response.aread()
-                return "error", f"Unexpected HTTP status: {response.status_code}", None
+                if not isinstance(result, dict) or "status" not in result:
+                    checks[check_name] = {"status": "error", "error": "Invalid result structure"}
+                    overall_status, overall_status_code = _update_overall_status(
+                        overall_status, overall_status_code, "error",
+                    )
+                    errors.append(f"{check_name} returned invalid result")
+                    continue
 
-        except httpx.TimeoutException:
-            return "error", "Health check timeout", None
-        except httpx.ConnectError:
-            return "error", "Connection error - server may be down", None
-        except httpx.HTTPError as e:
-            return "error", f"HTTP error: {e}", None
-        except Exception as e:
-            return "error", f"Unexpected error: {e}", None
+                checks[check_name] = result
+                check_status = result.get("status", "unknown")
+                overall_status, overall_status_code = _update_overall_status(
+                    overall_status, overall_status_code, check_status,
+                )
+                if check_status not in ("healthy", "skipped"):
+                    error_msg = result.get("error") or result.get("message", "Unknown error")
+                    if check_status == "error":
+                        errors.append(f"{check_name} check failed: {error_msg}")
+
+            checks["llm_services"] = {
+                "status": "skipped",
+                "message": "LLM health check skipped by health monitor",
+            }
+
+            healthy_count = sum(1 for c in checks.values() if c.get("status") == "healthy")
+            skipped_count = sum(1 for c in checks.values() if c.get("status") == "skipped")
+            total_count = len(checks)
+
+            response_data: Dict[str, Any] = {
+                "status": overall_status,
+                "timestamp": int(time.time()),
+                "checks": checks,
+                "summary": {
+                    "healthy": healthy_count,
+                    "unhealthy": total_count - healthy_count - skipped_count,
+                    "skipped": skipped_count,
+                    "total": total_count,
+                },
+            }
+            if errors:
+                response_data["errors"] = errors
+
+            if overall_status == "healthy":
+                return "healthy", None, response_data
+            if overall_status == "degraded":
+                return "degraded", None, response_data
+            return "unhealthy", f"Status: {overall_status}", response_data
+
+        except Exception as exc:  # pylint: disable=broad-except
+            return "error", f"Unexpected error: {exc}", None
 
     async def _monitor_loop(self) -> None:
         """Main monitoring loop - runs periodically"""
@@ -635,7 +643,6 @@ class HealthMonitor:
             except asyncio.CancelledError:
                 pass
 
-        await self._close_http_client()
         logger.info("[HealthMonitor] Health monitor stopped")
 
     def get_status(self) -> Dict[str, Any]:

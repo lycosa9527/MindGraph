@@ -47,7 +47,7 @@ export default {
     "auth.modal.phone11Digits": "请输入有效的11位手机号",
     "auth.modal.phonePlaceholder11": "11位手机号",
     "auth.modal.phoneRegisteredPlaceholder": "已注册的手机号",
-    "auth.modal.productTitle": "思维平台",
+    "auth.modal.productTitle": "迈特教研",
     "auth.modal.registerFailed": "注册失败",
     "auth.modal.registerSuccess": "注册成功，请登录",
     "auth.modal.registering": "注册中...",

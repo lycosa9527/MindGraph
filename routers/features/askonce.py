@@ -7,8 +7,11 @@ from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel
 
-from routers.auth.dependencies import get_current_user_optional
+from fastapi import Request
+
+from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from services.llm import llm_service
+from utils.auth import get_current_user
 
 """
 AskOnce Router - Multi-LLM Streaming Chat Endpoints
@@ -173,7 +176,7 @@ async def stream_from_llm(
         raise
     except Exception as e:
         logger.error("[ASKONCE:%s] Streaming error: %s", model_id.upper(), e)
-        yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
+        yield f'data: {json.dumps({"type": "error", "error": "Internal server error"})}\n\n'
 
 
 # ============================================================================
@@ -194,7 +197,7 @@ async def get_models():
     """Get available models with their display names."""
     return {
         "models": [
-            {"id": model_id, "name": cfg["display_name"], "model": cfg["model_name"]}
+            {"id": model_id, "name": cfg["display_name"]}
             for model_id, cfg in ASKONCE_MODELS.items()
         ]
     }
@@ -204,12 +207,13 @@ async def get_models():
 async def stream_chat(
     model: str,
     chat_request: ChatRequest,
-    current_user = Depends(get_current_user_optional)
+    request: Request,
+    current_user = Depends(get_current_user)
 ):
     """
     Stream chat completion from specified LLM.
 
-    Uses MindGraph's centralized LLM infrastructure with:
+    Requires authentication. Uses MindGraph's centralized LLM infrastructure with:
     - Rate limiting (prevents quota exhaustion)
     - Load balancing (DeepSeek → Dashscope/Volcengine, Kimi → Volcengine)
     - Error handling (comprehensive error parsing)
@@ -231,19 +235,21 @@ async def stream_chat(
             detail=f"Invalid model: {model}. Available: {', '.join(ASKONCE_MODELS.keys())}"
         )
 
+    # Rate limiting: 60 requests per minute per user
+    identifier = get_rate_limit_identifier(current_user, request)
+    await check_endpoint_rate_limit('askonce_stream', identifier, max_requests=60, window_seconds=60)
+
     # Convert messages to dict format
     messages = [{"role": m.role, "content": m.content} for m in chat_request.messages]
 
     # Get user ID for token tracking
     user_id = current_user.id if current_user else None
 
-    # Log request (user ID if authenticated)
-    user_info = f"user={user_id}" if user_id else "anonymous"
     logger.info(
-        "[ASKONCE:%s] Starting stream (%s messages, %s)",
+        "[ASKONCE:%s] Starting stream (%s messages, user=%s)",
         model.upper(),
         len(messages),
-        user_info
+        user_id,
     )
 
     return StreamingResponse(

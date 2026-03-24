@@ -107,6 +107,7 @@ export type EventTypes = {
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'diagram:loaded_from_library': { diagramId: string; diagramType: string }
   'diagram:branch_moved': Record<string, never>
+  'snapshot:requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
   'concept_map:link_drop': { sourceId: string; targetId: string }
   'concept_map:link_drag_start': { sourceId: string }
