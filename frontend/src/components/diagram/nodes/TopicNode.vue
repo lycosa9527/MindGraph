@@ -4,7 +4,7 @@
  * Used as the main/central node in bubble maps, mind maps, etc.
  * Supports inline text editing on double-click
  */
-import { computed, nextTick, onMounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -214,14 +214,34 @@ const topicNodeRef = ref<HTMLDivElement | null>(null)
 
 const diagramStore = useDiagramStore()
 
-onMounted(() => {
+let resizeObserver: ResizeObserver | null = null
+
+function reportMindMapDimensions(): void {
   if (!isMindMap.value || !topicNodeRef.value) return
-  nextTick(() => {
-    const actualWidth = topicNodeRef.value?.offsetWidth || 0
-    if (actualWidth > 0) {
-      diagramStore.setMindMapTopicWidth(actualWidth)
-    }
-  })
+  const w = topicNodeRef.value.offsetWidth
+  const h = topicNodeRef.value.offsetHeight
+  if (w > 0) {
+    diagramStore.setMindMapTopicWidth(w)
+  }
+  if (h > 0) {
+    diagramStore.setMindMapNodeDimensions(props.id, null, h)
+  }
+}
+
+onMounted(() => {
+  if (isMindMap.value && topicNodeRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      reportMindMapDimensions()
+    })
+    resizeObserver.observe(topicNodeRef.value)
+  }
+})
+
+onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
 })
 
 function handleTextSave(newText: string) {
@@ -239,15 +259,6 @@ function handleTextSave(newText: string) {
         nodeId: props.id,
         width: topicNodeRef.value?.offsetWidth || null,
       })
-    })
-  }
-
-  if (isMindMap.value) {
-    nextTick(() => {
-      const newWidth = topicNodeRef.value?.offsetWidth || 0
-      if (newWidth > 0) {
-        diagramStore.setMindMapTopicWidth(newWidth)
-      }
     })
   }
 }

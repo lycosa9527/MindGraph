@@ -38,7 +38,6 @@ from prompts import get_prompt
 
 from agents.core.agent_utils import extract_json_from_response
 from agents.core.learning_sheet import _detect_learning_sheet_from_prompt, _clean_prompt_for_learning_sheet
-from agents.mind_maps.mind_map_agent import MindMapAgent
 
 from services.llm import llm_service
 from services.monitoring.activity_stream import get_activity_stream_service
@@ -318,23 +317,6 @@ async def generate_png_from_prompt(
             except Exception as e:
                 logger.warning("[GeneratePNG] Token tracking failed (non-critical): %s", e, exc_info=False)
 
-        # For mindmaps, enhance spec with layout data if missing
-        if diagram_type == 'mind_map' and isinstance(spec, dict):
-            if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
-                logger.debug("[GeneratePNG] Mindmap spec missing layout data, enhancing with MindMapAgent")
-                try:
-                    mind_map_agent = MindMapAgent(model='qwen')
-                    enhanced_spec = await mind_map_agent.enhance_spec(spec)
-
-                    if enhanced_spec.get('_layout'):
-                        spec = enhanced_spec
-                        logger.debug("[GeneratePNG] Mindmap layout data added successfully")
-                    else:
-                        logger.warning("[GeneratePNG] MindMapAgent failed to generate layout data")
-                except Exception as e:
-                    logger.error("[GeneratePNG] Error enhancing mindmap spec: %s", e, exc_info=True)
-                    # Continue with original spec - renderer will show error message
-
         # Export PNG using core function
         screenshot_bytes = await _export_png_core(
             diagram_data=spec,
@@ -541,23 +523,6 @@ async def generate_dingtalk_png(
                 )
             except Exception as e:
                 logger.warning("[GenerateDingTalk] Token tracking failed (non-critical): %s", e, exc_info=False)
-
-        # For mindmaps, enhance spec with layout data if missing
-        if diagram_type == 'mind_map' and isinstance(spec, dict):
-            if not spec.get('_layout') or not spec.get('_layout', {}).get('positions'):
-                logger.debug("[GenerateDingTalk] Mindmap spec missing layout data, enhancing with MindMapAgent")
-                try:
-                    mind_map_agent = MindMapAgent(model='qwen')
-                    enhanced_spec = await mind_map_agent.enhance_spec(spec)
-
-                    if enhanced_spec.get('_layout'):
-                        spec = enhanced_spec
-                        logger.debug("[GenerateDingTalk] Mindmap layout data added successfully")
-                    else:
-                        logger.warning("[GenerateDingTalk] MindMapAgent failed to generate layout data")
-                except Exception as e:
-                    logger.error("[GenerateDingTalk] Error enhancing mindmap spec: %s", e, exc_info=True)
-                    # Continue with original spec - renderer will show error message
 
         # Export PNG using core helper function
         screenshot_bytes = await _export_png_core(

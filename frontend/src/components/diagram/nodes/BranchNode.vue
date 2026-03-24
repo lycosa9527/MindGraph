@@ -4,7 +4,7 @@
  * Represents branches, children, or categories in hierarchical diagrams
  * Supports inline text editing on double-click
  */
-import { computed, inject, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
@@ -168,11 +168,22 @@ function reportDimensions(): void {
   }
 }
 
+let resizeObserver: ResizeObserver | null = null
+
 onMounted(() => {
-  reportDimensions()
+  if (isMindMap.value && branchNodeRef.value) {
+    resizeObserver = new ResizeObserver(() => {
+      reportDimensions()
+    })
+    resizeObserver.observe(branchNodeRef.value)
+  }
 })
 
 onUnmounted(() => {
+  if (resizeObserver) {
+    resizeObserver.disconnect()
+    resizeObserver = null
+  }
   if (isMindMap.value) {
     diagramStore.setMindMapNodeDimensions(props.id, null, null)
   }
@@ -184,11 +195,6 @@ function handleTextSave(newText: string) {
     nodeId: props.id,
     text: newText,
   })
-  if (isMindMap.value) {
-    nextTick(() => {
-      reportDimensions()
-    })
-  }
 }
 
 function handleEditCancel() {

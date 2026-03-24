@@ -24,7 +24,6 @@ from . import (
     sse_streaming,
     llm_operations,
     frontend_logging,
-    layout,
     feedback,
     dify_files,
     dify_conversations,
@@ -57,7 +56,6 @@ router.include_router(png_export.router)
 router.include_router(sse_streaming.router)
 router.include_router(llm_operations.router)
 router.include_router(frontend_logging.router)
-router.include_router(layout.router)
 router.include_router(feedback.router)
 router.include_router(dify_files.router)
 router.include_router(dify_conversations.router)

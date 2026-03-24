@@ -331,29 +331,6 @@ class GenerateDingTalkRequest(BaseModel):
         }
 
 
-class RecalculateLayoutRequest(BaseModel):
-    """Request model for /api/recalculate_mindmap_layout endpoint"""
-    spec: Dict[str, Any] = Field(
-        ...,
-        description="Current diagram specification to recalculate layout for"
-    )
-
-    class Config:
-        """Configuration for RecalculateLayoutRequest model."""
-
-        json_schema_extra = {
-            "example": {
-                "spec": {
-                    "topic": "中心主题",
-                    "children": [
-                        {"text": "分支1", "children": []},
-                        {"text": "分支2", "children": []}
-                    ]
-                }
-            }
-        }
-
-
 class DiagramCreateRequest(BaseModel):
     """Request model for creating a new diagram"""
     title: str = Field(

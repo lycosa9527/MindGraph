@@ -1,9 +1,10 @@
 import {
   DEFAULT_CENTER_X,
+  DEFAULT_MINDMAP_BRANCH_GAP,
   DEFAULT_MINDMAP_RANK_SEPARATION,
   DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
-  DEFAULT_VERTICAL_SPACING,
+  MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
 import type { Connection, DiagramNode } from '@/types'
 
@@ -243,8 +244,7 @@ function correctYPositions(
   const topicChildren = childrenMap.get('topic') ?? []
   if (topicChildren.length === 0) return nodes
 
-  const verticalSpacing = DEFAULT_VERTICAL_SPACING
-  const crossBranchGap = verticalSpacing * 1.5
+  const crossBranchGap = DEFAULT_MINDMAP_BRANCH_GAP
 
   // Separate first-level branches by side
   const rightRoots: string[] = []
@@ -274,7 +274,7 @@ function correctYPositions(
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
       childSpans.reduce((a, b) => a + b, 0) +
-      (kids.length - 1) * verticalSpacing
+      (kids.length - 1) * MINDMAP_SIBLING_GAP
     return Math.max(h, childrenTotalSpan)
   }
 
@@ -290,12 +290,12 @@ function correctYPositions(
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
       childSpans.reduce((a, b) => a + b, 0) +
-      (kids.length - 1) * verticalSpacing
+      (kids.length - 1) * MINDMAP_SIBLING_GAP
 
     if (childrenTotalSpan >= h) {
       let y = startY
       for (let i = 0; i < kids.length; i++) {
-        if (i > 0) y += verticalSpacing
+        if (i > 0) y += MINDMAP_SIBLING_GAP
         y = assignSubtreeY(kids[i], y)
       }
       const childTop = newY.get(kids[0]) ?? startY
@@ -311,7 +311,7 @@ function correctYPositions(
     const shift = (h - childrenTotalSpan) / 2
     let y = startY + shift
     for (let i = 0; i < kids.length; i++) {
-      if (i > 0) y += verticalSpacing
+      if (i > 0) y += MINDMAP_SIBLING_GAP
       y = assignSubtreeY(kids[i], y)
     }
     return startY + h
@@ -353,7 +353,10 @@ function correctYPositions(
     }
     if (minBranchY !== Infinity) {
       const branchesCenter = (minBranchY + maxBranchBottom) / 2
-      const topicH = DEFAULT_NODE_HEIGHT
+      const topicH =
+        nodeHeights['topic'] ??
+        (nodeMap.get('topic')?.data?.estimatedHeight as number | undefined) ??
+        DEFAULT_NODE_HEIGHT
       newY.set('topic', branchesCenter - topicH / 2)
     }
   }

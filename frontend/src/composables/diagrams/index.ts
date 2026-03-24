@@ -11,12 +11,11 @@
  * 6. Flow Map - useFlowMap
  * 7. Multi-Flow Map - useMultiFlowMap
  * 8. Bridge Map - useBridgeMap
- * 9. Mind Map - useMindMap
+ * 9. Mind Map - (uses Pinia store slices directly)
  * 10. Concept Map - useConceptMap
  */
 export { useBubbleMap } from './useBubbleMap'
 export { useCircleMap } from './useCircleMap'
-export { useMindMap } from './useMindMap'
 export { useTreeMap } from './useTreeMap'
 export { useFlowMap } from './useFlowMap'
 export { useBraceMap } from './useBraceMap'

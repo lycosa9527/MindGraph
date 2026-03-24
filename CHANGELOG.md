@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.52.0] - 2026-03-24
+
+### Removed
+- **Mind map backend layout endpoint**: Deleted `routers/api/layout.py` and the `POST /api/recalculate_mindmap_layout` endpoint; removed `RecalculateLayoutRequest` model from `models/requests/requests_diagram.py` and its export from `models/requests/__init__.py` and `models/__init__.py`. The backend `MindMapAgent` no longer participates in layout recalculation.
+- **`useMindMap` composable**: Deleted `frontend/src/composables/diagrams/useMindMap.ts` (hybrid backend/Dagre layout orchestration, 631 lines) and removed its export from `composables/diagrams/index.ts` and the renderer reference in `frontend/src/renderers/index.ts`.
+- **Frontend API layout helpers**: Removed `recalculateMindMapLayout`, `diagramDataToMindMapSpec`, and `MindMapSpec`/`MindMapBranchSpec`/`MindMapLayout`/`MindMapNodePosition` interfaces from `frontend/src/utils/api.ts`; updated `frontend/src/utils/index.ts` exports accordingly.
+
+### Changed
+- **Mind map layout — DOM-measured branch heights**: `estimateBranchNodeHeight` (CJK character counting heuristic) replaced by `measureBranchNodeHeight` in `frontend/src/stores/specLoader/mindMap.ts`, which delegates to `measureTextDimensions` (font 16px, `maxWidth` 150px) and adds `BRANCH_PADDING_Y` (16px) + `BRANCH_BORDER_Y` (6px), enforcing `BRANCH_NODE_HEIGHT` minimum. Dagre imports and all Dagre-based subtree/node flattening helpers (`getSubtreeHeight`, `flattenMindMapBranches`, `layoutMindMapSideWithClockwiseHandles`, etc.) removed from the spec loader; the mind map store is substantially simplified (~480 lines removed).
+- **New layout spacing constants**: `MINDMAP_SIBLING_GAP` (20 px, vertical gap between sibling branch bottom/top edges) and `DEFAULT_MINDMAP_BRANCH_GAP` (70 px, vertical gap between top-level branches) added to `frontend/src/composables/diagrams/layoutConfig.ts`.
+- **`mindMapLayout` store**: `useMindMapLayoutSlice` updated to use the new gap constants for column position recalculation (`frontend/src/stores/diagram/mindMapLayout.ts`).
+- **`BranchNode.vue` / `TopicNode.vue`**: Minor updates aligned with the new DOM-measurement-driven layout flow.
+- **`mind_map_agent.py`**: Layout-related server-side computation removed; agent retains generation responsibilities only.
+
 ## [5.51.0] - 2026-03-24
 
 ### Changed

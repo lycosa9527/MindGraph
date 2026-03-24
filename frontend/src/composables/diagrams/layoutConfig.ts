@@ -145,6 +145,14 @@ export const DEFAULT_HORIZONTAL_SPACING = 180
 /** Default vertical spacing between nodes */
 export const DEFAULT_VERTICAL_SPACING = 60
 
+/** Fixed vertical gap between the bottom edge of one sibling and the top edge
+ *  of the next sibling within the same mind map branch. */
+export const MINDMAP_SIBLING_GAP = 20
+
+/** Vertical gap between top-level branches in a mind map.
+ *  Larger than sibling spacing to visually separate independent branches. */
+export const DEFAULT_MINDMAP_BRANCH_GAP = 70
+
 /** Mindmap column width (rank separation) - horizontal distance between depth levels.
  *  Matches double bubble map diff-to-topic spacing for shorter, tighter curves. */
 export const DEFAULT_MINDMAP_RANK_SEPARATION = 80

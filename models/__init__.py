@@ -19,7 +19,6 @@ from .requests.requests_diagram import (
     ExportPNGRequest,
     GeneratePNGRequest,
     GenerateDingTalkRequest,
-    RecalculateLayoutRequest,
     DiagramCreateRequest,
     DiagramUpdateRequest,
 )
@@ -116,7 +115,6 @@ __all__ = [
     "AIAssistantRequest",
     "FrontendLogRequest",
     "FrontendLogBatchRequest",
-    "RecalculateLayoutRequest",
     "FeedbackRequest",
     "DiagramCreateRequest",
     "DiagramUpdateRequest",

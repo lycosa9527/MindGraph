@@ -30,7 +30,6 @@
 export {
   useBubbleMap,
   useCircleMap,
-  useMindMap,
   useTreeMap,
   useFlowMap,
   useBraceMap,
