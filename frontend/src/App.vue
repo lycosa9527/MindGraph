@@ -110,25 +110,29 @@ function handleSessionExpiredLoginSuccess() {
 }
 
 onMounted(async () => {
-  await authStore.checkAuth().catch(() => false)
+  const isExportRender = route.path === '/export-render'
 
-  setTimeout(() => {
-    notify.info(t('app.aiDisclaimer'))
-  }, 500)
+  if (!isExportRender) {
+    await authStore.checkAuth().catch(() => false)
 
-  setTimeout(() => {
-    if (
-      uiStore.browserLocaleHintDismissed ||
-      uiStore.uiLanguageExplicit ||
-      uiStore.language !== 'zh'
-    ) {
-      return
-    }
-    const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''
-    if (nav.startsWith('en') || nav.startsWith('az')) {
-      showBrowserLocaleHint.value = true
-    }
-  }, 800)
+    setTimeout(() => {
+      notify.info(t('app.aiDisclaimer'))
+    }, 500)
+
+    setTimeout(() => {
+      if (
+        uiStore.browserLocaleHintDismissed ||
+        uiStore.uiLanguageExplicit ||
+        uiStore.language !== 'zh'
+      ) {
+        return
+      }
+      const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''
+      if (nav.startsWith('en') || nav.startsWith('az')) {
+        showBrowserLocaleHint.value = true
+      }
+    }, 800)
+  }
 })
 </script>
 

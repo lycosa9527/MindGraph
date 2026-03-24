@@ -53,6 +53,9 @@ from .vueflow_screenshot import capture_diagram_screenshot
 
 logger = logging.getLogger(__name__)
 
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+TEMP_IMAGES_DIR = _PROJECT_ROOT / "temp_images"
+
 router = APIRouter(tags=["api"])
 
 
@@ -530,14 +533,13 @@ async def generate_dingtalk_png(
                 logger.debug("Failed to broadcast activity: %s", e)
 
         # Save PNG to temp directory (ASYNC file I/O)
-        temp_dir = Path("temp_images")
-        temp_dir.mkdir(exist_ok=True)
+        TEMP_IMAGES_DIR.mkdir(exist_ok=True)
 
         # Generate unique filename
         unique_id = uuid.uuid4().hex[:8]
         timestamp = int(time.time())
         filename = f"dingtalk_{unique_id}_{timestamp}.png"
-        temp_path = temp_dir / filename
+        temp_path = TEMP_IMAGES_DIR / filename
 
         # Write PNG content to file using aiofiles (100% async, non-blocking)
         async with aiofiles.open(temp_path, 'wb') as f:
@@ -618,7 +620,7 @@ async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Option
     if '..' in filename or '/' in filename or '\\' in filename:
         raise HTTPException(status_code=400, detail="Invalid filename")
 
-    temp_path = Path("temp_images") / filename
+    temp_path = TEMP_IMAGES_DIR / filename
 
     # Step 1: Check if file exists (cleaner may have deleted it)
     # This check happens FIRST to distinguish between "file deleted" (404) and "URL expired" (403)

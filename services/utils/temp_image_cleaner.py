@@ -205,7 +205,7 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
     Returns:
         Number of files deleted
     """
-    temp_dir = Path("temp_images")
+    temp_dir = Path(__file__).resolve().parent.parent.parent / "temp_images"
 
     if not temp_dir.exists():
         # Silently skip if directory doesn't exist - nothing to clean
