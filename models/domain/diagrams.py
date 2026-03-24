@@ -17,6 +17,7 @@ from typing import Optional
 import uuid
 
 from sqlalchemy import Integer, String, Text, DateTime, ForeignKey, Boolean, Index
+from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
@@ -31,7 +32,7 @@ class Diagram(Base):
     """
     User-created diagrams for persistent storage and editing.
 
-    Stores the complete diagram spec as JSON text for flexibility.
+    Stores the diagram spec as JSONB for native PostgreSQL indexing and partial updates.
     Supports soft delete for data recovery.
     Uses UUID for secure, non-guessable diagram IDs.
     """
@@ -49,8 +50,8 @@ class Diagram(Base):
     diagram_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
     language: Mapped[str] = mapped_column(String(10), default='zh')
 
-    # The actual diagram data as JSON text
-    spec: Mapped[str] = mapped_column(Text, nullable=False)
+    # The actual diagram data — stored as JSONB for native parsing and GIN indexing.
+    spec: Mapped[dict] = mapped_column(pg.JSONB, nullable=False)
 
     # Optional: thumbnail for gallery view (base64 data URL)
     thumbnail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)

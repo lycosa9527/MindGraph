@@ -4,11 +4,14 @@ Redis server management for MindGraph application.
 Handles starting Redis server via systemctl or manual startup.
 """
 
+import logging
 import os
 import sys
 import time
 import subprocess
 from typing import TYPE_CHECKING, Optional
+
+logger = logging.getLogger(__name__)
 
 if TYPE_CHECKING:
     import redis as redis_module
@@ -44,8 +47,8 @@ def _get_process_name(pid: int) -> Optional[str]:
                 parts = result.stdout.strip().split(',')
                 if len(parts) > 0:
                     return parts[0].strip('"').lower()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Process name lookup via tasklist failed: %s", exc)
     else:
         try:
             result = subprocess.run(
@@ -57,8 +60,8 @@ def _get_process_name(pid: int) -> Optional[str]:
             )
             if result.stdout.strip():
                 return result.stdout.strip().lower()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Process name lookup via ps failed: %s", exc)
     return None
 
 
@@ -149,8 +152,8 @@ def start_redis_server(server_state) -> None:
         r.ping()
         print("[REDIS] Redis server is already running")
         return
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Redis pre-start connectivity check failed: %s", exc)
 
     if sys.platform != 'win32':
         try:

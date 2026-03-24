@@ -106,7 +106,7 @@ async def stream_debater_response(
     - {"type": "done"} - Stream complete
     - {"type": "error", "error": "..."} - Error occurred
     """
-    db = next(get_db())
+    db = await asyncio.to_thread(lambda: next(get_db()))
     try:
         service = DebateVerseService(session_id, db)
 
@@ -119,7 +119,9 @@ async def stream_debater_response(
         )
 
         # Get participant and model
-        participant = db.query(DebateParticipant).filter_by(id=participant_id).first()
+        participant = await asyncio.to_thread(
+            lambda: db.query(DebateParticipant).filter_by(id=participant_id).first()
+        )
 
         if not participant:
             yield f'data: {json.dumps({"type": "error", "error": "Participant not found"})}\n\n'
@@ -325,7 +327,9 @@ async def stream_debater_response(
                 logger.error("[DEBATEVERSE] TTS finish error: %s", tts_finish_error, exc_info=True)
 
         # Save message to database
-        session = db.query(DebateSession).filter_by(id=session_id).first()
+        session = await asyncio.to_thread(
+            lambda: db.query(DebateSession).filter_by(id=session_id).first()
+        )
         if not session:
             yield f'data: {json.dumps({"type": "error", "error": "Session not found"})}\n\n'
             return
@@ -342,8 +346,11 @@ async def stream_debater_response(
             round_number=round_number,
             message_type=message_type
         )
-        db.add(message)
-        db.flush()  # Flush to get message ID
+        def _sync_add_and_flush():
+            db.add(message)
+            db.flush()
+
+        await asyncio.to_thread(_sync_add_and_flush)
 
         # Generate TTS audio file from full content (fallback if streaming didn't work)
         if tts_available and full_content.strip():
@@ -361,11 +368,9 @@ async def stream_debater_response(
                 )
 
                 if audio_file:
-                    # Update message with audio URL
                     message.audio_url = f"/static/debateverse_audio/{audio_filename}"
-                    db.commit()
+                    await asyncio.to_thread(db.commit)
 
-                    # Yield audio URL to client
                     yield f'data: {json.dumps({"type": "audio_url", "url": message.audio_url})}\n\n'
                     logger.info(
                         "[DEBATEVERSE] Generated TTS audio for message %s: %s",
@@ -373,14 +378,13 @@ async def stream_debater_response(
                         message.audio_url
                     )
                 else:
-                    db.commit()
+                    await asyncio.to_thread(db.commit)
                     logger.warning("[DEBATEVERSE] TTS generation failed for message %s", message.id)
             except Exception as tts_error:
-                # Don't fail the whole request if TTS fails
                 logger.error("[DEBATEVERSE] TTS error: %s", tts_error, exc_info=True)
-                db.commit()
+                await asyncio.to_thread(db.commit)
         else:
-            db.commit()
+            await asyncio.to_thread(db.commit)
 
         yield f'data: {json.dumps({"type": "done"})}\n\n'
 
@@ -391,7 +395,7 @@ async def stream_debater_response(
         logger.error("[DEBATEVERSE] Streaming error: %s", e, exc_info=True)
         yield f'data: {json.dumps({"type": "error", "error": str(e)})}\n\n'
     finally:
-        db.close()
+        await asyncio.to_thread(db.close)
 
 
 # ============================================================================
@@ -430,7 +434,7 @@ async def create_session(
 
 
 @router.get("/sessions/{session_id}")
-async def get_session(
+def get_session(
     session_id: str,
     db: Session = Depends(get_db),
     _current_user = Depends(get_current_user_optional)
@@ -503,7 +507,7 @@ async def coin_toss(
 
 
 @router.get("/sessions/{session_id}/generate-positions")
-async def generate_positions(
+def generate_positions(
     session_id: str,
     language: str = Query('zh', description="Language for position generation"),
     db: Session = Depends(get_db),
@@ -600,7 +604,7 @@ async def advance_stage(
 
 
 @router.post("/sessions/{session_id}/messages")
-async def send_user_message(
+def send_user_message(
     session_id: str,
     request: SendMessageRequest,
     db: Session = Depends(get_db),
@@ -662,7 +666,7 @@ async def send_user_message(
 
 
 @router.post("/next")
-async def trigger_next(
+def trigger_next(
     session_id: str = Query(...),
     language: str = Query('zh'),
     db: Session = Depends(get_db),
@@ -752,7 +756,7 @@ async def stream_debater(
 
 
 @router.get("/sessions")
-async def list_sessions(
+def list_sessions(
     db: Session = Depends(get_db),
     current_user = Depends(get_current_user_optional),
     limit: int = 20,

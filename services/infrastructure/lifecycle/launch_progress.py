@@ -266,8 +266,8 @@ class ApplicationLaunchProgressTracker:
                         console_file = getattr(console_ref, '_file', None)
                         if console_file is not None and hasattr(console_file, 'flush'):
                             console_file.flush()
-                    except Exception:  # pylint: disable=broad-except
-                        pass
+                    except Exception as exc:  # pylint: disable=broad-except
+                        logger.debug("Console flush during cleanup failed: %s", exc)
 
     def __exit__(
         self,

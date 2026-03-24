@@ -1,0 +1,83 @@
+"""
+Redis Diagram Cache Helpers
+============================
+
+Helper functions, constants, and database utilities for RedisDiagramCache.
+
+Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+All Rights Reserved
+Proprietary License
+"""
+import logging
+import os
+from typing import Any, Dict, List, Optional, Tuple
+
+from config.database import SessionLocal
+from models.domain.diagrams import Diagram
+
+logger = logging.getLogger(__name__)
+
+CACHE_TTL = int(os.getenv('DIAGRAM_CACHE_TTL', '604800'))
+SYNC_INTERVAL = float(os.getenv('DIAGRAM_SYNC_INTERVAL', '300'))
+SYNC_BATCH_SIZE = int(os.getenv('DIAGRAM_SYNC_BATCH_SIZE', '100'))
+MAX_PER_USER = int(os.getenv('DIAGRAM_MAX_PER_USER', '20'))
+MAX_SPEC_SIZE_KB = int(os.getenv('DIAGRAM_MAX_SPEC_SIZE_KB', '500'))
+
+DIAGRAM_KEY = "diagram:{user_id}:{diagram_id}"
+USER_META_KEY = "diagrams:user:{user_id}:meta"
+USER_LIST_KEY = "diagrams:user:{user_id}:list"
+STATS_KEY = "diagrams:stats"
+DIRTY_SET_KEY = "diagrams:dirty"
+
+
+def _redis_json_get(redis_client: Any, key: str) -> Optional[Dict[str, Any]]:
+    """Retrieve diagram data using RedisJSON (JSON.GET). Returns None on miss or error."""
+    try:
+        result = redis_client.json().get(key, "$")
+        if result:
+            return result[0]
+    except Exception as exc:
+        logger.debug("[DiagramCache] JSON.GET failed for %s: %s", key, exc)
+    return None
+
+
+def _redis_json_set_paths(
+    redis_client: Any,
+    key: str,
+    path_value_pairs: List[Tuple[str, Any]],
+    ttl: int,
+) -> bool:
+    """
+    Update one or more JSON paths in-place in a single pipeline.
+
+    All JSON.SET commands and the EXPIRE are sent together.
+    Returns True on success, False if any Redis command raises an error
+    (e.g. key does not exist, RedisJSON not loaded, connection failure).
+    """
+    try:
+        pipe = redis_client.pipeline()
+        for path, value in path_value_pairs:
+            pipe.json().set(key, path, value)
+        pipe.expire(key, ttl)
+        pipe.execute()
+        return True
+    except Exception as exc:
+        logger.debug("[DiagramCache] JSON.SET paths failed for %s: %s", key, exc)
+        return False
+
+
+async def count_diagrams_from_db(user_id: int) -> int:
+    """Count non-deleted diagrams for a user directly from the database."""
+    try:
+        db = SessionLocal()
+        try:
+            count = db.query(Diagram).filter(
+                Diagram.user_id == user_id,
+                Diagram.is_deleted.is_(False)
+            ).count()
+            return count
+        finally:
+            db.close()
+    except Exception as exc:
+        logger.error("[DiagramCache] Database count failed: %s", exc)
+        return 0

@@ -124,7 +124,7 @@ async def get_avatars():
 
 
 @router.put("/avatar")
-async def update_avatar(
+def update_avatar(
     request: UpdateAvatarRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

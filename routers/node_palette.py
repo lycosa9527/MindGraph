@@ -150,7 +150,7 @@ def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, sessi
 # ============================================================================
 
 @router.post('/thinking_mode/node_palette/start')
-async def start_node_palette(
+def start_node_palette(
     req: NodePaletteStartRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -197,8 +197,8 @@ async def start_node_palette(
             logger.debug("Failed to log concept_generation: %s", e)
             try:
                 db.rollback()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Rollback after concept_generation log failure: %s", exc)
 
     # Log at INFO level for user activity tracking
     logger.info("[NodePalette] Started: Session %s (User: %s, Diagram: %s)",

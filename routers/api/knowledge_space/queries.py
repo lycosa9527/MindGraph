@@ -38,7 +38,7 @@ router = APIRouter()
 
 
 @router.post("/retrieval-test")
-async def test_retrieval(
+def test_retrieval(
     request: RetrievalTestRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -72,7 +72,7 @@ async def test_retrieval(
 
 
 @router.get("/queries/retrieval-test-history")
-async def get_retrieval_test_history(
+def get_retrieval_test_history(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -134,7 +134,7 @@ async def get_retrieval_test_history(
 
 
 @router.get("/queries/analytics")
-async def get_query_analytics(
+def get_query_analytics(
     days: int = 30,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -161,7 +161,7 @@ async def get_query_analytics(
 
 
 @router.post("/queries/{query_id}/feedback")
-async def submit_query_feedback(
+def submit_query_feedback(
     query_id: int,
     request: QueryFeedbackRequest,
     current_user: User = Depends(get_current_user),
@@ -216,7 +216,7 @@ async def submit_query_feedback(
 
 
 @router.post("/query-templates")
-async def create_query_template(
+def create_query_template(
     request: QueryTemplateRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -264,7 +264,7 @@ async def create_query_template(
 
 
 @router.get("/query-templates")
-async def list_query_templates(
+def list_query_templates(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

@@ -157,8 +157,8 @@ def _log_login_and_compute_stats(user_id: int, db: Session) -> None:
         logger.debug("Failed to log login or compute stats: %s", e)
         try:
             db.rollback()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Rollback after login activity log failure: %s", exc)
 
 
 def _record_city_flag_async(ip_address: str):
@@ -237,8 +237,8 @@ async def commit_user_with_retry(
     """
     for attempt in range(max_retries):
         try:
-            db.commit()
-            db.refresh(new_user)  # Get auto-generated ID
+            await asyncio.to_thread(db.commit)
+            await asyncio.to_thread(db.refresh, new_user)
             return attempt  # Return number of retries (0 = first attempt succeeded)
         except OperationalError as e:
             error_msg = str(e).lower()

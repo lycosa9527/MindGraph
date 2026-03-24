@@ -12,6 +12,7 @@ Proprietary License
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Text, Index
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .auth import Base
 
@@ -34,8 +35,11 @@ class GeweContact(Base):
     alias = Column(String(100), nullable=True, comment='WeChat alias')
     contact_type = Column(String(20), nullable=False, default='friend', comment='Type: friend, group, official')
     region = Column(String(100), nullable=True, comment='Region/location')
-    last_updated = Column(DateTime, default=datetime.utcnow, nullable=False, index=True, comment='Last update timestamp')
-    extra_data = Column(Text, nullable=True, comment='Additional data as JSON')
+    last_updated = Column(
+        DateTime, default=datetime.utcnow, nullable=False, index=True,
+        comment='Last update timestamp'
+    )
+    extra_data = Column(JSONB, nullable=True, comment='Additional structured data')
 
     # Composite unique constraint: same wxid can exist for different apps
     __table_args__ = (

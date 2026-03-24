@@ -12,6 +12,7 @@ Proprietary License
 from datetime import datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Text, Index
+from sqlalchemy.dialects.postgresql import JSONB
 
 from .auth import Base
 
@@ -34,8 +35,11 @@ class GeweGroupMember(Base):
     avatar = Column(Text, nullable=True, comment='Avatar URL')
     inviter_wxid = Column(String(40), nullable=True, comment='Who invited this member')
     join_time = Column(DateTime, nullable=True, comment='Join time')
-    last_updated = Column(DateTime, default=datetime.utcnow, nullable=False, index=True, comment='Last update timestamp')
-    extra_data = Column(Text, nullable=True, comment='Additional data as JSON')
+    last_updated = Column(
+        DateTime, default=datetime.utcnow, nullable=False, index=True,
+        comment='Last update timestamp'
+    )
+    extra_data = Column(JSONB, nullable=True, comment='Additional structured data')
 
     # Composite unique constraint: same member can only exist once per group per app
     __table_args__ = (

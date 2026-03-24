@@ -289,7 +289,7 @@ async def submit_message_feedback(
 
 
 @router.get('/dify/pinned')
-async def list_pinned_conversations(
+def list_pinned_conversations(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -314,7 +314,7 @@ async def list_pinned_conversations(
 
 
 @router.post('/dify/conversations/{conversation_id}/pin')
-async def toggle_pin_conversation(
+def toggle_pin_conversation(
     conversation_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)

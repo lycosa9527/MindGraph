@@ -190,18 +190,11 @@ class DistributedLock:
             return False
 
         try:
-            # Lua script: Only delete if lock value matches our lock_id
-            # This ensures we only release our own lock
-            # Use asyncio.to_thread() to avoid blocking event loop (Redis client is synchronous)
-            lua_script = """
-            if redis.call("GET", KEYS[1]) == ARGV[1] then
-                return redis.call("DEL", KEYS[1])
-            else
-                return 0
-            end
-            """
-
-            result = await asyncio.to_thread(redis.eval, lua_script, 1, self.lock_key, self.lock_id)
+            # DELEX (Redis >= 8.4): atomically deletes the key only if its value matches
+            # lock_id, replacing the Lua compare-and-delete script with a single command.
+            result = await asyncio.to_thread(
+                redis.delex, self.lock_key, self.lock_id
+            )
 
             if result:
                 self._acquired = False
@@ -211,22 +204,21 @@ class DistributedLock:
                     self.lock_id
                 )
                 return True
-            else:
-                # Check current holder for logging
-                current_holder = await asyncio.to_thread(redis.get, self.lock_key)
-                logger.warning(
-                    "[DistributedLock] Lock not released (not held by us or already released): %s. "
-                    "Current holder: %s",
-                    self.resource,
-                    current_holder
-                )
-                return False
 
-        except Exception as e:
+            current_holder = await asyncio.to_thread(redis.get, self.lock_key)
+            logger.warning(
+                "[DistributedLock] Lock not released (not held by us or already released): %s. "
+                "Current holder: %s",
+                self.resource,
+                current_holder
+            )
+            return False
+
+        except Exception as exc:
             logger.warning(
                 "[DistributedLock] Lock release error for %s: %s",
                 self.resource,
-                e
+                exc
             )
             return False
 

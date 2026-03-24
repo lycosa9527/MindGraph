@@ -60,7 +60,7 @@ class DeviceResponse(BaseModel):
 
 
 @router.post("/register", response_model=DeviceResponse)
-async def register_device(
+def register_device(
     request: DeviceRegisterRequest,
     db: Session = Depends(get_db),
 ):
@@ -83,7 +83,7 @@ async def register_device(
 
 
 @router.get("", response_model=List[DeviceResponse])
-async def list_devices(
+def list_devices(
     status_filter: Optional[str] = None,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -113,7 +113,7 @@ async def list_devices(
 
 
 @router.get("/unassigned", response_model=List[DeviceResponse])
-async def list_unassigned_devices(
+def list_unassigned_devices(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
@@ -129,7 +129,7 @@ async def list_unassigned_devices(
 
 
 @router.get("/{watch_id}", response_model=DeviceResponse)
-async def get_device(
+def get_device(
     watch_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -152,7 +152,7 @@ async def get_device(
 
 
 @router.post("/{watch_id}/assign", response_model=DeviceResponse)
-async def assign_device(
+def assign_device(
     watch_id: str,
     request: DeviceAssignRequest,
     current_user: User = Depends(get_current_user),
@@ -193,7 +193,7 @@ async def assign_device(
 
 
 @router.delete("/{watch_id}/assign")
-async def unassign_device(
+def unassign_device(
     watch_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -222,7 +222,7 @@ async def unassign_device(
 
 
 @router.get("/{watch_id}/status", response_model=DeviceResponse)
-async def get_device_status(
+def get_device_status(
     watch_id: str,
     db: Session = Depends(get_db),
 ):

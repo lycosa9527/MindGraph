@@ -9,6 +9,7 @@ Admin-only endpoint for teacher engagement classification:
 Reads from user_usage_stats (pre-computed). Groups: unused, continuous,
 rejection, stopped, intermittent.
 """
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
 
@@ -31,6 +32,8 @@ from services.teacher_usage_stats import (
 )
 
 from ..dependencies import require_admin
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
@@ -83,7 +86,7 @@ def _get_group_key(tier1: str | None, tier2: str | None) -> str:
 
 
 @router.get("/admin/teacher-usage", dependencies=[Depends(require_admin)])
-async def get_teacher_usage(
+def get_teacher_usage(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Get teacher engagement classification (ADMIN ONLY).
@@ -111,8 +114,8 @@ async def get_teacher_usage(
         )
         for row in stats_rows:
             stats_map[row.user_id] = (row.tier1, row.tier2)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to fetch usage stats: %s", exc)
 
     token_rows = (
         db.query(
@@ -174,8 +177,8 @@ async def get_teacher_usage(
             user_rel_labels_count = {
                 int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows
             }
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to fetch activity log counts: %s", exc)
 
     groups: dict[str, list[dict[str, Any]]] = {gid: [] for gid in GROUP_IDS}
 
@@ -248,7 +251,7 @@ async def get_teacher_usage(
     "/admin/teacher-usage/users",
     dependencies=[Depends(require_admin)],
 )
-async def get_teacher_usage_users(
+def get_teacher_usage_users(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
@@ -315,8 +318,8 @@ async def get_teacher_usage_users(
             user_rel_labels_count = {
                 int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows
             }
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to fetch paginated activity log counts: %s", exc)
     total = len(teachers)
     start = (page - 1) * page_size
     end = start + page_size
@@ -348,7 +351,7 @@ async def get_teacher_usage_users(
     "/admin/teacher-usage/user/{user_id}/weekly-tokens",
     dependencies=[Depends(require_admin)],
 )
-async def get_user_weekly_tokens(
+def get_user_weekly_tokens(
     user_id: int,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -392,7 +395,7 @@ async def get_user_weekly_tokens(
     "/admin/teacher-usage/user/{user_id}/detail",
     dependencies=[Depends(require_admin)],
 )
-async def get_user_detail(
+def get_user_detail(
     user_id: int,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -591,8 +594,8 @@ async def get_user_detail(
                     "output_tokens": int(row.output_tokens or 0),
                     "total_tokens": int(row.total_tokens or 0),
                 }
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to fetch token stats: %s", exc)
     return {
         "userId": user_id,
         "username": user.name or user.phone or str(user_id),
@@ -606,7 +609,7 @@ async def get_user_detail(
 
 
 @router.get("/admin/teacher-usage/config", dependencies=[Depends(require_admin)])
-async def get_teacher_usage_config(
+def get_teacher_usage_config(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Get classification thresholds (ADMIN ONLY)."""
@@ -614,7 +617,7 @@ async def get_teacher_usage_config(
 
 
 @router.put("/admin/teacher-usage/config", dependencies=[Depends(require_admin)])
-async def put_teacher_usage_config(
+def put_teacher_usage_config(
     body: ClassificationThresholds,
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
@@ -643,7 +646,7 @@ def _run_recompute(db: Session) -> tuple[int, int]:
 
 
 @router.post("/admin/teacher-usage/recompute", dependencies=[Depends(require_admin)])
-async def post_teacher_usage_recompute(
+def post_teacher_usage_recompute(
     db: Session = Depends(get_db),
 ) -> dict[str, Any]:
     """Recompute all teacher classifications (ADMIN ONLY). Run after config change."""

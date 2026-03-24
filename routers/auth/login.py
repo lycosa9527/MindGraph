@@ -87,8 +87,8 @@ def _preload_user_diagrams(user_id: int):
         except RuntimeError:
             # No running loop - skip preload
             pass
-    except Exception:
-        pass  # Silently fail - preload is optional optimization
+    except Exception as exc:
+        logger.debug("Failed to preload diagrams: %s", exc)
 
 
 logger = logging.getLogger(__name__)
@@ -166,7 +166,9 @@ async def login(
 
         # For all other captcha errors, increment failed attempts in database
         # Need user attached to session for modification - reload from DB
-        db_user = db.query(User).filter(User.id == cached_user.id).first()
+        db_user = await asyncio.to_thread(
+            lambda: db.query(User).filter(User.id == cached_user.id).first()
+        )
         if db_user:
             increment_failed_attempts(db_user, db)
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
@@ -202,7 +204,9 @@ async def login(
     # Verify password
     if not verify_password(request.password, cached_user.password_hash):
         # Need user attached to session for modification - reload from DB
-        db_user = db.query(User).filter(User.id == cached_user.id).first()
+        db_user = await asyncio.to_thread(
+            lambda: db.query(User).filter(User.id == cached_user.id).first()
+        )
         if db_user:
             increment_failed_attempts(db_user, db)
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
@@ -227,7 +231,9 @@ async def login(
     # Successful login - clear rate limit attempts in Redis
     clear_login_attempts(request.phone)
     # Need user attached to session for modification - reload from DB
-    db_user = db.query(User).filter(User.id == cached_user.id).first()
+    db_user = await asyncio.to_thread(
+        lambda: db.query(User).filter(User.id == cached_user.id).first()
+    )
     if db_user:
         reset_failed_attempts(db_user, db)
         user = db_user  # Use DB user for rest of function
@@ -335,7 +341,7 @@ async def login(
 
 
 @router.post("/sms/login")
-async def login_with_sms(
+def login_with_sms(
     request: LoginWithSMSRequest,
     http_request: Request,
     response: Response,
@@ -485,7 +491,7 @@ async def login_with_sms(
 
 
 @router.post("/demo/verify")
-async def verify_demo(
+def verify_demo(
     passkey_request: DemoPasskeyRequest,
     request: Request,
     response: Response,

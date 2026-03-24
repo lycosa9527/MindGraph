@@ -83,6 +83,28 @@ async def _check_application_health() -> Dict[str, Any]:
         }
 
 
+def _fetch_redis_memory_stats(redis_client: Any) -> Dict[str, Any]:
+    """Fetch memory stats from Redis INFO memory section."""
+    try:
+        mem_info = redis_client.info("memory")
+        return {
+            "used_memory_human": mem_info.get("used_memory_human", "unknown"),
+            "used_memory_peak_human": mem_info.get("used_memory_peak_human", "unknown"),
+            "mem_fragmentation_ratio": mem_info.get("mem_fragmentation_ratio", None),
+        }
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.debug("Redis memory info fetch failed: %s", exc)
+        return {}
+
+
+def _fetch_redis_hotkeys(redis_client: Any) -> Any:
+    """Fetch hot keys using the HOTKEYS command (Redis >= 8.6). Returns None on older versions."""
+    try:
+        return redis_client.execute_command("HOTKEYS")
+    except Exception:  # pylint: disable=broad-except
+        return None
+
+
 async def _check_redis_health() -> Dict[str, Any]:
     """Check Redis health status with timeout."""
     try:
@@ -109,11 +131,32 @@ async def _check_redis_health() -> Dict[str, Any]:
                     "status": "unhealthy",
                     "message": "Redis info failed"
                 }
-            return {
+
+            from services.redis.redis_client import get_redis  # pylint: disable=import-outside-toplevel
+            redis_client = get_redis()
+
+            memory = {}
+            hotkeys = None
+            if redis_client:
+                memory = await asyncio.wait_for(
+                    asyncio.to_thread(_fetch_redis_memory_stats, redis_client),
+                    timeout=2.0,
+                )
+                hotkeys = await asyncio.wait_for(
+                    asyncio.to_thread(_fetch_redis_hotkeys, redis_client),
+                    timeout=2.0,
+                )
+
+            result: Dict[str, Any] = {
                 "status": "healthy",
                 "version": info.get("redis_version", "unknown"),
-                "uptime_seconds": info.get("uptime_in_seconds", 0)
+                "uptime_seconds": info.get("uptime_in_seconds", 0),
+                "memory": memory,
             }
+            if hotkeys is not None:
+                result["hotkeys"] = hotkeys
+            return result
+
         return {
             "status": "unhealthy",
             "message": "Ping failed"
@@ -363,7 +406,9 @@ async def redis_health_check():
     """
     Redis health check endpoint.
 
-    Returns Redis connection status.
+    Returns Redis connection status, memory usage, and hot keys (Redis >= 8.6).
+    All sync Redis calls are wrapped in ``asyncio.to_thread`` with a 2-second
+    timeout so the endpoint never blocks the event loop or hangs indefinitely.
     """
     if not is_redis_available():
         return {
@@ -372,23 +417,83 @@ async def redis_health_check():
         }
 
     try:
-        # Test connection
-        if RedisOps.ping():
-            info = RedisOps.info("server")
-            return {
-                "status": "healthy",
-                "version": info.get("redis_version", "unknown"),
-                "uptime_seconds": info.get("uptime_in_seconds", 0)
+        ping_ok = await asyncio.wait_for(
+            asyncio.to_thread(RedisOps.ping), timeout=2.0,
+        )
+        if not ping_ok:
+            return {"status": "unhealthy", "message": "Ping failed"}
+
+        info = await asyncio.wait_for(
+            asyncio.to_thread(RedisOps.info, "server"), timeout=2.0,
+        )
+
+        from services.redis.redis_client import get_redis  # pylint: disable=import-outside-toplevel
+        redis_client = get_redis()
+
+        memory: Dict[str, Any] = {}
+        hotkeys = None
+        if redis_client:
+            memory = await asyncio.wait_for(
+                asyncio.to_thread(_fetch_redis_memory_stats, redis_client),
+                timeout=2.0,
+            )
+            hotkeys = await asyncio.wait_for(
+                asyncio.to_thread(_fetch_redis_hotkeys, redis_client),
+                timeout=2.0,
+            )
+
+        result: Dict[str, Any] = {
+            "status": "healthy",
+            "version": info.get("redis_version", "unknown"),
+            "uptime_seconds": info.get("uptime_in_seconds", 0),
+            "memory": memory,
+        }
+        if hotkeys is not None:
+            result["hotkeys"] = hotkeys
+        return result
+
+    except asyncio.TimeoutError:
+        return {"status": "unhealthy", "message": "Redis health check timed out"}
+    except Exception as exc:  # pylint: disable=broad-except
+        return {"status": "error", "error": str(exc)}
+
+
+def _sync_database_health_check() -> Dict[str, Any]:
+    """Run the synchronous database health probe (called via ``to_thread``)."""
+    is_healthy = check_integrity()
+    message = (
+        "Database connection and integrity check passed"
+        if is_healthy
+        else "Database integrity check failed"
+    )
+
+    current_stats: Dict[str, Any] = {}
+    try:
+        if "postgresql" in DATABASE_URL.lower():
+            with engine.connect() as conn:
+                db_name = DATABASE_URL.split("/")[-1].split("?")[0]
+                result = conn.execute(
+                    text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
+                    {"db_name": db_name},
+                )
+                size_row = result.fetchone()
+                if size_row:
+                    current_stats = {
+                        "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
+                        "size": size_row[0] if size_row else "unknown",
+                    }
+        else:
+            current_stats = {
+                "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
             }
-        return {
-            "status": "unhealthy",
-            "message": "Ping failed"
-        }
-    except Exception as e:  # pylint: disable=broad-except
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.debug("Failed to get database stats: %s", exc)
+
+    return {
+        "is_healthy": is_healthy,
+        "message": message,
+        "stats": current_stats,
+    }
 
 
 @router.get("/health/database", response_model=DatabaseHealthResponse)
@@ -396,10 +501,9 @@ async def database_health_check():
     """
     Database health check endpoint.
 
-    Returns database integrity status and statistics.
-
-    Note: This endpoint performs a fast integrity check. For detailed backup
-    information, use the admin panel or recovery tools.
+    Returns database integrity status and statistics.  All sync DB I/O is
+    offloaded via ``asyncio.to_thread`` with a 5-second timeout so the
+    endpoint never blocks the event loop or hangs indefinitely.
 
     Returns:
         - 200 OK: Database is healthy
@@ -407,69 +511,40 @@ async def database_health_check():
         - 500 Internal Server Error: Health check failed
     """
     try:
-        # Database-agnostic integrity check
-        is_healthy = check_integrity()
-
-        if is_healthy:
-            message = "Database connection and integrity check passed"
-        else:
-            message = "Database integrity check failed"
-
-        # Get basic database stats (database-agnostic)
-        current_stats = {}
-        try:
-            # For PostgreSQL, get database size using pg_database_size
-            if "postgresql" in DATABASE_URL.lower():
-                with engine.connect() as conn:
-                    # Extract database name from URL
-                    db_name = DATABASE_URL.split("/")[-1].split("?")[0]
-                    result = conn.execute(
-                        text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
-                        {"db_name": db_name}
-                    )
-                    size_row = result.fetchone()
-                    if size_row:
-                        current_stats = {
-                            "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL,
-                            "size": size_row[0] if size_row else "unknown"
-                        }
-            else:
-                # For other databases, just show connection URL (masked)
-                current_stats = {
-                    "database_url": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL
-                }
-        except Exception as e:  # pylint: disable=broad-except
-            logger.debug("Failed to get database stats: %s", e)
-            # Stats are optional, continue without them
-
-        response_data = {
-            "status": "healthy" if is_healthy else "unhealthy",
-            "database_healthy": is_healthy,
-            "database_message": message,
-            "database_stats": current_stats,
-            "timestamp": int(time.time())
-        }
-
-        # Return appropriate HTTP status code
-        status_code = 200 if is_healthy else 503
-
-        return JSONResponse(
-            content=response_data,
-            status_code=status_code
+        probe = await asyncio.wait_for(
+            asyncio.to_thread(_sync_database_health_check),
+            timeout=5.0,
         )
 
-    except ImportError as e:
-        logger.error("Database check module not available: %s", e)
+        response_data = {
+            "status": "healthy" if probe["is_healthy"] else "unhealthy",
+            "database_healthy": probe["is_healthy"],
+            "database_message": probe["message"],
+            "database_stats": probe["stats"],
+            "timestamp": int(time.time()),
+        }
+
+        status_code = 200 if probe["is_healthy"] else 503
+        return JSONResponse(content=response_data, status_code=status_code)
+
+    except asyncio.TimeoutError:
+        logger.warning("Database health check timed out")
         raise HTTPException(
             status_code=503,
-            detail="Database health check unavailable"
-        ) from e
-    except Exception as e:  # pylint: disable=broad-except
-        logger.error("Database health check error: %s", e, exc_info=True)
+            detail="Database health check timed out",
+        ) from None
+    except ImportError as exc:
+        logger.error("Database check module not available: %s", exc)
+        raise HTTPException(
+            status_code=503,
+            detail="Database health check unavailable",
+        ) from exc
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.error("Database health check error: %s", exc, exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Database health check failed: {str(e)}"
-        ) from e
+            detail=f"Database health check failed: {exc}",
+        ) from exc
 
 
 @router.get("/health/all")

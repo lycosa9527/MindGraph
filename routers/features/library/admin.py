@@ -62,8 +62,8 @@ def _canonical_path(stored_path: str, storage_dir: Path, project_root: Path) -> 
         result = normalize_library_path(Path(normalized), storage_dir, project_root)
         if result and "/" in result:
             return result
-    except Exception:  # pylint: disable=broad-except
-        pass
+    except Exception as exc:
+        logger.debug("Failed to normalize library path: %s", exc)
 
     folder_name = extract_folder_name_from_pages_dir_path(stored_path)
     if folder_name:
@@ -160,7 +160,7 @@ def _collect_disk_books(
 
 
 @router.get("/admin/scan")
-async def scan_library_folders(
+def scan_library_folders(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
 ):
@@ -215,7 +215,7 @@ async def scan_library_folders(
 
 
 @router.post("/admin/repair")
-async def repair_library_paths(
+def repair_library_paths(
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
 ):
@@ -289,7 +289,7 @@ async def repair_library_paths(
 
 
 @router.patch("/documents/{document_id}/visibility")
-async def update_document_visibility(
+def update_document_visibility(
     document_id: int,
     data: DocumentVisibilityUpdate,
     current_user: User = Depends(require_admin),
@@ -415,7 +415,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
 
 
 @router.post("/admin/rename-pages")
-async def rename_book_pages(
+def rename_book_pages(
     data: RenameRequest,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
@@ -498,7 +498,7 @@ async def rename_book_pages(
 
 
 @router.post("/admin/documents/{document_id}/generate-cover")
-async def generate_document_cover(
+def generate_document_cover(
     document_id: int,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db)
@@ -539,7 +539,7 @@ _COVER_FILE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.webp')
 
 
 @router.delete("/admin/documents/{document_id}")
-async def delete_document_record(
+def delete_document_record(
     document_id: int,
     delete_files: bool = Query(
         False,

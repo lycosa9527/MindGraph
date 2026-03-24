@@ -1,5 +1,7 @@
 """Disconnect / cleanup path for canvas collaboration WebSocket."""
 
+import logging
+
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS as active_connections,
@@ -16,6 +18,8 @@ from services.workshop.workshop_ws_editor_redis import (
 )
 
 from routers.api.workshop_ws_broadcast import broadcast_to_others
+
+logger = logging.getLogger(__name__)
 
 
 async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
@@ -92,8 +96,8 @@ async def finalize_canvas_collab_disconnect(
     try:
         record_ws_workshop_connection_delta(-1)
         redis_increment_active_total(-1)
-    except Exception:  # pylint: disable=broad-except
-        pass
+    except Exception as exc:
+        logger.debug("Failed to record WS disconnect metric: %s", exc)
 
     if is_ws_fanout_enabled():
         await _finalize_editors_fanout_disconnect(code, user)

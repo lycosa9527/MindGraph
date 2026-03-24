@@ -415,8 +415,8 @@ def backup_postgresql_database(backup_path: Path) -> bool:
                 )
                 if result.returncode == 0:
                     pg_dump_binary = result.stdout.decode('utf-8').strip()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("pg_dump binary lookup via which failed: %s", exc)
 
         if not pg_dump_binary:
             logger.error("[Backup] pg_dump binary not found. Install PostgreSQL client tools.")
@@ -470,8 +470,8 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         if backup_path.exists():
             try:
                 backup_path.unlink()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Failed backup file cleanup failed: %s", exc)
         return False
 
 
@@ -516,8 +516,8 @@ def verify_backup(backup_path: Path) -> bool:
                 )
                 if result.returncode == 0:
                     pg_restore_binary = result.stdout.decode('utf-8').strip()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("pg_restore binary lookup via which failed: %s", exc)
 
         if pg_restore_binary:
             # Use pg_restore --list to verify backup integrity
@@ -699,8 +699,8 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                             is_retryable = True
                         elif error_code in ('SlowDown', 'RequestLimitExceeded'):
                             is_retryable = True
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("COS error attribute extraction failed: %s", exc)
                 else:
                     # Retry on client errors (network issues)
                     is_retryable = True
@@ -1240,8 +1240,8 @@ async def start_backup_scheduler():
             except asyncio.CancelledError:
                 logger.info("[Backup] Scheduler monitor stopped")
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Backup scheduler lock acquisition retry failed: %s", exc)
 
     # This worker holds the lock - run the scheduler
     # Ensure backup directory exists

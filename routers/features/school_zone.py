@@ -130,7 +130,7 @@ def format_diagram_response(diagram: SharedDiagram, user_id: int, db: Session) -
 # =============================================================================
 
 @router.get("/posts")
-async def list_shared_diagrams(
+def list_shared_diagrams(
     content_type: Optional[str] = Query(None, description="Filter by content type: mindgraph or mindmate"),
     category: Optional[str] = Query(None, description="Filter by category"),
     sort: Optional[str] = Query("newest", description="Sort order: newest, likes, comments"),
@@ -187,7 +187,7 @@ async def list_shared_diagrams(
 
 
 @router.post("/posts")
-async def create_shared_diagram(
+def create_shared_diagram(
     data: SharedDiagramCreate,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -225,7 +225,7 @@ async def create_shared_diagram(
 
 
 @router.get("/posts/{post_id}")
-async def get_shared_diagram(
+def get_shared_diagram(
     post_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -260,7 +260,7 @@ async def get_shared_diagram(
 
 
 @router.delete("/posts/{post_id}")
-async def delete_shared_diagram(
+def delete_shared_diagram(
     post_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -303,7 +303,7 @@ async def delete_shared_diagram(
 
 
 @router.post("/posts/{post_id}/like")
-async def toggle_like(
+def toggle_like(
     post_id: str,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -359,7 +359,7 @@ async def toggle_like(
 
 
 @router.get("/posts/{post_id}/comments")
-async def list_comments(
+def list_comments(
     post_id: str,
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -414,7 +414,7 @@ async def list_comments(
 
 
 @router.post("/posts/{post_id}/comments")
-async def create_comment(
+def create_comment(
     post_id: str,
     data: CommentCreate,
     current_user: User = Depends(get_current_user),
@@ -467,7 +467,7 @@ async def create_comment(
 
 
 @router.delete("/posts/{post_id}/comments/{comment_id}")
-async def delete_comment(
+def delete_comment(
     post_id: str,
     comment_id: int,
     current_user: User = Depends(get_current_user),

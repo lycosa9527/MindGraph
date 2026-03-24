@@ -24,7 +24,7 @@ All Rights Reserved
 Proprietary License
 """
 from datetime import datetime, timedelta, timezone
-from typing import Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set
 import json
 import logging
 import uuid
@@ -132,84 +132,139 @@ class RedisActivityTracker:
         ip_address: Optional[str],
         reuse_existing: bool
     ) -> str:
-        """Start session using Redis."""
-        redis = get_redis()
-        if not redis:
+        """Start session using Redis.
+
+        Session reuse: batch-checks all candidate sessions with a single
+        pipelined EXISTS, then updates the first live one in one pipeline.
+        New session: creates the hash + set membership in one pipeline.
+        """
+        redis_client = get_redis()
+        if not redis_client:
             return self._memory_start_session(
                 user_id, user_phone, user_name, session_id, ip_address, reuse_existing
             )
 
         try:
-            # If reuse_existing, find existing session
             if reuse_existing and session_id is None:
-                user_sessions_key = f"{USER_SESSIONS_PREFIX}{user_id}"
-                existing_sessions = redis.smembers(user_sessions_key)
+                reused = self._try_reuse_session(
+                    redis_client, user_id, user_name, ip_address
+                )
+                if reused:
+                    return reused
 
-                if existing_sessions:
-                    # Find most recent active session
-                    for sid in existing_sessions:
-                        session_key = f"{SESSION_PREFIX}{sid}"
-                        if redis.exists(session_key):
-                            # Refresh TTL and update info
-                            redis.expire(session_key, SESSION_TTL)
-                            if user_name:
-                                redis.hset(session_key, "user_name", user_name)
-                            if ip_address:
-                                redis.hset(session_key, "ip_address", ip_address)
-                            redis.hset(session_key, "last_activity", get_beijing_now().isoformat())
-                            logger.debug("Reusing session %s for user %s", sid[:8], user_id)
+            return self._create_new_session(
+                redis_client, user_id, user_phone, user_name, session_id, ip_address
+            )
 
-                            # Record city flag for reused session (async, fire-and-forget)
-                            # This ensures flags are shown for all active sessions, including returning users
-                            if ip_address and ip_address != 'unknown':
-                                self._record_city_flag_async(ip_address)
-
-                            return sid
-
-            # Create new session
-            if session_id is None:
-                session_id = f"session_{uuid.uuid4().hex[:12]}"
-
-            now = get_beijing_now()
-            session_key = f"{SESSION_PREFIX}{session_id}"
-            user_sessions_key = f"{USER_SESSIONS_PREFIX}{user_id}"
-
-            # Store session data
-            session_data = {
-                "session_id": session_id,
-                "user_id": str(user_id),
-                "user_phone": user_phone,
-                "user_name": user_name or "",
-                "ip_address": ip_address or "",
-                "created_at": now.isoformat(),
-                "last_activity": now.isoformat(),
-                "current_activity": "",
-                "activity_count": "0"
-            }
-
-            redis.hset(session_key, mapping=session_data)
-            redis.expire(session_key, SESSION_TTL)
-
-            # Add to user's session set
-            redis.sadd(user_sessions_key, session_id)
-            redis.expire(user_sessions_key, SESSION_TTL)
-
-            # Log activity
-            self._log_activity(user_id, user_phone, 'login', session_id=session_id)
-
-            # Record city flag for new session (async, fire-and-forget)
-            # This ensures flags are shown for all active sessions, not just logins
-            if ip_address and ip_address != 'unknown':
-                self._record_city_flag_async(ip_address)
-
-            logger.debug("Started session %s for user %s", session_id[:8], user_id)
-            return session_id
-
-        except Exception as e:
-            logger.error("[ActivityTracker] Redis error: %s", e)
+        except Exception as exc:
+            logger.error("[ActivityTracker] Redis error: %s", exc)
             return self._memory_start_session(
                 user_id, user_phone, user_name, session_id, ip_address, reuse_existing
             )
+
+    def _try_reuse_session(
+        self,
+        redis_client: Any,
+        user_id: int,
+        user_name: Optional[str],
+        ip_address: Optional[str],
+    ) -> Optional[str]:
+        """Try to reuse an existing active session, minimising round-trips.
+
+        Also garbage-collects expired session IDs from the user's session
+        set so it does not grow without bound.
+        """
+        user_sessions_key = f"{USER_SESSIONS_PREFIX}{user_id}"
+        existing_sessions = redis_client.smembers(user_sessions_key)
+        if not existing_sessions:
+            return None
+
+        session_list = list(existing_sessions)
+        session_keys = [f"{SESSION_PREFIX}{sid}" for sid in session_list]
+
+        pipe = redis_client.pipeline()
+        for key in session_keys:
+            pipe.exists(key)
+        alive_flags = pipe.execute()
+
+        dead_sids = []
+        reused_sid = None
+
+        for sid, alive in zip(session_list, alive_flags):
+            if not alive:
+                dead_sids.append(sid)
+                continue
+
+            if reused_sid is not None:
+                continue
+
+            session_key = f"{SESSION_PREFIX}{sid}"
+            update_pipe = redis_client.pipeline()
+            update_pipe.expire(session_key, SESSION_TTL)
+            if user_name:
+                update_pipe.hset(session_key, "user_name", user_name)
+            if ip_address:
+                update_pipe.hset(session_key, "ip_address", ip_address)
+            update_pipe.hset(session_key, "last_activity", get_beijing_now().isoformat())
+            update_pipe.execute()
+
+            reused_sid = sid
+
+        # Remove expired session IDs from the user's set to prevent
+        # unbounded growth of ghost entries.
+        if dead_sids:
+            redis_client.srem(user_sessions_key, *dead_sids)
+
+        if reused_sid:
+            logger.debug("Reusing session %s for user %s", reused_sid[:8], user_id)
+            if ip_address and ip_address != 'unknown':
+                self._record_city_flag_async(ip_address)
+
+        return reused_sid
+
+    def _create_new_session(
+        self,
+        redis_client: Any,
+        user_id: int,
+        user_phone: str,
+        user_name: Optional[str],
+        session_id: Optional[str],
+        ip_address: Optional[str],
+    ) -> str:
+        """Create a brand-new session using a single pipeline."""
+        if session_id is None:
+            session_id = f"session_{uuid.uuid4().hex[:12]}"
+
+        now = get_beijing_now()
+        session_key = f"{SESSION_PREFIX}{session_id}"
+        user_sessions_key = f"{USER_SESSIONS_PREFIX}{user_id}"
+
+        session_data = {
+            "session_id": session_id,
+            "user_id": str(user_id),
+            "user_phone": user_phone,
+            "user_name": user_name or "",
+            "ip_address": ip_address or "",
+            "created_at": now.isoformat(),
+            "last_activity": now.isoformat(),
+            "current_activity": "",
+            "activity_count": "0"
+        }
+
+        pipe = redis_client.pipeline()
+        pipe.hset(session_key, mapping=session_data)
+        pipe.expire(session_key, SESSION_TTL)
+        pipe.sadd(user_sessions_key, session_id)
+        pipe.expire(user_sessions_key, SESSION_TTL)
+        pipe.execute()
+
+        self._log_activity(user_id, user_phone, 'login', session_id=session_id)
+
+        if ip_address and ip_address != 'unknown':
+            self._record_city_flag_async(ip_address)
+
+        logger.debug("Started session %s for user %s", session_id[:8], user_id)
+        return session_id
 
     def _record_city_flag_async(self, ip_address: str):
         """
@@ -442,7 +497,7 @@ class RedisActivityTracker:
                 # Update IP address if provided and session doesn't have one
                 if session_ip and session_ip != 'unknown':
                     existing_ip = redis.hget(session_key, "ip_address")
-                    if not existing_ip or existing_ip == b'unknown' or existing_ip == 'unknown':
+                    if not existing_ip or existing_ip == 'unknown':
                         pipe.hset(session_key, "ip_address", session_ip)
                 # Update user_name if provided and session doesn't have one or it's empty
                 if user_name:

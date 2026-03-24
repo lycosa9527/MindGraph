@@ -1,6 +1,7 @@
 """Post-accept join handshake (participants, editors, user_joined)."""
 
 import asyncio
+import logging
 from typing import Any, Dict, List
 
 from fastapi import WebSocket
@@ -16,6 +17,8 @@ from services.workshop.workshop_ws_editor_redis import load_editors
 
 from routers.api.workshop_ws_broadcast import broadcast_to_others
 from routers.api.workshop_ws_handlers import build_participants_with_names
+
+logger = logging.getLogger(__name__)
 
 
 async def _send_live_spec_snapshot(
@@ -47,8 +50,8 @@ async def _send_live_spec_snapshot(
             "spec": snap,
             "version": ver,
         })
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Failed to send snapshot to client: %s", exc)
 
 
 async def _replay_remote_node_editing_states(

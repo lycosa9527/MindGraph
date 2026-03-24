@@ -173,6 +173,43 @@ def _get_redis_config() -> Dict[str, Any]:
     }
 
 
+def _parse_redis_version(version_str: str) -> tuple:
+    """Parse Redis version string into a comparable tuple, e.g. '8.6.0' → (8, 6, 0)."""
+    try:
+        return tuple(int(p) for p in version_str.split(".")[:3])
+    except (ValueError, AttributeError):
+        return (0, 0, 0)
+
+
+def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
+    """
+    Apply runtime CONFIG SET options based on detected Redis version.
+
+    Guarded per-version so the app starts cleanly on older Redis instances.
+    All options are overridable via environment variables.
+    """
+    version_tuple = _parse_redis_version(redis_version)
+
+    if version_tuple >= (8, 6, 0):
+        policy = os.getenv("REDIS_EVICTION_POLICY", "volatile-lrm")
+        try:
+            redis_client.config_set("maxmemory-policy", policy)
+            logger.info("[Redis] Eviction policy set to '%s'", policy)
+        except Exception as exc:
+            logger.warning("[Redis] Could not set eviction policy: %s", exc)
+
+        try:
+            redis_client.config_set("key-memory-histograms", "yes")
+            logger.info("[Redis] key-memory-histograms enabled")
+        except Exception as exc:
+            logger.warning("[Redis] Could not enable key-memory-histograms: %s", exc)
+    else:
+        logger.debug(
+            "[Redis] Version %s < 8.6 — skipping volatile-lrm and key-memory-histograms",
+            redis_version,
+        )
+
+
 def init_redis_sync() -> bool:
     """
     Initialize Redis connection (synchronous version for startup).
@@ -222,6 +259,8 @@ def init_redis_sync() -> bool:
 
         _RedisState.set_client(redis_client)
         logger.info("[Redis] Connected successfully (version: %s)", redis_version)
+
+        _apply_redis_startup_config(redis_client, redis_version)
         return True
 
     except Exception as exc:
@@ -315,23 +354,17 @@ class RedisOperations:
         return True
 
     @staticmethod
-    @_with_retry("GET+DELETE", default_return=None)
+    @_with_retry("GETDEL", default_return=None)
     def get_and_delete(key: str) -> Optional[str]:
-        """Atomically get and delete a key using pipeline."""
+        """Atomically get and delete a key using GETDEL (single round-trip, Redis >= 6.2)."""
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:
             logger.debug("[Redis] get_and_delete: Redis unavailable for key: %s", key)
             return None
         try:
-            pipe = redis_client.pipeline()
-            pipe.get(key)
-            pipe.delete(key)
-            results = pipe.execute()
-            # results[0] is the GET result (None if key doesn't exist, string if exists)
-            # results[1] is the DELETE result (number of keys deleted)
-            return results[0] if results else None
-        except Exception as e:
-            logger.warning("[Redis] get_and_delete failed for key %s: %s", key, e)
+            return redis_client.getdel(key)
+        except Exception as exc:
+            logger.warning("[Redis] get_and_delete failed for key %s: %s", key, exc)
             return None
 
     @staticmethod

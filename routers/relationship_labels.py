@@ -98,7 +98,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
 
 
 @router.post('/thinking_mode/relationship_labels/start')
-async def start_relationship_labels(
+def start_relationship_labels(
     req: RelationshipLabelsStartRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -127,8 +127,8 @@ async def start_relationship_labels(
             logger.debug("Failed to log relationship_labels: %s", e)
             try:
                 db.rollback()
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Rollback after relationship_labels log failure: %s", exc)
 
     return StreamingResponse(
         _stream_labels(req, current_user, is_next=False),

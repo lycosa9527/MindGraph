@@ -40,6 +40,11 @@ logger = logging.getLogger(__name__)
 USER_KEY_PREFIX = "user:"
 USER_PHONE_INDEX_PREFIX = "user:phone:"
 
+# Safety TTL: keys are refreshed on every cache_user() call and on login,
+# so 24 h is a generous upper bound that prevents orphaned keys from
+# consuming memory indefinitely if invalidation misses.
+USER_CACHE_TTL = 86400  # 24 hours
+
 
 class UserCache:
     """
@@ -196,8 +201,8 @@ class UserCache:
                     # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Corrupted user cache entry deletion failed for user ID %s: %s", user_id, exc)
                     # Fallback to database
                     return self._load_from_database(user_id=user_id)
         except Exception as e:
@@ -241,8 +246,8 @@ class UserCache:
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Corrupted user phone index deletion failed: %s", exc)
                     # Fallback to database
                     return self._load_from_database(phone=phone)
         except Exception as e:
@@ -260,6 +265,9 @@ class UserCache:
         """
         Cache user in Redis (non-blocking).
 
+        Writes the user hash and phone index in a single pipeline
+        to avoid multiple round-trips.
+
         Args:
             user: User SQLAlchemy model instance
 
@@ -270,40 +278,40 @@ class UserCache:
             logger.debug("[UserCache] Redis unavailable, skipping cache write")
             return False
 
+        redis_client = get_redis()
+        if not redis_client:
+            logger.debug("[UserCache] Redis client unavailable, skipping cache write")
+            return False
+
         try:
-            # Serialize user
             user_dict = self._serialize_user(user)
-
-            # Store user hash
             user_key = f"{USER_KEY_PREFIX}{user.id}"
-            success = RedisOps.hash_set(user_key, user_dict)
 
-            if not success:
-                logger.warning("[UserCache] Failed to cache user ID %s", user.id)
-                return False
-
-            # Store phone index (permanent, no TTL)
+            pipe = redis_client.pipeline()
+            # DELETE before HSET to clear any stale key with wrong type.
+            pipe.delete(user_key)
+            pipe.hset(user_key, mapping=user_dict)
+            pipe.expire(user_key, USER_CACHE_TTL)
             if user.phone:
                 phone_index_key = f"{USER_PHONE_INDEX_PREFIX}{user.phone}"
-                redis = get_redis()
-                if redis:
-                    redis.set(phone_index_key, str(user.id))  # Permanent storage, no TTL
+                pipe.set(phone_index_key, str(user.id), ex=USER_CACHE_TTL)
+            pipe.execute()
 
             phone_prefix = user.phone[:3] if user.phone and len(user.phone) >= 3 else "***"
             phone_suffix = user.phone[-4:] if user.phone and len(user.phone) >= 4 else ""
             phone_masked = phone_prefix + "***" + phone_suffix
             logger.debug("[UserCache] Cached user ID %s (phone: %s)", user.id, phone_masked)
-            logger.debug("[UserCache] Cached user index: phone %s -> ID %s", phone_masked, user.id)
 
             return True
-        except Exception as e:
-            # Log but don't raise - cache failures are non-critical
-            logger.warning("[UserCache] Failed to cache user ID %s: %s", user.id, e)
+        except Exception as exc:
+            logger.warning("[UserCache] Failed to cache user ID %s: %s", user.id, exc)
             return False
 
     def invalidate(self, user_id: int, phone: Optional[str] = None) -> bool:
         """
         Invalidate user cache entries (non-blocking).
+
+        Deletes the user hash and phone index in a single pipeline.
 
         Args:
             user_id: User ID
@@ -316,23 +324,22 @@ class UserCache:
             logger.debug("[UserCache] Redis unavailable, skipping cache invalidation")
             return False
 
-        try:
-            # Delete user hash
-            user_key = f"{USER_KEY_PREFIX}{user_id}"
-            RedisOps.delete(user_key)
+        redis_client = get_redis()
+        if not redis_client:
+            return False
 
-            # Delete phone index
+        try:
+            user_key = f"{USER_KEY_PREFIX}{user_id}"
+            keys_to_delete = [user_key]
             if phone:
-                phone_index_key = f"{USER_PHONE_INDEX_PREFIX}{phone}"
-                RedisOps.delete(phone_index_key)
+                keys_to_delete.append(f"{USER_PHONE_INDEX_PREFIX}{phone}")
+
+            redis_client.delete(*keys_to_delete)
 
             logger.info("[UserCache] Invalidated cache for user ID %s", user_id)
-            logger.debug("[UserCache] Deleted cache keys: user:%s, user:phone:%s", user_id, phone)
-
             return True
-        except Exception as e:
-            # Log but don't raise - invalidation failures are non-critical
-            logger.warning("[UserCache] Failed to invalidate cache for user ID %s: %s", user_id, e)
+        except Exception as exc:
+            logger.warning("[UserCache] Failed to invalidate cache for user ID %s: %s", user_id, exc)
             return False
 
 

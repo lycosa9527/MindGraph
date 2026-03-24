@@ -227,11 +227,10 @@ def get_cached_stats(tracker) -> Dict:
             try:
                 return json.loads(cached)
             except json.JSONDecodeError:
-                # Invalid cache entry - delete it and query fresh
                 try:
                     redis.delete(STATS_CACHE_KEY)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Failed to delete invalid stats cache: %s", exc)
                 # Fall through to query and update cache
 
         # Cache miss or invalid - query stats and update cache
@@ -297,7 +296,7 @@ async def get_dashboard_stats(
                 logger.debug("Error reading registered users cache: %s", e)
 
         if registered_users is None:
-            registered_users = db.query(User).count()
+            registered_users = await asyncio.to_thread(lambda: db.query(User).count())
             # Cache the result
             if redis:
                 try:
@@ -328,17 +327,19 @@ async def get_dashboard_stats(
             # This is faster than two separate queries - scans table only once
             # Single query that calculates both today and total in one pass
             # Uses conditional aggregation to avoid scanning the table twice
-            token_stats_query = db.query(
-                func.sum(
-                    case(
-                        (TokenUsage.created_at >= today_start, TokenUsage.total_tokens),
-                        else_=0
-                    )
-                ).label('today_tokens'),
-                func.sum(TokenUsage.total_tokens).label('total_tokens')
-            ).filter(
-                TokenUsage.success.is_(True)
-            ).first()
+            token_stats_query = await asyncio.to_thread(
+                lambda: db.query(
+                    func.sum(
+                        case(
+                            (TokenUsage.created_at >= today_start, TokenUsage.total_tokens),
+                            else_=0
+                        )
+                    ).label('today_tokens'),
+                    func.sum(TokenUsage.total_tokens).label('total_tokens')
+                ).filter(
+                    TokenUsage.success.is_(True)
+                ).first()
+            )
 
             if token_stats_query:
                 tokens_used_today = int(token_stats_query.today_tokens or 0)
@@ -415,11 +416,10 @@ async def get_map_data(
                     try:
                         return json.loads(cached)
                     except json.JSONDecodeError:
-                        # Invalid cache entry - delete it
                         try:
                             redis.delete(MAP_DATA_CACHE_KEY)
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logger.debug("Failed to delete invalid map data cache: %s", exc)
             except Exception as e:
                 logger.debug("Error reading map data cache: %s", e)
 

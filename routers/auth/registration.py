@@ -150,9 +150,11 @@ async def register(
     # Use cache for org lookup (with database fallback)
     org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
-        org = db.query(Organization).filter(
-            Organization.invitation_code == provided_invite
-        ).first()
+        org = await asyncio.to_thread(
+            lambda: db.query(Organization).filter(
+                Organization.invitation_code == provided_invite
+            ).first()
+        )
         if not org:
             duration = time.time() - start_time
             registration_metrics.record_failure('invitation_code_invalid', duration)
@@ -197,7 +199,7 @@ async def register(
             )
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
-            db.add(new_user)
+            await asyncio.to_thread(db.add, new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
     except RuntimeError as e:
         # Lock acquisition failed - fall back to current behavior
@@ -385,9 +387,11 @@ async def register_with_sms(
     # Use cache for org lookup (with database fallback)
     org = org_cache.get_by_invitation_code(provided_invite)
     if not org:
-        org = db.query(Organization).filter(
-            Organization.invitation_code == provided_invite
-        ).first()
+        org = await asyncio.to_thread(
+            lambda: db.query(Organization).filter(
+                Organization.invitation_code == provided_invite
+            ).first()
+        )
         if not org:
             duration = time.time() - start_time
             registration_metrics.record_failure('invitation_code_invalid', duration)
@@ -441,7 +445,7 @@ async def register_with_sms(
             )
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
-            db.add(new_user)
+            await asyncio.to_thread(db.add, new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
     except RuntimeError as e:
         duration = time.time() - start_time

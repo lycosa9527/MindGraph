@@ -24,44 +24,37 @@ All Rights Reserved
 Proprietary License
 """
 
-import os
 import json
 import logging
 import time
 import uuid
 from typing import Optional, Dict, Any, List, Tuple
 from datetime import datetime
+
 from sqlalchemy import desc
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.cache._redis_diagram_cache_helpers import (
+    _redis_json_set_paths, count_diagrams_from_db,
+    CACHE_TTL, SYNC_INTERVAL, SYNC_BATCH_SIZE, MAX_PER_USER, MAX_SPEC_SIZE_KB,
+    DIAGRAM_KEY, USER_META_KEY, USER_LIST_KEY, DIRTY_SET_KEY,
+)
 from config.database import SessionLocal
 from models.domain.diagrams import Diagram
 
 logger = logging.getLogger(__name__)
 
-# Configuration from environment
-CACHE_TTL = int(os.getenv('DIAGRAM_CACHE_TTL', '604800'))  # 7 days
-SYNC_INTERVAL = float(os.getenv('DIAGRAM_SYNC_INTERVAL', '300'))  # 5 minutes
-SYNC_BATCH_SIZE = int(os.getenv('DIAGRAM_SYNC_BATCH_SIZE', '100'))
-MAX_PER_USER = int(os.getenv('DIAGRAM_MAX_PER_USER', '20'))
-MAX_SPEC_SIZE_KB = int(os.getenv('DIAGRAM_MAX_SPEC_SIZE_KB', '500'))
-
-# Redis key patterns
-DIAGRAM_KEY = "diagram:{user_id}:{diagram_id}"
-USER_META_KEY = "diagrams:user:{user_id}:meta"
-USER_LIST_KEY = "diagrams:user:{user_id}:list"  # Cached list for fast fetching
-STATS_KEY = "diagrams:stats"
-DIRTY_SET_KEY = "diagrams:dirty"  # For tracking diagrams that need sync (not used in write-through pattern)
 
 
 class RedisDiagramCache:
     """
-    Redis-based diagram caching with database persistence (write-through pattern).
+    Redis-based diagram caching with PostgreSQL persistence (write-through pattern).
 
     Pattern:
     - Write-through: Database first, then Redis cache (immediate durability)
     - Cache-aside: Redis for fast reads, database fallback for cache misses
-    - Database-agnostic: Works with PostgreSQL or any SQLAlchemy-supported database
+    - Requires PostgreSQL: uses pg_insert with RETURNING and JSONB spec column
     """
 
     def __init__(self):
@@ -93,37 +86,23 @@ class RedisDiagramCache:
         """
         Count user's diagrams (non-deleted).
 
-        Uses Redis if available, falls back to database.
+        Uses Redis only when the meta sorted-set key exists, ensuring
+        an evicted / expired key does not report 0 and bypass the quota.
+        Falls back to database when Redis is unavailable or key is missing.
         """
         if self._use_redis():
             redis = get_redis()
             if redis:
                 try:
                     meta_key = self._get_user_meta_key(user_id)
-                    count = redis.zcard(meta_key)
-                    if count is not None:
-                        return count
-                except Exception as e:
-                    logger.warning("[DiagramCache] Redis count failed: %s", e)
+                    if redis.exists(meta_key):
+                        count = redis.zcard(meta_key)
+                        if count is not None:
+                            return count
+                except Exception as exc:
+                    logger.warning("[DiagramCache] Redis count failed: %s", exc)
 
-        # Fallback to database
-        return await self._count_from_database(user_id)
-
-    async def _count_from_database(self, user_id: int) -> int:
-        """Count diagrams from database."""
-        try:
-            db = SessionLocal()
-            try:
-                count = db.query(Diagram).filter(
-                    Diagram.user_id == user_id,
-                    Diagram.is_deleted.is_(False)
-                ).count()
-                return count
-            finally:
-                db.close()
-        except Exception as e:
-            logger.error("[DiagramCache] Database count failed: %s", e)
-            return 0
+        return await count_diagrams_from_db(user_id)
 
     async def save_diagram(
         self,
@@ -154,11 +133,12 @@ class RedisDiagramCache:
         Returns:
             Tuple of (success, diagram_id, error_message)
         """
-        # Validate spec size
+        # Validate spec size — serialize once for the byte-length check only.
         spec_json = json.dumps(spec)
         spec_size_kb = len(spec_json.encode('utf-8')) / 1024
         if spec_size_kb > MAX_SPEC_SIZE_KB:
             return False, None, f"Diagram spec too large ({spec_size_kb:.1f}KB > {MAX_SPEC_SIZE_KB}KB)"
+        # spec_json is not used further; SQLAlchemy handles JSONB serialization.
 
         is_new = diagram_id is None
 
@@ -180,14 +160,15 @@ class RedisDiagramCache:
             if not existing_data:
                 return False, None, "Diagram not found"
 
-        # Write-through: Write to database FIRST
+        # Write-through: Write to database FIRST.
+        # Pass the dict directly — SQLAlchemy serialises JSONB columns automatically.
         if is_new:
             db_success = await self._create_in_database(
-                user_id, diagram_id, title, diagram_type, spec_json, language, thumbnail, now
+                user_id, diagram_id, title, diagram_type, spec, language, thumbnail, now
             )
         else:
             db_success = await self._update_in_database(
-                diagram_id, user_id, title, spec_json, thumbnail, now
+                diagram_id, user_id, title, spec, thumbnail, now
             )
 
         if not db_success:
@@ -208,7 +189,7 @@ class RedisDiagramCache:
             'is_pinned': existing_data.get('is_pinned', False) if existing_data else False
         }
 
-        # Then update Redis cache (cache-aside pattern)
+        # Then update Redis cache — all four Redis operations in a single pipeline.
         if self._use_redis():
             redis = get_redis()
             if redis:
@@ -218,11 +199,12 @@ class RedisDiagramCache:
                     list_key = self._get_user_list_key(user_id)
 
                     pipe = redis.pipeline()
-                    # Store full diagram data
-                    pipe.setex(diagram_key, CACHE_TTL, json.dumps(diagram_data))
-                    # Update sorted set for ordering
+                    # DELETE before JSON.SET to clear any stale key with wrong type.
+                    pipe.delete(diagram_key)
+                    pipe.json().set(diagram_key, "$", diagram_data)
+                    pipe.expire(diagram_key, CACHE_TTL)
                     pipe.zadd(meta_key, {str(diagram_id): now_ts})
-                    # Invalidate list cache (will rebuild on next list request)
+                    pipe.expire(meta_key, CACHE_TTL)
                     pipe.delete(list_key)
                     pipe.execute()
 
@@ -242,38 +224,42 @@ class RedisDiagramCache:
         diagram_id: str,
         title: str,
         diagram_type: str,
-        spec_json: str,
+        spec: Dict[str, Any],
         language: str,
         thumbnail: Optional[str],
         created_at: datetime
     ) -> bool:
-        """Create new diagram in database with the given UUID."""
+        """Create new diagram in database using INSERT … RETURNING to confirm in one query."""
         try:
             db = SessionLocal()
             try:
-                diagram = Diagram(
-                    id=diagram_id,
-                    user_id=user_id,
-                    title=title,
-                    diagram_type=diagram_type,
-                    spec=spec_json,
-                    language=language,
-                    thumbnail=thumbnail,
-                    created_at=created_at,
-                    updated_at=created_at,
-                    is_deleted=False
+                stmt = (
+                    pg_insert(Diagram)
+                    .values(
+                        id=diagram_id,
+                        user_id=user_id,
+                        title=title,
+                        diagram_type=diagram_type,
+                        spec=spec,
+                        language=language,
+                        thumbnail=thumbnail,
+                        created_at=created_at,
+                        updated_at=created_at,
+                        is_deleted=False,
+                    )
+                    .returning(Diagram.id)
                 )
-                db.add(diagram)
+                result = db.execute(stmt)
                 db.commit()
-                return True
-            except Exception as e:
+                return result.scalar_one_or_none() == diagram_id
+            except Exception as exc:
                 db.rollback()
-                logger.error("[DiagramCache] Database create failed: %s", e)
+                logger.error("[DiagramCache] Database create failed: %s", exc)
                 return False
             finally:
                 db.close()
-        except Exception as e:
-            logger.error("[DiagramCache] Database connection failed: %s", e)
+        except Exception as exc:
+            logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False
 
     async def _update_in_database(
@@ -281,7 +267,7 @@ class RedisDiagramCache:
         diagram_id: str,
         user_id: int,
         title: str,
-        spec_json: str,
+        spec: Dict[str, Any],
         thumbnail: Optional[str],
         updated_at: datetime
     ) -> bool:
@@ -295,7 +281,7 @@ class RedisDiagramCache:
                 ).update(
                     {
                         Diagram.title: title,
-                        Diagram.spec: spec_json,
+                        Diagram.spec: spec,
                         Diagram.thumbnail: thumbnail,
                         Diagram.updated_at: updated_at,
                     },
@@ -327,18 +313,29 @@ class RedisDiagramCache:
             if redis:
                 try:
                     diagram_key = self._get_diagram_key(user_id, diagram_id)
-                    data = redis.get(diagram_key)
 
-                    if data:
-                        diagram = json.loads(data)
-                        if not diagram.get('is_deleted', False):
-                            # Refresh TTL on access
-                            redis.expire(diagram_key, CACHE_TTL)
-                            return diagram
-                        return None
+                    # Pipeline JSON.GET + EXPIRE in a single round-trip.
+                    pipe = redis.pipeline()
+                    pipe.json().get(diagram_key, "$")
+                    pipe.expire(diagram_key, CACHE_TTL)
+                    results = pipe.execute()
 
-                except Exception as e:
-                    logger.warning("[DiagramCache] Redis get failed: %s", e)
+                    json_result = results[0]
+                    if json_result:
+                        diagram = json_result[0] if isinstance(json_result, list) else json_result
+                        if diagram is not None:
+                            if not diagram.get('is_deleted', False):
+                                return diagram
+                            return None
+
+                except Exception as exc:
+                    logger.warning("[DiagramCache] Redis get failed: %s", exc)
+                    # Stale key with wrong type — remove it so the cache-aside
+                    # write in _load_from_database can succeed with JSON type.
+                    try:
+                        redis.delete(diagram_key)
+                    except Exception:
+                        pass
 
         # Fallback to database (cache-aside pattern)
         return await self._load_from_database(user_id, diagram_id)
@@ -357,11 +354,18 @@ class RedisDiagramCache:
                 if not diagram:
                     return None
 
-                # Parse spec JSON
-                spec_str = str(getattr(diagram, 'spec', '{}'))
-                try:
-                    spec = json.loads(spec_str)
-                except json.JSONDecodeError:
+                # JSONB columns are returned as dicts by SQLAlchemy.
+                # Rows written before the JSONB migration may still carry a string value;
+                # parse those transparently so callers always receive a dict.
+                raw_spec = getattr(diagram, 'spec', None)
+                if isinstance(raw_spec, dict):
+                    spec = raw_spec
+                elif isinstance(raw_spec, str):
+                    try:
+                        spec = json.loads(raw_spec)
+                    except (ValueError, TypeError):
+                        spec = {}
+                else:
                     spec = {}
 
                 created_at_val = getattr(diagram, 'created_at', None)
@@ -386,7 +390,7 @@ class RedisDiagramCache:
                     'is_pinned': getattr(diagram, 'is_pinned', False)
                 }
 
-                # Cache in Redis
+                # Cache in Redis — JSON.SET + EXPIRE + ZADD in a single pipeline.
                 if self._use_redis():
                     redis = get_redis()
                     if redis:
@@ -399,11 +403,15 @@ class RedisDiagramCache:
                             )
 
                             pipe = redis.pipeline()
-                            pipe.setex(diagram_key, CACHE_TTL, json.dumps(diagram_data))
+                            # DELETE before JSON.SET to clear any stale key with wrong type.
+                            pipe.delete(diagram_key)
+                            pipe.json().set(diagram_key, "$", diagram_data)
+                            pipe.expire(diagram_key, CACHE_TTL)
                             pipe.zadd(meta_key, {str(diagram_id): updated_ts})
+                            pipe.expire(meta_key, CACHE_TTL)
                             pipe.execute()
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logger.debug("[DiagramCache] Redis cache-aside write failed: %s", exc)
 
                 return diagram_data
 
@@ -581,65 +589,28 @@ class RedisDiagramCache:
             redis = get_redis()
             if redis:
                 try:
-                    # Get existing diagram data from cache or load from database
-                    existing_data = redis.get(diagram_key)
-                    if existing_data:
-                        diagram_data = json.loads(existing_data)
-                    else:
-                        # Load from database
-                        db = SessionLocal()
-                        try:
-                            diagram = db.query(Diagram).filter(
-                                Diagram.id == diagram_id,
-                                Diagram.user_id == user_id
-                            ).first()
-                            if diagram:
-                                spec_str = str(getattr(diagram, 'spec', '{}'))
-                                try:
-                                    spec = json.loads(spec_str)
-                                except json.JSONDecodeError:
-                                    spec = {}
-                                created_at_val = getattr(diagram, 'created_at', None)
-                                diagram_data = {
-                                    'id': getattr(diagram, 'id', ''),
-                                    'user_id': getattr(diagram, 'user_id', 0),
-                                    'title': getattr(diagram, 'title', ''),
-                                    'diagram_type': getattr(diagram, 'diagram_type', ''),
-                                    'spec': spec,
-                                    'language': getattr(diagram, 'language', 'zh'),
-                                    'thumbnail': getattr(diagram, 'thumbnail', None),
-                                    'created_at': (
-                                        created_at_val.isoformat()
-                                        if created_at_val is not None else None
-                                    ),
-                                    'updated_at': now.isoformat(),
-                                    'is_deleted': True,
-                                    'is_pinned': getattr(diagram, 'is_pinned', False)
-                                }
-                            else:
-                                diagram_data = None
-                        finally:
-                            db.close()
+                    meta_key = self._get_user_meta_key(user_id)
+                    list_key = self._get_user_list_key(user_id)
 
-                    if diagram_data:
-                        meta_key = self._get_user_meta_key(user_id)
-                        list_key = self._get_user_list_key(user_id)
+                    # Attempt targeted JSON field update — avoids reading the full blob.
+                    # If the key doesn't exist as JSON (cache miss) we skip the update;
+                    # the next read will load from DB with is_deleted=True and skip caching.
+                    _redis_json_set_paths(
+                        redis,
+                        diagram_key,
+                        [("$.is_deleted", True), ("$.updated_at", now.isoformat())],
+                        CACHE_TTL,
+                    )
 
-                        pipe = redis.pipeline()
-                        # Update diagram with is_deleted=True
-                        pipe.setex(
-                            diagram_key, CACHE_TTL, json.dumps(diagram_data)
-                        )
-                        # Remove from meta set (won't appear in lists)
-                        pipe.zrem(meta_key, str(diagram_id))
-                        # Invalidate list cache
-                        pipe.delete(list_key)
-                        pipe.execute()
+                    pipe = redis.pipeline()
+                    pipe.zrem(meta_key, str(diagram_id))
+                    pipe.delete(list_key)
+                    pipe.execute()
 
-                        logger.debug(
-                            "[DiagramCache] Deleted diagram %s for user %s (write-through)",
-                            diagram_id, user_id
-                        )
+                    logger.debug(
+                        "[DiagramCache] Deleted diagram %s for user %s (write-through)",
+                        diagram_id, user_id
+                    )
                 except Exception as e:
                     logger.warning("[DiagramCache] Redis cache update failed (diagram deleted in database): %s", e)
 
@@ -721,32 +692,27 @@ class RedisDiagramCache:
             logger.error("[DiagramCache] Pin connection failed: %s", e)
             return False, "Database error"
 
-        # Then update Redis cache
+        # Then update Redis cache using targeted JSON path updates — no full blob read needed.
         diagram_key = self._get_diagram_key(user_id, diagram_id)
         if self._use_redis():
             redis = get_redis()
             if redis:
                 try:
-                    # Get diagram data to update cache
-                    diagram_data = await self.get_diagram(user_id, diagram_id)
-                    if diagram_data:
-                        diagram_data['is_pinned'] = pinned
-                        diagram_data['updated_at'] = now.isoformat()
+                    list_key = self._get_user_list_key(user_id)
 
-                        list_key = self._get_user_list_key(user_id)
+                    _redis_json_set_paths(
+                        redis,
+                        diagram_key,
+                        [("$.is_pinned", pinned), ("$.updated_at", now.isoformat())],
+                        CACHE_TTL,
+                    )
+                    redis.delete(list_key)
 
-                        pipe = redis.pipeline()
-                        # Update diagram with new pin state
-                        pipe.setex(diagram_key, CACHE_TTL, json.dumps(diagram_data))
-                        # Invalidate list cache (order changes with pin)
-                        pipe.delete(list_key)
-                        pipe.execute()
-
-                        action = 'Pinned' if pinned else 'Unpinned'
-                        logger.debug(
-                            "[DiagramCache] %s diagram %s for user %s (write-through)",
-                            action, diagram_id, user_id
-                        )
+                    action = 'Pinned' if pinned else 'Unpinned'
+                    logger.debug(
+                        "[DiagramCache] %s diagram %s for user %s (write-through)",
+                        action, diagram_id, user_id
+                    )
                 except Exception as e:
                     logger.warning("[DiagramCache] Redis cache update failed (pin saved to database): %s", e)
 
@@ -823,8 +789,8 @@ class RedisDiagramCache:
                 try:
                     dirty_count = redis.scard(DIRTY_SET_KEY)
                     stats['dirty_count'] = dirty_count or 0
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Redis dirty set count retrieval failed: %s", exc)
 
         return stats
 

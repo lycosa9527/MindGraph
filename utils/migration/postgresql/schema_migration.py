@@ -6,7 +6,7 @@ Currently supports PostgreSQL only (SQLite migration is handled separately).
 """
 
 import logging
-from typing import Any, Tuple, Dict
+from typing import Any, Dict, Optional, Tuple
 from sqlalchemy import inspect, text
 
 # Lazy import to avoid circular dependency with config.database
@@ -146,6 +146,255 @@ def check_database_status(db_engine, base) -> Dict[str, Any]:
         'missing_tables': missing_tables,
         'missing_columns': missing_columns
     }
+
+
+_JSONB_MIGRATIONS = [
+    ("diagrams", "spec"),
+    ("community_posts", "spec"),
+    ("shared_diagrams", "diagram_data"),
+    ("gewe_contacts", "extra_data"),
+    ("gewe_group_members", "extra_data"),
+    # knowledge_space models
+    ("knowledge_spaces", "processing_rules"),
+    ("knowledge_documents", "doc_metadata"),
+    ("knowledge_documents", "tags"),
+    ("knowledge_documents", "custom_fields"),
+    ("knowledge_queries", "source_context"),
+    ("child_chunks", "meta_data"),
+    ("document_versions", "change_summary"),
+    ("query_feedback", "relevant_chunk_ids"),
+    ("query_feedback", "irrelevant_chunk_ids"),
+    ("query_templates", "parameters"),
+    ("evaluation_datasets", "queries"),
+    ("evaluation_results", "metrics"),
+    ("chunk_test_results", "document_ids"),
+    ("chunk_test_results", "chunk_stats"),
+    ("chunk_test_results", "retrieval_metrics"),
+    ("chunk_test_results", "comparison_summary"),
+    ("chunk_test_results", "evaluation_results"),
+    ("chunk_test_results", "completed_methods"),
+    ("chunk_test_documents", "meta_data"),
+    ("chunk_test_document_chunks", "meta_data"),
+    # debateverse
+    ("debate_judgments", "scores"),
+    # library
+    ("library_danmaku", "text_bbox"),
+    # teacher usage config
+    ("teacher_usage_config", "config_value"),
+    # workshop chat
+    ("chat_messages", "mentioned_user_ids"),
+    ("direct_messages", "mentioned_user_ids"),
+]
+
+
+def _ensure_jsonb_columns(db_engine: Any) -> None:
+    """
+    Convert Text/JSON columns to JSONB in-place (idempotent).
+
+    For each column in _JSONB_MIGRATIONS:
+    1. Skip if already JSONB or table/column does not exist.
+    2. Nullify rows with invalid JSON (empty strings, plain text) so the
+       cast does not fail.
+    3. ALTER COLUMN … TYPE JSONB USING … ::jsonb.
+    4. Create a GIN index for @> / ? operators.
+    """
+    insp = inspect(db_engine)
+    existing_tables = set(insp.get_table_names())
+
+    with db_engine.connect() as conn:
+        for table_name, column_name in _JSONB_MIGRATIONS:
+            if table_name not in existing_tables:
+                continue
+            existing_cols = {
+                col["name"]: col for col in insp.get_columns(table_name)
+            }
+            if column_name not in existing_cols:
+                continue
+            col_type = str(existing_cols[column_name]["type"]).upper()
+            if "JSONB" in col_type:
+                logger.debug(
+                    "[DBMigration] %s.%s is already JSONB — skipping",
+                    table_name, column_name,
+                )
+                continue
+
+            logger.info(
+                "[DBMigration] Converting %s.%s to JSONB ...",
+                table_name, column_name,
+            )
+            try:
+                _sanitize_invalid_json(conn, table_name, column_name, col_type)
+
+                # Cast: works for both text → jsonb and json → jsonb.
+                conn.execute(text(
+                    f"ALTER TABLE {table_name} "
+                    f"ALTER COLUMN {column_name} TYPE JSONB "
+                    f"USING {column_name}::jsonb"
+                ))
+                conn.execute(text(
+                    f"CREATE INDEX IF NOT EXISTS "
+                    f"ix_{table_name}_{column_name}_gin "
+                    f"ON {table_name} USING gin ({column_name})"
+                ))
+                conn.commit()
+                logger.info(
+                    "[DBMigration] %s.%s converted to JSONB with GIN index",
+                    table_name, column_name,
+                )
+            except Exception as exc:
+                conn.rollback()
+                logger.warning(
+                    "[DBMigration] Could not convert %s.%s to JSONB: %s",
+                    table_name, column_name, exc,
+                )
+
+
+def _sanitize_invalid_json(
+    conn: Any,
+    table_name: str,
+    column_name: str,
+    col_type: str,
+) -> None:
+    """
+    Nullify rows where the column value is not valid JSON before the
+    Text/JSON → JSONB cast.
+
+    For TEXT columns: empty strings, whitespace-only, or values that
+    PostgreSQL cannot cast to jsonb are set to NULL.  Uses a temporary
+    PL/pgSQL function to safely try-cast each value without crashing
+    the entire UPDATE on a single bad row.  Native JSON columns skip
+    this step since PostgreSQL already enforces JSON syntax on write.
+    """
+    if "TEXT" not in col_type and "CHARACTER VARYING" not in col_type and "VARCHAR" not in col_type:
+        return
+
+    result = conn.execute(text(
+        f"UPDATE {table_name} "
+        f"SET {column_name} = NULL "
+        f"WHERE {column_name} IS NOT NULL "
+        f"AND TRIM({column_name}) = ''"
+    ))
+    if result.rowcount:
+        logger.info(
+            "[DBMigration] Nullified %d empty-string rows in %s.%s",
+            result.rowcount, table_name, column_name,
+        )
+
+    # Create a session-scoped temp function that safely validates JSON.
+    # pg_temp functions are automatically dropped when the connection closes.
+    conn.execute(text(
+        "CREATE OR REPLACE FUNCTION pg_temp.is_valid_jsonb(val text) "
+        "RETURNS boolean AS $fn$ "
+        "BEGIN "
+        "  PERFORM val::jsonb; "
+        "  RETURN true; "
+        "EXCEPTION WHEN OTHERS THEN "
+        "  RETURN false; "
+        "END; "
+        "$fn$ LANGUAGE plpgsql IMMUTABLE"
+    ))
+
+    result = conn.execute(text(
+        f"UPDATE {table_name} "
+        f"SET {column_name} = NULL "
+        f"WHERE {column_name} IS NOT NULL "
+        f"AND NOT pg_temp.is_valid_jsonb({column_name})"
+    ))
+    if result.rowcount:
+        logger.info(
+            "[DBMigration] Nullified %d invalid-JSON rows in %s.%s",
+            result.rowcount, table_name, column_name,
+        )
+
+
+_HASH_INDEX_MIGRATIONS = [
+    ("library_danmaku", "ix_library_danmaku_selected_text", "selected_text"),
+]
+
+
+def _get_index_method(conn: Any, index_name: str) -> Optional[str]:
+    """
+    Query pg_catalog for the access method of an index.
+
+    Returns 'btree', 'hash', 'gin', etc., or None if the index does not exist.
+    This is reliable across all SQLAlchemy versions, unlike dialect_options
+    reflection which varies in key format.
+    """
+    row = conn.execute(text(
+        "SELECT am.amname "
+        "FROM pg_class c "
+        "JOIN pg_am am ON c.relam = am.oid "
+        "WHERE c.relname = :idx_name "
+        "AND c.relkind = 'i'"
+    ), {"idx_name": index_name}).fetchone()
+    if row:
+        return row[0]
+    return None
+
+
+def _ensure_hash_indexes(db_engine: Any) -> None:
+    """
+    Replace B-tree indexes with hash indexes where only equality lookups
+    are performed on long Text columns.  Idempotent.
+
+    Uses pg_catalog to reliably detect the current index access method.
+    """
+    insp = inspect(db_engine)
+    existing_tables = set(insp.get_table_names())
+
+    with db_engine.connect() as conn:
+        for table_name, index_name, column_name in _HASH_INDEX_MIGRATIONS:
+            if table_name not in existing_tables:
+                continue
+
+            current_method = _get_index_method(conn, index_name)
+
+            if current_method is None:
+                try:
+                    conn.execute(text(
+                        f"CREATE INDEX {index_name} "
+                        f"ON {table_name} USING hash ({column_name})"
+                    ))
+                    conn.commit()
+                    logger.info(
+                        "[DBMigration] Created hash index %s on %s.%s",
+                        index_name, table_name, column_name,
+                    )
+                except Exception as exc:
+                    conn.rollback()
+                    logger.warning(
+                        "[DBMigration] Could not create hash index %s: %s",
+                        index_name, exc,
+                    )
+                continue
+
+            if current_method == "hash":
+                logger.debug(
+                    "[DBMigration] %s is already a hash index — skipping",
+                    index_name,
+                )
+                continue
+
+            logger.info(
+                "[DBMigration] Converting %s from %s to hash ...",
+                index_name, current_method,
+            )
+            try:
+                conn.execute(text(f"DROP INDEX IF EXISTS {index_name}"))
+                conn.execute(text(
+                    f"CREATE INDEX {index_name} "
+                    f"ON {table_name} USING hash ({column_name})"
+                ))
+                conn.commit()
+                logger.info(
+                    "[DBMigration] Converted %s to hash index", index_name,
+                )
+            except Exception as exc:
+                conn.rollback()
+                logger.warning(
+                    "[DBMigration] Could not convert %s to hash: %s",
+                    index_name, exc,
+                )
 
 
 def run_migrations() -> bool:
@@ -395,6 +644,30 @@ def run_migrations() -> bool:
                 logger.warning(
                     "[DBMigration] Optional FTS index step failed: %s",
                     fts_exc,
+                )
+
+        # =====================================================================
+        # STEP 3.6: Migrate spec/diagram_data columns to JSONB
+        # =====================================================================
+        if migration_success:
+            try:
+                _ensure_jsonb_columns(db_engine)
+            except Exception as jsonb_exc:
+                logger.warning(
+                    "[DBMigration] Optional JSONB column migration failed: %s",
+                    jsonb_exc,
+                )
+
+        # =====================================================================
+        # STEP 3.7: Convert B-tree indexes to hash where appropriate
+        # =====================================================================
+        if migration_success:
+            try:
+                _ensure_hash_indexes(db_engine)
+            except Exception as hash_exc:
+                logger.warning(
+                    "[DBMigration] Optional hash index migration failed: %s",
+                    hash_exc,
                 )
 
         # =====================================================================

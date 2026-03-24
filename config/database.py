@@ -228,8 +228,22 @@ DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)
 
 
-# Database URL from environment variable
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph")
+# Database URL from environment variable.
+# psycopg3 requires the scheme "postgresql+psycopg://".
+# Transparently normalise legacy "postgresql://" and "postgresql+psycopg2://" values
+# from existing .env files so no external config change is needed.
+def _normalise_db_url(url: str) -> str:
+    """Rewrite legacy psycopg2 URL schemes to the psycopg3 scheme."""
+    for legacy in ("postgresql+psycopg2://", "postgresql://", "postgres://"):
+        if url.startswith(legacy):
+            return "postgresql+psycopg://" + url[len(legacy):]
+    return url
+
+_raw_db_url = os.getenv(
+    "DATABASE_URL",
+    "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
+)
+DATABASE_URL = _normalise_db_url(_raw_db_url)
 
 # Create SQLAlchemy engine with proper pool configuration
 # PostgreSQL/MySQL pool configuration for production workloads

@@ -67,13 +67,14 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
                         browser.close()
                         return version_str
                 browser.close()
-            except Exception:
+            except Exception as exc:
+                logger.debug("Chromium CDP version detection failed: %s", exc)
                 try:
                     browser.close()
-                except Exception:
-                    pass
-    except Exception:
-        pass
+                except Exception as exc_close:
+                    logger.debug("Chromium browser close after error failed: %s", exc_close)
+    except Exception as exc:
+        logger.debug("Chromium CDP connection failed: %s", exc)
 
     # Method 2: Try --version flag with timeout (fallback)
     try:
@@ -91,10 +92,9 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             if version_match:
                 return version_match.group(1)
     except subprocess.TimeoutExpired:
-        # Chromium might hang on --version, skip
         pass
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Chromium --version fallback failed: %s", exc)
 
     # Method 3: Extract revision from path (fallback for Playwright browsers)
     # Only use this if we couldn't get actual version
@@ -104,8 +104,8 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             if revision_match:
                 # Return revision as fallback (will be compared as revision number)
                 return revision_match.group(1)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Chromium revision extraction from path failed: %s", exc)
 
     return None
 
@@ -164,8 +164,8 @@ def _get_playwright_chromium_executable() -> Optional[str]:
             browser_path = p.chromium.executable_path
             if browser_path and os.path.exists(browser_path):
                 return browser_path
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Playwright Chromium executable lookup failed: %s", exc)
     return None
 
 

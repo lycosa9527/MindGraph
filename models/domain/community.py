@@ -14,6 +14,7 @@ from datetime import datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
+from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
@@ -43,7 +44,7 @@ class CommunityPost(Base):
     description: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
     category: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
     diagram_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    spec: Mapped[str] = mapped_column(Text, nullable=False)
+    spec: Mapped[dict] = mapped_column(pg.JSONB, nullable=False)
 
     # Thumbnail path (e.g. community/uuid.png) - file on disk
     thumbnail_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)

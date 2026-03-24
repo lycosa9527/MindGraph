@@ -273,8 +273,8 @@ async def start_cleanup_scheduler(interval_hours: int = 1):
             except asyncio.CancelledError:
                 logger.info("[Cleanup] Cleanup scheduler monitor stopped")
                 return
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Cleanup scheduler lock acquisition retry failed: %s", exc)
 
     # This worker holds the lock - run the scheduler
     interval_seconds = interval_hours * 3600

@@ -32,7 +32,7 @@ async def get_auth_mode():
 
 
 @router.get("/organizations")
-async def list_organizations(db: Session = Depends(get_db)):
+def list_organizations(db: Session = Depends(get_db)):
     """
     Get list of all organizations (public endpoint for registration)
 

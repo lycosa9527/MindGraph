@@ -8,6 +8,7 @@ All Rights Reserved
 Proprietary License
 """
 from typing import Optional
+import asyncio
 import logging
 import time
 
@@ -27,6 +28,21 @@ from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
+
+
+def _query_diagram_ownership(diagram_id):
+    """Query diagram ownership info using a short-lived session."""
+    db = SessionLocal()
+    try:
+        diagram = db.query(Diagram).filter(
+            Diagram.id == diagram_id,
+            ~Diagram.is_deleted,
+        ).first()
+        if diagram:
+            return diagram.workshop_code, diagram.user_id
+        return None, None
+    finally:
+        db.close()
 
 
 @router.post('/generate_graph', response_model=GenerateResponse)
@@ -49,23 +65,18 @@ async def generate_graph(
     await check_endpoint_rate_limit('generate_graph', identifier, max_requests=100, window_seconds=60)
 
     if req.diagram_id and current_user:
-        db = SessionLocal()
-        try:
-            diagram = db.query(Diagram).filter(
-                Diagram.id == req.diagram_id,
-                ~Diagram.is_deleted,
-            ).first()
-            if diagram and diagram.workshop_code:
-                role = getattr(current_user, 'role', 'user') or 'user'
-                if role != 'admin' and diagram.user_id != current_user.id:
-                    raise HTTPException(
-                        status_code=403,
-                        detail=(
-                            'Only the diagram owner can use AI generation during collaboration'
-                        ),
-                    )
-        finally:
-            db.close()
+        workshop_code, diagram_user_id = await asyncio.to_thread(
+            _query_diagram_ownership, req.diagram_id
+        )
+        if workshop_code:
+            role = getattr(current_user, 'role', 'user') or 'user'
+            if role != 'admin' and diagram_user_id != current_user.id:
+                raise HTTPException(
+                    status_code=403,
+                    detail=(
+                        'Only the diagram owner can use AI generation during collaboration'
+                    ),
+                )
 
     # Get language for error messages
     accept_language = request.headers.get("Accept-Language", "")

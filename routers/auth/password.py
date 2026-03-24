@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 @router.post("/reset-password")
-async def reset_password_with_sms(
+def reset_password_with_sms(
     request: ResetPasswordWithSMSRequest,
     http_request: Request,
     db: Session = Depends(get_db),
@@ -129,7 +129,7 @@ async def reset_password_with_sms(
 
 
 @router.put("/change-password")
-async def change_password(
+def change_password(
     request: ChangePasswordRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),

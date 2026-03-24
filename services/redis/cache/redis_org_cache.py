@@ -40,6 +40,10 @@ ORG_KEY_PREFIX = "org:"
 ORG_CODE_INDEX_PREFIX = "org:code:"
 ORG_INVITE_INDEX_PREFIX = "org:invite:"
 
+# Safety TTL: keys are refreshed on every cache_org() call; 24 h prevents
+# orphaned keys from consuming memory indefinitely if invalidation misses.
+ORG_CACHE_TTL = 86400  # 24 hours
+
 
 class OrganizationCache:
     """
@@ -193,8 +197,8 @@ class OrganizationCache:
                     # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Corrupted org cache entry deletion failed for org ID %s: %s", org_id, exc)
                     # Fallback to database
                     return self._load_from_database(org_id=org_id)
         except Exception as e:
@@ -236,8 +240,8 @@ class OrganizationCache:
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Corrupted org code index deletion failed for code %s: %s", code, exc)
                     # Fallback to database
                     return self._load_from_database(code=code)
         except Exception as e:
@@ -281,8 +285,8 @@ class OrganizationCache:
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
-                    except Exception:
-                        pass
+                    except Exception as exc:
+                        logger.debug("Corrupted org invite index deletion failed: %s", exc)
                     # Fallback to database
                     return self._load_from_database(invite_code=invite_code)
         except Exception as e:
@@ -305,6 +309,9 @@ class OrganizationCache:
         """
         Cache organization in Redis (non-blocking).
 
+        Writes the org hash and all lookup indexes in a single pipeline
+        to avoid multiple round-trips.
+
         Args:
             org: Organization SQLAlchemy model instance
 
@@ -315,32 +322,30 @@ class OrganizationCache:
             logger.debug("[OrgCache] Redis unavailable, skipping cache write")
             return False
 
+        redis_client = get_redis()
+        if not redis_client:
+            logger.debug("[OrgCache] Redis client unavailable, skipping cache write")
+            return False
+
         try:
-            # Serialize org
             org_dict = self._serialize_org(org)
 
             org_id = int(getattr(org, 'id', 0))
             org_code = getattr(org, 'code', None)
             org_invite = getattr(org, 'invitation_code', None)
 
-            # Store org hash
             org_key = f"{ORG_KEY_PREFIX}{org_id}"
-            success = RedisOps.hash_set(org_key, org_dict)
 
-            if not success:
-                logger.warning("[OrgCache] Failed to cache org ID %s", org_id)
-                return False
-
-            # Store code and invitation code indexes (permanent, no TTL)
-            redis = get_redis()
-            if redis:
-                if org_code:
-                    code_index_key = f"{ORG_CODE_INDEX_PREFIX}{org_code}"
-                    redis.set(code_index_key, str(org_id))  # Permanent storage, no TTL
-
-                if org_invite:
-                    invite_index_key = f"{ORG_INVITE_INDEX_PREFIX}{org_invite}"
-                    redis.set(invite_index_key, str(org_id))  # Permanent storage, no TTL
+            pipe = redis_client.pipeline()
+            # DELETE before HSET to clear any stale key with wrong type.
+            pipe.delete(org_key)
+            pipe.hset(org_key, mapping=org_dict)
+            pipe.expire(org_key, ORG_CACHE_TTL)
+            if org_code:
+                pipe.set(f"{ORG_CODE_INDEX_PREFIX}{org_code}", str(org_id), ex=ORG_CACHE_TTL)
+            if org_invite:
+                pipe.set(f"{ORG_INVITE_INDEX_PREFIX}{org_invite}", str(org_id), ex=ORG_CACHE_TTL)
+            pipe.execute()
 
             if org_invite and len(org_invite) >= 8:
                 masked_invite = f"{org_invite[:8]}***"
@@ -349,17 +354,15 @@ class OrganizationCache:
             logger.debug("[OrgCache] Cached org indexes: code %s, invite %s -> ID %s", org_code, masked_invite, org_id)
 
             return True
-        except Exception as e:
-            # Log but don't raise - cache failures are non-critical
-            logger.warning("[OrgCache] Failed to cache org ID %s: %s", getattr(org, 'id', '?'), e)
+        except Exception as exc:
+            logger.warning("[OrgCache] Failed to cache org ID %s: %s", getattr(org, 'id', '?'), exc)
             return False
 
     def invalidate(self, org_id: int, code: Optional[str] = None, invite_code: Optional[str] = None) -> bool:
         """
         Invalidate organization cache entries (non-blocking).
 
-        Deletes: org:{id} hash, org:code:{code} index, org:invite:{invite_code} index.
-        Call before cache_org after any update/delete to ensure stale indexes are removed.
+        Deletes org hash and all lookup indexes in a single DELETE command.
 
         Args:
             org_id: Organization ID (always delete main hash)
@@ -373,17 +376,22 @@ class OrganizationCache:
             logger.debug("[OrgCache] Redis unavailable, skipping cache invalidation")
             return False
 
+        redis_client = get_redis()
+        if not redis_client:
+            return False
+
         try:
-            org_key = f"{ORG_KEY_PREFIX}{org_id}"
-            RedisOps.delete(org_key)
+            keys_to_delete = [f"{ORG_KEY_PREFIX}{org_id}"]
             if code:
-                RedisOps.delete(f"{ORG_CODE_INDEX_PREFIX}{code}")
+                keys_to_delete.append(f"{ORG_CODE_INDEX_PREFIX}{code}")
             if invite_code:
-                RedisOps.delete(f"{ORG_INVITE_INDEX_PREFIX}{invite_code}")
+                keys_to_delete.append(f"{ORG_INVITE_INDEX_PREFIX}{invite_code}")
+
+            redis_client.delete(*keys_to_delete)
             logger.info("[OrgCache] Invalidated cache for org ID %s", org_id)
             return True
-        except Exception as e:
-            logger.warning("[OrgCache] Failed to invalidate cache for org ID %s: %s", org_id, e)
+        except Exception as exc:
+            logger.warning("[OrgCache] Failed to invalidate cache for org ID %s: %s", org_id, exc)
             return False
 
     def write_through(self, org: Organization, old_code: Optional[str], old_invite: Optional[str]) -> bool:

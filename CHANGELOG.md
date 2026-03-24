@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.53.0] - 2026-03-24
+
+### Added
+- **Redis Diagram Cache helpers module**: Extracted constants (`CACHE_TTL`, `SYNC_INTERVAL`, `SYNC_BATCH_SIZE`, `MAX_PER_USER`, `MAX_SPEC_SIZE_KB`), key templates, `_redis_json_get`, `_redis_json_set_paths`, and `count_diagrams_from_db` into new `services/redis/cache/_redis_diagram_cache_helpers.py`. `RedisDiagramCache` now requires PostgreSQL and uses `pg_insert` with `RETURNING` and JSONB spec column.
+- **Redis Token Buffer → Streams**: Migrated token usage buffering from a Redis List (`tokens:buffer`) to Redis Streams (`tokens:stream`) with a consumer group (`token_flush_workers`) and per-worker consumer name, enabling at-least-once processing guarantees and no data loss on worker restart.
+- **Embedding Cache — VSET semantic deduplication**: New `_vset_lookup` / `_vset_key` helpers in `EmbeddingCache` use the `VSIM` command (Redis >= 8.0) to find semantically similar cached query embeddings above a configurable cosine threshold (`VSET_SIMILARITY_THRESHOLD`, default 0.95), avoiding redundant embedding API calls for near-duplicate queries.
+- **Redis startup configuration**: `_apply_redis_startup_config` and `_parse_redis_version` in `redis_client.py` apply version-gated `CONFIG SET` at startup — `volatile-lrm` eviction policy and `key-memory-histograms` enabled automatically for Redis >= 8.6 (overridable via `REDIS_EVICTION_POLICY`).
+- **Health — enhanced Redis endpoint**: `GET /health/redis` now returns memory stats (`used_memory_human`, `used_memory_peak_human`, `mem_fragmentation_ratio`) and hot keys (`HOTKEYS`, Redis >= 8.6). All sync Redis calls wrapped in `asyncio.to_thread` with 2-second timeouts to keep the event loop non-blocking.
+- **PostgreSQL JSONB column migration**: `_ensure_jsonb_columns` + `_JSONB_MIGRATIONS` list in `schema_migration.py` idempotently convert 30+ `Text`/`JSON` columns to `JSONB` (with GIN indexes) across `diagrams`, `community_posts`, `shared_diagrams`, `gewe_contacts`, `gewe_group_members`, all knowledge-space tables, `debate_judgments`, `library_danmaku`, `teacher_usage_config`, and `workshop_chat` message tables.
+
+### Changed
+- **Redis Activity Tracker — pipelined session reuse**: `_redis_start_session` now batch-checks all candidate sessions with a single pipelined `EXISTS` and updates the first live one in one pipeline, replacing the previous per-session sequential `EXISTS` + `HSET` calls for lower latency under concurrent users.
+- **Diagram Cache quota fix**: `count_user_diagrams` now checks `redis.exists(meta_key)` before calling `zcard`, preventing an evicted/expired sorted-set key from reporting 0 and falsely bypassing the per-user quota.
+- **`useDiagramAutoSave` suppress timer**: Replaced `suppressUntil` (`Date.now()` computed ref) with a `setTimeout`-based `isSuppressed` flag and `setSuppressWindow(ms)` helper; `suppressTimer` is cleared on `teardown()` to avoid memory leaks.
+- **Redis Org / User / Community caches**: PEP8 compliance pass — renamed exception variables, fixed line lengths, improved type hints.
+- **Workshop chat WS, community router, public dashboard, debateverse router**: Pylint/PEP8 compliance — consistent exception variable names, f-string/format cleanup, line length fixes.
+- **Gewe contact / group member DB services**: Code quality improvements with consistent exception handling and type annotations.
+- **Infrastructure process managers** (`_port_utils`, `_postgresql_manager`, `_postgresql_paths`, `_qdrant_manager`, `_redis_manager`): PEP8 compliance and minor refactoring.
+
 ## [5.52.0] - 2026-03-24
 
 ### Removed

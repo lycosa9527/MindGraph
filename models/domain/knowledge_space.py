@@ -15,9 +15,10 @@ import pickle
 import uuid
 
 from sqlalchemy import (
-    Column, Integer, String, DateTime, ForeignKey, Text, JSON, Enum, Index,
+    Column, Integer, String, DateTime, ForeignKey, Text, Enum, Index,
     CheckConstraint, UniqueConstraint, LargeBinary, Float
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from models.domain.auth import Base
@@ -56,7 +57,7 @@ class KnowledgeSpace(Base):
     #     ]
     #   }
     # }
-    processing_rules = Column(JSON, nullable=True)
+    processing_rules = Column(JSONB, nullable=True)
 
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
@@ -108,10 +109,10 @@ class KnowledgeDocument(Base):
 
     # Advanced metadata
     # Custom metadata dict (renamed from 'metadata' - reserved in SQLAlchemy)
-    doc_metadata = Column(JSON, nullable=True)
-    tags = Column(JSON, nullable=True)  # Array of tag strings
+    doc_metadata = Column(JSONB, nullable=True)
+    tags = Column(JSONB, nullable=True)  # Array of tag strings
     category = Column(String(100), nullable=True, index=True)  # Document category
-    custom_fields = Column(JSON, nullable=True)  # User-defined custom fields
+    custom_fields = Column(JSONB, nullable=True)  # User-defined custom fields
 
     # Language detection
     language = Column(String(10), nullable=True, index=True)  # Detected language code (e.g., 'zh', 'en', 'ja')
@@ -236,7 +237,7 @@ class KnowledgeQuery(Base):
 
     # Source tracking
     source = Column(String(100), nullable=False, default='api')  # api, diagram_generation, etc.
-    source_context = Column(JSON, nullable=True)  # Additional context (e.g., diagram_type)
+    source_context = Column(JSONB, nullable=True)  # Additional context (e.g., diagram_type)
 
     # Timestamp
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -318,7 +319,7 @@ class ChildChunk(Base):
     end_char = Column(Integer, nullable=False)
 
     # Metadata
-    meta_data = Column(JSON, nullable=True)  # Renamed from metadata to avoid SQLAlchemy reserved name
+    meta_data = Column(JSONB, nullable=True)  # Renamed from metadata to avoid SQLAlchemy reserved name
 
     # Timestamp
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
@@ -394,7 +395,7 @@ class DocumentVersion(Base):
 
     # Version metadata
     chunk_count = Column(Integer, nullable=False, default=0)
-    change_summary = Column(JSON, nullable=True)  # Summary of changes: {"added": 5, "updated": 3, "deleted": 2}
+    change_summary = Column(JSONB, nullable=True)  # Summary of changes: {"added": 5, "updated": 3, "deleted": 2}
 
     # Version creator
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
@@ -437,8 +438,8 @@ class QueryFeedback(Base):
     feedback_score = Column(Integer, nullable=True)  # 1-5 rating
 
     # Relevant and irrelevant chunks
-    relevant_chunk_ids = Column(JSON, nullable=True)  # Array of chunk IDs that were relevant
-    irrelevant_chunk_ids = Column(JSON, nullable=True)  # Array of chunk IDs that were irrelevant
+    relevant_chunk_ids = Column(JSONB, nullable=True)  # Array of chunk IDs that were relevant
+    irrelevant_chunk_ids = Column(JSONB, nullable=True)  # Array of chunk IDs that were irrelevant
 
     # Timestamp
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -465,7 +466,7 @@ class QueryTemplate(Base):
     # Template details
     name = Column(String(255), nullable=False)
     template_text = Column(Text, nullable=False)  # Query template with parameters
-    parameters = Column(JSON, nullable=True)  # Template parameters: {"param1": "default_value"}
+    parameters = Column(JSONB, nullable=True)  # Template parameters: {"param1": "default_value"}
 
     # Usage statistics
     usage_count = Column(Integer, default=0, nullable=False)
@@ -574,7 +575,7 @@ class EvaluationDataset(Base):
 
     # Queries with expected results (JSON)
     # Format: [{"query": "...", "expected_chunk_ids": [1, 2, 3], "relevance_scores": [1.0, 0.8, 0.6]}]
-    queries = Column(JSON, nullable=False)
+    queries = Column(JSONB, nullable=False)
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -602,7 +603,7 @@ class EvaluationResult(Base):
 
     # Quality metrics (JSON)
     # Format: {"precision": 0.8, "recall": 0.6, "mrr": 0.75, "ndcg": 0.82}
-    metrics = Column(JSON, nullable=False)
+    metrics = Column(JSONB, nullable=False)
 
     # Retrieval method used
     method = Column(String(50), nullable=False, index=True)
@@ -631,19 +632,19 @@ class ChunkTestResult(Base):
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
     session_id = Column(String(36), nullable=True, index=True, default=generate_uuid)  # UUID for session tracking
     dataset_name = Column(String(100), nullable=False, index=True)  # 'FinanceBench', 'user_documents', etc.
-    document_ids = Column(JSON, nullable=True)  # List of document IDs tested (for user documents)
+    document_ids = Column(JSONB, nullable=True)  # List of document IDs tested (for user documents)
 
     # Chunking comparison
     semchunk_chunk_count = Column(Integer, nullable=False, default=0)
     mindchunk_chunk_count = Column(Integer, nullable=False, default=0)
-    chunk_stats = Column(JSON, nullable=True)  # Detailed chunk statistics
+    chunk_stats = Column(JSONB, nullable=True)  # Detailed chunk statistics
 
     # Retrieval comparison
-    retrieval_metrics = Column(JSON, nullable=True)  # {semchunk: {...}, mindchunk: {...}}
-    comparison_summary = Column(JSON, nullable=True)  # Winner, differences, recommendations
+    retrieval_metrics = Column(JSONB, nullable=True)  # {semchunk: {...}, mindchunk: {...}}
+    comparison_summary = Column(JSONB, nullable=True)  # Winner, differences, recommendations
 
     # Evaluation results
-    evaluation_results = Column(JSON, nullable=True)  # Comprehensive metrics organized by dimension
+    evaluation_results = Column(JSONB, nullable=True)  # Comprehensive metrics organized by dimension
 
     # Progress tracking
     status = Column(
@@ -656,7 +657,7 @@ class ChunkTestResult(Base):
     # Current stage: 'chunking', 'retrieval', 'evaluation', 'completed'
     current_stage = Column(String(50), nullable=True)
     progress_percent = Column(Integer, default=0, nullable=False)  # Overall progress (0-100)
-    completed_methods = Column(JSON, nullable=True)  # List of completed methods: ['spacy', 'semchunk', ...]
+    completed_methods = Column(JSONB, nullable=True)  # List of completed methods: ['spacy', 'semchunk', ...]
 
     # Timestamp
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -725,7 +726,7 @@ class ChunkTestDocument(Base):
 
     # Processing results
     chunk_count = Column(Integer, default=0, nullable=False)
-    meta_data = Column(JSON, nullable=True)  # Store processing results and metadata
+    meta_data = Column(JSONB, nullable=True)  # Store processing results and metadata
 
     # Timestamps
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
@@ -779,7 +780,7 @@ class ChunkTestDocumentChunk(Base):
     chunking_method = Column(String(50), nullable=True, index=True)
 
     # Additional metadata
-    meta_data = Column(JSON, nullable=True)
+    meta_data = Column(JSONB, nullable=True)
 
     # Timestamp
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)

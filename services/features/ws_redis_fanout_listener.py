@@ -175,8 +175,8 @@ def _listener_loop() -> None:
     finally:
         try:
             pubsub.close()
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("Redis pubsub close failed: %s", exc)
 
 
 def start_ws_fanout_listener(loop: asyncio.AbstractEventLoop) -> None:

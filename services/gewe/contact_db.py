@@ -15,7 +15,7 @@ from datetime import datetime
 from typing import Optional, List, Dict, Any
 import logging
 
-from sqlalchemy import select, delete, and_
+from sqlalchemy import select, delete, and_, func
 from sqlalchemy.orm import Session
 
 from models.domain.gewe_contact import GeweContact
@@ -85,12 +85,8 @@ class GeweContactDB:
                 else:
                     contact_type = "friend"
 
-            # Serialize extra_data to JSON
-            extra_data_json = None
-            if extra_data:
-                extra_data_json = json.dumps(extra_data, ensure_ascii=False)
+            # JSONB columns accept dicts directly — no json.dumps needed.
 
-            # Check if contact exists
             existing = self.db.execute(
                 select(GeweContact).where(
                     and_(
@@ -101,17 +97,15 @@ class GeweContactDB:
             ).scalar_one_or_none()
 
             if existing:
-                # Update existing contact
                 existing.nickname = nickname
                 existing.remark = remark
                 existing.avatar = avatar
                 existing.alias = alias
                 existing.contact_type = contact_type
                 existing.region = region
-                existing.extra_data = extra_data_json
+                existing.extra_data = extra_data
                 existing.last_updated = datetime.utcnow()
             else:
-                # Create new contact
                 contact = GeweContact(
                     app_id=app_id,
                     wxid=wxid,
@@ -121,7 +115,7 @@ class GeweContactDB:
                     alias=alias,
                     contact_type=contact_type,
                     region=region,
-                    extra_data=extra_data_json,
+                    extra_data=extra_data,
                     last_updated=datetime.utcnow()
                 )
                 self.db.add(contact)
@@ -237,15 +231,16 @@ class GeweContactDB:
                 "last_updated": contact.last_updated.isoformat() if contact.last_updated else None
             }
 
-            # Parse extra_data
+            # JSONB extra_data is already a dict; legacy Text rows are handled gracefully.
             if contact.extra_data:
-                try:
-                    extra = json.loads(contact.extra_data)
-                    result.update(extra)
-                except Exception:
-                    pass
+                if isinstance(contact.extra_data, dict):
+                    result.update(contact.extra_data)
+                elif isinstance(contact.extra_data, str):
+                    try:
+                        result.update(json.loads(contact.extra_data))
+                    except (ValueError, TypeError):
+                        pass
 
-            # Cache result in Redis (non-blocking)
             if is_redis_available():
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
@@ -254,12 +249,12 @@ class GeweContactDB:
                         json.dumps(result, ensure_ascii=False),
                         CONTACT_CACHE_TTL
                     )
-                except Exception as e:
-                    logger.debug("Failed to cache contact %s:%s: %s", app_id, wxid, e)
+                except Exception as exc:
+                    logger.debug("Failed to cache contact %s:%s: %s", app_id, wxid, exc)
 
             return result
-        except Exception as e:
-            logger.error("Failed to get contact: %s", e, exc_info=True)
+        except Exception as exc:
+            logger.error("Failed to get contact: %s", exc, exc_info=True)
             return None
 
     def get_contacts(
@@ -311,13 +306,14 @@ class GeweContactDB:
                     "last_updated": contact.last_updated.isoformat() if contact.last_updated else None
                 }
 
-                # Parse extra_data
                 if contact.extra_data:
-                    try:
-                        extra = json.loads(contact.extra_data)
-                        contact_dict.update(extra)
-                    except Exception:
-                        pass
+                    if isinstance(contact.extra_data, dict):
+                        contact_dict.update(contact.extra_data)
+                    elif isinstance(contact.extra_data, str):
+                        try:
+                            contact_dict.update(json.loads(contact.extra_data))
+                        except (ValueError, TypeError):
+                            pass
 
                 contacts.append(contact_dict)
 
@@ -382,15 +378,14 @@ class GeweContactDB:
             Contact count
         """
         try:
-            query = select(GeweContact).where(
+            query = select(func.count()).select_from(GeweContact).where(
                 GeweContact.app_id == app_id
             )
 
             if contact_type:
                 query = query.where(GeweContact.contact_type == contact_type)
 
-            result = self.db.execute(query)
-            return len(list(result.scalars().all()))
+            return self.db.execute(query).scalar() or 0
         except Exception as e:
             logger.error("Failed to get contacts count: %s", e, exc_info=True)
             return 0

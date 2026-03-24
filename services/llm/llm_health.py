@@ -151,8 +151,8 @@ class LLMHealthChecker:
                     if native_client:
                         try:
                             await native_client.close()
-                        except Exception:
-                            pass
+                        except Exception as exc:
+                            logger.debug("Omni WebSocket client close failed: %s", exc)
                     raise
 
             await asyncio.wait_for(test_omni_connection(), timeout=5.0)

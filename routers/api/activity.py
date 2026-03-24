@@ -31,7 +31,7 @@ class DiagramExportLogRequest(BaseModel):
 
 
 @router.post("/activity/diagram_export")
-async def log_diagram_export(
+def log_diagram_export(
     _req: DiagramExportLogRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
@@ -57,6 +57,6 @@ async def log_diagram_export(
         logger.debug("Failed to log diagram_export: %s", e)
         try:
             db.rollback()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Rollback after export log failure: %s", exc)
         return {"status": "error"}

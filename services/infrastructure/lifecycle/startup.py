@@ -24,6 +24,8 @@ from utils.tiktoken_cache import ensure_tiktoken_cache
 # This is intentional: application cannot start without Redis
 from services.redis.redis_client import get_redis, is_redis_available
 
+logger = logging.getLogger(__name__)
+
 try:
     import psutil
     _PSUTIL_AVAILABLE = True
@@ -125,9 +127,8 @@ def _release_banner_lock() -> None:
         """
 
         redis.eval(lua_script, 1, BANNER_LOCK_KEY, worker_lock_id)
-    except Exception:  # pylint: disable=broad-except
-        # Ignore errors during lock release (non-critical)
-        pass
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.debug("Banner lock release failed: %s", exc)
 
 
 class _ShutdownEventManager:
@@ -195,9 +196,8 @@ def _is_uvicorn_reloader_process() -> bool:
                         return True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
-        except Exception:  # pylint: disable=broad-except
-            # Any other error, continue with other checks
-            pass
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("Uvicorn reloader process detection failed: %s", exc)
 
     # Check if we're being imported (not run directly)
     # If __main__ is not in sys.modules, we're being imported

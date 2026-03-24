@@ -25,9 +25,10 @@ from datetime import datetime
 from typing import List, Optional
 
 from sqlalchemy import (
-    Integer, String, Text, DateTime, ForeignKey, Boolean, JSON,
+    Integer, String, Text, DateTime, ForeignKey, Boolean,
     Index, CheckConstraint, UniqueConstraint,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
@@ -254,7 +255,7 @@ class ChatMessage(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
     mentioned_user_ids: Mapped[Optional[List[int]]] = mapped_column(
-        JSON, nullable=True,
+        JSONB, nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
@@ -307,7 +308,7 @@ class DirectMessage(Base):
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
     mentioned_user_ids: Mapped[Optional[List[int]]] = mapped_column(
-        JSON, nullable=True,
+        JSONB, nullable=True,
     )
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)

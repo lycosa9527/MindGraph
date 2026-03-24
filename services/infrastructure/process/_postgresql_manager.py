@@ -4,6 +4,7 @@ PostgreSQL server management for MindGraph application.
 Handles starting and stopping PostgreSQL server processes.
 """
 
+import logging
 import os
 import sys
 import time
@@ -13,6 +14,8 @@ import subprocess
 import shlex
 from pathlib import Path
 from typing import Optional, TYPE_CHECKING
+
+logger = logging.getLogger(__name__)
 
 from services.infrastructure.process._port_utils import check_port_in_use
 from services.infrastructure.process._postgresql_helpers import (
@@ -72,8 +75,8 @@ def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optiona
                         postgres_pids = [
                             p.strip() for p in result.stdout.strip().split('\n') if p.strip()
                         ]
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("PostgreSQL process search (pgrep) failed: %s", exc)
             if postgres_pids:
                 print(f"[ERROR] Port {port} is in use but no process found on port")
                 print(f"        Found PostgreSQL processes: {', '.join(postgres_pids)}")
@@ -111,8 +114,8 @@ def _check_existing_postgresql(port: str, port_int: int, db_url: str) -> Optiona
             except (ValueError, OSError):
                 pass
             return True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("PostgreSQL connection check failed: %s", exc)
 
     return None
 
@@ -286,8 +289,8 @@ def _wait_for_postgresql_ready(port: str) -> str:
                     except (ValueError, OSError):
                         pass
                     break
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("PostgreSQL superuser connection attempt failed: %s", exc)
             last_error = e
             if i < 29:
                 time.sleep(1)
@@ -566,8 +569,8 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                                 last_log_lines = '\n'.join(log_lines[-10:])
                                 print("[ERROR] PostgreSQL server process terminated")
                                 print(f"[ERROR] Last log entries:\n{last_log_lines}")
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("PostgreSQL log file read failed: %s", exc)
             else:
                 try:
                     print("[ERROR] PostgreSQL server process started but not responding after 30 seconds")

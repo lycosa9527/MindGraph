@@ -864,8 +864,8 @@ class ProcessMonitor:
                         break
                 except asyncio.CancelledError:
                     return
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Process monitor lock acquisition retry failed: %s", exc)
 
         # Start monitoring loop
         self._monitoring_task = asyncio.create_task(self._monitor_loop())

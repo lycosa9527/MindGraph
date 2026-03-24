@@ -13,7 +13,8 @@ Proprietary License
 from datetime import datetime
 from typing import Any
 
-from sqlalchemy import JSON, DateTime, Integer, String
+from sqlalchemy import DateTime, Integer, String
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
 from models.domain.auth import Base
@@ -56,7 +57,7 @@ class TeacherUsageConfig(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     config_key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
-    config_value: Mapped[dict[str, Any] | None] = mapped_column(JSON, nullable=True)
+    config_value: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
     updated_at: Mapped[datetime] = mapped_column(
         DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
     )

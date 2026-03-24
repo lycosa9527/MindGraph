@@ -144,8 +144,8 @@ def release_cache_loader_lock() -> bool:
     """
     Release the cache loader lock if held by this worker.
 
-    Uses Lua script to ensure we only release our own lock.
-    This prevents accidentally releasing another worker's lock.
+    Uses DELEX (Redis >= 8.4) for atomic compare-and-delete in a single
+    command, ensuring we only release our own lock.
 
     Returns:
         True if lock released, False otherwise
@@ -153,40 +153,30 @@ def release_cache_loader_lock() -> bool:
     if not is_redis_available() or not _LockIdManager.has_lock_id():
         return True
 
-    redis = get_redis()
-    if not redis:
+    redis_client = get_redis()
+    if not redis_client:
         return True
 
     try:
         worker_lock_id = _LockIdManager.get_lock_id()
 
-        # Lua script: Only delete if lock value matches our lock_id
-        # This ensures we only release our own lock
-        lua_script = """
-        if redis.call("GET", KEYS[1]) == ARGV[1] then
-            return redis.call("DEL", KEYS[1])
-        else
-            return 0
-        end
-        """
-
-        result = redis.eval(lua_script, 1, CACHE_LOADER_LOCK_KEY, worker_lock_id)
+        # DELEX atomically deletes only if the stored value matches our lock ID.
+        result = redis_client.delex(CACHE_LOADER_LOCK_KEY, worker_lock_id)
 
         if result:
             logger.debug("[CacheLoader] Lock released (id=%s)", worker_lock_id)
             return True
-        else:
-            # Check current holder for logging
-            current_holder = redis.get(CACHE_LOADER_LOCK_KEY)
-            logger.debug(
-                "[CacheLoader] Lock not released (not held by us or already released). "
-                "Current holder: %s",
-                current_holder
-            )
-            return False
 
-    except Exception as e:
-        logger.warning("[CacheLoader] Lock release failed: %s", e)
+        current_holder = redis_client.get(CACHE_LOADER_LOCK_KEY)
+        logger.debug(
+            "[CacheLoader] Lock not released (not held by us or already released). "
+            "Current holder: %s",
+            current_holder
+        )
+        return False
+
+    except Exception as exc:
+        logger.warning("[CacheLoader] Lock release failed: %s", exc)
         return False
 
 

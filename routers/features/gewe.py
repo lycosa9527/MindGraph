@@ -496,8 +496,8 @@ async def get_gewe_config_status(
                     '*' * len(app_id_value) if len(app_id_value) <= 8
                     else f"{app_id_value[:4]}...{app_id_value[-4:]}"
                 )
-    except Exception:
-        pass  # Ignore errors when getting login info
+    except Exception as exc:
+        logger.debug("Failed to get saved login info: %s", exc)
     finally:
         await service.cleanup()
 

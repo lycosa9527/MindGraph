@@ -27,8 +27,8 @@ async def authenticate_and_resolve_canvas_workshop(
     if auth_error or user is None:
         try:
             record_ws_auth_failure()
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as exc:
+            logger.debug("Failed to record auth failure metric: %s", exc)
         reason = auth_error or "Authentication failed"
         await websocket.close(code=4001, reason=reason)
         logger.warning("[CanvasCollabWS] Auth failed: %s", reason)

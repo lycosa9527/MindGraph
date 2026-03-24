@@ -4,10 +4,13 @@ Port checking utilities for process management.
 Provides functions to check if ports are in use and find processes using them.
 """
 
+import logging
 import socket
 import subprocess
 import sys
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 
 def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
@@ -30,8 +33,8 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
         pid = find_process_on_port(port)
         if pid is not None:
             return (True, pid)
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Process lookup on port %d failed: %s", port, exc)
 
     bind_failed_eaddrinuse = False
     try:
@@ -49,8 +52,8 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
                 bind_failed_eaddrinuse = True
             elif 'address already in use' in error_msg or 'address is already in use' in error_msg:
                 bind_failed_eaddrinuse = True
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Port %d bind check failed: %s", port, exc)
 
     if bind_failed_eaddrinuse:
         try:
@@ -61,8 +64,8 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
             if result == 0:
                 pid = find_process_on_port(port)
                 return (True, pid)
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Port %d connection check failed: %s", port, exc)
         pid = find_process_on_port(port)
         if pid is not None:
             return (True, pid)
@@ -106,6 +109,6 @@ def find_process_on_port(port: int) -> Optional[int]:
             )
             if result.stdout.strip():
                 return int(result.stdout.strip())
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Find process on port %d failed: %s", port, exc)
     return None

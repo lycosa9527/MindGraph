@@ -31,7 +31,7 @@ VALID_ROLES = frozenset({"user", "manager", "admin"})
 
 
 @router.get("/admin/admins", dependencies=[Depends(require_admin)])
-async def list_admins(
+def list_admins(
     db: Session = Depends(get_db),
 ):
     """
@@ -88,7 +88,7 @@ async def list_admins(
 
 
 @router.put("/admin/users/{user_id}/role", dependencies=[Depends(require_admin)])
-async def update_user_role(
+def update_user_role(
     user_id: int,
     role: str = Query(..., description="New role: user, manager, or admin"),
     current_user: User = Depends(require_admin),

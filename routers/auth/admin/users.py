@@ -39,7 +39,7 @@ router = APIRouter()
 
 
 @router.get("/admin/users", dependencies=[Depends(require_admin)])
-async def list_users_admin(
+def list_users_admin(
     db: Session = Depends(get_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
@@ -150,7 +150,7 @@ async def list_users_admin(
 
 
 @router.put("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
-async def update_user_admin(
+def update_user_admin(
     user_id: int,
     request: dict,
     current_user: User = Depends(require_admin),
@@ -285,7 +285,7 @@ async def update_user_admin(
 
 
 @router.delete("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
-async def delete_user_admin(
+def delete_user_admin(
     user_id: int,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -328,7 +328,7 @@ async def delete_user_admin(
 
 
 @router.put("/admin/users/{user_id}/unlock", dependencies=[Depends(require_admin)])
-async def unlock_user_admin(
+def unlock_user_admin(
     user_id: int,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -368,7 +368,7 @@ async def unlock_user_admin(
 
 
 @router.put("/admin/users/{user_id}/reset-password", dependencies=[Depends(require_admin)])
-async def reset_user_password_admin(
+def reset_user_password_admin(
     user_id: int,
     request: Optional[dict] = Body(None),
     current_user: User = Depends(require_admin),

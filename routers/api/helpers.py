@@ -38,8 +38,8 @@ def log_diagram_edit(user: User, db: Session, count: int = 1) -> None:
         _logger.debug("Failed to log diagram_edit: %s", exc)
         try:
             db.rollback()
-        except Exception:
-            pass
+        except Exception as rollback_exc:
+            _logger.debug("Rollback after activity log failure: %s", rollback_exc)
 
 
 def get_rate_limit_identifier(current_user: Optional[User], request: Request) -> str:

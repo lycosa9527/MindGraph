@@ -306,8 +306,8 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
         if not ctx.rate_limiter.allow():
             try:
                 record_ws_rate_limit_hit()
-            except Exception:  # pylint: disable=broad-except
-                pass
+            except Exception as exc:
+                logger.debug("Failed to record rate limit metric: %s", exc)
             await ctx.websocket.send_json({
                 "type": "error",
                 "message": "Rate limit exceeded",

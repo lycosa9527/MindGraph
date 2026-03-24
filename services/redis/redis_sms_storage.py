@@ -1,8 +1,3 @@
-from typing import Optional, Tuple
-import logging
-
-from services.redis.redis_client import is_redis_available, get_redis, RedisOps
-
 """
 Redis SMS Verification Storage
 ==============================
@@ -13,7 +8,7 @@ Replaces SQLite for SMS verification to eliminate write contention.
 Features:
 - O(1) store, verify, delete operations
 - Automatic TTL-based expiration (no cleanup needed)
-- One-time use verification (atomic compare-and-delete via Lua script)
+- One-time use verification (atomic compare-and-delete via DELEX)
 - Shared across all workers (accurate verification)
 
 Key Schema:
@@ -27,7 +22,10 @@ All Rights Reserved
 Proprietary License
 """
 
+from typing import Optional, Tuple
+import logging
 
+from services.redis.redis_client import is_redis_available, get_redis, RedisOps
 
 logger = logging.getLogger(__name__)
 
@@ -44,7 +42,7 @@ class RedisSMSStorage:
 
     Performance:
     - Store: O(1) - SETEX command
-    - Verify: O(1) - Atomic compare-and-delete via Lua script
+    - Verify: O(1) - Atomic compare-and-delete via DELEX (Redis >= 8.4)
     - No background cleanup needed (Redis TTL handles expiration)
 
     Thread-safe: All operations are atomic Redis commands.
@@ -102,9 +100,9 @@ class RedisSMSStorage:
         """
         Verify SMS code and remove it (one-time use).
 
-        Uses atomic Lua script for compare-and-delete to prevent race conditions.
-        Only removes the code if it matches. Wrong attempts do not consume the code,
-        allowing users to retry with the correct code.
+        Uses DELEX (Redis >= 8.4) for atomic compare-and-delete.
+        Only removes the code if it matches. Wrong attempts do not consume
+        the code, allowing users to retry with the correct code.
 
         Args:
             phone: Phone number
@@ -118,50 +116,40 @@ class RedisSMSStorage:
             logger.warning("[SMS] Redis unavailable, cannot verify code")
             return False
 
-        redis = get_redis()
-        if not redis:
+        redis_client = get_redis()
+        if not redis_client:
             logger.warning("[SMS] Redis client unavailable, cannot verify code")
             return False
 
         key = self._get_key(phone, purpose)
+        phone_masked = phone[:3] + "***" + phone[-4:]
 
         try:
-            # Atomic compare-and-delete using Lua script
-            # Only deletes if stored code matches provided code
-            # Prevents race condition where two concurrent requests could both consume the same code
-            lua_script = """
-            if redis.call("get", KEYS[1]) == ARGV[1] then
-                return redis.call("del", KEYS[1])
-            else
-                return 0
-            end
-            """
-            result = redis.eval(lua_script, 1, key, code)
+            # DELEX atomically deletes the key only if the current value
+            # matches the provided code — single round-trip, no Lua needed.
+            deleted = redis_client.delex(key, code)
 
-            if result == 1:
-                phone_masked = phone[:3] + "***" + phone[-4:]
+            if deleted:
                 logger.info("[SMS] Code verified and consumed for %s (purpose: %s)", phone_masked, purpose)
                 return True
-            elif result == 0:
-                # Code doesn't match or doesn't exist - check which case
-                stored_code = RedisOps.get(key)
-                phone_masked = phone[:3] + "***" + phone[-4:]
-                if stored_code is None:
-                    logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
-                else:
-                    logger.warning(
-                        "[SMS] Invalid code for %s (purpose: %s) - "
-                        "code preserved for retry",
-                        phone_masked,
-                        purpose
-                    )
-                return False
-            else:
-                logger.warning("[SMS] Unexpected Lua script result: %s", result)
-                return False
 
-        except Exception as e:
-            logger.error("[SMS] Lua script execution failed: %s", e)
+            # DELEX returned 0: either key missing or value mismatch.
+            # A single EXISTS check (instead of GET) avoids leaking the
+            # stored code into memory and eliminates the race window the
+            # old GET-after-Lua had.
+            if redis_client.exists(key):
+                logger.warning(
+                    "[SMS] Invalid code for %s (purpose: %s) - "
+                    "code preserved for retry",
+                    phone_masked,
+                    purpose
+                )
+            else:
+                logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
+            return False
+
+        except Exception as exc:
+            logger.error("[SMS] DELEX verification failed: %s", exc)
             return False
 
     def check_exists(self, phone: str, purpose: str = "verification") -> bool:
@@ -278,14 +266,14 @@ class RedisSMSStorage:
         return RedisOps.delete(key)
 
 
-# Global singleton
-_sms_storage: Optional[RedisSMSStorage] = None
+class _SMSStorageHolder:
+    """Singleton holder to avoid a module-level global variable."""
+
+    instance: Optional[RedisSMSStorage] = None
 
 
 def get_sms_storage() -> RedisSMSStorage:
     """Get or create global SMS storage instance."""
-    global _sms_storage
-    if _sms_storage is None:
-        _sms_storage = RedisSMSStorage()
-    return _sms_storage
-
+    if _SMSStorageHolder.instance is None:
+        _SMSStorageHolder.instance = RedisSMSStorage()
+    return _SMSStorageHolder.instance

@@ -16,7 +16,8 @@ from datetime import datetime
 import uuid
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index, JSON, UniqueConstraint
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index, UniqueConstraint
+from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
@@ -119,7 +120,7 @@ class LibraryDanmaku(Base):
 
     # Text selection mode (for OCRed PDFs)
     selected_text = Column(Text, nullable=True)  # The actual text content selected
-    text_bbox = Column(JSON, nullable=True)  # Bounding box: {x, y, width, height} relative to page
+    text_bbox = Column(pg.JSONB, nullable=True)  # Bounding box: {x, y, width, height} relative to page
 
     # Comment content
     content = Column(Text, nullable=False)
@@ -143,7 +144,10 @@ class LibraryDanmaku(Base):
     __table_args__ = (
         Index('ix_library_danmaku_document_page', 'document_id', 'page_number'),
         Index('ix_library_danmaku_created', 'created_at'),
-        Index('ix_library_danmaku_selected_text', 'selected_text'),
+        Index(
+            'ix_library_danmaku_selected_text', 'selected_text',
+            postgresql_using='hash',
+        ),
     )
 
     def __repr__(self):

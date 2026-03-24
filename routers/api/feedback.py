@@ -88,9 +88,8 @@ async def submit_feedback(
                     if current_user:
                         user_id_from_db = current_user.id
                         user_name_from_db = current_user.name if hasattr(current_user, 'name') else None
-        except Exception:
-            # No valid token, continue as anonymous (this is OK for feedback)
-            pass
+        except Exception as exc:
+            logger.debug("Failed to extract user from token: %s", exc)
 
         # Get user info (use from request if provided, otherwise from token, otherwise anonymous)
         user_id = req.user_id or (str(user_id_from_db) if user_id_from_db else 'anonymous')

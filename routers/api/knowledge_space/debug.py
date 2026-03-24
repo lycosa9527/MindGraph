@@ -30,7 +30,7 @@ router = APIRouter()
 
 
 @router.get("/metrics/compression", response_model=CompressionMetricsResponse)
-async def get_compression_metrics(
+def get_compression_metrics(
     current_user: User = Depends(get_current_user)
 ):
     """
@@ -60,7 +60,7 @@ async def get_compression_metrics(
 
 
 @router.get("/debug/qdrant-diagnostics")
-async def get_qdrant_diagnostics(
+def get_qdrant_diagnostics(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):

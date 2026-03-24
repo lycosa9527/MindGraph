@@ -69,7 +69,7 @@ def _escape_ilike_literal(text: str) -> str:
 # ── Organization members ─────────────────────────────────────────
 
 @router.get("/org-members", response_model=OrgMembersPage)
-async def list_org_members(
+def list_org_members(
     org_id: Optional[int] = None,
     q: Optional[str] = None,
     limit: int = _ORG_MEMBER_LIMIT_DEFAULT,

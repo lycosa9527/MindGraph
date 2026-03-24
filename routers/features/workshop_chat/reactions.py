@@ -9,6 +9,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
@@ -41,13 +42,17 @@ async def toggle_reaction(
     current_user: User = Depends(get_current_user),
 ):
     """Toggle an emoji reaction on a message (add or remove)."""
-    msg = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
+    msg = await asyncio.to_thread(
+        lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
+    )
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    result = reaction_service.toggle_reaction(
-        db, message_id, current_user.id,
-        body.emoji_name, body.emoji_code,
+    result = await asyncio.to_thread(
+        lambda: reaction_service.toggle_reaction(
+            db, message_id, current_user.id,
+            body.emoji_name, body.emoji_code,
+        )
     )
 
     await chat_ws_manager.broadcast_to_channel(msg.channel_id, {
@@ -73,25 +78,33 @@ async def remove_reaction(
     current_user: User = Depends(get_current_user),
 ):
     """Explicitly remove a specific emoji reaction."""
-    msg = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
+    msg = await asyncio.to_thread(
+        lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
+    )
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    existing = (
-        db.query(MessageReaction)
-        .filter(
-            MessageReaction.message_id == message_id,
-            MessageReaction.user_id == current_user.id,
-            MessageReaction.emoji_name == emoji_name,
+    existing = await asyncio.to_thread(
+        lambda: (
+            db.query(MessageReaction)
+            .filter(
+                MessageReaction.message_id == message_id,
+                MessageReaction.user_id == current_user.id,
+                MessageReaction.emoji_name == emoji_name,
+            )
+            .first()
         )
-        .first()
     )
     if not existing:
         raise HTTPException(status_code=404, detail="Reaction not found")
 
     emoji_code = existing.emoji_code
-    db.delete(existing)
-    db.commit()
+
+    def _sync_delete_reaction():
+        db.delete(existing)
+        db.commit()
+
+    await asyncio.to_thread(_sync_delete_reaction)
 
     await chat_ws_manager.broadcast_to_channel(msg.channel_id, {
         "type": "reaction_update",

@@ -671,8 +671,8 @@ async def voice_conversation(
         logger.error("WebSocket error: %s", e, exc_info=True)
         try:
             await safe_websocket_send(websocket, {'type': 'error', 'error': str(e)})
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as exc:
+            logger.debug("Failed to send WebSocket error response: %s", exc)
 
     finally:
         # Cleanup

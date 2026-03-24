@@ -32,7 +32,7 @@ router = APIRouter()
 
 
 @router.get("/admin/stats/trends", dependencies=[Depends(require_admin)])
-async def get_stats_trends_admin(
+def get_stats_trends_admin(
     _request: Request,
     metric: str,  # 'users', 'organizations', 'registrations', 'tokens'
     days: Optional[int] = 30,  # Number of days to look back
@@ -290,7 +290,7 @@ async def get_stats_trends_admin(
 
 
 @router.get("/admin/stats/school/trends", dependencies=[Depends(require_admin_or_manager)])
-async def get_school_token_trends(
+def get_school_token_trends(
     request: Request,
     organization_id: Optional[int] = None,
     days: Optional[int] = 30,
@@ -310,7 +310,7 @@ async def get_school_token_trends(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Organization not found"
         )
-    result = await get_organization_token_trends_admin(
+    result = get_organization_token_trends_admin(
         _request=request,
         organization_id=org_id,
         organization_name=None,
@@ -324,7 +324,7 @@ async def get_school_token_trends(
 
 
 @router.get("/admin/stats/trends/organization", dependencies=[Depends(require_admin)])
-async def get_organization_token_trends_admin(
+def get_organization_token_trends_admin(
     _request: Request,
     organization_id: Optional[int] = None,
     organization_name: Optional[str] = None,
@@ -520,7 +520,7 @@ async def get_organization_token_trends_admin(
 
 
 @router.get("/admin/stats/trends/user", dependencies=[Depends(require_admin)])
-async def get_user_token_trends_admin(
+def get_user_token_trends_admin(
     _request: Request,
     user_id: Optional[int] = None,
     days: Optional[int] = 10,  # Number of days to look back, default 10

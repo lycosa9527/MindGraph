@@ -13,6 +13,7 @@ Proprietary License
 import uuid
 from datetime import datetime
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index
+from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import relationship
 
 from models.domain.auth import Base
@@ -41,8 +42,8 @@ class SharedDiagram(Base):
     content_type = Column(String(50), nullable=False)  # 'mindgraph' or 'mindmate'
     category = Column(String(50), nullable=True)  # e.g., '教学设计', '学科资源'
 
-    # The actual diagram data (JSON string)
-    diagram_data = Column(Text, nullable=True)
+    # The actual diagram data — stored as JSONB for native parsing and GIN indexing.
+    diagram_data = Column(pg.JSONB, nullable=True)
 
     # Thumbnail/preview (base64 or URL)
     thumbnail = Column(Text, nullable=True)

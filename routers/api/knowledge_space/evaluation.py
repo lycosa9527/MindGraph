@@ -33,7 +33,7 @@ router = APIRouter()
 
 
 @router.post("/evaluation/datasets")
-async def create_evaluation_dataset(
+def create_evaluation_dataset(
     request: EvaluationDatasetRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -79,7 +79,7 @@ async def create_evaluation_dataset(
 
 
 @router.get("/evaluation/datasets")
-async def list_evaluation_datasets(
+def list_evaluation_datasets(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -109,7 +109,7 @@ async def list_evaluation_datasets(
 
 
 @router.post("/evaluation/run")
-async def run_evaluation(
+def run_evaluation(
     request: EvaluationRunRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -142,7 +142,7 @@ async def run_evaluation(
 
 
 @router.get("/evaluation/results")
-async def get_evaluation_results(
+def get_evaluation_results(
     dataset_id: Optional[int] = None,
     method: Optional[str] = None,
     current_user: User = Depends(get_current_user),

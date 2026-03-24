@@ -203,7 +203,7 @@ async def delete_chunk_test_document(
 
 
 @router.post("/chunk-test/documents/start-processing")
-async def start_processing_chunk_test_documents(
+def start_processing_chunk_test_documents(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -269,7 +269,7 @@ async def start_processing_chunk_test_documents(
 
 
 @router.post("/chunk-test/documents/process-selected")
-async def process_selected_chunk_test_documents(
+def process_selected_chunk_test_documents(
     request: ProcessSelectedRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -345,7 +345,7 @@ async def process_selected_chunk_test_documents(
 
 
 @router.get("/chunk-test/documents/{document_id}/chunks")
-async def get_chunk_test_document_chunks(
+def get_chunk_test_document_chunks(
     document_id: int,
     page: int = 1,
     page_size: int = 20,

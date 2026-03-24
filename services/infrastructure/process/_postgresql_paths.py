@@ -4,12 +4,15 @@ PostgreSQL path resolution and binary finding utilities.
 Handles WSL detection, path resolution, and finding PostgreSQL binaries.
 """
 
+import logging
 import os
 import sys
 from pathlib import Path
 from typing import Tuple, Optional
 
 from services.infrastructure.process._postgresql_helpers import ensure_postgres_directory_ownership
+
+logger = logging.getLogger(__name__)
 
 
 def find_postgres_binaries() -> Tuple[Optional[str], Optional[str]]:
@@ -79,8 +82,8 @@ def resolve_data_path() -> Tuple[Path, bool]:
                         is_wsl_windows_fs = True
                         break
                 current = current.parent
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("WSL symlink detection failed: %s", exc)
 
     # WSL: Use Linux-native path in user's home directory
     if is_wsl or is_wsl_windows_fs:

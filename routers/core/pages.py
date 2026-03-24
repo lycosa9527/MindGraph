@@ -54,7 +54,7 @@ router = APIRouter(tags=["Authentication"])
 # ============================================================================
 
 @router.get("/loginByXz")
-async def login_by_xz(
+def login_by_xz(
     request: Request,
     token: Optional[str] = None
 ):
@@ -449,7 +449,7 @@ async def login_by_xz(
 # ============================================================================
 
 @router.get("/favicon.ico")
-async def favicon():
+def favicon():
     """
     Serve favicon.ico
 

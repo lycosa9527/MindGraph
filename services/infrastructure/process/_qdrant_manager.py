@@ -4,6 +4,7 @@ Qdrant server management for MindGraph application.
 Handles starting and stopping Qdrant server processes.
 """
 
+import logging
 import os
 import sys
 import time
@@ -14,6 +15,8 @@ import urllib.request
 from typing import Optional
 
 from services.infrastructure.process._port_utils import check_port_in_use
+
+logger = logging.getLogger(__name__)
 
 
 def _get_process_name(pid: int) -> Optional[str]:
@@ -39,8 +42,8 @@ def _get_process_name(pid: int) -> Optional[str]:
                 parts = result.stdout.strip().split(',')
                 if len(parts) > 0:
                     return parts[0].strip('"').lower()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Process name lookup via tasklist failed: %s", exc)
     else:
         try:
             result = subprocess.run(
@@ -52,8 +55,8 @@ def _get_process_name(pid: int) -> Optional[str]:
             )
             if result.stdout.strip():
                 return result.stdout.strip().lower()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Process name lookup via ps failed: %s", exc)
     return None
 
 
@@ -131,8 +134,8 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         urllib.request.urlopen(f'http://{qdrant_host}:{qdrant_port}/collections', timeout=2)
         print(f"[QDRANT] Qdrant server is already running on {qdrant_host}:{qdrant_port}")
         return None
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Qdrant pre-start connectivity check failed: %s", exc)
 
     if sys.platform != 'win32':
         try:

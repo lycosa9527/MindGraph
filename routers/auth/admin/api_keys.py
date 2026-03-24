@@ -35,7 +35,7 @@ router = APIRouter()
 
 
 @router.get("/admin/api_keys", dependencies=[Depends(require_admin)])
-async def list_api_keys_admin(
+def list_api_keys_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -109,7 +109,7 @@ async def list_api_keys_admin(
 
 
 @router.post("/admin/api_keys", dependencies=[Depends(require_admin)])
-async def create_api_key_admin(
+def create_api_key_admin(
     request_body: dict,
     _http_request: Request,
     _current_user: User = Depends(require_admin),
@@ -146,7 +146,7 @@ async def create_api_key_admin(
 
 
 @router.put("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
-async def update_api_key_admin(
+def update_api_key_admin(
     key_id: int,
     request_body: dict,
     _http_request: Request,
@@ -187,7 +187,7 @@ async def update_api_key_admin(
 
 
 @router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
-async def delete_api_key_admin(
+def delete_api_key_admin(
     key_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
@@ -210,7 +210,7 @@ async def delete_api_key_admin(
 
 
 @router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(require_admin)])
-async def toggle_api_key_admin(
+def toggle_api_key_admin(
     key_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),

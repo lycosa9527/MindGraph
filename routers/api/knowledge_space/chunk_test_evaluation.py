@@ -24,7 +24,7 @@ router = APIRouter()
 
 
 @router.get("/chunk-test/{test_id}/chunks/{method}")
-async def get_chunk_test_chunks(
+def get_chunk_test_chunks(
     test_id: int,
     method: str,
     current_user: User = Depends(get_current_user),
@@ -91,7 +91,7 @@ async def get_chunk_test_chunks(
 
 
 @router.post("/chunk-test/{test_id}/evaluate")
-async def manual_evaluate_chunks(
+def manual_evaluate_chunks(
     test_id: int,
     request: ManualEvaluationRequest,
     current_user: User = Depends(get_current_user),

@@ -15,7 +15,8 @@ Proprietary License
 from datetime import datetime
 import uuid
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index, JSON
+from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from models.domain.auth import Base
@@ -186,7 +187,7 @@ class DebateJudgment(Base):
     best_debater_id = Column(Integer, ForeignKey("debate_participants.id"), nullable=True)
 
     # Scores (stored as JSON for flexibility)
-    scores = Column(JSON, nullable=True)
+    scores = Column(JSONB, nullable=True)
     # Format: {
     #   "affirmative": {
     #     "logic": 8.5,

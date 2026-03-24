@@ -92,8 +92,8 @@ class ChatConnectionManager:
         try:
             record_ws_chat_connection_delta(1)
             redis_increment_active_total(1)
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("WebSocket connect metrics update failed: %s", exc)
 
     def disconnect(self, user_id: int) -> tuple[Set[int], Optional[int]]:
         """Remove a connection and all its subscriptions.
@@ -108,16 +108,16 @@ class ChatConnectionManager:
                 workshop_chat_presence_store.remove_presence_org_user(
                     presence_org, user_id,
                 )
-            except Exception:  # pylint: disable=broad-except
-                pass
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.debug("Presence org user removal failed: %s", exc)
         self._remove_subscriptions(user_id)
         self._connections.pop(user_id, None)
         logger.info("[ChatWS] User %d disconnected", user_id)
         try:
             record_ws_chat_connection_delta(-1)
             redis_increment_active_total(-1)
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("WebSocket disconnect metrics update failed: %s", exc)
         return subscribed, presence_org
 
     def set_presence_org(self, user_id: int, org_id: int) -> None:
@@ -130,8 +130,8 @@ class ChatConnectionManager:
                 workshop_chat_presence_store.touch_presence_org_user(
                     org_id, user_id,
                 )
-            except Exception:  # pylint: disable=broad-except
-                pass
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.debug("Presence org user touch failed: %s", exc)
 
     def get_presence_org_id(self, user_id: int) -> Optional[int]:
         """Organization ID used for org-wide presence, if subscribed."""
@@ -149,8 +149,8 @@ class ChatConnectionManager:
             workshop_chat_presence_store.touch_presence_org_user(
                 conn.presence_org_id, user_id,
             )
-        except Exception:  # pylint: disable=broad-except
-            pass
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("Presence heartbeat refresh failed: %s", exc)
 
     def online_user_ids_for_presence_org(self, org_id: int) -> Set[int]:
         """User IDs with an active WS and the same presence org scope."""
@@ -159,8 +159,8 @@ class ChatConnectionManager:
                 return workshop_chat_presence_store.online_user_ids_for_org(
                     org_id,
                 )
-            except Exception:  # pylint: disable=broad-except
-                pass
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.debug("Presence org online users lookup failed: %s", exc)
         return {
             uid for uid, conn in self._connections.items()
             if conn.presence_org_id == org_id

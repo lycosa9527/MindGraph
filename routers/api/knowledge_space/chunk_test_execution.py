@@ -37,7 +37,7 @@ router = APIRouter()
 
 
 @router.post("/chunk-test/benchmark", response_model=ChunkTestResultResponse)
-async def test_benchmark_dataset(
+def test_benchmark_dataset(
     request: ChunkTestBenchmarkRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -99,7 +99,7 @@ async def test_benchmark_dataset(
 
 
 @router.post("/chunk-test/benchmark-async", response_model=ChunkTestResultResponse)
-async def test_benchmark_dataset_async(
+def test_benchmark_dataset_async(
     request: ChunkTestBenchmarkRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -188,7 +188,7 @@ async def test_benchmark_dataset_async(
 
 
 @router.post("/chunk-test/user-documents", response_model=ChunkTestResultResponse)
-async def test_user_documents(
+def test_user_documents(
     request: ChunkTestUserDocumentsRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -280,7 +280,7 @@ async def test_user_documents(
 
 
 @router.get("/chunk-test/progress/{test_id}", response_model=ChunkTestProgressResponse)
-async def get_chunk_test_progress(
+def get_chunk_test_progress(
     test_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -320,7 +320,7 @@ async def get_chunk_test_progress(
 
 
 @router.get("/chunk-test/results/{test_id}", response_model=ChunkTestResultResponse)
-async def get_chunk_test_result(
+def get_chunk_test_result(
     test_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -359,7 +359,7 @@ async def get_chunk_test_result(
 
 
 @router.get("/chunk-test/results")
-async def get_chunk_test_results(
+def get_chunk_test_results(
     dataset_name: Optional[str] = None,
     limit: int = 10,
     current_user: User = Depends(get_current_user),
@@ -400,7 +400,7 @@ async def get_chunk_test_results(
 
 
 @router.delete("/chunk-test/results/{test_id}")
-async def delete_chunk_test_result(
+def delete_chunk_test_result(
     test_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -451,7 +451,7 @@ async def delete_chunk_test_result(
 
 
 @router.post("/chunk-test/{test_id}/cancel")
-async def cancel_chunk_test(
+def cancel_chunk_test(
     test_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -506,7 +506,7 @@ async def cancel_chunk_test(
 
 
 @router.post("/chunk-test/detect-stuck")
-async def detect_stuck_tests(
+def detect_stuck_tests(
     _current_user: User = Depends(get_current_user),
     _db: Session = Depends(get_db)
 ):

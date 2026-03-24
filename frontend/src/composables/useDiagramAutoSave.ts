@@ -76,7 +76,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   const getDiagramSpec = useDiagramSpecForSave()
 
   let timer: ReturnType<typeof setTimeout> | null = null
-  const suppressUntil = ref(0)
+  let suppressTimer: ReturnType<typeof setTimeout> | null = null
+  const isSuppressed = ref(false)
   const lastSavedAt = ref<Date | null>(null)
 
   const diagramTypeForName = computed(
@@ -91,8 +92,6 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
       diagramStore.effectiveTitle || getDefaultDiagramName(diagramTypeForName.value, currentLanguage.value)
     )
   }
-
-  const isSuppressed = computed(() => Date.now() < suppressUntil.value)
 
   const canSave = computed(
     () =>
@@ -174,9 +173,18 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
     if (!llmResultsStore.isGenerating && !isSuppressed.value) trigger()
   })
 
+  function setSuppressWindow(ms: number): void {
+    if (suppressTimer) clearTimeout(suppressTimer)
+    isSuppressed.value = true
+    suppressTimer = setTimeout(() => {
+      isSuppressed.value = false
+      suppressTimer = null
+    }, ms)
+  }
+
   function setSuppressFromLibrary(): void {
     cancelTimer()
-    suppressUntil.value = Date.now() + SAVE.SUPPRESS_AFTER_LOAD_MS
+    setSuppressWindow(SAVE.SUPPRESS_AFTER_LOAD_MS)
   }
 
   const stopIsGenerating = watch(
@@ -198,7 +206,7 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
   )
 
   const stopWorkshopSnapshot = eventBus.on('diagram:workshop_snapshot_applied', () => {
-    suppressUntil.value = Date.now() + SAVE.SUPPRESS_AFTER_WORKSHOP_SNAPSHOT_MS
+    setSuppressWindow(SAVE.SUPPRESS_AFTER_WORKSHOP_SNAPSHOT_MS)
   })
 
   const stopOperationCompleted = eventBus.on(
@@ -210,6 +218,10 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
 
   function teardown(): void {
     cancelTimer()
+    if (suppressTimer) {
+      clearTimeout(suppressTimer)
+      suppressTimer = null
+    }
     stopContentWatch()
     stopIsGenerating()
     stopLlmComplete()

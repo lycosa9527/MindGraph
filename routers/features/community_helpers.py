@@ -1,5 +1,6 @@
 """Community helpers: thumbnail, spec, and post creation/update logic."""
 
+import asyncio
 import json
 import logging
 import uuid
@@ -137,12 +138,12 @@ async def save_post_and_thumbnail(
         description=description.strip() or None,
         category=category,
         diagram_type=diagram_type,
-        spec=json.dumps(spec_obj),
+        spec=spec_obj,
         thumbnail_path=thumbnail_path,
         author_id=author_id,
     )
-    db.add(post)
-    _commit_post_or_rollback(db, post, post_id)
+    await asyncio.to_thread(db.add, post)
+    await asyncio.to_thread(_commit_post_or_rollback, db, post, post_id)
     return post
 
 

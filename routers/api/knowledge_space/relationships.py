@@ -31,7 +31,7 @@ router = APIRouter()
 
 
 @router.post("/documents/{document_id}/relationships")
-async def create_relationship(
+def create_relationship(
     document_id: int,
     request: RelationshipRequest,
     current_user: User = Depends(get_current_user),
@@ -97,7 +97,7 @@ async def create_relationship(
 
 
 @router.get("/documents/{document_id}/relationships")
-async def get_document_relationships(
+def get_document_relationships(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -134,7 +134,7 @@ async def get_document_relationships(
 
 
 @router.delete("/relationships/{relationship_id}")
-async def delete_relationship(
+def delete_relationship(
     relationship_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)

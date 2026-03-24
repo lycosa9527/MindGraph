@@ -33,6 +33,7 @@ COMMUNITY_LIST_PREFIX = "community:list:"
 COMMUNITY_POST_PREFIX = "community:post:"
 LIST_TTL_SECONDS = 60
 POST_TTL_SECONDS = 300
+VERSION_TTL_SECONDS = 86400  # 24 h safety net; refreshed on every increment
 
 
 def _list_cache_key(mine: bool, type_filter: Optional[str], category: Optional[str],
@@ -65,10 +66,13 @@ def increment_version() -> None:
     if not redis:
         return
     try:
-        redis.incr(COMMUNITY_VERSION_KEY)
+        pipe = redis.pipeline()
+        pipe.incr(COMMUNITY_VERSION_KEY)
+        pipe.expire(COMMUNITY_VERSION_KEY, VERSION_TTL_SECONDS)
+        pipe.execute()
         logger.debug("[CommunityCache] Version incremented")
-    except Exception as e:
-        logger.warning("[CommunityCache] Failed to increment version: %s", e)
+    except Exception as exc:
+        logger.warning("[CommunityCache] Failed to increment version: %s", exc)
 
 
 def get_cached_list(

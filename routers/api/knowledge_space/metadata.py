@@ -30,7 +30,7 @@ router = APIRouter()
 
 
 @router.patch("/documents/{document_id}/metadata")
-async def update_document_metadata(
+def update_document_metadata(
     document_id: int,
     request: MetadataUpdateRequest,
     current_user: User = Depends(get_current_user),
@@ -94,7 +94,7 @@ async def update_document_metadata(
 
 
 @router.get("/documents/{document_id}/versions")
-async def get_document_versions(
+def get_document_versions(
     document_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -137,7 +137,7 @@ async def get_document_versions(
 
 
 @router.post("/documents/{document_id}/rollback")
-async def rollback_document(
+def rollback_document(
     document_id: int,
     request: RollbackRequest,
     current_user: User = Depends(get_current_user),

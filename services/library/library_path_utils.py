@@ -98,8 +98,8 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
             resolved = project_root / stored_path.replace('\\', '/')
             if resolved.exists():
                 return resolved.resolve()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Library path resolve from project root failed: %s", exc)
 
     # Strategy 2: If stored path is just filename, try storage_dir + filename
     if '/' not in stored_path and '\\' not in stored_path:
@@ -107,24 +107,24 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
             resolved = storage_dir / stored_path
             if resolved.exists():
                 return resolved.resolve()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Library path resolve from storage dir failed: %s", exc)
 
     # Strategy 3: Try as absolute path (legacy)
     if stored_path_obj.is_absolute():
         try:
             if stored_path_obj.exists():
                 return stored_path_obj.resolve()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Library absolute path resolve failed: %s", exc)
 
     # Strategy 4: Try relative to current working directory
     try:
         resolved = Path.cwd() / stored_path.replace('\\', '/')
         if resolved.exists():
             return resolved.resolve()
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Library path resolve from cwd failed: %s", exc)
 
     # Strategy 5: Extract folder name and try storage_dir + folder_name
     # Handles paths from DB import (e.g. different server paths)
@@ -134,8 +134,8 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
             resolved = storage_dir / folder_name
             if resolved.exists() and resolved.is_dir():
                 return resolved.resolve()
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Library folder name resolve failed: %s", exc)
 
     return None
 

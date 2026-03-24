@@ -66,7 +66,7 @@ async def get_channel_messages(
 
 
 @router.get("/channels/{channel_id}/messages/search")
-async def search_channel_messages(
+def search_channel_messages(
     channel_id: int,
     q: str,
     topic_id: Optional[int] = None,
@@ -214,7 +214,7 @@ async def edit_message(
 
 
 @router.delete("/messages/{message_id}")
-async def delete_message(
+def delete_message(
     message_id: int,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),

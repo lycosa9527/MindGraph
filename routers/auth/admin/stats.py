@@ -38,7 +38,7 @@ def _sql_count(column: Any) -> ColumnElement:
 
 
 @router.get("/admin/status")
-async def get_admin_status(
+def get_admin_status(
     current_user: User = Depends(get_current_user)
 ) -> Dict[str, bool]:
     """
@@ -54,7 +54,7 @@ async def get_admin_status(
 
 
 @router.get("/admin/stats", dependencies=[Depends(require_admin)])
-async def get_stats_admin(
+def get_stats_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -170,7 +170,7 @@ async def get_stats_admin(
 
 
 @router.get("/admin/stats/school", dependencies=[Depends(require_admin_or_manager)])
-async def get_school_stats(
+def get_school_stats(
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
     db: Session = Depends(get_db),
@@ -334,7 +334,7 @@ def _resolve_school_org_id(
 
 
 @router.get("/admin/stats/school/token-stats", dependencies=[Depends(require_admin_or_manager)])
-async def get_school_token_stats(
+def get_school_token_stats(
     request: Request,
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
@@ -346,7 +346,7 @@ async def get_school_token_stats(
     Same structure as /admin/token-stats with organization_id filter.
     """
     org_id = _resolve_school_org_id(organization_id, current_user)
-    return await get_token_stats_admin(
+    return get_token_stats_admin(
         _request=request,
         organization_id=org_id,
         _current_user=current_user,
@@ -356,7 +356,7 @@ async def get_school_token_stats(
 
 
 @router.get("/admin/token-stats", dependencies=[Depends(require_admin)])
-async def get_token_stats_admin(
+def get_token_stats_admin(
     _request: Request,
     organization_id: Optional[int] = None,
     _current_user: User = Depends(require_admin),

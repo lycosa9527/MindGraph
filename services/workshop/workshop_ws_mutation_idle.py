@@ -1,8 +1,11 @@
 """Mutation-idle monitor task for workshop WebSocket connections."""
 
 import asyncio
+import logging
 
 from fastapi import WebSocket
+
+logger = logging.getLogger(__name__)
 
 from services.redis.redis_client import get_redis as get_redis_client
 from services.workshop.workshop_redis_keys import mutation_idle_key
@@ -33,12 +36,12 @@ async def run_mutation_idle_monitor(
                     "type": "kicked",
                     "reason": "mutation_idle",
                 })
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Mutation idle kick notification send failed: %s", exc)
             try:
                 await websocket.close(code=4002, reason="mutation idle")
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Mutation idle WebSocket close failed: %s", exc)
             return
 
 

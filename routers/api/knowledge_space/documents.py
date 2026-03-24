@@ -157,7 +157,7 @@ async def batch_upload_documents(
 
 
 @router.get("/batches/{batch_id}")
-async def get_batch_status(
+def get_batch_status(
     batch_id: int,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
@@ -364,7 +364,7 @@ async def get_document_status(
 
 
 @router.get("/documents/{document_id}/chunks")
-async def get_document_chunks(
+def get_document_chunks(
     document_id: int,
     page: int = 1,
     page_size: int = 20,
@@ -413,7 +413,7 @@ async def get_document_chunks(
 
 
 @router.post("/documents/start-processing")
-async def start_processing(
+def start_processing(
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
@@ -459,7 +459,7 @@ async def start_processing(
 
 
 @router.post("/documents/process-selected")
-async def process_selected_documents(
+def process_selected_documents(
     request: ProcessSelectedRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)

@@ -8,6 +8,7 @@ Handles checking for required dependencies:
 - PostgreSQL (Python package + server binaries)
 """
 
+import logging
 import os
 import re
 import sys
@@ -16,6 +17,8 @@ import importlib.util
 import urllib.request
 from types import ModuleType
 from typing import Optional
+
+logger = logging.getLogger(__name__)
 
 # Try importing optional dependencies at module level
 try:
@@ -88,8 +91,8 @@ def check_redis_installed() -> tuple[bool, str]:
             r = redis_client_class(host=redis_host, port=redis_port, socket_connect_timeout=1)
             r.ping()
             redis_running = True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Redis connectivity check failed: %s", exc)
 
     if redis_running:
         return True, "Redis is installed and running"
@@ -177,8 +180,8 @@ def check_qdrant_installed() -> tuple[bool, str]:
     try:
         urllib.request.urlopen('http://localhost:6333/collections', timeout=2)
         return True, "Qdrant is installed and running"
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.debug("Qdrant connectivity check failed: %s", exc)
 
     # Check if Qdrant binary exists in common locations
     qdrant_paths = [
@@ -277,8 +280,8 @@ def check_postgresql_installed() -> tuple[bool, str]:
                         version_match = re.search(r'(\d+)', result.stdout)
                         if version_match:
                             postgres_version = version_match.group(1)
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("PostgreSQL version detection failed: %s", exc)
             break
 
     # Check for initdb binary (same directory as postgres)
@@ -303,8 +306,8 @@ def check_postgresql_installed() -> tuple[bool, str]:
                 )
                 conn.close()
                 postgres_running = True
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("PostgreSQL connectivity check failed: %s", exc)
 
     if postgres_running:
         version_msg = f" (version {postgres_version})" if postgres_version else ""

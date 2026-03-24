@@ -87,8 +87,8 @@ def _cleanup_active_tests():
             if db is not None:
                 try:
                     db.rollback()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Rollback during test cleanup failed: %s", exc)
         finally:
             if db is not None:
                 try:

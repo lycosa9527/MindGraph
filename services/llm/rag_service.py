@@ -689,13 +689,13 @@ class RAGService:
                         if vector_future.done() and not vector_future.exception():
                             try:
                                 vector_results = vector_future.result(timeout=0)
-                            except Exception:
-                                pass
+                            except Exception as exc:
+                                logger.debug("Vector search result retrieval failed: %s", exc)
                         if keyword_future.done() and not keyword_future.exception():
                             try:
                                 keyword_results = keyword_future.result(timeout=0)
-                            except Exception:
-                                pass
+                            except Exception as exc:
+                                logger.debug("Keyword search result retrieval failed: %s", exc)
                 except Exception as e:
                     logger.error("[RAGService] Parallel search failed: %s", e)
                     # Cancel remaining futures on error

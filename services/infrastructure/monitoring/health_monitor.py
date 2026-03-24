@@ -603,8 +603,8 @@ class HealthMonitor:
                         break
                 except asyncio.CancelledError:
                     return
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Health monitor lock acquisition retry failed: %s", exc)
 
         # Wait for server to be ready before starting health checks
         # This prevents the health monitor from making HTTP requests before

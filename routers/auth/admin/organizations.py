@@ -48,7 +48,7 @@ router = APIRouter()
 
 
 @router.get("/admin/organizations", dependencies=[Depends(require_admin)])
-async def list_organizations_admin(
+def list_organizations_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -146,7 +146,7 @@ async def list_organizations_admin(
 
 
 @router.post("/admin/organizations", dependencies=[Depends(require_admin)])
-async def create_organization_admin(
+def create_organization_admin(
     request: dict,
     _http_request: Request,
     current_user: User = Depends(require_admin),
@@ -226,7 +226,7 @@ async def create_organization_admin(
 
 
 @router.put("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
-async def update_organization_admin(
+def update_organization_admin(
     org_id: int,
     request: dict,
     _http_request: Request,
@@ -360,7 +360,7 @@ async def update_organization_admin(
 
 
 @router.post("/admin/organizations/{org_id}/refresh-invitation-code", dependencies=[Depends(require_admin)])
-async def refresh_organization_invitation_code(
+def refresh_organization_invitation_code(
     org_id: int,
     _request: Request,
     current_user: User = Depends(require_admin),
@@ -424,7 +424,7 @@ async def refresh_organization_invitation_code(
 
 
 @router.delete("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
-async def delete_organization_admin(
+def delete_organization_admin(
     org_id: int,
     _request: Request,
     current_user: User = Depends(require_admin),
@@ -501,7 +501,7 @@ async def delete_organization_admin(
 # =============================================================================
 
 @router.get("/admin/managers", dependencies=[Depends(require_admin)])
-async def list_all_managers(
+def list_all_managers(
     _request: Request,
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
@@ -549,7 +549,7 @@ async def list_all_managers(
 
 
 @router.get("/admin/organizations/{org_id}/users", dependencies=[Depends(require_admin)])
-async def list_organization_users(
+def list_organization_users(
     org_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
@@ -592,7 +592,7 @@ async def list_organization_users(
 
 
 @router.get("/admin/organizations/{org_id}/managers", dependencies=[Depends(require_admin)])
-async def list_organization_managers(
+def list_organization_managers(
     org_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
@@ -632,7 +632,7 @@ async def list_organization_managers(
 
 
 @router.put("/admin/organizations/{org_id}/managers/{user_id}", dependencies=[Depends(require_admin)])
-async def set_organization_manager(
+def set_organization_manager(
     org_id: int,
     user_id: int,
     _request: Request,
@@ -694,7 +694,7 @@ async def set_organization_manager(
 
 
 @router.delete("/admin/organizations/{org_id}/managers/{user_id}", dependencies=[Depends(require_admin)])
-async def remove_organization_manager(
+def remove_organization_manager(
     org_id: int,
     user_id: int,
     _request: Request,

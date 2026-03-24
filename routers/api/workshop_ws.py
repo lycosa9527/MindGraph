@@ -114,8 +114,8 @@ async def canvas_collab_websocket(
     try:
         record_ws_workshop_connection_delta(1)
         redis_increment_active_total(1)
-    except Exception:  # pylint: disable=broad-except
-        pass
+    except Exception as exc:
+        logger.debug("Failed to record WS connection metric: %s", exc)
 
     logger.info(
         "[WorkshopWS] User %s connected to workshop %s (diagram %s)",
@@ -168,8 +168,8 @@ async def canvas_collab_websocket(
                     "type": "error",
                     "message": f"Presentation mode error: {str(e)}",
                 })
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug("Failed to send WebSocket error message: %s", exc)
     finally:
         if monitor_task is not None:
             monitor_task.cancel()

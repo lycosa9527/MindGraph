@@ -1,15 +1,15 @@
 """Redis token buffer module.
 
-Shared token usage buffer using Redis. Collects token usage records from all
-workers and flushes to database periodically. Features: shared buffer across
-all workers (no data loss on worker crash), atomic list operations for thread
-safety, periodic batch flush to database for persistence, graceful fallback
-to per-worker memory buffer. Key schema: tokens:buffer -> list of record_json,
+Shared token usage buffer using Redis Streams. Collects token usage records
+from all workers and flushes to database periodically. Features: shared stream
+across all workers (no data loss on worker crash), consumer-group delivery for
+at-least-once processing, periodic batch flush to database, graceful fallback
+to per-worker memory buffer. Key schema: tokens:stream -> Redis Stream,
 tokens:stats -> hash of total_written, total_dropped, batches.
 """
 
 from datetime import datetime
-from typing import Optional, Dict, Any, List
+from typing import Optional, Dict, Any, List, Tuple
 import asyncio
 import json
 import logging
@@ -17,18 +17,20 @@ import os
 import threading
 import time
 
-from sqlalchemy import inspect as sa_inspect
+from sqlalchemy import insert as sa_insert
 
-from services.redis.redis_client import is_redis_available, get_redis
 from config.database import SessionLocal, check_disk_space
 from models.domain.token_usage import TokenUsage
+from services.redis.redis_client import is_redis_available, get_redis
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats
 
 logger = logging.getLogger(__name__)
 
 # Redis keys
-BUFFER_KEY = "tokens:buffer"
+STREAM_KEY = "tokens:stream"
 STATS_KEY = "tokens:stats"
+CONSUMER_GROUP = "token_flush_workers"
+CONSUMER_NAME = f"worker_{os.getpid()}"
 
 # Configuration from environment
 BATCH_SIZE = int(os.getenv('TOKEN_TRACKER_BATCH_SIZE', '1000'))
@@ -101,10 +103,26 @@ class RedisTokenBuffer:
         """Check if Redis should be used."""
         return is_redis_available()
 
+    def _ensure_stream_group(self) -> bool:
+        """Create the consumer group on the stream if it does not exist yet."""
+        redis = get_redis()
+        if not redis:
+            return False
+        try:
+            redis.xgroup_create(STREAM_KEY, CONSUMER_GROUP, id="0", mkstream=True)
+            logger.debug("[TokenBuffer] Consumer group '%s' created on stream '%s'", CONSUMER_GROUP, STREAM_KEY)
+        except Exception as exc:
+            if "BUSYGROUP" not in str(exc):
+                logger.warning("[TokenBuffer] Could not create consumer group: %s", exc)
+        return True
+
     def _ensure_worker_started(self):
         """Start background flush worker if not already running."""
         if self._initialized or not self._enabled:
             return
+
+        if self._use_redis():
+            self._ensure_stream_group()
 
         try:
             loop = asyncio.get_running_loop()
@@ -135,13 +153,13 @@ class RedisTokenBuffer:
 
                 if buffer_size >= MAX_BUFFER_SIZE:
                     should_flush = True
-                    flush_reason = "max buffer (%s >= %s)" % (buffer_size, MAX_BUFFER_SIZE)
+                    flush_reason = f"max buffer ({buffer_size} >= {MAX_BUFFER_SIZE})"
                 elif buffer_size >= BATCH_SIZE:
                     should_flush = True
-                    flush_reason = "batch size (%s >= %s)" % (buffer_size, BATCH_SIZE)
+                    flush_reason = f"batch size ({buffer_size} >= {BATCH_SIZE})"
                 elif time_since_flush >= BATCH_INTERVAL and buffer_size > 0:
                     should_flush = True
-                    flush_reason = "interval (%.0fs >= %ss)" % (time_since_flush, BATCH_INTERVAL)
+                    flush_reason = f"interval ({time_since_flush:.0f}s >= {BATCH_INTERVAL}s)"
 
                 if should_flush:
                     logger.debug("[TokenBuffer] Flush triggered: %s", flush_reason)
@@ -163,28 +181,30 @@ class RedisTokenBuffer:
         logger.debug("[TokenBuffer] Flush worker stopped")
 
     def _get_buffer_size(self) -> int:
-        """Get current buffer size."""
+        """Get current buffer size (stream length + unacked pending entries)."""
         if self._use_redis():
             redis = get_redis()
             if redis:
                 try:
-                    return redis.llen(BUFFER_KEY) or 0
-                except Exception:
-                    pass
+                    return redis.xlen(STREAM_KEY) or 0
+                except Exception as exc:
+                    logger.debug("Token buffer stream length check failed: %s", exc)
 
         with self._memory_lock:
             return len(self._memory_buffer)
 
     async def _flush_buffer(self):
-        """Flush buffer to database."""
+        """Flush buffer to database, then acknowledge processed stream entries."""
         if not self._enabled:
             return
 
-        # Get records from buffer
-        records = self._pop_records(BATCH_SIZE)
-        if not records:
+        # _pop_records returns [(entry_id, record), ...]; entry_id is None for memory fallback
+        tuples = self._pop_records(BATCH_SIZE)
+        if not tuples:
             return
 
+        entry_ids = [eid for eid, _ in tuples if eid is not None]
+        records = [r for _, r in tuples]
         record_count = len(records)
         start_time = time.time()
 
@@ -195,21 +215,23 @@ class RedisTokenBuffer:
                     logger.error("[TokenBuffer] Insufficient disk space - records dropped")
                     self._total_dropped += record_count
                     return
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Token buffer disk space check failed: %s", exc)
 
             db = SessionLocal()
             try:
-                # Bulk insert
-                db.bulk_insert_mappings(sa_inspect(TokenUsage), records)
+                # Bulk insert — SQLAlchemy 2.0 style, replaces deprecated bulk_insert_mappings.
+                db.execute(sa_insert(TokenUsage), records)
                 db.commit()
+
+                # Only ack stream entries after confirmed DB commit
+                self._ack_records(entry_ids)
 
                 write_time = time.time() - start_time
                 self._total_written += record_count
                 self._total_batches += 1
                 self._last_flush_time = time.time()
 
-                # Update Redis stats
                 self._update_stats(record_count)
 
                 total_tokens = sum(r.get('total_tokens', 0) for r in records)
@@ -233,48 +255,96 @@ class RedisTokenBuffer:
                             uid, stats_err
                         )
 
-            except Exception as e:
+            except Exception as exc:
                 db.rollback()
                 self._total_dropped += record_count
-                logger.error("[TokenBuffer] Database write failed: %s", e)
+                logger.error("[TokenBuffer] Database write failed: %s", exc)
             finally:
                 db.close()
 
-        except Exception as e:
+        except Exception as exc:
             self._total_dropped += record_count
-            logger.error("[TokenBuffer] Flush failed: %s", e)
+            logger.error("[TokenBuffer] Flush failed: %s", exc)
 
-    def _pop_records(self, count: int) -> List[Dict]:
-        """Pop up to count records from buffer."""
+    def _pop_records(self, count: int) -> List[Tuple]:
+        """
+        Read up to count records from the stream via consumer group.
+
+        Returns a list of (entry_id, parsed_record) tuples so that the caller
+        can acknowledge after a successful DB write.  The plain-list fallback
+        path returns tuples of (None, record) for a uniform interface.
+
+        block=None means non-blocking: if there are no new entries we get an
+        empty result immediately.  Using block=0 would block the thread
+        indefinitely when the stream is empty, freezing the flush worker.
+        """
         if self._use_redis():
             redis = get_redis()
             if redis:
                 try:
-                    # Atomic pop: get and remove in one pipeline
-                    pipe = redis.pipeline()
-                    pipe.lrange(BUFFER_KEY, 0, count - 1)
-                    pipe.ltrim(BUFFER_KEY, count, -1)
-                    results = pipe.execute()
+                    # First, try to reclaim any idle pending entries from crashed workers.
+                    try:
+                        pending = redis.xautoclaim(
+                            STREAM_KEY, CONSUMER_GROUP, CONSUMER_NAME,
+                            min_idle_time=60000,  # 60 s idle
+                            start_id="0-0",
+                            count=count,
+                        )
+                        raw_entries = pending[1] if pending and len(pending) > 1 else []
+                    except Exception:
+                        raw_entries = []
+
+                    remaining = count - len(raw_entries)
+                    if remaining > 0:
+                        # Non-blocking read — block=None returns immediately if empty.
+                        new_entries = redis.xreadgroup(
+                            CONSUMER_GROUP, CONSUMER_NAME,
+                            {STREAM_KEY: ">"},
+                            count=remaining,
+                            block=None,
+                        )
+                        if new_entries:
+                            raw_entries.extend(new_entries[0][1])
 
                     records = []
-                    for item in (results[0] or []):
+                    poison_ids = []
+                    for entry_id, fields in raw_entries:
                         try:
-                            record = json.loads(item)
-                            # Convert created_at back to datetime
+                            record = json.loads(fields.get("data", "{}"))
                             if 'created_at' in record and isinstance(record['created_at'], str):
                                 record['created_at'] = datetime.fromisoformat(record['created_at'])
-                            records.append(record)
-                        except Exception:
-                            pass
-                    return records
-                except Exception as e:
-                    logger.error("[TokenBuffer] Redis pop failed: %s", e)
+                            records.append((entry_id, record))
+                        except Exception as exc:
+                            logger.warning(
+                                "[TokenBuffer] Dropping unparseable stream entry %s: %s",
+                                entry_id, exc,
+                            )
+                            poison_ids.append(entry_id)
 
-        # Fallback to memory
+                    if poison_ids:
+                        self._ack_records(poison_ids)
+
+                    return records
+                except Exception as exc:
+                    logger.error("[TokenBuffer] Redis stream read failed: %s", exc)
+
+        # Fallback to memory (no entry IDs)
         with self._memory_lock:
-            records = self._memory_buffer[:count]
+            batch = self._memory_buffer[:count]
             self._memory_buffer = self._memory_buffer[count:]
-            return records
+            return [(None, r) for r in batch]
+
+    def _ack_records(self, entry_ids: List[str]) -> None:
+        """Acknowledge successfully processed stream entries so they are removed."""
+        if not entry_ids:
+            return
+        redis = get_redis()
+        if redis:
+            try:
+                redis.xack(STREAM_KEY, CONSUMER_GROUP, *entry_ids)
+                redis.xdel(STREAM_KEY, *entry_ids)
+            except Exception as exc:
+                logger.warning("[TokenBuffer] Stream ack failed: %s", exc)
 
     def _update_stats(self, count: int):
         """Update Redis stats."""
@@ -286,8 +356,8 @@ class RedisTokenBuffer:
                     pipe.hincrby(STATS_KEY, "total_written", count)
                     pipe.hincrby(STATS_KEY, "total_batches", 1)
                     pipe.execute()
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("Token buffer stats update failed: %s", exc)
 
     async def track_usage(
         self,
@@ -374,22 +444,25 @@ class RedisTokenBuffer:
             return False
 
     def _push_record(self, record: Dict) -> bool:
-        """Push record to buffer."""
+        """Push record to stream buffer using XADD with IDMPAUTO for deduplication."""
         if self._use_redis():
             redis = get_redis()
             if redis:
                 try:
-                    # Check buffer size
-                    current_size = redis.llen(BUFFER_KEY) or 0
+                    current_size = redis.xlen(STREAM_KEY) or 0
                     if current_size >= MAX_BUFFER_SIZE:
                         self._total_dropped += 1
                         logger.warning("[TokenBuffer] Buffer overflow! Dropping record.")
                         return False
 
-                    redis.rpush(BUFFER_KEY, json.dumps(record))
+                    try:
+                        redis.xadd(STREAM_KEY, {"data": json.dumps(record)}, id="IDMPAUTO")
+                    except Exception:
+                        # Fallback for Redis < 8.6 which lacks IDMPAUTO
+                        redis.xadd(STREAM_KEY, {"data": json.dumps(record)})
                     return True
-                except Exception as e:
-                    logger.error("[TokenBuffer] Redis push failed: %s", e)
+                except Exception as exc:
+                    logger.error("[TokenBuffer] Redis push failed: %s", exc)
 
         # Fallback to memory
         with self._memory_lock:
@@ -435,7 +508,7 @@ class RedisTokenBuffer:
             'total_written': self._total_written,
             'total_dropped': self._total_dropped,
             'total_batches': self._total_batches,
-            'storage': 'redis' if self._use_redis() else 'memory',
+            'storage': 'redis_stream' if self._use_redis() else 'memory',
             'config': {
                 'batch_size': BATCH_SIZE,
                 'batch_interval': BATCH_INTERVAL,
@@ -452,8 +525,9 @@ class RedisTokenBuffer:
                     if redis_stats:
                         stats['redis_total_written'] = int(redis_stats.get('total_written', 0))
                         stats['redis_total_batches'] = int(redis_stats.get('total_batches', 0))
-                except Exception:
-                    pass
+                    stats['stream_length'] = redis.xlen(STREAM_KEY) or 0
+                except Exception as exc:
+                    logger.debug("Token buffer stats retrieval failed: %s", exc)
 
         return stats
 
@@ -463,12 +537,17 @@ class _TokenBufferHolder:
 
     _instance: Optional[RedisTokenBuffer] = None
 
+    @classmethod
+    def get_instance(cls) -> RedisTokenBuffer:
+        """Get or create the singleton instance."""
+        if cls._instance is None:
+            cls._instance = RedisTokenBuffer()
+        return cls._instance
+
 
 def get_token_buffer() -> RedisTokenBuffer:
     """Get or create global token buffer instance."""
-    if _TokenBufferHolder._instance is None:
-        _TokenBufferHolder._instance = RedisTokenBuffer()
-    return _TokenBufferHolder._instance
+    return _TokenBufferHolder.get_instance()
 
 
 # Alias for backwards compatibility

@@ -417,8 +417,8 @@ class IPGeolocationService:
                         if lines:
                             download_time = datetime.fromisoformat(lines[0].strip())
                             age_days = (datetime.now() - download_time).days
-                except Exception:
-                    pass
+                except Exception as exc:
+                    logger.debug("IP geolocation DB version file parse failed: %s", exc)
 
             # Fallback to file modification time
             if age_days is None:
@@ -631,8 +631,8 @@ class IPGeolocationService:
                     }
                     logger.debug("[IPGeo] Localhost IP %s mapped to Beijing (DEBUG mode)", ip)
                     return localhost_location
-            except Exception:
-                pass
+            except Exception as exc:
+                logger.debug("Localhost IP geolocation fallback failed: %s", exc)
             # In production, skip localhost IPs
             return None
 
