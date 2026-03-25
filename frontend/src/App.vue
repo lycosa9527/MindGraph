@@ -59,6 +59,7 @@ const layouts = {
   auth: defineAsyncComponent(() => import('@/layouts/AuthLayout.vue')),
   main: defineAsyncComponent(() => import('@/layouts/MainLayout.vue')),
   canvas: defineAsyncComponent(() => import('@/layouts/CanvasLayout.vue')),
+  mobile: defineAsyncComponent(() => import('@/layouts/MobileLayout.vue')),
 }
 
 const currentLayout = computed(() => {

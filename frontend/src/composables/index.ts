@@ -30,6 +30,7 @@ export { usePanelCoordination, getPanelCoordinator } from './usePanelCoordinatio
 export { getNodePalette } from './useNodePalette'
 export { useDragConstraints } from './useDragConstraints'
 export { useBranchMoveDrag } from './useBranchMoveDrag'
+export { useNodeActions } from './useNodeActions'
 export type { BranchMoveState, DropTarget } from './useBranchMoveDrag'
 export { useTheme } from './useTheme'
 export { useVersionCheck } from './useVersionCheck'
@@ -59,6 +60,9 @@ export { useDiagramPersistence } from './useDiagramPersistence'
 export type { UseDiagramPersistenceOptions, DiagramPersistenceState } from './useDiagramPersistence'
 export { useAsyncFetch, useAuthFetch, useAsyncAction, useAsyncPost } from './useAsyncApi'
 export type { AsyncFetchOptions, AsyncActionOptions } from './useAsyncApi'
+
+// Mobile detection
+export { useMobileDetect } from './useMobileDetect'
 
 // Diagram-specific composables
 export * from './diagrams'

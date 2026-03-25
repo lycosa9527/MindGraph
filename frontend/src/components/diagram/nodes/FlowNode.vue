@@ -179,10 +179,11 @@ const branchMove = inject<{
     nodeId: string,
     isEditing: boolean,
     clientX?: number,
-    clientY?: number
-  ) => void
+    clientY?: number,
+    fromTouch?: boolean
+  ) => boolean
   onBranchMovePointerUp: () => void
-}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+}>('branchMove', { onBranchMovePointerDown: () => false, onBranchMovePointerUp: () => {} })
 
 const supportsBranchMove = computed(() => {
   if (isFlowMap.value) return props.id?.startsWith('flow-step-')
@@ -193,6 +194,18 @@ const supportsBranchMove = computed(() => {
 function handleBranchMovePointerDown(event: MouseEvent): void {
   if (supportsBranchMove.value) {
     branchMove.onBranchMovePointerDown(props.id, isEditing.value, event.clientX, event.clientY)
+  }
+}
+
+function handleBranchMoveTouchStart(event: TouchEvent): void {
+  if (!supportsBranchMove.value || event.touches.length !== 1) return
+  const touch = event.touches[0]
+  const consumed = branchMove.onBranchMovePointerDown(
+    props.id, isEditing.value, touch.clientX, touch.clientY, true,
+  )
+  if (consumed) {
+    event.stopPropagation()
+    event.preventDefault()
   }
 }
 
@@ -212,6 +225,7 @@ function handleBranchMovePointerUp(): void {
     @mouseleave="isHovering = false"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
+    @touchstart.capture="handleBranchMoveTouchStart"
   >
     <!-- Delete button - positioned using Vue Flow handle positioning system (Top + Right) -->
     <!-- Positioned at top-right corner using same absolute positioning as handles -->

@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.55.0] - 2026-03-25
+
+### Added
+- **Mobile web shell (`/m/*`)**: `MobileLayout.vue` and pages (`MobileHomePage`, `MobileMindMatePage`, `MobileMindGraphPage`, `MobileCanvasPage`, `MobileAccountPage`); `useMobileDetect` composable; router guard auto-redirects mobile clients from desktop paths to `/m/*` (skips login, auth, demo, `/export-render`, dashboard, and routes already under `/m`).
+- **`useNodeActions`**: Centralized event-bus handlers for add/delete node, branch, and child actions shared by the desktop toolbar and mobile canvas.
+- **Diagram canvas — mobile touch**: `DiagramCanvas` custom pinch-zoom and single-finger pane pan (capture-phase, before d3-drag/d3-zoom); optional `panOnDragButtons` prop; `useBranchMoveDrag` touch integration; diagram node components and `InlineEditableText` updates for consistent mobile interaction.
+
+### Changed
+- **Vue Flow PNG export (Playwright)**: Pre-seed `sessionStorage` via `page.add_init_script` before `goto` `/export-render`; remove Element Plus message/notification overlays before capturing the screenshot.
+- **Sidebar i18n**: Mobile-related sidebar strings (en, zh, az).
+
+### Removed
+- **`docs/ENDPOINTS_SUMMARY.md`**: Removed outdated endpoint summary.
+
 ## [5.54.0] - 2026-03-25
 
 ### Added

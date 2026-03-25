@@ -71,4 +71,5 @@ export default {
     "sidebar.teacherUsage": "Teacher usage",
     "sidebar.templateResources": "Templates",
     "sidebar.userSubtitleDefault": "MindGraph Pro",
+    "sidebar.account": "Account",
 } as const

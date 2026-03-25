@@ -193,10 +193,11 @@ const branchMove = inject<{
     nodeId: string,
     isEditing: boolean,
     clientX?: number,
-    clientY?: number
-  ) => void
+    clientY?: number,
+    fromTouch?: boolean
+  ) => boolean
   onBranchMovePointerUp: () => void
-}>('branchMove', { onBranchMovePointerDown: () => {}, onBranchMovePointerUp: () => {} })
+}>('branchMove', { onBranchMovePointerDown: () => false, onBranchMovePointerUp: () => {} })
 
 const supportsBranchMove = computed(() => {
   if (isTopicNode.value) return false
@@ -219,6 +220,18 @@ function handleBranchMovePointerDown(event: MouseEvent): void {
   }
 }
 
+function handleBranchMoveTouchStart(event: TouchEvent): void {
+  if (!supportsBranchMove.value || event.touches.length !== 1) return
+  const touch = event.touches[0]
+  const consumed = branchMove.onBranchMovePointerDown(
+    props.id, isEditing.value, touch.clientX, touch.clientY, true,
+  )
+  if (consumed) {
+    event.stopPropagation()
+    event.preventDefault()
+  }
+}
+
 function handleBranchMovePointerUp(): void {
   if (supportsBranchMove.value) {
     branchMove.onBranchMovePointerUp()
@@ -238,6 +251,7 @@ function handleBranchMovePointerUp(): void {
     :style="nodeStyle"
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
+    @touchstart.capture="handleBranchMoveTouchStart"
   >
     <!-- Handles for double bubble map curved edges (connect at node boundary) -->
     <template v-if="isDoubleBubbleMap">

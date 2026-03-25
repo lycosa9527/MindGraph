@@ -2,10 +2,15 @@
  * useBranchMoveDrag - Long-press drag-and-drop for moving/swapping nodes
  * across all thinking map types.
  *
- * Flow: mousedown 1.5s -> enter drag mode -> hide node (+ paired/child nodes) ->
- * circle follows cursor -> show drop preview -> mouseup to confirm or cancel
+ * Desktop flow:
+ *   mousedown 1.5 s → enter drag mode → hide node (+ paired/child nodes) →
+ *   circle follows cursor → show drop preview → mouseup to confirm or cancel
  *
- * Mindmap & tree_map use moveMindMapBranch / moveTreeMapBranch (hierarchical move).
+ * Mobile flow (tap-to-confirm):
+ *   touchstart 1.5 s → enter drag mode → circle follows finger →
+ *   lift finger (no target) → stays active → next tap on another node confirms
+ *
+ * Mindmap & tree_map use moveMindMapBranch / moveTreeMapBranch (hierarchical).
  * All other diagram types use moveNodeBySwap (position swap).
  * Bridge map and double bubble map diff nodes move as pairs.
  */
@@ -21,6 +26,7 @@ import type { MindGraphNode } from '@/types'
 
 const DEFAULT_NODE_WIDTH = 120
 const DEFAULT_NODE_HEIGHT = 50
+const LONG_PRESS_MOVE_THRESHOLD_SQ = 15 * 15
 
 /** Top-level branches are depth 1 (branch-r-1-X or branch-l-1-X). */
 function isTopLevelBranch(nodeId: string): boolean {
@@ -61,7 +67,6 @@ function getSwapGroup(diagramType: string, nodeId: string): string | null {
       return null
     case 'brace_map':
       if (nodeId.startsWith('label-') || nodeId.startsWith('dimension-')) return null
-      // Only non-root brace nodes are draggable
       return 'brace'
     case 'bridge_map':
       return nodeId.startsWith('pair-') ? 'pair' : null
@@ -110,6 +115,9 @@ export function useBranchMoveDrag() {
   const capturedBranchColor = ref<{ fill: string; border: string }>(getMindmapBranchColor(0))
   const nodeStartPos = ref<{ x: number; y: number; width: number; height: number } | null>(null)
   const animationPhase = ref<'shrinking' | 'following'>('shrinking')
+
+  let touchOrigin = false
+  let awaitingTapConfirm = false
 
   const active = computed(() => pendingNodeId.value !== null)
 
@@ -192,7 +200,6 @@ export function useBranchMoveDrag() {
       const nid = node.id ?? ''
       if (h.has(nid)) continue
       if (getSwapGroup(dt, nid) !== dragGroup) continue
-      // Brace map: skip root/topic nodes (they can't be swap targets)
       if (dt === 'brace_map' && node.data?.originalNode?.type === 'topic') continue
       const pos = node.position ?? { x: 0, y: 0 }
       const { w, h: nodeH } = getNodeDimensions(node)
@@ -221,6 +228,18 @@ export function useBranchMoveDrag() {
 
   const captureOpt = { capture: true }
 
+  function removeAllListeners(): void {
+    document.removeEventListener('mouseup', handleDocumentMouseUp, captureOpt)
+    document.removeEventListener('mousemove', handleDocumentMouseMove, captureOpt)
+    document.removeEventListener('touchmove', handleDocumentTouchMove, captureOpt)
+    document.removeEventListener('touchend', handleDocumentTouchEnd, captureOpt)
+    document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
+    document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+    document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
+    document.documentElement.removeEventListener('mouseleave', handleMouseLeave)
+    document.removeEventListener('keydown', handleEscape)
+  }
+
   function cleanup(): void {
     clearTimer()
     pendingNodeId.value = null
@@ -229,10 +248,18 @@ export function useBranchMoveDrag() {
     nodeStartPos.value = null
     animationPhase.value = 'shrinking'
     lastMouseDownPos.value = null
-    document.removeEventListener('mouseup', handleDocumentMouseUp, captureOpt)
-    document.removeEventListener('mousemove', handleDocumentMouseMove, captureOpt)
-    document.documentElement.removeEventListener('mouseleave', handleMouseLeave)
-    document.removeEventListener('keydown', handleEscape)
+    touchOrigin = false
+    awaitingTapConfirm = false
+    removeAllListeners()
+  }
+
+  function executeDrop(draggedId: string, targetNodeId: string): void {
+    const dt = diagramStore.type ?? ''
+    if (usesHierarchicalMove(dt)) {
+      handleDropHierarchical(draggedId, { type: 'child', nodeId: targetNodeId })
+    } else {
+      diagramStore.moveNodeBySwap(draggedId, targetNodeId)
+    }
   }
 
   function handleDropHierarchical(nodeId: string, target: DropTarget): void {
@@ -261,6 +288,8 @@ export function useBranchMoveDrag() {
       }
     }
   }
+
+  // ---- Desktop: mouse handlers ----
 
   function handleDocumentMouseUp(): void {
     const target = dropTarget.value
@@ -292,60 +321,131 @@ export function useBranchMoveDrag() {
     if (e.key === 'Escape') cleanup()
   }
 
+  // ---- Mobile: touch handlers ----
+
+  function handleDocumentTouchMove(e: TouchEvent): void {
+    if (e.touches.length !== 1) return
+    const touch = e.touches[0]
+    const flow = screenToFlowCoordinate({ x: touch.clientX, y: touch.clientY })
+    cursorPos.value = { x: flow.x, y: flow.y }
+    dropTarget.value = hitTest(flow.x, flow.y)
+  }
+
+  function handleDocumentTouchEnd(): void {
+    const target = dropTarget.value
+    const nodeId = pendingNodeId.value
+    if (!nodeId) return
+
+    if (target && target.nodeId !== nodeId) {
+      executeDrop(nodeId, target.nodeId)
+      cleanup()
+      return
+    }
+
+    awaitingTapConfirm = true
+    removeAllListeners()
+    document.addEventListener('keydown', handleEscape)
+  }
+
+  function handleCancelTouchMove(e: TouchEvent): void {
+    if (!longPressTimer.value || !lastMouseDownPos.value) return
+    if (e.touches.length !== 1) return
+    const touch = e.touches[0]
+    const dx = touch.clientX - lastMouseDownPos.value.clientX
+    const dy = touch.clientY - lastMouseDownPos.value.clientY
+    if (dx * dx + dy * dy > LONG_PRESS_MOVE_THRESHOLD_SQ) {
+      handleCancelTimer()
+    }
+  }
+
+  // ---- Activation (shared by mouse & touch) ----
+
+  function activateDragMode(nodeId: string): void {
+    const vfNodes = getNodes.value as MindGraphNode[]
+    const node = vfNodes.find((n) => n.id === nodeId)
+    pendingNodeId.value = nodeId
+    const idx =
+      (node?.data?.branchIndex as number) ??
+      (node?.data?.groupIndex as number) ??
+      (node?.data?.pairIndex as number) ??
+      0
+    capturedBranchColor.value = getMindmapBranchColor(idx)
+    const pos = node?.position ?? { x: 0, y: 0 }
+    const { w, h } = node
+      ? getNodeDimensions(node)
+      : { w: DEFAULT_NODE_WIDTH, h: DEFAULT_NODE_HEIGHT }
+    nodeStartPos.value = { x: pos.x, y: pos.y, width: w, height: h }
+    animationPhase.value = 'shrinking'
+    const lastPos = lastMouseDownPos.value
+    const flowPos =
+      lastPos !== null
+        ? screenToFlowCoordinate({ x: lastPos.clientX, y: lastPos.clientY })
+        : { x: pos.x + w / 2, y: pos.y + h / 2 }
+    cursorPos.value = { x: flowPos.x, y: flowPos.y }
+    setTimeout(() => {
+      animationPhase.value = 'following'
+    }, 280)
+  }
+
+  /**
+   * Called by node components on mousedown/touchstart.
+   * Returns true if the event was consumed (tap-to-confirm or cancel).
+   */
   function onBranchMovePointerDown(
     nodeId: string,
     isEditing: boolean,
     clientX?: number,
-    clientY?: number
-  ): void {
+    clientY?: number,
+    fromTouch?: boolean
+  ): boolean {
     const dt = diagramStore.type
-    if (!dt) return
-    if (isEditing) return
-    if (!getSwapGroup(dt, nodeId)) return
-    // Brace map root (topic) is not draggable
+    if (!dt) return false
+    if (isEditing) return false
+
+    if (active.value && pendingNodeId.value) {
+      const draggedId = pendingNodeId.value
+      if (nodeId !== draggedId && getSwapGroup(dt, nodeId)) {
+        executeDrop(draggedId, nodeId)
+      }
+      cleanup()
+      return true
+    }
+
+    if (!getSwapGroup(dt, nodeId)) return false
     if (dt === 'brace_map') {
       const node = diagramStore.data?.nodes.find((n) => n.id === nodeId)
-      if (node?.type === 'topic') return
+      if (node?.type === 'topic') return false
     }
 
     clearTimer()
+    touchOrigin = !!fromTouch
     if (clientX !== undefined && clientY !== undefined) {
       lastMouseDownPos.value = { clientX, clientY }
     }
     longPressTimer.value = setTimeout(() => {
       longPressTimer.value = null
-      const vfNodes = getNodes.value as MindGraphNode[]
-      const node = vfNodes.find((n) => n.id === nodeId)
-      pendingNodeId.value = nodeId
-      const idx =
-        (node?.data?.branchIndex as number) ??
-        (node?.data?.groupIndex as number) ??
-        (node?.data?.pairIndex as number) ??
-        0
-      capturedBranchColor.value = getMindmapBranchColor(idx)
-      const pos = node?.position ?? { x: 0, y: 0 }
-      const { w, h } = node
-        ? getNodeDimensions(node)
-        : { w: DEFAULT_NODE_WIDTH, h: DEFAULT_NODE_HEIGHT }
-      nodeStartPos.value = { x: pos.x, y: pos.y, width: w, height: h }
-      animationPhase.value = 'shrinking'
-      const lastPos = lastMouseDownPos.value
-      const flowPos =
-        lastPos !== null
-          ? screenToFlowCoordinate({ x: lastPos.clientX, y: lastPos.clientY })
-          : { x: pos.x + w / 2, y: pos.y + h / 2 }
-      cursorPos.value = { x: flowPos.x, y: flowPos.y }
-      setTimeout(() => {
-        animationPhase.value = 'following'
-      }, 280)
+      activateDragMode(nodeId)
+
       document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
+      document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+      document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
+
       document.addEventListener('mouseup', handleDocumentMouseUp, captureOpt)
       document.addEventListener('mousemove', handleDocumentMouseMove, captureOpt)
+      if (touchOrigin) {
+        document.addEventListener('touchmove', handleDocumentTouchMove, captureOpt)
+        document.addEventListener('touchend', handleDocumentTouchEnd, captureOpt)
+      }
       document.documentElement.addEventListener('mouseleave', handleMouseLeave)
       document.addEventListener('keydown', handleEscape)
     }, ANIMATION.LONG_PRESS_MS)
 
     document.addEventListener('mouseup', handleCancelTimer, captureOpt)
+    if (fromTouch) {
+      document.addEventListener('touchend', handleCancelTimer, captureOpt)
+      document.addEventListener('touchmove', handleCancelTouchMove, captureOpt)
+    }
+    return false
   }
 
   function handleCancelTimer(): void {
@@ -353,7 +453,10 @@ export function useBranchMoveDrag() {
       clearTimer()
       pendingNodeId.value = null
       lastMouseDownPos.value = null
+      touchOrigin = false
       document.removeEventListener('mouseup', handleCancelTimer, captureOpt)
+      document.removeEventListener('touchend', handleCancelTimer, captureOpt)
+      document.removeEventListener('touchmove', handleCancelTouchMove, captureOpt)
     }
   }
 
@@ -363,11 +466,19 @@ export function useBranchMoveDrag() {
     }
   }
 
+  function cancelDrag(): void {
+    if (active.value) {
+      cleanup()
+    }
+  }
+
   onUnmounted(cleanup)
 
   return {
     state,
     onBranchMovePointerDown,
     onBranchMovePointerUp,
+    cancelDrag,
+    awaitingTapConfirm: computed(() => awaitingTapConfirm),
   }
 }

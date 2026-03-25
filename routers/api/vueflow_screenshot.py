@@ -79,18 +79,15 @@ def _log_debug_info(
 
 
 async def _inject_spec_and_navigate(page, base_url: str, spec_json: str):
-    """Navigate to origin, inject spec into sessionStorage, then open /export-render."""
-    logger.debug("[VueFlowScreenshot] Navigating to origin: %s", base_url)
-    await page.goto(base_url, wait_until="domcontentloaded")
-
-    await page.evaluate(
-        """([key, value]) => { sessionStorage.setItem(key, value); }""",
-        [EXPORT_SPEC_SESSION_KEY, spec_json],
+    """Inject spec via init script and navigate directly to /export-render."""
+    escaped_spec = json.dumps(spec_json)
+    await page.add_init_script(
+        f"sessionStorage.setItem('{EXPORT_SPEC_SESSION_KEY}', {escaped_spec});"
     )
-    logger.debug("[VueFlowScreenshot] Spec injected into sessionStorage")
+    logger.debug("[VueFlowScreenshot] Spec will be injected via init script")
 
     export_url = f"{base_url}/export-render"
-    logger.debug("[VueFlowScreenshot] Navigating to export page: %s", export_url)
+    logger.debug("[VueFlowScreenshot] Navigating directly to: %s", export_url)
     await page.goto(export_url, wait_until="domcontentloaded")
 
 
@@ -137,6 +134,10 @@ async def _screenshot_canvas(
         ) from exc
 
     await asyncio.sleep(POST_RENDER_SETTLE_MS / 1000)
+
+    await page.evaluate(
+        "document.querySelectorAll('.el-notification, .el-message').forEach(el => el.remove())"
+    )
 
     wrapper = await page.query_selector(".vue-flow-wrapper")
     if not wrapper:

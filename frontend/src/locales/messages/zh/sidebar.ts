@@ -71,4 +71,5 @@ export default {
     "sidebar.teacherUsage": "教师使用度",
     "sidebar.templateResources": "模板资源",
     "sidebar.userSubtitleDefault": "MindGraph专业版",
+    "sidebar.account": "账号设置",
 } as const

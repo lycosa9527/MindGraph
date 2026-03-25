@@ -3,6 +3,7 @@
  */
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
+import { useMobileDetect } from '@/composables/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -13,6 +14,39 @@ function pageTitle(segment: string): { titleKey: string } {
 }
 
 const routes: RouteRecordRaw[] = [
+  // ── Mobile routes (always require auth) ───────────────────────────
+  {
+    path: '/m',
+    name: 'MobileHome',
+    component: () => import('@/pages/mobile/MobileHomePage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('mindmate') },
+  },
+  {
+    path: '/m/mindmate',
+    name: 'MobileMindMate',
+    component: () => import('@/pages/mobile/MobileMindMatePage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('mindmate') },
+  },
+  {
+    path: '/m/mindgraph',
+    name: 'MobileMindGraph',
+    component: () => import('@/pages/mobile/MobileMindGraphPage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('mindgraph') },
+  },
+  {
+    path: '/m/canvas',
+    name: 'MobileCanvas',
+    component: () => import('@/pages/mobile/MobileCanvasPage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('canvas') },
+  },
+  {
+    path: '/m/account',
+    name: 'MobileAccount',
+    component: () => import('@/pages/mobile/MobileAccountPage.vue'),
+    meta: { requiresAuth: true, layout: 'mobile', ...pageTitle('account') },
+  },
+
+  // ── Desktop routes ────────────────────────────────────────────────
   {
     path: '/smart-response',
     name: 'SmartResponse',
@@ -212,6 +246,31 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
+  const { isMobile } = useMobileDetect()
+
+  // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
+  const isMobileRoute = to.path === '/m' || to.path.startsWith('/m/')
+  const skipMobileRedirect =
+    isMobileRoute ||
+    to.path.startsWith('/login') ||
+    to.path.startsWith('/auth') ||
+    to.path.startsWith('/demo') ||
+    to.path.startsWith('/export-render') ||
+    to.path.startsWith('/dashboard')
+
+  if (isMobile.value && !skipMobileRedirect) {
+    const mobileMap: Record<string, string> = {
+      '/': '/m',
+      '/mindmate': '/m',
+      '/mindgraph': '/m/mindgraph',
+      '/canvas': '/m/canvas',
+    }
+    const mobilePath = mobileMap[to.path]
+    if (mobilePath) {
+      return next({ path: mobilePath, query: to.query as Record<string, string> })
+    }
+    return next({ path: '/m' })
+  }
 
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
   // Fetch for: routes with feature flag checks, OR any main layout route (sidebar needs flags)

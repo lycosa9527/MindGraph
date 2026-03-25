@@ -71,4 +71,5 @@ export default {
     "sidebar.teacherUsage": "Müəllif istifadəsi",
     "sidebar.templateResources": "Şablonlar",
     "sidebar.userSubtitleDefault": "MindGraph Pro",
+    "sidebar.account": "Hesab",
 } as const

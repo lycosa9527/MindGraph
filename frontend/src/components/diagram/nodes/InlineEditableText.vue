@@ -403,6 +403,38 @@ function handleDoubleClick(event: MouseEvent): void {
   startEditing()
 }
 
+let lastTapTime = 0
+let wasMultiTouch = false
+const DOUBLE_TAP_THRESHOLD = 350
+
+function handleTouchStart(event: TouchEvent): void {
+  if (event.touches.length > 1) {
+    wasMultiTouch = true
+  }
+}
+
+function handleTouchEnd(event: TouchEvent): void {
+  if (props.readonly || localIsEditing.value) return
+
+  if (wasMultiTouch) {
+    if (event.touches.length === 0) {
+      wasMultiTouch = false
+    }
+    lastTapTime = 0
+    return
+  }
+
+  const now = Date.now()
+  if (now - lastTapTime < DOUBLE_TAP_THRESHOLD) {
+    event.preventDefault()
+    event.stopPropagation()
+    lastTapTime = 0
+    startEditing()
+  } else {
+    lastTapTime = now
+  }
+}
+
 /**
  * Prevent node dragging when clicking on input
  */
@@ -442,6 +474,8 @@ onUnmounted(() => {
     class="inline-editable-text"
     :class="{ 'inline-editable-text--full-width': fullWidth }"
     @dblclick="handleDoubleClick"
+    @touchstart="handleTouchStart"
+    @touchend="handleTouchEnd"
     @mousedown="handleMouseDown"
   >
     <!-- Hidden span for measuring text width -->
