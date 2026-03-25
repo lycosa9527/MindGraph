@@ -11,6 +11,7 @@ import { useVueFlow } from '@vue-flow/core'
 
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { translateDimension, useLanguage } from '@/composables/useLanguage'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
@@ -29,6 +30,7 @@ const isBridgeDimension = computed(
 
 // Position recalculation for bridge map dimension labels
 const labelRef = ref<HTMLElement | null>(null)
+useNodeDimensions(labelRef, props.id)
 const { getNodes, updateNode } = useVueFlow()
 const diagramStore = useDiagramStore()
 let resizeObserver: ResizeObserver | null = null

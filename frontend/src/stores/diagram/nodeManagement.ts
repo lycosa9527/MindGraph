@@ -49,6 +49,14 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       }
     }
 
+    if (
+      ctx.type.value === 'multi_flow_map' &&
+      'text' in updates &&
+      (nodeId === 'event' || nodeId.startsWith('cause-') || nodeId.startsWith('effect-'))
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
+    }
+
     emitEvent('diagram:node_updated', { nodeId, updates })
     return true
   }
@@ -66,6 +74,13 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
     if (ctx.type.value === 'concept_map' && nodeId === 'topic') {
       ;(ctx.data.value as Record<string, unknown>).focus_question = ''
+    }
+
+    if (
+      ctx.type.value === 'multi_flow_map' &&
+      (nodeId === 'event' || nodeId.startsWith('cause-') || nodeId.startsWith('effect-'))
+    ) {
+      delete ctx.nodeDimensions.value[nodeId]
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates: { text: '' } })
@@ -111,7 +126,12 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
       ctx.data.value.nodes.push(node)
 
-      const recalculatedNodes = recalculateMultiFlowMapLayout(ctx.data.value.nodes)
+      const recalculatedNodes = recalculateMultiFlowMapLayout(
+        ctx.data.value.nodes,
+        null,
+        {},
+        ctx.nodeDimensions.value
+      )
       const recalculatedConnections: Connection[] = []
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
@@ -142,7 +162,10 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ctx.data.value.connections = recalculatedConnections
     } else if (ctx.type.value === 'bubble_map' && node.id?.startsWith('bubble-')) {
       ctx.data.value.nodes.push(node)
-      const recalculatedNodes = recalculateBubbleMapLayout(ctx.data.value.nodes)
+      const recalculatedNodes = recalculateBubbleMapLayout(
+        ctx.data.value.nodes,
+        ctx.nodeDimensions.value
+      )
       const bubbleNodes = recalculatedNodes.filter(
         (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
       )
@@ -227,7 +250,8 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       const recalculatedNodes = recalculateMultiFlowMapLayout(
         ctx.data.value.nodes,
         ctx.topicNodeWidth.value,
-        ctx.nodeWidths.value
+        ctx.nodeWidths.value,
+        ctx.nodeDimensions.value
       )
       const recalculatedConnections: Connection[] = []
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))

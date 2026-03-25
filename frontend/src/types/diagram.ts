@@ -39,6 +39,7 @@ export interface NodeStyle {
   fontWeight?: 'normal' | 'bold'
   fontStyle?: 'normal' | 'italic'
   textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
+  textAlign?: 'left' | 'center' | 'right'
   borderWidth?: number
   borderStyle?: 'solid' | 'dashed' | 'dotted' | 'double' | 'dash-dot' | 'dash-dot-dot'
   borderRadius?: number

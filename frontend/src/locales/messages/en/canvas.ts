@@ -35,6 +35,7 @@ export default {
     "canvas.toolbar.addSubstepHistory": "Add Substep",
     "canvas.toolbar.aiGenerate": "AI Generate",
     "canvas.toolbar.aiGenerating": "Generating…",
+    "canvas.toolbar.alignLabel": "Align",
     "canvas.toolbar.analogyPairAdded": "Analogy pair added",
     "canvas.toolbar.applied": "Applied",
     "canvas.toolbar.attributeAdded": "Attribute added",

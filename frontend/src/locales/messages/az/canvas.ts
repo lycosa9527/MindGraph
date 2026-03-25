@@ -35,6 +35,7 @@ export default {
     "canvas.toolbar.addSubstepHistory": "Alt addım əlavə et",
     "canvas.toolbar.aiGenerate": "AI ilə yarad",
     "canvas.toolbar.aiGenerating": "Yaradılır…",
+    "canvas.toolbar.alignLabel": "Hizalama",
     "canvas.toolbar.analogyPairAdded": "Analogiya cütü əlavə olundu",
     "canvas.toolbar.applied": "Tətbiq olundu",
     "canvas.toolbar.attributeAdded": "Atribut əlavə olundu",

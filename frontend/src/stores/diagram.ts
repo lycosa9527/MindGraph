@@ -23,6 +23,7 @@ import { useLearningSheetSlice } from './diagram/learningSheet'
 import { useMindMapLayoutSlice } from './diagram/mindMapLayout'
 import { useMindMapOpsSlice } from './diagram/mindMapOps'
 import { useMultiFlowLayoutSlice } from './diagram/multiFlowLayout'
+import { useNodeDimensionSlice } from './diagram/nodeDimensionSlice'
 import { useNodeManagementSlice } from './diagram/nodeManagement'
 import { useNodeStylesSlice } from './diagram/nodeStyles'
 import { useNodeSwapOpsSlice } from './diagram/nodeSwapOps'
@@ -61,6 +62,8 @@ export const useDiagramStore = defineStore('diagram', () => {
   const mindMapNodeHeights = ref<Record<string, number>>({})
   const mindMapRecalcTrigger = ref(0)
   const mindMapTopicBranchGaps = ref<{ left: number; right: number } | null>(null)
+  const nodeDimensions = ref<Record<string, { width: number; height: number }>>({})
+  const layoutRecalcTrigger = ref(0)
   const sessionEditCount = ref(0)
   const collabSessionActive = ref(false)
   const collabForeignLockedNodeIds = ref<Set<string>>(new Set())
@@ -99,6 +102,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapNodeHeights,
     mindMapRecalcTrigger,
     mindMapTopicBranchGaps,
+    nodeDimensions,
+    layoutRecalcTrigger,
     sessionEditCount,
     collabSessionActive,
     collabForeignLockedNodeIds,
@@ -205,6 +210,15 @@ export const useDiagramStore = defineStore('diagram', () => {
   ctx.setDiagramType = setDiagramType
   ctx.resetSessionEditCount = resetSessionEditCount
 
+  const nodeDimensionSlice = useNodeDimensionSlice(ctx)
+  const {
+    setNodeDimensions: setNodeDimensionsSlice,
+    clearNodeDimensions,
+    getNodeDimension,
+    setExpectedNodeCount,
+  } = nodeDimensionSlice
+  ctx.setExpectedNodeCount = setExpectedNodeCount
+
   const multiFlowLayoutSlice = useMultiFlowLayoutSlice(ctx)
   const { setTopicNodeWidth, setNodeWidth } = multiFlowLayoutSlice
   ctx.setNodeWidth = setNodeWidth
@@ -310,6 +324,8 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapNodeHeights.value = {}
     mindMapRecalcTrigger.value = 0
     mindMapTopicBranchGaps.value = null
+    clearNodeDimensions()
+    layoutRecalcTrigger.value = 0
     useConceptMapRelationshipStore().clearAll()
     title.value = ''
     isUserEditedTitle.value = false
@@ -420,5 +436,11 @@ export const useDiagramStore = defineStore('diagram', () => {
     setMindMapNodeDimensions,
     clearMindMapNodeWidths,
     mindMapTopicBranchGaps,
+    nodeDimensions,
+    layoutRecalcTrigger,
+    setNodeDimensions: setNodeDimensionsSlice,
+    clearNodeDimensions,
+    getNodeDimension,
+    setExpectedNodeCount,
   }
 })

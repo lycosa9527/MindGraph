@@ -2,6 +2,7 @@
 export default {
     "app.aiDisclaimer": "Content is AI-generated; please verify carefully.",
     "app.brandName": "Mind Platform",
+    "app.guestMainLoginPrompt": "Bu bölmədən istifadə üçün daxil olun",
     "app.browserLocale.body": "Brauzeriniz {name} üstünlük verir. Tətbiq interfeysini uyğunlaşdıraq?",
     "app.browserLocale.dontAsk": "Bir daha soruşma",
     "app.browserLocale.keepChinese": "Çin dilində saxla",

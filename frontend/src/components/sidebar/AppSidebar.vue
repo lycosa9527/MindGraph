@@ -326,7 +326,7 @@ watch(currentMode, () => {
           v-if="showPanel('mindmate')"
           class="sidebar-panel"
         >
-          <ChatHistory :is-blurred="!isAuthenticated" />
+          <ChatHistory />
         </div>
       </transition>
 
@@ -354,10 +354,7 @@ watch(currentMode, () => {
           v-if="showPanel('mindgraph')"
           class="sidebar-panel"
         >
-          <DiagramHistory
-            :is-blurred="!isAuthenticated"
-            @select="handleDiagramSelect"
-          />
+          <DiagramHistory @select="handleDiagramSelect" />
         </div>
       </transition>
 
@@ -415,7 +412,7 @@ watch(currentMode, () => {
           v-if="isAuthenticated && featureRagChunkTest && showPanel('chunk-test')"
           class="sidebar-panel"
         >
-          <ChunkTestHistory :is-blurred="!isAuthenticated" />
+          <ChunkTestHistory />
         </div>
       </transition>
 
@@ -444,7 +441,7 @@ watch(currentMode, () => {
           v-if="featureAskOnce && showPanel('askonce')"
           class="sidebar-panel"
         >
-          <AskOnceHistory :is-blurred="!isAuthenticated" />
+          <AskOnceHistory />
         </div>
       </transition>
 
@@ -473,7 +470,7 @@ watch(currentMode, () => {
           v-if="featureDebateverse && showPanel('debateverse')"
           class="sidebar-panel"
         >
-          <DebateHistory :is-blurred="!isAuthenticated" />
+          <DebateHistory />
         </div>
       </transition>
 
@@ -586,7 +583,7 @@ watch(currentMode, () => {
           v-if="featureLibrary && showPanel('library')"
           class="sidebar-panel"
         >
-          <LibraryCommentsHistory :is-blurred="!isAuthenticated" />
+          <LibraryCommentsHistory />
         </div>
       </transition>
 
@@ -620,7 +617,7 @@ watch(currentMode, () => {
           v-if="workshopExpanded && !isCollapsed && canAccessWorkshopChat"
           class="workshop-panel-host"
         >
-          <WorkshopChatHistory :is-blurred="!isAuthenticated" />
+          <WorkshopChatHistory />
         </div>
       </transition>
 

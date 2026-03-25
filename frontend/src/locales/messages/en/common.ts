@@ -2,6 +2,7 @@
 export default {
     "app.aiDisclaimer": "Content is AI-generated; please verify carefully.",
     "app.brandName": "Mind Platform",
+    "app.guestMainLoginPrompt": "Log in to use this area",
     "app.browserLocale.body": "Your browser prefers {name}. Switch the app interface to match?",
     "app.browserLocale.dontAsk": "Don't ask again",
     "app.browserLocale.keepChinese": "Keep Chinese",

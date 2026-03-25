@@ -24,7 +24,39 @@ import type { DiagramContext } from './types'
 export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const circleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'circle_map' || !ctx.data.value?.nodes) return []
-    return recalculateCircleMapLayout(ctx.data.value.nodes)
+    void ctx.layoutRecalcTrigger.value
+    return recalculateCircleMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+  })
+
+  const braceMapLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'brace_map' || !ctx.data.value?.nodes) return []
+    void ctx.layoutRecalcTrigger.value
+    return recalculateBraceMapLayout(
+      ctx.data.value.nodes,
+      ctx.data.value.connections ?? [],
+      ctx.nodeDimensions.value
+    )
+  })
+
+  const bubbleMapLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'bubble_map' || !ctx.data.value?.nodes) return []
+    void ctx.layoutRecalcTrigger.value
+    return recalculateBubbleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value
+    )
+  })
+
+  const multiFlowMapLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'multi_flow_map' || !ctx.data.value?.nodes) return []
+    void ctx.layoutRecalcTrigger.value
+    void ctx.multiFlowMapRecalcTrigger.value
+    return recalculateMultiFlowMapLayout(
+      ctx.data.value.nodes,
+      ctx.topicNodeWidth.value,
+      ctx.nodeWidths.value,
+      ctx.nodeDimensions.value
+    )
   })
 
   const vueFlowNodes = computed<MindGraphNode[]>(() => {
@@ -42,13 +74,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'multi_flow_map') {
-      void ctx.multiFlowMapRecalcTrigger.value
-
-      const recalculatedNodes = recalculateMultiFlowMapLayout(
-        ctx.data.value.nodes,
-        ctx.topicNodeWidth.value,
-        ctx.nodeWidths.value
-      )
+      const recalculatedNodes = multiFlowMapLayoutNodes.value
       const causeNodes = recalculatedNodes.filter((n) => n.id.startsWith('cause-'))
       const effectNodes = recalculatedNodes.filter((n) => n.id.startsWith('effect-'))
 
@@ -97,7 +123,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'bubble_map') {
-      const layoutNodes = recalculateBubbleMapLayout(ctx.data.value.nodes)
+      const layoutNodes = bubbleMapLayoutNodes.value
       return layoutNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
@@ -125,10 +151,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'brace_map') {
-      const layoutNodes = recalculateBraceMapLayout(
-        ctx.data.value.nodes,
-        ctx.data.value.connections ?? []
-      )
+      const layoutNodes = braceMapLayoutNodes.value
       return layoutNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)

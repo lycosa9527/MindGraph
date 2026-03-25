@@ -4,12 +4,13 @@
  * Represents branches, children, or categories in hierarchical diagrams
  * Supports inline text editing on double-click
  */
-import { computed, inject, onMounted, onUnmounted, ref } from 'vue'
+import { computed, inject, ref } from 'vue'
 import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores/diagram'
@@ -172,34 +173,11 @@ function handleBranchMovePointerUp(): void {
   }
 }
 
-function reportDimensions(): void {
-  if (!isMindMap.value || !branchNodeRef.value) return
-  const w = branchNodeRef.value.offsetWidth
-  const h = branchNodeRef.value.offsetHeight
-  if (w > 0 && h > 0) {
+useNodeDimensions(branchNodeRef, props.id, {
+  onResize(w, h) {
+    if (!isMindMap.value) return
     diagramStore.setMindMapNodeDimensions(props.id, w, h)
-  }
-}
-
-let resizeObserver: ResizeObserver | null = null
-
-onMounted(() => {
-  if (isMindMap.value && branchNodeRef.value) {
-    resizeObserver = new ResizeObserver(() => {
-      reportDimensions()
-    })
-    resizeObserver.observe(branchNodeRef.value)
-  }
-})
-
-onUnmounted(() => {
-  if (resizeObserver) {
-    resizeObserver.disconnect()
-    resizeObserver = null
-  }
-  if (isMindMap.value) {
-    diagramStore.setMindMapNodeDimensions(props.id, null, null)
-  }
+  },
 })
 
 function handleTextSave(newText: string) {
@@ -234,7 +212,7 @@ function handleEditCancel() {
       :is-editing="isEditing"
       :readonly="data.hidden === true"
       max-width="150px"
-      text-align="center"
+      :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"
       @cancel="handleEditCancel"

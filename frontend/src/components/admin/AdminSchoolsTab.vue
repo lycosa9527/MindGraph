@@ -7,13 +7,14 @@ import { onMounted, ref } from 'vue'
 
 import { DocumentCopy, Loading, Plus, Refresh, Share } from '@element-plus/icons-vue'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 
 import AdminTrendChartModal from './AdminTrendChartModal.vue'
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { publicSiteUrl } = usePublicSiteUrl()
 
 const isLoading = ref(true)
 const schools = ref<Record<string, unknown>[]>([])
@@ -131,7 +132,10 @@ function openShareModal(code: string) {
 }
 
 function shareMessageText(): string {
-  return t('admin.shareInviteMessage').replace('{code}', shareInvitationCode.value)
+  return t('admin.shareInviteMessage', {
+    code: shareInvitationCode.value,
+    siteUrl: publicSiteUrl.value,
+  })
 }
 
 async function copyShareMessage() {

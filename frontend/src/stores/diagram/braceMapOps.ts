@@ -53,7 +53,11 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     ctx.pushHistory('Add brace map part')
     emitEvent('diagram:node_added', { node: null })
 
-    const layoutNodes = recalculateBraceMapLayout(data.value.nodes, data.value.connections ?? [])
+    const layoutNodes = recalculateBraceMapLayout(
+      data.value.nodes,
+      data.value.connections ?? [],
+      ctx.nodeDimensions.value
+    )
     data.value.nodes = layoutNodes
 
     return true

@@ -36,7 +36,10 @@ function radiusFromText(text: string): number {
  * Recalculate bubble map layout from existing nodes.
  * Fixed center (DEFAULT_CENTER_X/Y); topic radius from text; topic always at center.
  */
-export function recalculateBubbleMapLayout(nodes: DiagramNode[]): DiagramNode[] {
+export function recalculateBubbleMapLayout(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
+): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) return []
 
   const topicNode = nodes.find((n) => n.type === 'topic' || n.type === 'center')
@@ -50,11 +53,18 @@ export function recalculateBubbleMapLayout(nodes: DiagramNode[]): DiagramNode[] 
     })
   const nodeCount = bubbleNodes.length
   const topicText = topicNode?.text ?? ''
-  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
+  const measuredTopic = topicNode ? nodeDimensions[topicNode.id] : undefined
+  const topicR = measuredTopic
+    ? Math.max(DEFAULT_TOPIC_RADIUS, Math.max(measuredTopic.width, measuredTopic.height) / 2)
+    : Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 
-  const radii = bubbleNodes.map((n) => radiusFromText(n.text))
+  const radii = bubbleNodes.map((n) => {
+    const measured = nodeDimensions[n.id]
+    if (measured) return Math.max(measured.width, measured.height) / 2
+    return radiusFromText(n.text)
+  })
   const uniformRadius =
     bubbleNodes.length > 0 ? Math.max(DEFAULT_CONTEXT_RADIUS, ...radii) : DEFAULT_CONTEXT_RADIUS
 

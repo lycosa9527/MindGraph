@@ -2,6 +2,7 @@
 export default {
     "app.aiDisclaimer": "内容由AI生成，请仔细甄别",
     "app.brandName": "迈特教研",
+    "app.guestMainLoginPrompt": "登录后使用此区域",
     "app.browserLocale.body": "检测到浏览器语言为 {name}，是否将界面切换为对应语言？",
     "app.browserLocale.dontAsk": "不再提示",
     "app.browserLocale.keepChinese": "保持中文",

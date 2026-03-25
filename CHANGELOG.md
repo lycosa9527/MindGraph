@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.56.0] - 2026-03-26
+
+### Added
+- **Unified node dimensions**: `useNodeDimensions` composable (ResizeObserver, debounced reporting) and `nodeDimensionSlice` in the diagram store — batch vs live `layoutRecalcTrigger` modes; diagram node components report measured width/height for layout.
+- **Public site URL for admin links**: `EXTERNAL_BASE_URL` exposed via `/config/features` as `external_base_url`; `usePublicSiteUrl` composable; admin Schools tab and trend chart modals use it for invitation/share `siteUrl` text. Documented in `env.example`.
+- **Canvas toolbar — text alignment**: Left/center/right alignment controls in the text format panel; `textAlign` applied to selected nodes with i18n (`canvas.toolbar.alignLabel`, en/zh/az).
+
+### Changed
+- **Brace map layout**: Removed Dagre dependency (`useDagreLayout.ts` deleted); `useBraceMap` and `specLoader/braceMap` refactored to use measured node dimensions and updated positioning logic.
+- **Other diagram loaders & store**: Bubble map, circle map, and multi-flow map spec loaders; `vueFlowIntegration`, `specIO`, `mindMapOps`, `nodeManagement`, `nodeSwapOps`, and `braceMapOps` aligned with dimension-driven layout and recalculation.
+
+### Removed
+- **`frontend/src/composables/diagrams/useDagreLayout.ts`**: Replaced by DOM-measured layout paths.
+
 ## [5.55.0] - 2026-03-25
 
 ### Added

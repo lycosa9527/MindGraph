@@ -9,6 +9,7 @@ import { defineStore } from 'pinia'
 import { apiRequest } from '@/utils/apiClient'
 
 interface FeatureFlagsResponse {
+  external_base_url: string
   feature_rag_chunk_test: boolean
   feature_course: boolean
   feature_template: boolean
@@ -51,6 +52,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       if (!response.ok) {
         // Default to all features disabled if endpoint is not available
         const defaultFlags: FeatureFlagsResponse = {
+          external_base_url: '',
           feature_rag_chunk_test: false,
           feature_course: false,
           feature_template: false,
@@ -82,6 +84,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         return flags.value
       }
       const defaultFlags: FeatureFlagsResponse = {
+        external_base_url: '',
         feature_rag_chunk_test: false,
         feature_course: false,
         feature_template: false,

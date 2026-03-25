@@ -10,6 +10,7 @@ import { computed, inject, ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -18,6 +19,9 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const flowSubstepNodeRef = ref<HTMLElement | null>(null)
+useNodeDimensions(flowSubstepNodeRef, props.id)
 
 const isFlowMap = computed(() => props.data.diagramType === 'flow_map')
 const groupColor = computed(() => {
@@ -110,6 +114,7 @@ function handleBranchMovePointerUp(): void {
 
 <template>
   <div
+    ref="flowSubstepNodeRef"
     class="flow-substep-node flex items-center justify-center px-3 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': isFlowMap }"
     :style="nodeStyle"
@@ -123,7 +128,7 @@ function handleBranchMovePointerUp(): void {
       :node-id="id"
       :is-editing="isEditing"
       :max-width="isFlowMap ? 'none' : '94px'"
-      text-align="center"
+      :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isFlowMap"
       @save="handleTextSave"

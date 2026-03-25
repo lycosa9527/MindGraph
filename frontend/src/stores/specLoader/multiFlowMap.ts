@@ -49,7 +49,8 @@ function computeFlowNodeWidth(text: string): number {
 export function recalculateMultiFlowMapLayout(
   nodes: DiagramNode[],
   topicNodeWidth: number | null = null,
-  nodeWidths: Record<string, number> = {}
+  nodeWidths: Record<string, number> = {},
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
@@ -84,8 +85,9 @@ export function recalculateMultiFlowMapLayout(
   const nodeWidth = DEFAULT_NODE_WIDTH
   const nodeHeight = DEFAULT_NODE_HEIGHT
 
-  // Use actual topic node width if provided, otherwise use multi-flow map specific default
-  const actualTopicWidth = topicNodeWidth || MULTI_FLOW_MAP_TOPIC_WIDTH
+  // Use actual DOM-measured topic width, then explicit topicNodeWidth, then default
+  const measuredTopicW = nodeDimensions['event']?.width
+  const actualTopicWidth = measuredTopicW ?? topicNodeWidth ?? MULTI_FLOW_MAP_TOPIC_WIDTH
 
   // Calculate uniform width for visual balance
   // Find max width among all cause and effect nodes
@@ -94,14 +96,18 @@ export function recalculateMultiFlowMapLayout(
   let maxEffectWidth = nodeWidth
 
   causeNodes.forEach((node, index) => {
-    const storedWidth = nodeWidths[`cause-${index}`] || nodeWidths[node.id || '']
-    const width = storedWidth ?? computeFlowNodeWidth(node.text ?? '')
+    const newId = `cause-${index}`
+    const measured = nodeDimensions[newId]?.width ?? nodeDimensions[node.id || '']?.width
+    const storedWidth = nodeWidths[newId] || nodeWidths[node.id || '']
+    const width = measured ?? storedWidth ?? computeFlowNodeWidth(node.text ?? '')
     maxCauseWidth = Math.max(maxCauseWidth, width)
   })
 
   effectNodes.forEach((node, index) => {
-    const storedWidth = nodeWidths[`effect-${index}`] || nodeWidths[node.id || '']
-    const width = storedWidth ?? computeFlowNodeWidth(node.text ?? '')
+    const newId = `effect-${index}`
+    const measured = nodeDimensions[newId]?.width ?? nodeDimensions[node.id || '']?.width
+    const storedWidth = nodeWidths[newId] || nodeWidths[node.id || '']
+    const width = measured ?? storedWidth ?? computeFlowNodeWidth(node.text ?? '')
     maxEffectWidth = Math.max(maxEffectWidth, width)
   })
 

@@ -29,5 +29,4 @@ export { useConceptMap } from './useConceptMap'
 export * from './layoutConfig'
 
 // Shared layout utilities
-export * from './useDagreLayout'
 export * from './useFlowMapLayout'

@@ -10,6 +10,7 @@ import { computed, inject, ref } from 'vue'
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
@@ -19,6 +20,9 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const braceNodeRef = ref<HTMLElement | null>(null)
+useNodeDimensions(braceNodeRef, props.id)
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -137,6 +141,7 @@ function handleBranchMovePointerUp(): void {
 
 <template>
   <div
+    ref="braceNodeRef"
     class="brace-node flex items-center justify-center px-4 py-2 border-solid cursor-grab select-none"
     :class="{ 'pill-shape': usePillShape }"
     :style="nodeStyle"
@@ -150,7 +155,7 @@ function handleBranchMovePointerUp(): void {
       :node-id="id"
       :is-editing="isEditing"
       max-width="240px"
-      text-align="center"
+      :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"
       @cancel="handleEditCancel"

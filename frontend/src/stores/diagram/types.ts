@@ -57,6 +57,10 @@ export interface DiagramContext {
   mindMapRecalcTrigger: Ref<number>
   mindMapTopicBranchGaps: Ref<{ left: number; right: number } | null>
 
+  // Generic node dimension tracking (actual DOM-measured sizes)
+  nodeDimensions: Ref<Record<string, { width: number; height: number }>>
+  layoutRecalcTrigger: Ref<number>
+
   // Multi-flow layout state refs (Phase 4)
   nodeWidths: Ref<Record<string, number>>
   topicNodeWidth: Ref<number | null>
@@ -87,4 +91,5 @@ export interface DiagramContext {
   resetSessionEditCount: () => void
   getMindMapDescendantIds: (rootNodeId: string) => Set<string>
   getTreeMapDescendantIds: (nodeId: string) => Set<string>
+  setExpectedNodeCount: (count: number) => void
 }

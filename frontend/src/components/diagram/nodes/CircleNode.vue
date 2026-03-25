@@ -12,6 +12,7 @@ import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from '
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
@@ -25,6 +26,9 @@ import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramStore()
+
+const circleNodeRef = ref<HTMLElement | null>(null)
+useNodeDimensions(circleNodeRef, props.id)
 
 // Get theme defaults
 const { getNodeStyle } = useTheme({
@@ -241,6 +245,7 @@ function handleBranchMovePointerUp(): void {
 
 <template>
   <div
+    ref="circleNodeRef"
     class="circle-node flex items-center justify-center rounded-full border-solid select-none"
     :class="[
       isTopicNode ? 'cursor-default' : 'cursor-grab',

@@ -2,9 +2,10 @@
  * useBraceMap - Composable for Brace Map layout and data management
  * Brace maps show part-whole relationships with braces
  *
- * Uses Dagre for automatic layout (LR direction):
+ * Custom column-based layout (no Dagre dependency):
  * - Whole on the left
- * - Parts expand to the right with curly brace connectors
+ * - Parts expand to the right in left-aligned columns
+ * - Y positions computed bottom-up: leaves stack, parents center on children
  */
 import { computed, ref } from 'vue'
 
@@ -18,7 +19,6 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from './layoutConfig'
-import { type DagreEdgeInput, type DagreNodeInput, calculateDagreLayout } from './useDagreLayout'
 
 interface BraceNode {
   id: string
@@ -31,14 +31,13 @@ interface BraceMapData {
 }
 
 interface BraceMapOptions {
-  levelWidth?: number // Horizontal spacing between levels (rankSeparation)
-  nodeSpacing?: number // Vertical spacing between siblings (nodeSeparation)
+  levelWidth?: number
+  nodeSpacing?: number
   nodeWidth?: number
   nodeHeight?: number
 }
 
-// Helper to flatten brace tree for Dagre
-interface FlattenedBraceNode {
+interface FlatNode {
   id: string
   text: string
   depth: number
@@ -55,166 +54,168 @@ export function useBraceMap(options: BraceMapOptions = {}) {
   const { t } = useLanguage()
   const data = ref<BraceMapData | null>(null)
 
-  // Flatten brace tree into nodes and edges for Dagre
   function flattenBraceTree(
     node: BraceNode,
     depth: number,
     parentId: string | null,
-    dagreNodes: DagreNodeInput[],
-    dagreEdges: DagreEdgeInput[],
-    nodeInfos: Map<string, FlattenedBraceNode>,
+    flatNodes: FlatNode[],
+    edges: { source: string; target: string }[],
     counter: { value: number }
   ): void {
     const nodeId = node.id || `brace-${depth}-${counter.value++}`
 
-    dagreNodes.push({ id: nodeId, width: nodeWidth, height: nodeHeight })
-    nodeInfos.set(nodeId, { id: nodeId, text: node.text, depth })
+    flatNodes.push({ id: nodeId, text: node.text, depth })
 
     if (parentId) {
-      dagreEdges.push({ source: parentId, target: nodeId })
+      edges.push({ source: parentId, target: nodeId })
     }
 
     if (node.parts && node.parts.length > 0) {
       node.parts.forEach((part) => {
-        flattenBraceTree(part, depth + 1, nodeId, dagreNodes, dagreEdges, nodeInfos, counter)
+        flattenBraceTree(part, depth + 1, nodeId, flatNodes, edges, counter)
       })
     }
   }
 
-  // Generate layout using Dagre
+  function computeColumnLayout(
+    flatNodes: FlatNode[],
+    edges: { source: string; target: string }[]
+  ): Map<string, { x: number; y: number }> {
+    const childrenMap = new Map<string, string[]>()
+    for (const e of edges) {
+      const kids = childrenMap.get(e.source)
+      if (kids) kids.push(e.target)
+      else childrenMap.set(e.source, [e.target])
+    }
+
+    // X: column positions (left-aligned per depth)
+    const maxDepth = flatNodes.reduce((m, n) => Math.max(m, n.depth), 0)
+    const columnX = new Map<number, number>()
+    let x = DEFAULT_PADDING
+    for (let d = 0; d <= maxDepth; d++) {
+      columnX.set(d, x)
+      x += nodeWidth + levelWidth
+    }
+
+    // Y: bottom-up recursive stacking
+    const newY = new Map<string, number>()
+
+    function computeSubtreeSpan(nid: string): number {
+      const kids = childrenMap.get(nid)
+      if (!kids || kids.length === 0) return nodeHeight
+      const childSpans = kids.map(computeSubtreeSpan)
+      const childrenTotal =
+        childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * nodeSpacing
+      return Math.max(nodeHeight, childrenTotal)
+    }
+
+    function assignSubtreeY(nid: string, startY: number): number {
+      const kids = childrenMap.get(nid)
+
+      if (!kids || kids.length === 0) {
+        newY.set(nid, startY)
+        return startY + nodeHeight
+      }
+
+      const childSpans = kids.map(computeSubtreeSpan)
+      const childrenTotal =
+        childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * nodeSpacing
+
+      if (childrenTotal >= nodeHeight) {
+        let y = startY
+        for (let i = 0; i < kids.length; i++) {
+          if (i > 0) y += nodeSpacing
+          y = assignSubtreeY(kids[i], y)
+        }
+        const childTop = newY.get(kids[0]) ?? startY
+        const lastKid = kids[kids.length - 1]
+        const childBottom = (newY.get(lastKid) ?? startY) + nodeHeight
+        const childCenter = (childTop + childBottom) / 2
+        newY.set(nid, childCenter - nodeHeight / 2)
+        return y
+      }
+
+      newY.set(nid, startY)
+      const shift = (nodeHeight - childrenTotal) / 2
+      let y = startY + shift
+      for (let i = 0; i < kids.length; i++) {
+        if (i > 0) y += nodeSpacing
+        y = assignSubtreeY(kids[i], y)
+      }
+      return startY + nodeHeight
+    }
+
+    const targetIds = new Set(edges.map((e) => e.target))
+    const rootId = flatNodes.find((n) => !targetIds.has(n.id))?.id ?? flatNodes[0]?.id
+    if (rootId) {
+      assignSubtreeY(rootId, DEFAULT_PADDING)
+    }
+
+    const positions = new Map<string, { x: number; y: number }>()
+    for (const n of flatNodes) {
+      positions.set(n.id, {
+        x: columnX.get(n.depth) ?? DEFAULT_PADDING,
+        y: newY.get(n.id) ?? DEFAULT_PADDING,
+      })
+    }
+    return positions
+  }
+
   function generateLayout(): { nodes: MindGraphNode[]; edges: MindGraphEdge[] } {
     if (!data.value) return { nodes: [], edges: [] }
 
-    const nodes: MindGraphNode[] = []
-    const edges: MindGraphEdge[] = []
+    const flatNodes: FlatNode[] = []
+    const edges: { source: string; target: string }[] = []
+    flattenBraceTree(data.value.whole, 0, null, flatNodes, edges, { value: 0 })
 
-    const dagreNodes: DagreNodeInput[] = []
-    const dagreEdges: DagreEdgeInput[] = []
-    const nodeInfos = new Map<string, FlattenedBraceNode>()
+    const positions = computeColumnLayout(flatNodes, edges)
 
-    // Flatten the tree structure
-    flattenBraceTree(data.value.whole, 0, null, dagreNodes, dagreEdges, nodeInfos, { value: 0 })
-
-    // Calculate layout using Dagre (left-to-right direction for brace maps)
-    const layoutResult = calculateDagreLayout(dagreNodes, dagreEdges, {
-      direction: 'LR',
-      nodeSeparation: nodeSpacing,
-      rankSeparation: levelWidth,
-      align: 'UL',
-      marginX: DEFAULT_PADDING,
-      marginY: DEFAULT_PADDING,
-    })
-
-    // Build parent-child map from edges
-    const childrenMap = new Map<string, string[]>()
-    dagreEdges.forEach((edge) => {
-      if (!childrenMap.has(edge.source)) {
-        childrenMap.set(edge.source, [])
-      }
-      const children = childrenMap.get(edge.source)
-      if (children) {
-        children.push(edge.target)
-      }
-    })
-
-    // Calculate adjusted Y positions by centering each parent relative to its children
-    // Process from deepest level to shallowest (bottom-up)
-    const adjustedY = new Map<string, number>()
-    const maxDepth = Math.max(...Array.from(nodeInfos.values()).map((info) => info.depth))
-
-    // Initialize with original positions
-    dagreNodes.forEach((node) => {
-      const pos = layoutResult.positions.get(node.id)
+    const vfNodes: MindGraphNode[] = []
+    for (const fn of flatNodes) {
+      const pos = positions.get(fn.id)
       if (pos) {
-        adjustedY.set(node.id, pos.y)
-      }
-    })
-
-    // Process each depth level from bottom to top
-    for (let depth = maxDepth; depth >= 0; depth--) {
-      dagreNodes.forEach((node) => {
-        const info = nodeInfos.get(node.id)
-        if (info?.depth === depth) {
-          const directChildren = childrenMap.get(node.id) || []
-          if (directChildren.length > 0) {
-            // Calculate vertical center of direct children
-            let minY = Infinity
-            let maxY = -Infinity
-            directChildren.forEach((childId) => {
-              const childY = adjustedY.get(childId)
-              if (childY !== undefined) {
-                const childTop = childY
-                const childBottom = childY + nodeHeight
-                if (childTop < minY) minY = childTop
-                if (childBottom > maxY) maxY = childBottom
-              }
-            })
-            if (minY !== Infinity && maxY !== -Infinity) {
-              const childrenCenterY = (minY + maxY) / 2
-              adjustedY.set(node.id, childrenCenterY - nodeHeight / 2)
-            }
-          }
-        }
-      })
-    }
-
-    // Create VueFlow nodes with adjusted positions
-    dagreNodes.forEach((dagreNode) => {
-      const info = nodeInfos.get(dagreNode.id)
-      const pos = layoutResult.positions.get(dagreNode.id)
-      const adjustedPosY = adjustedY.get(dagreNode.id)
-
-      if (info && pos) {
-        nodes.push({
-          id: dagreNode.id,
-          type: info.depth === 0 ? 'topic' : 'brace',
-          position: { x: pos.x, y: adjustedPosY !== undefined ? adjustedPosY : pos.y },
+        vfNodes.push({
+          id: fn.id,
+          type: fn.depth === 0 ? 'topic' : 'brace',
+          position: pos,
           data: {
-            label: info.text,
-            nodeType: info.depth === 0 ? 'topic' : 'brace',
+            label: fn.text,
+            nodeType: fn.depth === 0 ? 'topic' : 'brace',
             diagramType: 'brace_map',
-            isDraggable: info.depth > 0,
+            isDraggable: fn.depth > 0,
             isSelectable: true,
           },
-          draggable: info.depth > 0,
+          draggable: fn.depth > 0,
         })
       }
-    })
+    }
 
-    // Create edges
-    dagreEdges.forEach((edge) => {
-      edges.push({
-        id: `edge-${edge.source}-${edge.target}`,
-        source: edge.source,
-        target: edge.target,
-        type: 'brace',
-        data: { edgeType: 'brace' as const },
-      })
-    })
+    const vfEdges: MindGraphEdge[] = edges.map((e) => ({
+      id: `edge-${e.source}-${e.target}`,
+      source: e.source,
+      target: e.target,
+      type: 'brace',
+      data: { edgeType: 'brace' as const },
+    }))
 
-    return { nodes, edges }
+    return { nodes: vfNodes, edges: vfEdges }
   }
 
-  // Convert brace map data to Vue Flow nodes
   const nodes = computed<MindGraphNode[]>(() => {
     return generateLayout().nodes
   })
 
-  // Generate edges
   const edges = computed<MindGraphEdge[]>(() => {
     return generateLayout().edges
   })
 
-  // Set brace map data
   function setData(newData: BraceMapData) {
     data.value = newData
   }
 
-  // Convert from flat diagram nodes
   function fromDiagramNodes(diagramNodes: DiagramNode[], connections: Connection[]) {
     if (diagramNodes.length === 0) return
 
-    // Find root node (the "whole")
     const targetIds = new Set(connections.map((c) => c.target))
     const rootNode =
       diagramNodes.find(
@@ -223,7 +224,6 @@ export function useBraceMap(options: BraceMapOptions = {}) {
       diagramNodes.find((n) => !targetIds.has(n.id)) ||
       diagramNodes[0]
 
-    // Build hierarchy recursively
     function buildParts(parentId: string): BraceNode[] {
       const childConnections = connections.filter((c) => c.source === parentId)
       const result: BraceNode[] = []
@@ -250,15 +250,10 @@ export function useBraceMap(options: BraceMapOptions = {}) {
     }
   }
 
-  // Add part to a node (requires selection context matching old JS behavior)
   function addPart(parentId: string, text?: string, selectedNodeId?: string): boolean {
     if (!data.value) return false
 
-    // Selection validation - if selectedNodeId is the whole, that's valid
-    // Otherwise use selectedNodeId as parentId
     const targetParentId = selectedNodeId || parentId
-
-    // Use default translated text if not provided (matching old JS behavior)
     const partText = text || t('diagram.newPart', 'New Part')
 
     function findAndAdd(node: BraceNode): boolean {
@@ -284,7 +279,6 @@ export function useBraceMap(options: BraceMapOptions = {}) {
     return findAndAdd(data.value.whole)
   }
 
-  // Remove part by id
   function removePart(partId: string) {
     if (!data.value || data.value.whole.id === partId) return
 
@@ -309,7 +303,6 @@ export function useBraceMap(options: BraceMapOptions = {}) {
     findAndRemove(data.value.whole)
   }
 
-  // Update node text
   function updateText(nodeId: string, text: string) {
     if (!data.value) return
 

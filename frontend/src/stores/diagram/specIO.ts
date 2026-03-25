@@ -26,6 +26,8 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!spec || !diagramTypeValue) return false
 
     ctx.resetSessionEditCount()
+    ctx.nodeDimensions.value = {}
+    ctx.layoutRecalcTrigger.value = 0
     useConceptMapRelationshipStore().clearAll()
 
     if (!ctx.setDiagramType(diagramTypeValue)) return false
@@ -60,6 +62,16 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (diagramTypeValue === 'multi_flow_map') {
       ctx.topicNodeWidth.value = MULTI_FLOW_MAP_TOPIC_WIDTH
     }
+
+    for (const node of nodesToStore) {
+      const ew = node.data?.estimatedWidth as number | undefined
+      const eh = node.data?.estimatedHeight as number | undefined
+      if (ew && eh && node.id) {
+        ctx.nodeDimensions.value[node.id] = { width: ew, height: eh }
+      }
+    }
+
+    ctx.setExpectedNodeCount(nodesToStore.length)
 
     ctx.data.value = {
       type: diagramTypeValue,

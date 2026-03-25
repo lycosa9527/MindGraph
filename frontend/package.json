@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.55.0",
+  "version": "5.56.0",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
@@ -21,7 +21,6 @@
     "fix": "npm run lint:fix && npm run format"
   },
   "dependencies": {
-    "@dagrejs/dagre": "^1.1.8",
     "@element-plus/icons-vue": "^2.3.1",
     "@fontsource/noto-sans": "^5.2.10",
     "@fontsource/noto-sans-arabic": "^5.2.10",

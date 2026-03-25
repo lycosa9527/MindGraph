@@ -8,6 +8,9 @@ import { type ComputedRef, computed, inject, nextTick, onMounted, onUnmounted, r
 import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
 
 import {
+  AlignCenter,
+  AlignLeft,
+  AlignRight,
   ArrowDownUp,
   Brush,
   Camera,
@@ -116,6 +119,7 @@ const textColor = ref('#000000')
 const fontWeight = ref<'normal' | 'bold'>('normal')
 const fontStyle = ref<'normal' | 'italic'>('normal')
 const textDecoration = ref<'none' | 'underline' | 'line-through' | 'underline line-through'>('none')
+const textAlign = ref<'left' | 'center' | 'right'>('center')
 
 // Text color palette: grays first, then usual colors (red, blue, green, etc.)
 const textColorPalette = [
@@ -318,6 +322,7 @@ function applyTextStyleToSelected(updates: {
   fontWeight?: 'normal' | 'bold'
   fontStyle?: 'normal' | 'italic'
   textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
+  textAlign?: 'left' | 'center' | 'right'
 }) {
   const ids = diagramStore.selectedNodes
   if (!ids.length) {
@@ -420,6 +425,11 @@ function handleToggleStrikethrough() {
   applyTextStyleToSelected({ textDecoration: textDecoration.value })
 }
 
+function handleTextAlign(align: 'left' | 'center' | 'right') {
+  textAlign.value = align
+  applyTextStyleToSelected({ textAlign: align })
+}
+
 function handleFontFamilyChange(ev: Event) {
   const val = (ev.target as HTMLSelectElement).value
   fontFamily.value = val
@@ -451,6 +461,7 @@ watch(
         if (s.fontWeight) fontWeight.value = s.fontWeight
         if (s.fontStyle) fontStyle.value = s.fontStyle
         textDecoration.value = s.textDecoration ?? 'none'
+        textAlign.value = s.textAlign ?? 'center'
         if (s.borderColor) borderColor.value = s.borderColor
         if (s.borderWidth !== undefined) borderWidth.value = s.borderWidth
         if (s.borderStyle) borderStyle.value = s.borderStyle
@@ -1655,6 +1666,47 @@ onUnmounted(() => {
                       @click="handleToggleStrikethrough"
                     >
                       S
+                    </button>
+                  </div>
+                  <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mt-2 mb-1.5">
+                    {{ t('canvas.toolbar.alignLabel') }}
+                  </div>
+                  <div class="grid grid-cols-3 gap-1.5">
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border text-sm transition-all flex items-center justify-center"
+                      :class="[
+                        textAlign === 'left'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleTextAlign('left')"
+                    >
+                      <AlignLeft :size="14" />
+                    </button>
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border text-sm transition-all flex items-center justify-center"
+                      :class="[
+                        textAlign === 'center'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleTextAlign('center')"
+                    >
+                      <AlignCenter :size="14" />
+                    </button>
+                    <button
+                      type="button"
+                      class="format-btn min-w-[1.75rem] h-7 rounded border text-sm transition-all flex items-center justify-center"
+                      :class="[
+                        textAlign === 'right'
+                          ? 'border-blue-500 bg-blue-50 text-blue-700'
+                          : 'border-gray-200 bg-gray-50 text-gray-600 hover:border-gray-300 hover:bg-gray-100',
+                      ]"
+                      @click="handleTextAlign('right')"
+                    >
+                      <AlignRight :size="14" />
                     </button>
                   </div>
                 </div>

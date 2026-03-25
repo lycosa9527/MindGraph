@@ -13,6 +13,7 @@ import { ElIcon } from 'element-plus'
 import { Menu } from '@element-plus/icons-vue'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import { useDiagramStore } from '@/stores'
 import { focusQuestionMutedParts } from '@/stores/diagram/diagramDefaultLabels'
@@ -24,6 +25,9 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const conceptNodeRef = ref<HTMLElement | null>(null)
+useNodeDimensions(conceptNodeRef, props.id)
 
 const diagramStore = useDiagramStore()
 
@@ -164,6 +168,7 @@ function handleLinkDrop(event: DragEvent) {
     </div>
 
     <div
+      ref="conceptNodeRef"
       class="concept-node concept-node-pill flex items-center justify-center px-4 py-2 cursor-grab select-none border-solid"
       :class="{ 'concept-topic': isTopic }"
       :style="nodeStyle"
@@ -314,7 +319,7 @@ function handleLinkDrop(event: DragEvent) {
         :node-id="id"
         :is-editing="isEditing"
         :max-width="isTopic ? '300px' : '150px'"
-        text-align="center"
+        :text-align="data.style?.textAlign || 'center'"
         :text-decoration="data.style?.textDecoration || 'none'"
         :muted-tail-split="focusQuestionMutedTailSplit"
         :sync-baseline-on-tab="conceptMapSyncBaselineOnTab"

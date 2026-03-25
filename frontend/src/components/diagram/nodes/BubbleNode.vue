@@ -7,6 +7,7 @@
 import { computed, ref } from 'vue'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -15,6 +16,9 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const bubbleNodeRef = ref<HTMLElement | null>(null)
+useNodeDimensions(bubbleNodeRef, props.id)
 
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
@@ -61,6 +65,7 @@ function handleEditCancel() {
 
 <template>
   <div
+    ref="bubbleNodeRef"
     class="bubble-node flex items-center justify-center rounded-full border-solid cursor-grab select-none"
     :style="nodeStyle"
   >
@@ -70,7 +75,7 @@ function handleEditCancel() {
       :node-id="id"
       :is-editing="isEditing"
       max-width="100px"
-      text-align="center"
+      :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       text-class="px-3 py-2"
       @save="handleTextSave"

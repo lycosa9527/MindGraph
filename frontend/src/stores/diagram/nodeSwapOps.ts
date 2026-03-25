@@ -75,7 +75,10 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
     const srcText = bubbles[srcIdx].text
     bubbles[srcIdx].text = bubbles[tgtIdx].text
     bubbles[tgtIdx].text = srcText
-    const recalculatedNodes = recalculateBubbleMapLayout(ctx.data.value.nodes)
+    const recalculatedNodes = recalculateBubbleMapLayout(
+      ctx.data.value.nodes,
+      ctx.nodeDimensions.value
+    )
     const recalcBubbles = recalculatedNodes.filter(
       (n) => (n.type === 'bubble' || n.type === 'child') && n.id.startsWith('bubble-')
     )
@@ -353,7 +356,11 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
     ctx.data.value.connections = newConnections
 
-    const layoutNodes = recalculateBraceMapLayout(ctx.data.value.nodes, newConnections)
+    const layoutNodes = recalculateBraceMapLayout(
+      ctx.data.value.nodes,
+      newConnections,
+      ctx.nodeDimensions.value
+    )
     ctx.data.value.nodes = layoutNodes
     return true
   }
@@ -403,7 +410,8 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
 
       const layoutNodes = recalculateBraceMapLayout(
         ctx.data.value.nodes,
-        ctx.data.value.connections
+        ctx.data.value.connections,
+        ctx.nodeDimensions.value
       )
       ctx.data.value.nodes = layoutNodes
       success = true

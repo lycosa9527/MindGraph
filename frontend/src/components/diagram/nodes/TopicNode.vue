@@ -4,11 +4,12 @@
  * Used as the main/central node in bubble maps, mind maps, etc.
  * Supports inline text editing on double-click
  */
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
@@ -167,11 +168,11 @@ const nodeStyle = computed(() => {
     }
   }
 
-  // Set default width for multi-flow map topic nodes (optimized for "事件")
+  // Multi-flow map topic: adaptive width so node grows/shrinks with text
   if (isMultiFlowMap.value && dynamicWidth.value === null) {
     return {
       ...baseStyle,
-      width: '90px',
+      width: 'max-content',
       minWidth: '90px',
     }
   }
@@ -214,34 +215,12 @@ const topicNodeRef = ref<HTMLDivElement | null>(null)
 
 const diagramStore = useDiagramStore()
 
-let resizeObserver: ResizeObserver | null = null
-
-function reportMindMapDimensions(): void {
-  if (!isMindMap.value || !topicNodeRef.value) return
-  const w = topicNodeRef.value.offsetWidth
-  const h = topicNodeRef.value.offsetHeight
-  if (w > 0) {
+useNodeDimensions(topicNodeRef, props.id, {
+  onResize(w, h) {
+    if (!isMindMap.value) return
     diagramStore.setMindMapTopicWidth(w)
-  }
-  if (h > 0) {
     diagramStore.setMindMapNodeDimensions(props.id, null, h)
-  }
-}
-
-onMounted(() => {
-  if (isMindMap.value && topicNodeRef.value) {
-    resizeObserver = new ResizeObserver(() => {
-      reportMindMapDimensions()
-    })
-    resizeObserver.observe(topicNodeRef.value)
-  }
-})
-
-onUnmounted(() => {
-  if (resizeObserver) {
-    resizeObserver.disconnect()
-    resizeObserver = null
-  }
+  },
 })
 
 function handleTextSave(newText: string) {
@@ -309,7 +288,7 @@ function handleWidthChange(width: number) {
       :is-editing="isEditing"
       :readonly="data.hidden === true"
       max-width="300px"
-      text-align="center"
+      :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"
       @cancel="handleEditCancel"

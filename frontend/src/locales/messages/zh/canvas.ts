@@ -35,6 +35,7 @@ export default {
     "canvas.toolbar.addSubstepHistory": "添加子步骤",
     "canvas.toolbar.aiGenerate": "AI生成图示",
     "canvas.toolbar.aiGenerating": "生成中…",
+    "canvas.toolbar.alignLabel": "对齐",
     "canvas.toolbar.analogyPairAdded": "已添加类比对",
     "canvas.toolbar.applied": "已应用",
     "canvas.toolbar.attributeAdded": "已添加新属性",

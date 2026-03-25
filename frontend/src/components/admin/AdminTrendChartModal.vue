@@ -12,7 +12,7 @@ import { Delete, Loading, Lock, Refresh, Share, Unlock } from '@element-plus/ico
 
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 
 Chart.register(...registerables)
@@ -38,6 +38,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
+const { publicSiteUrl } = usePublicSiteUrl()
 
 const chartTitle = ref('')
 const chartLoading = ref(false)
@@ -392,7 +393,10 @@ async function removeManager(userId: number) {
 }
 
 function shareMessageText(): string {
-  return t('admin.shareInviteMessage').replace('{code}', invitationCode.value)
+  return t('admin.shareInviteMessage', {
+    code: invitationCode.value,
+    siteUrl: publicSiteUrl.value,
+  })
 }
 
 async function copyShareMessage() {

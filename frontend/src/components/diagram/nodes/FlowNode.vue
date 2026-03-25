@@ -13,6 +13,7 @@ import { X } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
 import { eventBus } from '@/composables/useEventBus'
+import { useNodeDimensions } from '@/composables/useNodeDimensions'
 import { useTheme } from '@/composables/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
@@ -23,6 +24,9 @@ import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 import InlineEditableText from './InlineEditableText.vue'
 
 const props = defineProps<MindGraphNodeProps>()
+
+const flowNodeRef = ref<HTMLElement | null>(null)
+useNodeDimensions(flowNodeRef, props.id)
 
 const { t } = useLanguage()
 
@@ -218,6 +222,7 @@ function handleBranchMovePointerUp(): void {
 
 <template>
   <div
+    ref="flowNodeRef"
     class="flow-node flex items-center justify-center px-5 py-3 border-solid cursor-grab select-none relative"
     :class="{ 'pill-shape': isPillShape, 'multi-flow-map-node': isMultiFlowMap }"
     :style="nodeStyle"
@@ -245,7 +250,7 @@ function handleBranchMovePointerUp(): void {
       :node-id="id"
       :is-editing="isEditing"
       :max-width="isPillShape ? 'none' : '200px'"
-      text-align="center"
+      :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isPillShape"
       @save="handleTextSave"

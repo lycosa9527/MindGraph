@@ -162,7 +162,7 @@ export default {
     "admin.searchUserByNameOrPhone": "Search by name or phone",
     "admin.selectSchool": "Select school",
     "admin.setManager": "Set as Manager",
-    "admin.shareInviteMessage": "Dear School Administrator, we cordially invite you and your school team to experience MindGraph — our AI-powered mind map generation software, dedicated to developing teaching information platforms. Your school's exclusive invitation code is: {code} Please visit mg.mingspringedu.com to complete registration and begin efficient, intuitive visual collaboration. We look forward to contributing to your school's educational innovation.",
+    "admin.shareInviteMessage": "Dear School Administrator, we cordially invite you and your school team to experience MindGraph — our AI-powered mind map generation software, dedicated to developing teaching information platforms. Your school's exclusive invitation code is: {code} Please visit {siteUrl} to complete registration and begin efficient, intuitive visual collaboration. We look forward to contributing to your school's educational innovation.",
     "admin.shareInviteTitle": "Share Invitation",
     "admin.source": "Source",
     "admin.sourceDatabase": "Database",

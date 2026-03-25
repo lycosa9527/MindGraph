@@ -13,6 +13,33 @@ import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabH
 import { emitEvent, getMindMapCurveExtents } from './events'
 import type { DiagramContext } from './types'
 
+/**
+ * Retain DOM-measured widths/heights for node IDs that still exist after a
+ * tree rebuild.  Nodes whose IDs survived the rebuild kept the same text, so
+ * their DOM dimensions are unchanged.  Dropping only the stale entries avoids
+ * a flicker where `recalculateMindMapColumnPositions` falls back to the less
+ * accurate `estimateNodeWidth` heuristic for nodes whose ResizeObservers
+ * won't re-fire (the DOM size didn't change, so the observer stays silent).
+ */
+function retainMeasuredDimensions(
+  ctx: DiagramContext,
+  newNodes: DiagramNode[]
+): void {
+  const surviving = new Set(newNodes.map((n) => n.id))
+
+  const widths = ctx.mindMapNodeWidths.value
+  for (const id of Object.keys(widths)) {
+    if (!surviving.has(id)) delete widths[id]
+  }
+
+  const heights = ctx.mindMapNodeHeights.value
+  for (const id of Object.keys(heights)) {
+    if (!surviving.has(id)) delete heights[id]
+  }
+
+  ctx.mindMapRecalcTrigger.value++
+}
+
 export function useMindMapOpsSlice(ctx: DiagramContext) {
   const { type, data, selectedNodes, mindMapCurveExtentBaseline } = ctx
 
@@ -40,8 +67,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches,
       preserveLeftRight: true,
     })
-    ctx.mindMapNodeWidths.value = {}
-    ctx.mindMapNodeHeights.value = {}
+    retainMeasuredDimensions(ctx, result.nodes)
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
@@ -80,8 +106,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    ctx.mindMapNodeWidths.value = {}
-    ctx.mindMapNodeHeights.value = {}
+    retainMeasuredDimensions(ctx, result.nodes)
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
@@ -148,8 +173,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    ctx.mindMapNodeWidths.value = {}
-    ctx.mindMapNodeHeights.value = {}
+    retainMeasuredDimensions(ctx, result.nodes)
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
@@ -313,8 +337,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       rightBranches: spec.rightBranches,
       preserveLeftRight: true,
     })
-    ctx.mindMapNodeWidths.value = {}
-    ctx.mindMapNodeHeights.value = {}
+    retainMeasuredDimensions(ctx, result.nodes)
 
     const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
     console.log('[BranchMove] curve length after', extentsAfter)

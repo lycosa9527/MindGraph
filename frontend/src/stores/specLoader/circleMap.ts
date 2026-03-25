@@ -16,7 +16,10 @@ import { calculateCircleMapLayout } from './utils'
  * Recalculate circle map layout from existing nodes.
  * Fixed font; circles from text; topic and context noWrap.
  */
-export function recalculateCircleMapLayout(nodes: DiagramNode[]): DiagramNode[] {
+export function recalculateCircleMapLayout(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
+): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
   }

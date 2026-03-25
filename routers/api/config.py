@@ -4,6 +4,8 @@ Config API Router
 
 Provides configuration and feature flags to the frontend.
 """
+import os
+
 from fastapi import APIRouter
 from pydantic import BaseModel
 
@@ -14,6 +16,7 @@ router = APIRouter(prefix="/config", tags=["config"])
 
 class FeatureFlagsResponse(BaseModel):
     """Feature flags response model."""
+    external_base_url: str
     feature_rag_chunk_test: bool
     feature_course: bool
     feature_template: bool
@@ -33,7 +36,9 @@ class FeatureFlagsResponse(BaseModel):
 @router.get("/features", response_model=FeatureFlagsResponse)
 async def get_feature_flags():
     """Get feature flags configuration."""
+    external_base = os.getenv('EXTERNAL_BASE_URL', '').strip().rstrip('/')
     return FeatureFlagsResponse(
+        external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
         feature_course=config.FEATURE_COURSE,
         feature_template=config.FEATURE_TEMPLATE,
