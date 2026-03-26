@@ -27,16 +27,19 @@ def wipe_public_schema_before_restore(
     engine: Optional[Engine] = None,
 ) -> bool:
     """
-    Drop the public schema so pg_restore can rebuild without --clean.
+    Drop the public schema and recreate an empty ``public`` schema.
 
-    pg_restore --clean can fail when dependent FKs block dropping primary keys
-    (e.g. feature_access_user_grants -> users_pkey). A CASCADE drop matches
-    full data replacement for scripted and admin imports.
+    Replaces ``--clean`` on pg_restore when FKs block drops. After
+    ``DROP SCHEMA public CASCADE`` there is no ``public`` (unlike a new DB from
+    ``createdb``), so ``CREATE TYPE public....`` in the archive would fail
+    unless we create the schema first.
     """
     try:
         if engine is not None:
             with engine.begin() as conn:
                 conn.execute(text("DROP SCHEMA IF EXISTS public CASCADE"))
+                conn.execute(text("CREATE SCHEMA public"))
+                conn.execute(text("GRANT ALL ON SCHEMA public TO PUBLIC"))
         else:
             if psycopg2 is None:
                 logger.error(
@@ -48,12 +51,14 @@ def wipe_public_schema_before_restore(
             try:
                 with conn.cursor() as cur:
                     cur.execute("DROP SCHEMA IF EXISTS public CASCADE")
+                    cur.execute("CREATE SCHEMA public")
+                    cur.execute("GRANT ALL ON SCHEMA public TO PUBLIC")
             finally:
                 conn.close()
     except Exception as exc:
-        logger.error("Failed to drop public schema: %s", exc)
+        logger.error("Failed to reset public schema: %s", exc)
         return False
     logger.info(
-        "Dropped schema public (CASCADE); pg_restore will recreate from dump",
+        "Reset public schema (DROP CASCADE, empty CREATE); pg_restore will load the dump",
     )
     return True
