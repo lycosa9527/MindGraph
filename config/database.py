@@ -363,7 +363,73 @@ def _ensure_chat_channels_display_order(db_engine):
         )
 
 
-def init_db():
+def _seed_organizations_if_empty() -> None:
+    """Insert organizations when the table is empty (INVITATION_CODES or demo defaults)."""
+    db = SessionLocal()
+    try:
+        if db.query(Organization).count() != 0:
+            logger.info("Organizations already exist, skipping seed")
+            return
+
+        env_codes = None
+        if load_invitation_codes is not None:
+            env_codes = load_invitation_codes()
+        seeded_orgs = []
+        if env_codes:
+            for org_code, (invite, _expiry) in env_codes.items():
+                seeded_orgs.append(
+                    Organization(
+                        code=org_code,
+                        name=org_code,
+                        invitation_code=invite,
+                        created_at=datetime.utcnow()
+                    )
+                )
+            logger.info("Seeding organizations from .env: %d entries", len(seeded_orgs))
+        else:
+            seeded_orgs = [
+                Organization(
+                    code="DEMO-001",
+                    name="Demo School for Testing",
+                    invitation_code="DEMO-A1B2C",
+                    created_at=datetime.utcnow()
+                ),
+                Organization(
+                    code="SPRING-EDU",
+                    name="Springfield Elementary School",
+                    invitation_code="SPRN-9K2L1",
+                    created_at=datetime.utcnow()
+                ),
+                Organization(
+                    code="BJ-001",
+                    name="Beijing First High School",
+                    invitation_code="BJXX-M3N4P",
+                    created_at=datetime.utcnow()
+                ),
+                Organization(
+                    code="SH-042",
+                    name="Shanghai International School",
+                    invitation_code="SHXX-Q5R6S",
+                    created_at=datetime.utcnow()
+                )
+            ]
+            logger.info(
+                "Seeding default demo organizations (no INVITATION_CODES in .env)"
+            )
+
+        if seeded_orgs:
+            db.add_all(seeded_orgs)
+            db.commit()
+            logger.info("Seeded %d organizations", len(seeded_orgs))
+
+    except Exception as e:
+        logger.error("Error seeding database: %s", e)
+        db.rollback()
+    finally:
+        db.close()
+
+
+def init_db(seed_organizations: bool = True):
     """
     Initialize database: create tables, run migrations, and seed demo data.
 
@@ -371,7 +437,12 @@ def init_db():
     1. Ensures all models are registered with Base metadata
     2. Creates missing tables using inspector to avoid conflicts
     3. Runs migrations to add missing columns
-    4. Seeds initial data if needed
+    4. Applies one-off column fixes (workshop, diagrams, language prefs)
+    5. Seeds organizations from INVITATION_CODES / defaults when seed_organizations is True
+
+    Args:
+        seed_organizations: When True (default), seed org rows if the table is empty.
+            Set False for schema-only runs (e.g. scripts/db/run_migrations.py --schema-only).
     """
     # Verify models are registered by checking Base.metadata contains their tables
     # This ensures models are loaded and registered before table creation
@@ -534,71 +605,11 @@ def init_db():
     ensure_diagram_workshop_session_columns(engine)
     ensure_user_language_preferences_columns(engine)
 
-    # Seed organizations
-    db = SessionLocal()
-    try:
-        # Check if organizations already exist
-        if db.query(Organization).count() == 0:
-            # Prefer seeding from .env INVITATION_CODES if provided
-            env_codes = None
-            if load_invitation_codes is not None:
-                env_codes = load_invitation_codes()
-            seeded_orgs = []
-            if env_codes:
-                for org_code, (invite, _expiry) in env_codes.items():
-                    # Use org_code as name fallback; admin can edit later
-                    seeded_orgs.append(
-                        Organization(
-                            code=org_code,
-                            name=org_code,
-                            invitation_code=invite,
-                            created_at=datetime.utcnow()
-                        )
-                    )
-                logger.info("Seeding organizations from .env: %d entries", len(seeded_orgs))
-            else:
-                # Fallback demo data if .env not configured
-                # Format: AAAA-XXXXX (4 uppercase letters, dash, 5 uppercase letters/digits)
-                seeded_orgs = [
-                    Organization(
-                        code="DEMO-001",
-                        name="Demo School for Testing",
-                        invitation_code="DEMO-A1B2C",
-                        created_at=datetime.utcnow()
-                    ),
-                    Organization(
-                        code="SPRING-EDU",
-                        name="Springfield Elementary School",
-                        invitation_code="SPRN-9K2L1",
-                        created_at=datetime.utcnow()
-                    ),
-                    Organization(
-                        code="BJ-001",
-                        name="Beijing First High School",
-                        invitation_code="BJXX-M3N4P",
-                        created_at=datetime.utcnow()
-                    ),
-                    Organization(
-                        code="SH-042",
-                        name="Shanghai International School",
-                        invitation_code="SHXX-Q5R6S",
-                        created_at=datetime.utcnow()
-                    )
-                ]
-                logger.info("Seeding default demo organizations (no INVITATION_CODES in .env)")
+    if not seed_organizations:
+        logger.info("Skipping organization seed (seed_organizations=False)")
+        return
 
-            if seeded_orgs:
-                db.add_all(seeded_orgs)
-                db.commit()
-                logger.info("Seeded %d organizations", len(seeded_orgs))
-        else:
-            logger.info("Organizations already exist, skipping seed")
-
-    except Exception as e:
-        logger.error("Error seeding database: %s", e)
-        db.rollback()
-    finally:
-        db.close()
+    _seed_organizations_if_empty()
 
 
 def get_db():

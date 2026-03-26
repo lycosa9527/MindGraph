@@ -54,8 +54,40 @@ from services.infrastructure.process.process_manager import (
 )
 from services.infrastructure.utils.port_manager import ShutdownErrorFilter
 from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
+from services.infrastructure.process import _port_utils
 
 logger = logging.getLogger(__name__)
+
+
+def _exit_port_in_use(port: int, pid: int | None = None) -> None:
+    """Print port conflict help and exit with status 1."""
+    print(f"\n[ERROR] Port {port} is already in use!")
+    print(f"        Another process is using port {port}.")
+    if pid is not None:
+        print(f"        Detected process ID: {pid}")
+    print("\n        Solutions:")
+    print(f"        1. Stop the process using port {port}:")
+    if sys.platform == "win32":
+        print(f"           netstat -ano | findstr :{port}")
+        print("           taskkill /PID <PID> /F")
+    else:
+        print(f"           lsof -ti:{port} | xargs kill -9")
+        print(f"           or: sudo fuser -k {port}/tcp")
+    print("        2. Use a different port:")
+    print("           Set PORT=<different_port> in .env")
+    print("           Example: PORT=9528")
+    print("        3. Check if another MindGraph instance is running")
+    sys.exit(1)
+
+
+def _ensure_http_port_free(host: str, port: int) -> None:
+    """Exit if the configured HTTP listen port is already bound."""
+    connect_host = (
+        "127.0.0.1" if host in ("0.0.0.0", "::", "::0") else host
+    )
+    in_use, occupant_pid = _port_utils.check_port_in_use(connect_host, port)
+    if in_use:
+        _exit_port_in_use(port, occupant_pid)
 
 
 def run_server() -> None:
@@ -126,6 +158,8 @@ def run_server() -> None:
         print("=" * 80)
         print("Press Ctrl+C to stop the server")
         print()
+
+        _ensure_http_port_free(host, port)
 
         # ========================================================================
         # DEPENDENCY CHECKING AND STARTUP SEQUENCE
@@ -341,24 +375,12 @@ def run_server() -> None:
         except OSError as e:
             if (
                 e.errno == 98
+                or e.errno == 48
+                or e.errno == 10048
                 or "Address already in use" in str(e)
                 or "address is already in use" in str(e).lower()
             ):
-                print(f"\n[ERROR] Port {port} is already in use!")
-                print(f"        Another process is using port {port}.")
-                print("\n        Solutions:")
-                print(f"        1. Stop the process using port {port}:")
-                if sys.platform == "win32":
-                    print(f"           netstat -ano | findstr :{port}")
-                    print("           taskkill /PID <PID> /F")
-                else:
-                    print(f"           lsof -ti:{port} | xargs kill -9")
-                    print(f"           or: sudo fuser -k {port}/tcp")
-                print("        2. Use a different port:")
-                print("           Set PORT=<different_port> in .env")
-                print("           Example: PORT=9528")
-                print("        3. Check if another MindGraph instance is running")
-                sys.exit(1)
+                _exit_port_in_use(port)
             else:
                 raise
         except KeyboardInterrupt:

@@ -80,7 +80,6 @@ _backup_dir_env = os.getenv("BACKUP_DIR", "backup")
 BACKUP_DIR = Path(_backup_dir_env) if Path(_backup_dir_env).is_absolute() else project_root / _backup_dir_env
 DUMP_PREFIX = "mindgraph.postgresql"
 DUMP_EXT = ".dump"
-LAST_IMPORT_FILE = BACKUP_DIR / ".last_import_timestamp"
 
 
 def _find_process_on_port(port: int) -> Optional[int]:
@@ -584,23 +583,25 @@ def run_restore(db_url: str, backup_path: Path) -> bool:
     return True
 
 
-def list_dumps() -> List[Path]:
+def list_dumps(backup_dir: Optional[Path] = None) -> List[Path]:
     """List dump files in backup dir, newest first."""
-    if not BACKUP_DIR.exists():
+    bdir = backup_dir or BACKUP_DIR
+    if not bdir.exists():
         return []
     dumps = [
-        p for p in BACKUP_DIR.glob(f"{DUMP_PREFIX}.*{DUMP_EXT}")
+        p for p in bdir.glob(f"{DUMP_PREFIX}.*{DUMP_EXT}")
         if p.is_file()
     ]
     dumps.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return dumps
 
 
-def select_dump_file() -> Optional[Path]:
+def select_dump_file(backup_dir: Optional[Path] = None) -> Optional[Path]:
     """Let user select dump file from backup. Returns Path or None."""
-    dumps = list_dumps()
+    bdir = backup_dir or BACKUP_DIR
+    dumps = list_dumps(bdir)
     if not dumps:
-        logger.error("No dump files found in %s", BACKUP_DIR)
+        logger.error("No dump files found in %s", bdir)
         return None
     if len(dumps) == 1:
         return dumps[0]
@@ -689,21 +690,22 @@ def dump_command(live: bool) -> int:
     return 0
 
 
-def _read_last_import_timestamp() -> Optional[str]:
+def _read_last_import_timestamp(backup_dir: Path) -> Optional[str]:
     """Read last import timestamp from backup dir. Returns ISO string or None."""
-    if not LAST_IMPORT_FILE.exists():
+    path = backup_dir / ".last_import_timestamp"
+    if not path.exists():
         return None
     try:
-        return LAST_IMPORT_FILE.read_text(encoding="utf-8").strip() or None
+        return path.read_text(encoding="utf-8").strip() or None
     except Exception:
         return None
 
 
-def _write_last_import_timestamp(ts: str) -> None:
+def _write_last_import_timestamp(backup_dir: Path, ts: str) -> None:
     """Write last import timestamp after successful import."""
     try:
-        BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-        LAST_IMPORT_FILE.write_text(ts, encoding="utf-8")
+        backup_dir.mkdir(parents=True, exist_ok=True)
+        (backup_dir / ".last_import_timestamp").write_text(ts, encoding="utf-8")
     except Exception as e:
         logger.warning("Could not write last import timestamp: %s", e)
 
@@ -755,13 +757,28 @@ def _confirm_overwrite(dump_ts: str, last_import_ts: Optional[str]) -> bool:
         return False
 
 
-def import_command(live: bool) -> int:
-    """Import flow. Returns exit code. Uses timestamp comparison, prompts to overwrite."""
-    if "postgresql" not in (DATABASE_URL or "").lower():
+def import_command(
+    live: bool,
+    *,
+    db_url: Optional[str] = None,
+    db_engine: Optional[Any] = None,
+    backup_dir: Optional[Path] = None,
+) -> int:
+    """
+    Import flow. Returns exit code. Uses timestamp comparison, prompts to overwrite.
+
+    Optional kwargs override module globals (DATABASE_URL, engine, BACKUP_DIR) so callers
+    such as run_migrations.py can pass a resolved backup folder after loading .env.
+    """
+    db_url = db_url or DATABASE_URL
+    db_engine = db_engine or engine
+    bdir = backup_dir or BACKUP_DIR
+
+    if "postgresql" not in (db_url or "").lower():
         logger.error("DATABASE_URL is not PostgreSQL")
         return 1
 
-    dump_path = select_dump_file()
+    dump_path = select_dump_file(bdir)
     if not dump_path:
         return 1
 
@@ -783,7 +800,7 @@ def import_command(live: bool) -> int:
         return 1
 
     dump_ts = manifest.get("timestamp", "")
-    last_import_ts = _read_last_import_timestamp()
+    last_import_ts = _read_last_import_timestamp(bdir)
     manifest_tables = manifest.get("total_tables", len(expected_counts))
     manifest_columns = manifest.get("total_columns", 0)
     manifest_records = manifest.get("total_records", sum(expected_counts.values()))
@@ -801,10 +818,10 @@ def import_command(live: bool) -> int:
         logger.info("[DRY RUN] Would REPLACE all existing data (prompt on execute)")
         return 0
 
-    if not ensure_postgresql_running(DATABASE_URL):
+    if not ensure_postgresql_running(db_url):
         return 1
 
-    current_counts = get_table_row_counts(engine)
+    current_counts = get_table_row_counts(db_engine)
     manifest_tables_set = set(expected_counts.keys())
     current_tables = set(current_counts.keys())
     dump_newer_tables = manifest_tables_set - current_tables
@@ -831,13 +848,13 @@ def import_command(live: bool) -> int:
     with DumpImportProgress("Import", 5, import_stages) as prog:
         prog.update(0, "Manifest loaded")
         prog.update(1, "Schema checked")
-        if not run_restore(DATABASE_URL, dump_path):
+        if not run_restore(db_url, dump_path):
             return 1
         prog.update(2, "pg_restore done")
 
         try:
             if reset_postgresql_sequences:
-                reset_postgresql_sequences(engine)
+                reset_postgresql_sequences(db_engine)
                 logger.info("PostgreSQL sequences reset")
             else:
                 logger.warning("Could not reset sequences (optional module not available)")
@@ -845,7 +862,7 @@ def import_command(live: bool) -> int:
             logger.warning("Sequence reset had issues: %s", e)
         prog.update(3, "Sequences reset")
 
-        actual_counts = get_table_row_counts(engine)
+        actual_counts = get_table_row_counts(db_engine)
         prog.update(4, "Verifying counts")
         prog.update(5, "Complete")
 
@@ -876,11 +893,11 @@ def import_command(live: bool) -> int:
             logger.error("  %s: expected %d, got %d", table, exp, act)
         return 1
 
-    tables, columns, total_records, _ = get_db_stats(engine)
+    tables, columns, total_records, _ = get_db_stats(db_engine)
     log_db_summary(tables, columns, total_records)
     logger.info("Import complete. All table counts match manifest.")
     if dump_ts:
-        _write_last_import_timestamp(dump_ts)
+        _write_last_import_timestamp(bdir, dump_ts)
     return 0
 
 

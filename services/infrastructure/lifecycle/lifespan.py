@@ -216,42 +216,62 @@ async def lifespan(fastapi_app: FastAPI):
     # Initialize Database with corruption detection and recovery
     if is_main_worker:
         logger.debug("[LIFESPAN] Initializing database...")
-    try:
-        # Check PostgreSQL connectivity on startup (uses Redis lock to ensure only one worker checks)
-        # If unreachable, startup is aborted and a critical alert is sent
+    # Check PostgreSQL connectivity on startup (uses Redis lock to ensure only one worker checks)
+    # If unreachable, startup is aborted and a critical alert is sent
+    if is_main_worker:
+        logger.debug("[LIFESPAN] Checking database integrity...")
+    if not check_database_on_startup():
         if is_main_worker:
-            logger.debug("[LIFESPAN] Checking database integrity...")
-        if not check_database_on_startup():
-            if is_main_worker:
-                logger.critical("Database recovery failed or was aborted. Shutting down.")
-            try:
-                CriticalAlertService.send_startup_failure_alert_sync(
-                    component="Database",
-                    error_message="Database recovery failed or was aborted",
-                    details=(
-                        "Database integrity check failed and recovery was not successful. "
-                        "Manual intervention required."
-                    )
+            logger.critical("Database recovery failed or was aborted. Shutting down.")
+        try:
+            CriticalAlertService.send_startup_failure_alert_sync(
+                component="Database",
+                error_message="Database recovery failed or was aborted",
+                details=(
+                    "Database integrity check failed and recovery was not successful. "
+                    "Manual intervention required."
                 )
-            except Exception as alert_error:  # pylint: disable=broad-except
-                if is_main_worker:
-                    logger.error("Failed to send startup failure alert: %s", alert_error)
-            raise SystemExit(1)
-        # Initialize database connection
-        # Only log from first worker to avoid duplicate messages
-        if is_main_worker:
-            logger.debug("Database integrity verified")
-            logger.debug("[LIFESPAN] Connecting to PostgreSQL database...")
-            logger.debug("[LIFESPAN] Verifying PostgreSQL tables...")
-            logger.debug("[LIFESPAN] Running database migrations...")
+            )
+        except Exception as alert_error:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+        raise SystemExit(1)
+    if is_main_worker:
+        logger.debug("Database integrity verified")
+        logger.debug("[LIFESPAN] Connecting to PostgreSQL database...")
+        logger.debug("[LIFESPAN] Verifying PostgreSQL tables...")
+        logger.debug("[LIFESPAN] Running database migrations...")
 
-        # init_db() handles connection, table creation, and migrations
+    # init_db() creates tables and runs migrations — must not be swallowed or the app
+    # will serve traffic against an empty database (e.g. missing organizations table).
+    try:
         init_db()
-        if is_main_worker:
-            logger.debug("Database initialized successfully")
-            # Display demo info if in demo mode
-            display_demo_info()
+    except Exception as init_exc:
+        logger.critical(
+            "[LIFESPAN] Database schema initialization failed (init_db): %s",
+            init_exc,
+            exc_info=True,
+        )
+        try:
+            CriticalAlertService.send_startup_failure_alert_sync(
+                component="Database",
+                error_message=f"init_db failed: {init_exc}",
+                details=(
+                    "Table creation or migrations failed. Verify the PostgreSQL user can "
+                    "CREATE tables on the database and DATABASE_URL points at the "
+                    "intended database."
+                ),
+            )
+        except Exception as alert_error:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.error("Failed to send startup failure alert: %s", alert_error)
+        raise SystemExit(1) from init_exc
 
+    if is_main_worker:
+        logger.debug("Database initialized successfully")
+        display_demo_info()
+
+    try:
         # Ensure library storage directories exist on every startup
         try:
             _library_dir = Path(os.getenv("LIBRARY_STORAGE_DIR", "./storage/library"))
@@ -362,7 +382,11 @@ async def lifespan(fastapi_app: FastAPI):
             # Don't fail startup - system can work with in-memory whitelist
     except Exception as e:  # pylint: disable=broad-except
         if is_main_worker:
-            logger.error("Failed to initialize database: %s", e)
+            logger.error(
+                "Failed during post-DB startup (library dirs, cache preload, etc.): %s",
+                e,
+                exc_info=True,
+            )
 
     # Initialize LLM Service
     if is_main_worker:

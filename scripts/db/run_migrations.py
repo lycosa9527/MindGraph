@@ -1,246 +1,464 @@
 """
-Run database migrations standalone.
+MindGraph database migration (interactive; aligned with application DB startup).
 
-This script runs the database migration module to:
-1. Create missing tables
-2. Add missing columns to existing tables
-3. Fix PostgreSQL sequences
+- Schema path: same as ``config.database.init_db()`` (app startup).
+- Import path: ``pg_restore`` from ``BACKUP_DIR`` (default ``backup/``), using the
+  same rules as ``scripts/db/dump_import_postgres.py`` — each
+  ``mindgraph.postgresql.*.dump`` needs a ``*.dump.manifest.json`` beside it.
 
 Usage:
     python scripts/db/run_migrations.py
+
+Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
+All Rights Reserved
+Proprietary License
 """
-import sys
+
+from __future__ import annotations
+
+import importlib
+import importlib.util
 import logging
+import os
+import sys
 from pathlib import Path
+from typing import Any, Callable, Dict
+from urllib.parse import urlparse, urlunparse
 
-# Add project root to path
-project_root = Path(__file__).parent.parent.parent
-sys.path.insert(0, str(project_root))
+from sqlalchemy import text
+from sqlalchemy.engine import Engine
+from sqlalchemy.orm import DeclarativeMeta
 
-from config.database import Base, engine
-from utils.migration.postgresql.schema_migration import (
-    check_database_status,
-    run_migrations,
-    verify_migration_results,
-)
+# -----------------------------------------------------------------------------
+# Project root — before config.database
+# -----------------------------------------------------------------------------
+PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(PROJECT_ROOT))
+os.environ.setdefault("PYTHONPATH", str(PROJECT_ROOT))
 
-# Set up logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
-)
-logger = logging.getLogger(__name__)
+_DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
 
 
-def ensure_models_registered(base):
-    """
-    Ensure all models are imported and registered with Base.metadata.
-
-    This is important because config.database imports models, but we want
-    to ensure they're all registered before checking database status.
-
-    Args:
-        base: SQLAlchemy Base metadata object
-
-    Returns:
-        bool: True if models are registered, False otherwise
-    """
-    logger.info("Ensuring all models are registered with Base.metadata...")
-
+def _apply_env_file(path: Path) -> None:
+    """Load KEY=VALUE pairs into os.environ if not already set (bootstrap)."""
+    if not path.is_file():
+        return
     try:
-        registered_tables = set(base.metadata.tables.keys())
-        logger.info(
-            "✓ Models registered: %d table(s) in Base.metadata",
-            len(registered_tables)
-        )
-        logger.debug("Registered tables: %s", ', '.join(sorted(registered_tables)))
-        return True
-    except Exception as e:
-        logger.error("Failed to check model registration: %s", e)
-        return False
+        raw = path.read_text(encoding="utf-8")
+    except OSError:
+        return
+    for raw_line in raw.splitlines():
+        line = raw_line.strip()
+        if not line or line.startswith("#"):
+            continue
+        if "=" not in line:
+            continue
+        key, _, val = line.partition("=")
+        key = key.strip()
+        val = val.strip().strip("'").strip('"')
+        if key and key not in os.environ:
+            os.environ[key] = val
 
 
-def check_status(engine, base):
-    """
-    Check current database status using module function.
+# Ubuntu/Debian as root: match migrate_sqlite_to_postgresql default data dir
+if sys.platform != "win32":
+    try:
+        uid_zero = hasattr(os, "geteuid") and os.geteuid() == 0
+        if uid_zero and not os.getenv("POSTGRESQL_DATA_DIR"):
+            try:
+                with open("/etc/os-release", "r", encoding="utf-8") as os_file:
+                    os_release = os_file.read().lower()
+                if "ubuntu" in os_release or "debian" in os_release:
+                    os.environ["POSTGRESQL_DATA_DIR"] = "/var/lib/postgresql/mindgraph"
+            except (FileNotFoundError, OSError, PermissionError):
+                pass
+    except (AttributeError, OSError):
+        pass
 
-    Returns:
-        tuple: (expected_tables, existing_tables, missing_tables)
-    """
+
+def _mask_database_url(url: str) -> str:
+    """Redact password for logs."""
+    try:
+        parsed = urlparse(url)
+        if not parsed.password:
+            return url
+        user = parsed.username or ""
+        host = parsed.hostname or ""
+        port = f":{parsed.port}" if parsed.port else ""
+        netloc = f"{user}:****@{host}{port}"
+        masked = parsed._replace(netloc=netloc)
+        return urlunparse(masked)
+    except (ValueError, TypeError, AttributeError):
+        return url
+
+
+def _preflight_database(db_engine: Engine) -> None:
+    """Fail fast if PostgreSQL/SQLite is unreachable."""
+    with db_engine.connect() as conn:
+        conn.execute(text("SELECT 1"))
+
+
+def _configure_logging(debug: bool) -> None:
+    level = logging.DEBUG if debug else logging.INFO
+    logging.basicConfig(
+        level=level,
+        format="[%(asctime)s] %(levelname)s | %(name)s | %(message)s",
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
+
+
+def _log_model_registration_summary(base: DeclarativeMeta) -> None:
+    names = sorted(base.metadata.tables.keys())
+    logging.getLogger(__name__).info(
+        "Registered %d table(s) on Base.metadata (via config.database)",
+        len(names),
+    )
+    logging.getLogger(__name__).debug("Tables: %s", ", ".join(names))
+
+
+def _check_status(
+    db_engine: Engine,
+    base: DeclarativeMeta,
+    check_database_status_fn: Callable[..., Any],
+) -> None:
+    """Log expected vs existing tables and missing columns."""
+    logger = logging.getLogger(__name__)
     logger.info("%s", "=" * 60)
-    logger.info("STEP 1: CHECK - Current Database Status")
+    logger.info("STEP 1: CHECK — current database status")
     logger.info("%s", "=" * 60)
 
-    # Use module function to check status
-    status = check_database_status(engine, base)
-    expected_tables = status['expected_tables']
-    existing_tables = status['existing_tables']
-    missing_tables = status['missing_tables']
-    missing_columns = status['missing_columns']
+    status = check_database_status_fn(db_engine, base)
+    expected_tables = status["expected_tables"]
+    existing_tables = status["existing_tables"]
+    missing_tables = status["missing_tables"]
+    missing_columns = status["missing_columns"]
 
-    # Log status
-    logger.info("\nExpected tables in Base.metadata (%d):", len(expected_tables))
+    logger.info("Expected tables in Base.metadata (%d):", len(expected_tables))
     for table_name in sorted(expected_tables):
         logger.info("  - %s", table_name)
 
-    logger.info("\nExisting tables in database (%d):", len(existing_tables))
+    logger.info("Existing tables in database (%d):", len(existing_tables))
     for table_name in sorted(existing_tables):
         logger.info("  - %s", table_name)
 
     if missing_tables:
-        logger.warning("\n⚠ Found %d missing table(s):", len(missing_tables))
+        logger.warning("Found %d missing table(s):", len(missing_tables))
         for table_name in sorted(missing_tables):
             logger.warning("  - %s", table_name)
     else:
-        logger.info("\n✓ All expected tables exist in database")
+        logger.info("All expected tables exist in database")
 
     if missing_columns:
         missing_columns_count = sum(len(cols) for cols in missing_columns.values())
-        logger.warning("\n⚠ Found %d missing column(s) across tables:", missing_columns_count)
+        logger.warning(
+            "Found %d missing column(s) across tables:", missing_columns_count
+        )
         for table_name, missing_cols in missing_columns.items():
             logger.warning(
-                "  - Table '%s': %d missing column(s): %s",
-                table_name, len(missing_cols), ', '.join(sorted(missing_cols))
+                "  - Table '%s': %s",
+                table_name,
+                ", ".join(sorted(missing_cols)),
             )
     else:
-        logger.info("\n✓ All tables have all expected columns")
-
-    return expected_tables, existing_tables, missing_tables
+        logger.info("All existing tables have expected columns (per metadata)")
 
 
-def verify_results(engine, base, expected_tables):
-    """
-    Verify migration results using module function.
-
-    Returns:
-        bool: True if verification passed, False otherwise
-    """
-    logger.info("\n%s", "=" * 60)
-    logger.info("STEP 3: VERIFY - Migration Results")
+def _verify_results(
+    db_engine: Engine,
+    base: DeclarativeMeta,
+    expected_tables: set[str],
+    verify_migration_results_fn: Callable[..., Any],
+) -> bool:
+    """Compare live schema to metadata (tables, columns, sequences, indexes)."""
+    logger = logging.getLogger(__name__)
+    logger.info("%s", "=" * 60)
+    logger.info("VERIFY — migration results")
     logger.info("%s", "=" * 60)
 
-    verification_passed, verification_details = verify_migration_results(
-        engine, base, expected_tables
+    verification_passed, verification_details = verify_migration_results_fn(
+        db_engine, base, expected_tables
     )
 
-    # Log verification results
-    if verification_details['tables_missing']:
+    if verification_details["tables_missing"]:
         logger.error(
-            "\n✗ VERIFICATION FAILED: %d table(s) still missing:",
-            len(verification_details['tables_missing'])
+            "VERIFICATION FAILED: %d table(s) still missing:",
+            len(verification_details["tables_missing"]),
         )
-        for table_name in sorted(verification_details['tables_missing']):
+        for table_name in sorted(verification_details["tables_missing"]):
             logger.error("  - %s", table_name)
         return False
-    else:
-        logger.info("\n✓ All %d expected tables exist in database", len(expected_tables))
+    logger.info("All %d expected tables exist", len(expected_tables))
 
-    if verification_details['columns_missing']:
-        logger.error("\n✗ VERIFICATION FAILED: Some columns are still missing:")
-        for table_name, missing_cols in verification_details['columns_missing'].items():
+    if verification_details["columns_missing"]:
+        logger.error("VERIFICATION FAILED: missing columns:")
+        for table_name, missing_cols in verification_details["columns_missing"].items():
             logger.error(
-                "  ✗ Table '%s': Missing columns: %s",
-                table_name, ', '.join(sorted(missing_cols))
+                "  - Table '%s': %s",
+                table_name,
+                ", ".join(sorted(missing_cols)),
             )
         return False
-    else:
-        logger.info("✓ All tables have all expected columns")
+    logger.info("All tables have expected columns")
 
-    if verification_details['sequences_missing']:
-        logger.error("\n✗ VERIFICATION FAILED: Some sequences are still missing:")
-        for table_name, missing_seqs in verification_details['sequences_missing'].items():
+    if verification_details["sequences_missing"]:
+        logger.error("VERIFICATION FAILED: missing sequences:")
+        for table_name, missing_seqs in verification_details["sequences_missing"].items():
             logger.error(
-                "  ✗ Table '%s': Missing sequences: %s",
-                table_name, ', '.join(sorted(missing_seqs))
+                "  - Table '%s': %s",
+                table_name,
+                ", ".join(sorted(missing_seqs)),
             )
         return False
-    else:
-        logger.info("✓ All required sequences exist")
+    logger.info("All required sequences exist")
 
-    if verification_details['indexes_missing']:
-        logger.error("\n✗ VERIFICATION FAILED: Some indexes are still missing:")
-        for table_name, missing_idxs in verification_details['indexes_missing'].items():
+    if verification_details["indexes_missing"]:
+        logger.error("VERIFICATION FAILED: missing indexes:")
+        for table_name, missing_idxs in verification_details["indexes_missing"].items():
             logger.error(
-                "  ✗ Table '%s': Missing indexes: %s",
-                table_name, ', '.join(sorted(missing_idxs))
+                "  - Table '%s': %s",
+                table_name,
+                ", ".join(sorted(missing_idxs)),
             )
         return False
-    else:
-        logger.info("✓ All tables have all expected indexes")
+    logger.info("All expected indexes exist")
 
-    logger.info("\n%s", "=" * 60)
-    logger.info("✓ VERIFICATION PASSED - All migrations applied successfully")
+    logger.info("%s", "=" * 60)
+    logger.info("VERIFICATION PASSED")
     logger.info("%s", "=" * 60)
     return verification_passed
 
 
-def main():
-    """Run database migrations."""
+def _prompt_env_path() -> Path:
+    """Ask which .env file to load before importing config.database."""
+    print()
+    print("Database settings are read from a .env file (DATABASE_URL, etc.).")
+    default_s = str(_DEFAULT_ENV_PATH)
+    entered = input(f"Path to .env [{default_s}]: ").strip()
+    if not entered:
+        return _DEFAULT_ENV_PATH
+    path = Path(entered).expanduser()
+    if not path.is_absolute():
+        path = (PROJECT_ROOT / path).resolve()
+    return path
+
+
+def _prompt_yes_no(question: str, default_yes: bool) -> bool:
+    hint = "Y/n" if default_yes else "y/N"
+    raw = input(f"{question} [{hint}]: ").strip().lower()
+    if not raw:
+        return default_yes
+    return raw in ("y", "yes")
+
+
+def _resolve_backup_dir() -> Path:
+    """Same resolution as scripts/db/dump_import_postgres (BACKUP_DIR in .env)."""
+    raw = os.getenv("BACKUP_DIR", "backup")
+    path = Path(raw)
+    return path if path.is_absolute() else PROJECT_ROOT / path
+
+
+def _load_dump_import_module() -> Any:
+    """Load dump_import_postgres without requiring scripts/ to be a package."""
+    path = PROJECT_ROOT / "scripts" / "db" / "dump_import_postgres.py"
+    name = "mindgraph_dump_import_postgres"
+    spec = importlib.util.spec_from_file_location(name, path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Cannot load {path}")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def _prompt_primary_mode() -> str:
+    """Return 'migrations', 'import_pg', or 'quit'."""
+    print()
+    print("What do you want to do?")
+    print("  1) Schema migrations (init_db — same as app startup)")
+    print(
+        "  2) Import PostgreSQL dump from backup folder "
+        "(needs mindgraph.postgresql.*.dump + .manifest.json beside it)"
+    )
+    print("  3) Quit")
+    while True:
+        choice = input("Enter 1, 2, or 3: ").strip()
+        if choice == "1":
+            return "migrations"
+        if choice == "2":
+            return "import_pg"
+        if choice == "3":
+            return "quit"
+        print("Please enter 1, 2, or 3.")
+
+
+def _prompt_action() -> str:
+    """Return 'check', 'apply_full', or 'apply_schema'."""
+    print()
+    print("Choose an action:")
+    print("  1) Check only — show status and verify schema (no changes)")
+    print("  2) Apply migrations — full init (same as app startup), seed orgs if empty")
+    print("  3) Apply migrations — schema only (no organization seeding)")
+    while True:
+        choice = input("Enter 1, 2, or 3: ").strip()
+        if choice == "1":
+            return "check"
+        if choice == "2":
+            return "apply_full"
+        if choice == "3":
+            return "apply_schema"
+        print("Please enter 1, 2, or 3.")
+
+
+def _load_database_modules() -> Dict[str, Any]:
+    """Import DB stack after .env has been applied."""
+    cfg = importlib.import_module("config.database")
+    sm = importlib.import_module(
+        "utils.migration.postgresql.schema_migration"
+    )
+    return {
+        "Base": cfg.Base,
+        "DATABASE_URL": cfg.DATABASE_URL,
+        "engine": cfg.engine,
+        "init_db": cfg.init_db,
+        "check_database_status": sm.check_database_status,
+        "verify_migration_results": sm.verify_migration_results,
+    }
+
+
+def _connect_and_report(mods: Dict[str, Any], env_path: Path) -> bool:
+    """Preflight DB and log connection summary. Returns False on failure."""
+    logger = logging.getLogger(__name__)
+    logger.info(
+        "Env file: %s",
+        env_path.resolve() if env_path.exists() else "(not found)",
+    )
+    logger.info("Database URL: %s", _mask_database_url(mods["DATABASE_URL"]))
+    logger.info("Dialect: %s", mods["engine"].dialect.name)
     try:
-        logger.info("%s", "=" * 60)
-        logger.info("Database Migration Script")
-        logger.info("%s", "=" * 60)
+        _preflight_database(mods["engine"])
+    except Exception as exc:
+        logger.error("Database connection failed: %s", exc, exc_info=True)
+        logger.error(
+            "Check DATABASE_URL, PostgreSQL service, and network/firewall settings."
+        )
+        return False
+    return True
 
-        logger.info("Importing database configuration...")
 
-        # Ensure all models are registered before proceeding
-        if not ensure_models_registered(Base):
-            logger.error("Failed to verify model registration - cannot proceed")
-            return 1
+def _run_check_flow(mods: Dict[str, Any]) -> int:
+    """Verify-only path."""
+    base = mods["Base"]
+    _log_model_registration_summary(base)
+    _check_status(mods["engine"], base, mods["check_database_status"])
+    expected = set(base.metadata.tables.keys())
+    ok = _verify_results(
+        mods["engine"], base, expected, mods["verify_migration_results"]
+    )
+    return 0 if ok else 1
 
-        # STEP 1: CHECK - Current status
-        _, _, _ = check_status(engine, Base)
 
-        # STEP 2: ACT - Run migrations
-        logger.info("\n%s", "=" * 60)
-        logger.info("STEP 2: ACT - Running Migrations")
-        logger.info("%s", "=" * 60)
+def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
+    """init_db path with optional post-verify."""
+    logger = logging.getLogger(__name__)
+    base = mods["Base"]
+    _log_model_registration_summary(base)
+    _check_status(mods["engine"], base, mods["check_database_status"])
 
-        result = run_migrations()
+    print()
+    if not _prompt_yes_no("Proceed with applying migrations", default_yes=False):
+        print("Cancelled.")
+        return 0
 
-        if not result:
-            logger.error("\n✗ Migrations encountered errors")
-            logger.error(
-                "The run_migrations() function returned False, indicating "
-                "that some migrations failed. Check the logs above for details."
-            )
-            # Still run verification to see what's missing
-            logger.info(
-                "\nRunning verification anyway to see current state..."
-            )
-        else:
-            logger.info("\n✓ Migrations completed successfully")
+    logger.info("%s", "=" * 60)
+    logger.info("APPLY — init_db() (same as application startup)")
+    logger.info("%s", "=" * 60)
 
-        # STEP 3: VERIFY - Confirm results
-        # Refresh expected_tables from Base.metadata (shouldn't change, but be safe)
-        expected_tables_after = set(Base.metadata.tables.keys())
-
-        verification_passed = verify_results(engine, Base, expected_tables_after)
-
-        if verification_passed and result:
-            logger.info("\n%s", "=" * 60)
-            logger.info("✓ ALL CHECKS PASSED - Migration completed successfully")
-            logger.info("%s", "=" * 60)
-            return 0
-        else:
-            logger.error("\n%s", "=" * 60)
-            logger.error("✗ MIGRATION FAILED OR VERIFICATION FAILED")
-            logger.error("%s", "=" * 60)
-            if not result:
-                logger.error("Migration function returned False")
-            if not verification_passed:
-                logger.error("Verification failed - see details above")
-            return 1
-
-    except ImportError as e:
-        logger.error("Import error: %s", e, exc_info=True)
-        logger.error("\nMake sure you're running this from the project root")
-        logger.error("and that all dependencies are installed.")
+    try:
+        mods["init_db"](seed_organizations=seed_orgs)
+    except Exception as exc:
+        logger.error("init_db() failed: %s", exc, exc_info=True)
         return 1
-    except Exception as e:
-        logger.error("Unexpected error: %s", e, exc_info=True)
+
+    if not _prompt_yes_no("Run verification after apply", default_yes=True):
+        logger.info("Skipping verification.")
+        return 0
+
+    expected = set(base.metadata.tables.keys())
+    ok = _verify_results(
+        mods["engine"], base, expected, mods["verify_migration_results"]
+    )
+    return 0 if ok else 1
+
+
+def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
+    """pg_restore from backup/ using manifest verification (dump_import_postgres)."""
+    logger = logging.getLogger(__name__)
+    if mods["engine"].dialect.name != "postgresql":
+        logger.error(
+            "PostgreSQL dump import needs DATABASE_URL to be PostgreSQL. "
+            "Current dialect: %s",
+            mods["engine"].dialect.name,
+        )
         return 1
+
+    backup_dir = _resolve_backup_dir()
+    logger.info("Backup folder (BACKUP_DIR): %s", backup_dir.resolve())
+    print()
+    print(
+        "Each dump file must have a manifest in the same folder, e.g.\n"
+        "  mindgraph.postgresql.YYYYMMDD_HHMMSS.dump\n"
+        "  mindgraph.postgresql.YYYYMMDD_HHMMSS.dump.manifest.json"
+    )
+    print("Stop the MindGraph app before choosing Execute.")
+
+    try:
+        dip = _load_dump_import_module()
+    except RuntimeError as exc:
+        logger.error("%s", exc)
+        return 1
+
+    live = dip.prompt_dry_run_or_execute()
+    if live:
+        logger.info("Execute mode — pg_restore will replace data in the target DB")
+    else:
+        logger.info("Dry run — no changes")
+
+    return dip.import_command(
+        live,
+        db_url=mods["DATABASE_URL"],
+        db_engine=mods["engine"],
+        backup_dir=backup_dir,
+    )
+
+
+def main() -> int:
+    """Interactive entry: env path, primary mode, then migrations or import."""
+    print("=" * 60)
+    print("MindGraph — database migration / PostgreSQL import")
+    print("=" * 60)
+
+    env_path = _prompt_env_path()
+    _apply_env_file(env_path)
+
+    debug = _prompt_yes_no("Enable debug logging", default_yes=False)
+    _configure_logging(debug)
+
+    mods = _load_database_modules()
+    if not _connect_and_report(mods, env_path):
+        return 1
+
+    primary = _prompt_primary_mode()
+    if primary == "quit":
+        print("Goodbye.")
+        return 0
+    if primary == "import_pg":
+        return _run_pg_import_flow(mods)
+
+    action = _prompt_action()
+    if action == "check":
+        return _run_check_flow(mods)
+    seed_orgs = action == "apply_full"
+    return _run_apply_flow(mods, seed_orgs)
+
 
 if __name__ == "__main__":
     sys.exit(main())
