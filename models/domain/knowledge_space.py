@@ -129,7 +129,6 @@ class KnowledgeDocument(Base):
     __table_args__ = (
         UniqueConstraint('space_id', 'file_name', name='uq_space_filename'),
         CheckConstraint("status IN ('pending', 'processing', 'completed', 'failed')", name='chk_document_status'),
-        Index('ix_knowledge_documents_category', 'category'),
     )
 
     def __repr__(self):
@@ -162,10 +161,9 @@ class DocumentChunk(Base):
     # Relationships
     document = relationship("KnowledgeDocument", back_populates="chunks")
 
-    # Indexes for efficient queries
+    # Indexes for efficient queries (id index from index=True; used for Qdrant lookup)
     __table_args__ = (
         Index('ix_document_chunks_document_id_chunk_index', 'document_id', 'chunk_index'),
-        Index('ix_document_chunks_id', 'id'),  # For Qdrant lookup
     )
 
     def __repr__(self):
@@ -193,7 +191,6 @@ class Embedding(Base):
     # Unique constraint: same model + provider + hash = same embedding
     __table_args__ = (
         UniqueConstraint('model_name', 'provider_name', 'hash', name='uq_embedding_model_provider_hash'),
-        Index('ix_embeddings_hash', 'hash'),
     )
 
     def set_embedding(self, embedding_data: list[float]) -> None:
@@ -788,10 +785,9 @@ class ChunkTestDocumentChunk(Base):
     # Relationships
     document = relationship("ChunkTestDocument", back_populates="chunks")
 
-    # Indexes for efficient queries
+    # Indexes for efficient queries (chunking_method single-column index from index=True)
     __table_args__ = (
         Index('ix_chunk_test_document_chunks_document_id_chunk_index', 'document_id', 'chunk_index'),
-        Index('ix_chunk_test_document_chunks_chunking_method', 'chunking_method'),
         Index('ix_chunk_test_document_chunks_document_method', 'document_id', 'chunking_method'),
     )
 
