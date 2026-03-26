@@ -232,6 +232,21 @@ except ImportError as e:
 except Exception as e:
     logger.debug("[Database] Error registering workshop chat models: %s", e)
 
+try:
+    from models.domain.feature_access_control import (
+        FeatureAccessOrgGrant,
+        FeatureAccessRule,
+        FeatureAccessUserGrant,
+    )
+    _ = FeatureAccessRule.__tablename__
+    _ = FeatureAccessOrgGrant.__tablename__
+    _ = FeatureAccessUserGrant.__tablename__
+    logger.debug("[Database] Feature access control models imported for migrations")
+except ImportError as e:
+    logger.debug("[Database] Could not import feature access control models: %s", e)
+except Exception as e:
+    logger.debug("[Database] Error registering feature access control models: %s", e)
+
 # Ensure data directory exists for database files
 DATA_DIR = Path("data")
 DATA_DIR.mkdir(exist_ok=True)

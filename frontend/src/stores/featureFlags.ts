@@ -8,6 +8,12 @@ import { defineStore } from 'pinia'
 
 import { apiRequest } from '@/utils/apiClient'
 
+export interface FeatureOrgAccessEntry {
+  restrict: boolean
+  organization_ids: number[]
+  user_ids: number[]
+}
+
 interface FeatureFlagsResponse {
   external_base_url: string
   feature_rag_chunk_test: boolean
@@ -24,6 +30,7 @@ interface FeatureFlagsResponse {
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
   workshop_chat_preview_org_ids: number[]
+  feature_org_access: Record<string, FeatureOrgAccessEntry>
 }
 
 export const useFeatureFlagsStore = defineStore('featureFlags', () => {
@@ -67,13 +74,18 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_teacher_usage: false,
           feature_workshop_chat: false,
           workshop_chat_preview_org_ids: [],
+          feature_org_access: {},
         }
         flags.value = defaultFlags
         lastFetchTime.value = now
         return defaultFlags
       }
 
-      const data: FeatureFlagsResponse = await response.json()
+      const raw = (await response.json()) as FeatureFlagsResponse
+      const data: FeatureFlagsResponse = {
+        ...raw,
+        feature_org_access: raw.feature_org_access ?? {},
+      }
       flags.value = data
       lastFetchTime.value = now
       return data
@@ -99,6 +111,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         feature_teacher_usage: false,
         feature_workshop_chat: false,
         workshop_chat_preview_org_ids: [],
+        feature_org_access: {},
       }
       flags.value = defaultFlags
       return defaultFlags
@@ -176,6 +189,10 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     }
   }
 
+  function markStale(): void {
+    lastFetchTime.value = 0
+  }
+
   return {
     flags,
     isLoading,
@@ -195,5 +212,6 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureWorkshopChat,
     getWorkshopChatPreviewOrgIds,
     init,
+    markStale,
   }
 })

@@ -332,8 +332,16 @@ router.beforeEach(async (to, _from, next) => {
       return next({ name: 'MindMate' })
     }
     const previewIds = featureFlagsStore.getWorkshopChatPreviewOrgIds()
+    const accessMap = featureFlagsStore.flags?.feature_org_access ?? {}
+    const workshopEntry = accessMap.feature_workshop_chat
     if (
-      !userCanAccessWorkshopChat(authStore.isAdminOrManager, authStore.user?.schoolId, previewIds)
+      !userCanAccessWorkshopChat(
+        authStore.isAdminOrManager,
+        authStore.user?.schoolId,
+        authStore.user?.id,
+        previewIds,
+        workshopEntry,
+      )
     ) {
       return next({ name: 'MindMate' })
     }

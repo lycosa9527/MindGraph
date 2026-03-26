@@ -23,6 +23,7 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.middleware.gzip import GZipResponder
 from config.settings import config
 from services.auth.security_logger import security_log
+from services.infrastructure.http.feature_gate import feature_flag_gate
 
 logger = logging.getLogger(__name__)
 
@@ -472,3 +473,4 @@ def setup_middleware(app: FastAPI):
     app.middleware("http")(add_cache_control_headers)
     app.middleware("http")(ensure_pdf_range_support)  # Safety net for PDF headers
     app.middleware("http")(log_requests)
+    app.middleware("http")(feature_flag_gate)

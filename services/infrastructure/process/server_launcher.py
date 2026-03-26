@@ -53,6 +53,7 @@ from services.infrastructure.process.process_manager import (
     setup_signal_handlers,
 )
 from services.infrastructure.utils.port_manager import ShutdownErrorFilter
+from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
 
 logger = logging.getLogger(__name__)
 
@@ -72,6 +73,9 @@ def run_server() -> None:
             "[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0"
         )
         sys.exit(1)
+
+    # Workers spawned by Uvicorn inherit this and skip duplicate banner / early prints
+    os.environ[MINDGRAPH_LAUNCHER_PID_ENV] = str(os.getpid())
 
     if config is None:
         print("[ERROR] Failed to import config.settings.config")
@@ -245,7 +249,8 @@ def run_server() -> None:
             is_installed, message = check_celery_installed()
             if not is_installed:
                 print(
-                    "[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed or dependencies are missing."
+                    "[ERROR] Celery is REQUIRED for Knowledge Space feature but not installed "
+                    "or dependencies are missing."
                 )
                 print(f"        {message}")
                 print(
@@ -266,10 +271,17 @@ def run_server() -> None:
 
         # All services verified and running - continue with application startup
         logger.debug("=" * 80)
-        logger.debug("All required services are ready: Redis%s%s",
-                    ", PostgreSQL" if using_postgresql else "",
-                    ", Qdrant, Celery" if config.FEATURE_KNOWLEDGE_SPACE else "")
+        logger.debug(
+            "All required services are ready: Redis%s%s",
+            ", PostgreSQL" if using_postgresql else "",
+            ", Qdrant, Celery" if config.FEATURE_KNOWLEDGE_SPACE else "",
+        )
         logger.debug("=" * 80)
+        logger.info(
+            "Infrastructure ready: Redis%s%s",
+            " + PostgreSQL" if using_postgresql else "",
+            " + Qdrant + Celery" if config.FEATURE_KNOWLEDGE_SPACE else "",
+        )
 
         config.print_config_summary()
 

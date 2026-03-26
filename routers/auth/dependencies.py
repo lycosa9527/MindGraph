@@ -204,7 +204,9 @@ def require_workshop_chat_access(
     lang: Language = Depends(get_language_dependency)
 ) -> User:
     """
-    Require admin, manager, or membership in WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+    Require access to Workshop Chat: global flag on, then DB rules or preview org list.
+
+    See ``utils.auth.roles.user_has_feature_access`` / ``can_access_workshop_chat``.
     """
     if not can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)

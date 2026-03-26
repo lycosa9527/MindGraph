@@ -289,16 +289,18 @@ class EnvManager:
             Tuple[bool, List[str]]: (is_valid, list of error messages)
         """
         errors = []
+        self._run_known_validation_rules(settings_dict, errors)
+        self._validate_feature_flag_keys(settings_dict, errors)
 
-        # Basic validation rules
+        is_valid = len(errors) == 0
+        return is_valid, errors
+
+    def _run_known_validation_rules(self, settings_dict: Dict[str, str], errors: List[str]) -> None:
+        """Apply fixed validation rules for well-known keys."""
         validation_rules = {
             'PORT': lambda v: self._validate_port(v, errors),
             'DEBUG': lambda v: self._validate_boolean(v, 'DEBUG', errors),
             'VERBOSE_LOGGING': lambda v: self._validate_boolean(v, 'VERBOSE_LOGGING', errors),
-            'FEATURE_MINDMATE': lambda v: self._validate_boolean(
-                v, 'FEATURE_MINDMATE', errors),
-            'FEATURE_VOICE_AGENT': lambda v: self._validate_boolean(
-                v, 'FEATURE_VOICE_AGENT', errors),
             'DASHSCOPE_RATE_LIMITING_ENABLED': lambda v: self._validate_boolean(
                 v, 'DASHSCOPE_RATE_LIMITING_ENABLED', errors),
             'QWEN_TEMPERATURE': lambda v: self._validate_float_range(v, 'QWEN_TEMPERATURE', 0.0, 2.0, errors),
@@ -310,14 +312,15 @@ class EnvManager:
             'LOG_LEVEL': lambda v: self._validate_log_level(v, errors),
             'AUTH_MODE': lambda v: self._validate_auth_mode(v, errors),
         }
-
-        # Run validations for keys that exist in settings_dict
         for key, validator in validation_rules.items():
             if key in settings_dict and settings_dict[key]:
                 validator(settings_dict[key])
 
-        is_valid = len(errors) == 0
-        return is_valid, errors
+    def _validate_feature_flag_keys(self, settings_dict: Dict[str, str], errors: List[str]) -> None:
+        """Validate all ``FEATURE_*`` keys in the update payload."""
+        for key, value in settings_dict.items():
+            if key.startswith('FEATURE_') and value not in (None, ''):
+                self._validate_boolean(str(value), key, errors)
 
     def _validate_port(self, value: str, errors: List[str]):
         """Validate PORT is integer 1-65535"""

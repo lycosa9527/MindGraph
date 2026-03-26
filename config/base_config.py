@@ -31,6 +31,11 @@ class BaseConfig:
             self._cache[key] = os.environ.get(key, default)
         return self._cache[key]
 
+    def refresh_env_cache(self) -> None:
+        """Clear in-process env cache so the next read uses current ``os.environ``."""
+        self._cache.clear()
+        self._cache_timestamp = 0
+
     @property
     def version(self) -> str:
         """

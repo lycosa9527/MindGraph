@@ -22,8 +22,10 @@ Proprietary License
 from typing import Dict
 import logging
 
+from dotenv import load_dotenv
 from fastapi import APIRouter, Depends, HTTPException, status
 
+from config.settings import config
 from models.domain.auth import User
 from services.infrastructure.utils.env_manager import EnvManager
 from utils.auth import get_current_user, is_admin
@@ -33,6 +35,15 @@ from utils.auth import get_current_user, is_admin
 logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/auth/admin/env", tags=["Admin - Environment Settings"])
+
+
+def reload_runtime_config_from_dotenv() -> None:
+    """Reload ``.env`` into ``os.environ`` and clear the in-process config cache."""
+    env_manager = EnvManager()
+    env_path = env_manager.env_path.resolve()
+    if env_path.is_file():
+        load_dotenv(env_path, override=True)
+    config.refresh_env_cache()
 
 
 @router.get("/settings", dependencies=[Depends(get_current_user)])
@@ -375,6 +386,7 @@ async def restore_env_from_backup(
         success = env_manager.restore_env(backup_filename)
 
         if success:
+            reload_runtime_config_from_dotenv()
             logger.warning(
                 "Admin %s restored .env from backup: %s",
                 current_user.phone,
@@ -384,7 +396,12 @@ async def restore_env_from_backup(
             return {
                 "message": "Restored successfully from backup",
                 "restored_from": backup_filename,
-                "warning": "⚠️ Server restart required for changes to take effect!"
+                "runtime_reloaded": True,
+                "warning": (
+                    "Runtime config reloaded from restored file. "
+                    "A full server restart may still be required if you changed "
+                    "settings that only apply at process startup (e.g. new routers)."
+                ),
             }
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -445,3 +462,41 @@ async def get_env_schema(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Failed to get schema: {str(e)}"
         ) from e
+
+
+@router.post("/reload-runtime", dependencies=[Depends(get_current_user)])
+async def reload_runtime_env(
+    current_user: User = Depends(get_current_user),
+):
+    """
+    Reload .env into ``os.environ`` and clear the in-process config cache (ADMIN ONLY).
+
+    Use after updating FEATURE_* (or other) keys via PUT /settings so the running
+    process picks up new values without a full process restart. Router modules that
+    were not imported at startup still require a restart to appear.
+    """
+    if not is_admin(current_user):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Admin access required"
+        )
+
+    try:
+        env_manager = EnvManager()
+        env_path = env_manager.env_path.resolve()
+        reload_runtime_config_from_dotenv()
+        logger.warning(
+            "Admin %s triggered runtime .env reload (%s)",
+            current_user.phone,
+            env_path,
+        )
+        return {
+            "message": "Runtime configuration reloaded from .env",
+            "env_path": str(env_path),
+        }
+    except Exception as exc:
+        logger.error("Runtime env reload failed: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to reload runtime configuration: {exc}",
+        ) from exc

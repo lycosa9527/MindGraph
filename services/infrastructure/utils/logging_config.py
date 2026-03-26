@@ -487,19 +487,33 @@ def setup_logging():
             # Last resort: create a null handler to prevent errors
             handlers.append(logging.NullHandler())
 
-    # Determine log level - always use DEBUG for full verbose logging
-    # Override with VERBOSE_LOGGING env var if set, otherwise default to DEBUG
+    # File: full detail (DEBUG when LOG_LEVEL=DEBUG). Console: INFO by default when
+    # LOG_LEVEL=DEBUG so startup stays readable; full DEBUG still in logs/app.log.
+    # Set VERBOSE_CONSOLE=1 to mirror DEBUG to the terminal as well.
     if hasattr(config, 'verbose_logging') and config.verbose_logging:
         log_level = logging.DEBUG
     else:
-        # Default to DEBUG for full verbose logging
         log_level_str = getattr(config, 'log_level', 'DEBUG')
         log_level = getattr(logging, log_level_str.upper(), logging.DEBUG)
+
+    verbose_console = os.getenv('VERBOSE_CONSOLE', '').lower() in ('1', 'true', 'yes')
+    if log_level == logging.DEBUG and not verbose_console:
+        console_level = logging.INFO
+    else:
+        console_level = log_level
+
+    for handler in handlers:
+        if isinstance(handler, TimestampedRotatingFileHandler):
+            handler.setLevel(log_level)
+        elif isinstance(handler, SafeStreamHandler):
+            handler.setLevel(console_level)
+        elif not isinstance(handler, logging.NullHandler):
+            handler.setLevel(log_level)
 
     # Configure logging with available handlers
     # Use force=True to replace any existing configuration
     logging.basicConfig(
-        level=logging.DEBUG,  # Always DEBUG for full verbose logging
+        level=logging.DEBUG,
         handlers=handlers,
         force=True
     )

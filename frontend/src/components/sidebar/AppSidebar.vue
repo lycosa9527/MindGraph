@@ -75,6 +75,7 @@ const {
   featureTeacherUsage,
   featureWorkshopChat,
   workshopChatPreviewOrgIds,
+  featureOrgAccess,
 } = useFeatureFlags()
 
 const isCollapsed = computed(() => uiStore.sidebarCollapsed)
@@ -115,10 +116,13 @@ const canAccessWorkshopChat = computed(() => {
   if (!featureWorkshopChat.value) {
     return false
   }
+  const entry = featureOrgAccess.value.feature_workshop_chat
   return userCanAccessWorkshopChat(
     authStore.isAdminOrManager,
     authStore.user?.schoolId,
-    workshopChatPreviewOrgIds.value
+    authStore.user?.id,
+    workshopChatPreviewOrgIds.value,
+    entry,
   )
 })
 

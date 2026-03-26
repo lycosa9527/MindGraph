@@ -126,10 +126,12 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(auth.router, prefix="/api/auth", tags=["Authentication"])  # Authentication system
 
     # Feature routers that must be registered BEFORE vue_spa catch-all
+    registered_feature_paths = []
+
     # Library (图书馆) - PDF viewing with danmaku comments
     if LIBRARY_MODULE is not None:
         app.include_router(LIBRARY_MODULE)
-        logger.info("[RouterRegistration] Library router registered at /api/library")
+        registered_feature_paths.append("/api/library")
     else:
         if config.FEATURE_LIBRARY:
             logger.warning(
@@ -142,7 +144,7 @@ def register_routers(app: FastAPI) -> None:
     # Community (社区分享) - global diagram sharing
     if COMMUNITY_MODULE is not None:
         app.include_router(COMMUNITY_MODULE)
-        logger.info("[RouterRegistration] Community router registered at /api/community")
+        registered_feature_paths.append("/api/community")
     else:
         if config.FEATURE_COMMUNITY:
             logger.warning(
@@ -155,7 +157,7 @@ def register_routers(app: FastAPI) -> None:
     # Gewe WeChat integration (admin only) - must be before vue_spa
     if GEWE_MODULE is not None:
         app.include_router(GEWE_MODULE)
-        logger.info("[RouterRegistration] Gewe router registered at /api/gewe")
+        registered_feature_paths.append("/api/gewe")
     else:
         if config.FEATURE_GEWE:
             logger.warning(
@@ -168,7 +170,7 @@ def register_routers(app: FastAPI) -> None:
     # Workshop Chat (工作坊) - school-scoped communication
     if WORKSHOP_CHAT_MODULE is not None:
         app.include_router(WORKSHOP_CHAT_MODULE)
-        logger.info("[RouterRegistration] Workshop Chat REST router registered at /api/chat")
+        registered_feature_paths.append("/api/chat")
     else:
         if config.FEATURE_WORKSHOP_CHAT:
             logger.warning(
@@ -194,12 +196,12 @@ def register_routers(app: FastAPI) -> None:
     # Workshop Chat WebSocket
     if WORKSHOP_CHAT_WS_MODULE is not None:
         app.include_router(WORKSHOP_CHAT_WS_MODULE)
-        logger.info("[RouterRegistration] Workshop Chat WS router registered at /api/ws/chat")
+        registered_feature_paths.append("/api/ws/chat")
 
     # DebateVerse (论境) - US-style debate system
     if DEBATEVERSE_MODULE is not None:
         app.include_router(DEBATEVERSE_MODULE)
-        logger.info("[RouterRegistration] DebateVerse router registered at /api/debateverse")
+        registered_feature_paths.append("/api/debateverse")
     else:
         if config.FEATURE_DEBATEVERSE:
             logger.warning(
@@ -208,6 +210,12 @@ def register_routers(app: FastAPI) -> None:
             )
         else:
             logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
+
+    if registered_feature_paths:
+        logger.info(
+            "[RouterRegistration] Feature API prefixes: %s",
+            ", ".join(registered_feature_paths),
+        )
 
     # Vue SPA catch-all - MUST be registered LAST (after all API routes)
     app.include_router(vue_spa)

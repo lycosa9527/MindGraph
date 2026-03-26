@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { notify } from '@/composables/notifications'
 import { difyKeys } from '@/composables/queries/difyKeys'
 import { i18n } from '@/i18n'
+import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import type {
@@ -192,7 +193,9 @@ export const useAuthStore = defineStore('auth', () => {
     const queryClient = getQueryClient()
     if (queryClient) {
       queryClient.invalidateQueries({ queryKey: difyKeys.all })
+      queryClient.invalidateQueries({ queryKey: ['featureFlags'] })
     }
+    useFeatureFlagsStore().markStale()
 
     applyUserLanguageFromProfile(normalizedUser)
   }

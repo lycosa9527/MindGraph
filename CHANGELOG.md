@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.59.0] - 2026-03-26
+
+### Added
+- **Per-feature organization/user access**: SQLAlchemy models (`FeatureAccessRule`, `FeatureAccessOrgGrant`, `FeatureAccessUserGrant`), `FeatureOrgAccessEntry` DTO, `services/feature_access/repository.py` with Postgres load/replace and Redis cache (`redis_feature_org_access_cache`), admin GET/PUT `/api/auth/admin/feature-org-access`, and `feature_org_access` on `/config/features` for authenticated clients.
+- **Admin Features tab**: `AdminFeaturesTab.vue` for toggling `FEATURE_*` flags (env + runtime reload) and editing DB-backed org/user allowlists; i18n (en/zh/az).
+- **HTTP feature-flag gate**: `feature_gate.py` middleware returns 404 JSON for feature API URL prefixes when the corresponding `FEATURE_*` env flag is off (covers workshop chat, library, community, knowledge space, school zone, DebateVerse, AskOnce, devices, gewe, and related admin paths).
+- **Presentation mode highlighter**: `PresentationHighlightOverlay.vue`, `presentationHighlighter.ts` stroke palette, types on `PresentationHighlightStroke`, wired through `DiagramCanvas`, `CanvasPage`, toolbar, and context menu.
+
+### Changed
+- **Workshop Chat access**: `can_access_workshop_chat` / `user_has_feature_access` in `utils/auth/roles.py` respect DB rules and global flags; WebSocket and REST paths aligned; `workshopAccess.ts` mirrors server logic using `feature_org_access.feature_workshop_chat` with legacy preview-org fallback.
+- **Feature flags & routing**: `useFeatureFlags`, `featureFlags` store, and `router/index.ts` consume `feature_org_access` for gating; `auth` dependencies and workshop chat router updated accordingly.
+- **Infrastructure**: `middleware`, lifecycle/startup, server launcher, logging, and admin env wiring updated to register the feature gate and new admin routes.
+
 ## [5.58.0] - 2026-03-26
 
 ### Added

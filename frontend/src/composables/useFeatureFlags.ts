@@ -37,6 +37,7 @@ export function useFeatureFlags() {
   const featureTeacherUsage = computed(() => data.value?.feature_teacher_usage ?? false)
   const featureWorkshopChat = computed(() => data.value?.feature_workshop_chat ?? false)
   const workshopChatPreviewOrgIds = computed(() => data.value?.workshop_chat_preview_org_ids ?? [])
+  const featureOrgAccess = computed(() => data.value?.feature_org_access ?? {})
 
   return {
     featureRagChunkTest,
@@ -53,6 +54,7 @@ export function useFeatureFlags() {
     featureTeacherUsage,
     featureWorkshopChat,
     workshopChatPreviewOrgIds,
+    featureOrgAccess,
     isLoading,
     error,
   }

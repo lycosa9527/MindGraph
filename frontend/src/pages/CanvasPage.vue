@@ -52,6 +52,7 @@ import {
   useWorkshop,
 } from '@/composables'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { ANIMATION, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
@@ -71,7 +72,7 @@ import {
 } from '@/stores'
 import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import type { DiagramType } from '@/types'
+import type { DiagramType, PresentationHighlightStroke } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const route = useRoute()
@@ -189,7 +190,102 @@ const handToolActive = ref(false)
 
 // Presentation mode: browser fullscreen, only top bar + bottom controls visible
 const isPresentationMode = ref(false)
+const presentationTool = ref<'laser' | 'spotlight' | 'highlighter'>('laser')
+const presentationHighlighterColor = ref(DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR)
+const presentationHighlightStrokes = ref<PresentationHighlightStroke[]>([])
 const canvasPageRef = ref<HTMLElement | null>(null)
+
+const presentationHighlighterActive = computed(() => presentationTool.value === 'highlighter')
+
+/** Laser dot, spotlight hole, and highlighter stroke width (Ctrl+/Ctrl- in presentation) */
+const presentationPointerSizeScale = ref(1)
+const PRESENTATION_POINTER_SCALE_MIN = 0.5
+const PRESENTATION_POINTER_SCALE_MAX = 2.5
+const PRESENTATION_POINTER_SCALE_STEP = 0.1
+
+const SPOTLIGHT_INNER_RADIUS_PX = 150
+const SPOTLIGHT_OUTER_RADIUS_PX = 195
+const LASER_CURSOR_BASE_PX = 22
+
+// Laser / spotlight: track pointer for dot and radial reveal
+const laserX = ref(0)
+const laserY = ref(0)
+
+function handleLaserMouseMove(event: MouseEvent) {
+  laserX.value = event.clientX
+  laserY.value = event.clientY
+}
+
+const spotlightStyle = computed(() => {
+  const s = presentationPointerSizeScale.value
+  const inner = SPOTLIGHT_INNER_RADIUS_PX * s
+  const outer = SPOTLIGHT_OUTER_RADIUS_PX * s
+  return {
+    background: `radial-gradient(circle at ${laserX.value}px ${laserY.value}px, transparent 0%, transparent ${inner}px, rgba(0,0,0,0.62) ${outer}px)`,
+  }
+})
+
+const laserCursorStyle = computed(() => {
+  const s = presentationPointerSizeScale.value
+  const size = LASER_CURSOR_BASE_PX * s
+  const half = size / 2
+  return {
+    transform: `translate(${laserX.value}px, ${laserY.value}px)`,
+    width: `${size}px`,
+    height: `${size}px`,
+    marginLeft: `-${half}px`,
+    marginTop: `-${half}px`,
+    boxShadow: [
+      `0 0 ${4 * s}px ${2 * s}px rgba(255, 255, 255, 0.9)`,
+      `0 0 ${10 * s}px ${4 * s}px rgba(255, 60, 60, 1)`,
+      `0 0 ${22 * s}px ${8 * s}px rgba(220, 20, 20, 0.85)`,
+      `0 0 ${45 * s}px ${18 * s}px rgba(180, 0, 0, 0.55)`,
+      `0 0 ${80 * s}px ${35 * s}px rgba(140, 0, 0, 0.25)`,
+    ].join(', '),
+  }
+})
+
+function handlePresentationPointerSizeKeydown(event: KeyboardEvent) {
+  if (!isPresentationMode.value) return
+  if (!event.ctrlKey && !event.metaKey) return
+  if (isTypingInInput()) return
+
+  const code = event.code
+  const key = event.key
+  const increase =
+    key === '+' ||
+    key === '=' ||
+    code === 'Equal' ||
+    code === 'NumpadAdd'
+  const decrease =
+    key === '-' ||
+    key === '_' ||
+    code === 'Minus' ||
+    code === 'NumpadSubtract'
+  if (!increase && !decrease) return
+
+  event.preventDefault()
+  const delta = increase ? PRESENTATION_POINTER_SCALE_STEP : -PRESENTATION_POINTER_SCALE_STEP
+  presentationPointerSizeScale.value = Math.min(
+    PRESENTATION_POINTER_SCALE_MAX,
+    Math.max(PRESENTATION_POINTER_SCALE_MIN, presentationPointerSizeScale.value + delta),
+  )
+}
+
+watch(isPresentationMode, (active) => {
+  if (active) {
+    window.addEventListener('mousemove', handleLaserMouseMove)
+    window.addEventListener('keydown', handlePresentationPointerSizeKeydown, true)
+    presentationTool.value = 'laser'
+  } else {
+    window.removeEventListener('mousemove', handleLaserMouseMove)
+    window.removeEventListener('keydown', handlePresentationPointerSizeKeydown, true)
+    presentationHighlightStrokes.value = []
+    presentationTool.value = 'laser'
+    presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
+    presentationPointerSizeScale.value = 1
+  }
+})
 
 // Auto-save: event-driven, config-based (useDiagramAutoSave)
 const diagramAutoSave = useDiagramAutoSave()
@@ -1314,6 +1410,8 @@ onMounted(async () => {
 
 onUnmounted(() => {
   document.removeEventListener('fullscreenchange', handleFullscreenChange)
+  window.removeEventListener('mousemove', handleLaserMouseMove)
+  window.removeEventListener('keydown', handlePresentationPointerSizeKeydown, true)
 
   if (document.fullscreenElement) {
     document.exitFullscreen().catch(() => {})
@@ -1338,6 +1436,10 @@ onUnmounted(() => {
   uiStore.setFreeInputValue('')
   handToolActive.value = false
   isPresentationMode.value = false
+  presentationHighlightStrokes.value = []
+  presentationTool.value = 'laser'
+  presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
+  presentationPointerSizeScale.value = 1
 
   // Reset previous state tracking
   previousNodes = []
@@ -1349,7 +1451,32 @@ onUnmounted(() => {
   <div
     ref="canvasPageRef"
     class="canvas-page flex flex-col h-screen bg-gray-50 relative"
+    :class="{
+      'presentation-active': isPresentationMode,
+      'presentation-highlighter-mode':
+        isPresentationMode && presentationHighlighterActive,
+    }"
   >
+    <!-- Laser pointer cursor (presentation mode, laser tool) -->
+    <Transition name="laser-fade">
+      <div
+        v-if="isPresentationMode && presentationTool === 'laser'"
+        class="laser-cursor"
+        :style="laserCursorStyle"
+        aria-hidden="true"
+      />
+    </Transition>
+
+    <!-- Spotlight overlay: dark vignette with circular reveal (spotlight tool) -->
+    <Transition name="spotlight-fade">
+      <div
+        v-if="isPresentationMode && presentationTool === 'spotlight'"
+        class="spotlight-overlay"
+        :style="spotlightStyle"
+        aria-hidden="true"
+      />
+    </Transition>
+
     <!-- Top navigation bar (hidden in presentation mode) -->
     <CanvasTopBar
       v-if="!isPresentationMode"
@@ -1413,13 +1540,21 @@ onUnmounted(() => {
       <div class="flex-1 min-w-0 flex flex-col relative">
         <DiagramCanvas
           v-if="diagramStore.data"
+          v-model:presentation-highlight-strokes="presentationHighlightStrokes"
+          v-model:presentation-tool="presentationTool"
+          v-model:presentation-highlighter-color="presentationHighlighterColor"
           class="w-full flex-1 min-h-0"
           :show-background="true"
           :show-minimap="false"
           :fit-view-on-init="true"
           :hand-tool-active="handToolActive"
           :collab-locked-node-ids="collabLockedNodeIds"
+          :presentation-mode="isPresentationMode"
+          :presentation-pointer-size-scale="presentationPointerSizeScale"
           @node-double-click="handleNodeDoubleClick"
+          @clear-presentation-highlighter="presentationHighlightStrokes = []"
+          @exit-presentation="handleStartPresentation"
+          @fit-presentation-view="handleFitToScreen"
         />
       </div>
 
@@ -1537,5 +1672,62 @@ onUnmounted(() => {
   .ai-selector-wrap {
     justify-content: flex-start;
   }
+}
+
+/* Hide the native cursor when presentation mode is active */
+.presentation-active,
+.presentation-active * {
+  cursor: none !important;
+}
+
+/* Highlighter tool: brush-style cursor (overrides cursor: none above) */
+.presentation-active.presentation-highlighter-mode,
+.presentation-active.presentation-highlighter-mode * {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5 27 L11 8 L17 10 L13 29 Z' fill='%23fbbf24' stroke='%23b45309' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M11 8 L21 12 L17 26 L9 22 Z' fill='%23fde68a' opacity='0.95'/%3E%3Cpath d='M7 26 L9 18 L12 19 L10 27 Z' fill='%23f59e0b' opacity='0.55'/%3E%3C/svg%3E")
+      10 26,
+    crosshair !important;
+}
+
+/* Laser pointer dot — size/glow via inline style (presentationPointerSizeScale) */
+.laser-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 99999;
+  background: radial-gradient(circle at 40% 35%, #ff8080 0%, #ff1a1a 45%, #cc0000 70%, transparent 100%);
+}
+
+/* Subtle entrance / exit fade */
+.laser-fade-enter-active,
+.laser-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.laser-fade-enter-from,
+.laser-fade-leave-to {
+  opacity: 0;
+}
+
+/* Spotlight overlay: covers entire viewport, radial hole follows mouse */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 99998;
+  pointer-events: none;
+  /* background is set via inline :style (dynamic gradient position) */
+}
+
+/* Soft fade so the overlay doesn't pop in harshly */
+.spotlight-fade-enter-active,
+.spotlight-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.spotlight-fade-enter-from,
+.spotlight-fade-leave-to {
+  opacity: 0;
 }
 </style>

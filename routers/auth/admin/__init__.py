@@ -21,6 +21,7 @@ from . import (
     api_keys,
     bayi,
     teacher_usage,
+    feature_org_access,
 )
 
 # Create admin router aggregation
@@ -36,6 +37,7 @@ admin_router.include_router(stats_trends.router)
 admin_router.include_router(api_keys.router)
 admin_router.include_router(bayi.router)
 admin_router.include_router(teacher_usage.router)
+admin_router.include_router(feature_org_access.router)
 
 __all__ = ['admin_router']
 

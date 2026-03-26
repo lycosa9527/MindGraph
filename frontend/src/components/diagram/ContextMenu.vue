@@ -13,8 +13,11 @@ import {
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/useEventBus'
+import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR, PRESENTATION_HIGHLIGHTER_PALETTE } from '@/config/presentationHighlighter'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
+
+type PresentationToolId = 'laser' | 'spotlight' | 'highlighter'
 
 interface MenuItem {
   label?: string
@@ -22,6 +25,10 @@ interface MenuItem {
   action?: () => void
   disabled?: boolean
   divider?: boolean
+  checked?: boolean
+  swatch?: string
+  stroke?: string
+  sectionHeader?: boolean
 }
 
 interface Props {
@@ -30,14 +37,26 @@ interface Props {
   y: number
   node?: MindGraphNode | null
   target?: 'node' | 'pane'
+  presentationMode?: boolean
+  presentationTool?: PresentationToolId
+  presentationHighlighterColor?: string
 }
 
-const props = defineProps<Props>()
+const props = withDefaults(defineProps<Props>(), {
+  presentationMode: false,
+  presentationTool: 'laser',
+  presentationHighlighterColor: DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR,
+})
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'paste', position: { x: number; y: number }): void
   (e: 'addConcept', position: { x: number; y: number }): void
+  (e: 'presentationToolSelect', tool: PresentationToolId): void
+  (e: 'clearPresentationHighlighter'): void
+  (e: 'exitPresentation'): void
+  (e: 'fitPresentationView'): void
+  (e: 'presentationHighlighterColorSelect', stroke: string): void
 }>()
 
 const diagramStore = useDiagramStore()
@@ -60,6 +79,73 @@ function getDoubleBubbleGroupFromNodeId(
 const menuItems = computed<MenuItem[]>(() => {
   void uiStore.language
   const items: MenuItem[] = []
+
+  if (props.presentationMode) {
+    const tool = props.presentationTool ?? 'laser'
+    items.push({
+      label: t('canvas.presentationContextMenu.laserPointer'),
+      checked: tool === 'laser',
+      action: () => {
+        emit('presentationToolSelect', 'laser')
+        emit('close')
+      },
+    })
+    items.push({
+      label: t('canvas.presentationContextMenu.spotlight'),
+      checked: tool === 'spotlight',
+      action: () => {
+        emit('presentationToolSelect', 'spotlight')
+        emit('close')
+      },
+    })
+    items.push({
+      label: t('canvas.presentationContextMenu.highlighterTool'),
+      checked: tool === 'highlighter',
+      action: () => {
+        emit('presentationToolSelect', 'highlighter')
+        emit('close')
+      },
+    })
+    items.push({ divider: true })
+    items.push({
+      label: t('canvas.presentationContextMenu.clearHighlighter'),
+      action: () => {
+        emit('clearPresentationHighlighter')
+        emit('close')
+      },
+    })
+    items.push({
+      label: t('canvas.presentationContextMenu.exitPresentation'),
+      action: () => {
+        emit('exitPresentation')
+        emit('close')
+      },
+    })
+    items.push({
+      label: t('canvas.zoomControls.fitCanvas'),
+      action: () => {
+        emit('fitPresentationView')
+        emit('close')
+      },
+    })
+    items.push({ divider: true })
+    items.push({
+      label: t('canvas.presentationContextMenu.highlighterColor'),
+      sectionHeader: true,
+    })
+    for (const entry of PRESENTATION_HIGHLIGHTER_PALETTE) {
+      items.push({
+        swatch: entry.swatch,
+        stroke: entry.stroke,
+        checked: props.presentationHighlighterColor === entry.stroke,
+        action: () => {
+          emit('presentationHighlighterColorSelect', entry.stroke)
+          emit('close')
+        },
+      })
+    }
+    items.push({ divider: true })
+  }
 
   if (props.target === 'node' && props.node) {
     const node = props.node
@@ -533,14 +619,35 @@ function handleItemClick(item: MenuItem) {
           v-for="(item, index) in menuItems"
           :key="index"
           class="context-menu-item"
-          :class="{ disabled: item.disabled, divider: item.divider }"
+          :class="{
+            disabled: item.disabled,
+            divider: item.divider,
+            'swatch-pick': !!item.swatch,
+            'section-title-row': item.sectionHeader && !item.action,
+          }"
           @click="handleItemClick(item)"
         >
-          <span
-            v-if="!item.divider && item.label"
-            class="context-menu-label"
-            >{{ item.label }}</span
-          >
+          <template v-if="item.divider" />
+          <template v-else-if="item.swatch">
+            <span class="context-menu-check">{{ item.checked ? '✓' : '' }}</span>
+            <span
+              class="context-menu-swatch"
+              :style="{ backgroundColor: item.swatch }"
+            />
+          </template>
+          <template v-else>
+            <span
+              v-if="item.checked !== undefined"
+              class="context-menu-check"
+              >{{ item.checked ? '✓' : '' }}</span
+            >
+            <span
+              v-if="item.label"
+              class="context-menu-label"
+              :class="{ 'is-section-title': item.sectionHeader }"
+              >{{ item.label }}</span
+            >
+          </template>
         </div>
       </div>
     </Transition>
@@ -568,9 +675,64 @@ function handleItemClick(item: MenuItem) {
 }
 
 .context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   padding: 8px 16px;
   cursor: pointer;
   transition: background-color 0.15s ease;
+}
+
+.context-menu-check {
+  width: 1.25rem;
+  flex-shrink: 0;
+  text-align: center;
+  font-size: 12px;
+  color: #059669;
+}
+
+.dark .context-menu-check {
+  color: #34d399;
+}
+
+.context-menu-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #e5e7eb;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.dark .context-menu-swatch {
+  border-color: #4b5563;
+}
+
+.context-menu-label.is-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #9ca3af;
+}
+
+.dark .context-menu-label.is-section-title {
+  color: #6b7280;
+}
+
+.context-menu-item.section-title-row {
+  cursor: default;
+  padding-top: 10px;
+  padding-bottom: 4px;
+}
+
+.context-menu-item.section-title-row:hover {
+  background-color: transparent !important;
+}
+
+.context-menu-item.swatch-pick {
+  padding-top: 4px;
+  padding-bottom: 4px;
 }
 
 .context-menu-item:hover:not(.disabled):not(.divider) {
@@ -587,6 +749,7 @@ function handleItemClick(item: MenuItem) {
 }
 
 .context-menu-item.divider {
+  display: block;
   height: 1px;
   padding: 0;
   margin: 4px 0;

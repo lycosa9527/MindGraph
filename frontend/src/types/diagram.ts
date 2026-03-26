@@ -140,3 +140,10 @@ export interface DiagramSession {
  * for compatibility with legacy code patterns.
  */
 export type DiagramSpec = DiagramData
+
+/** Freehand strokes in presentation highlighter mode (Vue Flow coordinates). */
+export interface PresentationHighlightStroke {
+  points: { x: number; y: number }[]
+  /** SVG stroke color (e.g. rgba) */
+  color: string
+}

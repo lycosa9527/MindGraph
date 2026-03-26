@@ -34,10 +34,11 @@ import {
 } from '@/composables/useConceptMapRelationship'
 import { eventBus } from '@/composables/useEventBus'
 import { useTheme } from '@/composables/useTheme'
+import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { ANIMATION, FIT_PADDING, GRID, PANEL, ZOOM } from '@/config/uiConfig'
 import { useDiagramStore, useLLMResultsStore, usePanelsStore, useUIStore } from '@/stores'
 import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
-import type { MindGraphNode } from '@/types'
+import type { MindGraphNode, PresentationHighlightStroke } from '@/types'
 import {
   getTopicRootConceptTargetId,
   normalizeAllConceptMapTopicRootLabels,
@@ -47,6 +48,7 @@ import BraceOverlay from './BraceOverlay.vue'
 import BridgeOverlay from './BridgeOverlay.vue'
 import ContextMenu from './ContextMenu.vue'
 import LearningSheetOverlay from './LearningSheetOverlay.vue'
+import PresentationHighlightOverlay from './PresentationHighlightOverlay.vue'
 import TreeMapOverlay from './TreeMapOverlay.vue'
 import BraceEdge from './edges/BraceEdge.vue'
 // Import custom edge components
@@ -79,6 +81,10 @@ interface Props {
   collabLockedNodeIds?: string[]
   /** Override panOnDrag button array (e.g. [0,1,2] for mobile touch) */
   panOnDragButtons?: number[] | null
+  /** Presentation / fullscreen mode — enables highlighter overlay */
+  presentationMode?: boolean
+  /** Scales laser glow, spotlight hole, and highlighter stroke (Ctrl± in presentation) */
+  presentationPointerSizeScale?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -88,6 +94,41 @@ const props = withDefaults(defineProps<Props>(), {
   handToolActive: false,
   collabLockedNodeIds: () => [],
   panOnDragButtons: null,
+  presentationMode: false,
+  presentationPointerSizeScale: 1,
+})
+
+const presentationHighlightStrokes = defineModel<PresentationHighlightStroke[]>(
+  'presentationHighlightStrokes',
+  { default: () => [] },
+)
+
+const presentationTool = defineModel<'laser' | 'spotlight' | 'highlighter'>('presentationTool', {
+  default: 'laser',
+})
+
+const presentationHighlighterColor = defineModel<string>('presentationHighlighterColor', {
+  default: DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR,
+})
+
+const presentationHighlighterActive = computed(
+  () => props.presentationMode && presentationTool.value === 'highlighter',
+)
+
+/**
+ * Vue Flow pan-on-drag uses mouse button indices: 0=left, 1=middle, 2=right.
+ * Default [1,2] pans with middle+right; right-drag steals the gesture from context menu.
+ * In presentation mode, drop right button so right-click opens the menu; pan with middle (or left+middle when hand tool is on).
+ */
+const effectivePanOnDrag = computed((): number[] => {
+  const base =
+    props.panOnDragButtons ??
+    (props.handToolActive ? [0, 1, 2] : [1, 2])
+  if (!props.presentationMode) {
+    return base
+  }
+  const withoutRight = base.filter((b) => b !== 2)
+  return withoutRight.length > 0 ? withoutRight : [1]
 })
 
 // Emits
@@ -97,6 +138,9 @@ const emit = defineEmits<{
   (e: 'nodeDragStop', node: MindGraphNode): void
   (e: 'selectionChange', nodes: MindGraphNode[]): void
   (e: 'paneClick'): void
+  (e: 'clearPresentationHighlighter'): void
+  (e: 'exitPresentation'): void
+  (e: 'fitPresentationView'): void
 }>()
 
 // Stores
@@ -1473,16 +1517,17 @@ const gridConfig = {
         :snap-grid="gridConfig.snapSize"
         :nodes-draggable="
           !props.handToolActive &&
+          !presentationHighlighterActive &&
           diagramStore.type !== 'mindmap' &&
           diagramStore.type !== 'mind_map' &&
           diagramStore.type !== 'tree_map'
         "
         :nodes-connectable="false"
-        :elements-selectable="!props.handToolActive"
+        :elements-selectable="!props.handToolActive && !presentationHighlighterActive"
         :pan-on-scroll="false"
         :zoom-on-scroll="true"
         :zoom-on-double-click="false"
-        :pan-on-drag="props.panOnDragButtons ?? (props.handToolActive ? [0, 1, 2] : [1, 2])"
+        :pan-on-drag="effectivePanOnDrag"
         :class="[
           'bg-gray-50 dark:bg-gray-900',
           diagramStore.type !== null &&
@@ -1523,6 +1568,15 @@ const gridConfig = {
 
         <!-- Learning sheet overlay: dashed line + answers below diagram (半成品图示 mode) -->
         <LearningSheetOverlay />
+
+        <!-- Presentation mode: temporary highlighter strokes (cleared on exit) -->
+        <PresentationHighlightOverlay
+          v-if="props.presentationMode"
+          v-model="presentationHighlightStrokes"
+          :active="presentationHighlighterActive"
+          :current-color="presentationHighlighterColor"
+          :pointer-size-scale="props.presentationPointerSizeScale"
+        />
 
         <!-- Concept map: link preview while dragging from icon (line + pill at 60% opacity) -->
         <!-- Branch move: shrink animation from node to circle, then follow cursor -->
@@ -1605,9 +1659,17 @@ const gridConfig = {
       :y="contextMenuY"
       :node="contextMenuNode"
       :target="contextMenuTarget"
+      :presentation-mode="props.presentationMode"
+      :presentation-tool="presentationTool"
+      :presentation-highlighter-color="presentationHighlighterColor"
       @close="closeContextMenu"
       @paste="handleContextMenuPaste"
       @add-concept="handleContextMenuAddConcept"
+      @presentation-tool-select="(id) => (presentationTool = id)"
+      @clear-presentation-highlighter="emit('clearPresentationHighlighter')"
+      @exit-presentation="emit('exitPresentation')"
+      @fit-presentation-view="emit('fitPresentationView')"
+      @presentation-highlighter-color-select="(stroke) => (presentationHighlighterColor = stroke)"
     />
 
     <!-- Export to community modal -->

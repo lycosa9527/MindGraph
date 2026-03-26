@@ -18,6 +18,7 @@ import logging
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
 
+from config.settings import config
 from config.database import SessionLocal
 from models.domain.auth import User as UserModel
 from models.domain.workshop_chat import ChatChannel
@@ -107,6 +108,9 @@ async def chat_websocket(websocket: WebSocket):
     Auth: JWT from query ``token`` or ``access_token`` cookie (prefer cookie
     for same-origin clients). Per-topic read state: REST only.
     """
+    if not config.FEATURE_WORKSHOP_CHAT:
+        await websocket.close(code=4403, reason="Workshop Chat feature is disabled")
+        return
     user, error = authenticate_websocket_user(websocket)
     if not user:
         try:

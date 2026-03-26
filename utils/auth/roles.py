@@ -11,8 +11,25 @@ Proprietary License
 """
 
 from config.settings import config
+from services.feature_access.repository import load_feature_org_access_map
 
 from .config import AUTH_MODE, ADMIN_PHONES
+
+FEATURE_KEY_TO_CONFIG_ATTR = {
+    "feature_rag_chunk_test": "FEATURE_RAG_CHUNK_TEST",
+    "feature_course": "FEATURE_COURSE",
+    "feature_template": "FEATURE_TEMPLATE",
+    "feature_community": "FEATURE_COMMUNITY",
+    "feature_askonce": "FEATURE_ASKONCE",
+    "feature_school_zone": "FEATURE_SCHOOL_ZONE",
+    "feature_debateverse": "FEATURE_DEBATEVERSE",
+    "feature_knowledge_space": "FEATURE_KNOWLEDGE_SPACE",
+    "feature_library": "FEATURE_LIBRARY",
+    "feature_gewe": "FEATURE_GEWE",
+    "feature_smart_response": "FEATURE_SMART_RESPONSE",
+    "feature_teacher_usage": "FEATURE_TEACHER_USAGE",
+    "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
+}
 
 
 def is_admin(current_user) -> bool:
@@ -106,18 +123,52 @@ def can_moderate_workshop_channel(current_user, channel) -> bool:
     return org_id is not None and org_id == user_org
 
 
-def can_access_workshop_chat(current_user) -> bool:
-    """
-    Workshop Chat gate: admins/managers, or users in WORKSHOP_CHAT_PREVIEW_ORG_IDS.
-
-    Preview org list is server-configured for in-development testing.
-    """
-    if is_admin_or_manager(current_user):
+def _global_feature_flag_enabled(feature_key: str) -> bool:
+    attr = FEATURE_KEY_TO_CONFIG_ATTR.get(feature_key)
+    if not attr:
         return True
-    org_id = getattr(current_user, 'organization_id', None)
+    return bool(getattr(config, attr, False))
+
+
+def _legacy_workshop_preview_or_open(feature_key: str, current_user) -> bool:
+    if feature_key != "feature_workshop_chat":
+        return True
+    org_id = getattr(current_user, "organization_id", None)
     if org_id is None:
         return False
     return org_id in config.WORKSHOP_CHAT_PREVIEW_ORG_IDS
+
+
+def user_has_feature_access(current_user, feature_key: str) -> bool:
+    """
+    Whether the user may use this feature (global FEATURE_* + DB rules).
+
+    Admins and managers pass when the global flag is on. Otherwise rules in
+    ``feature_access_*`` tables apply; missing rules fall back to open access
+    except Workshop Chat, which uses WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+    """
+    if not _global_feature_flag_enabled(feature_key):
+        return False
+    if is_admin_or_manager(current_user):
+        return True
+    doc = load_feature_org_access_map()
+    entry = doc.get(feature_key)
+    if entry is None:
+        return _legacy_workshop_preview_or_open(feature_key, current_user)
+    if not entry.restrict:
+        return True
+    uid = getattr(current_user, "id", None)
+    org_id = getattr(current_user, "organization_id", None)
+    ok_user = uid is not None and uid in entry.user_ids
+    ok_org = org_id is not None and org_id in entry.organization_ids
+    return ok_user or ok_org
+
+
+def can_access_workshop_chat(current_user) -> bool:
+    """
+    Workshop Chat gate: global flag, then DB rules or WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+    """
+    return user_has_feature_access(current_user, "feature_workshop_chat")
 
 
 def get_user_role(current_user) -> str:

@@ -5,7 +5,13 @@
  */
 import { type ComputedRef, computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
-import { ElButton, ElDropdown, ElDropdownItem, ElDropdownMenu, ElTooltip } from 'element-plus'
+import {
+  ElButton,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+  ElTooltip,
+} from 'element-plus'
 
 import {
   AlignCenter,
@@ -19,7 +25,6 @@ import {
   Layers,
   LayoutGrid,
   Package,
-  PenLine,
   Plus,
   RotateCcw,
   RotateCw,
@@ -104,6 +109,10 @@ const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 // Concept map uses real-time relationship generation only (no multi-stage AI Generate).
 // Default editing experience is "standard" mode; alternate concept-map modes are not wired yet.
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+
+// Format painter state
+const formatBrushActive = ref(false)
+const formatBrushStyle = ref<import('@/types').NodeStyle | null>(null)
 
 // Dropdown visibility (prefixed with _ to indicate intentionally unused - reserved for future)
 const _showStyleDropdown = ref(false)
@@ -1266,7 +1275,64 @@ async function handleDeleteNode() {
 }
 
 function handleFormatBrush() {
-  notify.info(t('canvas.toolbar.formatBrushDev'))
+  const styleKeys: (keyof import('@/types').NodeStyle)[] = [
+    'backgroundColor',
+    'borderColor',
+    'textColor',
+    'fontSize',
+    'fontFamily',
+    'fontWeight',
+    'fontStyle',
+    'textDecoration',
+    'textAlign',
+    'borderWidth',
+    'borderStyle',
+    'borderRadius',
+  ]
+
+  if (!formatBrushActive.value) {
+    const sourceId = diagramStore.selectedNodes[0]
+    if (!sourceId) {
+      notify.warning(t('canvas.toolbar.formatBrushSelectSource'))
+      return
+    }
+    const sourceNode = diagramStore.data?.nodes?.find((n) => n.id === sourceId)
+    if (!sourceNode) return
+
+    const copiedStyle: import('@/types').NodeStyle = {}
+    for (const key of styleKeys) {
+      if (sourceNode.style?.[key] !== undefined) {
+        ;(copiedStyle as Record<string, unknown>)[key] = sourceNode.style[key]
+      }
+    }
+    formatBrushStyle.value = copiedStyle
+    formatBrushActive.value = true
+    notify.success(t('canvas.toolbar.formatBrushActivated'))
+    return
+  }
+
+  const targetIds = diagramStore.selectedNodes
+  if (!targetIds.length) {
+    formatBrushActive.value = false
+    formatBrushStyle.value = null
+    notify.info(t('canvas.toolbar.formatBrushCancelled'))
+    return
+  }
+
+  const style = formatBrushStyle.value
+  if (!style) return
+
+  diagramStore.pushHistory(t('canvas.toolbar.formatPainter'))
+  targetIds.forEach((nodeId) => {
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    if (node) {
+      diagramStore.updateNode(nodeId, { style: { ...(node.style || {}), ...style } })
+    }
+  })
+
+  formatBrushActive.value = false
+  formatBrushStyle.value = null
+  notify.success(t('canvas.toolbar.formatBrushApplied', { count: targetIds.length }))
 }
 
 /**
@@ -1545,9 +1611,13 @@ onUnmounted(() => {
           <ElButton
             text
             size="small"
+            :class="formatBrushActive ? 'bg-purple-100 ring-1 ring-purple-400 rounded' : ''"
             @click="handleFormatBrush"
           >
-            <PenLine class="w-4 h-4 text-purple-500" />
+            <Brush
+              class="w-4 h-4"
+              :class="formatBrushActive ? 'text-purple-600' : 'text-purple-500'"
+            />
           </ElButton>
         </ElTooltip>
 

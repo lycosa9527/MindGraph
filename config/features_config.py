@@ -268,6 +268,15 @@ class FeaturesConfigMixin:
         - D3.js visualization settings
         - Theme and styling options
         """
+        logger.info(
+            "Configuration: v%s | %s:%s | lang=%s | Qwen classification=%s | Qwen generation=%s",
+            self.version,
+            self.host,
+            self.port,
+            self.GRAPH_LANGUAGE,
+            self.QWEN_MODEL_CLASSIFICATION,
+            self.QWEN_MODEL_GENERATION,
+        )
         logger.debug("Configuration Summary:")
         logger.debug("   Version: %s", self.version)
         logger.debug("   FastAPI: %s:%s (Debug: %s)", self.host, self.port, self.debug)

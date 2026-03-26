@@ -5,11 +5,16 @@ Config API Router
 Provides configuration and feature flags to the frontend.
 """
 import os
+from typing import Optional
 
-from fastapi import APIRouter
-from pydantic import BaseModel
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
 
 from config.settings import config
+from models.domain.auth import User
+from models.domain.feature_org_access import FeatureOrgAccessEntry
+from routers.auth.dependencies import get_current_user_optional
+from services.feature_access.repository import load_feature_org_access_map
 
 router = APIRouter(prefix="/config", tags=["config"])
 
@@ -31,12 +36,21 @@ class FeatureFlagsResponse(BaseModel):
     feature_teacher_usage: bool
     feature_workshop_chat: bool
     workshop_chat_preview_org_ids: list[int]
+    feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
 
 
 @router.get("/features", response_model=FeatureFlagsResponse)
-async def get_feature_flags():
-    """Get feature flags configuration."""
+async def get_feature_flags(
+    current_user: Optional[User] = Depends(get_current_user_optional),
+):
+    """Get feature flags configuration.
+
+    ``feature_org_access`` (org/user allowlists) is omitted for anonymous requests
+    so allowlists are not exposed publicly; authenticated clients receive the full map
+    for UI gating.
+    """
     external_base = os.getenv('EXTERNAL_BASE_URL', '').strip().rstrip('/')
+    access_map = load_feature_org_access_map() if current_user is not None else {}
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,
@@ -53,4 +67,5 @@ async def get_feature_flags():
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
+        feature_org_access=access_map,
     )

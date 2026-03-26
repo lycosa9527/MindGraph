@@ -6,11 +6,25 @@
  * - Admin: Full access to all organizations' data
  * - Manager: Access to their organization's data only
  */
-import { computed, ref, watch } from 'vue'
+import type { TabsInstance } from 'element-plus'
+import {
+  ChatLineRound,
+  Coin,
+  DataAnalysis,
+  Reading,
+  School,
+  Setting,
+  Ticket,
+  User,
+  UserFilled,
+} from '@element-plus/icons-vue'
+import type { Component } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
+import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
@@ -28,18 +42,25 @@ const { featureGewe, featureLibrary } = useFeatureFlags()
 const { t } = useLanguage()
 
 const activeTab = ref((route.query.tab as string) || 'dashboard')
+const tabsRef = ref<TabsInstance>()
 
 const isAdmin = computed(() => authStore.isAdmin)
 
-const allTabsConfig = [
-  { name: 'dashboard', labelKey: 'admin.dashboard', icon: 'DataAnalysis', adminOnly: false },
-  { name: 'users', labelKey: 'admin.users', icon: 'User', adminOnly: false },
-  { name: 'schools', labelKey: 'admin.schools', icon: 'School', adminOnly: true },
-  { name: 'roles', labelKey: 'admin.roleControl', icon: 'UserFilled', adminOnly: true },
-  { name: 'tokens', labelKey: 'admin.tokens', icon: 'Ticket', adminOnly: true },
-  { name: 'library', labelKey: 'admin.library', icon: 'Reading', adminOnly: true },
-  { name: 'database', labelKey: 'admin.database.tab', icon: 'Coin', adminOnly: true },
-  { name: 'gewe', labelKey: 'admin.geweWechat', icon: 'ChatLineRound', adminOnly: true },
+const allTabsConfig: ReadonlyArray<{
+  name: string
+  labelKey: string
+  icon: Component
+  adminOnly: boolean
+}> = [
+  { name: 'dashboard', labelKey: 'admin.dashboard', icon: DataAnalysis, adminOnly: false },
+  { name: 'users', labelKey: 'admin.users', icon: User, adminOnly: false },
+  { name: 'schools', labelKey: 'admin.schools', icon: School, adminOnly: true },
+  { name: 'roles', labelKey: 'admin.roleControl', icon: UserFilled, adminOnly: true },
+  { name: 'tokens', labelKey: 'admin.tokens', icon: Ticket, adminOnly: true },
+  { name: 'features', labelKey: 'admin.featuresTab', icon: Setting, adminOnly: true },
+  { name: 'library', labelKey: 'admin.library', icon: Reading, adminOnly: true },
+  { name: 'database', labelKey: 'admin.database.tab', icon: Coin, adminOnly: true },
+  { name: 'gewe', labelKey: 'admin.geweWechat', icon: ChatLineRound, adminOnly: true },
 ]
 
 const tabs = computed(() => {
@@ -65,12 +86,37 @@ watch(
   }
 )
 
+function scheduleTabBarUpdate(): void {
+  void nextTick(() => {
+    tabsRef.value?.tabNavRef?.tabBarRef?.update()
+  })
+}
+
 watch(activeTab, (tab) => {
   const current = route.query.tab as string
   if (tab !== current) {
     router.replace({ query: { ...route.query, tab } })
   }
+  scheduleTabBarUpdate()
 })
+
+watch(
+  () => tabs.value.map((tab) => `${tab.name}:${tab.label}`).join('|'),
+  scheduleTabBarUpdate
+)
+
+watch(
+  () => tabs.value.map((tab) => tab.name),
+  (names) => {
+    if (!names.includes(activeTab.value)) {
+      activeTab.value = 'dashboard'
+      void router.replace({ query: { ...route.query, tab: 'dashboard' } })
+    }
+  },
+  { immediate: true }
+)
+
+onMounted(scheduleTabBarUpdate)
 </script>
 
 <template>
@@ -86,6 +132,7 @@ watch(activeTab, (tab) => {
     <div class="admin-body flex-1 overflow-y-auto">
       <div class="px-6 pt-4 pb-6">
         <el-tabs
+          ref="tabsRef"
           v-model="activeTab"
           class="admin-tabs"
         >
@@ -93,7 +140,6 @@ watch(activeTab, (tab) => {
             v-for="tab in tabs"
             :key="tab.name"
             :name="tab.name"
-            :label="tab.label"
           >
             <template #label>
               <span class="flex items-center gap-2">
@@ -123,6 +169,10 @@ watch(activeTab, (tab) => {
 
           <template v-else-if="activeTab === 'tokens'">
             <AdminTokensTab />
+          </template>
+
+          <template v-else-if="activeTab === 'features'">
+            <AdminFeaturesTab />
           </template>
 
           <template v-else-if="activeTab === 'library'">

@@ -50,6 +50,22 @@ except ImportError:
 BANNER_LOCK_KEY = "banner:print:lock"
 BANNER_LOCK_TTL = 10  # 10 seconds - enough for banner printing
 
+# Set by server_launcher.run_server() before Uvicorn spawns workers; inherited by child
+# processes so we skip duplicate ASCII banner and [Startup] prints on re-import of main.
+MINDGRAPH_LAUNCHER_PID_ENV = "MINDGRAPH_LAUNCHER_PID"
+
+
+class _UvicornProcessHints:
+    """Detect Uvicorn/launcher child-process context for banner and startup logs."""
+
+    @staticmethod
+    def is_launched_child() -> bool:
+        """True when this process is a Uvicorn worker child of the launcher process."""
+        raw = os.environ.get(MINDGRAPH_LAUNCHER_PID_ENV)
+        if not raw:
+            return False
+        return str(os.getpid()) != raw
+
 
 class _BannerLockIdManager:
     """Manages the worker lock ID for banner printing."""
@@ -241,6 +257,10 @@ class _BannerManager:
         if cls._banner_printed:
             return False
 
+        # Uvicorn subprocess imports main again; skip duplicate banner (parent already printed)
+        if _UvicornProcessHints.is_launched_child():
+            return False
+
         # Skip if we're in Uvicorn reloader process (reloader doesn't serve requests)
         if _is_uvicorn_reloader_process():
             return False
@@ -309,7 +329,7 @@ def _print_startup_banner() -> None:
 def setup_early_configuration():
     """
     Perform early configuration setup that must happen before other initialization.
-    
+
     This includes:
     - Banner display
     - Windows event loop policy setup (required for Playwright)
@@ -321,8 +341,12 @@ def setup_early_configuration():
     # Check if we should skip startup messages
     worker_id = os.getenv('UVICORN_WORKER_ID')
     is_reloader = _is_uvicorn_reloader_process()
-    should_log_startup = not is_reloader and worker_id is None
-    
+    should_log_startup = (
+        not is_reloader
+        and worker_id is None
+        and not _UvicornProcessHints.is_launched_child()
+    )
+
     # Print banner (handles its own worker detection)
     _print_startup_banner()
 
