@@ -442,7 +442,7 @@ def init_db(seed_organizations: bool = True):
 
     Args:
         seed_organizations: When True (default), seed org rows if the table is empty.
-            Set False for schema-only runs (e.g. scripts/db/run_migrations.py --schema-only).
+            Set False for schema-only initialization (no org seeding).
     """
     # Verify models are registered by checking Base.metadata contains their tables
     # This ensures models are loaded and registered before table creation

@@ -1,10 +1,14 @@
 """
-MindGraph database migration (interactive; aligned with application DB startup).
+MindGraph database migration (aligned with application DB startup).
 
-- Schema path: same as ``config.database.init_db()`` (app startup).
-- Import path: ``pg_restore`` from ``BACKUP_DIR`` (default ``backup/``), using the
-  same rules as ``scripts/db/dump_import_postgres.py`` — each
-  ``mindgraph.postgresql.*.dump`` needs a ``*.dump.manifest.json`` beside it.
+Loads ``.env`` from the project root automatically (or ``MINDGRAPH_ENV_FILE`` if set).
+Set ``MINDGRAPH_MIGRATION_DEBUG=1`` for debug logging (optional).
+
+- **Create missing tables**: same as ``config.database.init_db()`` (app startup).
+- **Import backup**: if any expected tables are missing, runs ``init_db`` (schema
+  only, no org seed) before ``pg_restore``. Then restores from ``BACKUP_DIR``
+  (default ``backup/``), same rules as ``scripts/db/dump_import_postgres.py`` —
+  each ``mindgraph.postgresql.*.dump`` needs a ``*.dump.manifest.json`` beside it.
 
 Usage:
     python scripts/db/run_migrations.py
@@ -37,6 +41,15 @@ sys.path.insert(0, str(PROJECT_ROOT))
 os.environ.setdefault("PYTHONPATH", str(PROJECT_ROOT))
 
 _DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
+
+
+def _resolve_env_path() -> Path:
+    """Project ``.env``, or ``MINDGRAPH_ENV_FILE`` when set."""
+    env_override = os.getenv("MINDGRAPH_ENV_FILE")
+    if env_override:
+        path = Path(env_override).expanduser()
+        return path if path.is_absolute() else (PROJECT_ROOT / path).resolve()
+    return _DEFAULT_ENV_PATH
 
 
 def _apply_env_file(path: Path) -> None:
@@ -228,20 +241,6 @@ def _verify_results(
     return verification_passed
 
 
-def _prompt_env_path() -> Path:
-    """Ask which .env file to load before importing config.database."""
-    print()
-    print("Database settings are read from a .env file (DATABASE_URL, etc.).")
-    default_s = str(_DEFAULT_ENV_PATH)
-    entered = input(f"Path to .env [{default_s}]: ").strip()
-    if not entered:
-        return _DEFAULT_ENV_PATH
-    path = Path(entered).expanduser()
-    if not path.is_absolute():
-        path = (PROJECT_ROOT / path).resolve()
-    return path
-
-
 def _prompt_yes_no(question: str, default_yes: bool) -> bool:
     hint = "Y/n" if default_yes else "y/N"
     raw = input(f"{question} [{hint}]: ").strip().lower()
@@ -273,10 +272,10 @@ def _prompt_primary_mode() -> str:
     """Return 'migrations', 'import_pg', or 'quit'."""
     print()
     print("What do you want to do?")
-    print("  1) Schema migrations (init_db — same as app startup)")
+    print("  1) Create missing tables (init_db — same as app startup)")
     print(
-        "  2) Import PostgreSQL dump from backup folder "
-        "(needs mindgraph.postgresql.*.dump + .manifest.json beside it)"
+        "  2) Import backup into PostgreSQL "
+        "(mindgraph.postgresql.*.dump + .manifest.json in BACKUP_DIR)"
     )
     print("  3) Quit")
     while True:
@@ -287,24 +286,6 @@ def _prompt_primary_mode() -> str:
             return "import_pg"
         if choice == "3":
             return "quit"
-        print("Please enter 1, 2, or 3.")
-
-
-def _prompt_action() -> str:
-    """Return 'check', 'apply_full', or 'apply_schema'."""
-    print()
-    print("Choose an action:")
-    print("  1) Check only — show status and verify schema (no changes)")
-    print("  2) Apply migrations — full init (same as app startup), seed orgs if empty")
-    print("  3) Apply migrations — schema only (no organization seeding)")
-    while True:
-        choice = input("Enter 1, 2, or 3: ").strip()
-        if choice == "1":
-            return "check"
-        if choice == "2":
-            return "apply_full"
-        if choice == "3":
-            return "apply_schema"
         print("Please enter 1, 2, or 3.")
 
 
@@ -344,18 +325,6 @@ def _connect_and_report(mods: Dict[str, Any], env_path: Path) -> bool:
     return True
 
 
-def _run_check_flow(mods: Dict[str, Any]) -> int:
-    """Verify-only path."""
-    base = mods["Base"]
-    _log_model_registration_summary(base)
-    _check_status(mods["engine"], base, mods["check_database_status"])
-    expected = set(base.metadata.tables.keys())
-    ok = _verify_results(
-        mods["engine"], base, expected, mods["verify_migration_results"]
-    )
-    return 0 if ok else 1
-
-
 def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
     """init_db path with optional post-verify."""
     logger = logging.getLogger(__name__)
@@ -387,6 +356,59 @@ def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
         mods["engine"], base, expected, mods["verify_migration_results"]
     )
     return 0 if ok else 1
+
+
+def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
+    """
+    Create missing tables before pg_restore so the dump can load.
+
+    Uses init_db(seed_organizations=False): schema + migrations, no org seed
+    (restore supplies data).
+    """
+    logger = logging.getLogger(__name__)
+    base = mods["Base"]
+    status = mods["check_database_status"](mods["engine"], base)
+    missing = status["missing_tables"]
+    if not missing:
+        logger.info("Import precheck: all expected tables exist in the database")
+        return True
+
+    logger.warning(
+        "Import precheck: %d expected table(s) missing from the database",
+        len(missing),
+    )
+    for table_name in sorted(missing)[:25]:
+        logger.warning("  - %s", table_name)
+    if len(missing) > 25:
+        logger.warning("  ... and %d more", len(missing) - 25)
+
+    if not live:
+        logger.info(
+            "[DRY RUN] On execute, init_db() would run first to create missing tables."
+        )
+        return True
+
+    logger.info(
+        "Creating missing schema (init_db, seed_organizations=False) before "
+        "pg_restore..."
+    )
+    try:
+        mods["init_db"](seed_organizations=False)
+    except Exception as exc:
+        logger.error("init_db() failed before import: %s", exc, exc_info=True)
+        return False
+
+    status_after = mods["check_database_status"](mods["engine"], base)
+    still_missing = status_after["missing_tables"]
+    if still_missing:
+        logger.error(
+            "After init_db, %d table(s) still missing: %s",
+            len(still_missing),
+            ", ".join(sorted(still_missing)[:15]),
+        )
+        return False
+    logger.info("Import precheck: schema ready for pg_restore")
+    return True
 
 
 def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
@@ -422,6 +444,9 @@ def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
     else:
         logger.info("Dry run — no changes")
 
+    if not _ensure_schema_before_pg_import(mods, live):
+        return 1
+
     return dip.import_command(
         live,
         db_url=mods["DATABASE_URL"],
@@ -430,34 +455,36 @@ def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
     )
 
 
-def main() -> int:
-    """Interactive entry: env path, primary mode, then migrations or import."""
-    print("=" * 60)
-    print("MindGraph — database migration / PostgreSQL import")
-    print("=" * 60)
-
-    env_path = _prompt_env_path()
-    _apply_env_file(env_path)
-
-    debug = _prompt_yes_no("Enable debug logging", default_yes=False)
-    _configure_logging(debug)
-
-    mods = _load_database_modules()
-    if not _connect_and_report(mods, env_path):
-        return 1
-
+def _interactive_migration_flow(mods: Dict[str, Any]) -> int:
+    """After DB connect: create tables or import backup."""
     primary = _prompt_primary_mode()
     if primary == "quit":
         print("Goodbye.")
         return 0
     if primary == "import_pg":
         return _run_pg_import_flow(mods)
+    return _run_apply_flow(mods, seed_orgs=True)
 
-    action = _prompt_action()
-    if action == "check":
-        return _run_check_flow(mods)
-    seed_orgs = action == "apply_full"
-    return _run_apply_flow(mods, seed_orgs)
+
+def main() -> int:
+    """Load ``.env`` automatically, then prompt for create tables vs import backup."""
+    print("=" * 60)
+    print("MindGraph — database migration / PostgreSQL import")
+    print("=" * 60)
+
+    env_path = _resolve_env_path()
+    _apply_env_file(env_path)
+
+    debug = os.getenv("MINDGRAPH_MIGRATION_DEBUG", "").lower() in (
+        "1", "true", "yes",
+    )
+    _configure_logging(debug)
+
+    mods = _load_database_modules()
+    if not _connect_and_report(mods, env_path):
+        return 1
+
+    return _interactive_migration_flow(mods)
 
 
 if __name__ == "__main__":
