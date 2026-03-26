@@ -38,6 +38,10 @@ from typing import Any, Mapping, Optional
 
 _PG_IDENT = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
+# Module-level bindings for dynamic setup.py load (keeps importlib out of inner scope for linters)
+_spec_from_file = importlib.util.spec_from_file_location
+_module_from_spec = importlib.util.module_from_spec
+
 # -----------------------------------------------------------------------------
 # Project root + dotenv
 # -----------------------------------------------------------------------------
@@ -286,6 +290,7 @@ def _parse_redis_url(url: str) -> Optional[dict[str, Any]]:
 
 
 def _redis_ping(url: str) -> bool:
+    """Return True if redis-cli can PING the given redis:// or rediss:// URL."""
     cli = shutil.which("redis-cli")
     if not cli:
         return False
@@ -344,14 +349,20 @@ def _qdrant_http_ok(host: str, port: int) -> bool:
 
 
 def _provision_qdrant_linux(project_root: Path) -> tuple[bool, str]:
+    """
+    Load scripts/setup/setup.py and run install_qdrant_via_documented_flow (Linux, root).
+
+    Returns:
+        Success flag and a short status message.
+    """
     setup_py = project_root / "scripts" / "setup" / "setup.py"
     if not setup_py.is_file():
         return False, "scripts/setup/setup.py not found"
 
-    spec = importlib.util.spec_from_file_location("mindgraph_setup", setup_py)
+    spec = _spec_from_file("mindgraph_setup", setup_py)
     if spec is None or spec.loader is None:
         return False, "Could not load setup.py"
-    mod = importlib.util.module_from_spec(spec)
+    mod = _module_from_spec(spec)
     spec.loader.exec_module(mod)
     ok = mod.install_qdrant_via_documented_flow(
         str(project_root),
@@ -373,6 +384,7 @@ def _sync_celery_keys_in_dotenv(
     redis_url: str,
     celery_db: str,
 ) -> tuple[bool, str]:
+    """Append CELERY_BROKER_URL and CELERY_RESULT_BACKEND to .env when absent."""
     if not redis_url:
         return False, "REDIS_URL empty"
 
