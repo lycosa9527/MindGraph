@@ -306,9 +306,19 @@ def _try_start_postgresql() -> bool:
         return False
 
 
+def _connection_error_is_password_reject(conn_err: Optional[str]) -> bool:
+    """True when the server responded but rejected the password (daemon is up)."""
+    if not conn_err:
+        return False
+    return "password authentication failed" in conn_err.lower()
+
+
 def ensure_postgresql_running(db_url: str) -> bool:
     """
     Ensure PostgreSQL is running. Check connection, try to start if not, retry.
+
+    If the failure is password authentication, does not try to start the
+    service (PostgreSQL is already accepting connections).
 
     Returns:
         True if PostgreSQL is reachable, False otherwise.
@@ -321,16 +331,30 @@ def ensure_postgresql_running(db_url: str) -> bool:
         logger.info("PostgreSQL is running")
         return True
 
-    logger.info("PostgreSQL not reachable. Attempting to start...")
-    _try_start_postgresql()
-    time.sleep(3)
+    conn_err = _get_connection_error(db_url)
+    if _connection_error_is_password_reject(conn_err):
+        logger.error(
+            "PostgreSQL rejected the password (server is likely running). "
+            "Not attempting to start PostgreSQL.\n"
+            "  If DATABASE_URL is not set in your environment or .env, the app "
+            "uses the default in config/database.py: user mindgraph_user, "
+            "password mindgraph_password. The file env.example is only a template; "
+            "it is never loaded. Either create/alter the role to use that password, "
+            "or set DATABASE_URL in .env to match your PostgreSQL user.\n"
+            "  Detail: %s",
+            conn_err,
+        )
+    else:
+        logger.info("PostgreSQL not reachable. Attempting to start...")
+        _try_start_postgresql()
+        time.sleep(3)
 
-    for attempt in range(3):
-        if _can_connect_postgresql(db_url):
-            logger.info("PostgreSQL is now running")
-            return True
-        if attempt < 2:
-            time.sleep(2)
+        for attempt in range(3):
+            if _can_connect_postgresql(db_url):
+                logger.info("PostgreSQL is now running")
+                return True
+            if attempt < 2:
+                time.sleep(2)
 
     host = _parse_db_host(db_url)
     port = _parse_db_port(db_url)

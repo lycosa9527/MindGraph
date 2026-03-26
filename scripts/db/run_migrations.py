@@ -4,6 +4,12 @@ MindGraph database migration (aligned with application DB startup).
 Loads ``.env`` from the project root automatically (or ``MINDGRAPH_ENV_FILE`` if set).
 Set ``MINDGRAPH_MIGRATION_DEBUG=1`` for debug logging (optional).
 
+For PostgreSQL, after loading ``.env`` the script tries to ensure the server is
+reachable (same logic as ``dump_import_postgres.ensure_postgresql_running``):
+if the database does not accept connections, it may start PostgreSQL via the
+app starter, ``systemctl``, or Windows services — but not when failure is
+password authentication (server already running).
+
 - **Create missing tables**: same as ``config.database.init_db()`` (app startup).
 - **Import backup**: if any expected tables are missing, runs ``init_db`` (schema
   only, no org seed) before ``pg_restore``. Then restores from ``BACKUP_DIR``
@@ -34,13 +40,26 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import DeclarativeMeta
 
 # -----------------------------------------------------------------------------
-# Project root — before config.database
+# Project root — before config.database or lazy imports of ``services.*``
 # -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 os.environ.setdefault("PYTHONPATH", str(PROJECT_ROOT))
 
 _DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
+
+
+def _ensure_public_schema_for_project_db(mods: Dict[str, Any]) -> bool:
+    """
+    Ensure ``public`` exists before ORM DDL.
+
+    Loads ``pg_restore_prep`` after ``sys.path`` includes ``PROJECT_ROOT``.
+    """
+    prep = importlib.import_module("services.utils.pg_restore_prep")
+    ensure_fn = getattr(prep, "ensure_public_schema_exists")
+    return bool(
+        ensure_fn(mods["DATABASE_URL"], mods["engine"])
+    )
 
 
 def _resolve_env_path() -> Path:
@@ -109,6 +128,30 @@ def _preflight_database(db_engine: Engine) -> None:
     """Fail fast if PostgreSQL/SQLite is unreachable."""
     with db_engine.connect() as conn:
         conn.execute(text("SELECT 1"))
+
+
+def _log_database_connection_failure(logger: logging.Logger, exc: Exception) -> None:
+    """Log connection failure with hints for common PostgreSQL cases."""
+    logger.error("Database connection failed: %s", exc, exc_info=True)
+    msg_lower = str(exc).lower()
+    if "password authentication failed" in msg_lower:
+        logger.error(
+            "PostgreSQL rejected the password for this DATABASE_URL. "
+            "Set the password in .env (or MINDGRAPH_ENV_FILE) to match the "
+            "role on your server, or reset the role: "
+            "ALTER ROLE mindgraph_user WITH PASSWORD 'your_secret'; "
+            "Test with: psql \"postgresql://mindgraph_user:...@localhost:5432/mindgraph\" -c \"SELECT 1\""
+        )
+        return
+    if "connection refused" in msg_lower:
+        logger.error(
+            "Nothing accepted the connection on that host/port. "
+            "Start PostgreSQL and confirm DATABASE_URL host and port."
+        )
+        return
+    logger.error(
+        "Check DATABASE_URL, PostgreSQL service, and network/firewall settings."
+    )
 
 
 def _configure_logging(debug: bool) -> None:
@@ -268,6 +311,22 @@ def _load_dump_import_module() -> Any:
     return mod
 
 
+def _ensure_postgresql_for_migrations(db_url: str) -> bool:
+    """
+    If PostgreSQL is not reachable, try starting it (same as dump/import script).
+
+    Uses ``dump_import_postgres.ensure_postgresql_running`` (requires psycopg2
+    for the pre-check probe).
+    """
+    logger = logging.getLogger(__name__)
+    try:
+        dip = _load_dump_import_module()
+    except RuntimeError as exc:
+        logger.error("%s", exc)
+        return False
+    return bool(dip.ensure_postgresql_running(db_url))
+
+
 def _prompt_primary_mode() -> str:
     """Return 'migrations', 'import_pg', or 'quit'."""
     print()
@@ -317,10 +376,7 @@ def _connect_and_report(mods: Dict[str, Any], env_path: Path) -> bool:
     try:
         _preflight_database(mods["engine"])
     except Exception as exc:
-        logger.error("Database connection failed: %s", exc, exc_info=True)
-        logger.error(
-            "Check DATABASE_URL, PostgreSQL service, and network/firewall settings."
-        )
+        _log_database_connection_failure(logger, exc)
         return False
     return True
 
@@ -336,6 +392,13 @@ def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
     if not _prompt_yes_no("Proceed with applying migrations", default_yes=False):
         print("Cancelled.")
         return 0
+
+    if mods["engine"].dialect.name == "postgresql":
+        if not _ensure_public_schema_for_project_db(mods):
+            logger.error(
+                "Could not ensure schema public exists; fix the database and retry."
+            )
+            return 1
 
     logger.info("%s", "=" * 60)
     logger.info("APPLY — init_db() (same as application startup)")
@@ -387,6 +450,12 @@ def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
             "[DRY RUN] On execute, init_db() would run first to create missing tables."
         )
         return True
+
+    if not _ensure_public_schema_for_project_db(mods):
+        logger.error(
+            "Could not ensure schema public exists; fix the database and retry."
+        )
+        return False
 
     logger.info(
         "Creating missing schema (init_db, seed_organizations=False) before "
@@ -481,6 +550,9 @@ def main() -> int:
     _configure_logging(debug)
 
     mods = _load_database_modules()
+    if mods["engine"].dialect.name == "postgresql":
+        if not _ensure_postgresql_for_migrations(mods["DATABASE_URL"]):
+            return 1
     if not _connect_and_report(mods, env_path):
         return 1
 
