@@ -148,7 +148,8 @@ def check_celery_installed() -> tuple[bool, str]:
     if not qdrant_host and not qdrant_url:
         return False, (
             "Celery requires Qdrant server but QDRANT_HOST is not configured.\n"
-            "Install Qdrant: bash scripts/install_qdrant.sh\n"
+            "Install Qdrant (Linux): sudo python3 scripts/setup/setup.py\n"
+            "(see docs/QDRANT_SETUP.md)\n"
             "Then add QDRANT_HOST=localhost:6333 to .env"
         )
 
@@ -158,8 +159,8 @@ def check_celery_installed() -> tuple[bool, str]:
     except Exception:
         return False, (
             "Celery requires Qdrant server but Qdrant is not running on port 6333.\n"
-            "Start Qdrant: bash scripts/install_qdrant.sh\n"
-            "Or ensure Qdrant is running: sudo systemctl start qdrant"
+            "Start Qdrant: sudo systemctl start qdrant\n"
+            "If not installed: sudo python3 scripts/setup/setup.py (see docs/QDRANT_SETUP.md)"
         )
 
     return True, "Celery is installed and dependencies are available"
@@ -216,7 +217,7 @@ def check_qdrant_installed() -> tuple[bool, str]:
 
     return False, (
         "Qdrant server binary not found. Install Qdrant:\n"
-        "  - Run: bash scripts/install_qdrant.sh\n"
+        "  - Run: sudo python3 scripts/setup/setup.py (Linux; see docs/QDRANT_SETUP.md)\n"
         "  - Or download from: https://github.com/qdrant/qdrant/releases\n"
         "  - Or set QDRANT_HOST to point to an existing Qdrant server"
     )

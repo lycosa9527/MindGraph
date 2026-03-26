@@ -26,6 +26,13 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!spec || !diagramTypeValue) return false
 
     ctx.resetSessionEditCount()
+
+    // Preserve dimensions of nodes that will be reused (same type reload, e.g. add/delete step).
+    // Reused nodes are not remounted by Vue Flow, so ResizeObserver won't re-fire for them.
+    // Restoring their known dimensions allows reactive layout correction to fire immediately.
+    const prevDimensions: Record<string, { width: number; height: number }> =
+      ctx.type.value === diagramTypeValue ? { ...ctx.nodeDimensions.value } : {}
+
     ctx.nodeDimensions.value = {}
     ctx.layoutRecalcTrigger.value = 0
     useConceptMapRelationshipStore().clearAll()
@@ -68,6 +75,9 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       const eh = node.data?.estimatedHeight as number | undefined
       if (ew && eh && node.id) {
         ctx.nodeDimensions.value[node.id] = { width: ew, height: eh }
+      } else if (node.id && prevDimensions[node.id] && !ctx.nodeDimensions.value[node.id]) {
+        // Restore previously measured dimensions for reused nodes (no estimatedWidth in data)
+        ctx.nodeDimensions.value[node.id] = prevDimensions[node.id]
       }
     }
 

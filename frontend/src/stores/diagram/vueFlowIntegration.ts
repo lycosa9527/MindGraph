@@ -15,6 +15,7 @@ import {
   recalculateBraceMapLayout,
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
+  recalculateFlowMapLayout,
   recalculateMultiFlowMapLayout,
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
@@ -45,6 +46,12 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       ctx.data.value.nodes,
       ctx.nodeDimensions.value
     )
+  })
+
+  const flowMapLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'flow_map' || !ctx.data.value?.nodes) return []
+    void ctx.layoutRecalcTrigger.value
+    return recalculateFlowMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
   })
 
   const multiFlowMapLayoutNodes = computed(() => {
@@ -142,7 +149,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'flow_map') {
-      return ctx.data.value.nodes.map((node) => {
+      const layoutNodes = flowMapLayoutNodes.value
+      return layoutNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false

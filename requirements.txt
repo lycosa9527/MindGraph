@@ -113,7 +113,7 @@ celery>=5.6.2  # Background task processing for document uploads (REQUIRED - app
 #   - Windows: Download from https://github.com/UB-Mannheim/tesseract/wiki
 #   - macOS: brew install tesseract
 #   - Linux: apt-get install tesseract-ocr tesseract-ocr-chi-sim (for Chinese support)
-# Note: Qdrant server is REQUIRED. Install with: bash scripts/install_qdrant.sh
+# Note: Qdrant server is REQUIRED. On Linux: sudo python3 scripts/setup/setup.py (docs/QDRANT_SETUP.md)
 #       Then set QDRANT_HOST=localhost:6333 in .env
 # Note: Celery is REQUIRED and requires Redis as broker (already included above).
 #       Application will exit if Celery cannot start or Qdrant is not available.
@@ -130,8 +130,8 @@ redis>=7.1.0  # Redis client for caching (captcha, rate limiting, sessions)
 # IP GEOLOCATION (Local Database - No External APIs)
 # ============================================================================
 py-ip2region>=3.0.2  # Local IP geolocation database (xdb format, loads into memory)
-# Note: Database files (ip2region_v4.xdb and ip2region_v6.xdb) need to be placed in data/ directory
-# Download from: https://github.com/lionsoul2014/ip2region
+# Note: Run python scripts/setup/dashboard_install.py to fetch xdb files and dashboard assets
+#       (see scripts/setup/setup_ip2region.md)
 
 # ============================================================================
 # CLOUD STORAGE (Optional)

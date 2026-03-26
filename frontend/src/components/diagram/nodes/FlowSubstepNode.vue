@@ -53,7 +53,7 @@ const nodeStyle = computed(() => {
       ...baseStyle,
       width: 'max-content',
       minWidth: '120px',
-      height: '48px',
+      minHeight: '48px',
     }
   }
   return baseStyle
@@ -183,8 +183,8 @@ function handleBranchMovePointerUp(): void {
 <style scoped>
 .flow-substep-node {
   width: 100px;
-  height: 50px;
-  overflow: hidden;
+  min-height: 50px;
+  overflow: visible;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);
   transition:
     box-shadow 0.2s ease,
@@ -193,7 +193,7 @@ function handleBranchMovePointerUp(): void {
 
 .flow-substep-node.pill-shape {
   width: 120px;
-  height: 48px;
+  min-height: 48px;
   padding-left: 20px;
   padding-right: 20px;
 }

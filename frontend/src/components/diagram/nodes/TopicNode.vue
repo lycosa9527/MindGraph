@@ -177,13 +177,13 @@ const nodeStyle = computed(() => {
     }
   }
 
-  // Flow map topic: adaptive width (min 120px) so full text displays
+  // Flow map topic: adaptive width and height so full text displays
   if (isFlowMap.value) {
     return {
       ...baseStyle,
       width: 'max-content',
       minWidth: '120px',
-      height: '48px',
+      minHeight: '48px',
     }
   }
 
@@ -273,12 +273,14 @@ function handleWidthChange(width: number) {
 <template>
   <div
     ref="topicNodeRef"
-    class="topic-node flex items-center justify-center px-6 py-4 border-solid cursor-default select-none"
+    class="topic-node flex items-center justify-center px-6 border-solid cursor-default select-none"
     :class="{
       'pill-shape': isPillShape,
       'rounded-rectangle': isRoundedRectangle,
       'multi-flow-map-node': isMultiFlowMap,
       'flow-map-topic-node': isFlowMap,
+      'py-3': isFlowMap,
+      'py-4': !isFlowMap,
     }"
     :style="nodeStyle"
   >
@@ -287,7 +289,7 @@ function handleWidthChange(width: number) {
       :node-id="id"
       :is-editing="isEditing"
       :readonly="data.hidden === true"
-      max-width="300px"
+      :max-width="isFlowMap ? 'none' : '300px'"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"

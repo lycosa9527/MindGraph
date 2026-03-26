@@ -1,4 +1,4 @@
-﻿"""
+"""
 Emit data/prompt_language_registry.json — single source for prompt output languages.
 
 Run from repo root:

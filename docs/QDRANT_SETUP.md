@@ -2,69 +2,44 @@
 
 ## Quick Install (Recommended)
 
-Run the automated install script from your MindGraph project directory:
+Qdrant installation is built into the MindGraph setup script (Linux with systemd). From the project root:
 
 ```bash
-# Python entry point (recommended - works on Windows, WSL, Linux)
-# Use full path when using conda (sudo does not inherit conda PATH):
-sudo $(which python) scripts/setup/install_qdrant.py
+# Use the same Python you use for the project (conda: sudo does not inherit PATH)
+sudo $(which python3) scripts/setup/setup.py
 
-# Or use system python3:
-sudo python3 scripts/setup/install_qdrant.py
-
-# Or use the shell wrapper
-sudo bash scripts/setup/install_qdrant.sh
+# Or system Python:
+sudo python3 scripts/setup/setup.py
 ```
 
-**Conda users**: Run `sudo $(which python) scripts/setup/install_qdrant.py` so sudo finds your conda Python.
+**Conda users**: Use `sudo $(which python3) scripts/setup/setup.py` so sudo resolves your conda interpreter.
 
-**WSL / Windows users**: Use the Python entry point to avoid line-ending issues when the repo is on a Windows drive.
+**Non-Linux**: Run setup for other steps; Qdrant server auto-install targets Linux. On Windows or macOS use Docker, WSL, or a manual/binary install (sections below).
 
-### What the script does:
+When `setup.py` asks, you can skip installing the Qdrant server if you use your own instance.
 
-1. **Downloads** the latest Qdrant release from GitHub
-2. **Installs** to `~/qdrant/`
-3. **Creates** a systemd service for auto-start
-4. **Starts** Qdrant on port 6333
-5. **Updates** your `.env` file with `QDRANT_HOST=localhost:6333`
+### What the setup script does for Qdrant (Linux):
+
+1. **Downloads** a pinned Qdrant release from GitHub (see `QDRANT_GITHUB_VERSION` in `scripts/setup/setup.py`)
+2. **Installs** the binary to `/usr/local/bin/qdrant`
+3. **Writes** `/etc/qdrant/config.yaml` with storage under `/var/lib/qdrant/`
+4. **Creates** a `qdrant` systemd unit and starts the service
+5. **Ensures** the `qdrant-client` Python package via pip
+6. You should set **`QDRANT_HOST=localhost:6333`** in `.env` (see `env.example`)
 
 ### Expected output:
 
+Setup runs several steps; for Qdrant you should see log lines similar to:
+
 ```
-========================================
-  Qdrant Installation Script
-  MindGraph Vector Database Setup
-========================================
-
-Step 1: Creating directories...
-[OK] Created /home/user/qdrant
-
-Step 2: Downloading latest Qdrant...
-[OK] Download complete
-
-Step 3: Extracting...
-[OK] Extracted and set permissions
-
-Step 4: Creating systemd service...
-[OK] Created systemd service
-
-Step 5: Starting Qdrant service...
-[OK] Service started
-
-Step 6: Verifying installation...
-[OK] Qdrant is running on port 6333
-[OK] Installed version: 1.13.0
-
-Step 7: Updating .env file...
-[OK] Added QDRANT_HOST to .env
-
-========================================
-  Installation Complete!
-========================================
-
-Qdrant is running on: http://localhost:6333
-Dashboard URL: http://localhost:6333/dashboard
+============================================================
+  Qdrant vector database (GitHub release + systemd)
+============================================================
+...
+[SUCCESS] Qdrant is running — API http://127.0.0.1:6333  gRPC 127.0.0.1:6334
 ```
+
+Add `QDRANT_HOST=localhost:6333` to `.env` yourself if it is not already set (see `env.example`). Dashboard: http://localhost:6333/dashboard
 
 ### After installation:
 
@@ -82,10 +57,10 @@ You should see:
 
 ### Upgrade to latest version:
 
-Simply run the script again - it will detect the existing installation and prompt you:
+Bump `QDRANT_GITHUB_VERSION` in `scripts/setup/setup.py` if needed, then re-run setup as root so the new binary and service are applied:
 
 ```bash
-python scripts/setup/install_qdrant.py
+sudo python3 scripts/setup/setup.py
 ```
 
 ---
@@ -290,49 +265,57 @@ Features:
 
 ## Update to Latest Version
 
-### Using the install script (easiest)
+### Using setup (easiest on Linux)
 
 ```bash
-python scripts/setup/install_qdrant.py
+sudo python3 scripts/setup/setup.py
 ```
 
-The script detects existing installations and prompts to upgrade.
+Adjust `QDRANT_GITHUB_VERSION` in `scripts/setup/setup.py` when you want a newer upstream release.
 
-### Manual upgrade
+### Manual upgrade (home-directory install)
+
+If you installed under `~/qdrant` (manual section below), replace the binary there and restart the service.
+
+### Manual upgrade (MindGraph setup paths: `/usr/local/bin`, `/var/lib/qdrant`)
 
 ```bash
 # Stop service
 sudo systemctl stop qdrant
 
-# Backup current version (optional)
-cd ~/qdrant
-mv qdrant qdrant.bak
+# Backup current binary (optional)
+sudo cp /usr/local/bin/qdrant /usr/local/bin/qdrant.bak
 
-# Download latest
+# Download and extract a new release (pick arch + version from GitHub)
+cd /tmp
 wget https://github.com/qdrant/qdrant/releases/latest/download/qdrant-x86_64-unknown-linux-gnu.tar.gz
 tar -xzf qdrant-x86_64-unknown-linux-gnu.tar.gz
-chmod +x qdrant
+sudo install -m 755 qdrant /usr/local/bin/qdrant
 
 # Start service
 sudo systemctl start qdrant
 
-# Verify version
-curl http://localhost:6333 | grep version
+# Verify
+curl -s http://localhost:6333/collections
 ```
 
 ## Data Location
 
-Data is stored in `~/qdrant/storage/`. To backup:
+**MindGraph automated install (recommended):** vectors and snapshots live under **`/var/lib/qdrant/storage`** and **`/var/lib/qdrant/snapshots`** (see `/etc/qdrant/config.yaml`).
+
+**Manual install (below):** data may live under **`~/qdrant/storage/`** if you configured it that way.
+
+To back up automated-install storage:
 
 ```bash
 # Stop Qdrant first
 sudo systemctl stop qdrant
 
 # Backup
-tar -czvf qdrant_backup_$(date +%Y%m%d).tar.gz ~/qdrant/storage/
+sudo tar -czvf qdrant_backup_$(date +%Y%m%d).tar.gz -C /var/lib/qdrant .
 
-# Restore
-tar -xzvf qdrant_backup_YYYYMMDD.tar.gz -C ~/
+# Restore (example — adjust paths)
+# sudo tar -xzvf qdrant_backup_YYYYMMDD.tar.gz -C /var/lib/qdrant
 
 # Start Qdrant
 sudo systemctl start qdrant
@@ -345,11 +328,16 @@ sudo systemctl start qdrant
 # Check logs
 sudo journalctl -u qdrant -n 50
 
-# Check permissions
+# Check permissions (automated install)
+ls -la /usr/local/bin/qdrant
+ls -la /var/lib/qdrant/
+sudo ls -la /etc/qdrant/
+
+# Manual install under home directory
 ls -la ~/qdrant/
 ls -la ~/qdrant/storage/
 
-# Fix permissions if needed
+# Fix permissions if needed (manual home install)
 chmod +x ~/qdrant/qdrant
 chmod 755 ~/qdrant/storage
 ```

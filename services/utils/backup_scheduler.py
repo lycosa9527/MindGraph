@@ -30,6 +30,7 @@ Proprietary License
 """
 
 import asyncio
+import json
 import logging
 import os
 import subprocess
@@ -38,7 +39,7 @@ import time
 import uuid
 from datetime import datetime, timedelta
 from pathlib import Path
-from typing import List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 
 try:
     from config.database import DATABASE_URL
@@ -1011,13 +1012,23 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                     try:
                         client.delete_object(
                             Bucket=COS_BUCKET,
-                            Key=backup['key']
+                            Key=backup['key'],
                         )
                         deleted_count += 1
                         logger.debug("[Backup] Deleted COS backup: %s", backup['key'])
+
+                        # Also delete the companion manifest if it exists
+                        manifest_key = f"{backup['key']}.manifest.json"
+                        try:
+                            client.delete_object(
+                                Bucket=COS_BUCKET,
+                                Key=manifest_key,
+                            )
+                            logger.debug("[Backup] Deleted COS manifest: %s", manifest_key)
+                        except Exception:
+                            pass  # Manifest may not exist for older backups
                     except Exception as delete_error:
                         if CosServiceError is not None and isinstance(delete_error, CosServiceError):
-                            # Type checker doesn't know CosServiceError methods, use hasattr checks
                             error_code = (
                                 delete_error.get_error_code()
                                 if hasattr(delete_error, 'get_error_code')
@@ -1107,18 +1118,111 @@ def cleanup_old_backups(backup_dir: Path, keep_count: int) -> int:
         # Sort by modification time (newest first)
         backup_files.sort(key=lambda x: x[0], reverse=True)
 
-        # Delete files beyond the keep_count
+        # Delete files beyond the keep_count (dump + manifest)
         for _, backup_file in backup_files[keep_count:]:
             try:
                 backup_file.unlink()
                 logger.info("[Backup] Deleted old backup: %s", backup_file.name)
                 deleted_count += 1
+
+                manifest_file = Path(f"{backup_file}.manifest.json")
+                if manifest_file.exists():
+                    manifest_file.unlink()
+                    logger.debug("[Backup] Deleted manifest: %s", manifest_file.name)
             except (OSError, PermissionError) as e:
                 logger.warning("[Backup] Could not delete %s: %s", backup_file.name, e)
     except Exception as e:
         logger.warning("[Backup] Cleanup error: %s", e)
 
     return deleted_count
+
+
+def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
+    """
+    Write a manifest JSON alongside a pg_dump backup file.
+
+    The manifest records table row counts and summary statistics so that
+    restores can be verified (matching the pattern used by
+    ``database_export_service`` and ``dump_import_postgres``).
+
+    Returns:
+        Path to the manifest file, or None on failure.
+    """
+    try:
+        from config.database import engine  # pylint: disable=import-outside-toplevel
+        from sqlalchemy import inspect, text  # pylint: disable=import-outside-toplevel
+
+        pg_inspector = inspect(engine)
+        table_names = sorted(pg_inspector.get_table_names())
+        counts: Dict[str, int] = {}
+
+        with engine.connect() as conn:
+            for table in table_names:
+                try:
+                    result = conn.execute(
+                        text(f'SELECT COUNT(*) FROM "{table}"')
+                    )
+                    counts[table] = result.scalar() or 0
+                except Exception:
+                    counts[table] = -1
+
+        total_columns = 0
+        for table in table_names:
+            try:
+                total_columns += len(pg_inspector.get_columns(table))
+            except Exception:
+                pass
+
+        manifest: Dict[str, Any] = {
+            "dump_file": backup_path.name,
+            "timestamp": datetime.now().isoformat(),
+            "size_bytes": backup_path.stat().st_size,
+            "tables": counts,
+            "total_tables": len(table_names),
+            "total_columns": total_columns,
+            "total_records": sum(v for v in counts.values() if v >= 0),
+        }
+
+        manifest_path = Path(f"{backup_path}.manifest.json")
+        manifest_path.write_text(json.dumps(manifest, indent=2), encoding="utf-8")
+        logger.info("[Backup] Manifest written: %s", manifest_path.name)
+        return manifest_path
+
+    except Exception as exc:
+        logger.warning("[Backup] Failed to write manifest: %s", exc)
+        return None
+
+
+def _upload_to_cos_if_enabled(
+    backup_path: Path,
+    manifest_path: Optional[Path],
+) -> None:
+    """Upload dump and manifest to COS, then clean up old COS backups."""
+    if not COS_BACKUP_ENABLED:
+        logger.debug("[Backup] COS backup disabled (COS_BACKUP_ENABLED=false), skipping upload")
+        return
+
+    logger.info("[Backup] COS backup enabled, starting upload...")
+    logger.info(
+        "[Backup] COS config: bucket=%s, region=%s, prefix=%s",
+        COS_BUCKET, COS_REGION, COS_KEY_PREFIX,
+    )
+
+    if not upload_backup_to_cos(backup_path):
+        logger.error("[Backup] COS upload failed, but local backup succeeded")
+        return
+
+    logger.info("[Backup] COS dump upload completed successfully")
+
+    if manifest_path and manifest_path.exists():
+        if upload_backup_to_cos(manifest_path):
+            logger.info("[Backup] COS manifest upload completed")
+        else:
+            logger.warning("[Backup] COS manifest upload failed")
+
+    deleted = cleanup_old_cos_backups(retention_days=2)
+    if deleted > 0:
+        logger.info("[Backup] Cleaned up %s old backup(s) from COS", deleted)
 
 
 def create_backup() -> bool:
@@ -1128,15 +1232,10 @@ def create_backup() -> bool:
     Returns:
         True if backup succeeded, False otherwise
     """
-    # CRITICAL: Verify this worker holds the lock before creating backup
-    # This prevents race conditions where multiple workers pass the initial lock check
-    # The atomic lock refresh in the scheduler loop should prevent this, but this is
-    # a final safety check
     if not is_backup_lock_holder():
         logger.warning("[Backup] Backup rejected: this worker does not hold the scheduler lock")
         return False
 
-    # PostgreSQL backup
     if not is_postgresql():
         logger.warning("[Backup] Not using PostgreSQL database, skipping backup")
         return False
@@ -1146,52 +1245,31 @@ def create_backup() -> bool:
 
     logger.info("[Backup] Starting PostgreSQL backup...")
 
-    # Check disk space (estimate: assume 2x database size for compressed backup)
     if not _check_disk_space(BACKUP_DIR, required_mb=200):
         logger.error("[Backup] Insufficient disk space (need at least 200 MB), skipping backup")
         return False
 
-    # Create PostgreSQL backup
-    if backup_postgresql_database(backup_path):
-        size_mb = backup_path.stat().st_size / (1024 * 1024)
-        logger.info("[Backup] PostgreSQL backup created: %s (%.2f MB)", backup_path.name, size_mb)
-
-        # Verify integrity
-        if verify_backup(backup_path):
-            logger.info("[Backup] Integrity check passed")
-        else:
-            logger.warning("[Backup] Integrity check failed - backup may be corrupted")
-
-        # Cleanup old backups (keep only N most recent)
-        deleted = cleanup_old_backups(BACKUP_DIR, BACKUP_RETENTION_COUNT)
-        if deleted > 0:
-            logger.info("[Backup] Cleaned up %s old backup(s)", deleted)
-
-        # Upload to COS if enabled
-        if COS_BACKUP_ENABLED:
-            logger.info("[Backup] COS backup enabled, starting upload...")
-            logger.info(
-                "[Backup] COS config: bucket=%s, region=%s, prefix=%s",
-                COS_BUCKET,
-                COS_REGION,
-                COS_KEY_PREFIX
-            )
-            if upload_backup_to_cos(backup_path):
-                logger.info("[Backup] COS upload completed successfully")
-
-                # Cleanup old COS backups (keep only last 2 days)
-                deleted = cleanup_old_cos_backups(retention_days=2)
-                if deleted > 0:
-                    logger.info("[Backup] Cleaned up %s old backup(s) from COS", deleted)
-            else:
-                logger.error("[Backup] COS upload failed, but local backup succeeded")
-        else:
-            logger.debug("[Backup] COS backup disabled (COS_BACKUP_ENABLED=false), skipping upload")
-
-        return True
-    else:
+    if not backup_postgresql_database(backup_path):
         logger.error("[Backup] PostgreSQL backup failed")
         return False
+
+    size_mb = backup_path.stat().st_size / (1024 * 1024)
+    logger.info("[Backup] PostgreSQL backup created: %s (%.2f MB)", backup_path.name, size_mb)
+
+    if verify_backup(backup_path):
+        logger.info("[Backup] Integrity check passed")
+    else:
+        logger.warning("[Backup] Integrity check failed - backup may be corrupted")
+
+    manifest_path = _write_backup_manifest(backup_path)
+
+    deleted = cleanup_old_backups(BACKUP_DIR, BACKUP_RETENTION_COUNT)
+    if deleted > 0:
+        logger.info("[Backup] Cleaned up %s old backup(s)", deleted)
+
+    _upload_to_cos_if_enabled(backup_path, manifest_path)
+
+    return True
 
 
 def get_next_backup_time() -> datetime:
@@ -1354,26 +1432,44 @@ async def run_backup_now() -> bool:
         return False
 
 
+def _read_manifest(dump_path: Path) -> Optional[Dict[str, Any]]:
+    """Read a manifest file accompanying a .dump backup, if it exists."""
+    manifest_path = Path(f"{dump_path}.manifest.json")
+    if not manifest_path.exists():
+        return None
+    try:
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        logger.debug("[Backup] Could not read manifest %s: %s", manifest_path.name, exc)
+        return None
+
+
 def get_backup_status() -> dict:
     """
     Get the current backup status and list of backups.
 
     Returns:
-        dict with backup configuration and list of existing backups
+        dict with backup configuration and list of existing backups.
+        Each backup entry includes manifest data (row counts) when available.
     """
-    backups = []
+    backups: List[Dict[str, Any]] = []
 
     if BACKUP_DIR.exists():
-        # PostgreSQL backups
         for backup_file in sorted(BACKUP_DIR.glob("mindgraph.postgresql.*.dump"), reverse=True):
             if backup_file.is_file():
                 stat = backup_file.stat()
-                backups.append({
+                entry: Dict[str, Any] = {
                     "filename": backup_file.name,
                     "size_mb": round(stat.st_size / (1024 * 1024), 2),
                     "created": datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                    "type": "postgresql"
-                })
+                    "type": "postgresql",
+                }
+                manifest = _read_manifest(backup_file)
+                if manifest:
+                    entry["total_tables"] = manifest.get("total_tables")
+                    entry["total_records"] = manifest.get("total_records")
+                    entry["manifest"] = manifest
+                backups.append(entry)
 
     return {
         "enabled": BACKUP_ENABLED,
@@ -1381,5 +1477,5 @@ def get_backup_status() -> dict:
         "retention_count": BACKUP_RETENTION_COUNT,
         "backup_dir": str(BACKUP_DIR.resolve()),
         "next_backup": get_next_backup_time().isoformat() if BACKUP_ENABLED else None,
-        "backups": backups
+        "backups": backups,
     }

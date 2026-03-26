@@ -623,17 +623,21 @@ function handleAddNode() {
     return
   }
 
-  // For flow map: add step or substep
+  // For flow map: substep selected → add substep; step/nothing selected → add step
   if (diagramType === 'flow_map') {
     const selectedId = diagramStore.selectedNodes[0]
     const selectedNode = selectedId
       ? diagramStore.data?.nodes?.find((n) => n.id === selectedId)
       : undefined
-    const isStepSelected = selectedNode?.type === 'flow'
-    if (isStepSelected && selectedNode?.text) {
-      if (
-        diagramStore.addFlowMapSubstep(selectedNode.text, t('canvas.toolbar.newSubstep'))
-      ) {
+
+    if (selectedNode?.type === 'flowSubstep') {
+      const match = selectedNode.id?.match(/^flow-substep-(\d+)-/)
+      const stepIndex = match ? parseInt(match[1], 10) : -1
+      const stepNode =
+        stepIndex >= 0
+          ? diagramStore.data?.nodes?.find((n) => n.id === `flow-step-${stepIndex}`)
+          : undefined
+      if (stepNode?.text && diagramStore.addFlowMapSubstep(stepNode.text, t('canvas.toolbar.newSubstep'))) {
         diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
         notify.success(t('canvas.toolbar.substepAdded'))
       }
@@ -765,13 +769,22 @@ function handleAddChild() {
     const selectedNode = selectedId
       ? diagramStore.data?.nodes?.find((n) => n.id === selectedId)
       : undefined
-    if (selectedNode?.type !== 'flow' || !selectedNode?.text) {
+
+    let stepNode = selectedNode?.type === 'flow' ? selectedNode : undefined
+    if (!stepNode && selectedNode?.type === 'flowSubstep') {
+      const match = selectedNode.id?.match(/^flow-substep-(\d+)-/)
+      const stepIndex = match ? parseInt(match[1], 10) : -1
+      stepNode =
+        stepIndex >= 0
+          ? diagramStore.data?.nodes?.find((n) => n.id === `flow-step-${stepIndex}`)
+          : undefined
+    }
+
+    if (!stepNode?.text) {
       notify.warning(t('canvas.toolbar.selectStepForSubstep'))
       return
     }
-    if (
-      diagramStore.addFlowMapSubstep(selectedNode.text, t('canvas.toolbar.newSubstep'))
-    ) {
+    if (diagramStore.addFlowMapSubstep(stepNode.text, t('canvas.toolbar.newSubstep'))) {
       diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
       notify.success(t('canvas.toolbar.substepAdded'))
     }

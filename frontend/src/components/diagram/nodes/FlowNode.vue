@@ -100,13 +100,13 @@ const nodeStyle = computed(() => {
     }
   }
 
-  // Flow map: adaptive width (min 120px) so full text displays
+  // Flow map: adaptive width and height so full text displays
   if (isFlowMap.value) {
     return {
       ...baseStyle,
       width: 'max-content',
       minWidth: '120px',
-      height: '48px',
+      minHeight: '48px',
     }
   }
 
@@ -314,8 +314,8 @@ function handleBranchMovePointerUp(): void {
 <style scoped>
 .flow-node {
   width: 140px;
-  min-width: 140px; /* Minimum width */
-  height: 50px;
+  min-width: 140px;
+  min-height: 50px;
   overflow: visible; /* Changed from hidden to visible so delete button isn't clipped */
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition:

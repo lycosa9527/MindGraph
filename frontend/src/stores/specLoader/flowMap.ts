@@ -68,6 +68,60 @@ export function getFlowTopicCenteredPosition(
   return { x, y: currentY }
 }
 
+/**
+ * Post-render layout correction for flow maps.
+ * Uses actual DOM-measured node dimensions from Pinia to center-align the topic
+ * node with the step column, since node sizes are only known after the first render.
+ *
+ * Horizontal layout: corrects topic Y so its center matches step nodes' center Y.
+ * Vertical layout:   corrects topic X so its center matches step column's center X.
+ */
+export function recalculateFlowMapLayout(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
+): DiagramNode[] {
+  if (!Array.isArray(nodes) || nodes.length === 0) return nodes
+
+  const topicNode = nodes.find((n) => n.id === FLOW_TOPIC_NODE_ID)
+  if (!topicNode) return nodes
+
+  const topicDims = nodeDimensions[FLOW_TOPIC_NODE_ID]
+  if (!topicDims) return nodes
+
+  const stepNodes = nodes.filter((n) => n.type === 'flow')
+  if (stepNodes.length === 0) return nodes
+
+  const firstStep = stepNodes[0]
+  if (!firstStep.position || !topicNode.position) return nodes
+
+  const firstStepDims = nodeDimensions[firstStep.id]
+  if (!firstStepDims) return nodes
+
+  const orientation =
+    ((topicNode.data as Record<string, unknown>)?.orientation as string) || 'horizontal'
+
+  const result = nodes.map((n) => ({ ...n }))
+  const topicIndex = result.findIndex((n) => n.id === FLOW_TOPIC_NODE_ID)
+
+  if (orientation === 'horizontal') {
+    const stepCenterY = firstStep.position.y + firstStepDims.height / 2
+    const correctedY = Math.round(stepCenterY - topicDims.height / 2)
+    result[topicIndex] = {
+      ...result[topicIndex],
+      position: { x: topicNode.position.x, y: correctedY },
+    }
+  } else {
+    const stepCenterX = firstStep.position.x + firstStepDims.width / 2
+    const correctedX = Math.round(stepCenterX - topicDims.width / 2)
+    result[topicIndex] = {
+      ...result[topicIndex],
+      position: { x: correctedX, y: topicNode.position.y },
+    }
+  }
+
+  return result
+}
+
 export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult {
   // Steps can be strings or objects with text property
   const rawSteps = (spec.steps as Array<string | { id?: string; text: string }>) || []

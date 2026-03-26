@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.58.0] - 2026-03-26
+
+### Added
+- **Flow map — post-render layout correction**: `recalculateFlowMapLayout` in `specLoader/flowMap.ts` uses DOM-measured node dimensions to center-align the topic node with step nodes after the first render (horizontal: corrects Y; vertical: corrects X). Wired into `vueFlowIntegrationSlice` via a reactive `flowMapLayoutNodes` computed.
+- **Flow map — dimension preservation across spec reloads**: `specIO.ts` captures existing `nodeDimensions` before clearing on same-type reloads (add/delete step). Previously measured sizes are restored for reused nodes so layout correction fires immediately without waiting for `ResizeObserver` to re-fire.
+- **Qdrant service split — `qdrant_diagnostics.py` and `qdrant_startup.py`**: Extracted compression-metrics helpers (`QdrantDiagnosticsMixin`) and startup/error utilities (`parse_qdrant_host_port`, `QdrantStartupError`, `_log_qdrant_error`) into two new modules; `QdrantService` now imports from them, reducing its size and improving separation of concerns.
+- **Backup manifest co-deletion**: `backup_scheduler.py` now deletes companion `.manifest.json` files alongside their pg_dump archives during both COS cleanup (`cleanup_old_cos_backups`) and local backup rotation (`cleanup_old_backups`). `_write_backup_manifest` helper writes table row counts and summary statistics alongside pg_dump files.
+- **`database_export_service.py` — shared manifest builder**: Extracted `_build_manifest` helper (filename, size, table row counts, column totals) used by `export_postgres_dump`; aligns manifest structure with `backup_scheduler` and `dump_import_postgres`.
+- **`dashboard_install.py`**: Consolidated IP geolocation and dashboard asset installer (ECharts bundle, China GeoJSON, ip2region xdb databases, patch cache) extracted from the old setup script into its own standalone script with interactive prompts and `MINDGRAPH_NON_INTERACTIVE=1` CI support.
+- **`setup.py` — monolithic unified installer**: Absorbed Redis ≥ 8.6, PostgreSQL ≥ 18.3, Qdrant, Tesseract OCR, Playwright (with `--with-deps` on Linux), system-package, and interactive-prompt logic. Privilege check on Linux; `MINDGRAPH_NON_INTERACTIVE=1` for CI. Old split helper scripts (`install_dependencies.sh`, `install_qdrant.sh`, `install_qdrant.py`, `download_dashboard_dependencies.py`, `download_ip2region_db.py`, `apply_ip2region_patches.py`, `embed_china_geo.py`) removed.
+- **`recovery_startup.py` — inline kill-9 cleanup helper**: `_cleanup_user_documents` extracted to isolate per-user document cleanup, removing the `DatabaseRecovery` class import dependency.
+
+### Changed
+- **Flow map nodes — adaptive height**: `FlowNode.vue`, `FlowSubstepNode.vue`, and `TopicNode.vue` switch fixed `height` to `min-height` in both inline styles and scoped CSS, allowing multi-line text to expand node height. `TopicNode` also removes fixed `py-4` padding in flow-map context (`py-3`) and lifts `max-width` cap (`none`) for the topic node.
+- **Flow map substep add — substep-aware parent lookup**: `CanvasToolbar.vue` and `useNodeActions.ts` handle `flowSubstep` selection when "Add Node" / "Add Child" is triggered, parsing the parent step index from the substep ID (`flow-substep-{stepIndex}-*`) and routing the add to the correct step. Previously, only step-type selection triggered substep creation.
+- **`pyproject.toml` — Pylint module-line limit raised**: `max-module-lines` increased from 800 to 3500 to accommodate the intentionally monolithic `scripts/setup/setup.py`. `extraPaths` updated to local Python 3.13 site-packages path.
+- **`requirements.txt` / `env.example`**: Updated install references from old shell scripts to `sudo python3 scripts/setup/setup.py` and `dashboard_install.py`; updated `DB_QUICK_CHECK_ENABLED` note to `SKIP_INTEGRITY_CHECK`.
+
+### Removed
+- **`scripts/setup/install_dependencies.sh`**, **`install_qdrant.sh`**, **`install_qdrant.py`**, **`download_dashboard_dependencies.py`**, **`download_ip2region_db.py`**, **`apply_ip2region_patches.py`**, **`embed_china_geo.py`**: Superseded by `setup.py` and `dashboard_install.py`.
+- **`services/infrastructure/recovery/database_recovery.py`**: `DatabaseRecovery` class removed; startup recovery logic consolidated in `recovery_startup.py`.
+
+## [5.57.0] - 2026-03-26
+
+### Added
+- **Bundled tiktoken encoding (offline-safe startup)**: Shipped `resources/tiktoken_encodings/cl100k_base.tiktoken` (~1.7 MB) with the repo. When present, `ensure_tiktoken_cache()` sets `TIKTOKEN_CACHE_DIR` to that directory and skips HTTP/Redis cache coordination — no outbound fetch to `openaipublic.blob.core.windows.net` on startup. If the bundled file is absent, behavior falls back to `storage/tiktoken_cache/` with the previous download-and-update logic.
+
+### Changed
+- **`utils/tiktoken_cache.py`**: Refactored cache helpers (`_default_cache_dir_path`, `_set_tiktoken_cache_dir_env`, `_encoding_requires_download`, `_sync_one_encoding_if_needed`) for clarity and Pylint compliance.
+
 ## [5.56.0] - 2026-03-26
 
 ### Added

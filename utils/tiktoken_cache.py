@@ -1,8 +1,11 @@
 """
 Tiktoken encoding file caching utility.
 
-Downloads and caches tiktoken encoding files locally to avoid repeated downloads
-from Azure Blob Storage on every application startup. Checks for new versions
+If ``resources/tiktoken_encodings/cl100k_base.tiktoken`` is shipped with the app,
+that directory is used and no network access is required.
+
+Otherwise downloads and caches tiktoken encoding files locally to avoid repeated
+downloads from Azure Blob Storage on application startup. Checks for new versions
 using HTTP headers (ETag/Last-Modified) and only downloads when needed.
 """
 
@@ -31,6 +34,37 @@ TIKTOKEN_ENCODINGS = {
 
 # Default cache directory (relative to project root)
 DEFAULT_CACHE_DIR = Path("storage/tiktoken_cache")
+
+# Bundled encodings (project root) — if present, used instead of any download
+_BUNDLED_ENCODING_NAMES = ("cl100k_base",)
+
+
+def _bundled_tiktoken_cache_dir() -> Path | None:
+    """
+    Return the directory containing bundled .tiktoken files if all required
+    encodings are present and non-empty. Otherwise return None.
+    """
+    project_root = Path(__file__).resolve().parent.parent
+    bundled_dir = project_root / "resources" / "tiktoken_encodings"
+    try:
+        for name in _BUNDLED_ENCODING_NAMES:
+            path = bundled_dir / f"{name}.tiktoken"
+            if not path.is_file() or path.stat().st_size == 0:
+                return None
+    except OSError:
+        return None
+    return bundled_dir
+
+
+def _default_cache_dir_path() -> Path:
+    """Project-root path for the runtime tiktoken cache directory."""
+    return Path(__file__).resolve().parent.parent / DEFAULT_CACHE_DIR
+
+
+def _set_tiktoken_cache_dir_env(cache_dir: Path) -> None:
+    """Point tiktoken at the given cache directory."""
+    os.environ["TIKTOKEN_CACHE_DIR"] = str(cache_dir.resolve())
+
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
@@ -100,29 +134,26 @@ def _acquire_tiktoken_cache_lock() -> bool:
         False if lock held by another worker
     """
     try:
-        if not is_redis_available or not callable(is_redis_available):
-            # No Redis = single worker mode, proceed
-            return True
-        if not is_redis_available():
-            # No Redis = single worker mode, proceed
+        redis_unavailable = (
+            not is_redis_available
+            or not callable(is_redis_available)
+            or not is_redis_available()
+        )
+        if redis_unavailable:
             return True
 
         if not get_redis or not callable(get_redis):
-            return True  # Fallback to single worker mode
+            return True
         redis = get_redis()
         if not redis:
-            return True  # Fallback to single worker mode
+            return True
 
-        # Generate unique ID for this worker
         worker_lock_id = _LockIdManager.get_lock_id()
-
-        # Attempt atomic lock acquisition: SETNX with TTL
-        # Returns True only if key did not exist (lock acquired)
         acquired = redis.set(
             TIKTOKEN_CACHE_LOCK_KEY,
             worker_lock_id,
-            nx=True,  # Only set if not exists
-            ex=TIKTOKEN_CACHE_LOCK_TTL  # TTL in seconds
+            nx=True,
+            ex=TIKTOKEN_CACHE_LOCK_TTL
         )
 
         if acquired:
@@ -132,18 +163,16 @@ def _acquire_tiktoken_cache_lock() -> bool:
                     worker_lock_id
                 )
             except Exception:  # pylint: disable=broad-except
-                pass  # Logging not initialized yet
+                pass
             return True
-        else:
-            # Lock held by another worker
-            try:
-                logger.debug("[TiktokenCache] Another worker is checking cache, skipping")
-            except Exception:  # pylint: disable=broad-except
-                pass  # Logging not initialized yet
-            return False
+
+        try:
+            logger.debug("[TiktokenCache] Another worker is checking cache, skipping")
+        except Exception:  # pylint: disable=broad-except
+            pass
+        return False
 
     except Exception:  # pylint: disable=broad-except
-        # If Redis is not available or not initialized yet, assume single worker mode
         return True
 
 
@@ -179,6 +208,84 @@ def _release_tiktoken_cache_lock() -> None:
         pass
 
 
+def _log_http_debug_cached_up_to_date(encoding_name: str, encoding_file: Path) -> None:
+    """If HTTP_DEBUG is on, log that an encoding file is already current."""
+    if os.getenv('HTTP_DEBUG', '').lower() not in ('1', 'true', 'yes'):
+        return
+    try:
+        logger.debug(
+            "Tiktoken encoding %s already cached and up-to-date at %s",
+            encoding_name, encoding_file
+        )
+    except Exception:  # pylint: disable=broad-except
+        pass
+
+
+def _encoding_requires_download(
+    cache_dir: Path,
+    encoding_name: str,
+    url: str,
+) -> bool:
+    """
+    Decide whether to download or refresh the encoding file.
+
+    Returns:
+        True if a download should run, False if the existing file is enough.
+    """
+    encoding_file = cache_dir / f"{encoding_name}.tiktoken"
+    metadata_file = cache_dir / f"{encoding_name}.metadata.json"
+
+    if not encoding_file.exists() or encoding_file.stat().st_size == 0:
+        logger.debug("[Startup] Downloading tiktoken encoding %s...", encoding_name)
+        return True
+
+    try:
+        needs_update = _check_if_update_needed(url, metadata_file)
+        if not needs_update:
+            _log_http_debug_cached_up_to_date(encoding_name, encoding_file)
+            return False
+
+        logger.debug(
+            "[Startup] New version of tiktoken encoding %s available, updating...",
+            encoding_name
+        )
+        return True
+    except Exception as network_error:  # pylint: disable=broad-except
+        logger.debug(
+            "[Startup] Network check failed for tiktoken encoding %s, "
+            "using existing cache: %s",
+            encoding_name, network_error
+        )
+        return False
+
+
+def _sync_one_encoding_if_needed(
+    cache_dir: Path,
+    encoding_name: str,
+    url: str,
+) -> None:
+    """Download or refresh one encoding file under cache_dir when required."""
+    encoding_file = cache_dir / f"{encoding_name}.tiktoken"
+    metadata_file = cache_dir / f"{encoding_name}.metadata.json"
+
+    try:
+        if not _encoding_requires_download(cache_dir, encoding_name, url):
+            return
+
+        _download_encoding_file(url, encoding_file, metadata_file)
+        file_size_mb = encoding_file.stat().st_size / (1024 * 1024)
+        logger.debug(
+            "[Startup] OK Cached tiktoken encoding %s (%.2f MB) at %s",
+            encoding_name, file_size_mb, encoding_file
+        )
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning(
+            "[Startup] Failed to download tiktoken encoding %s: %s. "
+            "Tiktoken will download it automatically on first use.",
+            encoding_name, exc
+        )
+
+
 def ensure_tiktoken_cache():
     """
     Ensure tiktoken encoding files are cached locally.
@@ -195,106 +302,36 @@ def ensure_tiktoken_cache():
     This should be called early in application startup, before any tiktoken imports.
     Network failures are handled gracefully - if the file exists locally, it will be used.
     """
-    # Check if another worker is already checking/updating cache
-    # This avoids unnecessary lock acquisition attempts
+    bundled_dir = _bundled_tiktoken_cache_dir()
+    if bundled_dir is not None:
+        _set_tiktoken_cache_dir_env(bundled_dir)
+        logger.debug(
+            "[Startup] Using bundled tiktoken encodings at %s (no network)",
+            bundled_dir,
+        )
+        return
+
     if _is_tiktoken_cache_check_in_progress():
-        # Another worker is checking - silently skip (no logging to reduce noise)
-        # Still set TIKTOKEN_CACHE_DIR so this worker can use the cache
-        project_root = Path(__file__).parent.parent
-        cache_dir = project_root / DEFAULT_CACHE_DIR
-        cache_dir_str = str(cache_dir.absolute())
-        os.environ["TIKTOKEN_CACHE_DIR"] = cache_dir_str
+        _set_tiktoken_cache_dir_env(_default_cache_dir_path())
         return
 
-    # Try to acquire lock - only one worker should check/update cache
     if not _acquire_tiktoken_cache_lock():
-        # Another worker acquired the lock - silently skip (no logging to reduce noise)
-        # Still set TIKTOKEN_CACHE_DIR so this worker can use the cache
-        project_root = Path(__file__).parent.parent
-        cache_dir = project_root / DEFAULT_CACHE_DIR
-        cache_dir_str = str(cache_dir.absolute())
-        os.environ["TIKTOKEN_CACHE_DIR"] = cache_dir_str
+        _set_tiktoken_cache_dir_env(_default_cache_dir_path())
         return
 
-    # This worker acquired the lock - proceed with cache check/update
     try:
-        # Get project root directory (parent of utils directory)
-        project_root = Path(__file__).parent.parent
-        cache_dir = project_root / DEFAULT_CACHE_DIR
-
-        # Create cache directory if it doesn't exist
+        cache_dir = _default_cache_dir_path()
         try:
             cache_dir.mkdir(parents=True, exist_ok=True)
-        except Exception as e:  # pylint: disable=broad-except
-            logger.debug("[Startup] Could not create tiktoken cache directory: %s", e)
-            return  # Lock will be released in finally block
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("[Startup] Could not create tiktoken cache directory: %s", exc)
+            return
 
-        # Set environment variable for tiktoken to use this cache directory
-        cache_dir_str = str(cache_dir.absolute())
-        os.environ["TIKTOKEN_CACHE_DIR"] = cache_dir_str
+        _set_tiktoken_cache_dir_env(cache_dir)
 
-        # Check and download encoding files if needed
         for encoding_name, url in TIKTOKEN_ENCODINGS.items():
-            encoding_file = cache_dir / f"{encoding_name}.tiktoken"
-            metadata_file = cache_dir / f"{encoding_name}.metadata.json"
-
-            try:
-                if encoding_file.exists() and encoding_file.stat().st_size > 0:
-                    # File exists - try to check for updates, but don't fail if network is unavailable
-                    try:
-                        needs_update = _check_if_update_needed(url, metadata_file)
-
-                        if not needs_update:
-                            # File is up-to-date - no logging needed to reduce startup noise
-                            # Only log if HTTP_DEBUG is enabled
-                            try:
-                                if os.getenv('HTTP_DEBUG', '').lower() in ('1', 'true', 'yes'):
-                                    logger.debug(
-                                        "Tiktoken encoding %s already cached and up-to-date at %s",
-                                        encoding_name, encoding_file
-                                    )
-                            except Exception:  # pylint: disable=broad-except
-                                pass  # Logging not initialized yet, skip
-                            continue
-
-                        # New version available, download it
-                        logger.debug(
-                            "[Startup] New version of tiktoken encoding %s available, updating...",
-                            encoding_name
-                        )
-                    except Exception as network_error:  # pylint: disable=broad-except
-                        # Network check failed - use existing file (conservative approach)
-                        logger.debug(
-                            "[Startup] Network check failed for %s, using existing cache: %s",
-                            encoding_name, network_error
-                        )
-                        try:
-                            logger.debug(
-                                "Network check failed for tiktoken encoding %s, "
-                                "using existing cache: %s",
-                                encoding_name, network_error
-                            )
-                        except Exception:  # pylint: disable=broad-except
-                            pass
-                        continue
-                else:
-                    # File doesn't exist, download it
-                    logger.debug("[Startup] Downloading tiktoken encoding %s...", encoding_name)
-
-                _download_encoding_file(url, encoding_file, metadata_file)
-                file_size_mb = encoding_file.stat().st_size / (1024 * 1024)
-                logger.debug(
-                    "[Startup] OK Cached tiktoken encoding %s (%.2f MB) at %s",
-                    encoding_name, file_size_mb, encoding_file
-                )
-            except Exception as e:  # pylint: disable=broad-except
-                logger.warning(
-                    "[Startup] Failed to download tiktoken encoding %s: %s. "
-                    "Tiktoken will download it automatically on first use.",
-                    encoding_name, e
-                )
+            _sync_one_encoding_if_needed(cache_dir, encoding_name, url)
     finally:
-        # Always release the lock when done
         _release_tiktoken_cache_lock()
 
 

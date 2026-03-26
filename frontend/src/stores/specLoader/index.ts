@@ -29,6 +29,7 @@ export { getDefaultTemplate } from './defaultTemplates'
 export { recalculateBraceMapLayout } from './braceMap'
 export { recalculateCircleMapLayout } from './circleMap'
 export { recalculateBubbleMapLayout } from './bubbleMap'
+export { recalculateFlowMapLayout } from './flowMap'
 export { recalculateMultiFlowMapLayout } from './multiFlowMap'
 export {
   distributeBranchesClockwise,

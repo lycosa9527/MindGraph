@@ -133,6 +133,46 @@ def get_pg_stats(pg_engine: Engine) -> Dict[str, Any]:
     }
 
 
+# ── manifest ──────────────────────────────────────────────────────────
+
+def _build_manifest(
+    filename: str,
+    dump_path: Path,
+    pg_engine: Optional[Engine] = None,
+) -> Dict[str, Any]:
+    """Build a manifest dict for a pg_dump backup file."""
+    manifest: Dict[str, Any] = {
+        "dump_file": filename,
+        "timestamp": datetime.utcnow().isoformat(),
+        "size_bytes": dump_path.stat().st_size,
+    }
+    if pg_engine is None:
+        return manifest
+
+    try:
+        counts = _get_row_counts(pg_engine)
+        manifest["tables"] = counts
+
+        pg_inspector = inspect(pg_engine)
+        all_tables = pg_inspector.get_table_names()
+        total_cols = 0
+        for tbl in all_tables:
+            try:
+                total_cols += len(pg_inspector.get_columns(tbl))
+            except Exception:
+                pass
+
+        manifest["total_tables"] = len(all_tables)
+        manifest["total_columns"] = total_cols
+        manifest["total_records"] = sum(
+            v for v in counts.values() if v >= 0
+        )
+    except Exception:
+        pass
+
+    return manifest
+
+
 # ── export (pg_dump) ─────────────────────────────────────────────────
 
 def export_postgres_dump(
@@ -172,19 +212,7 @@ def export_postgres_dump(
     if not dump_path.exists() or dump_path.stat().st_size == 0:
         return {"success": False, "error": "Dump file empty or missing"}
 
-    # Write manifest (mirrors existing dump_import_postgres.py logic)
-    manifest: Dict[str, Any] = {
-        "timestamp": timestamp,
-        "filename": filename,
-        "size_bytes": dump_path.stat().st_size,
-    }
-
-    if pg_engine is not None:
-        try:
-            manifest["tables"] = _get_row_counts(pg_engine)
-        except Exception:
-            pass
-
+    manifest = _build_manifest(filename, dump_path, pg_engine)
     manifest_path = backup_dir / f"{filename}.manifest.json"
     manifest_path.write_text(json.dumps(manifest, indent=2))
 

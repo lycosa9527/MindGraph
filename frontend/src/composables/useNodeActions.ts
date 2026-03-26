@@ -97,11 +97,24 @@ export function useNodeActions() {
       const selectedNode = selectedId
         ? diagramStore.data.nodes.find((n) => n.id === selectedId)
         : undefined
-      if (selectedNode?.type !== 'flow' || !selectedNode?.text) {
+
+      let stepNode: DiagramNode | undefined
+      if (selectedNode?.type === 'flow') {
+        stepNode = selectedNode
+      } else if (selectedNode?.type === 'flowSubstep') {
+        const match = selectedNode.id?.match(/^flow-substep-(\d+)-/)
+        const stepIndex = match ? parseInt(match[1], 10) : -1
+        stepNode =
+          stepIndex >= 0
+            ? diagramStore.data.nodes.find((n) => n.id === `flow-step-${stepIndex}`)
+            : undefined
+      }
+
+      if (!stepNode?.text) {
         notify.warning(t('canvas.toolbar.selectStepForSubstep'))
         return
       }
-      if (diagramStore.addFlowMapSubstep(selectedNode.text, t('canvas.toolbar.newSubstep'))) {
+      if (diagramStore.addFlowMapSubstep(stepNode.text, t('canvas.toolbar.newSubstep'))) {
         diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
         notify.success(t('canvas.toolbar.substepAdded'))
       }
@@ -272,12 +285,21 @@ export function useNodeActions() {
       const selectedNode = selectedId
         ? diagramStore.data.nodes.find((n) => n.id === selectedId)
         : undefined
-      if (selectedNode?.type === 'flow' && selectedNode?.text) {
-        if (diagramStore.addFlowMapSubstep(selectedNode.text, t('canvas.toolbar.newSubstep'))) {
+
+      if (selectedNode?.type === 'flowSubstep') {
+        // Substep selected → add another substep to the same parent step
+        const match = selectedNode.id?.match(/^flow-substep-(\d+)-/)
+        const stepIndex = match ? parseInt(match[1], 10) : -1
+        const stepNode =
+          stepIndex >= 0
+            ? diagramStore.data.nodes.find((n) => n.id === `flow-step-${stepIndex}`)
+            : undefined
+        if (stepNode?.text && diagramStore.addFlowMapSubstep(stepNode.text, t('canvas.toolbar.newSubstep'))) {
           diagramStore.pushHistory(t('canvas.toolbar.addSubstepHistory'))
           notify.success(t('canvas.toolbar.substepAdded'))
         }
       } else {
+        // Step selected or nothing selected → add a step
         const stepCount = diagramStore.data.nodes.filter((n) => n.type === 'flow').length
         const stepNum = stepCount + 1
         const subs: [string, string] = [

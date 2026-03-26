@@ -39,7 +39,7 @@ from services.infrastructure.lifecycle.startup import (
 )
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.llm import llm_service
-from services.llm.qdrant_service import QdrantStartupError, init_qdrant_sync
+from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
 from services.redis.cache.redis_cache_loader import reload_cache_from_database
 from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
@@ -217,9 +217,8 @@ async def lifespan(fastapi_app: FastAPI):
     if is_main_worker:
         logger.debug("[LIFESPAN] Initializing database...")
     try:
-        # Check database integrity on startup (uses Redis lock to ensure only one worker checks)
-        # Note: Removed worker_id check - Redis lock handles multi-worker coordination
-        # If corruption is detected, interactive recovery wizard is triggered
+        # Check PostgreSQL connectivity on startup (uses Redis lock to ensure only one worker checks)
+        # If unreachable, startup is aborted and a critical alert is sent
         if is_main_worker:
             logger.debug("[LIFESPAN] Checking database integrity...")
         if not check_database_on_startup():

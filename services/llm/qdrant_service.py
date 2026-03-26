@@ -13,7 +13,6 @@ Proprietary License
 from typing import List, Optional, Dict, Any
 import logging
 import os
-import random
 
 import qdrant_client
 from qdrant_client.http import models as rest
@@ -28,47 +27,91 @@ except ImportError:
 
 from config.settings import config
 
+from services.llm.qdrant_diagnostics import QdrantDiagnosticsMixin
+from services.llm.qdrant_startup import parse_qdrant_host_port
+
 logger = logging.getLogger(__name__)
 
-# Error message width (matching Redis format)
-_ERROR_WIDTH = 70
+
+def _append_metadata_filter_conditions(
+    metadata_filter: Dict[str, Any],
+    filter_conditions: list,
+) -> None:
+    """Append Qdrant FieldConditions derived from metadata_filter."""
+    for key, value in metadata_filter.items():
+        if key == "document_id":
+            filter_conditions.append(
+                rest.FieldCondition(
+                    key="document_id",
+                    match=rest.MatchValue(value=str(value)),
+                )
+            )
+        elif key == "document_type":
+            filter_conditions.append(
+                rest.FieldCondition(
+                    key="document_type",
+                    match=rest.MatchValue(value=str(value)),
+                )
+            )
+        elif key == "category":
+            filter_conditions.append(
+                rest.FieldCondition(
+                    key="category",
+                    match=rest.MatchValue(value=str(value)),
+                )
+            )
+        elif key == "tags" and isinstance(value, (list, tuple)):
+            pass
+        elif key == "created_at" and isinstance(value, dict):
+            pass
+        elif isinstance(value, dict) and (
+            "gte" in value or "lte" in value or "gt" in value or "lt" in value
+        ):
+            pass
+        elif isinstance(value, (list, tuple)):
+            filter_conditions.append(
+                rest.FieldCondition(
+                    key=key,
+                    match=rest.MatchAny(any=[str(v) for v in value]),
+                )
+            )
+        else:
+            filter_conditions.append(
+                rest.FieldCondition(
+                    key=key,
+                    match=rest.MatchValue(value=str(value)),
+                )
+            )
 
 
-class QdrantStartupError(Exception):
-    """
-    Raised when Qdrant connection fails during startup.
+def _chunk_results_from_query_points(results: Any) -> List[Dict[str, Any]]:
+    """Map Qdrant query point results to chunk id / score / metadata dicts."""
+    chunk_results: List[Dict[str, Any]] = []
+    for result in results:
+        if not result.payload:
+            continue
+        chunk_id_str = result.payload.get("chunk_id", "")
+        try:
+            chunk_id = int(chunk_id_str)
+        except (ValueError, TypeError):
+            payload_keys = list(result.payload.keys()) if result.payload else []
+            logger.debug(
+                "[Qdrant] Skipping result with invalid chunk_id: "
+                "%s, payload keys: %s",
+                chunk_id_str,
+                payload_keys
+            )
+            continue
 
-    This is a controlled startup failure - the error message has already
-    been logged with instructions. Catching this exception should exit
-    cleanly without logging additional tracebacks.
-    """
-
-
-def _log_qdrant_error(title: str, details: list[str]) -> None:
-    """
-    Log a Qdrant error with clean, professional formatting.
-
-    Args:
-        title: Error title (e.g., "QDRANT CONNECTION FAILED")
-        details: List of detail lines to display
-    """
-    separator = "=" * _ERROR_WIDTH
-
-    lines = [
-        "",
-        separator,
-        title.center(_ERROR_WIDTH),
-        separator,
-        "",
-    ]
-    lines.extend(details)
-    lines.extend(["", separator, ""])
-
-    error_msg = "\n".join(lines)
-    logger.critical(error_msg)
+        chunk_results.append({
+            "id": chunk_id,
+            "score": float(result.score),
+            "metadata": result.payload,
+        })
+    return chunk_results
 
 
-class QdrantService:
+class QdrantService(QdrantDiagnosticsMixin):
     """
     Qdrant service for vector storage and retrieval.
 
@@ -97,12 +140,7 @@ class QdrantService:
             self.client = qdrant_client.QdrantClient(url=qdrant_url)
         elif qdrant_host:
             # Host:port specified (e.g., localhost:6333)
-            if ':' in qdrant_host:
-                host, port = qdrant_host.rsplit(':', 1)
-                port = int(port)
-            else:
-                host = qdrant_host
-                port = 6333
+            host, port = parse_qdrant_host_port(qdrant_host)
             logger.info("[Qdrant] Connecting to server: %s:%s", host, port)
             self.client = qdrant_client.QdrantClient(host=host, port=port)
         else:
@@ -409,62 +447,8 @@ class QdrantService:
                 )
             )
 
-        # Apply metadata filter if provided
         if metadata_filter:
-            for key, value in metadata_filter.items():
-                if key == "document_id":
-                    # Convert to string for Qdrant
-                    filter_conditions.append(
-                        rest.FieldCondition(
-                            key="document_id",
-                            match=rest.MatchValue(value=str(value)),
-                        )
-                    )
-                elif key == "document_type":
-                    # Filter by document type (stored in payload)
-                    filter_conditions.append(
-                        rest.FieldCondition(
-                            key="document_type",
-                            match=rest.MatchValue(value=str(value)),
-                        )
-                    )
-                elif key == "category":
-                    # Category filtering
-                    filter_conditions.append(
-                        rest.FieldCondition(
-                            key="category",
-                            match=rest.MatchValue(value=str(value)),
-                        )
-                    )
-                elif key == "tags" and isinstance(value, (list, tuple)):
-                    # Tag filtering: check if any tag in the list matches
-                    # Tags are stored in document metadata, need to filter at document level
-                    # For now, pass through to be handled at database level
-                    pass  # Will be handled in post-filtering
-                elif key == "created_at" and isinstance(value, dict):
-                    # Date range filtering: {"gte": "2024-01-01", "lte": "2024-12-31"}
-                    # This will be handled at database level
-                    pass
-                elif isinstance(value, dict) and ("gte" in value or "lte" in value or "gt" in value or "lt" in value):
-                    # Range filtering: {"gte": 10, "lte": 20}
-                    # Qdrant doesn't support range queries directly, will filter at DB level
-                    pass
-                elif isinstance(value, (list, tuple)):
-                    # Support "in" operator for lists
-                    filter_conditions.append(
-                        rest.FieldCondition(
-                            key=key,
-                            match=rest.MatchAny(any=[str(v) for v in value]),
-                        )
-                    )
-                else:
-                    # Simple equality match (including custom_fields)
-                    filter_conditions.append(
-                        rest.FieldCondition(
-                            key=key,
-                            match=rest.MatchValue(value=str(value)),
-                        )
-                    )
+            _append_metadata_filter_conditions(metadata_filter, filter_conditions)
 
         query_filter = rest.Filter(must=filter_conditions) if filter_conditions else None
 
@@ -486,28 +470,7 @@ class QdrantService:
 
             logger.debug("[Qdrant] Raw search returned %s results", len(results))
 
-            # Process results
-            chunk_results = []
-            for result in results:
-                if result.payload:
-                    chunk_id_str = result.payload.get("chunk_id", "")
-                    try:
-                        chunk_id = int(chunk_id_str)
-                    except (ValueError, TypeError):
-                        payload_keys = list(result.payload.keys()) if result.payload else []
-                        logger.debug(
-                            "[Qdrant] Skipping result with invalid chunk_id: "
-                            "%s, payload keys: %s",
-                            chunk_id_str,
-                            payload_keys
-                        )
-                        continue
-
-                    chunk_results.append({
-                        "id": chunk_id,
-                        "score": float(result.score),
-                        "metadata": result.payload,
-                    })
+            chunk_results = _chunk_results_from_query_points(results)
 
             logger.debug("[Qdrant] Found %s valid results for user %s", len(chunk_results), user_id)
             return chunk_results
@@ -685,264 +648,6 @@ class QdrantService:
         except Exception as e:
             logger.error("[Qdrant] Failed to get collection size for user %s: %s", user_id, e)
             return 0
-
-    def get_compression_metrics(self, user_id: int) -> Dict[str, Any]:
-        """
-        Get compression metrics for user's collection.
-
-        Args:
-            user_id: User ID
-
-        Returns:
-            Dict with compression metrics:
-            - compression_enabled: bool
-            - compression_type: str
-            - points_count: int
-            - vector_size: int
-            - estimated_uncompressed_size: float (bytes)
-            - estimated_compressed_size: float (bytes)
-            - compression_ratio: float
-            - storage_savings_percent: float
-        """
-        collection_name = self.get_user_collection(user_id)
-        if not collection_name:
-            return {
-                "compression_enabled": False,
-                "compression_type": None,
-                "points_count": 0,
-                "vector_size": 0,
-                "estimated_uncompressed_size": 0.0,
-                "estimated_compressed_size": 0.0,
-                "compression_ratio": 1.0,
-                "storage_savings_percent": 0.0
-            }
-
-        try:
-            info = self.client.get_collection(collection_name)
-            points_count = info.points_count
-            vector_size = info.config.params.vectors.size
-
-            # Check if compression is enabled
-            compression_enabled = self.use_compression
-            compression_type = self.compression_type if compression_enabled else None
-
-            # Estimate sizes
-            # Uncompressed: 4 bytes per float32 dimension + metadata overhead (~200 bytes per point)
-            bytes_per_vector_uncompressed = vector_size * 4
-            metadata_overhead = 200
-            estimated_uncompressed_size = points_count * (bytes_per_vector_uncompressed + metadata_overhead)
-
-            if compression_enabled:
-                # Compressed: 1 byte per dimension (SQ8) + metadata overhead
-                bytes_per_vector_compressed = vector_size * 1
-                estimated_compressed_size = points_count * (bytes_per_vector_compressed + metadata_overhead)
-                compression_ratio = (
-                    estimated_uncompressed_size / estimated_compressed_size
-                    if estimated_compressed_size > 0 else 1.0
-                )
-                storage_savings_percent = (
-                    (1.0 - (estimated_compressed_size /
-                            estimated_uncompressed_size)) * 100
-                    if estimated_uncompressed_size > 0 else 0.0
-                )
-            else:
-                estimated_compressed_size = estimated_uncompressed_size
-                compression_ratio = 1.0
-                storage_savings_percent = 0.0
-
-            return {
-                "compression_enabled": compression_enabled,
-                "compression_type": compression_type,
-                "points_count": points_count,
-                "vector_size": vector_size,
-                "estimated_uncompressed_size": estimated_uncompressed_size,
-                "estimated_compressed_size": estimated_compressed_size,
-                "compression_ratio": round(compression_ratio, 2),
-                "storage_savings_percent": round(storage_savings_percent, 1)
-            }
-        except Exception as e:
-            logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, e)
-            return {
-                "compression_enabled": False,
-                "compression_type": None,
-                "points_count": 0,
-                "vector_size": 0,
-                "estimated_uncompressed_size": 0.0,
-                "estimated_compressed_size": 0.0,
-                "compression_ratio": 1.0,
-                "storage_savings_percent": 0.0,
-                "error": str(e)
-            }
-
-    def get_diagnostics(self, user_id: int) -> Dict[str, Any]:
-        """
-        Get diagnostic information for user's Qdrant collection.
-
-        Useful for debugging retrieval issues.
-
-        Args:
-            user_id: User ID
-
-        Returns:
-            Dict with collection info, point count, sample payloads, etc.
-        """
-        result = {
-            "user_id": user_id,
-            "collection_name": self._get_collection_name(user_id),
-            "collection_exists": False,
-            "points_count": 0,
-            "vector_dimensions": None,
-            "sample_points": [],
-            "payload_keys": set(),
-            "errors": []
-        }
-
-        try:
-            # Check if collection exists
-            collection_name = self.get_user_collection(user_id)
-            if not collection_name:
-                result["errors"].append(f"Collection does not exist for user {user_id}")
-                return result
-
-            result["collection_exists"] = True
-
-            # Get collection info
-            try:
-                info = self.client.get_collection(collection_name)
-                result["points_count"] = info.points_count
-                if info.config and info.config.params and info.config.params.vectors:
-                    vectors_config = info.config.params.vectors
-                    if hasattr(vectors_config, 'size'):
-                        result["vector_dimensions"] = vectors_config.size
-                    elif isinstance(vectors_config, dict) and '' in vectors_config:
-                        result["vector_dimensions"] = vectors_config[''].size
-            except Exception as e:
-                result["errors"].append(f"Failed to get collection info: {e}")
-
-            # Get sample points (up to 5)
-            try:
-                scroll_result = self.client.scroll(
-                    collection_name=collection_name,
-                    limit=5,
-                    with_payload=True,
-                    with_vectors=False
-                )
-
-                points = scroll_result[0] if scroll_result else []
-                for point in points:
-                    point_info = {
-                        "id": point.id,
-                        "payload": point.payload
-                    }
-                    result["sample_points"].append(point_info)
-
-                    # Collect payload keys
-                    if point.payload:
-                        result["payload_keys"].update(point.payload.keys())
-
-            except Exception as e:
-                result["errors"].append(f"Failed to scroll points: {e}")
-
-            # Convert set to list for JSON serialization
-            result["payload_keys"] = list(result["payload_keys"])
-
-            # Test search with a random vector (to check if search works)
-            if result["vector_dimensions"]:
-                try:
-                    test_vector = [random.random() for _ in range(result["vector_dimensions"])]
-                    test_results = self.client.query_points(
-                        collection_name=collection_name,
-                        query=test_vector,
-                        limit=1,
-                        with_payload=True
-                    ).points
-                    result["test_search_returned"] = len(test_results)
-                except Exception as e:
-                    result["errors"].append(f"Test search failed: {e}")
-
-        except Exception as e:
-            result["errors"].append(f"Diagnostic failed: {e}")
-
-        return result
-
-
-def init_qdrant_sync() -> bool:
-    """
-    Initialize Qdrant connection (synchronous version for startup).
-
-    Qdrant is REQUIRED. Application will exit if connection fails.
-
-    Returns:
-        True if Qdrant is available.
-
-    Raises:
-        QdrantStartupError: Application will exit if Qdrant is unavailable.
-    """
-    qdrant_host = os.getenv("QDRANT_HOST", "")
-    qdrant_url = os.getenv("QDRANT_URL", "")
-
-    logger.info("[Qdrant] Validating Qdrant connection...")
-
-    # Check if Qdrant is configured
-    if not qdrant_url and not qdrant_host:
-        _log_qdrant_error(
-            title="QDRANT NOT CONFIGURED",
-            details=[
-                "Qdrant server is not configured.",
-                "",
-                "Set one of the following in your .env file:",
-                "  QDRANT_HOST=localhost:6333",
-                "  or",
-                "  QDRANT_URL=http://localhost:6333",
-                "",
-                "Install Qdrant:",
-                "  bash scripts/install_qdrant.sh",
-                "",
-                "Or download from: https://github.com/qdrant/qdrant/releases",
-            ]
-        )
-        raise QdrantStartupError("Qdrant not configured") from None
-
-    try:
-        # Try to create Qdrant client and verify connection
-        if qdrant_url:
-            logger.info("[Qdrant] Connecting to %s...", qdrant_url)
-            client = qdrant_client.QdrantClient(url=qdrant_url)
-        else:
-            if ':' in qdrant_host:
-                host, port = qdrant_host.rsplit(':', 1)
-                port = int(port)
-            else:
-                host = qdrant_host
-                port = 6333
-            logger.info("[Qdrant] Connecting to %s:%s...", host, port)
-            client = qdrant_client.QdrantClient(host=host, port=port)
-
-        # Test connection by getting collections (lightweight operation)
-        client.get_collections()
-        logger.info("[Qdrant] Connected successfully")
-        return True
-
-    except Exception as exc:
-        connection_info = qdrant_url if qdrant_url else f"{qdrant_host or 'localhost:6333'}"
-        _log_qdrant_error(
-            title="QDRANT CONNECTION FAILED",
-            details=[
-                f"Failed to connect to Qdrant at: {connection_info}",
-                f"Error: {exc}",
-                "",
-                "MindGraph requires Qdrant. Please ensure Qdrant is running:",
-                "",
-                "  Install:  bash scripts/install_qdrant.sh",
-                "",
-                "  Ubuntu:   sudo systemctl start qdrant",
-                "",
-                "  Or run:   qdrant",
-                "",
-                "Then set QDRANT_HOST=localhost:6333 in your .env file",
-            ]
-        )
-        raise QdrantStartupError(f"Failed to connect to Qdrant: {exc}") from exc
 
 
 def get_qdrant_service() -> QdrantService:
