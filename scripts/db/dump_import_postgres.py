@@ -37,7 +37,7 @@ from urllib.parse import urlparse
 
 from sqlalchemy import inspect, text
 
-from config.database import DATABASE_URL, engine
+from config.database import DATABASE_URL, engine, libpq_database_url
 
 try:
     from dotenv import load_dotenv
@@ -110,7 +110,10 @@ def _find_process_on_port(port: int) -> Optional[int]:
                 check=False
             )
             if result.stdout.strip():
-                return int(result.stdout.strip())
+                for line in result.stdout.strip().split("\n"):
+                    candidate = line.strip()
+                    if candidate.isdigit():
+                        return int(candidate)
     except Exception:
         pass
     return None
@@ -224,8 +227,9 @@ def _can_connect_postgresql(db_url: str, timeout: int = 2) -> bool:
     if psycopg2 is None:
         logger.error("psycopg2 not installed. Install with: pip install psycopg2-binary")
         return False
+    libpq_url = libpq_database_url(db_url)
     try:
-        conn = psycopg2.connect(db_url, connect_timeout=timeout)
+        conn = psycopg2.connect(libpq_url, connect_timeout=timeout)
         conn.close()
         return True
     except Exception:
@@ -236,8 +240,9 @@ def _get_connection_error(db_url: str, timeout: int = 2) -> Optional[str]:
     """Try to connect and return the error message for diagnostics."""
     if psycopg2 is None:
         return None
+    libpq_url = libpq_database_url(db_url)
     try:
-        psycopg2.connect(db_url, connect_timeout=timeout)
+        psycopg2.connect(libpq_url, connect_timeout=timeout)
         return None
     except Exception as e:
         return str(e)
@@ -519,7 +524,7 @@ def run_dump(db_url: str, backup_path: Path) -> bool:
         "--no-owner",
         "-f",
         str(backup_path),
-        db_url
+        libpq_database_url(db_url),
     ]
     result = subprocess.run(cmd, capture_output=True, timeout=3600, check=False, text=True)
 
@@ -571,8 +576,8 @@ def run_restore(db_url: str, backup_path: Path) -> bool:
         "--no-owner",
         "--single-transaction",
         "-d",
-        db_url,
-        str(backup_path)
+        libpq_database_url(db_url),
+        str(backup_path),
     ]
     result = subprocess.run(cmd, capture_output=True, timeout=3600, check=False, text=True)
 

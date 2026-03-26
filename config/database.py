@@ -13,6 +13,7 @@ from datetime import datetime
 from pathlib import Path
 import logging
 import os
+import re
 import time
 
 from sqlalchemy import create_engine, inspect, text
@@ -262,6 +263,22 @@ def _normalise_db_url(url: str) -> str:
         if url.startswith(legacy):
             return "postgresql+psycopg://" + url[len(legacy):]
     return url
+
+
+_LIBPQ_SCHEME = re.compile(r"^postgresql\+[^/]+://", re.IGNORECASE)
+
+
+def libpq_database_url(db_url: str) -> str:
+    """
+    Convert a SQLAlchemy PostgreSQL URL to a libpq-compatible connection URI.
+
+    Strips the +driver suffix (e.g. +psycopg) so pg_dump, pg_restore, and
+    psycopg2 accept the string.
+    """
+    if not db_url:
+        return db_url
+    return _LIBPQ_SCHEME.sub("postgresql://", db_url, count=1)
+
 
 _raw_db_url = os.getenv(
     "DATABASE_URL",

@@ -41,10 +41,19 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from services.redis.redis_client import get_redis, is_redis_available
+
+
+def _libpq_url_identity(url: str) -> str:
+    """Fallback when config.database is unavailable (e.g. isolated tests)."""
+    return url
+
+
 try:
-    from config.database import DATABASE_URL
+    from config.database import DATABASE_URL, libpq_database_url
 except ImportError:
     DATABASE_URL = ""
+    libpq_database_url = _libpq_url_identity
 
 try:
     from qcloud_cos import CosConfig, CosS3Client
@@ -55,9 +64,19 @@ except ImportError:
     CosClientError = None
     CosServiceError = None
 
-from services.redis.redis_client import get_redis, is_redis_available
-
 logger = logging.getLogger(__name__)
+
+
+def _cos_exc_call(exc: Exception, method: str, default: str) -> str:
+    """Call optional qcloud COS exception method; getattr avoids incomplete stubs."""
+    bound = getattr(exc, method, None)
+    if not callable(bound):
+        return default
+    try:
+        val = bound()
+    except Exception:
+        return default
+    return str(val) if val is not None else default
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
@@ -76,7 +95,18 @@ logger = logging.getLogger(__name__)
 
 BACKUP_LOCK_KEY = "backup:scheduler:lock"
 BACKUP_LOCK_TTL = 600  # 10 minutes - plenty of time for backup, auto-release on crash
-_worker_lock_id: Optional[str] = None  # This worker's unique lock identifier
+
+
+class _BackupSchedulerLockState:
+    """Holds worker lock id for Redis coordination without a global statement."""
+
+    __slots__ = ("worker_lock_id",)
+
+    def __init__(self) -> None:
+        self.worker_lock_id: Optional[str] = None
+
+
+_backup_scheduler_lock = _BackupSchedulerLockState()
 
 
 def _generate_lock_id() -> str:
@@ -98,8 +128,6 @@ def acquire_backup_scheduler_lock() -> bool:
         True if lock acquired (this worker should run scheduler)
         False if lock held by another worker or Redis unavailable
     """
-    global _worker_lock_id
-
     if not is_redis_available():
         # Redis is REQUIRED for multi-worker coordination
         # Without Redis, we cannot guarantee only one worker runs backups
@@ -116,20 +144,20 @@ def acquire_backup_scheduler_lock() -> bool:
 
     try:
         # Generate unique ID for this worker
-        if _worker_lock_id is None:
-            _worker_lock_id = _generate_lock_id()
+        if _backup_scheduler_lock.worker_lock_id is None:
+            _backup_scheduler_lock.worker_lock_id = _generate_lock_id()
 
         # Attempt atomic lock acquisition: SETNX with TTL
         # Returns True only if key did not exist (lock acquired)
         acquired = redis.set(
             BACKUP_LOCK_KEY,
-            _worker_lock_id,
+            _backup_scheduler_lock.worker_lock_id,
             nx=True,  # Only set if not exists
             ex=BACKUP_LOCK_TTL  # TTL in seconds
         )
 
         if acquired:
-            logger.info("[Backup] Lock acquired by this worker (id=%s)", _worker_lock_id)
+            logger.info("[Backup] Lock acquired by this worker (id=%s)", _backup_scheduler_lock.worker_lock_id)
             return True
         else:
             # Lock held by another worker - check who
@@ -161,7 +189,7 @@ def release_backup_scheduler_lock() -> bool:
         True if lock released, False otherwise
     """
 
-    if not is_redis_available() or _worker_lock_id is None:
+    if not is_redis_available() or _backup_scheduler_lock.worker_lock_id is None:
         return True
 
     redis = get_redis()
@@ -178,10 +206,10 @@ def release_backup_scheduler_lock() -> bool:
             return 0
         end
         """
-        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _worker_lock_id)
+        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _backup_scheduler_lock.worker_lock_id)
 
         if result == 1:
-            logger.info("[Backup] Lock released by this worker (id=%s)", _worker_lock_id)
+            logger.info("[Backup] Lock released by this worker (id=%s)", _backup_scheduler_lock.worker_lock_id)
 
         return result == 1
 
@@ -201,7 +229,7 @@ def refresh_backup_scheduler_lock() -> bool:
         True if lock refreshed, False if not held by this worker
     """
 
-    if not is_redis_available() or _worker_lock_id is None:
+    if not is_redis_available() or _backup_scheduler_lock.worker_lock_id is None:
         # Redis unavailable - cannot verify lock, but this should not happen
         # in production since Redis is required
         logger.error("[Backup] Cannot refresh lock: Redis unavailable or lock ID not set")
@@ -223,7 +251,7 @@ def refresh_backup_scheduler_lock() -> bool:
             return 0
         end
         """
-        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _worker_lock_id, BACKUP_LOCK_TTL)
+        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _backup_scheduler_lock.worker_lock_id, BACKUP_LOCK_TTL)
 
         if result == 1:
             logger.debug("[Backup] Lock refreshed (TTL=%ss)", BACKUP_LOCK_TTL)
@@ -231,7 +259,7 @@ def refresh_backup_scheduler_lock() -> bool:
         else:
             # Lock not held by us - check who holds it
             holder = redis.get(BACKUP_LOCK_KEY)
-            logger.warning("[Backup] Lock lost! Holder: %s, our ID: %s", holder, _worker_lock_id)
+            logger.warning("[Backup] Lock lost! Holder: %s, our ID: %s", holder, _backup_scheduler_lock.worker_lock_id)
             return False
 
     except Exception as e:
@@ -251,7 +279,7 @@ def is_backup_lock_holder() -> bool:
         False if lock held by another worker or Redis unavailable
     """
 
-    if not is_redis_available() or _worker_lock_id is None:
+    if not is_redis_available() or _backup_scheduler_lock.worker_lock_id is None:
         # Redis unavailable - cannot verify lock ownership
         logger.error("[Backup] Cannot verify lock ownership: Redis unavailable or lock ID not set")
         return False
@@ -263,7 +291,7 @@ def is_backup_lock_holder() -> bool:
 
     try:
         holder = redis.get(BACKUP_LOCK_KEY)
-        return holder == _worker_lock_id
+        return holder == _backup_scheduler_lock.worker_lock_id
     except Exception as e:
         # On error, fail safe - do not assume we hold the lock
         logger.warning("[Backup] Error checking lock ownership: %s", e)
@@ -432,7 +460,7 @@ def backup_postgresql_database(backup_path: Path) -> bool:
             pg_dump_binary,
             '-Fc',  # Custom format (compressed)
             '-f', str(backup_path),
-            db_url
+            libpq_database_url(db_url),
         ]
 
         logger.debug("[Backup] Running: %s", ' '.join(cmd[:3]) + ' [URL]')
@@ -691,17 +719,12 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                 is_retryable = False
                 # Type narrowing: after isinstance check, e is CosServiceError or CosClientError
                 if CosServiceError is not None and isinstance(e, CosServiceError):
-                    try:
-                        # Type checker doesn't know CosServiceError methods, use hasattr checks
-                        status_code = e.get_status_code() if hasattr(e, 'get_status_code') else None  # type: ignore
-                        error_code = e.get_error_code() if hasattr(e, 'get_error_code') else None  # type: ignore
-                        # Retry on 5xx errors and rate limits
-                        if status_code and str(status_code).startswith('5'):
-                            is_retryable = True
-                        elif error_code in ('SlowDown', 'RequestLimitExceeded'):
-                            is_retryable = True
-                    except Exception as exc:
-                        logger.debug("COS error attribute extraction failed: %s", exc)
+                    status_code = _cos_exc_call(e, 'get_status_code', '')
+                    error_code = _cos_exc_call(e, 'get_error_code', '')
+                    if status_code and str(status_code).startswith('5'):
+                        is_retryable = True
+                    elif error_code in ('SlowDown', 'RequestLimitExceeded'):
+                        is_retryable = True
                 else:
                     # Retry on client errors (network issues)
                     is_retryable = True
@@ -753,25 +776,14 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             # Following official COS SDK exception handling pattern:
             # https://cloud.tencent.com/document/product/436/35154
             # Error codes reference: https://cloud.tencent.com/document/product/436/7730
-            try:
-                # Type checker doesn't know CosServiceError methods, use hasattr checks
-                status_code = e.get_status_code() if hasattr(e, 'get_status_code') else 'Unknown'  # type: ignore
-                error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'  # type: ignore
-                error_msg = e.get_error_msg() if hasattr(e, 'get_error_msg') else str(e)  # type: ignore
-                request_id = e.get_request_id() if hasattr(e, 'get_request_id') else 'N/A'  # type: ignore
-                trace_id = e.get_trace_id() if hasattr(e, 'get_trace_id') else 'N/A'  # type: ignore
-                resource_location = (
-                    e.get_resource_location()
-                    if hasattr(e, 'get_resource_location') else 'N/A'
-                )  # type: ignore
-            except Exception:
-                # Fallback if methods don't exist or fail
-                status_code = 'Unknown'
-                error_code = 'Unknown'
+            status_code = _cos_exc_call(e, 'get_status_code', 'Unknown')
+            error_code = _cos_exc_call(e, 'get_error_code', 'Unknown')
+            error_msg = _cos_exc_call(e, 'get_error_msg', '')
+            if not error_msg:
                 error_msg = str(e)
-                request_id = 'N/A'
-                trace_id = 'N/A'
-                resource_location = 'N/A'
+            request_id = _cos_exc_call(e, 'get_request_id', 'N/A')
+            trace_id = _cos_exc_call(e, 'get_trace_id', 'N/A')
+            resource_location = _cos_exc_call(e, 'get_resource_location', 'N/A')
 
             # Provide actionable error messages for common error codes
             # Reference: https://cloud.tencent.com/document/product/436/7730
@@ -779,14 +791,16 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             if error_code == 'AccessDenied':
                 actionable_msg = " - Check COS credentials and bucket permissions"
             elif error_code == 'NoSuchBucket':
-                actionable_msg = " - Bucket '%s' does not exist or is inaccessible" % COS_BUCKET
+                actionable_msg = (
+                    f" - Bucket '{COS_BUCKET}' does not exist or is inaccessible"
+                )
             elif error_code == 'InvalidAccessKeyId':
                 actionable_msg = " - Check TENCENT_SMS_SECRET_ID configuration"
             elif error_code == 'SignatureDoesNotMatch':
                 actionable_msg = " - Check TENCENT_SMS_SECRET_KEY configuration"
             elif error_code == 'EntityTooLarge':
                 actionable_msg = " - Backup file exceeds COS size limit (5GB for single upload)"
-            elif error_code == 'SlowDown' or error_code == 'RequestLimitExceeded':
+            elif error_code in ('SlowDown', 'RequestLimitExceeded'):
                 actionable_msg = " - Rate limit exceeded, backup will retry on next schedule"
             elif status_code and str(status_code).startswith('5'):
                 actionable_msg = " - Server error, may be transient - backup will retry on next schedule"
@@ -1029,11 +1043,7 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                             pass  # Manifest may not exist for older backups
                     except Exception as delete_error:
                         if CosServiceError is not None and isinstance(delete_error, CosServiceError):
-                            error_code = (
-                                delete_error.get_error_code()
-                                if hasattr(delete_error, 'get_error_code')
-                                else 'Unknown'
-                            )  # type: ignore
+                            error_code = _cos_exc_call(delete_error, 'get_error_code', 'Unknown')
                             logger.warning("[Backup] Failed to delete COS backup %s: %s", backup['key'], error_code)
                         else:
                             logger.warning("[Backup] Failed to delete COS backup %s: %s", backup['key'], delete_error)

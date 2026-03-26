@@ -20,6 +20,8 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
+from config.database import libpq_database_url
+
 logger = logging.getLogger(__name__)
 
 DUMP_PREFIX = "mindgraph.postgresql"
@@ -195,7 +197,14 @@ def export_postgres_dump(
     filename = f"{DUMP_PREFIX}.{timestamp}{DUMP_EXT}"
     dump_path = backup_dir / filename
 
-    cmd = [pg_dump, "-Fc", "--no-owner", "-f", str(dump_path), db_url]
+    cmd = [
+        pg_dump,
+        "-Fc",
+        "--no-owner",
+        "-f",
+        str(dump_path),
+        libpq_database_url(db_url),
+    ]
     result = subprocess.run(
         cmd, capture_output=True, timeout=3600, check=False, text=True,
     )
@@ -255,7 +264,8 @@ def import_postgres_dump(
         "--if-exists",
         "--no-owner",
         "--single-transaction",
-        "-d", db_url,
+        "-d",
+        libpq_database_url(db_url),
         str(dump_path),
     ]
     result = subprocess.run(
