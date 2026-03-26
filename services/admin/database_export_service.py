@@ -21,6 +21,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 from config.database import libpq_database_url
+from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 logger = logging.getLogger(__name__)
 
@@ -258,10 +259,14 @@ def import_postgres_dump(
     if not dump_path.exists():
         return {"success": False, "error": f"File not found: {filename}"}
 
+    if not wipe_public_schema_before_restore(db_url, pg_engine):
+        return {
+            "success": False,
+            "error": "Failed to prepare database (drop public schema)",
+        }
+
     cmd = [
         pg_restore,
-        "--clean",
-        "--if-exists",
         "--no-owner",
         "--single-transaction",
         "-d",

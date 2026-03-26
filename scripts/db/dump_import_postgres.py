@@ -59,6 +59,8 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
+from services.utils.pg_restore_prep import wipe_public_schema_before_restore
+
 try:
     from services.infrastructure.process.process_manager import start_postgresql_server
 except ImportError:
@@ -556,23 +558,30 @@ def verify_dump(backup_path: Path) -> bool:
     return result.returncode == 0
 
 
-def run_restore(db_url: str, backup_path: Path) -> bool:
+def run_restore(
+    db_url: str,
+    backup_path: Path,
+    db_engine: Optional[Any] = None,
+) -> bool:
     """
     Run pg_restore. Overwrites existing data.
 
-    Uses --clean --if-exists to drop and recreate objects.
-    Uses --no-owner to avoid ownership issues when restoring from another machine.
-    Uses --single-transaction for atomicity (rollback on failure).
+    Drops schema public first (CASCADE) so we do not use pg_restore --clean,
+    which can fail when FKs block dropping primary keys. The archive then
+    creates schema, tables, and data. Uses --no-owner for portability and
+    --single-transaction so a failed restore rolls back the load (the CASCADE
+    drop is already committed).
     """
     pg_restore = find_pg_binary("pg_restore")
     if not pg_restore:
         logger.error("pg_restore not found. Install PostgreSQL client tools.")
         return False
 
+    if not wipe_public_schema_before_restore(db_url, db_engine):
+        return False
+
     cmd = [
         pg_restore,
-        "--clean",
-        "--if-exists",
         "--no-owner",
         "--single-transaction",
         "-d",
@@ -853,7 +862,7 @@ def import_command(
     with DumpImportProgress("Import", 5, import_stages) as prog:
         prog.update(0, "Manifest loaded")
         prog.update(1, "Schema checked")
-        if not run_restore(db_url, dump_path):
+        if not run_restore(db_url, dump_path, db_engine):
             return 1
         prog.update(2, "pg_restore done")
 
