@@ -18,10 +18,10 @@
     "isolatedModules": true,
     "jsx": "preserve",
 
-    /* Path aliases */
+    /* Path aliases — keep in sync with `vite.config.ts` `resolve.alias` (required for SFC/CSS + bundler resolution). */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
+      "@/*": ["./src/*"],
       "@data/*": ["../data/*"]
     },
 

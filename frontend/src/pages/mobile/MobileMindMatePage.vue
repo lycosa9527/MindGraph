@@ -9,14 +9,14 @@ import { useRouter } from 'vue-router'
 
 import { Home, Menu, Plus } from 'lucide-vue-next'
 
+import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
+import ShareExportModal from '@/components/panels/ShareExportModal.vue'
 import ConversationHistory from '@/components/panels/mindmate/ConversationHistory.vue'
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
-import ShareExportModal from '@/components/panels/ShareExportModal.vue'
-import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
-import type { FeedbackRating } from '@/composables/useMindMate'
+import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
 
 const router = useRouter()
@@ -53,8 +53,8 @@ const userAvatar = computed(() => {
   return avatar.startsWith('avatar_') ? '👤' : avatar
 })
 
-const showWelcome = computed(() =>
-  !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value,
+const showWelcome = computed(
+  () => !mindMate.hasMessages.value && !mindMate.isLoading.value && !mindMate.isStreaming.value
 )
 
 const { data: conversationsData } = useConversations()
@@ -69,7 +69,7 @@ watch(
       mindMateStore.syncConversationsFromQuery(convs, pinned)
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 watch(
@@ -78,7 +78,7 @@ watch(
     if (!isTypingTitle.value && newTitle !== displayTitle.value) {
       displayTitle.value = newTitle
     }
-  },
+  }
 )
 
 async function animateTitleChange(newTitle: string, oldTitle?: string) {
@@ -178,7 +178,7 @@ async function handleFeedback(messageId: string, rating: FeedbackRating) {
         ? t('notification.feedbackThanks')
         : newRating === 'dislike'
           ? t('notification.feedbackThanksDislike')
-          : t('notification.feedbackCancelled'),
+          : t('notification.feedbackCancelled')
     )
   }
 }
@@ -237,13 +237,19 @@ onUnmounted(() => {
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
           @click="goHome"
         >
-          <Home :size="18" class="text-gray-500" />
+          <Home
+            :size="18"
+            class="text-gray-500"
+          />
         </button>
         <button
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
           @click="toggleHistory"
         >
-          <Menu :size="18" class="text-gray-600" />
+          <Menu
+            :size="18"
+            class="text-gray-600"
+          />
         </button>
       </div>
 
@@ -259,7 +265,10 @@ onUnmounted(() => {
         :disabled="!authStore.isAuthenticated"
         @click="startNewConversation"
       >
-        <Plus :size="18" class="text-gray-600" />
+        <Plus
+          :size="18"
+          class="text-gray-600"
+        />
       </button>
     </header>
 
@@ -378,7 +387,9 @@ onUnmounted(() => {
 }
 
 @keyframes blink {
-  50% { opacity: 0; }
+  50% {
+    opacity: 0;
+  }
 }
 
 .mobile-welcome-scroll {

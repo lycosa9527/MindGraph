@@ -33,16 +33,56 @@ const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
 
 // All 10 diagram types (8 Thinking Maps + 2 extra), displayed in 2 rows of 5
 const allDiagramTypes: Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
-  { titleKey: 'landing.diagramGrid.circle_map.title', descKey: 'landing.diagramGrid.circle_map.desc', type: 'circle_map' },
-  { titleKey: 'landing.diagramGrid.bubble_map.title', descKey: 'landing.diagramGrid.bubble_map.desc', type: 'bubble_map' },
-  { titleKey: 'landing.diagramGrid.double_bubble_map.title', descKey: 'landing.diagramGrid.double_bubble_map.desc', type: 'double_bubble_map' },
-  { titleKey: 'landing.diagramGrid.tree_map.title', descKey: 'landing.diagramGrid.tree_map.desc', type: 'tree_map' },
-  { titleKey: 'landing.diagramGrid.brace_map.title', descKey: 'landing.diagramGrid.brace_map.desc', type: 'brace_map' },
-  { titleKey: 'landing.diagramGrid.flow_map.title', descKey: 'landing.diagramGrid.flow_map.desc', type: 'flow_map' },
-  { titleKey: 'landing.diagramGrid.multi_flow_map.title', descKey: 'landing.diagramGrid.multi_flow_map.desc', type: 'multi_flow_map' },
-  { titleKey: 'landing.diagramGrid.bridge_map.title', descKey: 'landing.diagramGrid.bridge_map.desc', type: 'bridge_map' },
-  { titleKey: 'landing.diagramGrid.mindmap.title', descKey: 'landing.diagramGrid.mindmap.desc', type: 'mindmap' },
-  { titleKey: 'landing.diagramGrid.concept_map.title', descKey: 'landing.diagramGrid.concept_map.desc', type: 'concept_map' },
+  {
+    titleKey: 'landing.diagramGrid.circle_map.title',
+    descKey: 'landing.diagramGrid.circle_map.desc',
+    type: 'circle_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.bubble_map.title',
+    descKey: 'landing.diagramGrid.bubble_map.desc',
+    type: 'bubble_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.double_bubble_map.title',
+    descKey: 'landing.diagramGrid.double_bubble_map.desc',
+    type: 'double_bubble_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.tree_map.title',
+    descKey: 'landing.diagramGrid.tree_map.desc',
+    type: 'tree_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.brace_map.title',
+    descKey: 'landing.diagramGrid.brace_map.desc',
+    type: 'brace_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.flow_map.title',
+    descKey: 'landing.diagramGrid.flow_map.desc',
+    type: 'flow_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.multi_flow_map.title',
+    descKey: 'landing.diagramGrid.multi_flow_map.desc',
+    type: 'multi_flow_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.bridge_map.title',
+    descKey: 'landing.diagramGrid.bridge_map.desc',
+    type: 'bridge_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.mindmap.title',
+    descKey: 'landing.diagramGrid.mindmap.desc',
+    type: 'mindmap',
+  },
+  {
+    titleKey: 'landing.diagramGrid.concept_map.title',
+    descKey: 'landing.diagramGrid.concept_map.desc',
+    type: 'concept_map',
+  },
 ]
 
 function handleNewCanvas(item: { type: DiagramType }) {

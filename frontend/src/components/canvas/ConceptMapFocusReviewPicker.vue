@@ -6,7 +6,7 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { Equal, Loader2, Minus } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 
 const store = useConceptMapFocusReviewStore()

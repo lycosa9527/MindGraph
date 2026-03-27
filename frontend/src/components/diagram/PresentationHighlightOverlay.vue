@@ -26,15 +26,15 @@ const { screenToFlowCoordinate, viewport: vueFlowViewport, getViewport } = useVu
 const viewport = computed(() => vueFlowViewport.value ?? getViewport())
 
 const transform = computed(
-  () => `translate(${viewport.value.x}, ${viewport.value.y}) scale(${viewport.value.zoom})`,
+  () => `translate(${viewport.value.x}, ${viewport.value.y}) scale(${viewport.value.zoom})`
 )
 
 /** Keep apparent stroke width roughly constant on screen (flow space is scaled by zoom). */
 const strokeWidthFlow = computed(() => {
   const z = viewport.value.zoom
   const s = props.pointerSizeScale ?? 1
-  if (!z || z < 0.05) return 40 * s
-  return (34 / z) * s
+  if (!z || z < 0.05) return 10 * s
+  return (8.5 / z) * s
 })
 
 const showLayer = computed(() => strokes.value.length > 0 || props.active)

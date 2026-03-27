@@ -1,4 +1,4 @@
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'

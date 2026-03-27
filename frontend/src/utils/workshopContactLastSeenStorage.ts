@@ -58,7 +58,7 @@ export function loadLastSeenOnlineFromStorage(scope: WorkshopCacheScope): Record
 
 export function saveLastSeenOnlineToStorage(
   scope: WorkshopCacheScope,
-  data: Record<number, number>,
+  data: Record<number, number>
 ): void {
   if (typeof localStorage === 'undefined') {
     return

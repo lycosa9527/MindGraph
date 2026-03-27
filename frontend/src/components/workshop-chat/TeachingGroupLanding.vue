@@ -9,7 +9,7 @@ import { useRouter } from 'vue-router'
 import { Hash, MessageSquare, MoreVertical } from 'lucide-vue-next'
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { type ChatChannel, useWorkshopChatStore } from '@/stores/workshopChat'
 import { formatDeadlineRelative, lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 

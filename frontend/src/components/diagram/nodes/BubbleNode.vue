@@ -6,9 +6,9 @@
  */
 import { computed, ref } from 'vue'
 
-import { eventBus } from '@/composables/useEventBus'
-import { useNodeDimensions } from '@/composables/useNodeDimensions'
-import { useTheme } from '@/composables/useTheme'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useTheme } from '@/composables/core/useTheme'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'

@@ -2,6 +2,8 @@
  * Pinia Stores Index
  */
 
+export type { DiagramId } from '@/types'
+
 export { useConceptMapRelationshipStore } from './conceptMapRelationship'
 export { useConceptMapFocusReviewStore } from './conceptMapFocusReview'
 export { useConceptMapRootConceptReviewStore } from './conceptMapRootConceptReview'

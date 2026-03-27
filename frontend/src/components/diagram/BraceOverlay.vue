@@ -18,7 +18,7 @@ import { computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
 
@@ -254,9 +254,7 @@ const alternativeDimensions = computed(() => {
   return []
 })
 
-const alternativeDimensionsLabel = computed(() =>
-  t('diagram.alternativeDimensions.braceTitle')
-)
+const alternativeDimensionsLabel = computed(() => t('diagram.alternativeDimensions.braceTitle'))
 
 /** Archive uses simple text "• dim1  • dim2" not individual chips */
 const alternativeDimensionsChipsText = computed(() =>

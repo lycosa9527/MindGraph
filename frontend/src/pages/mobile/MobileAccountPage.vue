@@ -7,8 +7,15 @@ import { computed, ref } from 'vue'
 import { useRouter } from 'vue-router'
 
 import {
-  Phone, Lock, Smile, Globe, Languages,
-  LogOut, ChevronRight, ChevronDown, Check,
+  Check,
+  ChevronDown,
+  ChevronRight,
+  Globe,
+  Languages,
+  Lock,
+  LogOut,
+  Phone,
+  Smile,
 } from 'lucide-vue-next'
 
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
@@ -58,38 +65,31 @@ const currentUiLabel = computed(() => {
 const TOP_PROMPT_CODES = ['zh', 'zh-hant', 'en']
 
 const topPromptOptions = computed(() =>
-  PROMPT_LANGUAGE_OPTIONS.filter((opt) => TOP_PROMPT_CODES.includes(opt.code)),
+  PROMPT_LANGUAGE_OPTIONS.filter((opt) => TOP_PROMPT_CODES.includes(opt.code))
 )
 
 const filteredPromptOptions = computed(() => {
   const query = promptSearchQuery.value.toLowerCase().trim()
-  const nonTop = PROMPT_LANGUAGE_OPTIONS.filter(
-    (opt) => !TOP_PROMPT_CODES.includes(opt.code),
-  )
+  const nonTop = PROMPT_LANGUAGE_OPTIONS.filter((opt) => !TOP_PROMPT_CODES.includes(opt.code))
   if (!query) return nonTop
   return nonTop.filter(
     (opt) =>
       opt.label.toLowerCase().includes(query) ||
       opt.englishName.toLowerCase().includes(query) ||
       opt.code.toLowerCase().includes(query) ||
-      opt.search.some((s: string) => s.toLowerCase().includes(query)),
+      opt.search.some((s: string) => s.toLowerCase().includes(query))
   )
 })
 
 const currentPromptLabel = computed(() => {
-  const match = PROMPT_LANGUAGE_OPTIONS.find(
-    (opt) => opt.code === uiStore.promptLanguage,
-  )
+  const match = PROMPT_LANGUAGE_OPTIONS.find((opt) => opt.code === uiStore.promptLanguage)
   return match?.label ?? uiStore.promptLanguage
 })
 
 function selectUiLanguage(code: string) {
   uiStore.setLanguage(code as Language)
   uiStore.setUiLanguageExplicit(true)
-  void authStore.saveLanguagePreferences(
-    code as Language,
-    uiStore.promptLanguage,
-  )
+  void authStore.saveLanguagePreferences(code as Language, uiStore.promptLanguage)
   uiLangExpanded.value = false
 }
 
@@ -137,7 +137,10 @@ async function handleLogout() {
         <div class="text-base font-semibold text-gray-900">
           {{ displayName }}
         </div>
-        <div v-if="orgName" class="text-sm text-gray-500">
+        <div
+          v-if="orgName"
+          class="text-sm text-gray-500"
+        >
           {{ orgName }}
         </div>
       </div>
@@ -149,14 +152,20 @@ async function handleLogout() {
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="showChangePhone = true"
         >
-          <Phone :size="20" class="text-gray-500 shrink-0" />
+          <Phone
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
               {{ t('sidebar.changePhone', '修改手机号') }}
             </div>
             <div class="text-xs text-gray-400 mt-0.5">{{ maskedPhone }}</div>
           </div>
-          <ChevronRight :size="18" class="text-gray-400 shrink-0" />
+          <ChevronRight
+            :size="18"
+            class="text-gray-400 shrink-0"
+          />
         </button>
 
         <div class="border-t border-gray-100 mx-4" />
@@ -166,13 +175,19 @@ async function handleLogout() {
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="showChangePassword = true"
         >
-          <Lock :size="20" class="text-gray-500 shrink-0" />
+          <Lock
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
               {{ t('sidebar.changePassword', '修改密码') }}
             </div>
           </div>
-          <ChevronRight :size="18" class="text-gray-400 shrink-0" />
+          <ChevronRight
+            :size="18"
+            class="text-gray-400 shrink-0"
+          />
         </button>
 
         <div class="border-t border-gray-100 mx-4" />
@@ -182,13 +197,19 @@ async function handleLogout() {
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="showAvatarSelect = true"
         >
-          <Smile :size="20" class="text-gray-500 shrink-0" />
+          <Smile
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
               {{ t('sidebar.changeAvatar', '修改头像') }}
             </div>
           </div>
-          <ChevronRight :size="18" class="text-gray-400 shrink-0" />
+          <ChevronRight
+            :size="18"
+            class="text-gray-400 shrink-0"
+          />
         </button>
 
         <div class="border-t border-gray-100 mx-4" />
@@ -198,7 +219,10 @@ async function handleLogout() {
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="toggleUiLang"
         >
-          <Globe :size="20" class="text-gray-500 shrink-0" />
+          <Globe
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
               {{ t('mobile.uiLanguage', '界面语言') }}
@@ -213,7 +237,10 @@ async function handleLogout() {
         </button>
 
         <!-- UI Language inline selector -->
-        <div v-if="uiLangExpanded" class="bg-gray-50 px-4 py-2 border-t border-gray-100">
+        <div
+          v-if="uiLangExpanded"
+          class="bg-gray-50 px-4 py-2 border-t border-gray-100"
+        >
           <button
             v-for="locale in enabledUiLocales"
             :key="locale.code"
@@ -238,7 +265,10 @@ async function handleLogout() {
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="togglePromptLang"
         >
-          <Languages :size="20" class="text-gray-500 shrink-0" />
+          <Languages
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
               {{ t('languageSettings.promptLanguage', '生成语言') }}
@@ -253,7 +283,10 @@ async function handleLogout() {
         </button>
 
         <!-- Prompt Language inline selector -->
-        <div v-if="promptLangExpanded" class="bg-gray-50 px-4 py-2 border-t border-gray-100">
+        <div
+          v-if="promptLangExpanded"
+          class="bg-gray-50 px-4 py-2 border-t border-gray-100"
+        >
           <!-- Top languages (zh, zh-hant, en) -->
           <button
             v-for="opt in topPromptOptions"

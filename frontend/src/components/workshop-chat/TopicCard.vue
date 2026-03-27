@@ -9,7 +9,7 @@ import { ChatLineSquare } from '@element-plus/icons-vue'
 
 import { MoreVertical } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatTopic } from '@/stores/workshopChat'
 
 import TopicActionsPopover from './TopicActionsPopover.vue'

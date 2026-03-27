@@ -5,7 +5,7 @@ import { ElMessageBox } from 'element-plus'
 
 import { ArrowRightLeft, Bell, BellOff, BookCheck, Eye, Pencil, Trash2 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import type { ChatTopic } from '@/stores/workshopChat'
 import { useWorkshopChatStore } from '@/stores/workshopChat'

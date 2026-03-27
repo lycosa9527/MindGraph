@@ -35,8 +35,7 @@ function main(): void {
   reportMissing('Extra in en (not in zh)', extraEn)
   reportMissing('Extra in az (not in zh)', extraAz)
 
-  const failed =
-    onlyEn.length + onlyAz.length + extraEn.length + extraAz.length > 0
+  const failed = onlyEn.length + onlyAz.length + extraEn.length + extraAz.length > 0
   if (failed) {
     process.exit(1)
   }

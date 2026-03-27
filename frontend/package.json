@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.59.0",
+  "version": "5.60.0",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
@@ -15,6 +15,7 @@
     "format": "prettier --write \"src/**/*.{vue,ts,js,json,css,scss}\"",
     "format:check": "prettier --check \"src/**/*.{vue,ts,js,json,css,scss}\"",
     "check": "vue-tsc --noEmit && npm run lint && npm run format:check",
+    "check:fix": "npm run fix && npm run check",
     "i18n:check-keys": "npx tsx scripts/check-i18n-keys.ts",
     "i18n:check-prompts": "cd .. && python scripts/check_prompt_output_languages_sync.py",
     "i18n:check": "npm run i18n:check-keys && npm run i18n:check-prompts",

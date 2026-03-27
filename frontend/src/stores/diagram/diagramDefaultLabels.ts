@@ -64,9 +64,7 @@ export function isDefaultFocusQuestionLabel(label: string): boolean {
   return ALL_FOCUS_QUESTION_DEFAULTS.includes(label.trim())
 }
 
-export function focusQuestionMutedParts(
-  label: string
-): { prefix: string; suffix: string } | null {
+export function focusQuestionMutedParts(label: string): { prefix: string; suffix: string } | null {
   const t = label.trim()
   for (const loc of UI_LOCALE_CODES) {
     const def = getConceptMapFocusQuestionDefault(loc)

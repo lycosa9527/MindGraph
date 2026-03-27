@@ -8,7 +8,7 @@ import { ElEmpty, ElScrollbar } from 'element-plus'
 
 import { Document } from '@element-plus/icons-vue'
 
-import { useKnowledgeSpace } from '@/composables/useKnowledgeSpace'
+import { useKnowledgeSpace } from '@/composables/knowledge/useKnowledgeSpace'
 
 const { documents: allDocuments, fetchDocuments } = useKnowledgeSpace()
 

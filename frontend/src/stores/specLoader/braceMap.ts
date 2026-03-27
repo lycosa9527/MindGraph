@@ -32,8 +32,8 @@ interface BraceNode {
 const BRACE_TOPIC_FONT_SIZE = 18
 const BRACE_PART_FONT_SIZE = 16
 const BRACE_SUBPART_FONT_SIZE = 12
-const BRACE_TOPIC_PADDING_X = 48 + 6  // px-6 (24*2) + border (3*2)
-const BRACE_PILL_PADDING_X = 40 + 4   // px-5 (20*2) + border (2*2)
+const BRACE_TOPIC_PADDING_X = 48 + 6 // px-6 (24*2) + border (3*2)
+const BRACE_PILL_PADDING_X = 40 + 4 // px-5 (20*2) + border (2*2)
 const BRACE_MAX_NODE_WIDTH = 280
 const BRACE_NODE_MAX_TEXT_WIDTH = 240
 const BRACE_TOPIC_MAX_TEXT_WIDTH = 300
@@ -176,8 +176,7 @@ function computeColumnLayout(
     if (!kids || kids.length === 0) return h
     const childSpans = kids.map(computeSubtreeSpan)
     const childrenTotal =
-      childSpans.reduce((a, b) => a + b, 0) +
-      (kids.length - 1) * BRACE_MAP_NODE_SPACING
+      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * BRACE_MAP_NODE_SPACING
     return Math.max(h, childrenTotal)
   }
 
@@ -192,8 +191,7 @@ function computeColumnLayout(
 
     const childSpans = kids.map(computeSubtreeSpan)
     const childrenTotal =
-      childSpans.reduce((a, b) => a + b, 0) +
-      (kids.length - 1) * BRACE_MAP_NODE_SPACING
+      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * BRACE_MAP_NODE_SPACING
 
     if (childrenTotal >= h) {
       let y = startY
@@ -416,7 +414,10 @@ export function recalculateBraceMapLayout(
   const childrenMap = new Map<string, string[]>()
   connections.forEach((conn) => {
     if (!childrenMap.has(conn.source)) childrenMap.set(conn.source, [])
-    childrenMap.get(conn.source)!.push(conn.target)
+    const children = childrenMap.get(conn.source)
+    if (children) {
+      children.push(conn.target)
+    }
   })
 
   function buildTree(nodeId: string): BraceNode {

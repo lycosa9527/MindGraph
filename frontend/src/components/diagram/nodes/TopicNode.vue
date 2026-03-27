@@ -8,9 +8,9 @@ import { computed, nextTick, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { eventBus } from '@/composables/useEventBus'
-import { useNodeDimensions } from '@/composables/useNodeDimensions'
-import { useTheme } from '@/composables/useTheme'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'

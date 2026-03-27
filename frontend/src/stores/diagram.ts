@@ -6,7 +6,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { DiagramData, DiagramNode, DiagramType, HistoryEntry } from '@/types'
 
 import { useConceptMapRelationshipStore } from './conceptMapRelationship'
@@ -119,8 +119,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const learningSheetSlice = useLearningSheetSlice(ctx)
   const titleSlice = useTitleSlice(ctx)
 
-  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack } =
-    historySlice
+  const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack } = historySlice
   const {
     selectNodes,
     clearSelection,

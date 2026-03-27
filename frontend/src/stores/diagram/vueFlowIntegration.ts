@@ -42,10 +42,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
   const bubbleMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'bubble_map' || !ctx.data.value?.nodes) return []
     void ctx.layoutRecalcTrigger.value
-    return recalculateBubbleMapLayout(
-      ctx.data.value.nodes,
-      ctx.nodeDimensions.value
-    )
+    return recalculateBubbleMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
   })
 
   const flowMapLayoutNodes = computed(() => {

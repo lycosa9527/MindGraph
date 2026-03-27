@@ -34,7 +34,10 @@ interface AnalysisResult {
 }
 
 interface MergeResult {
-  tables: Record<string, { inserted: number; skipped: number; orphaned?: number; rejected?: number }>
+  tables: Record<
+    string,
+    { inserted: number; skipped: number; orphaned?: number; rejected?: number }
+  >
   elapsed_seconds: number
 }
 
@@ -179,7 +182,11 @@ async function cleanSqliteOrphans() {
     await ElMessageBox.confirm(
       `Delete ${totalSqliteOrphans.value} orphaned records from the SQLite file? This modifies the file on disk.`,
       'Clean SQLite Orphans',
-      { confirmButtonText: t('admin.confirm'), cancelButtonText: t('admin.cancel'), type: 'warning' },
+      {
+        confirmButtonText: t('admin.confirm'),
+        cancelButtonText: t('admin.cancel'),
+        type: 'warning',
+      }
     )
   } catch (err: unknown) {
     if (err === 'cancel' || err === 'close') return
@@ -219,7 +226,11 @@ async function executeMerge() {
     await ElMessageBox.confirm(
       t('admin.database.mergeConfirmMsg'),
       t('admin.database.mergeConfirmTitle'),
-      { confirmButtonText: t('admin.confirm'), cancelButtonText: t('admin.cancel'), type: 'warning' },
+      {
+        confirmButtonText: t('admin.confirm'),
+        cancelButtonText: t('admin.cancel'),
+        type: 'warning',
+      }
     )
   } catch (err: unknown) {
     if (err === 'cancel' || err === 'close') return
@@ -274,7 +285,7 @@ async function importDump(filename: string) {
     await ElMessageBox.confirm(
       t('admin.database.importConfirmMsg'),
       t('admin.database.importConfirmTitle'),
-      { confirmButtonText: t('admin.confirm'), cancelButtonText: t('admin.cancel'), type: 'error' },
+      { confirmButtonText: t('admin.confirm'), cancelButtonText: t('admin.cancel'), type: 'error' }
     )
   } catch (err: unknown) {
     if (err === 'cancel' || err === 'close') return
@@ -327,7 +338,11 @@ async function cleanOrphans() {
     await ElMessageBox.confirm(
       t('admin.database.orphanCleanConfirmMsg'),
       t('admin.database.orphanCleanConfirmTitle'),
-      { confirmButtonText: t('admin.confirm'), cancelButtonText: t('admin.cancel'), type: 'warning' },
+      {
+        confirmButtonText: t('admin.confirm'),
+        cancelButtonText: t('admin.cancel'),
+        type: 'warning',
+      }
     )
   } catch (err: unknown) {
     if (err === 'cancel' || err === 'close') return
@@ -337,7 +352,9 @@ async function cleanOrphans() {
 
   isCleaningOrphans.value = true
   try {
-    const response = await apiRequest('/api/auth/admin/database/cleanup-orphans', { method: 'POST' })
+    const response = await apiRequest('/api/auth/admin/database/cleanup-orphans', {
+      method: 'POST',
+    })
     if (!response.ok) throw new Error('orphan cleanup failed')
     const result = (await response.json()) as Record<string, number>
     const total = Object.values(result).reduce((s, v) => s + v, 0)
@@ -520,7 +537,9 @@ onMounted(() => {
           v-if="Object.keys(analysis.orphans).length > 0"
           class="mb-4"
         >
-          <h5 class="text-sm font-medium text-orange-600 mb-2">{{ t('admin.database.orphansFound') }}</h5>
+          <h5 class="text-sm font-medium text-orange-600 mb-2">
+            {{ t('admin.database.orphansFound') }}
+          </h5>
           <div
             v-for="(count, label) in analysis.orphans"
             :key="label"
@@ -741,7 +760,10 @@ onMounted(() => {
       <p class="text-gray-500 text-sm mb-4">{{ t('admin.database.orphanCleanupDesc') }}</p>
 
       <template v-if="orphans !== null">
-        <div v-if="!hasOrphans" class="text-green-600 text-sm py-2">
+        <div
+          v-if="!hasOrphans"
+          class="text-green-600 text-sm py-2"
+        >
           {{ t('admin.database.noOrphansFound') }}
         </div>
 
@@ -757,7 +779,8 @@ onMounted(() => {
             </div>
           </div>
           <div class="text-sm text-gray-500 mb-3">
-            {{ t('admin.database.totalOrphans') }}: <strong class="text-orange-600">{{ totalOrphans }}</strong>
+            {{ t('admin.database.totalOrphans') }}:
+            <strong class="text-orange-600">{{ totalOrphans }}</strong>
           </div>
           <el-button
             type="warning"

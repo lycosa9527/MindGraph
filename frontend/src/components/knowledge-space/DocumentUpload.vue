@@ -9,8 +9,8 @@ import type { UploadFile } from 'element-plus'
 
 import { Upload } from '@element-plus/icons-vue'
 
-import { notify } from '@/composables/notifications'
-import { useLanguage } from '@/composables/useLanguage'
+import { notify } from '@/composables/core/notifications'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   visible: boolean

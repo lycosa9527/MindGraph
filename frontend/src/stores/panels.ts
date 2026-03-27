@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores/diagram'
 import type {
   ConceptMapTab,

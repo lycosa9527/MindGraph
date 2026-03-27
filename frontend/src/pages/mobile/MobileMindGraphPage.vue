@@ -59,16 +59,56 @@ const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
 }
 
 const diagramTypes: Array<{ titleKey: string; descKey: string; type: DiagramType }> = [
-  { titleKey: 'landing.diagramGrid.circle_map.title', descKey: 'landing.diagramGrid.circle_map.desc', type: 'circle_map' },
-  { titleKey: 'landing.diagramGrid.bubble_map.title', descKey: 'landing.diagramGrid.bubble_map.desc', type: 'bubble_map' },
-  { titleKey: 'landing.diagramGrid.double_bubble_map.title', descKey: 'landing.diagramGrid.double_bubble_map.desc', type: 'double_bubble_map' },
-  { titleKey: 'landing.diagramGrid.tree_map.title', descKey: 'landing.diagramGrid.tree_map.desc', type: 'tree_map' },
-  { titleKey: 'landing.diagramGrid.brace_map.title', descKey: 'landing.diagramGrid.brace_map.desc', type: 'brace_map' },
-  { titleKey: 'landing.diagramGrid.flow_map.title', descKey: 'landing.diagramGrid.flow_map.desc', type: 'flow_map' },
-  { titleKey: 'landing.diagramGrid.multi_flow_map.title', descKey: 'landing.diagramGrid.multi_flow_map.desc', type: 'multi_flow_map' },
-  { titleKey: 'landing.diagramGrid.bridge_map.title', descKey: 'landing.diagramGrid.bridge_map.desc', type: 'bridge_map' },
-  { titleKey: 'landing.diagramGrid.mindmap.title', descKey: 'landing.diagramGrid.mindmap.desc', type: 'mindmap' },
-  { titleKey: 'landing.diagramGrid.concept_map.title', descKey: 'landing.diagramGrid.concept_map.desc', type: 'concept_map' },
+  {
+    titleKey: 'landing.diagramGrid.circle_map.title',
+    descKey: 'landing.diagramGrid.circle_map.desc',
+    type: 'circle_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.bubble_map.title',
+    descKey: 'landing.diagramGrid.bubble_map.desc',
+    type: 'bubble_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.double_bubble_map.title',
+    descKey: 'landing.diagramGrid.double_bubble_map.desc',
+    type: 'double_bubble_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.tree_map.title',
+    descKey: 'landing.diagramGrid.tree_map.desc',
+    type: 'tree_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.brace_map.title',
+    descKey: 'landing.diagramGrid.brace_map.desc',
+    type: 'brace_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.flow_map.title',
+    descKey: 'landing.diagramGrid.flow_map.desc',
+    type: 'flow_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.multi_flow_map.title',
+    descKey: 'landing.diagramGrid.multi_flow_map.desc',
+    type: 'multi_flow_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.bridge_map.title',
+    descKey: 'landing.diagramGrid.bridge_map.desc',
+    type: 'bridge_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.mindmap.title',
+    descKey: 'landing.diagramGrid.mindmap.desc',
+    type: 'mindmap',
+  },
+  {
+    titleKey: 'landing.diagramGrid.concept_map.title',
+    descKey: 'landing.diagramGrid.concept_map.desc',
+    type: 'concept_map',
+  },
 ]
 
 function handleSelectType(item: { type: DiagramType }) {
@@ -95,23 +135,29 @@ function handleFreeInput() {
 <template>
   <div class="mobile-mindgraph flex flex-col flex-1 min-h-0">
     <!-- Custom header -->
-    <header class="mobile-mg-header flex items-center h-12 px-3 bg-white border-b border-gray-200 shrink-0">
+    <header
+      class="mobile-mg-header flex items-center h-12 px-3 bg-white border-b border-gray-200 shrink-0"
+    >
       <button
         class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
         @click="goHome"
       >
-        <Home :size="18" class="text-gray-500" />
+        <Home
+          :size="18"
+          class="text-gray-500"
+        />
       </button>
       <button
         class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors ml-0.5"
         @click="toggleHistory"
       >
-        <Menu :size="18" class="text-gray-500" />
+        <Menu
+          :size="18"
+          class="text-gray-500"
+        />
       </button>
 
-      <h1 class="flex-1 text-center text-base font-semibold text-gray-800 truncate">
-        MindGraph
-      </h1>
+      <h1 class="flex-1 text-center text-base font-semibold text-gray-800 truncate">MindGraph</h1>
 
       <div class="w-[72px] shrink-0" />
     </header>
@@ -130,51 +176,53 @@ function handleFreeInput() {
 
     <!-- Page content -->
     <div class="flex-1 overflow-y-auto">
-    <div class="px-4 pt-4 pb-8 max-w-md mx-auto">
-      <!-- Free text input -->
-      <div class="relative mb-5">
-        <input
-          v-model="uiStore.freeInputValue"
-          type="text"
-          class="w-full h-12 pl-4 pr-12 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
-          :placeholder="t('mindgraphLanding.inputPlaceholder', '描述你的图示，或从下方选择具体图示模板...')"
-          maxlength="50"
-          @keydown.enter="handleFreeInput"
-        />
-        <button
-          class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white active:bg-indigo-700 transition-colors disabled:opacity-40"
-          :disabled="!uiStore.freeInputValue?.trim()"
-          @click="handleFreeInput"
-        >
-          <ArrowRight :size="18" />
-        </button>
-      </div>
+      <div class="px-4 pt-4 pb-8 max-w-md mx-auto">
+        <!-- Free text input -->
+        <div class="relative mb-5">
+          <input
+            v-model="uiStore.freeInputValue"
+            type="text"
+            class="w-full h-12 pl-4 pr-12 rounded-xl border border-gray-200 bg-white text-sm text-gray-800 placeholder-gray-400 focus:outline-none focus:border-indigo-400 focus:ring-2 focus:ring-indigo-100 transition-all"
+            :placeholder="
+              t('mindgraphLanding.inputPlaceholder', '描述你的图示，或从下方选择具体图示模板...')
+            "
+            maxlength="50"
+            @keydown.enter="handleFreeInput"
+          />
+          <button
+            class="absolute right-2 top-1/2 -translate-y-1/2 flex items-center justify-center w-8 h-8 rounded-lg bg-indigo-600 text-white active:bg-indigo-700 transition-colors disabled:opacity-40"
+            :disabled="!uiStore.freeInputValue?.trim()"
+            @click="handleFreeInput"
+          >
+            <ArrowRight :size="18" />
+          </button>
+        </div>
 
-      <!-- Section title -->
-      <div class="text-sm font-semibold text-gray-500 mb-3">
-        {{ t('landing.diagramGrid.sectionTitle') }}
-      </div>
+        <!-- Section title -->
+        <div class="text-sm font-semibold text-gray-500 mb-3">
+          {{ t('landing.diagramGrid.sectionTitle') }}
+        </div>
 
-      <!-- Diagram type grid — 2 columns -->
-      <div class="grid grid-cols-3 gap-3">
-        <button
-          v-for="item in diagramTypes"
-          :key="item.type"
-          class="diagram-card flex flex-col items-center p-4 bg-white rounded-xl border border-gray-200 active:border-indigo-400 active:bg-indigo-50/30 transition-all text-center"
-          @click="handleSelectType(item)"
-        >
-          <div class="w-full min-h-[48px] flex items-center justify-center mb-2">
-            <DiagramPreviewSvg :type="item.type" />
-          </div>
-          <div class="text-sm font-medium text-gray-800 leading-snug">
-            {{ t(item.titleKey) }}
-          </div>
-          <div class="text-xs text-gray-500 leading-snug mt-0.5">
-            {{ t(item.descKey) }}
-          </div>
-        </button>
+        <!-- Diagram type grid — 2 columns -->
+        <div class="grid grid-cols-3 gap-3">
+          <button
+            v-for="item in diagramTypes"
+            :key="item.type"
+            class="diagram-card flex flex-col items-center p-4 bg-white rounded-xl border border-gray-200 active:border-indigo-400 active:bg-indigo-50/30 transition-all text-center"
+            @click="handleSelectType(item)"
+          >
+            <div class="w-full min-h-[48px] flex items-center justify-center mb-2">
+              <DiagramPreviewSvg :type="item.type" />
+            </div>
+            <div class="text-sm font-medium text-gray-800 leading-snug">
+              {{ t(item.titleKey) }}
+            </div>
+            <div class="text-xs text-gray-500 leading-snug mt-0.5">
+              {{ t(item.descKey) }}
+            </div>
+          </button>
+        </div>
       </div>
-    </div>
     </div>
   </div>
 </template>

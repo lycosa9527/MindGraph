@@ -15,7 +15,7 @@ import { defineStore } from 'pinia'
 
 import { useQueryClient } from '@tanstack/vue-query'
 
-import { notify } from '@/composables/notifications'
+import { notify } from '@/composables/core/notifications'
 import { difyKeys } from '@/composables/queries/difyKeys'
 import { i18n } from '@/i18n'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
@@ -160,7 +160,10 @@ export const useAuthStore = defineStore('auth', () => {
     const uiStore = useUIStore()
     if (target.uiLanguage != null || target.promptLanguage != null) {
       languagePrefsSeededForUserId.value = null
-      uiStore.applyLanguageFromServerProfile(target.uiLanguage ?? null, target.promptLanguage ?? null)
+      uiStore.applyLanguageFromServerProfile(
+        target.uiLanguage ?? null,
+        target.promptLanguage ?? null
+      )
       return
     }
     if (languagePrefsSeededForUserId.value === target.id) {

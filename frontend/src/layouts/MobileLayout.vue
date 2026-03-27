@@ -15,12 +15,10 @@ const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
 
-const isHome = computed(() =>
-  route.name === 'MobileHome' || route.path === '/m',
-)
+const isHome = computed(() => route.name === 'MobileHome' || route.path === '/m')
 
-const hideHeader = computed(() =>
-  isHome.value || route.name === 'MobileMindMate' || route.name === 'MobileMindGraph',
+const hideHeader = computed(
+  () => isHome.value || route.name === 'MobileMindMate' || route.name === 'MobileMindGraph'
 )
 
 const showBackButton = computed(() => route.name === 'MobileCanvas')
@@ -60,14 +58,20 @@ function goHome() {
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
           @click="goBack"
         >
-          <ArrowLeft :size="18" class="text-gray-500" />
+          <ArrowLeft
+            :size="18"
+            class="text-gray-500"
+          />
         </button>
 
         <button
           class="flex items-center justify-center w-8 h-8 rounded-lg active:bg-gray-100 transition-colors"
           @click="goHome"
         >
-          <Home :size="18" class="text-gray-500" />
+          <Home
+            :size="18"
+            class="text-gray-500"
+          />
         </button>
       </div>
 
@@ -75,7 +79,10 @@ function goHome() {
         {{ pageTitle }}
       </h1>
 
-      <div class="w-8 shrink-0" :class="{ 'w-16!': showBackButton }" />
+      <div
+        class="w-8 shrink-0"
+        :class="{ 'w-16!': showBackButton }"
+      />
     </header>
 
     <!-- Page content -->

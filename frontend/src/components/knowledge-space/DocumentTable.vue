@@ -19,7 +19,7 @@ import {
 
 import { Close, Delete, Document, View } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const props = defineProps<{
@@ -258,7 +258,9 @@ const isRowSelected = (docId: number) => props.selectedIds.includes(docId)
                   <Close />
                 </ElIcon>
                 <div class="flex-1">
-                  <span class="text-red-600 text-xs font-medium">{{ t('knowledge.doc.errorPrefix') }}</span>
+                  <span class="text-red-600 text-xs font-medium">{{
+                    t('knowledge.doc.errorPrefix')
+                  }}</span>
                   <span class="text-red-600 text-xs">{{ row.error_message }}</span>
                 </div>
               </div>

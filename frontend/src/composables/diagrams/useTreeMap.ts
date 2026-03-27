@@ -12,7 +12,7 @@ import { computed, ref } from 'vue'
 
 import { Position } from '@vue-flow/core'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
 import {

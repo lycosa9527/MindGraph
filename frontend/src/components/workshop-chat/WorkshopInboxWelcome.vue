@@ -7,7 +7,7 @@ import { useRouter } from 'vue-router'
 
 import { Hash, Inbox, MessageSquare } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
 const { t } = useLanguage()

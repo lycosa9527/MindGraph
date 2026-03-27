@@ -6,7 +6,7 @@ import { computed } from 'vue'
 
 import { ElButton } from 'element-plus'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
 import DebaterAvatar from './DebaterAvatar.vue'

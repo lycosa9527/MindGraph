@@ -10,7 +10,7 @@ import { ElEmpty, ElIcon, ElSkeleton, ElTable, ElTableColumn } from 'element-plu
 import { Document, Link } from '@element-plus/icons-vue'
 
 import type { Benchmark } from '@/composables/queries/useChunkTestQueries'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
   datasets: Benchmark[]

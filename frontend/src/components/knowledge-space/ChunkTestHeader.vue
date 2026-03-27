@@ -7,7 +7,7 @@ import { ElButton, ElIcon, ElTooltip } from 'element-plus'
 
 import { RefreshRight, Upload, VideoPlay } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   documentCount: number
@@ -34,9 +34,7 @@ const { t } = useLanguage()
       <h1 class="text-lg font-semibold text-stone-900">
         {{ t('knowledge.chunkHeader.title') }}
       </h1>
-      <span class="text-sm text-stone-500">
-        ({{ documentCount }}/5)
-      </span>
+      <span class="text-sm text-stone-500"> ({{ documentCount }}/5) </span>
     </div>
     <div class="flex items-center gap-2 shrink-0">
       <!-- Process Documents Button -->

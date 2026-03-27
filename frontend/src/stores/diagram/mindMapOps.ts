@@ -1,5 +1,5 @@
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { DiagramNode, Position } from '@/types'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
@@ -21,10 +21,7 @@ import type { DiagramContext } from './types'
  * accurate `estimateNodeWidth` heuristic for nodes whose ResizeObservers
  * won't re-fire (the DOM size didn't change, so the observer stays silent).
  */
-function retainMeasuredDimensions(
-  ctx: DiagramContext,
-  newNodes: DiagramNode[]
-): void {
+function retainMeasuredDimensions(ctx: DiagramContext, newNodes: DiagramNode[]): void {
   const surviving = new Set(newNodes.map((n) => n.id))
 
   const widths = ctx.mindMapNodeWidths.value

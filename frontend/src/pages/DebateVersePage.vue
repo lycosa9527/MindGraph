@@ -14,7 +14,7 @@ import { Plus } from '@element-plus/icons-vue'
 
 import DebateSetup from '@/components/debateverse/DebateSetup.vue'
 import DebateVerseStage from '@/components/debateverse/DebateVerseStage.vue'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
 const { t } = useLanguage()

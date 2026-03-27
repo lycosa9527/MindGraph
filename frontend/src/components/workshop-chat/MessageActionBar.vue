@@ -11,7 +11,7 @@ import { Delete, Edit } from '@element-plus/icons-vue'
 
 import { ChevronDown, ChevronUp, Link2, Quote, Smile, Star } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 import EmojiPicker from './EmojiPicker.vue'
 

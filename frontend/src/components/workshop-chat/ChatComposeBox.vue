@@ -15,7 +15,7 @@ import {
   X,
 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 import { apiUpload } from '@/utils/apiClient'
 

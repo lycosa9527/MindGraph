@@ -25,7 +25,7 @@ import {
 
 import ChannelSidebarItem from '@/components/sidebar/ChannelSidebarItem.vue'
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { type ChatChannel, type ChatTopic, useWorkshopChatStore } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'
 

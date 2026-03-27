@@ -25,11 +25,11 @@ import {
   writeCachedChannels,
   writeCachedTopics,
 } from '@/utils/workshopChatLocalCache'
+import { registerWorkshopChatResetOnAuthClear } from '@/utils/workshopChatWsRegistry'
 import {
   loadLastSeenOnlineFromStorage,
   saveLastSeenOnlineToStorage,
 } from '@/utils/workshopContactLastSeenStorage'
-import { registerWorkshopChatResetOnAuthClear } from '@/utils/workshopChatWsRegistry'
 
 export interface ChatChannel {
   id: number

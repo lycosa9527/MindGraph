@@ -9,7 +9,7 @@ import { OfficeBuilding } from '@element-plus/icons-vue'
 
 import { Globe, Lock, Megaphone, Pin } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatChannel } from '@/stores/workshopChat'
 
 const { t } = useLanguage()

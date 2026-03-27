@@ -56,8 +56,7 @@ onMounted(async () => {
     // Silently handle auth errors - user will see blurred empty state
     // Don't show error notification for unauthenticated users
     if (authStore.isAuthenticated) {
-      const errorMessage =
-        error instanceof Error ? error.message : t('library.loadDocumentsFailed')
+      const errorMessage = error instanceof Error ? error.message : t('library.loadDocumentsFailed')
       notify.error(errorMessage)
     }
   }
@@ -171,7 +170,9 @@ function handleLoginSuccess() {
       >
         <!-- 精品案例集 Group -->
         <div v-if="premiumBooks.length > 0">
-          <h2 class="text-lg font-semibold text-stone-900 mb-3">{{ t('library.premiumCollection') }}</h2>
+          <h2 class="text-lg font-semibold text-stone-900 mb-3">
+            {{ t('library.premiumCollection') }}
+          </h2>
           <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
             <div
               v-for="document in premiumBooks"

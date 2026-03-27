@@ -13,7 +13,7 @@
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 
 const props = withDefaults(
@@ -256,9 +256,7 @@ function startEditing(): void {
   if (localIsEditing.value || props.readonly) return
 
   if (collabCanvas?.isNodeLockedByOther?.(props.nodeId)) {
-    notifyCollab.warning(
-      t('collab.nodeLocked')
-    )
+    notifyCollab.warning(t('collab.nodeLocked'))
     return
   }
 

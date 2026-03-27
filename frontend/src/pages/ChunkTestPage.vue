@@ -18,7 +18,7 @@ import DatasetTable from '@/components/knowledge-space/DatasetTable.vue'
 import DocumentTable from '@/components/knowledge-space/DocumentTable.vue'
 import DocumentUpload from '@/components/knowledge-space/DocumentUpload.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
-import { notify } from '@/composables/notifications'
+import { notify } from '@/composables/core/notifications'
 import type { ChunkTestDocument } from '@/composables/queries/useChunkTestDocumentQueries'
 import {
   useBenchmarks,
@@ -27,8 +27,8 @@ import {
   useTestUserDocuments,
   useUpdateDatasets,
 } from '@/composables/queries/useChunkTestQueries'
-import { useChunkTestDocumentsComposable } from '@/composables/useChunkTestDocuments'
-import { useLanguage } from '@/composables/useLanguage'
+import { useChunkTestDocumentsComposable } from '@/composables/knowledge/useChunkTestDocuments'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const { t } = useLanguage()
 const router = useRouter()
@@ -186,9 +186,7 @@ const handleUpdateDatasets = async () => {
     await updateDatasetsMutation.mutateAsync()
     notify.success(t('chunkTest.page.datasetsUpdated'))
   } catch (error) {
-    notify.error(
-      error instanceof Error ? error.message : t('chunkTest.page.datasetsUpdateFailed')
-    )
+    notify.error(error instanceof Error ? error.message : t('chunkTest.page.datasetsUpdateFailed'))
   }
 }
 </script>

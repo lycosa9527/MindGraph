@@ -13,7 +13,7 @@ import { Bottom } from '@element-plus/icons-vue'
 import { Check, ChevronDown, ChevronUp, Copy, Square } from 'lucide-vue-next'
 import MarkdownIt from 'markdown-it'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { type ModelId, type ModelResponse, useAskOnceStore } from '@/stores/askonce'
 
 const store = useAskOnceStore()

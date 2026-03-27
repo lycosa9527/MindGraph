@@ -2,6 +2,9 @@
  * Diagram Types - Type definitions for MindGraph diagrams
  */
 
+/** Persisted diagram record id (UUID string from the API). */
+export type DiagramId = string
+
 export type DiagramType =
   | 'circle_map'
   | 'bubble_map'
@@ -140,6 +143,9 @@ export interface DiagramSession {
  * for compatibility with legacy code patterns.
  */
 export type DiagramSpec = DiagramData
+
+/** Tools available in browser fullscreen presentation mode */
+export type PresentationToolId = 'laser' | 'spotlight' | 'highlighter' | 'pen' | 'timer'
 
 /** Freehand strokes in presentation highlighter mode (Vue Flow coordinates). */
 export interface PresentationHighlightStroke {

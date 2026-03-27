@@ -16,8 +16,8 @@ import { Send, Settings } from 'lucide-vue-next'
 
 import { AskOncePanel } from '@/components/askonce'
 import { LoginModal } from '@/components/auth'
-import { useLanguage } from '@/composables/useLanguage'
-import { type PromptTemplate, ASKONCE_PROMPT_TEMPLATES } from '@/config/askOncePrompts'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { ASKONCE_PROMPT_TEMPLATES, type PromptTemplate } from '@/config/askOncePrompts'
 import { type ModelId, useAskOnceStore } from '@/stores/askonce'
 import { useAuthStore } from '@/stores/auth'
 

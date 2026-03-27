@@ -5,7 +5,7 @@
  */
 import { computed } from 'vue'
 
-import { useTheme } from '@/composables/useTheme'
+import { useTheme } from '@/composables/core/useTheme'
 import type { MindGraphNodeProps } from '@/types'
 
 const props = defineProps<MindGraphNodeProps>()

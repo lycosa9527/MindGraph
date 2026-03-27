@@ -3,7 +3,7 @@
  */
 import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 
-import { useMobileDetect } from '@/composables/useMobileDetect'
+import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -51,7 +51,12 @@ const routes: RouteRecordRaw[] = [
     path: '/smart-response',
     name: 'SmartResponse',
     component: () => import('@/pages/SmartResponsePage.vue'),
-    meta: { requiresAuth: true, requiresAdmin: true, layout: 'main', ...pageTitle('smartResponse') },
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      layout: 'main',
+      ...pageTitle('smartResponse'),
+    },
   },
   {
     path: '/',
@@ -122,13 +127,23 @@ const routes: RouteRecordRaw[] = [
     path: '/school-zone',
     name: 'SchoolZone',
     component: () => import('@/pages/SchoolZonePage.vue'),
-    meta: { requiresAuth: true, requiresOrganization: true, layout: 'main', ...pageTitle('schoolZone') },
+    meta: {
+      requiresAuth: true,
+      requiresOrganization: true,
+      layout: 'main',
+      ...pageTitle('schoolZone'),
+    },
   },
   {
     path: '/school-dashboard',
     name: 'SchoolDashboard',
     component: () => import('@/pages/SchoolDashboardPage.vue'),
-    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main', ...pageTitle('schoolDashboard') },
+    meta: {
+      requiresAuth: true,
+      requiresAdminOrManager: true,
+      layout: 'main',
+      ...pageTitle('schoolDashboard'),
+    },
   },
   {
     path: '/askonce',
@@ -209,7 +224,12 @@ const routes: RouteRecordRaw[] = [
     path: '/workshop-chat',
     name: 'WorkshopChat',
     component: () => import('@/pages/WorkshopChatPage.vue'),
-    meta: { requiresAuth: true, requiresAdminOrManager: true, layout: 'main', ...pageTitle('workshopChat') },
+    meta: {
+      requiresAuth: true,
+      requiresAdminOrManager: true,
+      layout: 'main',
+      ...pageTitle('workshopChat'),
+    },
   },
   {
     path: '/dashboard',
@@ -340,7 +360,7 @@ router.beforeEach(async (to, _from, next) => {
         authStore.user?.schoolId,
         authStore.user?.id,
         previewIds,
-        workshopEntry,
+        workshopEntry
       )
     ) {
       return next({ name: 'MindMate' })

@@ -17,7 +17,7 @@ import { defineStore } from 'pinia'
 
 import { getDefaultDiagramName } from '@/composables'
 import { SAVE } from '@/config'
-import type { DiagramType } from '@/types'
+import type { DiagramId, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
 import { useAuthStore } from './auth'
@@ -59,9 +59,7 @@ function isDiagramEmpty(spec: Record<string, unknown>, diagramType: DiagramType)
 
   const zhTemplate = getDefaultTemplate(diagramType, 'zh')
   const enTemplate = getDefaultTemplate(diagramType, 'en')
-  const templates = [zhTemplate, enTemplate].filter(
-    (t): t is Record<string, unknown> => t != null
-  )
+  const templates = [zhTemplate, enTemplate].filter((t): t is Record<string, unknown> => t != null)
   if (templates.length === 0) {
     return false
   }
@@ -103,7 +101,7 @@ function isDiagramEmpty(spec: Record<string, unknown>, diagramType: DiagramType)
 
 // Types
 export interface SavedDiagram {
-  id: string // UUID
+  id: DiagramId
   title: string
   diagram_type: string
   thumbnail: string | null
@@ -116,9 +114,6 @@ export interface SavedDiagramFull extends SavedDiagram {
   language: string
   created_at: string
 }
-
-// Type for diagram IDs (UUID strings)
-export type DiagramId = string
 
 export interface DiagramListResponse {
   diagrams: SavedDiagram[]

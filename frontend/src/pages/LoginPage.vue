@@ -100,9 +100,7 @@ async function handleLogin() {
     if (success) {
       const userName = result.user?.username || ''
       notify.success(
-        userName
-          ? t('auth.loginSuccessNamed', { username: userName })
-          : t('auth.loginSuccess')
+        userName ? t('auth.loginSuccessNamed', { username: userName }) : t('auth.loginSuccess')
       )
       // Redirect to intended page or main page
       const redirect = (route.query.redirect as string) || '/'

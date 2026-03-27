@@ -133,7 +133,9 @@ const loading = ref(true)
 const saving = ref(false)
 const savingPermissions = ref(false)
 const draft = ref<Partial<Record<ApiKey, boolean>>>({})
-const accessDraft = ref<Record<ApiKey, FeatureOrgAccessEntry>>({} as Record<ApiKey, FeatureOrgAccessEntry>)
+const accessDraft = ref<Record<ApiKey, FeatureOrgAccessEntry>>(
+  {} as Record<ApiKey, FeatureOrgAccessEntry>
+)
 const orgOptions = ref<OrgOption[]>([])
 
 const dialogVisible = ref(false)

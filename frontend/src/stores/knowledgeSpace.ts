@@ -21,11 +21,6 @@ export interface KnowledgeDocument {
   updated_at: string
 }
 
-export interface DocumentListResponse {
-  documents: KnowledgeDocument[]
-  total: number
-}
-
 export const useKnowledgeSpaceStore = defineStore('knowledgeSpace', () => {
   // This store is now a thin wrapper
   // Actual state is managed by Vue Query composables

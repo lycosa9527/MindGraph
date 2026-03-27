@@ -31,9 +31,7 @@ async function handleDemoLogin() {
 
     if (success) {
       const userName = result.user?.username || ''
-      notify.success(
-        userName ? t('demo.loginSuccessNamed', { name: userName }) : t('demo.loginOk')
-      )
+      notify.success(userName ? t('demo.loginSuccessNamed', { name: userName }) : t('demo.loginOk'))
       router.push('/')
     } else {
       notify.error(result.message || t('demo.invalidCode'))

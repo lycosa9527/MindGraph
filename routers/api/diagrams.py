@@ -688,6 +688,13 @@ async def generate_qrcode(
 _SNAPSHOT_MAX = 10
 
 
+async def _diagram_visible_in_cache(user_id: int, diagram_id: str) -> bool:
+    """Return True if GET /diagrams/{id} would succeed (Redis diagram cache)."""
+    cache = get_diagram_cache()
+    cached = await cache.get_diagram(user_id, diagram_id)
+    return cached is not None
+
+
 @router.post("/diagrams/{diagram_id}/snapshots", response_model=SnapshotMetadata)
 async def take_snapshot(
     diagram_id: str,
@@ -708,11 +715,20 @@ async def take_snapshot(
         "diagram_snapshots", identifier, max_requests=60, window_seconds=60
     )
 
+    if not await _diagram_visible_in_cache(current_user.id, diagram_id):
+        raise HTTPException(status_code=404, detail="Diagram not found")
+
     diagram = db.query(Diagram).filter_by(
         id=diagram_id, user_id=current_user.id, is_deleted=False
     ).first()
     if not diagram:
-        raise HTTPException(status_code=404, detail="Diagram not found")
+        raise HTTPException(
+            status_code=409,
+            detail=(
+                "Snapshot storage needs the diagram saved to the database. "
+                "Save the diagram, then try again."
+            ),
+        )
 
     # Strip llm_results unconditionally — snapshots are diagram content only.
     spec = {k: v for k, v in req.spec.items() if k != "llm_results"}
@@ -794,15 +810,12 @@ async def list_snapshots(
         "diagram_snapshots", identifier, max_requests=60, window_seconds=60
     )
 
-    diagram = db.query(Diagram).filter_by(
-        id=diagram_id, user_id=current_user.id, is_deleted=False
-    ).first()
-    if not diagram:
+    if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
     rows = (
         db.query(DiagramSnapshot)
-        .filter_by(diagram_id=diagram_id)
+        .filter_by(diagram_id=diagram_id, user_id=current_user.id)
         .order_by(DiagramSnapshot.version_number.asc())
         .all()
     )
@@ -824,8 +837,8 @@ async def list_snapshots(
 )
 async def delete_snapshot(
     diagram_id: str,
+    request: Request,
     version_number: int = Path(..., ge=1, le=10),
-    request: Request = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -840,10 +853,7 @@ async def delete_snapshot(
         "diagram_snapshots", identifier, max_requests=60, window_seconds=60
     )
 
-    diagram = db.query(Diagram).filter_by(
-        id=diagram_id, user_id=current_user.id, is_deleted=False
-    ).first()
-    if not diagram:
+    if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
     snapshot = (
@@ -895,8 +905,8 @@ async def delete_snapshot(
 )
 async def recall_snapshot(
     diagram_id: str,
+    request: Request,
     version_number: int = Path(..., ge=1, le=10),
-    request: Request = None,
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -911,10 +921,7 @@ async def recall_snapshot(
         "diagram_snapshots", identifier, max_requests=60, window_seconds=60
     )
 
-    diagram = db.query(Diagram).filter_by(
-        id=diagram_id, user_id=current_user.id, is_deleted=False
-    ).first()
-    if not diagram:
+    if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
     snapshot = (

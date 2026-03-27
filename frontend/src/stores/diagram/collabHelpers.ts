@@ -1,7 +1,7 @@
 /**
  * Collaboration guards for diagram mutations (delete vs foreign edit lock).
  */
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 
 import type { DiagramContext } from './types'
 
@@ -27,4 +27,3 @@ export function collabForeignLockBlocksAnyId(
   }
   return false
 }
-

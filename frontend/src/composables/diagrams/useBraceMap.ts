@@ -9,7 +9,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 import {
@@ -104,8 +104,7 @@ export function useBraceMap(options: BraceMapOptions = {}) {
       const kids = childrenMap.get(nid)
       if (!kids || kids.length === 0) return nodeHeight
       const childSpans = kids.map(computeSubtreeSpan)
-      const childrenTotal =
-        childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * nodeSpacing
+      const childrenTotal = childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * nodeSpacing
       return Math.max(nodeHeight, childrenTotal)
     }
 
@@ -118,8 +117,7 @@ export function useBraceMap(options: BraceMapOptions = {}) {
       }
 
       const childSpans = kids.map(computeSubtreeSpan)
-      const childrenTotal =
-        childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * nodeSpacing
+      const childrenTotal = childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * nodeSpacing
 
       if (childrenTotal >= nodeHeight) {
         let y = startY

@@ -10,9 +10,9 @@ import type { CSSProperties } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/useEventBus'
-import { useNodeDimensions } from '@/composables/useNodeDimensions'
-import { translateDimension, useLanguage } from '@/composables/useLanguage'
+import { eventBus } from '@/composables/core/useEventBus'
+import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -331,9 +331,7 @@ function labeledDimensionPrefix(braceMap: boolean, dimensionValue: string): stri
       ? t('diagram.dimension.decompositionAz')
       : t('diagram.dimension.classificationAz')
   }
-  return braceMap
-    ? t('diagram.dimension.decompositionEn')
-    : t('diagram.dimension.classificationEn')
+  return braceMap ? t('diagram.dimension.decompositionEn') : t('diagram.dimension.classificationEn')
 }
 
 const displayText = computed(() => {

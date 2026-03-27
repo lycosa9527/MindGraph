@@ -8,7 +8,7 @@ import { Close, VideoPause } from '@element-plus/icons-vue'
 import { Paperclip, Send } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
-import type { MindMateFile } from '@/composables/useMindMate'
+import type { MindMateFile } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores/auth'
 
 import SuggestionBubbles from '../../common/SuggestionBubbles.vue'

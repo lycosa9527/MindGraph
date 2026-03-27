@@ -20,13 +20,13 @@ import { Loading } from '@element-plus/icons-vue'
 
 import { Sparkles } from 'lucide-vue-next'
 
-import { notify } from '@/composables/notifications'
+import { notify } from '@/composables/core/notifications'
 import {
   type ManualEvaluationResult,
   useChunkTestChunks,
   useManualEvaluation,
 } from '@/composables/queries/useChunkTestQueries'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 interface Props {
   visible: boolean
@@ -110,9 +110,7 @@ const handleEvaluate = async () => {
     evaluationResults.value = result
     notify.success(t('knowledge.manualEval.notify.completed'))
   } catch (error) {
-    notify.error(
-      error instanceof Error ? error.message : t('knowledge.manualEval.notify.failed')
-    )
+    notify.error(error instanceof Error ? error.message : t('knowledge.manualEval.notify.failed'))
   }
 }
 

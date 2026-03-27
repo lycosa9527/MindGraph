@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.60.0] - 2026-03-27
+
+### Added
+- **Composable domains**: New groupings and helpers — `canvasPage/` (presentation, workshop collab, library snapshots, editor shortcuts, diagram event bus), `canvasToolbar/` (apps, formatting), `diagramCanvas/` (Vue Flow handlers, viewport/zoom, mobile touch, export, fit, concept-map link preview), `auth/useLoginModal`, `sidebar/useAppSidebar`, `teacherUsage/`, and node-palette streaming/errors/session keys; `workshop/`, `knowledge/`, `mindmate/` moves from flat composables.
+- **Split UI components**: `CanvasToolbar` subcomponents (add/delete, AI, style/text/border/background/more-apps dropdowns, undo/redo), `PresentationSideToolbar`, `PresentationTimerOverlay`, `DiagramCanvasZoomPaneOverlays`, `AppSidebarNav`, `AppSidebarAccountFooter`, `TeacherUsageDialogs`; `diagramCanvas.css`, `diagramCanvasVueFlowTypes.ts`, `CanvasPage.scoped.css`, `imageViewer.css`.
+- **Utilities**: `colorFormat.ts`; diagram diff/type maps and related canvas-page utilities.
+
+### Changed
+- **Composable layout**: Shared code under `composables/core/`; editor and diagram editing under `composables/editor/` and `composables/diagrams/`; barrel `composables/index.ts` and imports updated across pages, stores, and components.
+- **Stores & API**: Diagram store/spec-loader/vue-flow integration updates; `routers/api/diagrams.py` aligned with frontend diagram handling.
+- **i18n**: Locale messages (en/zh/az) and tooling (`check-i18n-keys.ts`, `split-locale-bundles.ts`) updated for new structure and strings.
+
 ## [5.59.0] - 2026-03-26
 
 ### Added

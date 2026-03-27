@@ -1,11 +1,9 @@
 import type { LocaleCode } from '@/i18n/locales'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
-
 import {
   getConceptMapFocusQuestionDefault,
   getConceptMapRootConceptText,
 } from '@/stores/diagram/diagramDefaultLabels'
-
 import type { DiagramType } from '@/types'
 
 export const VALID_DIAGRAM_TYPES: DiagramType[] = [
@@ -25,9 +23,7 @@ export const VALID_DIAGRAM_TYPES: DiagramType[] = [
 
 export const MAX_HISTORY_SIZE = 50
 
-function placeholderStringsForLocales(
-  fn: (lang: LocaleCode) => string
-): string[] {
+function placeholderStringsForLocales(fn: (lang: LocaleCode) => string): string[] {
   return UI_LOCALE_CODES.map(fn)
 }
 

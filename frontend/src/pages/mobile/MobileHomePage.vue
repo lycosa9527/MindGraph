@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
 
-import { MessageSquare, Workflow, ChevronRight, UserCog } from 'lucide-vue-next'
+import { ChevronRight, MessageSquare, UserCog, Workflow } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
@@ -35,7 +35,9 @@ function goToAccount() {
     <div class="px-4 pt-6 pb-8 max-w-md mx-auto space-y-4">
       <!-- Welcome -->
       <div class="text-center mb-6">
-        <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold mb-3">
+        <div
+          class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-indigo-600 text-white text-2xl font-bold mb-3"
+        >
           M
         </div>
         <h2 class="text-xl font-bold text-gray-900">
@@ -51,7 +53,9 @@ function goToAccount() {
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToMindMate"
       >
-        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 shrink-0">
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-blue-50 text-blue-600 shrink-0"
+        >
           <MessageSquare :size="24" />
         </div>
         <div class="flex-1 min-w-0">
@@ -60,7 +64,10 @@ function goToAccount() {
             {{ t('mobile.mindmateDesc', 'AI智能对话助手') }}
           </div>
         </div>
-        <ChevronRight :size="20" class="text-gray-400 shrink-0" />
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
       </button>
 
       <!-- MindGraph Card -->
@@ -68,7 +75,9 @@ function goToAccount() {
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToMindGraph"
       >
-        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 shrink-0">
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-purple-50 text-purple-600 shrink-0"
+        >
           <Workflow :size="24" />
         </div>
         <div class="flex-1 min-w-0">
@@ -77,7 +86,10 @@ function goToAccount() {
             {{ t('mobile.mindgraphDesc', '思维图示工具') }}
           </div>
         </div>
-        <ChevronRight :size="20" class="text-gray-400 shrink-0" />
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
       </button>
 
       <!-- Account Card -->
@@ -85,7 +97,9 @@ function goToAccount() {
         class="feature-card w-full flex items-center gap-4 p-5 bg-white rounded-2xl border border-gray-200 active:bg-gray-50 transition-colors text-left"
         @click="goToAccount"
       >
-        <div class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-50 text-green-600 shrink-0">
+        <div
+          class="flex items-center justify-center w-12 h-12 rounded-xl bg-green-50 text-green-600 shrink-0"
+        >
           <UserCog :size="24" />
         </div>
         <div class="flex-1 min-w-0">
@@ -96,7 +110,10 @@ function goToAccount() {
             {{ t('mobile.accountDesc', '账号设置') }}
           </div>
         </div>
-        <ChevronRight :size="20" class="text-gray-400 shrink-0" />
+        <ChevronRight
+          :size="20"
+          class="text-gray-400 shrink-0"
+        />
       </button>
 
       <!-- Footer -->

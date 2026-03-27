@@ -72,10 +72,7 @@ const DEVANAGARI_CODES = new Set<string>([
   'kok',
 ])
 
-function pair(
-  a: () => Promise<unknown>,
-  b: () => Promise<unknown>
-): Promise<void> {
+function pair(a: () => Promise<unknown>, b: () => Promise<unknown>): Promise<void> {
   return Promise.all([a(), b()]).then(() => undefined)
 }
 

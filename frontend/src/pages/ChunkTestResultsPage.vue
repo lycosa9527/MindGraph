@@ -22,14 +22,14 @@ import { Check, CircleClose, Loading, View } from '@element-plus/icons-vue'
 
 import { Sparkles } from 'lucide-vue-next'
 
-import { notify } from '@/composables/notifications'
+import { notify } from '@/composables/core/notifications'
 import {
   useCancelChunkTest,
   useChunkTestChunks,
   useChunkTestProgress,
   useChunkTestResult,
 } from '@/composables/queries/useChunkTestQueries'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const route = useRoute()
 const router = useRouter()
@@ -79,14 +79,16 @@ const completedMethods = computed(
 
 const allMethods = ['spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk']
 
-const stageLabels = computed((): Record<string, string> => ({
-  pending: t('chunkTest.stage.pending'),
-  chunking: t('chunkTest.stage.chunking'),
-  retrieval: t('chunkTest.stage.retrieval'),
-  evaluation: t('chunkTest.stage.evaluation'),
-  completed: t('chunkTest.stage.completed'),
-  failed: t('chunkTest.stage.failed'),
-}))
+const stageLabels = computed(
+  (): Record<string, string> => ({
+    pending: t('chunkTest.stage.pending'),
+    chunking: t('chunkTest.stage.chunking'),
+    retrieval: t('chunkTest.stage.retrieval'),
+    evaluation: t('chunkTest.stage.evaluation'),
+    completed: t('chunkTest.stage.completed'),
+    failed: t('chunkTest.stage.failed'),
+  })
+)
 
 const methodLabels: Record<string, string> = {
   spacy: 'spaCy',

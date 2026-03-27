@@ -11,11 +11,10 @@ import {
   type FocusValidationState,
   streamFocusSuggestions,
   validateFocusQuestionParallel,
-} from '@/composables/conceptMapFocusQuestionApi'
-import { isPlaceholderText } from '@/composables/useAutoComplete'
-import { useNotifications } from '@/composables/useNotifications'
+} from '@/composables/editor/conceptMapFocusQuestionApi'
+import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
+import { useNotifications } from '@/composables/core/useNotifications'
 import { i18n } from '@/i18n'
-
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'

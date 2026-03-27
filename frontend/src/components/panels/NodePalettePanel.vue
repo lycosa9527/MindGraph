@@ -8,14 +8,14 @@
  * For double_bubble_map: shows tabs (相似点/Similarities | 差异点/Differences).
  * Differences tab displays paired attributes for both Topic A and Topic B.
  */
-import { computed, nextTick, onMounted, watch } from 'vue'
+import { computed, nextTick, onMounted } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
 import { Check, Loader2, RefreshCw, X } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { getNodePalette } from '@/composables/useNodePalette'
+import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
 import { usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
@@ -101,9 +101,7 @@ const pairedLabelLeft = computed(() =>
   isBridgeMap.value ? t('nodePalette.bridgeSource') : (doubleBubbleTopics?.value?.left ?? 'A')
 )
 const pairedLabelRight = computed(() =>
-  isBridgeMap.value
-    ? t('nodePalette.bridgeAnalogy')
-    : (doubleBubbleTopics?.value?.right ?? 'B')
+  isBridgeMap.value ? t('nodePalette.bridgeAnalogy') : (doubleBubbleTopics?.value?.right ?? 'B')
 )
 
 function handleClose() {
@@ -260,11 +258,7 @@ function getDisplayText(suggestion: NodeSuggestion): string {
     <!-- Header (matches MindMate panel) -->
     <div
       class="panel-header px-4 flex justify-between border-b border-gray-200 dark:border-gray-700 shrink-0"
-      :class="
-        showDoubleBubbleDiffLegend
-          ? 'min-h-[7rem] items-start py-2'
-          : 'h-14 items-center'
-      "
+      :class="showDoubleBubbleDiffLegend ? 'min-h-[7rem] items-start py-2' : 'h-14 items-center'"
     >
       <div
         class="flex gap-3 min-w-0 flex-1"
@@ -344,14 +338,18 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               class="text-[10px] leading-tight font-medium text-blue-600 dark:text-blue-400 truncate"
               :title="`${pairedLabelLeft}: ${doubleBubbleTopics?.left ?? ''}`"
             >
-              <span class="font-normal text-gray-500 dark:text-gray-400">{{ pairedLabelLeft }} · </span>
+              <span class="font-normal text-gray-500 dark:text-gray-400"
+                >{{ pairedLabelLeft }} ·
+              </span>
               {{ doubleBubbleTopics?.left ?? '—' }}
             </div>
             <div
               class="text-[10px] leading-tight font-medium text-amber-600 dark:text-amber-400 truncate"
               :title="`${pairedLabelRight}: ${doubleBubbleTopics?.right ?? ''}`"
             >
-              <span class="font-normal text-gray-500 dark:text-gray-400">{{ pairedLabelRight }} · </span>
+              <span class="font-normal text-gray-500 dark:text-gray-400"
+                >{{ pairedLabelRight }} ·
+              </span>
               {{ doubleBubbleTopics?.right ?? '—' }}
             </div>
           </div>

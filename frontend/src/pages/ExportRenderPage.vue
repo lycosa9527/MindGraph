@@ -9,9 +9,9 @@
 import { nextTick, onMounted } from 'vue'
 
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
-import { eventBus } from '@/composables/useEventBus'
-import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores'
+import { VALID_DIAGRAM_TYPES } from '@/stores/diagram/constants'
 import type { DiagramType } from '@/types'
 
 const EXPORT_SPEC_KEY = 'mindgraph_export_spec'

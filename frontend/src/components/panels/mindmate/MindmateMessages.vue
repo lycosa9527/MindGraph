@@ -9,7 +9,7 @@ import { Bottom } from '@element-plus/icons-vue'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import { useLanguage } from '@/composables'
-import type { MindMateMessage } from '@/composables/useMindMate'
+import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useUIStore } from '@/stores'
 
 import MessageBubble from './MessageBubble.vue'

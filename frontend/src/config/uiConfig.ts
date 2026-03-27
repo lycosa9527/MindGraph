@@ -5,8 +5,26 @@
  * eliminating magic numbers and ensuring consistency across the application.
  *
  * Usage:
- *   import { PANEL, ANIMATION, ZOOM, FIT_PADDING } from '@/config/uiConfig'
+ *   import { PANEL, ANIMATION, ZOOM, FIT_PADDING, PRESENTATION_Z } from '@/config/uiConfig'
  */
+
+// ============================================================================
+// Presentation mode — global stacking (fixed layers on canvas fullscreen)
+// ============================================================================
+/**
+ * Single z-index ladder for presentation UI. Higher paints above lower.
+ * - Spotlight stays below the side rail so the rail stays clickable.
+ * - Laser dot is above the rail (pointer-events: none on laser).
+ * - Timer fullscreen modal is above all canvas chrome; Teleport to `body` uses these values.
+ * Element Plus overlays (dropdowns ~2000–3000) stay below this range.
+ */
+export const PRESENTATION_Z = {
+  SPOTLIGHT: 99_998,
+  SIDE_RAIL: 100_001,
+  LASER: 100_100,
+  /** Fullscreen dim + countdown (Teleport to body; use inline style z-index) */
+  TIMER_OVERLAY: 100_150,
+} as const
 
 // ============================================================================
 // Panel Dimensions (Tailwind-based)
@@ -88,6 +106,11 @@ export const FIT_PADDING = {
   STANDARD: 0.15,
   /** Standard edge padding in pixels */
   STANDARD_PX: 40,
+  /**
+   * Right padding in presentation fullscreen: vertical tool rail (~40px) + margin + buffer
+   * so fit-to-canvas does not place content under PresentationSideToolbar.
+   */
+  PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 72,
   /** Top padding in pixels - clears CanvasTopBar (48px) + CanvasToolbar (top-60px, ~52px) + buffer */
   TOP_UI_HEIGHT_PX: 124,
   /** Extra top padding for concept map - leaves space for menu icon above main topic node (icon ~20px + margin) */

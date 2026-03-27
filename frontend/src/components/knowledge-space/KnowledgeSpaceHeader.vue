@@ -9,7 +9,7 @@ import { ElButton, ElIcon, ElTooltip } from 'element-plus'
 
 import { Search, Setting, Upload, VideoPlay } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const props = defineProps<{
   documentCount: number
@@ -42,9 +42,7 @@ const hasSelectedPending = computed(() => props.selectedPendingCount > 0)
       <h1 class="text-lg font-semibold text-stone-900">
         {{ t('knowledge.header.title') }}
       </h1>
-      <span class="text-sm text-stone-500">
-        ({{ documentCount }}/5)
-      </span>
+      <span class="text-sm text-stone-500"> ({{ documentCount }}/5) </span>
     </div>
     <div class="flex items-center gap-2 shrink-0">
       <!-- Upload Documents Button -->

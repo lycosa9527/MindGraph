@@ -6,9 +6,9 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { Equal, Loader2, Minus } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
-import { useDiagramStore } from '@/stores/diagram'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useConceptMapRootConceptReviewStore } from '@/stores/conceptMapRootConceptReview'
+import { useDiagramStore } from '@/stores/diagram'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const store = useConceptMapRootConceptReviewStore()
@@ -153,9 +153,11 @@ onUnmounted(() => {
           >
           <span class="min-w-0 flex-1 text-gray-800 dark:text-gray-100 break-words">
             {{ t('conceptMapPicker.currentRootConcept') }}
-            <span v-if="currentRootText" class="block mt-0.5 text-gray-600 dark:text-gray-300">{{
-              currentRootText
-            }}</span>
+            <span
+              v-if="currentRootText"
+              class="block mt-0.5 text-gray-600 dark:text-gray-300"
+              >{{ currentRootText }}</span
+            >
           </span>
         </button>
         <button

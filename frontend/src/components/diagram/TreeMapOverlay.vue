@@ -8,7 +8,7 @@ import { computed } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDiagramStore } from '@/stores'
 
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
@@ -44,9 +44,7 @@ const alternativeDimensions = computed(() => {
   return []
 })
 
-const alternativeDimensionsLabel = computed(() =>
-  t('diagram.alternativeDimensions.treeMapTitle')
-)
+const alternativeDimensionsLabel = computed(() => t('diagram.alternativeDimensions.treeMapTitle'))
 
 const alternativeDimensionsChipsText = computed(() =>
   alternativeDimensions.value.map((d) => `• ${d}`).join('  ')

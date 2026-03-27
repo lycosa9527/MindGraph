@@ -11,7 +11,7 @@ import { Close, Download } from '@element-plus/icons-vue'
 
 import { Link } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 const { t } = useLanguage()
 

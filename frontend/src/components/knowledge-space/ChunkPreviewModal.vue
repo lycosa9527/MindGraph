@@ -9,7 +9,7 @@ import { ElDialog, ElEmpty, ElIcon, ElPagination, ElTag } from 'element-plus'
 
 import { Document, Loading } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { apiRequest } from '@/utils/apiClient'
 
 interface Chunk {

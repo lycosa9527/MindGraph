@@ -20,7 +20,7 @@ export interface StylePresetColors {
  * 简约风格 (Simple) - Blue/Teal palette
  * Source: https://colorhunt.co/palette/e8f4f8-9dd6df-5c9ead-2c6b7f
  */
-export const PRESET_SIMPLE: StylePresetColors = {
+const PRESET_SIMPLE: StylePresetColors = {
   backgroundColor: '#e8f4f8',
   textColor: '#2c6b7f',
   borderColor: '#5c9ead',
@@ -33,7 +33,7 @@ export const PRESET_SIMPLE: StylePresetColors = {
  * 创意风格 (Creative) - Purple palette
  * Source: https://colorhunt.co/palette/ede9fe-c4b5fd-a78bfa-7c3aed
  */
-export const PRESET_CREATIVE: StylePresetColors = {
+const PRESET_CREATIVE: StylePresetColors = {
   backgroundColor: '#ede9fe',
   textColor: '#4c1d95',
   borderColor: '#7c3aed',
@@ -46,7 +46,7 @@ export const PRESET_CREATIVE: StylePresetColors = {
  * 商务风格 (Business) - Mint/Green palette
  * Source: https://colorhunt.co/palette/a8e6cf-dcedc1-ffd3b6-ffaaa5
  */
-export const PRESET_BUSINESS: StylePresetColors = {
+const PRESET_BUSINESS: StylePresetColors = {
   backgroundColor: '#a8e6cf',
   textColor: '#14532d',
   borderColor: '#10b981',
@@ -59,7 +59,7 @@ export const PRESET_BUSINESS: StylePresetColors = {
  * 活力风格 (Vibrant) - Peach/Warm palette
  * Source: https://colorhunt.co/palette/ffd6a5-fdffab-caffbf-9bf6ff
  */
-export const PRESET_VIBRANT: StylePresetColors = {
+const PRESET_VIBRANT: StylePresetColors = {
   backgroundColor: '#ffd6a5',
   textColor: '#78350f',
   borderColor: '#d97706',

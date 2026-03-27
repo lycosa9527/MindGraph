@@ -1,4 +1,4 @@
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection } from '@/types'
 

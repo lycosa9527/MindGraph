@@ -9,7 +9,7 @@ import { ChevronDown, ChevronRight, Globe, Hash, Lock, MoreVertical, Pin } from 
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import TopicActionsPopover from '@/components/workshop-chat/TopicActionsPopover.vue'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { ChatChannel, ChatTopic } from '@/stores/workshopChat'
 import { lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 

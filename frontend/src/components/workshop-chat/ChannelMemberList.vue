@@ -10,7 +10,7 @@ import { ChevronRight, Search } from 'lucide-vue-next'
 
 import UserCardPopover from '@/components/workshop-chat/UserCardPopover.vue'
 import type { UserCardUser } from '@/components/workshop-chat/UserCardPopover.vue'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { type ChannelMember, type OrgMember, useWorkshopChatStore } from '@/stores/workshopChat'
 

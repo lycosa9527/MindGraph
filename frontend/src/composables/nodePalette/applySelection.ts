@@ -8,7 +8,11 @@ import { useDiagramStore, usePanelsStore } from '@/stores'
 import type { DiagramNode, DiagramType } from '@/types'
 import type { NodeSuggestion } from '@/types/panels'
 
-import { STAGED_DIAGRAM_TYPES, getParentIdFromStageData, suggestionBelongsToParent } from './constants'
+import {
+  STAGED_DIAGRAM_TYPES,
+  getParentIdFromStageData,
+  suggestionBelongsToParent,
+} from './constants'
 import { getPlaceholderNodes } from './placeholderHelpers'
 import {
   type Stage2Parent,

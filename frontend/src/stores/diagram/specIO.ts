@@ -3,17 +3,17 @@ import {
   DEFAULT_NODE_WIDTH,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/useEventBus'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
-import { useUIStore } from '../ui'
 import {
   getDefaultTemplate,
   loadSpecForDiagramType,
   recalculateBubbleMapLayout,
 } from '../specLoader'
+import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
 import type { DiagramContext, LoadFromSpecOptions } from './types'
 
@@ -56,8 +56,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
         const topicNode = nodesToStore.find(
           (n) => n.id === 'topic' && (n.type === 'topic' || n.type === 'center')
         )
-        const topicW =
-          (topicNode?.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
+        const topicW = (topicNode?.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
         const centerX =
           topicNode?.position != null ? topicNode.position.x + topicW / 2 : DEFAULT_CENTER_X
         ctx.mindMapCurveExtentBaseline.value = getMindMapCurveExtents(nodesToStore, centerX)

@@ -11,11 +11,11 @@ import { ElButton, ElRadio, ElRadioGroup } from 'element-plus'
 
 import { AlertTriangle, Loader2, Trash2 } from 'lucide-vue-next'
 
-import { getDiagramTypeDisplayName } from '@/composables/useDiagramLabels'
 import { useNotifications } from '@/composables'
 import { useLanguage } from '@/composables'
-import type { LocaleCode } from '@/i18n/locales'
+import { getDiagramTypeDisplayName } from '@/composables/editor/useDiagramLabels'
 import { intlLocaleForUiCode } from '@/i18n'
+import type { LocaleCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 

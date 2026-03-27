@@ -6,7 +6,7 @@ import { ElButton, ElDialog } from 'element-plus'
 
 import { Coins } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   visible: boolean

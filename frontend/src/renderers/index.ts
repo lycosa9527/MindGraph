@@ -8,20 +8,23 @@
  * - Composables: @/composables/diagrams/ (useBubbleMap, useCircleMap, etc.)
  * - Types: @/types/vueflow.ts (MindGraphNode, MindGraphEdge, etc.)
  *
- * To render diagrams, use the DiagramCanvas component with diagram-specific composables:
+ * To render diagrams, mount `DiagramCanvas` with diagram data loaded into the diagram store
+ * (`useDiagramStore`). The canvas reads `vueFlowNodes` / `vueFlowEdges` from the store; it does
+ * not take `:nodes` / `:edges` props. Diagram-type composables under `@/composables/diagrams`
+ * update that store.
  *
  * @example
  * ```vue
  * <script setup>
  * import { DiagramCanvas } from '@/components/diagram'
- * import { useBubbleMap } from '@/composables/diagrams'
+ * import { useDiagramStore } from '@/stores'
  *
- * const bubbleMap = useBubbleMap()
- * bubbleMap.setData({ topic: 'My Topic', attributes: ['Attr 1', 'Attr 2'] })
+ * const diagramStore = useDiagramStore()
+ * // Load a spec or use diagram composables so diagramStore.data is set.
  * </script>
  *
  * <template>
- *   <DiagramCanvas :nodes="bubbleMap.nodes.value" :edges="bubbleMap.edges.value" />
+ *   <DiagramCanvas v-if="diagramStore.data" />
  * </template>
  * ```
  */

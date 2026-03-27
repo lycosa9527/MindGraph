@@ -11,7 +11,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { useConceptMapRelationship } from '@/composables/useConceptMapRelationship'
+import { useConceptMapRelationship } from '@/composables/editor/useConceptMapRelationship'
 import { useDiagramStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 

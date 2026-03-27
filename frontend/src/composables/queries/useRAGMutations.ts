@@ -5,8 +5,8 @@
  */
 import { useMutation, useQueryClient } from '@tanstack/vue-query'
 
-import { notify } from '@/composables/notifications'
-import { useLanguage } from '@/composables/useLanguage'
+import { notify } from '@/composables/core/notifications'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { apiPost } from '@/utils/apiClient'
 
 import { ragKeys } from './ragKeys'

@@ -79,8 +79,7 @@ watch(
   () => [route.meta.titleKey, uiStore.language] as const,
   () => {
     const raw = route.meta.titleKey
-    const key =
-      typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
+    const key = typeof raw === 'string' && raw.length > 0 ? raw : 'meta.pageTitle.default'
     const page = t(key)
     const brand = t('app.brandName')
     document.title = page === key ? brand : `${page} · ${brand}`

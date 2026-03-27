@@ -17,4 +17,3 @@ export async function authFetch(endpoint: string, options: RequestInit = {}): Pr
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
   return apiRequest(url, options)
 }
-

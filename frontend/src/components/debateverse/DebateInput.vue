@@ -10,7 +10,7 @@ import { ArrowRight } from '@element-plus/icons-vue'
 
 import { Send } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
 const { t } = useLanguage()

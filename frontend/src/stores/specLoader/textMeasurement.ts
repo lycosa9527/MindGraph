@@ -3,7 +3,6 @@
  * Finds fontSize so text fits inside a circle (no truncation).
  * Wrap vs no-wrap uses prefersNoWrapWidthFitForCircleMap (Latin/Cyrillic vs CJK/Arabic/Thai…).
  */
-
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
@@ -436,8 +435,7 @@ export function calculateBubbleMapRadius(
 
   const { width, height } = measureTextWithSVG(text.trim(), fontSize, isTopic)
 
-  const measuredWidth =
-    width || estimateTextWidthFallbackPx(text, fontSize, { isTopic })
+  const measuredWidth = width || estimateTextWidthFallbackPx(text, fontSize, { isTopic })
   const measuredHeight = height || fontSize * 1.4
 
   const diagonal = Math.sqrt(measuredWidth * measuredWidth + measuredHeight * measuredHeight)

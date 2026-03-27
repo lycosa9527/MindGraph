@@ -5,18 +5,19 @@ import { createApp } from 'vue'
 
 import { createPinia } from 'pinia'
 
+import 'element-plus/es/components/loading/style/css'
+import 'element-plus/es/components/message-box/style/css'
+// Element Plus programmatic-API styles (not auto-resolved by unplugin)
+import 'element-plus/es/components/message/style/css'
+import 'element-plus/es/components/notification/style/css'
+
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
-import './fonts/eagerFonts'
 import App from './App.vue'
+import './fonts/eagerFonts'
 import { i18n, loadLocaleMessages, setI18nLocale } from './i18n'
 import router from './router'
 import { useUIStore } from './stores/ui'
-// Element Plus programmatic-API styles (not auto-resolved by unplugin)
-import 'element-plus/es/components/message/style/css'
-import 'element-plus/es/components/message-box/style/css'
-import 'element-plus/es/components/notification/style/css'
-import 'element-plus/es/components/loading/style/css'
 // Styles
 import './styles/index.css'
 

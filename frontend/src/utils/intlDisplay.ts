@@ -17,7 +17,7 @@ export function formatUserInteger(value: number, locale: LocaleCode): string {
 export function formatUserDate(
   isoOrDate: string | Date,
   locale: LocaleCode,
-  dateStyle: 'short' | 'medium' | 'long' = 'short',
+  dateStyle: 'short' | 'medium' | 'long' = 'short'
 ): string {
   const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
   return new Intl.DateTimeFormat(intlLocaleForUiCode(locale), { dateStyle }).format(d)
@@ -27,7 +27,7 @@ export function formatUserDateTime(
   isoOrDate: string | Date,
   locale: LocaleCode,
   dateStyle: 'short' | 'medium' = 'short',
-  timeStyle: 'short' | 'medium' = 'short',
+  timeStyle: 'short' | 'medium' = 'short'
 ): string {
   const d = typeof isoOrDate === 'string' ? new Date(isoOrDate) : isoOrDate
   return new Intl.DateTimeFormat(intlLocaleForUiCode(locale), {

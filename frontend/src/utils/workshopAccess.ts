@@ -11,7 +11,7 @@ export function userCanAccessWorkshopChat(
   schoolId: string | undefined,
   userId: string | undefined,
   previewOrgIds: number[],
-  accessEntry: FeatureOrgAccessEntry | undefined,
+  accessEntry: FeatureOrgAccessEntry | undefined
 ): boolean {
   if (isAdminOrManager) {
     return true
@@ -33,7 +33,6 @@ export function userCanAccessWorkshopChat(
   const uidRaw = userId != null && userId !== '' ? Number(userId) : NaN
   const okOrg =
     Number.isInteger(oidRaw) && oidRaw > 0 && accessEntry.organization_ids.includes(oidRaw)
-  const okUser =
-    Number.isInteger(uidRaw) && uidRaw > 0 && accessEntry.user_ids.includes(uidRaw)
+  const okUser = Number.isInteger(uidRaw) && uidRaw > 0 && accessEntry.user_ids.includes(uidRaw)
   return okOrg || okUser
 }

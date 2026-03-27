@@ -7,7 +7,7 @@ import { computed, ref, watch } from 'vue'
 
 import { AtSign, Copy, MessageSquare, ShieldCheck, User } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { resolveWorkshopAvatarDisplay } from '@/utils/workshopAvatar'

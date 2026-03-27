@@ -12,12 +12,9 @@ import {
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/useEventBus'
-import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR, PRESENTATION_HIGHLIGHTER_PALETTE } from '@/config/presentationHighlighter'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
-
-type PresentationToolId = 'laser' | 'spotlight' | 'highlighter'
 
 interface MenuItem {
   label?: string
@@ -37,26 +34,14 @@ interface Props {
   y: number
   node?: MindGraphNode | null
   target?: 'node' | 'pane'
-  presentationMode?: boolean
-  presentationTool?: PresentationToolId
-  presentationHighlighterColor?: string
 }
 
-const props = withDefaults(defineProps<Props>(), {
-  presentationMode: false,
-  presentationTool: 'laser',
-  presentationHighlighterColor: DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR,
-})
+const props = withDefaults(defineProps<Props>(), {})
 
 const emit = defineEmits<{
   (e: 'close'): void
   (e: 'paste', position: { x: number; y: number }): void
   (e: 'addConcept', position: { x: number; y: number }): void
-  (e: 'presentationToolSelect', tool: PresentationToolId): void
-  (e: 'clearPresentationHighlighter'): void
-  (e: 'exitPresentation'): void
-  (e: 'fitPresentationView'): void
-  (e: 'presentationHighlighterColorSelect', stroke: string): void
 }>()
 
 const diagramStore = useDiagramStore()
@@ -79,73 +64,6 @@ function getDoubleBubbleGroupFromNodeId(
 const menuItems = computed<MenuItem[]>(() => {
   void uiStore.language
   const items: MenuItem[] = []
-
-  if (props.presentationMode) {
-    const tool = props.presentationTool ?? 'laser'
-    items.push({
-      label: t('canvas.presentationContextMenu.laserPointer'),
-      checked: tool === 'laser',
-      action: () => {
-        emit('presentationToolSelect', 'laser')
-        emit('close')
-      },
-    })
-    items.push({
-      label: t('canvas.presentationContextMenu.spotlight'),
-      checked: tool === 'spotlight',
-      action: () => {
-        emit('presentationToolSelect', 'spotlight')
-        emit('close')
-      },
-    })
-    items.push({
-      label: t('canvas.presentationContextMenu.highlighterTool'),
-      checked: tool === 'highlighter',
-      action: () => {
-        emit('presentationToolSelect', 'highlighter')
-        emit('close')
-      },
-    })
-    items.push({ divider: true })
-    items.push({
-      label: t('canvas.presentationContextMenu.clearHighlighter'),
-      action: () => {
-        emit('clearPresentationHighlighter')
-        emit('close')
-      },
-    })
-    items.push({
-      label: t('canvas.presentationContextMenu.exitPresentation'),
-      action: () => {
-        emit('exitPresentation')
-        emit('close')
-      },
-    })
-    items.push({
-      label: t('canvas.zoomControls.fitCanvas'),
-      action: () => {
-        emit('fitPresentationView')
-        emit('close')
-      },
-    })
-    items.push({ divider: true })
-    items.push({
-      label: t('canvas.presentationContextMenu.highlighterColor'),
-      sectionHeader: true,
-    })
-    for (const entry of PRESENTATION_HIGHLIGHTER_PALETTE) {
-      items.push({
-        swatch: entry.swatch,
-        stroke: entry.stroke,
-        checked: props.presentationHighlighterColor === entry.stroke,
-        action: () => {
-          emit('presentationHighlighterColorSelect', entry.stroke)
-          emit('close')
-        },
-      })
-    }
-    items.push({ divider: true })
-  }
 
   if (props.target === 'node' && props.node) {
     const node = props.node

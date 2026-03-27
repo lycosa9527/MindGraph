@@ -17,11 +17,7 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
     pendingNodeCount = count
   }
 
-  function setNodeDimensions(
-    nodeId: string,
-    width: number | null,
-    height: number | null
-  ): void {
+  function setNodeDimensions(nodeId: string, width: number | null, height: number | null): void {
     const wasBatch = pendingNodeCount > 0
 
     if (width === null && height === null) {
@@ -38,9 +34,7 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
     const newH = height ?? existing?.height ?? 0
 
     const unchanged =
-      existing &&
-      Math.abs(existing.width - newW) < 1 &&
-      Math.abs(existing.height - newH) < 1
+      existing && Math.abs(existing.width - newW) < 1 && Math.abs(existing.height - newH) < 1
 
     if (!unchanged) {
       ctx.nodeDimensions.value[nodeId] = { width: newW, height: newH }
@@ -61,9 +55,7 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
     ctx.nodeDimensions.value = {}
   }
 
-  function getNodeDimension(
-    nodeId: string
-  ): { width: number; height: number } | undefined {
+  function getNodeDimension(nodeId: string): { width: number; height: number } | undefined {
     return ctx.nodeDimensions.value[nodeId]
   }
 

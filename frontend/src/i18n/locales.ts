@@ -2,7 +2,6 @@
  * UI locale registry — single source of truth for supported interface languages.
  * Add a row + message file + types will follow via LocaleCode.
  */
-
 import promptLanguageRegistry from '@data/prompt_language_registry.json'
 
 /** Ordered definitions; `code` values form the LocaleCode union. */

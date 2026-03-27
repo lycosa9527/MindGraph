@@ -8,7 +8,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 
 interface ConceptNode {

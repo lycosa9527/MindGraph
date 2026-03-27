@@ -50,7 +50,7 @@ import {
 } from '@/composables'
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
-import { FOCUS_MODELS, type FocusModel } from '@/composables/conceptMapFocusQuestionApi'
+import { FOCUS_MODELS, type FocusModel } from '@/composables/editor/conceptMapFocusQuestionApi'
 import { getLLMColor } from '@/config/llmModelColors'
 import {
   useAuthStore,
@@ -391,15 +391,11 @@ async function handleReset() {
   }
 
   try {
-    await ElMessageBox.confirm(
-      t('canvas.reset.confirmBody'),
-      t('canvas.reset.confirmTitle'),
-      {
-        confirmButtonText: t('canvas.reset.confirmButton'),
-        cancelButtonText: t('common.cancel'),
-        type: 'warning',
-      }
-    )
+    await ElMessageBox.confirm(t('canvas.reset.confirmBody'), t('canvas.reset.confirmTitle'), {
+      confirmButtonText: t('canvas.reset.confirmButton'),
+      cancelButtonText: t('common.cancel'),
+      type: 'warning',
+    })
   } catch {
     return
   }
@@ -473,7 +469,7 @@ async function handleReset() {
               ? 'text-blue-500 dark:text-blue-400'
               : props.isDirty
                 ? 'text-amber-500 dark:text-amber-400'
-                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
+                : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
           ]"
           :title="
             props.slotFullAndNewDiagram
@@ -503,12 +499,17 @@ async function handleReset() {
       >
         <span
           class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 cursor-pointer transition-colors select-none"
-          :class="snap.version_number === props.activeSnapshotVersion
-            ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
-            : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'"
-          @click="(e: MouseEvent) => e.ctrlKey || e.metaKey
-            ? emit('snapshotDelete', snap.version_number)
-            : emit('snapshotRecall', snap.version_number)"
+          :class="
+            snap.version_number === props.activeSnapshotVersion
+              ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
+              : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'
+          "
+          @click="
+            (e: MouseEvent) =>
+              e.ctrlKey || e.metaKey
+                ? emit('snapshotDelete', snap.version_number)
+                : emit('snapshotRecall', snap.version_number)
+          "
         >
           {{ snap.version_number }}
         </span>
@@ -524,7 +525,9 @@ async function handleReset() {
         class="text-xs text-gray-600 dark:text-gray-300 min-w-0 flex-1 truncate text-left"
         :title="focusQuestionCenterTitle"
       >
-        <span class="text-gray-400 dark:text-gray-500">{{ t('canvas.topBar.focusQuestionLabel') }}</span>
+        <span class="text-gray-400 dark:text-gray-500">{{
+          t('canvas.topBar.focusQuestionLabel')
+        }}</span>
         <span class="ml-1">{{ props.focusQuestion }}</span>
       </p>
       <div

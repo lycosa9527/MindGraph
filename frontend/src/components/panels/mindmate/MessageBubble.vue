@@ -12,7 +12,7 @@ import MarkdownIt from 'markdown-it'
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import { useLanguage } from '@/composables'
-import type { FeedbackRating, MindMateMessage } from '@/composables/useMindMate'
+import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 
 const props = defineProps<{
   message: MindMateMessage

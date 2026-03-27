@@ -4,6 +4,9 @@
 
 export const DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR = 'rgba(255, 235, 60, 0.48)'
 
+/** Presentation pen tool: fixed blue stroke (rgba for SVG) */
+export const DEFAULT_PRESENTATION_PEN_COLOR = 'rgba(37, 99, 235, 0.9)'
+
 export interface PresentationHighlighterPaletteEntry {
   /** Opaque swatch for UI (circle) */
   swatch: string

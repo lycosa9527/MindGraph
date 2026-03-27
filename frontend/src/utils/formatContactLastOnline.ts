@@ -6,7 +6,7 @@ import { LAST_SEEN_ONLINE_MAX_AGE_MS } from '@/utils/workshopContactLastSeenStor
 export function formatContactLastOnlineLabel(
   lastSeenAtMs: number,
   nowMs: number,
-  translate: (key: string) => string,
+  translate: (key: string) => string
 ): string {
   const diff = nowMs - lastSeenAtMs
   if (diff < 0 || diff > LAST_SEEN_ONLINE_MAX_AGE_MS) {

@@ -1,7 +1,7 @@
 /**
  * Node Palette stage helpers - stage resolution and parent selection for staged diagrams
  */
-import { isPlaceholderText } from '@/composables/useAutoComplete'
+import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import type { DiagramType } from '@/types'
 
 import { DIMENSION_FIRST_TYPES, STAGED_DIAGRAM_TYPES } from './constants'

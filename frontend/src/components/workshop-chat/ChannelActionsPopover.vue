@@ -20,7 +20,7 @@ import {
   Trash2,
 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 import { workshopChatHrefFromState } from '@/utils/workshopChatRoute'

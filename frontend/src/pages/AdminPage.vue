@@ -6,7 +6,12 @@
  * - Admin: Full access to all organizations' data
  * - Manager: Access to their organization's data only
  */
+import type { Component } from 'vue'
+import { computed, nextTick, onMounted, ref, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+
 import type { TabsInstance } from 'element-plus'
+
 import {
   ChatLineRound,
   Coin,
@@ -18,9 +23,6 @@ import {
   User,
   UserFilled,
 } from '@element-plus/icons-vue'
-import type { Component } from 'vue'
-import { computed, nextTick, onMounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
 
 import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
@@ -32,7 +34,7 @@ import AdminTokensTab from '@/components/admin/AdminTokensTab.vue'
 import AdminUsersTab from '@/components/admin/AdminUsersTab.vue'
 import GeweLoginComponent from '@/components/admin/GeweLoginComponent.vue'
 import { useLanguage } from '@/composables'
-import { useFeatureFlags } from '@/composables/useFeatureFlags'
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore } from '@/stores'
 
 const route = useRoute()
@@ -100,10 +102,7 @@ watch(activeTab, (tab) => {
   scheduleTabBarUpdate()
 })
 
-watch(
-  () => tabs.value.map((tab) => `${tab.name}:${tab.label}`).join('|'),
-  scheduleTabBarUpdate
-)
+watch(() => tabs.value.map((tab) => `${tab.name}:${tab.label}`).join('|'), scheduleTabBarUpdate)
 
 watch(
   () => tabs.value.map((tab) => tab.name),

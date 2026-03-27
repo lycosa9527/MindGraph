@@ -9,7 +9,7 @@ import { computed, ref } from 'vue'
 
 import { Download } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { FileAttachment } from '@/stores/workshopChat'
 
 import ImageLightbox from './ImageLightbox.vue'

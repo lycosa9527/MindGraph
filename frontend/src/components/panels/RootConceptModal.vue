@@ -11,7 +11,7 @@ import { Loader2, Plus, RefreshCw, X } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
-import { getNodePalette } from '@/composables/useNodePalette'
+import { getNodePalette } from '@/composables/nodePalette/useNodePalette'
 import { getLLMColor } from '@/config/llmModelColors'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { NodeSuggestion } from '@/types/panels'
@@ -49,9 +49,7 @@ const conceptMapTabs = computed(() => {
   const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
   const nodes = diagramStore.data?.nodes ?? []
   const nodeIds = new Set(nodes.map((n) => n.id))
-  return tabs.filter(
-    (t) => t.id === 'topic' || t.id.startsWith('domain_') || nodeIds.has(t.id)
-  )
+  return tabs.filter((t) => t.id === 'topic' || t.id.startsWith('domain_') || nodeIds.has(t.id))
 })
 
 const conceptMapRootText = computed(() => {

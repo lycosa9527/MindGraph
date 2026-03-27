@@ -12,9 +12,9 @@ import { ElIcon } from 'element-plus'
 
 import { Menu } from '@element-plus/icons-vue'
 
-import { eventBus } from '@/composables/useEventBus'
-import { useNodeDimensions } from '@/composables/useNodeDimensions'
-import { useTheme } from '@/composables/useTheme'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useTheme } from '@/composables/core/useTheme'
 import { useDiagramStore } from '@/stores'
 import { focusQuestionMutedParts } from '@/stores/diagram/diagramDefaultLabels'
 import type { MindGraphNodeProps } from '@/types'

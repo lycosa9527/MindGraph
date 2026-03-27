@@ -4,7 +4,7 @@
  */
 import { computed, ref, watch } from 'vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { loadLocaleMessages, setI18nLocale } from '@/i18n'
 import { SUPPORTED_UI_LOCALES } from '@/i18n/locales'
 import type { Language } from '@/stores/ui'

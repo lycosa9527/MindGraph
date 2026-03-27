@@ -6,11 +6,20 @@
  * inline recommendations, and other desktop-only features.
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 
 import {
-  Save, Sparkles, Plus, Trash2, LayoutGrid, Bot, TableProperties,
-  ChevronLeft, ChevronRight, X, Loader2,
+  Bot,
+  ChevronLeft,
+  ChevronRight,
+  LayoutGrid,
+  Loader2,
+  Plus,
+  Save,
+  Sparkles,
+  TableProperties,
+  Trash2,
+  X,
 } from 'lucide-vue-next'
 
 import { AIModelSelector } from '@/components/canvas'
@@ -42,7 +51,6 @@ import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
 const route = useRoute()
-const router = useRouter()
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -116,9 +124,17 @@ const DIAGRAM_TYPE_TO_ZH: Record<DiagramType, string> = {
 }
 
 const VALID_TYPES: DiagramType[] = [
-  'circle_map', 'bubble_map', 'double_bubble_map', 'tree_map',
-  'brace_map', 'flow_map', 'multi_flow_map', 'bridge_map',
-  'mindmap', 'mind_map', 'concept_map',
+  'circle_map',
+  'bubble_map',
+  'double_bubble_map',
+  'tree_map',
+  'brace_map',
+  'flow_map',
+  'multi_flow_map',
+  'bridge_map',
+  'mindmap',
+  'mind_map',
+  'concept_map',
 ]
 
 const chartType = computed(() => uiStore.selectedChartType)
@@ -164,19 +180,20 @@ const mobileRecFetching = computed(() => {
   return !!nid && inlineRecStore.fetchingNextBatchNodeIds.has(nid)
 })
 
-watch(() => inlineRecStore.activeNodeId, () => {
-  mobileRecPage.value = 0
-})
+watch(
+  () => inlineRecStore.activeNodeId,
+  () => {
+    mobileRecPage.value = 0
+  }
+)
 
 function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boolean {
   const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
   if (!dt || !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(dt))
     return false
   const nid = node.id ?? ''
-  if (dt === 'mindmap')
-    return /^branch-(l|r)-(1|2)-/.test(nid)
-  if (dt === 'flow_map')
-    return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
+  if (dt === 'mindmap') return /^branch-(l|r)-(1|2)-/.test(nid)
+  if (dt === 'flow_map') return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
   if (dt === 'tree_map')
     return nid === 'dimension-label' || /^tree-cat-\d+$/.test(nid) || /^tree-leaf-/.test(nid)
   if (dt === 'brace_map')
@@ -184,11 +201,15 @@ function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boole
   if (dt === 'circle_map') return nid.startsWith('context-')
   if (dt === 'bubble_map') return nid.startsWith('bubble-')
   if (dt === 'double_bubble_map')
-    return nid.startsWith('similarity-') || nid.startsWith('left-diff-') || nid.startsWith('right-diff-')
-  if (dt === 'multi_flow_map')
-    return nid.startsWith('cause-') || nid.startsWith('effect-')
+    return (
+      nid.startsWith('similarity-') || nid.startsWith('left-diff-') || nid.startsWith('right-diff-')
+    )
+  if (dt === 'multi_flow_map') return nid.startsWith('cause-') || nid.startsWith('effect-')
   if (dt === 'bridge_map')
-    return nid === 'dimension-label' || (nid.startsWith('pair-') && (nid.endsWith('-left') || nid.endsWith('-right')))
+    return (
+      nid === 'dimension-label' ||
+      (nid.startsWith('pair-') && (nid.endsWith('-left') || nid.endsWith('-right')))
+    )
   return false
 }
 
@@ -276,7 +297,7 @@ watch(
   () => panelsStore.nodePalettePanel.isOpen,
   (isOpen) => {
     showNodePalette.value = isOpen
-  },
+  }
 )
 
 watch(
@@ -289,7 +310,7 @@ watch(
       }
     }
   },
-  { immediate: true },
+  { immediate: true }
 )
 
 eventBus.onWithOwner(
@@ -299,7 +320,7 @@ eventBus.onWithOwner(
       startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })
     }
   },
-  'MobileCanvasPage',
+  'MobileCanvasPage'
 )
 
 onMounted(async () => {
@@ -350,9 +371,7 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
   })
   const loaded = diagramStore.loadFromSpec(spec, diagram.diagram_type as DiagramType)
   if (loaded) {
-    const zhName = Object.entries(DIAGRAM_TYPE_MAP).find(
-      ([, v]) => v === diagram.diagram_type,
-    )?.[0]
+    const zhName = Object.entries(DIAGRAM_TYPE_MAP).find(([, v]) => v === diagram.diagram_type)?.[0]
     if (zhName) uiStore.setSelectedChartType(zhName)
   }
 }
@@ -374,7 +393,9 @@ onUnmounted(() => {
 <template>
   <div class="mobile-canvas flex flex-col flex-1 min-h-0 bg-gray-50 relative overflow-hidden">
     <!-- Top toolbar (fixed, no zoom/pan) -->
-    <div class="mobile-toolbar flex items-center justify-evenly px-2 py-1.5 bg-white border-b border-gray-200 shrink-0 touch-none">
+    <div
+      class="mobile-toolbar flex items-center justify-evenly px-2 py-1.5 bg-white border-b border-gray-200 shrink-0 touch-none"
+    >
       <button
         class="toolbar-btn"
         :disabled="isSaving"
@@ -406,7 +427,10 @@ onUnmounted(() => {
         :class="{ 'toolbar-btn--generating': isGenerating }"
         @click="handleAutoComplete"
       >
-        <Sparkles :size="18" class="ai-icon" />
+        <Sparkles
+          :size="18"
+          class="ai-icon"
+        />
         <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
       </button>
 
@@ -452,9 +476,14 @@ onUnmounted(() => {
     </div>
 
     <!-- Bottom bar (fixed, no zoom/pan) -->
-    <div class="mobile-bottom-bar shrink-0 px-3 py-2 bg-white/90 backdrop-blur-md border-t border-gray-200 touch-none">
+    <div
+      class="mobile-bottom-bar shrink-0 px-3 py-2 bg-white/90 backdrop-blur-md border-t border-gray-200 touch-none"
+    >
       <!-- Inline recommendations mode -->
-      <div v-if="inlineRecActive" class="flex items-center gap-1.5 min-h-[36px]">
+      <div
+        v-if="inlineRecActive"
+        class="flex items-center gap-1.5 min-h-[36px]"
+      >
         <button
           class="shrink-0 p-1.5 rounded-md bg-red-50 active:bg-red-100 text-red-500 transition-colors"
           @click="handleRecDismiss"
@@ -464,7 +493,11 @@ onUnmounted(() => {
 
         <button
           class="shrink-0 p-1.5 rounded-md transition-colors"
-          :class="mobileCanPrev ? 'bg-gray-100 active:bg-gray-200 text-gray-600' : 'bg-gray-50 text-gray-300'"
+          :class="
+            mobileCanPrev
+              ? 'bg-gray-100 active:bg-gray-200 text-gray-600'
+              : 'bg-gray-50 text-gray-300'
+          "
           :disabled="!mobileCanPrev"
           @click="handleRecPrev"
         >
@@ -475,20 +508,26 @@ onUnmounted(() => {
           v-if="inlineRecGenerating && mobileRecOptions.length === 0"
           class="flex-1 flex items-center justify-center gap-2 text-xs text-gray-500"
         >
-          <Loader2 :size="14" class="animate-spin text-green-500" />
+          <Loader2
+            :size="14"
+            class="animate-spin text-green-500"
+          />
           <span>{{ t('inlineRec.generating', '生成推荐中...') }}</span>
         </div>
-        <div v-else class="rec-scroll-area flex-1 overflow-x-auto">
+        <div
+          v-else
+          class="rec-scroll-area flex-1 overflow-x-auto"
+        >
           <div class="flex items-stretch gap-1.5">
             <button
               v-for="(opt, idx) in mobileRecOptions"
               :key="`${inlineRecStore.activeNodeId}-${mobileRecPage}-${idx}`"
-              class="rec-chip shrink-0 px-2.5 py-1.5 rounded-lg bg-green-50 active:bg-green-100
-                     text-xs text-green-700 font-medium transition-colors border border-green-200
-                     whitespace-nowrap"
+              class="rec-chip shrink-0 px-2.5 py-1.5 rounded-lg bg-green-50 active:bg-green-100 text-xs text-green-700 font-medium transition-colors border border-green-200 whitespace-nowrap"
               @click="handleRecSelect(idx)"
             >
-              <span class="text-green-500 font-bold mr-1">{{ mobileRecPage * MOBILE_REC_PER_PAGE + idx + 1 }}</span>
+              <span class="text-green-500 font-bold mr-1">{{
+                mobileRecPage * MOBILE_REC_PER_PAGE + idx + 1
+              }}</span>
               {{ opt }}
             </button>
           </div>
@@ -496,30 +535,49 @@ onUnmounted(() => {
 
         <button
           class="shrink-0 p-1.5 rounded-md transition-colors"
-          :class="mobileRecFetching
-            ? 'bg-gray-50 text-gray-300'
-            : 'bg-gray-100 active:bg-gray-200 text-gray-600'"
+          :class="
+            mobileRecFetching
+              ? 'bg-gray-50 text-gray-300'
+              : 'bg-gray-100 active:bg-gray-200 text-gray-600'
+          "
           :disabled="mobileRecFetching"
           @click="handleRecNext"
         >
-          <Loader2 v-if="mobileRecFetching" :size="14" class="animate-spin" />
-          <ChevronRight v-else :size="14" />
+          <Loader2
+            v-if="mobileRecFetching"
+            :size="14"
+            class="animate-spin"
+          />
+          <ChevronRight
+            v-else
+            :size="14"
+          />
         </button>
       </div>
 
       <!-- Normal mode: AI models + Tab button -->
-      <div v-else class="flex items-center justify-between">
+      <div
+        v-else
+        class="flex items-center justify-between"
+      >
         <button
           class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gray-100 active:bg-gray-200 transition-colors"
           @click="showModelDrawer = true"
         >
-          <Bot :size="16" class="text-indigo-500" />
+          <Bot
+            :size="16"
+            class="text-indigo-500"
+          />
           <span class="text-xs font-medium text-gray-700">{{ t('aiModel.label', 'AI 模型') }}</span>
         </button>
 
         <button
           class="bottom-btn flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-colors"
-          :class="tabReady ? 'bg-green-50 active:bg-green-100 text-green-600' : 'bg-gray-100 text-gray-400 opacity-50'"
+          :class="
+            tabReady
+              ? 'bg-green-50 active:bg-green-100 text-green-600'
+              : 'bg-gray-100 text-gray-400 opacity-50'
+          "
           :disabled="!tabReady"
           @click="handleTabMode"
         >
@@ -728,7 +786,8 @@ onUnmounted(() => {
 }
 
 @keyframes ai-sparkle-pulse {
-  0%, 100% {
+  0%,
+  100% {
     opacity: 1;
     transform: scale(1);
   }

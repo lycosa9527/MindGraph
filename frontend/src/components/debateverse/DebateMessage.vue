@@ -16,7 +16,7 @@ import kimiAvatar from '@/assets/kimi-avatar.png'
 // Import avatar images
 import qwenAvatar from '@/assets/qwen-avatar.png'
 import userAvatar from '@/assets/user-avatar.png'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { DebateMessage as DebateMessageType } from '@/stores/debateverse'
 import { useDebateVerseStore } from '@/stores/debateverse'
 

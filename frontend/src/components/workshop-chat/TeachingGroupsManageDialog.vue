@@ -10,7 +10,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 
 import { ArrowDown, ArrowUp, Copy, LayoutList, Plus, Settings, Trash2 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import {
   type ChannelMember,

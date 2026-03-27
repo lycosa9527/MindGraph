@@ -82,14 +82,9 @@ function parseNodeId(id: string): ParsedNodeId | null {
   return { side: m[1] as 'r' | 'l', depth: parseInt(m[2], 10) }
 }
 
-function getNodeWidth(
-  node: DiagramNode,
-  nodeWidths: Record<string, number>
-): number {
+function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
   return (
-    nodeWidths[node.id] ??
-    (node.data?.estimatedWidth as number | undefined) ??
-    DEFAULT_NODE_WIDTH
+    nodeWidths[node.id] ?? (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
   )
 }
 
@@ -273,8 +268,7 @@ function correctYPositions(
     if (!kids || kids.length === 0) return h
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
-      childSpans.reduce((a, b) => a + b, 0) +
-      (kids.length - 1) * MINDMAP_SIBLING_GAP
+      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
     return Math.max(h, childrenTotalSpan)
   }
 
@@ -289,8 +283,7 @@ function correctYPositions(
 
     const childSpans = kids.map((kid) => computeSubtreeSpan(kid))
     const childrenTotalSpan =
-      childSpans.reduce((a, b) => a + b, 0) +
-      (kids.length - 1) * MINDMAP_SIBLING_GAP
+      childSpans.reduce((a, b) => a + b, 0) + (kids.length - 1) * MINDMAP_SIBLING_GAP
 
     if (childrenTotalSpan >= h) {
       let y = startY
@@ -320,9 +313,7 @@ function correctYPositions(
   function stackBranches(roots: string[]): void {
     if (roots.length === 0) return
     const spans = roots.map((r) => computeSubtreeSpan(r))
-    const totalSpan =
-      spans.reduce((a, b) => a + b, 0) +
-      (roots.length - 1) * crossBranchGap
+    const totalSpan = spans.reduce((a, b) => a + b, 0) + (roots.length - 1) * crossBranchGap
 
     const firstRootY = nodeMap.get(roots[0])?.position?.y ?? 0
     const lastRoot = roots[roots.length - 1]

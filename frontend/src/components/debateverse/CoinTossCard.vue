@@ -9,7 +9,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { Coins } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
 const { t } = useLanguage()

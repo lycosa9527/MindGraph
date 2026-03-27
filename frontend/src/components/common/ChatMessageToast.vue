@@ -17,8 +17,8 @@ import {
   type ChatToastItem,
   dismissChatToast,
   useChatToastQueue,
-} from '@/composables/chatToastQueue'
-import { useLanguage } from '@/composables/useLanguage'
+} from '@/composables/core/chatToastQueue'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useWorkshopChatStore } from '@/stores/workshopChat'
 
 const { t } = useLanguage()

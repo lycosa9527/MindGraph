@@ -6,7 +6,14 @@
 import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElAvatar, ElButton, ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
+import {
+  ElAvatar,
+  ElButton,
+  ElDialog,
+  ElDropdown,
+  ElDropdownItem,
+  ElDropdownMenu,
+} from 'element-plus'
 
 import { Upload, User } from '@element-plus/icons-vue'
 

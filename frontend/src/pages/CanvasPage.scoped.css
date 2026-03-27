@@ -1,0 +1,111 @@
+/* Node Palette panel slide-in animation (from left) */
+.node-palette-slide-enter-active,
+.node-palette-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.node-palette-slide-enter-from,
+.node-palette-slide-leave-to {
+  transform: translateX(-100%);
+}
+
+.node-palette-slide-enter-to,
+.node-palette-slide-leave-from {
+  transform: translateX(0);
+}
+
+/* MindMate panel slide-in animation */
+.mindmate-slide-enter-active,
+.mindmate-slide-leave-active {
+  transition: transform 0.3s ease;
+}
+
+.mindmate-slide-enter-from,
+.mindmate-slide-leave-to {
+  transform: translateX(100%);
+}
+
+.mindmate-slide-enter-to,
+.mindmate-slide-leave-from {
+  transform: translateX(0);
+}
+
+/* Short viewport: compact bottom controls */
+@media (max-height: 560px) {
+  .ai-selector-wrap {
+    justify-content: flex-start;
+  }
+}
+
+/* Hide the native cursor when presentation mode is active */
+.presentation-active,
+.presentation-active * {
+  cursor: none !important;
+}
+
+/* Highlighter tool: brush-style cursor (overrides cursor: none above) */
+.presentation-active.presentation-highlighter-mode,
+.presentation-active.presentation-highlighter-mode * {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5 27 L11 8 L17 10 L13 29 Z' fill='%23fbbf24' stroke='%23b45309' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M11 8 L21 12 L17 26 L9 22 Z' fill='%23fde68a' opacity='0.95'/%3E%3Cpath d='M7 26 L9 18 L12 19 L10 27 Z' fill='%23f59e0b' opacity='0.55'/%3E%3C/svg%3E")
+      10 26,
+    crosshair !important;
+}
+
+/* Timer tool: restore normal cursor (presentation-active hides it by default) */
+.presentation-active.presentation-timer-mode,
+.presentation-active.presentation-timer-mode * {
+  cursor: auto !important;
+}
+
+/* Vertical rail: normal cursor while hovering (overrides none, spotlight, highlighter brush, etc.) */
+.presentation-active .presentation-side-toolbar:hover,
+.presentation-active .presentation-side-toolbar:hover * {
+  cursor: auto !important;
+}
+
+/* Laser pointer dot — z-index via laserCursorStyle (PRESENTATION_Z.LASER) */
+.laser-cursor {
+  position: fixed;
+  top: 0;
+  left: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  background: radial-gradient(
+    circle at 40% 35%,
+    #ff8080 0%,
+    #ff1a1a 45%,
+    #cc0000 70%,
+    transparent 100%
+  );
+}
+
+/* Subtle entrance / exit fade */
+.laser-fade-enter-active,
+.laser-fade-leave-active {
+  transition: opacity 0.25s ease;
+}
+
+.laser-fade-enter-from,
+.laser-fade-leave-to {
+  opacity: 0;
+}
+
+/* Spotlight overlay — z-index via spotlightStyle (PRESENTATION_Z.SPOTLIGHT) */
+.spotlight-overlay {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  /* background is set via inline :style (dynamic gradient position) */
+}
+
+/* Soft fade so the overlay doesn't pop in harshly */
+.spotlight-fade-enter-active,
+.spotlight-fade-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.spotlight-fade-enter-from,
+.spotlight-fade-leave-to {
+  opacity: 0;
+}

@@ -20,9 +20,9 @@ import {
 
 import { Search } from '@element-plus/icons-vue'
 
-import { notify } from '@/composables/notifications'
+import { notify } from '@/composables/core/notifications'
 import { type RetrievalTestResponse, useRetrievalTest } from '@/composables/queries'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   visible: boolean
@@ -179,10 +179,13 @@ function testRetrieval() {
             <div class="flex justify-between items-center">
               <span class="font-semibold">{{ t('knowledge.retrieval.results') }}</span>
               <div class="text-sm text-stone-500">
-                {{ t('knowledge.retrieval.timingTotal') }}: {{ results.timing.total_ms.toFixed(0) }}ms ({{
+                {{ t('knowledge.retrieval.timingTotal') }}:
+                {{ results.timing.total_ms.toFixed(0) }}ms ({{
                   t('knowledge.retrieval.timingEmbed')
-                }}: {{ results.timing.embedding_ms.toFixed(0) }}ms, {{ t('knowledge.retrieval.timingSearch') }}:
-                {{ results.timing.search_ms.toFixed(0) }}ms, {{ t('knowledge.retrieval.timingRerank') }}:
+                }}: {{ results.timing.embedding_ms.toFixed(0) }}ms,
+                {{ t('knowledge.retrieval.timingSearch') }}:
+                {{ results.timing.search_ms.toFixed(0) }}ms,
+                {{ t('knowledge.retrieval.timingRerank') }}:
                 {{ results.timing.rerank_ms.toFixed(0) }}ms)
               </div>
             </div>
@@ -237,10 +240,12 @@ function testRetrieval() {
               {{ results.stats.total_chunks_searched }}
             </div>
             <div>
-              {{ t('knowledge.retrieval.statsBeforeRerank') }}: {{ results.stats.chunks_before_rerank }}
+              {{ t('knowledge.retrieval.statsBeforeRerank') }}:
+              {{ results.stats.chunks_before_rerank }}
             </div>
             <div>
-              {{ t('knowledge.retrieval.statsAfterRerank') }}: {{ results.stats.chunks_after_rerank }}
+              {{ t('knowledge.retrieval.statsAfterRerank') }}:
+              {{ results.stats.chunks_after_rerank }}
             </div>
             <div>
               {{ t('knowledge.retrieval.statsFiltered') }}:

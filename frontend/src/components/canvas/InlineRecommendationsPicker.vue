@@ -9,7 +9,7 @@ import { computed, onMounted, onUnmounted, watch } from 'vue'
 
 import { storeToRefs } from 'pinia'
 
-import { useInlineRecommendations } from '@/composables/useInlineRecommendations'
+import { useInlineRecommendations } from '@/composables/editor/useInlineRecommendations'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 
 const diagramStore = useDiagramStore()
@@ -37,7 +37,9 @@ const isFractionPairTabRec = computed(() => {
   return false
 })
 
-function parsePairedOption(opt: string): { top: string; bottom: string; dimension?: string } | null {
+function parsePairedOption(
+  opt: string
+): { top: string; bottom: string; dimension?: string } | null {
   if (!opt.includes('|')) return null
   const parts = opt.split('|').map((s) => s.trim())
   if (parts.length < 2) return null
@@ -179,24 +181,28 @@ onUnmounted(() => {
         >
           <span
             class="text-center text-blue-600 dark:text-blue-400 leading-snug text-[11px] break-words"
-          >{{ row.pair.top }}</span>
+            >{{ row.pair.top }}</span
+          >
           <div
             class="fraction-rule h-px w-full min-w-0 shrink-0 bg-gray-400/90 dark:bg-gray-500"
             aria-hidden="true"
           />
           <span
             class="text-center text-amber-600 dark:text-amber-400 leading-snug text-[11px] break-words"
-          >{{ row.pair.bottom }}</span>
+            >{{ row.pair.bottom }}</span
+          >
           <span
             v-if="row.pair.dimension"
             class="text-center text-[9px] text-gray-500 dark:text-gray-400 leading-tight truncate max-w-full"
             :title="row.pair.dimension"
-          >{{ row.pair.dimension }}</span>
+            >{{ row.pair.dimension }}</span
+          >
         </div>
         <span
           v-else
           class="min-w-0 whitespace-nowrap"
-        >{{ row.opt }}</span>
+          >{{ row.opt }}</span
+        >
       </span>
     </span>
     <span

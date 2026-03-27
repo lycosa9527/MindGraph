@@ -15,7 +15,7 @@ import {
   Mic,
 } from 'lucide-vue-next'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useDebateVerseStore } from '@/stores/debateverse'
 
 import CoinTossDisplay from './CoinTossDisplay.vue'

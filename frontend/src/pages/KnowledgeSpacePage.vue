@@ -18,7 +18,7 @@ import KnowledgeSpaceHeader from '@/components/knowledge-space/KnowledgeSpaceHea
 import KnowledgeSpaceSettings from '@/components/knowledge-space/KnowledgeSpaceSettings.vue'
 import ProcessingProgressBar from '@/components/knowledge-space/ProcessingProgressBar.vue'
 import RetrievalTest from '@/components/knowledge-space/RetrievalTest.vue'
-import { useKnowledgeSpace } from '@/composables/useKnowledgeSpace'
+import { useKnowledgeSpace } from '@/composables/knowledge/useKnowledgeSpace'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const {

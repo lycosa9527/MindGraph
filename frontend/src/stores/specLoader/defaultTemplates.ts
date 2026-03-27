@@ -167,7 +167,16 @@ function templatesForLocale(group: 'zh' | 'en'): Record<string, Record<string, u
   return {
     circle_map: {
       topic: 'Topic',
-      context: ['Context 1', 'Context 2', 'Context 3', 'Context 4', 'Context 5', 'Context 6', 'Context 7', 'Context 8'],
+      context: [
+        'Context 1',
+        'Context 2',
+        'Context 3',
+        'Context 4',
+        'Context 5',
+        'Context 6',
+        'Context 7',
+        'Context 8',
+      ],
     },
     bubble_map: {
       topic: 'Topic',

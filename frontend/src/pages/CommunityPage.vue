@@ -259,11 +259,15 @@ async function handleEditSuccess(updated: CommunityPost) {
 
 async function confirmDelete(post: CommunityPost) {
   try {
-    await ElMessageBox.confirm(t('community.deleteConfirmBody'), t('community.deleteConfirmTitle'), {
-      confirmButtonText: t('common.delete'),
-      cancelButtonText: t('common.cancel'),
-      type: 'warning',
-    })
+    await ElMessageBox.confirm(
+      t('community.deleteConfirmBody'),
+      t('community.deleteConfirmTitle'),
+      {
+        confirmButtonText: t('common.delete'),
+        cancelButtonText: t('common.cancel'),
+        type: 'warning',
+      }
+    )
   } catch {
     return
   }

@@ -1,0 +1,177 @@
+/* Vue Flow base styles */
+@import '@vue-flow/core/dist/style.css';
+@import '@vue-flow/core/dist/theme-default.css';
+@import '@vue-flow/minimap/dist/style.css';
+
+.diagram-canvas {
+  position: relative;
+}
+
+.vue-flow-wrapper {
+  transition: filter 0.2s ease;
+}
+
+.vue-flow-wrapper.wireframe-mode {
+  filter: grayscale(1);
+}
+
+/* Concept map link preview pill (matches ConceptNode styling) */
+.concept-map-link-preview-pill {
+  fill: #e3f2fd;
+  stroke: #4e79a7;
+  stroke-width: 2;
+}
+.dark .concept-map-link-preview-pill {
+  fill: #1f2937;
+  stroke: #5a8fc7;
+}
+
+/* All diagrams: hide Vue Flow's default blue selection box, use pulse glow animation instead */
+.diagram-canvas .vue-flow__nodesselection,
+.diagram-canvas .vue-flow__nodesselection-rect {
+  display: none !important;
+}
+
+/* Default node selection: pulse glow animation (same as circle map, concept map) */
+.vue-flow__node.selected {
+  box-shadow: none !important;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Circle nodes: circular wrapper so any outline follows circle shape; pulse animation when selected */
+.vue-flow__node-circle {
+  border-radius: 50% !important;
+  overflow: visible;
+}
+
+@keyframes pulseGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+      drop-shadow(0 0 4px rgba(102, 126, 234, 0.4));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(102, 126, 234, 0.9))
+      drop-shadow(0 0 8px rgba(102, 126, 234, 0.7));
+  }
+}
+.vue-flow__node-circle.selected {
+  box-shadow: none !important;
+  animation: pulseGlow 2s ease-in-out infinite;
+}
+
+/* Smooth transitions */
+.vue-flow__node {
+  transition:
+    box-shadow 0.2s ease,
+    filter 0.2s ease,
+    transform 0.2s ease;
+}
+
+/* Boundary node styling - ensure it's visible and not clipped */
+.vue-flow__node-boundary {
+  overflow: visible !important;
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  z-index: -1 !important;
+}
+
+/* Ensure boundary node doesn't interfere with other nodes */
+.vue-flow__node-boundary:hover {
+  box-shadow: none !important;
+}
+
+/* Boundary nodes should never show selection */
+.vue-flow__node-boundary.selected {
+  box-shadow: none !important;
+  filter: none !important;
+  animation: none !important;
+}
+
+/* Multi-flow map node selection - matches circle map approach */
+/* Use :has() selector to target wrapper when it contains multi-flow-map-node component */
+/* This is the SAME approach as circle map - target by node type classes */
+.vue-flow__node-flow.selected:has(.multi-flow-map-node),
+.vue-flow__node-topic.selected:has(.multi-flow-map-node) {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+    drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
+  animation: pulseGlow 2s ease-in-out infinite !important;
+}
+
+/* Fallback: Target by ID patterns if :has() not supported (older browsers) */
+.vue-flow__node-flow[id^='cause-'].selected,
+.vue-flow__node-flow[id^='effect-'].selected,
+.vue-flow__node-topic[id='event'].selected {
+  border: 2px solid var(--primary-color, #3b82f6);
+}
+
+/* Workshop editing indicators */
+.vue-flow__node.workshop-editing {
+  position: relative;
+  border: 3px solid var(--editor-color, #ff6b6b) !important;
+  box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+  animation: workshop-pulse 2s ease-in-out infinite;
+}
+
+.vue-flow__node.workshop-editing::before {
+  content: attr(data-editor-emoji);
+  position: absolute;
+  top: -12px;
+  right: -12px;
+  width: 24px;
+  height: 24px;
+  background: var(--editor-color, #ff6b6b);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+  z-index: 1000;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  border: 2px solid white;
+}
+
+.vue-flow__node.workshop-editing::after {
+  content: attr(data-editor-username) ' ' attr(data-editor-emoji) ' editing';
+  position: absolute;
+  bottom: -22px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: transparent;
+  color: #6b7280;
+  font-size: 11px;
+  line-height: 1.2;
+  white-space: nowrap;
+  z-index: 1000;
+  pointer-events: none;
+  opacity: 1;
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.vue-flow__node.collab-remote-selected {
+  outline: 2px dashed #f97316 !important;
+  outline-offset: 2px;
+}
+
+@keyframes workshop-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 8px rgba(255, 107, 107, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 16px rgba(255, 107, 107, 0.6);
+  }
+}
+
+.vue-flow__node-flow[id^='cause-'].selected,
+.vue-flow__node-flow[id^='effect-'].selected,
+.vue-flow__node-topic[id='event'].selected {
+  box-shadow: none !important;
+  filter: drop-shadow(0 0 8px rgba(102, 126, 234, 0.6))
+    drop-shadow(0 0 4px rgba(102, 126, 234, 0.4)) !important;
+  animation: pulseGlow 2s ease-in-out infinite !important;
+}

@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { computed, nextTick, onMounted, ref } from 'vue'
 
-import { useLanguage } from '@/composables/useLanguage'
-import { useMarkdown } from '@/composables/useMarkdown'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useMarkdown } from '@/composables/core/useMarkdown'
 import {
   type ChatMessage,
   type FileAttachment,

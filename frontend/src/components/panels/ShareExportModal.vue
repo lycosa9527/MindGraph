@@ -15,7 +15,7 @@ import MarkdownIt from 'markdown-it'
 
 import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
-import type { MindMateMessage } from '@/composables/useMindMate'
+import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores'
 
 const props = defineProps<{

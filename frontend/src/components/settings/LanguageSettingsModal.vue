@@ -6,13 +6,13 @@ import { ref, watch } from 'vue'
 
 import { ElCheckbox } from 'element-plus'
 
+import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useLanguage } from '@/composables/useLanguage'
 import { PROMPT_LANGUAGE_OPTIONS, SUPPORTED_UI_LOCALES } from '@/i18n/locales'
-import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
-import type { Language, PromptLanguage } from '@/stores/ui'
 import { useAuthStore } from '@/stores'
+import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
+import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
 const visible = defineModel<boolean>({ required: true })
 
@@ -248,8 +248,7 @@ function promptOptionFilterLabel(o: PromptLangOption): string {
 }
 
 .prompt-lang-select-popper .prompt-option-code {
-  font-family:
-    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace !important;
   font-size: 0.75rem;
   font-weight: 500;
   letter-spacing: 0.02em;

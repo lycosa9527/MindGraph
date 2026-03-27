@@ -26,12 +26,6 @@ export function registerWorkshopChatResetOnAuthClear(fn: WorkshopChatResetOnAuth
   resetOnAuthClearHandler = fn
 }
 
-export function unregisterWorkshopChatResetOnAuthClear(fn: WorkshopChatResetOnAuthClear): void {
-  if (resetOnAuthClearHandler === fn) {
-    resetOnAuthClearHandler = null
-  }
-}
-
 export function resetWorkshopChatOnAuthClear(userId?: string): void {
   resetOnAuthClearHandler?.(userId)
 }

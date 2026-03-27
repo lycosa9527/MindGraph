@@ -6,11 +6,11 @@ import * as fs from 'node:fs'
 import * as path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url))
-
 import az from '../src/locales/messages/az'
 import en from '../src/locales/messages/en'
 import zh from '../src/locales/messages/zh'
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 type LocaleMessages = Record<string, string>
 
@@ -103,7 +103,18 @@ function stringifyBundle(obj: LocaleMessages, localeLabel: string, bundleName: s
   return `/** ${localeLabel} — ${bundleName} */\nexport default {\n${lines.join('\n')}\n} as const\n`
 }
 
-const bundles = ['common', 'mindmate', 'canvas', 'workshop', 'admin', 'knowledge', 'community', 'sidebar', 'auth', 'notification'] as const
+const bundles = [
+  'common',
+  'mindmate',
+  'canvas',
+  'workshop',
+  'admin',
+  'knowledge',
+  'community',
+  'sidebar',
+  'auth',
+  'notification',
+] as const
 
 function main(): void {
   const root = path.join(__dirname, '..', 'src', 'locales', 'messages')
@@ -118,7 +129,8 @@ function main(): void {
         throw new Error(`Missing bundle ${name} for ${locale}`)
       }
       const filePath = path.join(localeDir, `${name}.ts`)
-      const label = locale === 'zh' ? 'Chinese UI' : locale === 'en' ? 'English UI' : 'Azerbaijani UI'
+      const label =
+        locale === 'zh' ? 'Chinese UI' : locale === 'en' ? 'English UI' : 'Azerbaijani UI'
       fs.writeFileSync(filePath, stringifyBundle(part, label, name), 'utf8')
     }
     const indexPath = path.join(localeDir, 'index.ts')

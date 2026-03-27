@@ -10,7 +10,7 @@ import { ElIcon, ElProgress, ElTable, ElTableColumn } from 'element-plus'
 
 import { Check, Loading, Minus } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const props = defineProps<{

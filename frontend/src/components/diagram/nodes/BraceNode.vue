@@ -9,9 +9,9 @@ import { computed, inject, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
-import { eventBus } from '@/composables/useEventBus'
-import { useNodeDimensions } from '@/composables/useNodeDimensions'
-import { useTheme } from '@/composables/useTheme'
+import { eventBus } from '@/composables/core/useEventBus'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { useTheme } from '@/composables/core/useTheme'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -124,7 +124,11 @@ function handleBranchMoveTouchStart(event: TouchEvent): void {
   if (!supportsBranchMove.value || event.touches.length !== 1) return
   const touch = event.touches[0]
   const consumed = branchMove.onBranchMovePointerDown(
-    props.id, isEditing.value, touch.clientX, touch.clientY, true,
+    props.id,
+    isEditing.value,
+    touch.clientX,
+    touch.clientY,
+    true
   )
   if (consumed) {
     event.stopPropagation()

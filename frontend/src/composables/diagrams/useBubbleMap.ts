@@ -7,7 +7,7 @@
  */
 import { computed, ref } from 'vue'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { CONTEXT_FONT_SIZE, computeMinDiameterForNoWrap } from '@/stores/specLoader/textMeasurement'
 import type { Connection, DiagramNode, MindGraphEdge, MindGraphNode } from '@/types'
 

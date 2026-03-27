@@ -20,7 +20,7 @@ import { ArrowDown } from '@element-plus/icons-vue'
 import { Send } from 'lucide-vue-next'
 
 import debateverseAvatarLg from '@/assets/debateverse-avatar-lg.png'
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
 import { type LLMAssignment, useDebateVerseStore } from '@/stores/debateverse'
 

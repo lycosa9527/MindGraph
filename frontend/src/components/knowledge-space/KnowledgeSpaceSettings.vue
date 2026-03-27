@@ -7,7 +7,7 @@ import { ref } from 'vue'
 
 import { ElButton, ElDivider, ElDrawer, ElForm, ElFormItem, ElInput, ElSelect } from 'element-plus'
 
-import { useLanguage } from '@/composables/useLanguage'
+import { useLanguage } from '@/composables/core/useLanguage'
 
 defineProps<{
   visible: boolean

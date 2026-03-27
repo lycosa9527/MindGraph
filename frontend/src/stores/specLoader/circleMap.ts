@@ -18,7 +18,7 @@ import { calculateCircleMapLayout } from './utils'
  */
 export function recalculateCircleMapLayout(
   nodes: DiagramNode[],
-  nodeDimensions: Record<string, { width: number; height: number }> = {}
+  _nodeDimensions: Record<string, { width: number; height: number }> = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
