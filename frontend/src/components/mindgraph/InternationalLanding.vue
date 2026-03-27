@@ -18,18 +18,11 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import {
-  KeyRound,
-  Languages,
-  LogIn,
-  LogOut,
-  Share2,
-  Upload,
-  UserRound,
-  Users,
-} from 'lucide-vue-next'
+import { KeyRound, Languages, LogIn, LogOut, Upload, UserRound } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
+import { AccountInfoModal, ChangePasswordModal } from '@/components/auth'
+import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import type { DiagramType } from '@/types'
@@ -75,16 +68,56 @@ const allDiagramTypes: Array<{
   descKey: string
   type: DiagramType
 }> = [
-  { titleKey: 'landing.diagramGrid.circle_map.title', descKey: 'landing.diagramGrid.circle_map.desc', type: 'circle_map' },
-  { titleKey: 'landing.diagramGrid.bubble_map.title', descKey: 'landing.diagramGrid.bubble_map.desc', type: 'bubble_map' },
-  { titleKey: 'landing.diagramGrid.double_bubble_map.title', descKey: 'landing.diagramGrid.double_bubble_map.desc', type: 'double_bubble_map' },
-  { titleKey: 'landing.diagramGrid.tree_map.title', descKey: 'landing.diagramGrid.tree_map.desc', type: 'tree_map' },
-  { titleKey: 'landing.diagramGrid.brace_map.title', descKey: 'landing.diagramGrid.brace_map.desc', type: 'brace_map' },
-  { titleKey: 'landing.diagramGrid.flow_map.title', descKey: 'landing.diagramGrid.flow_map.desc', type: 'flow_map' },
-  { titleKey: 'landing.diagramGrid.multi_flow_map.title', descKey: 'landing.diagramGrid.multi_flow_map.desc', type: 'multi_flow_map' },
-  { titleKey: 'landing.diagramGrid.bridge_map.title', descKey: 'landing.diagramGrid.bridge_map.desc', type: 'bridge_map' },
-  { titleKey: 'landing.diagramGrid.mindmap.title', descKey: 'landing.diagramGrid.mindmap.desc', type: 'mindmap' },
-  { titleKey: 'landing.diagramGrid.concept_map.title', descKey: 'landing.diagramGrid.concept_map.desc', type: 'concept_map' },
+  {
+    titleKey: 'landing.diagramGrid.circle_map.title',
+    descKey: 'landing.diagramGrid.circle_map.desc',
+    type: 'circle_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.bubble_map.title',
+    descKey: 'landing.diagramGrid.bubble_map.desc',
+    type: 'bubble_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.double_bubble_map.title',
+    descKey: 'landing.diagramGrid.double_bubble_map.desc',
+    type: 'double_bubble_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.tree_map.title',
+    descKey: 'landing.diagramGrid.tree_map.desc',
+    type: 'tree_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.brace_map.title',
+    descKey: 'landing.diagramGrid.brace_map.desc',
+    type: 'brace_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.flow_map.title',
+    descKey: 'landing.diagramGrid.flow_map.desc',
+    type: 'flow_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.multi_flow_map.title',
+    descKey: 'landing.diagramGrid.multi_flow_map.desc',
+    type: 'multi_flow_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.bridge_map.title',
+    descKey: 'landing.diagramGrid.bridge_map.desc',
+    type: 'bridge_map',
+  },
+  {
+    titleKey: 'landing.diagramGrid.mindmap.title',
+    descKey: 'landing.diagramGrid.mindmap.desc',
+    type: 'mindmap',
+  },
+  {
+    titleKey: 'landing.diagramGrid.concept_map.title',
+    descKey: 'landing.diagramGrid.concept_map.desc',
+    type: 'concept_map',
+  },
 ]
 
 // ── Prompt generation ──
@@ -101,7 +134,9 @@ async function handlePromptSubmit() {
     return
   }
   if (text.length > MAX_PROMPT_LENGTH) {
-    notify.error(t('diagramTemplate.promptTooLong', { length: text.length, max: MAX_PROMPT_LENGTH }))
+    notify.error(
+      t('diagramTemplate.promptTooLong', { length: text.length, max: MAX_PROMPT_LENGTH })
+    )
     return
   }
 
@@ -181,6 +216,9 @@ function handleCardClick(item: { type: DiagramType }) {
 
 // ── Collaboration dialogs ──
 
+const showLanguageSettingsModal = ref(false)
+const showAccountModal = ref(false)
+const showPasswordModal = ref(false)
 const showOrgSessionsDialog = ref(false)
 const showSharedCodeDialog = ref(false)
 const orgSessionsLoading = ref(false)
@@ -227,8 +265,14 @@ function getFormattedCode(): string {
 
 async function joinWorkshop() {
   const code = getFormattedCode()
-  if (code.length !== 7) { notify.warning(t('mindgraphLanding.codeIncomplete')); return }
-  if (!/^\d{3}-\d{3}$/.test(code)) { notify.warning(t('mindgraphLanding.codeFormatInvalid')); return }
+  if (code.length !== 7) {
+    notify.warning(t('mindgraphLanding.codeIncomplete'))
+    return
+  }
+  if (!/^\d{3}-\d{3}$/.test(code)) {
+    notify.warning(t('mindgraphLanding.codeFormatInvalid'))
+    return
+  }
   isJoining.value = true
   try {
     const response = await authFetch(`/api/workshop/join?code=${code}`, { method: 'POST' })
@@ -296,9 +340,13 @@ async function joinOrgSession(session: { diagram_id: string }) {
 
 function handleAvatarCommand(cmd: string) {
   if (cmd === 'import') triggerImport()
+  else if (cmd === 'language') showLanguageSettingsModal.value = true
+  else if (cmd === 'account') showAccountModal.value = true
+  else if (cmd === 'password') showPasswordModal.value = true
   else if (cmd === 'collab-org') openOrgSessionsDialog()
-  else if (cmd === 'collab-shared') { showSharedCodeDialog.value = true }
-  else if (cmd === 'logout') authStore.logout()
+  else if (cmd === 'collab-shared') {
+    showSharedCodeDialog.value = true
+  } else if (cmd === 'logout') authStore.logout()
 }
 
 // ── Auto-join from QR query ──
@@ -307,11 +355,15 @@ onMounted(() => {
   const joinWorkshopCode = route.query.join_workshop as string | undefined
   if (joinWorkshopCode) {
     const digits = joinWorkshopCode.replace(/\D/g, '').slice(0, 6)
-    digits.split('').forEach((digit, i) => { if (i < 6) joinCode.value[i] = digit })
+    digits.split('').forEach((digit, i) => {
+      if (i < 6) joinCode.value[i] = digit
+    })
     const newQuery = { ...route.query }
     delete newQuery.join_workshop
     router.replace({ query: newQuery })
-    setTimeout(() => { joinWorkshop() }, 500)
+    setTimeout(() => {
+      joinWorkshop()
+    }, 500)
   }
 })
 </script>
@@ -525,7 +577,11 @@ onMounted(() => {
             <input
               v-for="(_digit, index) in joinCode.slice(0, 3)"
               :key="index"
-              :ref="(el) => { codeInputRefs[index] = el as HTMLInputElement | null }"
+              :ref="
+                (el) => {
+                  codeInputRefs[index] = el as HTMLInputElement | null
+                }
+              "
               v-model="joinCode[index]"
               type="text"
               inputmode="numeric"
@@ -539,7 +595,11 @@ onMounted(() => {
             <input
               v-for="(_digit, index) in joinCode.slice(3, 6)"
               :key="index + 3"
-              :ref="(el) => { codeInputRefs[index + 3] = el as HTMLInputElement | null }"
+              :ref="
+                (el) => {
+                  codeInputRefs[index + 3] = el as HTMLInputElement | null
+                }
+              "
               v-model="joinCode[index + 3]"
               type="text"
               inputmode="numeric"
@@ -565,6 +625,13 @@ onMounted(() => {
         </div>
       </div>
     </ElDialog>
+
+    <LanguageSettingsModal v-model="showLanguageSettingsModal" />
+    <AccountInfoModal
+      v-model:visible="showAccountModal"
+      @success="authStore.checkAuth()"
+    />
+    <ChangePasswordModal v-model:visible="showPasswordModal" />
   </div>
 </template>
 
@@ -650,18 +717,32 @@ onMounted(() => {
   --rainbow-angle: 0deg;
   background: conic-gradient(
     from var(--rainbow-angle) at 50% 50%,
-    #e7e5e4 0deg, #d6d3d1 45deg, #a8a29e 90deg,
-    #667eea 135deg, #764ba2 180deg,
-    #667eea 225deg, #78716c 270deg, #d6d3d1 315deg, #e7e5e4 360deg
+    #e7e5e4 0deg,
+    #d6d3d1 45deg,
+    #a8a29e 90deg,
+    #667eea 135deg,
+    #764ba2 180deg,
+    #667eea 225deg,
+    #78716c 270deg,
+    #d6d3d1 315deg,
+    #e7e5e4 360deg
   );
-  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
+  -webkit-mask:
+    linear-gradient(#fff 0 0) content-box,
+    linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
   animation: intl-rainbow 2.5s linear infinite;
 }
 
-@keyframes intl-rainbow { to { --rainbow-angle: 360deg; } }
+@keyframes intl-rainbow {
+  to {
+    --rainbow-angle: 360deg;
+  }
+}
 
 .intl-logo-inner {
   position: relative;
@@ -677,7 +758,9 @@ onMounted(() => {
   border-radius: 16px;
 }
 
-.intl-logo :deep(img) { object-fit: cover; }
+.intl-logo :deep(img) {
+  object-fit: cover;
+}
 
 .intl-title {
   font-size: 48px;
@@ -718,7 +801,9 @@ onMounted(() => {
 }
 
 .intl-prompt-generating {
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.4), 0 8px 30px rgba(0, 0, 0, 0.12);
+  box-shadow:
+    0 0 0 3px rgba(102, 126, 234, 0.4),
+    0 8px 30px rgba(0, 0, 0, 0.12);
 }
 
 .intl-prompt-input {
@@ -753,15 +838,40 @@ onMounted(() => {
   transition: opacity 0.2s;
 }
 
-.intl-prompt-send:hover:not(:disabled) { opacity: 0.85; }
-.intl-prompt-send:disabled { opacity: 0.4; cursor: not-allowed; }
+.intl-prompt-send:hover:not(:disabled) {
+  opacity: 0.85;
+}
+.intl-prompt-send:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
 
-/* ── Gallery ── */
+/* ── Gallery — same grey as /auth international (AuthLayout .auth-layout--minimal-intl) ── */
 
 .intl-gallery {
+  width: calc(100% + 40px);
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-top: 0;
+  padding: 32px 30px 48px;
+  box-sizing: border-box;
+  background-color: rgb(249 250 251);
+  color-scheme: light;
+}
+
+.intl-gallery .intl-section-title {
   max-width: 1400px;
-  margin: 0 auto;
-  padding: 0 10px;
+  margin-left: auto;
+  margin-right: auto;
+  margin-bottom: 24px;
+  padding-left: 10px;
+  padding-right: 10px;
+}
+
+.intl-gallery .intl-grid {
+  max-width: 1400px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 .intl-section-title {
@@ -798,7 +908,9 @@ onMounted(() => {
   border-color: #667eea;
 }
 
-.intl-card:active { transform: translateY(-4px); }
+.intl-card:active {
+  transform: translateY(-4px);
+}
 
 .intl-card-preview {
   width: 100%;
@@ -847,18 +959,40 @@ onMounted(() => {
   animation: intlNodePulse 2s ease-in-out infinite;
 }
 
-.intl-card:hover :deep(.anim-node:nth-child(1 of .anim-node)) { animation-delay: 0s; }
-.intl-card:hover :deep(.anim-node:nth-child(2 of .anim-node)) { animation-delay: 0.2s; }
-.intl-card:hover :deep(.anim-node:nth-child(3 of .anim-node)) { animation-delay: 0.3s; }
-.intl-card:hover :deep(.anim-node:nth-child(4 of .anim-node)) { animation-delay: 0.4s; }
-.intl-card:hover :deep(.anim-node:nth-child(5 of .anim-node)) { animation-delay: 0.5s; }
-.intl-card:hover :deep(.anim-node:nth-child(6 of .anim-node)) { animation-delay: 0.6s; }
-.intl-card:hover :deep(.anim-node:nth-child(7 of .anim-node)) { animation-delay: 0.7s; }
-.intl-card:hover :deep(.anim-node:nth-child(8 of .anim-node)) { animation-delay: 0.8s; }
+.intl-card:hover :deep(.anim-node:nth-child(1 of .anim-node)) {
+  animation-delay: 0s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(2 of .anim-node)) {
+  animation-delay: 0.2s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(3 of .anim-node)) {
+  animation-delay: 0.3s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(4 of .anim-node)) {
+  animation-delay: 0.4s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(5 of .anim-node)) {
+  animation-delay: 0.5s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(6 of .anim-node)) {
+  animation-delay: 0.6s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(7 of .anim-node)) {
+  animation-delay: 0.7s;
+}
+.intl-card:hover :deep(.anim-node:nth-child(8 of .anim-node)) {
+  animation-delay: 0.8s;
+}
 
 @keyframes intlNodePulse {
-  0%, 20%, 100% { transform: scale(1); }
-  10% { transform: scale(1.3); }
+  0%,
+  20%,
+  100% {
+    transform: scale(1);
+  }
+  10% {
+    transform: scale(1.3);
+  }
 }
 
 /* ── Code input boxes ── */
@@ -885,17 +1019,46 @@ onMounted(() => {
 /* ── Mobile ── */
 
 @media (max-width: 768px) {
-  .intl-hero { padding-top: 64px; gap: 16px; }
-  .intl-title { font-size: 28px; }
-  .intl-subtitle { font-size: 13px; }
-  .intl-logo-wrapper { width: 72px; height: 72px; }
-  .intl-logo-inner { width: 64px; height: 64px; }
-  .intl-grid { grid-template-columns: repeat(2, 1fr); gap: 16px; padding: 0 8px; }
-  .intl-card { padding: 16px 12px; }
-  .intl-card-preview { height: 100px; margin-bottom: 12px; }
-  .intl-card-title { font-size: 16px; margin-bottom: 4px; }
-  .intl-card-desc { font-size: 12px; }
-  .intl-section-title { font-size: 20px; }
+  .intl-hero {
+    padding-top: 64px;
+    gap: 16px;
+  }
+  .intl-title {
+    font-size: 28px;
+  }
+  .intl-subtitle {
+    font-size: 13px;
+  }
+  .intl-logo-wrapper {
+    width: 72px;
+    height: 72px;
+  }
+  .intl-logo-inner {
+    width: 64px;
+    height: 64px;
+  }
+  .intl-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 16px;
+    padding: 0 8px;
+  }
+  .intl-card {
+    padding: 16px 12px;
+  }
+  .intl-card-preview {
+    height: 100px;
+    margin-bottom: 12px;
+  }
+  .intl-card-title {
+    font-size: 16px;
+    margin-bottom: 4px;
+  }
+  .intl-card-desc {
+    font-size: 12px;
+  }
+  .intl-section-title {
+    font-size: 20px;
+  }
 }
 
 /* ── Dark mode ── */

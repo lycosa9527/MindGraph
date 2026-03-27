@@ -10,6 +10,8 @@ import { Hash, MessageSquare, MoreVertical } from 'lucide-vue-next'
 
 import ChannelActionsPopover from '@/components/workshop-chat/ChannelActionsPopover.vue'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { LocaleCode } from '@/i18n/locales'
+import { intlLocaleForUiCode } from '@/i18n/locales'
 import { type ChatChannel, useWorkshopChatStore } from '@/stores/workshopChat'
 import { formatDeadlineRelative, lessonStudyDeadlineBadge } from '@/utils/lessonStudyDeadline'
 
@@ -20,7 +22,7 @@ const router = useRouter()
 const streamMenuVisible = ref(false)
 const activeLessonPopoverId = ref<number | null>(null)
 
-const intlLocale = computed(() => (currentLanguage.value === 'zh' ? 'zh-CN' : 'en-US'))
+const intlLocale = computed(() => intlLocaleForUiCode(currentLanguage.value as LocaleCode))
 
 const group = computed((): ChatChannel | null => {
   const id = store.teachingGroupLandingId

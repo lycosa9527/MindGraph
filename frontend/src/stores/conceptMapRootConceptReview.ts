@@ -5,10 +5,10 @@ import { computed, ref, watch } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { useNotifications } from '@/composables/core/useNotifications'
 import type { FocusModel } from '@/composables/editor/conceptMapFocusQuestionApi'
 import { streamRootConceptSuggestions } from '@/composables/editor/conceptMapRootConceptApi'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
-import { useNotifications } from '@/composables/core/useNotifications'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'

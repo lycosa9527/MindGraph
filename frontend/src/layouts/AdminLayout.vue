@@ -38,7 +38,7 @@ function goToHome() {
 
 async function handleLogout() {
   await authStore.logout()
-  router.push('/login')
+  router.push('/auth')
 }
 
 function toggleSidebar() {

@@ -6,6 +6,8 @@ import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar, ElTooltip } 
 import { Close, Delete, DocumentCopy, Menu, Plus } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables'
+import type { LocaleCode } from '@/i18n/locales'
+import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { MindMateConversation } from '@/stores'
 
 const props = withDefaults(
@@ -55,8 +57,7 @@ function formatConversationDate(timestamp: number): string {
   if (diffDays < 7) {
     return t('common.date.daysAgo', { n: diffDays })
   }
-  const lang = currentLanguage.value
-  const localeTag = lang === 'zh' ? 'zh-CN' : lang === 'az' ? 'az-AZ' : 'en-US'
+  const localeTag = intlLocaleForUiCode(currentLanguage.value as LocaleCode)
   return date.toLocaleDateString(localeTag, {
     month: 'short',
     day: 'numeric',

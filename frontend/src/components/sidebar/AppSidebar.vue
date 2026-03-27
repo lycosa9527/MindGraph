@@ -55,9 +55,7 @@ const {
         circle
         class="toggle-btn"
         :title="
-          isCollapsed
-            ? sidebar.t('sidebar.expandSidebar')
-            : sidebar.t('sidebar.collapseSidebar')
+          isCollapsed ? sidebar.t('sidebar.expandSidebar') : sidebar.t('sidebar.collapseSidebar')
         "
         @click="sidebar.toggleSidebar"
       >

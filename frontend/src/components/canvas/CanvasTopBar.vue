@@ -65,6 +65,8 @@ import type { DiagramType } from '@/types'
 
 const notify = useNotifications()
 
+const showCanvasCollabButton = false
+
 const props = defineProps<{
   autoSavedStatus?: string | null
   slotFullAndNewDiagram?: boolean
@@ -573,6 +575,7 @@ async function handleReset() {
     <!-- Right section: Online collaboration + participants + teaching design + export -->
     <div class="flex items-center gap-4 shrink-0 z-10">
       <ElTooltip
+        v-if="showCanvasCollabButton"
         :content="t('canvas.topBar.collabTooltip')"
         placement="bottom"
       >

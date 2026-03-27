@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.60.0",
+  "version": "5.62.0",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
@@ -17,6 +17,8 @@
     "check": "vue-tsc --noEmit && npm run lint && npm run format:check",
     "check:fix": "npm run fix && npm run check",
     "i18n:check-keys": "npx tsx scripts/check-i18n-keys.ts",
+    "i18n:materialize-from-en": "npx tsx scripts/materialize-locale-bundles-from-en.ts",
+    "i18n:build-zhtw": "npx tsx scripts/build-zhtw-from-zh.ts",
     "i18n:check-prompts": "cd .. && python scripts/check_prompt_output_languages_sync.py",
     "i18n:check": "npm run i18n:check-keys && npm run i18n:check-prompts",
     "fix": "npm run lint:fix && npm run format"
@@ -88,6 +90,7 @@
     "eslint-plugin-prettier": "^5.2.2",
     "eslint-plugin-vue": "^10.6.2",
     "globals": "^17.0.0",
+    "opencc-js": "^1.0.5",
     "prettier": "^3.4.2",
     "tailwindcss": "^4.2.2",
     "tsx": "^4.21.0",

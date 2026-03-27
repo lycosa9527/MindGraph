@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.62.0] - 2026-03-28
+
+### Added
+- **Tier-2 UI locales**: Materialized `common` and `canvas` bundles for 50+ additional languages; `supportedUiLocales.ts` registry; Traditional Chinese (`zh-tw`) generated from Simplified Chinese via `build-zhtw-from-zh.ts`.
+- **i18n / canvas pipeline**: Scripts for canvas key extraction and English JSON export, locale bundle emission, tier-2 build orchestration, and `translate_canvas_tier2.py`; flat JSON assets (e.g. `canvas-*-flat.json`) to support translation workflows.
+- **Auth entry pages**: `AuthPage.vue` and `RootHome.vue` for a unified auth and home entry path alongside modal-based login.
+
+### Changed
+- **Auth & routing**: Removed standalone `LoginPage.vue`; routing uses `AuthPage`, `AuthLayout`, and updated guards in `router/index.ts` and `pages/index.ts`; `useLoginModal`, `LoginModal`, `DemoLoginPage`, and mobile account flows aligned.
+- **Backend**: `models/requests/requests_auth.py` and `utils/ui_languages.py` updated for UI language lists and preference validation consistent with the expanded frontend locales.
+- **i18n integration**: `locales.ts`, `i18n/index.ts`, `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts`; widespread `$t` key and Element Plus API updates across canvas, diagram, admin, MindMate, knowledge space, and settings components.
+- **Tooling**: ESLint config and frontend dependencies refreshed (`package.json` / lockfile).
+
 ## [5.61.0] - 2026-03-27
 
 ### Added

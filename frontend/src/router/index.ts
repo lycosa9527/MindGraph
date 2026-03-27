@@ -14,6 +14,13 @@ function pageTitle(segment: string): { titleKey: string } {
   return { titleKey: `meta.pageTitle.${segment}` }
 }
 
+/**
+ * Route auth (see `beforeEach`):
+ * - `requiresAuth`: guests are sent to `/auth?redirect=…`; expired sessions use the login modal.
+ * - `guestOnly`: `/auth`, `/demo` — signed-in users are sent to `Main` (home).
+ * - Public main-layout: `/mindmate`, `/template`, `/course`, `/askonce`, `/debateverse`, `/library`, …
+ */
+
 const routes: RouteRecordRaw[] = [
   // ── Mobile routes (always require auth) ───────────────────────────
   {
@@ -62,7 +69,8 @@ const routes: RouteRecordRaw[] = [
   {
     path: '/',
     name: 'Main',
-    redirect: '/mindmate',
+    component: () => import('@/pages/RootHome.vue'),
+    meta: { layout: 'default', ...pageTitle('default') },
   },
   {
     path: '/mindmate',
@@ -74,7 +82,7 @@ const routes: RouteRecordRaw[] = [
     path: '/mindgraph',
     name: 'MindGraph',
     component: () => import('@/pages/MindGraphPage.vue'),
-    meta: { layout: 'main', ...pageTitle('mindgraph') },
+    meta: { requiresAuth: true, layout: 'main', ...pageTitle('mindgraph') },
   },
   {
     path: '/canvas',
@@ -90,15 +98,18 @@ const routes: RouteRecordRaw[] = [
   },
   {
     path: '/login',
-    name: 'Login',
-    component: () => import('@/pages/LoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true, ...pageTitle('login') },
+    redirect: (to) => ({ path: '/auth', query: to.query, hash: to.hash }),
   },
   {
     path: '/auth',
     name: 'Auth',
-    component: () => import('@/pages/LoginPage.vue'),
-    meta: { layout: 'auth', guestOnly: true, ...pageTitle('auth') },
+    component: () => import('@/pages/AuthPage.vue'),
+    meta: {
+      layout: 'auth',
+      guestOnly: true,
+      authLayoutMinimal: true,
+      ...pageTitle('auth'),
+    },
   },
   {
     path: '/demo',
@@ -267,7 +278,23 @@ const router = createRouter({
 router.beforeEach(async (to, _from, next) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
+  const uiStore = useUIStore()
   const { isMobile } = useMobileDetect()
+
+  // Landing `/`: guests → auth; signed-in → mobile home or CN MindMate / international MindGraph
+  if (to.name === 'Main') {
+    const isAuthenticated = await authStore.checkAuth()
+    if (!isAuthenticated) {
+      return next({ path: '/auth', query: to.query as Record<string, string> })
+    }
+    if (isMobile.value) {
+      return next({ path: '/m', query: to.query as Record<string, string> })
+    }
+    if (uiStore.uiVersion === 'international') {
+      return next({ name: 'MindGraph' })
+    }
+    return next({ name: 'MindMate' })
+  }
 
   // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
   const isMobileRoute = to.path === '/m' || to.path.startsWith('/m/')
@@ -317,24 +344,15 @@ router.beforeEach(async (to, _from, next) => {
   // Check authentication status - only for protected routes
   // checkAuth() is smart: it uses cached user if available, only makes API call if needed
   if (to.meta.requiresAuth) {
-    // Check if user was previously authenticated (before checkAuth clears it)
     const hadUserBeforeCheck = !!authStore.user || !!sessionStorage.getItem('auth_user')
 
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {
-      // If user existed before checkAuth but checkAuth failed, session expired
-      if (hadUserBeforeCheck && to.name !== 'Login') {
-        // Session expired - show modal overlay and prevent navigation
-        // Stay on current page (from) instead of navigating to protected route
-        authStore.handleTokenExpired(undefined, undefined) // undefined = stay on current page
-        // Prevent navigation - user must login first
+      if (hadUserBeforeCheck && to.name !== 'Auth') {
+        authStore.handleTokenExpired(undefined, undefined)
         return next(false)
       }
-
-      // User was never authenticated - show login modal with redirect path
-      authStore.handleTokenExpired(undefined, to.fullPath)
-      // Prevent navigation - user must login first
-      return next(false)
+      return next({ path: '/auth', query: { redirect: to.fullPath } })
     }
   }
 
@@ -413,12 +431,14 @@ router.beforeEach(async (to, _from, next) => {
   if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
     return next({ name: 'MindMate' })
   }
-  // Redirect authenticated users away from guest-only pages
-  if (to.meta.guestOnly && authStore.isAuthenticated) {
-    return next({ name: 'MindMate' })
+  // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then send signed-in users home
+  if (to.meta.guestOnly) {
+    const isAuthenticated = await authStore.checkAuth()
+    if (isAuthenticated) {
+      return next({ name: 'Main' })
+    }
   }
 
-  const uiStore = useUIStore()
   if (uiStore.uiVersion === 'international' && to.name === 'MindMate') {
     return next({ name: 'MindGraph' })
   }

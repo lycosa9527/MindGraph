@@ -4,7 +4,7 @@
 import { computed, onBeforeUnmount, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
-import { useAuthStore } from '@/stores'
+import { useAuthStore, useUIStore } from '@/stores'
 
 export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-password'
 
@@ -15,6 +15,7 @@ type LoginModalEmit = {
 
 export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit) {
   const authStore = useAuthStore()
+  const uiStore = useUIStore()
   const { t } = useLanguage()
   const notify = useNotifications()
 
@@ -147,6 +148,9 @@ export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit)
     () => props.visible,
     (newValue) => {
       if (newValue) {
+        if (!authStore.isAuthenticated) {
+          uiStore.syncGuestLocaleFromBrowser()
+        }
         void refreshCaptcha()
         if (authStore.showSessionExpiredModal) {
           document.body.style.overflow = 'hidden'
@@ -214,8 +218,8 @@ export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit)
           emit('success')
         } else {
           setTimeout(() => {
-            closeModal()
             emit('success')
+            closeModal()
           }, 1500)
         }
       } else {
@@ -390,8 +394,8 @@ export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit)
           emit('success')
         } else {
           setTimeout(() => {
-            closeModal()
             emit('success')
+            closeModal()
           }, 1500)
         }
       } else {

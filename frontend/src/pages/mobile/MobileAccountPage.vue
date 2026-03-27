@@ -21,7 +21,7 @@ import {
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import { useLanguage } from '@/composables'
-import { PROMPT_LANGUAGE_OPTIONS, SUPPORTED_UI_LOCALES } from '@/i18n/locales'
+import { PROMPT_LANGUAGE_OPTIONS, getLocalesForInterfaceLanguagePicker } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
@@ -55,10 +55,10 @@ const uiLangExpanded = ref(false)
 const promptLangExpanded = ref(false)
 const promptSearchQuery = ref('')
 
-const enabledUiLocales = SUPPORTED_UI_LOCALES.filter((entry) => entry.enabled)
+const enabledUiLocales = computed(() => getLocalesForInterfaceLanguagePicker(uiStore.language))
 
 const currentUiLabel = computed(() => {
-  const match = enabledUiLocales.find((entry) => entry.code === uiStore.language)
+  const match = enabledUiLocales.value.find((entry) => entry.code === uiStore.language)
   return match?.nativeName ?? uiStore.language
 })
 
@@ -122,7 +122,7 @@ function togglePromptLang() {
 
 async function handleLogout() {
   await authStore.logout()
-  router.push('/login')
+  router.push('/auth')
 }
 </script>
 
@@ -271,7 +271,7 @@ async function handleLogout() {
           />
           <div class="flex-1 min-w-0">
             <div class="text-sm font-medium text-gray-900">
-              {{ t('languageSettings.promptLanguage', '生成语言') }}
+              {{ t('settings.language.prompt') }}
             </div>
             <div class="text-xs text-gray-400 mt-0.5">{{ currentPromptLabel }}</div>
           </div>

@@ -1,12 +1,12 @@
 import type { Ref } from 'vue'
 
 import { nodeIdsDiffBetweenDiagrams } from '@/composables/canvasPage/diagramDiff'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useEditorShortcuts } from '@/composables/core/useKeyboard'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
-import { eventBus } from '@/composables/core/useEventBus'
-import { useAuthStore, useDiagramStore } from '@/stores'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
+import { useAuthStore, useDiagramStore } from '@/stores'
 
 type ActiveEditorEntry = { user_id: number }
 type DiagramAutoSaveApi = ReturnType<typeof useDiagramAutoSave>
@@ -157,7 +157,9 @@ export function useCanvasPageEditorShortcuts(options: {
 
     if (clearedCount > 0) {
       diagramStore.pushHistory(
-        isLearningSheet ? t('notification.historyEmptyLearning') : t('notification.historyClearNodes')
+        isLearningSheet
+          ? t('notification.historyEmptyLearning')
+          : t('notification.historyClearNodes')
       )
       notify.success(
         isLearningSheet

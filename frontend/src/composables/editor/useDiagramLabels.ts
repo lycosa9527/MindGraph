@@ -1,40 +1,180 @@
 /**
  * useDiagramLabels - Diagram type to display name mapping
- * Used for placeholder text like "新圆圈图" / "New Circle Map" / Azerbaijani when creating new diagrams
+ * Used for placeholder text like "新圆圈图" / "New Circle Map" / Azerbaijani when creating new diagrams.
+ * zh / zh-tw use Chinese labels; az / fr / af use locale-specific columns; all other UI locales fall back to English (labels.en) until extended.
  */
 import type { LocaleCode } from '@/i18n/locales'
 import type { DiagramType } from '@/types'
 
-const DIAGRAM_TYPE_LABELS: Record<string, { zh: string; en: string; az: string }> = {
-  circle_map: { zh: '圆圈图', en: 'Circle Map', az: 'Dairə xəritəsi' },
-  bubble_map: { zh: '气泡图', en: 'Bubble Map', az: 'Baloncuk xəritəsi' },
-  double_bubble_map: { zh: '双气泡图', en: 'Double Bubble Map', az: 'İki baloncuk xəritəsi' },
-  tree_map: { zh: '树形图', en: 'Tree Map', az: 'Ağac xəritəsi' },
-  brace_map: { zh: '括号图', en: 'Brace Map', az: 'Mötərizə xəritəsi' },
-  flow_map: { zh: '流程图', en: 'Flow Map', az: 'Axın xəritəsi' },
-  multi_flow_map: { zh: '复流程图', en: 'Multi-Flow Map', az: 'Çox axın xəritəsi' },
-  bridge_map: { zh: '桥形图', en: 'Bridge Map', az: 'Körpü xəritəsi' },
-  mindmap: { zh: '思维导图', en: 'Mind Map', az: 'Zehin xəritəsi' },
-  mind_map: { zh: '思维导图', en: 'Mind Map', az: 'Zehin xəritəsi' },
-  concept_map: { zh: '概念图', en: 'Concept Map', az: 'Konsept xəritəsi' },
+const DIAGRAM_TYPE_LABELS: Record<
+  string,
+  { zh: string; en: string; az: string; fr: string; af: string }
+> = {
+  circle_map: {
+    zh: '圆圈图',
+    en: 'Circle Map',
+    az: 'Dairə xəritəsi',
+    fr: 'Carte circulaire',
+    af: 'Sirkelkaart',
+  },
+  bubble_map: {
+    zh: '气泡图',
+    en: 'Bubble Map',
+    az: 'Baloncuk xəritəsi',
+    fr: 'Carte à bulles',
+    af: 'Borrelkaart',
+  },
+  double_bubble_map: {
+    zh: '双气泡图',
+    en: 'Double Bubble Map',
+    az: 'İki baloncuk xəritəsi',
+    fr: 'Double carte à bulles',
+    af: 'Dubbelborrelkaart',
+  },
+  tree_map: {
+    zh: '树形图',
+    en: 'Tree Map',
+    az: 'Ağac xəritəsi',
+    fr: 'Carte arborescente',
+    af: 'Boomkaart',
+  },
+  brace_map: {
+    zh: '括号图',
+    en: 'Brace Map',
+    az: 'Mötərizə xəritəsi',
+    fr: 'Carte en accolades',
+    af: 'Krulhakiekaart',
+  },
+  flow_map: {
+    zh: '流程图',
+    en: 'Flow Map',
+    az: 'Axın xəritəsi',
+    fr: 'Carte de flux',
+    af: 'Vloei-kaart',
+  },
+  multi_flow_map: {
+    zh: '复流程图',
+    en: 'Multi-Flow Map',
+    az: 'Çox axın xəritəsi',
+    fr: 'Carte multi-flux',
+    af: 'Multivloei-kaart',
+  },
+  bridge_map: {
+    zh: '桥形图',
+    en: 'Bridge Map',
+    az: 'Körpü xəritəsi',
+    fr: 'Carte en pont',
+    af: 'Brugkaart',
+  },
+  mindmap: {
+    zh: '思维导图',
+    en: 'Mind Map',
+    az: 'Zehin xəritəsi',
+    fr: 'Carte mentale',
+    af: 'Denkkaart',
+  },
+  mind_map: {
+    zh: '思维导图',
+    en: 'Mind Map',
+    az: 'Zehin xəritəsi',
+    fr: 'Carte mentale',
+    af: 'Denkkaart',
+  },
+  concept_map: {
+    zh: '概念图',
+    en: 'Concept Map',
+    az: 'Konsept xəritəsi',
+    fr: 'Carte conceptuelle',
+    af: 'Konsepkaart',
+  },
 }
 
-function pickLocale(labels: { zh: string; en: string; az: string }, locale: LocaleCode): string {
-  if (locale === 'zh') return labels.zh
+function pickLocale(
+  labels: { zh: string; en: string; az: string; fr: string; af: string },
+  locale: LocaleCode
+): string {
+  if (locale === 'zh' || locale === 'zh-tw') return labels.zh
   if (locale === 'az') return labels.az
+  if (locale === 'fr') return labels.fr
+  if (locale === 'af') return labels.af
   return labels.en
 }
 
+const NEW_EN = 'New Diagram'
+
 const NEW_DIAGRAM_FALLBACK: Record<LocaleCode, string> = {
+  'zh-tw': '新圖示',
   zh: '新图示',
-  en: 'New Diagram',
+  en: NEW_EN,
   az: 'Yeni diaqram',
+  th: NEW_EN,
+  fr: 'Nouveau diagramme',
+  de: NEW_EN,
+  ja: NEW_EN,
+  ko: NEW_EN,
+  pt: NEW_EN,
+  ru: NEW_EN,
+  ar: NEW_EN,
+  nl: NEW_EN,
+  it: NEW_EN,
+  hi: NEW_EN,
+  id: NEW_EN,
+  vi: NEW_EN,
+  tr: NEW_EN,
+  pl: NEW_EN,
+  uk: NEW_EN,
+  ms: NEW_EN,
+  es: NEW_EN,
+  sv: NEW_EN,
+  da: NEW_EN,
+  fi: NEW_EN,
+  no: NEW_EN,
+  cs: NEW_EN,
+  ro: NEW_EN,
+  el: NEW_EN,
+  he: NEW_EN,
+  fa: NEW_EN,
+  sw: NEW_EN,
+  tl: NEW_EN,
+  bn: NEW_EN,
+  ta: NEW_EN,
+  ca: NEW_EN,
+  bg: NEW_EN,
+  hr: NEW_EN,
+  hu: NEW_EN,
+  hy: NEW_EN,
+  am: NEW_EN,
+  ka: NEW_EN,
+  km: NEW_EN,
+  kk: NEW_EN,
+  ky: NEW_EN,
+  lo: NEW_EN,
+  mn: NEW_EN,
+  my: NEW_EN,
+  ne: NEW_EN,
+  si: NEW_EN,
+  sr: NEW_EN,
+  tg: NEW_EN,
+  tk: NEW_EN,
+  ug: NEW_EN,
+  ur: NEW_EN,
+  uz: NEW_EN,
+  af: 'Nuwe diagram',
+  ha: NEW_EN,
+  ig: NEW_EN,
+  so: NEW_EN,
+  ss: NEW_EN,
+  st: NEW_EN,
+  tn: NEW_EN,
+  xh: NEW_EN,
+  yo: NEW_EN,
+  zu: NEW_EN,
 }
 
 /**
  * Get display name for a diagram type (handles both type key and Chinese name)
  * @param typeOrName - Diagram type key (circle_map) or Chinese name (圆圈图)
- * @param locale - UI locale (zh / en / az)
+ * @param locale - UI locale
  */
 export function getDiagramTypeDisplayName(typeOrName: string, locale: LocaleCode): string {
   const labels = DIAGRAM_TYPE_LABELS[typeOrName]
@@ -56,11 +196,17 @@ export function getDefaultDiagramName(
   if (!displayName) {
     return NEW_DIAGRAM_FALLBACK[locale] ?? NEW_DIAGRAM_FALLBACK.en
   }
-  if (locale === 'zh') {
+  if (locale === 'zh' || locale === 'zh-tw') {
     return `新${displayName}`
   }
   if (locale === 'az') {
     return `Yeni ${displayName}`
+  }
+  if (locale === 'fr') {
+    return `Nouveau ${displayName}`
+  }
+  if (locale === 'af') {
+    return `Nuwe ${displayName}`
   }
   return `New ${displayName}`
 }

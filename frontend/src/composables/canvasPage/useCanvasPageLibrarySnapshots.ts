@@ -3,12 +3,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { useSnapshotHistory } from '@/composables/editor/useSnapshotHistory'
-import {
-  type LLMResult,
-  useDiagramStore,
-  useLLMResultsStore,
-  useUIStore,
-} from '@/stores'
+import { type LLMResult, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 

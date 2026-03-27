@@ -19,8 +19,8 @@ import { useQueryClient } from '@tanstack/vue-query'
 
 import { useAuthStore, useMindMateStore } from '@/stores'
 
-import { difyKeys, useAppParameters, useGenerateTitle } from '../queries'
 import { eventBus } from '../core/useEventBus'
+import { difyKeys, useAppParameters, useGenerateTitle } from '../queries'
 
 // ============================================================================
 // Types

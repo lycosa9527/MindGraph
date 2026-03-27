@@ -72,28 +72,130 @@ const canWorkshop = computed(() => {
     authStore.user?.schoolId,
     authStore.user?.id,
     workshopChatPreviewOrgIds.value,
-    entry as Parameters<typeof userCanAccessWorkshopChat>[4],
+    entry as Parameters<typeof userCanAccessWorkshopChat>[4]
   )
 })
 
 const modules = computed<ModuleItem[]>(() => [
-  { key: 'mindmate', labelKey: 'sidebar.mindMate', route: '/mindmate', icon: ChatLineSquare, visible: true },
-  { key: 'mindgraph', labelKey: 'sidebar.mindGraph', route: '/mindgraph', icon: Connection, visible: true },
-  { key: 'knowledge-space', labelKey: 'sidebar.knowledgeSpace', route: '/knowledge-space', icon: Document, visible: isAuthenticated.value && featureKnowledgeSpace.value },
-  { key: 'askonce', labelKey: 'askonce.title', route: '/askonce', icon: MagicStick, visible: featureAskOnce.value },
-  { key: 'debateverse', labelKey: 'sidebar.debateverse', route: '/debateverse', icon: ChatDotRound, visible: featureDebateverse.value },
-  { key: 'school-zone', labelKey: 'sidebar.schoolZone', route: '/school-zone', icon: OfficeBuilding, visible: hasOrg.value && featureSchoolZone.value },
-  { key: 'template', labelKey: 'sidebar.templateResources', route: '/template', icon: Files, visible: featureTemplate.value },
-  { key: 'course', labelKey: 'sidebar.courses', route: '/course', icon: VideoPlay, visible: featureCourse.value },
-  { key: 'community', labelKey: 'sidebar.community', route: '/community', icon: Share, visible: featureCommunity.value },
-  { key: 'library', labelKey: 'sidebar.library', route: '/library', icon: Reading, visible: featureLibrary.value },
-  { key: 'chunk-test', labelKey: 'sidebar.chunkTest', route: '/chunk-test', icon: Tools, visible: isAuthenticated.value && featureRagChunkTest.value },
-  { key: 'workshop-chat', labelKey: 'workshop.title', route: '/workshop-chat', icon: MessageSquare, visible: canWorkshop.value },
-  { key: 'smart-response', labelKey: 'sidebar.smartResponse', route: '/smart-response', icon: Watch, visible: isAdminOrManager.value && featureSmartResponse.value },
-  { key: 'teacher-usage', labelKey: 'sidebar.teacherUsage', route: '/teacher-usage', icon: TrendCharts, visible: isAdmin.value && featureTeacherUsage.value },
-  { key: 'school-dashboard', labelKey: 'admin.schoolDashboard', route: '/school-dashboard', icon: OfficeBuilding, visible: isAdminOrManager.value },
-  { key: 'gewe', labelKey: 'Gewe', route: '/gewe', icon: ChatDotRound, visible: isAdmin.value && featureGewe.value },
-  { key: 'admin', labelKey: 'admin.title', route: '/admin', icon: Settings, visible: isAdmin.value },
+  {
+    key: 'mindmate',
+    labelKey: 'sidebar.mindMate',
+    route: '/mindmate',
+    icon: ChatLineSquare,
+    visible: true,
+  },
+  {
+    key: 'mindgraph',
+    labelKey: 'sidebar.mindGraph',
+    route: '/mindgraph',
+    icon: Connection,
+    visible: true,
+  },
+  {
+    key: 'knowledge-space',
+    labelKey: 'sidebar.knowledgeSpace',
+    route: '/knowledge-space',
+    icon: Document,
+    visible: isAuthenticated.value && featureKnowledgeSpace.value,
+  },
+  {
+    key: 'askonce',
+    labelKey: 'askonce.title',
+    route: '/askonce',
+    icon: MagicStick,
+    visible: featureAskOnce.value,
+  },
+  {
+    key: 'debateverse',
+    labelKey: 'sidebar.debateverse',
+    route: '/debateverse',
+    icon: ChatDotRound,
+    visible: featureDebateverse.value,
+  },
+  {
+    key: 'school-zone',
+    labelKey: 'sidebar.schoolZone',
+    route: '/school-zone',
+    icon: OfficeBuilding,
+    visible: hasOrg.value && featureSchoolZone.value,
+  },
+  {
+    key: 'template',
+    labelKey: 'sidebar.templateResources',
+    route: '/template',
+    icon: Files,
+    visible: featureTemplate.value,
+  },
+  {
+    key: 'course',
+    labelKey: 'sidebar.courses',
+    route: '/course',
+    icon: VideoPlay,
+    visible: featureCourse.value,
+  },
+  {
+    key: 'community',
+    labelKey: 'sidebar.community',
+    route: '/community',
+    icon: Share,
+    visible: featureCommunity.value,
+  },
+  {
+    key: 'library',
+    labelKey: 'sidebar.library',
+    route: '/library',
+    icon: Reading,
+    visible: featureLibrary.value,
+  },
+  {
+    key: 'chunk-test',
+    labelKey: 'sidebar.chunkTest',
+    route: '/chunk-test',
+    icon: Tools,
+    visible: isAuthenticated.value && featureRagChunkTest.value,
+  },
+  {
+    key: 'workshop-chat',
+    labelKey: 'workshop.title',
+    route: '/workshop-chat',
+    icon: MessageSquare,
+    visible: canWorkshop.value,
+  },
+  {
+    key: 'smart-response',
+    labelKey: 'sidebar.smartResponse',
+    route: '/smart-response',
+    icon: Watch,
+    visible: isAdminOrManager.value && featureSmartResponse.value,
+  },
+  {
+    key: 'teacher-usage',
+    labelKey: 'sidebar.teacherUsage',
+    route: '/teacher-usage',
+    icon: TrendCharts,
+    visible: isAdmin.value && featureTeacherUsage.value,
+  },
+  {
+    key: 'school-dashboard',
+    labelKey: 'admin.schoolDashboard',
+    route: '/school-dashboard',
+    icon: OfficeBuilding,
+    visible: isAdminOrManager.value,
+  },
+  {
+    key: 'gewe',
+    labelKey: 'Gewe',
+    route: '/gewe',
+    icon: ChatDotRound,
+    visible: isAdmin.value && featureGewe.value,
+  },
+  {
+    key: 'admin',
+    labelKey: 'admin.title',
+    route: '/admin',
+    icon: Settings,
+    visible: isAdmin.value,
+  },
 ])
 
 const visibleModules = computed(() => modules.value.filter((m) => m.visible))
@@ -151,7 +253,9 @@ function goTo(route: string) {
   background: transparent;
   cursor: pointer;
   color: var(--el-text-color-regular, #57534e);
-  transition: background-color 0.2s, color 0.2s;
+  transition:
+    background-color 0.2s,
+    color 0.2s;
 }
 
 .intl-grid-btn:hover {
@@ -190,7 +294,9 @@ function goTo(route: string) {
   border-radius: 50%;
   background: var(--el-fill-color-lighter, #fafaf9);
   color: var(--el-text-color-regular, #57534e);
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .intl-module-tile:hover .intl-module-icon {

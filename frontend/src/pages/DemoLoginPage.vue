@@ -45,7 +45,7 @@ async function handleDemoLogin() {
 }
 
 function goToLogin() {
-  router.push('/login')
+  router.push('/auth')
 }
 </script>
 

@@ -30,6 +30,16 @@ export default tseslint.config(
     },
   },
 
+  // Node CLI scripts (.mjs)
+  {
+    files: ['scripts/**/*.mjs'],
+    languageOptions: {
+      globals: {
+        ...globals.node,
+      },
+    },
+  },
+
   // TypeScript recommended rules
   ...tseslint.configs.recommended,
 

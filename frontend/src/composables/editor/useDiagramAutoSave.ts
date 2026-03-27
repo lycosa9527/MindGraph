@@ -25,8 +25,8 @@ import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 
-import { useDiagramSpecForSave } from './useDiagramSpecForSave'
 import { useLanguage } from '../core/useLanguage'
+import { useDiagramSpecForSave } from './useDiagramSpecForSave'
 
 type DiagramDataLike = { nodes?: unknown[]; connections?: unknown[] } | null
 

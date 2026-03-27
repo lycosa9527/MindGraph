@@ -8,10 +8,10 @@ import { computed, inject, nextTick, ref, watch } from 'vue'
 
 import { EdgeLabelRenderer, type EdgeProps, getBezierPath } from '@vue-flow/core'
 
-import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
+import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
 import { useDiagramStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import type { DiagramType, MindGraphEdgeData } from '@/types'

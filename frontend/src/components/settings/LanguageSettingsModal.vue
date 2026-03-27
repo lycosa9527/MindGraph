@@ -2,14 +2,14 @@
 /**
  * Language & prompt language settings (interface vs LLM prompt language).
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 
 import { ElCheckbox } from 'element-plus'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { PROMPT_LANGUAGE_OPTIONS, SUPPORTED_UI_LOCALES } from '@/i18n/locales'
+import { PROMPT_LANGUAGE_OPTIONS, getLocalesForInterfaceLanguagePicker } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage, UiVersion } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
@@ -28,7 +28,54 @@ const draftVersion = ref<UiVersion>(uiStore.uiVersion)
 const promptLangOptions = PROMPT_LANGUAGE_OPTIONS
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
-const uiOptions = SUPPORTED_UI_LOCALES.filter((x) => x.enabled)
+/**
+ * Interface language uses the same searchable dropdown as prompt language.
+ * Rows come from translated UI locales (Tier 1–2 + primary); labels/search match the prompt registry when codes align.
+ */
+function buildUiLanguageSelectRows(): {
+  code: Language
+  label: string
+  englishName: string
+  search: string[]
+}[] {
+  const enabled = getLocalesForInterfaceLanguagePicker(draftUi.value)
+  const orderIndex = (code: string) => {
+    const i = PROMPT_LANGUAGE_OPTIONS.findIndex((p) => p.code === code)
+    return i === -1 ? 9999 : i
+  }
+  enabled.sort((a, b) => orderIndex(a.code) - orderIndex(b.code) || a.code.localeCompare(b.code))
+  return enabled.map((u) => {
+    const prompt = PROMPT_LANGUAGE_OPTIONS.find((p) => p.code === u.code)
+    if (prompt) {
+      return {
+        code: u.code as Language,
+        label: prompt.label,
+        englishName: prompt.englishName,
+        search: prompt.search,
+      }
+    }
+    return {
+      code: u.code as Language,
+      label: u.nativeName,
+      englishName: u.englishName,
+      search: [] as string[],
+    }
+  })
+}
+
+const uiLanguageOptions = computed(() => buildUiLanguageSelectRows())
+
+const interfaceLanguageOptionCount = computed(() => uiLanguageOptions.value.length)
+const promptLanguageOptionCount = computed(() => promptLangOptions.length)
+
+/**
+ * el-option `label` is shown in the collapsed select and used by filterable matching.
+ * Use a short line only — long concatenations (code + EN + native + search) were
+ * incorrectly shown as the selected value.
+ */
+function languageSelectDisplayLabel(o: { code: string; label: string }): string {
+  return `${o.label} (${o.code})`
+}
 
 /** Same stack as diagram nodes; v-bind in style below. */
 const multiscriptFontFamily = MULTISCRIPT_SANS_STACK
@@ -44,10 +91,17 @@ watch(visible, (v) => {
     draftVersion.value = uiStore.uiVersion
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
+    void ensureFontsForLanguageCode(draftUi.value)
   }
 })
 
 watch(draftPrompt, (code) => {
+  if (visible.value) {
+    void ensureFontsForLanguageCode(code)
+  }
+})
+
+watch(draftUi, (code) => {
   if (visible.value) {
     void ensureFontsForLanguageCode(code)
   }
@@ -97,13 +151,6 @@ async function save(): Promise<void> {
 function onClose(): void {
   visible.value = false
 }
-
-type PromptLangOption = (typeof PROMPT_LANGUAGE_OPTIONS)[number]
-
-/** Concatenated for el-select filterable substring match (code, EN, native, CN keywords). */
-function promptOptionFilterLabel(o: PromptLangOption): string {
-  return [o.code, o.englishName, o.label, ...o.search].join(' ')
-}
 </script>
 
 <template>
@@ -138,29 +185,49 @@ function promptOptionFilterLabel(o: PromptLangOption): string {
         </ElCheckbox>
       </div>
       <div>
-        <div class="text-sm text-stone-600 dark:text-stone-400 mb-2">
-          {{ t('settings.language.interface') }}
-        </div>
-        <el-radio-group
-          v-model="draftUi"
-          class="interface-lang-group flex w-full flex-col gap-1"
+        <div
+          class="text-sm text-stone-600 dark:text-stone-400 mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
         >
-          <el-radio
-            v-for="o in uiOptions"
+          <span>{{ t('settings.language.interface') }}</span>
+          <span class="text-xs text-stone-400 dark:text-stone-500 font-normal">
+            {{ t('settings.language.supportsCount', { n: interfaceLanguageOptionCount }) }}
+          </span>
+        </div>
+        <el-select
+          v-model="draftUi"
+          class="interface-lang-select prompt-lang-select w-full"
+          filterable
+          :placeholder="t('settings.language.promptSelectPlaceholder')"
+          popper-class="prompt-lang-select-popper"
+        >
+          <el-option
+            v-for="o in uiLanguageOptions"
             :key="o.code"
+            :label="languageSelectDisplayLabel(o)"
             :value="o.code"
-            class="interface-lang-radio"
           >
-            <span class="interface-lang-row">
-              <span class="interface-lang-native">{{ o.nativeName }}</span>
-              <span class="interface-lang-en">{{ o.englishName }}</span>
+            <span
+              class="prompt-option-row"
+              dir="auto"
+              :lang="o.code"
+            >
+              <span class="prompt-option-code">{{ o.code }}</span>
+              <span class="prompt-option-text">
+                <span class="prompt-option-name">{{ o.label }}</span>
+                <span class="prompt-option-en">{{ o.englishName }}</span>
+              </span>
             </span>
-          </el-radio>
-        </el-radio-group>
+          </el-option>
+        </el-select>
       </div>
       <div>
-        <div class="text-sm text-stone-600 dark:text-stone-400 mb-2">
-          {{ t('settings.language.prompt') }}
+        <div
+          class="text-sm text-stone-600 dark:text-stone-400 mb-2 flex flex-wrap items-baseline gap-x-2 gap-y-0.5"
+        >
+          <span>{{ t('settings.language.prompt') }}</span>
+          <span class="text-xs text-stone-400 dark:text-stone-500 font-normal">
+            {{ t('settings.language.supportsCount', { n: promptLanguageOptionCount }) }}
+          </span>
         </div>
         <el-select
           v-model="draftPrompt"
@@ -173,7 +240,7 @@ function promptOptionFilterLabel(o: PromptLangOption): string {
           <el-option
             v-for="o in promptLangOptions"
             :key="o.code"
-            :label="promptOptionFilterLabel(o)"
+            :label="languageSelectDisplayLabel(o)"
             :value="o.code"
           >
             <span
@@ -206,43 +273,6 @@ function promptOptionFilterLabel(o: PromptLangOption): string {
 </template>
 
 <style scoped>
-/* Full-width radios; grid aligns native vs English regardless of script length */
-.interface-lang-group :deep(.el-radio) {
-  display: flex;
-  align-items: center;
-  width: 100%;
-  height: auto;
-  min-height: 2.25rem;
-  margin-right: 0;
-  margin-bottom: 0;
-  padding: 0.25rem 0;
-}
-
-.interface-lang-group :deep(.el-radio__label) {
-  flex: 1;
-  min-width: 0;
-  line-height: 1.35;
-}
-
-.interface-lang-row {
-  display: grid;
-  grid-template-columns: 9rem minmax(0, 1fr);
-  column-gap: 1rem;
-  align-items: center;
-  width: 100%;
-  text-align: start;
-}
-
-.interface-lang-native {
-  font-weight: 500;
-  color: var(--el-text-color-primary);
-}
-
-.interface-lang-en {
-  font-size: 0.875rem;
-  color: var(--el-text-color-secondary);
-}
-
 .prompt-lang-select :deep(.el-select__selected-item) {
   font-family: v-bind('multiscriptFontFamily');
 }

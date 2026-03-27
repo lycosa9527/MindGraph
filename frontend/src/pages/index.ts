@@ -2,7 +2,6 @@
  * Pages Index
  */
 
-export { default as LoginPage } from './LoginPage.vue'
 export { default as DemoLoginPage } from './DemoLoginPage.vue'
 export { default as AdminPage } from './AdminPage.vue'
 export { default as PublicDashboardPage } from './PublicDashboardPage.vue'

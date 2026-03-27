@@ -10,8 +10,8 @@ import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 
 // Helper function to get timestamp for logging

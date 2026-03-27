@@ -9,15 +9,15 @@
  */
 import { nextTick, onMounted, onUnmounted } from 'vue'
 
+import { eventBus } from '@/composables/core/useEventBus'
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import {
   BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_Y,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/core/useEventBus'
-import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
 import { useDiagramStore } from '@/stores'
 import type { DiagramNode } from '@/types'
 

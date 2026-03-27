@@ -128,6 +128,16 @@ function resetFilters() {
   loadUsers()
 }
 
+function goToPreviousUserPage() {
+  pagination.value.page -= 1
+  loadUsers()
+}
+
+function goToNextUserPage() {
+  pagination.value.page += 1
+  loadUsers()
+}
+
 const pageInfo = computed(() => {
   const p = pagination.value
   const start = (p.page - 1) * p.page_size + 1
@@ -287,14 +297,14 @@ watch([orgFilter], () => {
             <el-button
               size="small"
               :disabled="pagination.page <= 1"
-              @click="pagination.page -= 1; loadUsers()"
+              @click="goToPreviousUserPage"
             >
               {{ t('admin.previous') }}
             </el-button>
             <el-button
               size="small"
               :disabled="pagination.page >= pagination.total_pages"
-              @click="pagination.page += 1; loadUsers()"
+              @click="goToNextUserPage"
             >
               {{ t('admin.next') }}
             </el-button>

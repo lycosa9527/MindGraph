@@ -707,16 +707,18 @@ class LanguagePreferencesUpdate(BaseModel):
     @field_validator('ui_language')
     @classmethod
     def validate_ui_language(cls, value):
+        """Allow only codes in ``utils.ui_languages.UI_LANGUAGE_CODES``."""
         if value is None:
             return value
         stripped = value.strip().lower()
         if stripped not in UI_LANGUAGE_CODES:
-            raise ValueError("ui_language must be one of: zh, en, az")
+            raise ValueError("ui_language must be a supported UI locale code")
         return stripped
 
     @field_validator('prompt_language')
     @classmethod
     def validate_prompt_language(cls, value):
+        """Allow only registered prompt/generation language codes."""
         if value is None:
             return value
         stripped = value.strip().lower()
@@ -727,6 +729,7 @@ class LanguagePreferencesUpdate(BaseModel):
     @field_validator('ui_version')
     @classmethod
     def validate_ui_version(cls, value):
+        """Allow ``chinese`` or ``international``."""
         if value is None:
             return value
         stripped = value.strip().lower()

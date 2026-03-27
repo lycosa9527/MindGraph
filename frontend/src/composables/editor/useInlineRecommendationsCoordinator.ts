@@ -16,9 +16,9 @@
  */
 import { onUnmounted, watch } from 'vue'
 
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
-import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useAutoComplete } from '@/composables/editor/useAutoComplete'
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 
 const TOPIC_NODE_IDS = new Set([

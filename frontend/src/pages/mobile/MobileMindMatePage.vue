@@ -15,8 +15,8 @@ import ConversationHistory from '@/components/panels/mindmate/ConversationHistor
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import MindmateMessages from '@/components/panels/mindmate/MindmateMessages.vue'
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
-import { useConversations, usePinnedConversations } from '@/composables/queries'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
+import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore, useVoiceStore } from '@/stores'
 
 const router = useRouter()

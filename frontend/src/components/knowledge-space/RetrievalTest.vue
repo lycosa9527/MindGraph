@@ -21,8 +21,8 @@ import {
 import { Search } from '@element-plus/icons-vue'
 
 import { notify } from '@/composables/core/notifications'
-import { type RetrievalTestResponse, useRetrievalTest } from '@/composables/queries'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { type RetrievalTestResponse, useRetrievalTest } from '@/composables/queries'
 
 defineProps<{
   visible: boolean

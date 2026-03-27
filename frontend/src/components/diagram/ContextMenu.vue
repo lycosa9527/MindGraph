@@ -6,13 +6,13 @@
 import { computed, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   BRANCH_NODE_HEIGHT,
   DEFAULT_CENTER_Y,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { DiagramNode, MindGraphNode } from '@/types'
 

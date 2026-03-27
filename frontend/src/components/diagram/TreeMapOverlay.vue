@@ -7,8 +7,8 @@ import { computed } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useLanguage } from '@/composables/core/useLanguage'
+import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()

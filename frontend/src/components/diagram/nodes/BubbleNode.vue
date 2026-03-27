@@ -7,8 +7,8 @@
 import { computed, ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useTheme } from '@/composables/core/useTheme'
+import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'

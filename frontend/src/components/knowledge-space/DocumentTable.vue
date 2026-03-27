@@ -20,6 +20,8 @@ import {
 import { Close, Delete, Document, View } from '@element-plus/icons-vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { LocaleCode } from '@/i18n/locales'
+import { intlLocaleForUiCode } from '@/i18n/locales'
 import type { KnowledgeDocument } from '@/stores/knowledgeSpace'
 
 const props = defineProps<{
@@ -38,9 +40,7 @@ const emit = defineEmits<{
 
 const { t, currentLanguage } = useLanguage()
 
-const dateLocaleTag = computed(() =>
-  currentLanguage.value === 'zh' ? 'zh-CN' : currentLanguage.value === 'az' ? 'az-AZ' : 'en-US'
-)
+const dateLocaleTag = computed(() => intlLocaleForUiCode(currentLanguage.value as LocaleCode))
 
 const sortedDocuments = computed(() => {
   return [...props.documents].sort((a, b) => {

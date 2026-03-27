@@ -18,6 +18,7 @@ import { useQueryClient } from '@tanstack/vue-query'
 import { notify } from '@/composables/core/notifications'
 import { difyKeys } from '@/composables/queries/difyKeys'
 import { i18n } from '@/i18n'
+import { isPromptOutputLanguageCode, isUiLocale } from '@/i18n/locales'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
 import type { Language, PromptLanguage } from '@/stores/ui'
@@ -160,11 +161,13 @@ export const useAuthStore = defineStore('auth', () => {
   function applyUserLanguageFromProfile(target: User): void {
     const uiStore = useUIStore()
     uiStore.applyUiVersionFromServerProfile(target.uiVersion ?? null)
-    if (target.uiLanguage != null || target.promptLanguage != null) {
+    const hasServerUi = isUiLocale(target.uiLanguage ?? null)
+    const hasServerPrompt = isPromptOutputLanguageCode(target.promptLanguage ?? null)
+    if (hasServerUi || hasServerPrompt) {
       languagePrefsSeededForUserId.value = null
       uiStore.applyLanguageFromServerProfile(
-        target.uiLanguage ?? null,
-        target.promptLanguage ?? null
+        hasServerUi ? (target.uiLanguage ?? null) : null,
+        hasServerPrompt ? (target.promptLanguage ?? null) : null
       )
       return
     }
@@ -177,6 +180,7 @@ export const useAuthStore = defineStore('auth', () => {
     languagePrefsSeedInFlight = true
     void (async () => {
       try {
+        uiStore.syncGuestLocaleFromBrowser()
         const ok = await saveLanguagePreferences(uiStore.language, uiStore.promptLanguage)
         if (ok) {
           languagePrefsSeededForUserId.value = target.id
@@ -208,7 +212,7 @@ export const useAuthStore = defineStore('auth', () => {
   async function saveLanguagePreferences(
     ui: Language,
     prompt: PromptLanguage,
-    uiVersion?: string,
+    uiVersion?: string
   ): Promise<boolean> {
     try {
       const payload: Record<string, string> = {
@@ -677,7 +681,7 @@ export const useAuthStore = defineStore('auth', () => {
         } else if (currentMode === 'bayi') {
           return false
         } else {
-          redirectUrl = '/login'
+          redirectUrl = '/auth'
         }
       }
       if (redirectUrl) {

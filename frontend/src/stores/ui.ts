@@ -37,8 +37,7 @@ function isValidUiVersion(value: string | null): value is UiVersion {
 }
 
 function detectDefaultUiVersion(): UiVersion {
-  if (typeof navigator === 'undefined') return 'international'
-  return navigator.language.toLowerCase().startsWith('zh') ? 'chinese' : 'international'
+  return 'international'
 }
 
 function isValidLanguage(value: string | null): value is Language {
@@ -163,6 +162,19 @@ export const useUIStore = defineStore('ui', () => {
     const loc = detectBrowserLocale()
     setLanguage(loc)
     setPromptLanguage(isValidPromptLanguage(loc) ? loc : 'en')
+  }
+
+  /**
+   * Login modal and /auth: while the user is not signed in, align UI and prompt
+   * languages with the browser on every open (guest experience).
+   */
+  function syncGuestLocaleFromBrowser(): void {
+    const loc = detectBrowserLocale()
+    setLanguage(loc)
+    if (!matchPromptToUi.value) {
+      const pr: PromptLanguage = isValidPromptLanguage(loc) ? loc : 'en'
+      setPromptLanguage(pr)
+    }
   }
 
   function initFromStorage(): void {
@@ -292,6 +304,8 @@ export const useUIStore = defineStore('ui', () => {
   function applyUiVersionFromServerProfile(version: string | null | undefined): void {
     if (isValidUiVersion(version ?? null)) {
       setUiVersion(version as UiVersion)
+    } else {
+      setUiVersion('international')
     }
   }
 
@@ -470,6 +484,7 @@ export const useUIStore = defineStore('ui', () => {
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,
+    syncGuestLocaleFromBrowser,
     checkMobile,
     setSidebarCollapsed,
     toggleSidebar,

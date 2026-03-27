@@ -93,7 +93,7 @@ function goToAdmin(): void {
         <template v-else>
           <el-button
             type="primary"
-            @click="router.push('/login')"
+            @click="router.push('/auth')"
           >
             {{ t('auth.login') }}
           </el-button>

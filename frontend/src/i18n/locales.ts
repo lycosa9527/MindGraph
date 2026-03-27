@@ -1,59 +1,70 @@
 /**
- * UI locale registry — single source of truth for supported interface languages.
- * Add a row + message file + types will follow via LocaleCode.
+ * UI locale helpers and prompt-registry integration.
+ * The locale table lives in `supportedUiLocales.ts` (`SUPPORTED_UI_LOCALES`).
+ * When adding a code: edit `supportedUiLocales.ts`, then stub or run `npm run i18n:materialize-from-en`,
+ * `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts` (regenerate `i18n/index.ts` if the script is extended).
  */
 import promptLanguageRegistry from '@data/prompt_language_registry.json'
 
-/** Ordered definitions; `code` values form the LocaleCode union. */
-export const SUPPORTED_UI_LOCALES = [
-  {
-    code: 'zh',
-    nativeName: '中文',
-    englishName: 'Chinese',
-    enabled: true,
-    /** BCP 47 for Intl / Date / toLocaleString */
-    intlLocale: 'zh-CN',
-    /** document.documentElement.lang */
-    htmlLang: 'zh-CN',
-    /** Match navigator.language (lowercased) prefixes; first match in list order wins */
-    browserPrefixes: ['zh'],
-    /** Compact label for toolbar / language toggle */
-    toolbarShort: '中',
-    /** Right-to-left UI; enable when adding ar/he UI locales */
-    rtl: false as boolean,
-  },
-  {
-    code: 'en',
-    nativeName: 'English',
-    englishName: 'English',
-    enabled: true,
-    intlLocale: 'en-US',
-    htmlLang: 'en',
-    browserPrefixes: ['en'],
-    toolbarShort: 'EN',
-    rtl: false as boolean,
-  },
-  {
-    code: 'az',
-    nativeName: 'Azərbaycan',
-    englishName: 'Azerbaijani',
-    enabled: true,
-    intlLocale: 'az-AZ',
-    htmlLang: 'az-AZ',
-    browserPrefixes: ['az'],
-    toolbarShort: 'AZ',
-    rtl: false as boolean,
-  },
-] as const
+import { SUPPORTED_UI_LOCALES } from './supportedUiLocales'
+import type { LocaleCode, UiLocaleEntry } from './supportedUiLocales'
 
-export type UiLocaleEntry = (typeof SUPPORTED_UI_LOCALES)[number]
-
-export type LocaleCode = (typeof SUPPORTED_UI_LOCALES)[number]['code']
+export { SUPPORTED_UI_LOCALES, type LocaleCode, type UiLocaleEntry } from './supportedUiLocales'
 
 /** Enabled UI locales in registry order (for cycling, validation, etc.). */
 export const UI_LOCALE_CODES: LocaleCode[] = SUPPORTED_UI_LOCALES.filter((e) => e.enabled).map(
   (e) => e.code
 )
+
+/**
+ * Locales listed in Settings → Interface language (and mobile account UI picker).
+ * Only locales with real UI strings (non-stub `common.ts` — not 'English copy; translate values as needed').
+ * Other codes may stay `enabled` for bundles and saved preferences but are hidden from the picker.
+ */
+export const INTERFACE_LANGUAGE_PICKER_CODES: readonly LocaleCode[] = [
+  'zh-tw',
+  'zh',
+  'en',
+  'az',
+  'th',
+  'fr',
+  'de',
+  'ja',
+  'ko',
+  'pt',
+  'ru',
+  'ar',
+  'nl',
+  'it',
+  'hi',
+  'id',
+  'vi',
+  'tr',
+  'pl',
+  'uk',
+  'ms',
+  'af',
+] as const
+
+const INTERFACE_LANGUAGE_PICKER_SET = new Set<string>(INTERFACE_LANGUAGE_PICKER_CODES)
+
+export function isInterfaceLanguagePickerLocale(code: string): boolean {
+  return INTERFACE_LANGUAGE_PICKER_SET.has(code)
+}
+
+/**
+ * Enabled registry entries shown in the interface-language dropdown.
+ * Always includes `currentUiCode` when set so an existing saved locale outside the list still displays.
+ */
+export function getLocalesForInterfaceLanguagePicker(
+  currentUiCode?: string | null
+): UiLocaleEntry[] {
+  return SUPPORTED_UI_LOCALES.filter((e) => {
+    if (!e.enabled) return false
+    if (INTERFACE_LANGUAGE_PICKER_SET.has(e.code)) return true
+    return currentUiCode != null && e.code === currentUiCode
+  }) as UiLocaleEntry[]
+}
 
 const UI_LOCALE_SET = new Set<string>(UI_LOCALE_CODES)
 

@@ -2,10 +2,10 @@ import { type ComputedRef, computed, inject } from 'vue'
 
 import { Camera, Layers, LayoutGrid, type LucideIcon, Package } from 'lucide-vue-next'
 
-import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 

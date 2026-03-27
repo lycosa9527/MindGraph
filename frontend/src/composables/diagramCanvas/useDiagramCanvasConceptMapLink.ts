@@ -3,8 +3,8 @@ import { computed, onMounted, onUnmounted, ref } from 'vue'
 
 import { Position, getBezierPath } from '@vue-flow/core'
 
-import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import { eventBus } from '@/composables/core/useEventBus'
+import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 

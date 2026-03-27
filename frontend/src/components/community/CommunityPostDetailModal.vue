@@ -18,6 +18,8 @@ import { Download, Heart, MoreVertical, Trash2, X } from 'lucide-vue-next'
 
 import MindmateInput from '@/components/panels/mindmate/MindmateInput.vue'
 import { useLanguage, useNotifications } from '@/composables'
+import type { LocaleCode } from '@/i18n/locales'
+import { intlLocaleForUiCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import {
@@ -266,10 +268,7 @@ function formatDate(iso: string): string {
   if (diffMins < 60) return t('community.time.minutesAgo', { n: diffMins })
   if (diffHours < 24) return t('community.time.hoursAgo', { n: diffHours })
   if (diffDays < 7) return t('community.time.daysAgo', { n: diffDays })
-  const lang = currentLanguage.value
-  if (lang === 'zh') return d.toLocaleDateString('zh-CN')
-  if (lang === 'az') return d.toLocaleDateString('az-AZ')
-  return d.toLocaleDateString()
+  return d.toLocaleDateString(intlLocaleForUiCode(currentLanguage.value as LocaleCode))
 }
 </script>
 

@@ -14,8 +14,8 @@ import { useRoute } from 'vue-router'
 
 import { storeToRefs } from 'pinia'
 
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { type EventTypes, eventBus } from '@/composables/core/useEventBus'
+import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'

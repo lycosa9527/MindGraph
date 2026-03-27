@@ -16,6 +16,8 @@ import type { EChartsType } from 'echarts/core'
 import { LabelLayout } from 'echarts/features'
 import { CanvasRenderer } from 'echarts/renderers'
 
+import { useLanguage } from '@/composables/core/useLanguage'
+import { useNotifications } from '@/composables/core/useNotifications'
 import {
   GROUPS,
   type GroupStats,
@@ -25,8 +27,6 @@ import {
   type Teacher,
   type UserDetailData,
 } from '@/composables/teacherUsage/teacherUsageTypes'
-import { useLanguage } from '@/composables/core/useLanguage'
-import { useNotifications } from '@/composables/core/useNotifications'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 import { formatUserNumber } from '@/utils/intlDisplay'

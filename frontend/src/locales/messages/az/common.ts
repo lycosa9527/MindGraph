@@ -104,6 +104,7 @@ export default {
   'settings.language.matchPrompt': 'Prompt dilini interfeys dili ilə uyğunlaşdır',
   'settings.language.prompt': 'AI / prompt dili',
   'settings.language.promptSelectPlaceholder': 'Dilləri axtarın…',
+  'settings.language.supportsCount': 'Supports {n} languages',
   'settings.language.title': 'Dil və promptlar',
   'settings.version.title': 'UI Versiyası',
   'settings.version.chinese': 'Çin Versiyası',

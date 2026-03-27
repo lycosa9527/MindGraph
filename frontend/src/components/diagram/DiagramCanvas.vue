@@ -20,6 +20,7 @@ import { MiniMap } from '@vue-flow/minimap'
 
 import { ExportToCommunityModal } from '@/components/canvas'
 import { useBranchMoveDrag, useLanguage } from '@/composables'
+import { useTheme } from '@/composables/core/useTheme'
 import {
   diagramCanvasGridConfig,
   diagramCanvasZoomConfig,
@@ -37,7 +38,6 @@ import {
   CONCEPT_MAP_GENERATING_KEY,
   useConceptMapRelationship,
 } from '@/composables/editor/useConceptMapRelationship'
-import { useTheme } from '@/composables/core/useTheme'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'

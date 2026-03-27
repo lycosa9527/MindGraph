@@ -10,8 +10,8 @@ import { ArrowDownUp, Brush, X } from 'lucide-vue-next'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
-import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { useNodeActions } from '@/composables/editor/useNodeActions'
 import { useDiagramStore, useUIStore } from '@/stores'
 
 import CanvasToolbarAddDelete from './CanvasToolbarAddDelete.vue'

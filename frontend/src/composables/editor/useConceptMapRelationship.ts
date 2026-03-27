@@ -10,9 +10,9 @@
  */
 import { ref } from 'vue'
 
-import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
+import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore } from '@/stores/diagram'
 import { ALL_TOPIC_ROOT_RELATIONSHIP_LABELS } from '@/stores/diagram/diagramDefaultLabels'

@@ -7,8 +7,8 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
-import { useConversations, usePinnedConversations } from '@/composables/queries'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
+import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'
 
 import ShareExportModal from './ShareExportModal.vue'

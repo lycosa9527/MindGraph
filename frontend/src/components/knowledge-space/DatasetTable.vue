@@ -9,8 +9,10 @@ import { ElEmpty, ElIcon, ElSkeleton, ElTable, ElTableColumn } from 'element-plu
 
 import { Document, Link } from '@element-plus/icons-vue'
 
-import type { Benchmark } from '@/composables/queries/useChunkTestQueries'
 import { useLanguage } from '@/composables/core/useLanguage'
+import type { Benchmark } from '@/composables/queries/useChunkTestQueries'
+import type { LocaleCode } from '@/i18n/locales'
+import { intlLocaleForUiCode } from '@/i18n/locales'
 
 const props = defineProps<{
   datasets: Benchmark[]
@@ -23,9 +25,7 @@ const sortedDatasets = computed(() => {
   return [...props.datasets].sort((a, b) => a.name.localeCompare(b.name))
 })
 
-const dateLocaleTag = computed(() =>
-  currentLanguage.value === 'zh' ? 'zh-CN' : currentLanguage.value === 'az' ? 'az-AZ' : 'en-US'
-)
+const dateLocaleTag = computed(() => intlLocaleForUiCode(currentLanguage.value as LocaleCode))
 
 const formatDate = (dateString?: string) => {
   if (!dateString) return '-'

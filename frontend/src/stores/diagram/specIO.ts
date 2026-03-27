@@ -1,9 +1,9 @@
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   DEFAULT_CENTER_X,
   DEFAULT_NODE_WIDTH,
   MULTI_FLOW_MAP_TOPIC_WIDTH,
 } from '@/composables/diagrams/layoutConfig'
-import { eventBus } from '@/composables/core/useEventBus'
 import type { Connection, DiagramNode, DiagramType } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 

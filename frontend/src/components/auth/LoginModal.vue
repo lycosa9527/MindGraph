@@ -20,6 +20,11 @@ import { useLoginModal } from '@/composables/auth/useLoginModal'
 
 const props = defineProps<{
   visible: boolean
+  /**
+   * `/auth`: no full-screen scrim — page background stays fully visible; backdrop dismiss still works.
+   * Default uses a dark scrim (`stone-900/70`) for session-expired and other overlays.
+   */
+  lightBackdrop?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -70,8 +75,9 @@ const {
         :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
         @click="handleBackdropClick"
       >
-        <!-- Backdrop -->
+        <!-- Full-screen scrim (skipped on /auth so the route background shows through) -->
         <div
+          v-if="!lightBackdrop"
           class="absolute inset-0 bg-stone-900/70"
           :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
         />

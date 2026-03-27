@@ -1,5 +1,5 @@
-import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/core/useEventBus'
+import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode, Position } from '@/types'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'

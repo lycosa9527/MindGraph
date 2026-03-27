@@ -1,5 +1,5 @@
-import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/core/useEventBus'
+import { DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode, DiagramType, MindGraphEdgeType } from '@/types'
 
 import type { DiagramEvent, DiagramEventType, EventCallback, MindMapCurveExtents } from './types'

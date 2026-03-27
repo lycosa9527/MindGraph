@@ -128,7 +128,7 @@ onMounted(async () => {
         return
       }
       const nav = typeof navigator !== 'undefined' ? navigator.language.toLowerCase() : ''
-      if (nav.startsWith('en') || nav.startsWith('az')) {
+      if (nav.startsWith('en') || nav.startsWith('az') || nav.startsWith('th')) {
         showBrowserLocaleHint.value = true
       }
     }, 800)

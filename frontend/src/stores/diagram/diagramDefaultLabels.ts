@@ -10,7 +10,7 @@ function conceptT(key: string, lang: LocaleCode): string {
 }
 
 export function defaultUiLocaleGroup(lang: LocaleCode): 'zh' | 'en' {
-  return lang === 'zh' ? 'zh' : 'en'
+  return lang === 'zh' || lang === 'zh-tw' ? 'zh' : 'en'
 }
 
 export function getConceptMapFocusQuestionPrefix(lang: LocaleCode): string {

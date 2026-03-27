@@ -9,9 +9,9 @@ import type { CSSProperties } from 'vue'
 
 import { useVueFlow } from '@vue-flow/core'
 
-import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { eventBus } from '@/composables/core/useEventBus'
 import { translateDimension, useLanguage } from '@/composables/core/useLanguage'
+import { BRANCH_NODE_HEIGHT } from '@/composables/diagrams/layoutConfig'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore, useUIStore } from '@/stores'
 import type { MindGraphNodeProps } from '@/types'

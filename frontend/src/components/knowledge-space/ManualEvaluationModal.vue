@@ -21,12 +21,12 @@ import { Loading } from '@element-plus/icons-vue'
 import { Sparkles } from 'lucide-vue-next'
 
 import { notify } from '@/composables/core/notifications'
+import { useLanguage } from '@/composables/core/useLanguage'
 import {
   type ManualEvaluationResult,
   useChunkTestChunks,
   useManualEvaluation,
 } from '@/composables/queries/useChunkTestQueries'
-import { useLanguage } from '@/composables/core/useLanguage'
 
 interface Props {
   visible: boolean

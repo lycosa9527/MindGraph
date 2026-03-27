@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * First-visit hint when browser is en/az but UI is still default Chinese.
+ * First-visit hint when browser is en/az/th but UI is still default Chinese.
  */
 import { computed, ref, watch } from 'vue'
 
@@ -26,7 +26,13 @@ const targetDisplayName = computed(
 watch(visible, (v) => {
   if (v && typeof navigator !== 'undefined') {
     const nav = navigator.language.toLowerCase()
-    targetLocale.value = nav.startsWith('az') ? 'az' : 'en'
+    if (nav.startsWith('az')) {
+      targetLocale.value = 'az'
+    } else if (nav.startsWith('th')) {
+      targetLocale.value = 'th'
+    } else {
+      targetLocale.value = 'en'
+    }
   }
 })
 

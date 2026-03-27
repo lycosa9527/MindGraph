@@ -23,6 +23,13 @@ const isGuest = computed(() => !authStore.isAuthenticated)
 const isInternational = computed(() => uiStore.uiVersion === 'international')
 const isOnLanding = computed(() => route.path === '/mindgraph')
 const showFloatingGrid = computed(() => isInternational.value && !isOnLanding.value)
+
+/** CN `/mindgraph`: show content clearly for guests; other main routes keep blur + login hint overlay. */
+const shouldBlurGuestMain = computed(() => {
+  if (!isGuest.value) return false
+  if (uiStore.uiVersion === 'chinese' && route.path === '/mindgraph') return false
+  return true
+})
 </script>
 
 <template>
@@ -38,14 +45,14 @@ const showFloatingGrid = computed(() => isInternational.value && !isOnLanding.va
       <IntlModuleGrid />
     </div>
 
-    <!-- Main content (blurred for guests; sidebar stays clear) -->
+    <!-- Main content (blurred for guests except CN MindGraph landing; sidebar stays clear) -->
     <main
       class="main-content relative flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
     >
       <div
         :class="[
           'flex flex-1 flex-col min-h-0 overflow-hidden',
-          isGuest ? 'blur-sm pointer-events-none select-none' : '',
+          shouldBlurGuestMain ? 'blur-sm pointer-events-none select-none' : '',
         ]"
       >
         <div class="main-slot flex-1 min-h-0 flex flex-col overflow-hidden">
@@ -61,7 +68,7 @@ const showFloatingGrid = computed(() => isInternational.value && !isOnLanding.va
       </div>
 
       <div
-        v-if="isGuest"
+        v-if="shouldBlurGuestMain"
         class="absolute inset-0 z-10 flex items-center justify-center bg-gray-50/60 dark:bg-gray-900/60 backdrop-blur-[2px]"
       >
         <div class="text-center px-4 max-w-sm">

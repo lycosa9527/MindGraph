@@ -5,6 +5,7 @@ import { computed, ref, watch } from 'vue'
 
 import { defineStore } from 'pinia'
 
+import { useNotifications } from '@/composables/core/useNotifications'
 import {
   FOCUS_MODELS,
   type FocusModel,
@@ -13,7 +14,6 @@ import {
   validateFocusQuestionParallel,
 } from '@/composables/editor/conceptMapFocusQuestionApi'
 import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
-import { useNotifications } from '@/composables/core/useNotifications'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'

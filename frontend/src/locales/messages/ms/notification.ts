@@ -1,0 +1,47 @@
+/** ms UI — notification (translated from en; review recommended) */
+export default {
+  'notification.cannotClearTopicOrCenter': 'Tidak boleh kosongkan nod topik atau pusat',
+  'notification.cannotResetSelectDiagramType':
+    'Tidak boleh tetapkan semula: pilih jenis gambar rajah dahulu',
+  'notification.canvasClearNodes': '{count} nod dikosongkan',
+  'notification.canvasClearNodesLearning': '{count} nod dikosongkan, ditambah ke jawapan',
+  'notification.canvasSomeoneEditingNode': 'Orang lain sedang mengedit nod ini',
+  'notification.collabDeleteBlocked':
+    'Tidak boleh padam semasa pengguna lain mengedit nod yang dipilih',
+  'notification.collabRedoBlocked': 'Tidak boleh buat semula semasa pengguna lain sedang mengedit',
+  'notification.collabUndoBlocked': 'Tidak boleh buat asal semasa pengguna lain sedang mengedit',
+  'notification.conversationDeleted': 'Perbualan dipadam',
+  'notification.copied': 'Disalin ke papan keratan',
+  'notification.copyFailed': 'Gagal menyalin',
+  'notification.deleteFailed': 'Gagal memadam',
+  'notification.deleted': 'Item berjaya dipadam',
+  'notification.feedbackCancelled': 'Maklum balas dialih keluar',
+  'notification.feedbackThanks': 'Terima kasih atas maklum balas anda',
+  'notification.feedbackThanksDislike':
+    'Terima kasih atas maklum balas anda — kami akan tambah baik',
+  'notification.focusQuestionTooShort': 'Masukkan soalan fokus yang lebih panjang dahulu',
+  'notification.fullscreenFailed': 'Tidak boleh masuk skrin penuh',
+  'notification.generationCancelled': 'Penjanaan dibatalkan',
+  'notification.historyClearNodes': 'Kosongkan teks nod',
+  'notification.historyEmptyLearning': 'Kosongkan nod dan tambah jawapan',
+  'notification.importInvalidData': 'Import gagal: data gambar rajah tidak sah',
+  'notification.importLoadFailed': 'Import gagal: gambar rajah tidak dapat dimuatkan',
+  'notification.importSavePartial': 'Diimport, tetapi gagal simpan ke pustaka',
+  'notification.importSlotsFull':
+    'Pustaka penuh; gambar rajah diimport tetapi tidak disimpan ke pustaka',
+  'notification.importSuccess': 'Gambar rajah diimport dan disimpan ke pustaka',
+  'notification.importUnsupportedType': 'Import gagal: jenis gambar rajah tidak disokong',
+  'notification.loadMoreFailed': 'Tidak dapat muatkan lagi',
+  'notification.networkError': 'Ralat rangkaian',
+  'notification.newVersionAvailable': 'Versi baharu tersedia. Klik untuk segar semula.',
+  'notification.recommendationFailed': 'Cadangan gagal: {msg}',
+  'notification.relationshipGenerationFailed': 'Penjanaan hubungan gagal',
+  'notification.resetDefaultTemplate': 'Tetapkan semula ke templat lalai',
+  'notification.rootConceptLinkNotFound': 'Pautan konsep akar tidak dijumpai',
+  'notification.saved': 'Perubahan berjaya disimpan',
+  'notification.selectNodeToClear': 'Sila pilih nod untuk dikosongkan',
+  'notification.sessionInvalidated':
+    'Anda telah dilog keluar kerana melebihi bilangan peranti maksimum',
+  'notification.signInToUse': 'Log masuk untuk menggunakan ini',
+  'notification.signInToValidateFocus': 'Log masuk untuk sahkan soalan fokus',
+} as const
