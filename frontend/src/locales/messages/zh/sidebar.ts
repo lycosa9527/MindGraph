@@ -62,7 +62,7 @@ export default {
   'sidebar.history.pinned': '置顶',
   'sidebar.history.untitled': '未命名',
   'sidebar.knowledgeSpace': '个人知识库',
-  'sidebar.languageSettings': '语言与提示词',
+  'sidebar.languageSettings': '语言设置',
   'sidebar.library': '图书馆',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

@@ -326,6 +326,7 @@ async def get_me(
             ),
             "ui_language": getattr(current_user, "ui_language", None),
             "prompt_language": getattr(current_user, "prompt_language", None),
+            "ui_version": getattr(current_user, "ui_version", None),
         }
     except Exception as me_error:
         logger.error(

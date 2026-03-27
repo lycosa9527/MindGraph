@@ -1,5 +1,5 @@
 """
-Ensure ``users.ui_language`` and ``users.prompt_language`` exist.
+Ensure ``users.ui_language``, ``users.prompt_language`` and ``users.ui_version`` exist.
 
 PostgreSQL: added by ORM ``run_migrations``. SQLite needs explicit ALTER.
 """
@@ -16,6 +16,7 @@ _TABLE = "users"
 _COLUMNS = (
     ("ui_language", "VARCHAR(32)", "VARCHAR(32) NULL"),
     ("prompt_language", "VARCHAR(32)", "VARCHAR(32) NULL"),
+    ("ui_version", "VARCHAR(32)", "VARCHAR(32) NULL"),
 )
 
 

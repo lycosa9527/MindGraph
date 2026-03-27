@@ -20,17 +20,20 @@ import { Upload, User } from '@element-plus/icons-vue'
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
+import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'
 
 import DiagramTemplateInput from './DiagramTemplateInput.vue'
 import DiagramTypeGrid from './DiagramTypeGrid.vue'
 import DiscoveryGallery from './DiscoveryGallery.vue'
+import InternationalLanding from './InternationalLanding.vue'
 
 const route = useRoute()
 const router = useRouter()
 const { t } = useLanguage()
 const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 const notify = useNotifications()
 const username = computed(() => authStore.user?.username || '')
 
@@ -220,7 +223,11 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="mindgraph-container flex flex-col h-full">
+  <InternationalLanding v-if="uiStore.uiVersion === 'international'" />
+  <div
+    v-else
+    class="mindgraph-container flex flex-col h-full"
+  >
     <!-- Header -->
     <header class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200">
       <div class="flex items-center gap-2">

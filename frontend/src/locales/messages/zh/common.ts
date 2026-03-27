@@ -105,4 +105,11 @@ export default {
   'settings.language.prompt': 'AI / 提示词语言',
   'settings.language.promptSelectPlaceholder': '搜索语言…',
   'settings.language.title': '语言与提示词',
+  'settings.version.title': '界面版本',
+  'settings.version.chinese': '中国版',
+  'settings.version.international': '国际版',
+  'landing.international.subtitle': '宇宙中最强大的AI思维图示生成软件',
+  'landing.international.promptPlaceholder': '描述你想要的图示，或从下方选择类型...',
+  'landing.international.sectionTitle': '选择图示类型',
+  'landing.international.modules': '功能模块',
 } as const

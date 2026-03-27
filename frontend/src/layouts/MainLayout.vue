@@ -4,23 +4,39 @@
  * Used for MindMate/MindGraph main page
  */
 import { computed } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { Lock } from 'lucide-vue-next'
 
+import IntlModuleGrid from '@/components/mindgraph/IntlModuleGrid.vue'
 import { AppSidebar } from '@/components/sidebar'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
+import { useUIStore } from '@/stores/ui'
 
+const route = useRoute()
 const authStore = useAuthStore()
+const uiStore = useUIStore()
 const { t } = useLanguage()
 
 const isGuest = computed(() => !authStore.isAuthenticated)
+const isInternational = computed(() => uiStore.uiVersion === 'international')
+const isOnLanding = computed(() => route.path === '/mindgraph')
+const showFloatingGrid = computed(() => isInternational.value && !isOnLanding.value)
 </script>
 
 <template>
   <div class="main-layout h-screen w-screen flex overflow-hidden">
-    <!-- Sidebar -->
-    <AppSidebar />
+    <!-- Sidebar (hidden in international mode) -->
+    <AppSidebar v-if="!isInternational" />
+
+    <!-- Floating module grid for non-landing pages in international mode -->
+    <div
+      v-if="showFloatingGrid"
+      class="intl-floating-grid"
+    >
+      <IntlModuleGrid />
+    </div>
 
     <!-- Main content (blurred for guests; sidebar stays clear) -->
     <main
@@ -35,8 +51,13 @@ const isGuest = computed(() => !authStore.isAuthenticated)
         <div class="main-slot flex-1 min-h-0 flex flex-col overflow-hidden">
           <slot />
         </div>
-        <!-- ICP Registration Footer - reserved space at bottom -->
-        <div class="icp-footer">京ICP备2025126228号</div>
+        <!-- ICP Registration Footer - Chinese version only -->
+        <div
+          v-if="uiStore.uiVersion === 'chinese'"
+          class="icp-footer"
+        >
+          京ICP备2025126228号
+        </div>
       </div>
 
       <div
@@ -59,6 +80,13 @@ const isGuest = computed(() => !authStore.isAuthenticated)
 </template>
 
 <style scoped>
+.intl-floating-grid {
+  position: fixed;
+  top: 16px;
+  right: 20px;
+  z-index: 100;
+}
+
 .main-slot {
   flex: 1 1 0;
 }

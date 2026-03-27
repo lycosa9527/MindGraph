@@ -65,7 +65,7 @@ export default {
   'sidebar.history.pinned': 'Pinned',
   'sidebar.history.untitled': 'Adsız',
   'sidebar.knowledgeSpace': 'Şəxsi bilik bazası',
-  'sidebar.languageSettings': 'Dil və promptlar',
+  'sidebar.languageSettings': 'Dil parametrləri',
   'sidebar.library': 'Kitabxana',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

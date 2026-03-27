@@ -20,6 +20,7 @@ export type Language = LocaleCode
 export type PromptLanguage = PromptOutputLanguageCode
 
 export type AppMode = 'mindmate' | 'mindgraph' | 'template' | 'course' | 'community'
+export type UiVersion = 'chinese' | 'international'
 
 const THEME_KEY = 'mindgraph_theme'
 const LANGUAGE_KEY = 'language'
@@ -27,6 +28,18 @@ const PROMPT_LANGUAGE_KEY = 'mindgraph_prompt_language'
 const MATCH_PROMPT_TO_UI_KEY = 'mindgraph_match_prompt_to_ui'
 const UI_LANGUAGE_EXPLICIT_KEY = 'mindgraph_ui_language_explicit'
 const BROWSER_LOCALE_HINT_KEY = 'mindgraph_browser_locale_hint_dismissed'
+const UI_VERSION_KEY = 'mindgraph_ui_version'
+
+const VALID_UI_VERSIONS: ReadonlySet<string> = new Set(['chinese', 'international'])
+
+function isValidUiVersion(value: string | null): value is UiVersion {
+  return value !== null && VALID_UI_VERSIONS.has(value)
+}
+
+function detectDefaultUiVersion(): UiVersion {
+  if (typeof navigator === 'undefined') return 'international'
+  return navigator.language.toLowerCase().startsWith('zh') ? 'chinese' : 'international'
+}
 
 function isValidLanguage(value: string | null): value is Language {
   return isUiLocale(value)
@@ -72,6 +85,7 @@ export const useUIStore = defineStore('ui', () => {
   const matchPromptToUi = ref(true)
   const uiLanguageExplicit = ref(false)
   const browserLocaleHintDismissed = ref(false)
+  const uiVersion = ref<UiVersion>(detectDefaultUiVersion())
   const isMobile = ref(false)
   const sidebarCollapsed = ref(false)
 
@@ -161,6 +175,13 @@ export const useUIStore = defineStore('ui', () => {
     uiLanguageExplicit.value = localStorage.getItem(UI_LANGUAGE_EXPLICIT_KEY) === '1'
     browserLocaleHintDismissed.value = localStorage.getItem(BROWSER_LOCALE_HINT_KEY) === '1'
     matchPromptToUi.value = localStorage.getItem(MATCH_PROMPT_TO_UI_KEY) !== '0'
+
+    const storedVersion = localStorage.getItem(UI_VERSION_KEY)
+    if (isValidUiVersion(storedVersion)) {
+      uiVersion.value = storedVersion
+    } else {
+      uiVersion.value = detectDefaultUiVersion()
+    }
 
     if (isValidLanguage(storedLanguage)) {
       language.value = storedLanguage
@@ -261,6 +282,17 @@ export const useUIStore = defineStore('ui', () => {
     const idx = order.indexOf(language.value)
     const next = order[(idx + 1) % order.length]
     setLanguage(next)
+  }
+
+  function setUiVersion(version: UiVersion): void {
+    uiVersion.value = version
+    localStorage.setItem(UI_VERSION_KEY, version)
+  }
+
+  function applyUiVersionFromServerProfile(version: string | null | undefined): void {
+    if (isValidUiVersion(version ?? null)) {
+      setUiVersion(version as UiVersion)
+    }
   }
 
   function checkMobile(): void {
@@ -388,12 +420,14 @@ export const useUIStore = defineStore('ui', () => {
     selectedChartType.value = '选择具体图示'
     templateSlots.value = {}
     freeInputValue.value = ''
+    uiVersion.value = detectDefaultUiVersion()
     localStorage.removeItem(THEME_KEY)
     localStorage.removeItem(LANGUAGE_KEY)
     localStorage.removeItem(PROMPT_LANGUAGE_KEY)
     localStorage.removeItem(MATCH_PROMPT_TO_UI_KEY)
     localStorage.removeItem(UI_LANGUAGE_EXPLICIT_KEY)
     localStorage.removeItem(BROWSER_LOCALE_HINT_KEY)
+    localStorage.removeItem(UI_VERSION_KEY)
     applyTheme()
     initFromStorage()
   }
@@ -409,6 +443,7 @@ export const useUIStore = defineStore('ui', () => {
     matchPromptToUi,
     uiLanguageExplicit,
     browserLocaleHintDismissed,
+    uiVersion,
     isMobile,
     sidebarCollapsed,
     wireframeMode,
@@ -431,6 +466,8 @@ export const useUIStore = defineStore('ui', () => {
     setUiLanguageExplicit,
     setBrowserLocaleHintDismissed,
     toggleLanguage,
+    setUiVersion,
+    applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,
     applyGuestLocaleFromBrowser,
     checkMobile,

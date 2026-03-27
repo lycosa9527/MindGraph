@@ -3,6 +3,7 @@
  * Language & prompt language settings (interface vs LLM prompt language).
  */
 import { ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
 
 import { ElCheckbox } from 'element-plus'
 
@@ -10,18 +11,20 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { PROMPT_LANGUAGE_OPTIONS, SUPPORTED_UI_LOCALES } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
-import type { Language, PromptLanguage } from '@/stores/ui'
+import type { Language, PromptLanguage, UiVersion } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
 const visible = defineModel<boolean>({ required: true })
 
+const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
+const draftVersion = ref<UiVersion>(uiStore.uiVersion)
 const promptLangOptions = PROMPT_LANGUAGE_OPTIONS
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
@@ -38,6 +41,7 @@ watch(visible, (v) => {
   if (v) {
     draftUi.value = uiStore.language
     draftPrompt.value = uiStore.promptLanguage
+    draftVersion.value = uiStore.uiVersion
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
   }
@@ -67,8 +71,9 @@ watch(matchPromptToInterface, (on) => {
 async function save(): Promise<void> {
   const ui = draftUi.value
   const prompt = matchPromptToInterface.value ? draftUi.value : draftPrompt.value
+  const version = draftVersion.value
   if (authStore.isAuthenticated) {
-    const ok = await authStore.saveLanguagePreferences(ui, prompt)
+    const ok = await authStore.saveLanguagePreferences(ui, prompt, version)
     if (!ok) {
       return
     }
@@ -78,8 +83,15 @@ async function save(): Promise<void> {
   if (!matchPromptToInterface.value) {
     uiStore.setPromptLanguage(prompt)
   }
+  const versionChanged = version !== uiStore.uiVersion
+  uiStore.setUiVersion(version)
   uiStore.setUiLanguageExplicit(true)
   visible.value = false
+
+  if (versionChanged) {
+    const target = version === 'international' ? '/mindgraph' : '/mindmate'
+    router.push(target)
+  }
 }
 
 function onClose(): void {
@@ -105,6 +117,22 @@ function promptOptionFilterLabel(o: PromptLangOption): string {
   >
     <div class="space-y-5">
       <div>
+        <div class="text-sm text-stone-600 dark:text-stone-400 mb-2">
+          {{ t('settings.version.title') }}
+        </div>
+        <el-radio-group
+          v-model="draftVersion"
+          class="version-group flex w-full gap-3"
+        >
+          <el-radio value="chinese">
+            {{ t('settings.version.chinese') }}
+          </el-radio>
+          <el-radio value="international">
+            {{ t('settings.version.international') }}
+          </el-radio>
+        </el-radio-group>
+      </div>
+      <div>
         <ElCheckbox v-model="matchPromptToInterface">
           {{ t('settings.language.matchPrompt') }}
         </ElCheckbox>
@@ -120,7 +148,7 @@ function promptOptionFilterLabel(o: PromptLangOption): string {
           <el-radio
             v-for="o in uiOptions"
             :key="o.code"
-            :label="o.code"
+            :value="o.code"
             class="interface-lang-radio"
           >
             <span class="interface-lang-row">

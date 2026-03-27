@@ -28,6 +28,8 @@ export interface User {
   uiLanguage?: string | null
   /** Persisted prompt output language code; absent until loaded from server */
   promptLanguage?: string | null
+  /** Persisted UI version (chinese | international); absent until loaded from server */
+  uiVersion?: string | null
 }
 
 /**
@@ -51,6 +53,7 @@ export interface BackendUser {
   lastLogin?: string
   ui_language?: string | null
   prompt_language?: string | null
+  ui_version?: string | null
   user?: {
     id?: string | number
     phone?: string

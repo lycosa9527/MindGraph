@@ -6,6 +6,7 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
+import { useUIStore } from '@/stores/ui'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
@@ -415,6 +416,11 @@ router.beforeEach(async (to, _from, next) => {
   // Redirect authenticated users away from guest-only pages
   if (to.meta.guestOnly && authStore.isAuthenticated) {
     return next({ name: 'MindMate' })
+  }
+
+  const uiStore = useUIStore()
+  if (uiStore.uiVersion === 'international' && to.name === 'MindMate') {
+    return next({ name: 'MindGraph' })
   }
 
   next()

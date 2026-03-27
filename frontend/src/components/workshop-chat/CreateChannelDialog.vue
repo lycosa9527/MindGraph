@@ -99,10 +99,10 @@ async function submit(): Promise<void> {
         v-model="kind"
         class="flex flex-col items-start gap-2"
       >
-        <el-radio label="group">
+        <el-radio value="group">
           {{ t('workshop.channelKindGroup') }}
         </el-radio>
-        <el-radio label="lesson">
+        <el-radio value="lesson">
           {{ t('workshop.channelKindLessonStudy') }}
         </el-radio>
       </el-radio-group>

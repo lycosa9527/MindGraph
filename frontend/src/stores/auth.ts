@@ -153,11 +153,13 @@ export const useAuthStore = defineStore('auth', () => {
       lastLogin: backendUser.last_login || backendUser.lastLogin,
       uiLanguage: backendUser.ui_language ?? null,
       promptLanguage: backendUser.prompt_language ?? null,
+      uiVersion: backendUser.ui_version ?? null,
     }
   }
 
   function applyUserLanguageFromProfile(target: User): void {
     const uiStore = useUIStore()
+    uiStore.applyUiVersionFromServerProfile(target.uiVersion ?? null)
     if (target.uiLanguage != null || target.promptLanguage != null) {
       languagePrefsSeededForUserId.value = null
       uiStore.applyLanguageFromServerProfile(
@@ -203,18 +205,30 @@ export const useAuthStore = defineStore('auth', () => {
     applyUserLanguageFromProfile(normalizedUser)
   }
 
-  async function saveLanguagePreferences(ui: Language, prompt: PromptLanguage): Promise<boolean> {
+  async function saveLanguagePreferences(
+    ui: Language,
+    prompt: PromptLanguage,
+    uiVersion?: string,
+  ): Promise<boolean> {
     try {
+      const payload: Record<string, string> = {
+        ui_language: ui,
+        prompt_language: prompt,
+      }
+      if (uiVersion) {
+        payload.ui_version = uiVersion
+      }
       const response = await fetch(`${API_BASE}/language-preferences`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify({ ui_language: ui, prompt_language: prompt }),
+        body: JSON.stringify(payload),
       })
       const data = (await response.json().catch(() => ({}))) as {
         detail?: string
         ui_language?: string | null
         prompt_language?: string | null
+        ui_version?: string | null
       }
       if (!response.ok) {
         notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
@@ -225,6 +239,7 @@ export const useAuthStore = defineStore('auth', () => {
           ...user.value,
           uiLanguage: data.ui_language ?? ui,
           promptLanguage: data.prompt_language ?? prompt,
+          uiVersion: data.ui_version ?? uiVersion ?? user.value.uiVersion,
         }
         user.value = next
         sessionStorage.setItem(USER_KEY, JSON.stringify(next))

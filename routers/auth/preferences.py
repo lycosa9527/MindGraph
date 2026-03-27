@@ -29,12 +29,17 @@ def update_language_preferences(
     db: Session = Depends(get_db),
 ):
     """
-    Persist interface language and/or prompt output language for the signed-in user.
+    Persist interface language, prompt output language, and/or UI version
+    for the signed-in user.
     """
-    if body.ui_language is None and body.prompt_language is None:
+    if (
+        body.ui_language is None
+        and body.prompt_language is None
+        and body.ui_version is None
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide at least one of ui_language or prompt_language",
+            detail="Provide at least one of ui_language, prompt_language, or ui_version",
         )
 
     user = db.query(User).filter(User.id == current_user.id).first()
@@ -48,6 +53,8 @@ def update_language_preferences(
         user.ui_language = body.ui_language
     if body.prompt_language is not None:
         user.prompt_language = body.prompt_language
+    if body.ui_version is not None:
+        user.ui_version = body.ui_version
 
     try:
         db.commit()
@@ -71,4 +78,5 @@ def update_language_preferences(
     return {
         "ui_language": user.ui_language,
         "prompt_language": user.prompt_language,
+        "ui_version": user.ui_version,
     }

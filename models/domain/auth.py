@@ -81,6 +81,7 @@ class User(Base):
     # Client preferences (interface + LLM prompt language); persisted for signed-in users
     ui_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     prompt_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Relationships
     organization = relationship("Organization", back_populates="users")

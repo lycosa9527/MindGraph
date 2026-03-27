@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.61.0] - 2026-03-27
+
+### Added
+- **International UI version**: Google-style landing page (`InternationalLanding.vue`) with centered hero (logo + title side-by-side), pill-shaped prompt bar for AI diagram generation, and large diagram-type card grid with staggered pulse hover animations.
+- **UI version persistence**: `ui_version` column on `users` table (PostgreSQL + custom migration), `PATCH /api/auth/language-preferences` and `GET /api/auth/me` support, localStorage sync, and browser-language auto-detection (`zh` → Chinese, else International) for first-time visitors.
+- **Module grid menu**: `IntlModuleGrid.vue` — feature-gated 3×3 popover grid replacing sidebar navigation in International mode; shown in InternationalLanding top-right and as floating button on non-landing pages.
+- **UI version selector**: Radio group in `LanguageSettingsModal` to switch between Chinese and International versions; navigates to the correct default page after switching.
+
+### Changed
+- **MainLayout**: Sidebar conditionally hidden when International version is active; ICP footer shown only in Chinese version.
+- **Router**: Added guard redirecting `/mindmate` → `/mindgraph` when `uiVersion === 'international'`; `'/'` follows the same redirect chain.
+- **LanguageSettingsModal**: Uses `value` prop instead of deprecated `label` for `el-radio` (Element Plus 2.13 compatibility).
+- **DiagramPreviewSvg**: Fixed circle-map outer ring and long connector paths (tree map, brace map, bridge map) broken by `stroke-dasharray: 100` — changed to `anim-connector`/`anim-ring` classes; removed `max-height: 80px` constraint.
+- **Diagram card animations**: Replaced fade-in/fade-out (`intlAddNode`) with staggered per-node pulse animation using `:nth-child(n of .anim-node)` matching old gallery style.
+- **i18n**: Updated slogan to "宇宙中最强大的AI思维图示生成软件"; renamed "语言与提示词" → "语言设置"; added module grid and version setting keys across zh/en/az.
+
 ## [5.60.0] - 2026-03-27
 
 ### Added

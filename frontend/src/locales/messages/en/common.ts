@@ -105,4 +105,11 @@ export default {
   'settings.language.prompt': 'AI / prompt language',
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.title': 'Language & prompts',
+  'settings.version.title': 'UI Version',
+  'settings.version.chinese': 'Chinese Version',
+  'settings.version.international': 'International Version',
+  'landing.international.subtitle': 'The Most Powerful AI Thinking Diagram Software in the Universe',
+  'landing.international.promptPlaceholder': 'Describe your diagram, or choose a type below...',
+  'landing.international.sectionTitle': 'Choose a Diagram Type',
+  'landing.international.modules': 'Modules',
 } as const

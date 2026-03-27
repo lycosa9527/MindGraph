@@ -26,7 +26,7 @@ defineProps<{
         fill="#e91e63"
       />
       <circle
-        class="anim-line"
+        class="anim-ring"
         cx="100"
         cy="75"
         r="71"
@@ -308,9 +308,8 @@ defineProps<{
       viewBox="0 0 200 150"
       class="diagram-svg"
     >
-      <!-- Single path for T connector: stroke-linejoin ensures clean corners; lines extend into nodes -->
       <path
-        class="anim-line"
+        class="anim-connector"
         d="M 100 49 L 100 74 L 45 74 L 45 112 M 100 74 L 100 112 M 100 74 L 155 74 L 155 112"
         stroke="#ce93d8"
         stroke-width="2"
@@ -362,7 +361,7 @@ defineProps<{
       class="diagram-svg"
     >
       <path
-        class="anim-line"
+        class="anim-connector"
         d="M 115 25 Q 105 25, 105 40 L 105 65 Q 105 75, 95 75 Q 105 75, 105 85 L 105 110 Q 105 125, 115 125"
         stroke="#4dd0e1"
         stroke-width="3"
@@ -565,7 +564,7 @@ defineProps<{
       class="diagram-svg"
     >
       <line
-        class="anim-line"
+        class="anim-connector"
         x1="20"
         y1="75"
         x2="180"
@@ -766,10 +765,8 @@ defineProps<{
 .diagram-svg {
   width: 100%;
   height: 100%;
-  max-height: 80px;
 }
 
-/* Static state when not hovering - diagram fully visible */
 .diagram-svg .anim-node {
   opacity: 1;
   transform-origin: center;
@@ -780,6 +777,4 @@ defineProps<{
   stroke-dashoffset: 0;
   opacity: 1;
 }
-
-/* Animation runs only when parent card is hovered - see DiagramTypeGrid */
 </style>

@@ -65,7 +65,7 @@ export default {
   'sidebar.history.pinned': 'Pinned',
   'sidebar.history.untitled': 'Untitled',
   'sidebar.knowledgeSpace': 'Knowledge base',
-  'sidebar.languageSettings': 'Language & prompts',
+  'sidebar.languageSettings': 'Language Settings',
   'sidebar.library': 'Library',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',

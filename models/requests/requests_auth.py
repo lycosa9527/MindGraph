@@ -694,11 +694,15 @@ class ChangePhoneRequest(BaseModel):
         }
 
 
+_VALID_UI_VERSIONS = frozenset(("chinese", "international"))
+
+
 class LanguagePreferencesUpdate(BaseModel):
     """PATCH body for /api/auth/language-preferences (at least one field)."""
 
     ui_language: Optional[str] = Field(None, max_length=32)
     prompt_language: Optional[str] = Field(None, max_length=32)
+    ui_version: Optional[str] = Field(None, max_length=32)
 
     @field_validator('ui_language')
     @classmethod
@@ -718,4 +722,14 @@ class LanguagePreferencesUpdate(BaseModel):
         stripped = value.strip().lower()
         if not is_prompt_output_language(stripped):
             raise ValueError("prompt_language must be a supported generation language code")
+        return stripped
+
+    @field_validator('ui_version')
+    @classmethod
+    def validate_ui_version(cls, value):
+        if value is None:
+            return value
+        stripped = value.strip().lower()
+        if stripped not in _VALID_UI_VERSIONS:
+            raise ValueError("ui_version must be 'chinese' or 'international'")
         return stripped

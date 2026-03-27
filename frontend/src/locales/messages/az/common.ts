@@ -105,4 +105,11 @@ export default {
   'settings.language.prompt': 'AI / prompt dili',
   'settings.language.promptSelectPlaceholder': 'Dilləri axtarın…',
   'settings.language.title': 'Dil və promptlar',
+  'settings.version.title': 'UI Versiyası',
+  'settings.version.chinese': 'Çin Versiyası',
+  'settings.version.international': 'Beynəlxalq Versiya',
+  'landing.international.subtitle': 'Kainatdakı ən güclü AI düşüncə diaqram proqramı',
+  'landing.international.promptPlaceholder': 'Diaqramınızı təsvir edin və ya aşağıdan tip seçin...',
+  'landing.international.sectionTitle': 'Diaqram Tipini Seçin',
+  'landing.international.modules': 'Modullar',
 } as const
