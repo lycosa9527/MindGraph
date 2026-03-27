@@ -2,17 +2,18 @@
 /**
  * Sidebar bottom: login CTA or user menu with account actions.
  */
-import { computed, inject, unref } from 'vue'
+import { computed, inject, reactive } from 'vue'
 
 import { ChevronDown, KeyRound, Languages, LogIn, LogOut, UserRound } from 'lucide-vue-next'
 
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
-const s = inject(appSidebarInjectionKey)
-if (!s) {
+const _raw = inject(appSidebarInjectionKey)
+if (!_raw) {
   throw new Error('AppSidebarAccountFooter must be used inside AppSidebar')
 }
-const orgSubtitle = computed(() => unref(s.userSubtitle))
+const s = reactive(_raw)
+const orgSubtitle = computed(() => s.userSubtitle as string)
 </script>
 
 <template>

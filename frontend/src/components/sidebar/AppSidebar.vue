@@ -19,6 +19,7 @@ const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
 
 const {
+  isCollapsed,
   showLanguageSettingsModal,
   showLoginModal,
   showAccountModal,
@@ -30,7 +31,7 @@ const {
 <template>
   <div
     class="app-sidebar bg-stone-50 border-r border-stone-200 flex flex-col transition-all duration-300 ease-in-out h-full"
-    :class="sidebar.isCollapsed ? 'w-16' : 'w-64'"
+    :class="isCollapsed ? 'w-16' : 'w-64'"
   >
     <!-- Header with logo and toggle -->
     <div class="p-4 flex items-center justify-between border-b border-stone-200">
@@ -44,7 +45,7 @@ const {
           M
         </div>
         <span
-          v-if="!sidebar.isCollapsed"
+          v-if="!isCollapsed"
           class="font-semibold text-lg text-stone-900 tracking-tight"
           >{{ sidebar.t('sidebar.brandTitle') }}</span
         >
@@ -54,7 +55,7 @@ const {
         circle
         class="toggle-btn"
         :title="
-          sidebar.isCollapsed
+          isCollapsed
             ? sidebar.t('sidebar.expandSidebar')
             : sidebar.t('sidebar.collapseSidebar')
         "

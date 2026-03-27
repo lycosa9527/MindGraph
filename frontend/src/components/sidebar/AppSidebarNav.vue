@@ -2,7 +2,7 @@
 /**
  * Sidebar feature navigation and inline history accordion panels.
  */
-import { inject } from 'vue'
+import { inject, reactive } from 'vue'
 
 import {
   ChatDotRound,
@@ -32,10 +32,11 @@ import KnowledgeSpaceHistory from './KnowledgeSpaceHistory.vue'
 import LibraryCommentsHistory from './LibraryCommentsHistory.vue'
 import WorkshopChatHistory from './WorkshopChatHistory.vue'
 
-const s = inject(appSidebarInjectionKey)
-if (!s) {
+const _raw = inject(appSidebarInjectionKey)
+if (!_raw) {
   throw new Error('AppSidebarNav must be used inside AppSidebar')
 }
+const s = reactive(_raw)
 </script>
 
 <template>
