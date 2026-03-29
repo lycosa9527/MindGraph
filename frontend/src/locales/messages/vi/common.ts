@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': 'Mô tả sơ đồ của bạn, hoặc chọn loại bên dưới...',
   'landing.international.sectionTitle': 'Chọn loại sơ đồ',
   'landing.international.modules': 'Mô-đun',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Đối tác ảo về giảng dạy và nghiên cứu của bạn',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

@@ -114,4 +114,11 @@ export default {
   'landing.international.promptPlaceholder': 'Describe your diagram, or choose a type below...',
   'landing.international.sectionTitle': 'Choose a Diagram Type',
   'landing.international.modules': 'Modules',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'கற்பித்தல் மற்றும் ஆராய்ச்சிக்கான உங்கள் மெய்நிகர் கூட்டாளி',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

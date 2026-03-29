@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': '다이어그램을 설명하거나 아래에서 유형을 선택하세요…',
   'landing.international.sectionTitle': '다이어그램 유형 선택',
   'landing.international.modules': '모듈',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': '가상 교육·연구 파트너',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

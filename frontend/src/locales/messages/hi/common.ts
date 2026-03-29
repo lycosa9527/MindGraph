@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': 'अपना आरेख वर्णन करें, या नीचे एक प्रकार चुनें...',
   'landing.international.sectionTitle': 'आरेख प्रकार चुनें',
   'landing.international.modules': 'मॉड्यूल',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'शिक्षण और अनुसंधान के लिए आपका आभासी साथी',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

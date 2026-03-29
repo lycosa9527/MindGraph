@@ -10,10 +10,14 @@ import { ElButton } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
 
+import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
 
 import AvatarSelectModal from './AvatarSelectModal.vue'
+import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
+
+const { t } = useLanguage()
 
 const props = defineProps<{
   visible: boolean
@@ -33,6 +37,7 @@ const isVisible = computed({
 
 const showAvatarModal = ref(false)
 const showChangePhoneModal = ref(false)
+const showChangePasswordModal = ref(false)
 
 // Get user data
 const userName = computed(() => authStore.user?.username || '')
@@ -68,6 +73,10 @@ function handleAvatarSuccess() {
 
 function openChangePhoneModal() {
   showChangePhoneModal.value = true
+}
+
+function openChangePasswordModal() {
+  showChangePasswordModal.value = true
 }
 
 function handlePhoneChangeSuccess() {
@@ -149,21 +158,31 @@ function handlePhoneChangeSuccess() {
                   >
                     手机号
                   </label>
-                  <div class="flex items-center gap-3">
+                  <div class="flex flex-wrap items-center gap-2">
                     <input
                       :value="userPhone || '未设置'"
                       type="text"
                       disabled
-                      class="flex-1 px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
+                      class="min-w-0 flex-1 px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
                     />
-                    <el-button
-                      round
-                      size="small"
-                      class="update-phone-btn"
-                      @click="openChangePhoneModal"
-                    >
-                      更换
-                    </el-button>
+                    <div class="flex shrink-0 items-center gap-2">
+                      <el-button
+                        round
+                        size="small"
+                        class="account-action-btn"
+                        @click="openChangePhoneModal"
+                      >
+                        {{ t('auth.changePhoneButton') }}
+                      </el-button>
+                      <el-button
+                        round
+                        size="small"
+                        class="account-action-btn"
+                        @click="openChangePasswordModal"
+                      >
+                        {{ t('auth.changePassword') }}
+                      </el-button>
+                    </div>
                   </div>
                 </div>
 
@@ -208,6 +227,8 @@ function handlePhoneChangeSuccess() {
       v-model:visible="showChangePhoneModal"
       @success="handlePhoneChangeSuccess"
     />
+
+    <ChangePasswordModal v-model:visible="showChangePasswordModal" />
   </Teleport>
 </template>
 
@@ -242,8 +263,8 @@ function handlePhoneChangeSuccess() {
   --el-button-hover-bg-color: #f5f5f4;
 }
 
-/* Update phone button - Swiss Design with dark grey/black theme */
-.update-phone-btn {
+/* Phone / password actions - Swiss Design with dark grey/black theme */
+.account-action-btn {
   --el-button-bg-color: #44403c;
   --el-button-text-color: #ffffff;
   --el-button-border-color: #44403c;

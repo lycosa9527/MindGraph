@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': 'Beschrijf je diagram of kies hieronder een type…',
   'landing.international.sectionTitle': 'Kies een diagramtype',
   'landing.international.modules': 'Modules',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Je virtuele partner voor onderwijs en onderzoek',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

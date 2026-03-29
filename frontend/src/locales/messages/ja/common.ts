@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': '図の内容を入力するか、下から種類を選んでください…',
   'landing.international.sectionTitle': '図の種類を選ぶ',
   'landing.international.modules': 'モジュール',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': '教育・研究のバーチャルパートナー',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

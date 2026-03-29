@@ -202,7 +202,12 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
             redis_client.config_set("key-memory-histograms", "yes")
             logger.info("[Redis] key-memory-histograms enabled")
         except Exception as exc:
-            logger.warning("[Redis] Could not enable key-memory-histograms: %s", exc)
+            logger.info(
+                "[Redis] key-memory-histograms not applied at runtime (%s). "
+                "Optional in Redis 8.6+; often blocked unless set in redis.conf "
+                "or when CONFIG is restricted — safe to ignore.",
+                exc,
+            )
     else:
         logger.debug(
             "[Redis] Version %s < 8.6 — skipping volatile-lrm and key-memory-histograms",

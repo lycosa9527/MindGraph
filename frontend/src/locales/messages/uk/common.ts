@@ -116,4 +116,11 @@ export default {
   'landing.international.promptPlaceholder': 'Опишіть діаграму або виберіть тип нижче...',
   'landing.international.sectionTitle': 'Виберіть тип діаграми',
   'landing.international.modules': 'Модулі',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Ваш віртуальний партнер з викладання та досліджень',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

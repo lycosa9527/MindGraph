@@ -74,6 +74,13 @@ export default {
   'diagramTemplates.multi_flow_map': 'Analysez les causes et les effets de l’événement 【event】.',
   'diagramTemplates.tree_map': 'Classez selon le critère 【criterion】 pour le sujet 【subject】.',
   'landing.international.modules': 'Modules',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Votre partenaire virtuel d’enseignement et de recherche',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
   'landing.international.promptPlaceholder':
     'Décrivez votre diagramme ou choisissez un type ci-dessous…',
   'landing.international.sectionTitle': 'Choisissez un type de diagramme',

@@ -116,4 +116,11 @@ export default {
     'Diyagramınızı tanımlayın veya aşağıdan bir tür seçin...',
   'landing.international.sectionTitle': 'Diyagram türü seçin',
   'landing.international.modules': 'Modüller',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Sanal öğretim ve araştırma ortağınız',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

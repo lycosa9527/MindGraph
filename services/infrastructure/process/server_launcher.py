@@ -353,10 +353,22 @@ def run_server() -> None:
             logger.debug("Starting Uvicorn server...")
 
             worker_count = 1 if reload else workers
+            worker_healthcheck = int(
+                os.getenv("UVICORN_TIMEOUT_WORKER_HEALTHCHECK", "120")
+            )
             logger.debug(
                 "Uvicorn configuration: host=%s, port=%s, workers=%s, reload=%s",
                 host, port, worker_count, reload
             )
+            if worker_count > 1:
+                logger.info(
+                    "Uvicorn multi-worker: timeout_worker_healthcheck=%ss "
+                    "(UVICORN_TIMEOUT_WORKER_HEALTHCHECK). "
+                    "If logs show 'Child process died' during startup, it is often a "
+                    "worker healthcheck ping timeout (slow import/lifespan) rather than "
+                    "a crash—increase this value. For real process exits, check dmesg/OOM.",
+                    worker_healthcheck,
+                )
 
             uvicorn.run(
                 "main:app",
@@ -369,6 +381,7 @@ def run_server() -> None:
                 use_colors=False,
                 timeout_keep_alive=300,
                 timeout_graceful_shutdown=5,
+                timeout_worker_healthcheck=worker_healthcheck,
                 access_log=False,
                 limit_concurrency=1000 if not reload else None,
             )

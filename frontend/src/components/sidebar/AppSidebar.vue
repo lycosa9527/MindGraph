@@ -8,7 +8,7 @@ import { provide } from 'vue'
 
 import { Menu } from 'lucide-vue-next'
 
-import { AccountInfoModal, ChangePasswordModal, LoginModal } from '@/components/auth'
+import { AccountInfoModal, LoginModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 
@@ -23,7 +23,6 @@ const {
   showLanguageSettingsModal,
   showLoginModal,
   showAccountModal,
-  showPasswordModal,
   authStore,
 } = sidebar
 </script>
@@ -73,7 +72,6 @@ const {
       v-model:visible="showAccountModal"
       @success="authStore.checkAuth()"
     />
-    <ChangePasswordModal v-model:visible="showPasswordModal" />
   </div>
 </template>
 

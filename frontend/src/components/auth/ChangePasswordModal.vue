@@ -8,9 +8,9 @@ import { computed, ref, watch } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { Eye, EyeOff, Loader2 } from 'lucide-vue-next'
+import { Eye, EyeOff, Loader2, RefreshCw } from 'lucide-vue-next'
 
-import { useNotifications } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 
 const props = defineProps<{
@@ -24,6 +24,7 @@ const emit = defineEmits<{
 
 const authStore = useAuthStore()
 const notify = useNotifications()
+const { t } = useLanguage()
 
 const isVisible = computed({
   get: () => props.visible,
@@ -34,7 +35,12 @@ const formData = ref({
   currentPassword: '',
   newPassword: '',
   confirmPassword: '',
+  captcha: '',
 })
+
+const captchaId = ref('')
+const captchaImage = ref('')
+const captchaLoading = ref(false)
 
 const isLoading = ref(false)
 const showCurrentPassword = ref(false)
@@ -46,10 +52,31 @@ function resetForm() {
     currentPassword: '',
     newPassword: '',
     confirmPassword: '',
+    captcha: '',
   }
+  captchaId.value = ''
+  captchaImage.value = ''
   showCurrentPassword.value = false
   showNewPassword.value = false
   showConfirmPassword.value = false
+}
+
+async function refreshCaptcha() {
+  captchaLoading.value = true
+  try {
+    const result = await authStore.fetchCaptcha()
+    if (result) {
+      captchaId.value = result.captcha_id
+      captchaImage.value = result.captcha_image
+    } else {
+      notify.error(t('auth.modal.captchaLoadFailed'))
+    }
+  } catch (error) {
+    console.error('Captcha error:', error)
+    notify.error(t('auth.modal.captchaNetworkError'))
+  } finally {
+    captchaLoading.value = false
+  }
 }
 
 function closeModal() {
@@ -62,6 +89,8 @@ watch(
   (newValue) => {
     if (!newValue) {
       resetForm()
+    } else {
+      void refreshCaptcha()
     }
   }
 )
@@ -72,24 +101,34 @@ async function handleSubmit() {
     !formData.value.newPassword ||
     !formData.value.confirmPassword
   ) {
-    notify.warning('请填写所有字段')
+    notify.warning(t('auth.modal.fillAllFields'))
+    return
+  }
+
+  if (!formData.value.captcha || formData.value.captcha.length !== 4) {
+    notify.warning(t('auth.captchaLength4'))
+    return
+  }
+
+  if (!captchaId.value) {
+    notify.warning(t('auth.waitCaptchaLoad'))
+    void refreshCaptcha()
     return
   }
 
   if (formData.value.newPassword.length < 8) {
-    notify.warning('密码至少需要8个字符')
+    notify.warning(t('auth.modal.passwordMin8'))
     return
   }
 
   if (formData.value.newPassword !== formData.value.confirmPassword) {
-    notify.warning('两次输入的密码不一致')
+    notify.warning(t('auth.modal.passwordMismatch'))
     return
   }
 
   isLoading.value = true
 
   try {
-    // Use credentials (token in httpOnly cookie)
     const response = await fetch('/api/auth/change-password', {
       method: 'PUT',
       credentials: 'same-origin',
@@ -97,21 +136,33 @@ async function handleSubmit() {
       body: JSON.stringify({
         current_password: formData.value.currentPassword,
         new_password: formData.value.newPassword,
+        captcha: formData.value.captcha,
+        captcha_id: captchaId.value,
       }),
     })
 
     const data = await response.json()
 
     if (response.ok) {
-      notify.success('密码修改成功')
+      const msg =
+        typeof data.message === 'string' && data.message
+          ? data.message
+          : t('auth.passwordChangeSuccess')
+      notify.success(msg)
       closeModal()
       emit('success')
+      // Server revokes refresh tokens and invalidates sessions; clear client state and cookies
+      await authStore.logout()
     } else {
-      notify.error(data.detail || '密码修改失败')
+      notify.error(typeof data.detail === 'string' ? data.detail : t('auth.passwordChangeFailed'))
+      formData.value.captcha = ''
+      void refreshCaptcha()
     }
   } catch (error) {
     console.error('Failed to change password:', error)
-    notify.error('网络错误，密码修改失败')
+    notify.error(t('auth.passwordChangeFailed'))
+    formData.value.captcha = ''
+    void refreshCaptcha()
   } finally {
     isLoading.value = false
   }
@@ -263,10 +314,53 @@ function handleBackdropClick(event: MouseEvent) {
                 </div>
               </div>
 
+              <!-- Captcha -->
+              <div>
+                <label
+                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                >
+                  {{ t('auth.captcha') }}
+                </label>
+                <div class="flex gap-3 items-center">
+                  <input
+                    v-model="formData.captcha"
+                    type="text"
+                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
+                    maxlength="4"
+                    autocomplete="off"
+                    autocapitalize="off"
+                    spellcheck="false"
+                    class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                  />
+                  <img
+                    v-if="captchaImage && !captchaLoading"
+                    :src="captchaImage"
+                    :alt="t('auth.captcha')"
+                    class="captcha-image"
+                    :title="t('auth.clickToRefresh')"
+                    @click="refreshCaptcha"
+                  />
+                  <div
+                    v-else
+                    class="captcha-placeholder"
+                    @click="refreshCaptcha"
+                  >
+                    <Loader2
+                      v-if="captchaLoading"
+                      class="w-5 h-5 text-stone-400 animate-spin"
+                    />
+                    <RefreshCw
+                      v-else
+                      class="w-5 h-5 text-stone-400"
+                    />
+                  </div>
+                </div>
+              </div>
+
               <!-- Submit button -->
               <button
                 type="submit"
-                :disabled="isLoading"
+                :disabled="isLoading || captchaLoading"
                 class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Loader2
@@ -302,6 +396,36 @@ function handleBackdropClick(event: MouseEvent) {
 .modal-enter-from > div:last-child,
 .modal-leave-to > div:last-child {
   transform: scale(0.95);
+}
+
+.captcha-image {
+  height: 48px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+  flex-shrink: 0;
+}
+
+.captcha-image:hover {
+  opacity: 0.8;
+}
+
+.captcha-placeholder {
+  height: 48px;
+  width: 120px;
+  border-radius: 8px;
+  cursor: pointer;
+  background: #f5f5f4;
+  border: 1px solid #e7e5e4;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: opacity 0.2s ease;
+}
+
+.captcha-placeholder:hover {
+  opacity: 0.8;
 }
 
 /* Close button positioning and styling */

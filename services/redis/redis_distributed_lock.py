@@ -235,6 +235,80 @@ class DistributedLock:
         return False  # Don't suppress exceptions
 
 
+STARTUP_SMS_NOTIFICATION_LOCK_KEY = "lock:mindgraph:lifespan:startup_sms"
+# Safety net if a worker dies before release; caller releases immediately after send.
+STARTUP_SMS_NOTIFICATION_LOCK_TTL = 120
+
+
+async def acquire_startup_sms_notification_lock() -> Optional[str]:
+    """
+    Acquire exclusive right to send startup SMS for this process group.
+
+    Uvicorn does not set UVICORN_WORKER_ID; all workers default to the same id,
+    so each would otherwise send duplicate SMS. Uses Redis SET NX (see also
+    backup scheduler lock pattern).
+
+    Returns:
+        Lock token to pass to release_startup_sms_notification_lock, or None
+        if another worker holds the lock or coordination failed (prefer no SMS
+        over duplicate SMS when Redis errors).
+    """
+    if not is_redis_available():
+        return None
+
+    redis = get_redis()
+    if not redis:
+        return None
+
+    lock_id = _generate_lock_id()
+    try:
+        acquired = await asyncio.to_thread(
+            redis.set,
+            STARTUP_SMS_NOTIFICATION_LOCK_KEY,
+            lock_id,
+            nx=True,
+            ex=STARTUP_SMS_NOTIFICATION_LOCK_TTL,
+        )
+        if acquired:
+            return lock_id
+        holder = await asyncio.to_thread(
+            redis.get, STARTUP_SMS_NOTIFICATION_LOCK_KEY
+        )
+        logger.debug(
+            "[LIFESPAN] Startup SMS skipped — lock held by another worker (%s)",
+            holder,
+        )
+        return None
+    except Exception as exc:
+        logger.warning(
+            "[LIFESPAN] Startup SMS lock acquisition failed (skipping send): %s",
+            exc,
+        )
+        return None
+
+
+async def release_startup_sms_notification_lock(lock_id: str) -> None:
+    """Release startup SMS lock so a quick restart can notify again."""
+    if not lock_id:
+        return
+    if not is_redis_available():
+        return
+    redis = get_redis()
+    if not redis:
+        return
+    try:
+        await asyncio.to_thread(
+            redis.delex,
+            STARTUP_SMS_NOTIFICATION_LOCK_KEY,
+            lock_id,
+        )
+    except Exception as exc:
+        logger.debug(
+            "[LIFESPAN] Startup SMS lock release (non-critical): %s",
+            exc,
+        )
+
+
 @asynccontextmanager
 async def phone_registration_lock(phone: str):
     """

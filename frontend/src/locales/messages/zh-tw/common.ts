@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': '描述你想要的圖示，或從下方選擇類型...',
   'landing.international.sectionTitle': '選擇圖示類型',
   'landing.international.modules': '功能模塊',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': '虛擬教研夥伴',
+  'landing.international.shareSite': '網址分享',
+  'landing.international.shareSiteModalTitle': '網址分享',
+  'landing.international.shareSiteModalHint': '使用手機或平板相機掃描，便於快速開啟本頁。',
+  'landing.international.shareSiteCopy': '複製連結',
+  'landing.international.shareSiteCopied': '連結已複製',
 } as const

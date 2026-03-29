@@ -510,6 +510,11 @@ class ChangePasswordRequest(BaseModel):
         ..., min_length=8,
         description="New password (minimum 8 characters)"
     )
+    captcha: str = Field(
+        ..., min_length=4, max_length=4,
+        description="4-character captcha code"
+    )
+    captcha_id: str = Field(..., description="Captcha session ID")
 
 
 class ResetPasswordWithSMSRequest(BaseModel):

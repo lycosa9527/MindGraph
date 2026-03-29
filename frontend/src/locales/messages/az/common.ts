@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': 'Diaqramınızı təsvir edin və ya aşağıdan tip seçin...',
   'landing.international.sectionTitle': 'Diaqram Tipini Seçin',
   'landing.international.modules': 'Modullar',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Virtual tədris və tədqiqat tərəfdaşınız',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

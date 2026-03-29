@@ -114,4 +114,11 @@ export default {
   'landing.international.promptPlaceholder': 'Opisz swój diagram lub wybierz typ poniżej...',
   'landing.international.sectionTitle': 'Wybierz typ diagramu',
   'landing.international.modules': 'Moduły',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Twój wirtualny partner nauczania i badań',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

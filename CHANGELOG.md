@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.64.0] - 2026-03-29
+
+### Added
+- **Password change captcha**: `ChangePasswordModal.vue` now requires captcha verification before submitting; auto-loads on open, refreshes on error, and triggers `authStore.logout()` after success (server revokes all sessions). Backend `ChangePasswordRequest` gains `captcha` / `captcha_id` fields; `change_password` endpoint is now async with captcha verification via `verify_captcha_with_retry` and `_raise_for_captcha_failure`.
+- **AccountInfoModal — change-password entry**: "Change password" button added directly next to "Change phone" inside `AccountInfoModal.vue`; `ChangePasswordModal` embedded inline.
+- **IntlShareSiteModal**: New `IntlShareSiteModal.vue` component wired to the avatar dropdown on the International landing page (command `share-site`).
+- **Password security helpers** (`services/auth/password_security.py`): `invalidate_user_cache_after_password_write` and `revoke_refresh_tokens_and_sessions` extracted as shared utilities; used by `routers/auth/password.py`, `routers/auth/admin/users.py`, and admin user endpoints to eliminate duplicate logic.
+- **Redis startup SMS lock** (`services/redis/redis_distributed_lock.py`): `acquire_startup_sms_notification_lock` / `release_startup_sms_notification_lock` using Redis `SET NX` to ensure exactly one worker sends the startup SMS in a multi-worker Uvicorn cluster.
+- **Uvicorn `timeout_worker_healthcheck`** (`server_launcher.py`): Configurable via `UVICORN_TIMEOUT_WORKER_HEALTHCHECK` (default 120 s); logged on multi-worker start with guidance on distinguishing healthcheck timeouts from real crashes.
+
+### Changed
+- **InternationalLanding.vue**: Teleported the top-right nav (`IntlModuleGrid` + avatar dropdown) to `<body>` via `<Teleport>` to prevent position:fixed interference from ancestor CSS transforms/filters; removed collaboration dialogs (org sessions, shared-code join) and `showPasswordModal` flow; added `IntlShareSiteModal` and `share-site` avatar command.
+- **AppSidebarAccountFooter / useAppSidebar**: Removed the "Change password" dropdown item and `openPasswordModal` / `showPasswordModal` state — password change is now accessible from within `AccountInfoModal`.
+- **MindGraphContainer header**: Title centered; action buttons absolutely positioned to the right.
+- **Startup SMS** (`lifespan.py`): Extracted into `_send_startup_sms_notification_once()` guarded by the Redis startup lock instead of the unreliable `UVICORN_WORKER_ID == '0'` check.
+- **Redis client**: `key-memory-histograms` config failure downgraded from `WARNING` to `INFO` with a clearer explanation (optional Redis 8.6+ feature, often blocked by `redis.conf` or ACLs).
+- **i18n**: Added `auth.changePhoneButton`, `auth.passwordChangeSuccess`, `auth.passwordChangeFailed`, `auth.captcha`-related keys and `auth.modal.*` keys (en / zh / zh-tw auth bundles); propagated `auth.changePhoneButton` and related common keys across all 50+ tier-2 locale `common.ts` bundles.
+
 ## [5.63.0] - 2026-03-29
 
 ### Added

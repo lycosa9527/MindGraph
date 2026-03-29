@@ -114,4 +114,11 @@ export default {
   'landing.international.promptPlaceholder': 'อธิบายไดอะแกรมของคุณ หรือเลือกประเภทด้านล่าง...',
   'landing.international.sectionTitle': 'เลือกประเภทไดอะแกรม',
   'landing.international.modules': 'โมดูล',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'พันธมิตรเสมือนด้านการสอนและการวิจัยของคุณ',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

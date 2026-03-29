@@ -114,4 +114,11 @@ export default {
   'landing.international.promptPlaceholder': 'Опишите диаграмму или выберите тип ниже…',
   'landing.international.sectionTitle': 'Выберите тип диаграммы',
   'landing.international.modules': 'Модули',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Ваш виртуальный партнёр по преподаванию и исследованиям',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

@@ -43,6 +43,10 @@ from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
 from services.redis.cache.redis_cache_loader import reload_cache_from_database
 from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
+from services.redis.redis_distributed_lock import (
+    acquire_startup_sms_notification_lock,
+    release_startup_sms_notification_lock,
+)
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
@@ -58,6 +62,67 @@ from utils.dependency_checker import DependencyError, check_system_dependencies
 logger = logging.getLogger(__name__)
 
 
+async def _send_startup_sms_notification_once() -> None:
+    """
+    Notify admins via SMS at most once per process group.
+
+    Uvicorn does not set UVICORN_WORKER_ID; a Redis lock ensures only one
+    worker sends when multiple workers run the lifespan.
+    """
+    is_debug_mode = os.getenv("DEBUG", "").lower() == "true"
+    if is_debug_mode:
+        logger.debug("[LIFESPAN] Startup SMS notification skipped (DEBUG mode enabled)")
+        return
+
+    sms_startup_enabled = os.getenv(
+        "SMS_STARTUP_NOTIFICATION_ENABLED", "true"
+    ).lower() in ("true", "1", "yes")
+    if not sms_startup_enabled:
+        logger.debug(
+            "[LIFESPAN] Startup SMS notification disabled "
+            "(SMS_STARTUP_NOTIFICATION_ENABLED=false)"
+        )
+        return
+
+    sms_middleware = get_sms_middleware()
+    if not sms_middleware.is_available:
+        logger.debug(
+            "[LIFESPAN] SMS service not available, skipping startup SMS notification"
+        )
+        return
+
+    admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
+    if not admin_phones:
+        logger.debug(
+            "[LIFESPAN] No admin phones configured, skipping startup SMS notification"
+        )
+        return
+
+    startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
+    if not startup_template_id:
+        logger.warning(
+            "[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, "
+            "skipping startup SMS notification"
+        )
+        return
+
+    lock_token = await acquire_startup_sms_notification_lock()
+    if lock_token is None:
+        return
+
+    try:
+        success, message = await sms_middleware.send_notification(
+            phones=admin_phones,
+            template_id=startup_template_id,
+            template_params=[],
+            lang="zh",
+        )
+        if success:
+            logger.info("[LIFESPAN] Startup SMS notification sent successfully: %s", message)
+        else:
+            logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
+    finally:
+        await release_startup_sms_notification_lock(lock_token)
 
 
 @asynccontextmanager
@@ -75,7 +140,9 @@ async def lifespan(fastapi_app: FastAPI):
     signal.signal(signal.SIGINT, _handle_shutdown_signal)
     signal.signal(signal.SIGTERM, _handle_shutdown_signal)
 
-    # Only log startup messages from first worker to avoid repetition
+    # Only log startup messages from first worker to avoid repetition.
+    # Note: Uvicorn does not set UVICORN_WORKER_ID; default '0' applies to all workers.
+    # Features that must run once per cluster (e.g. startup SMS) use Redis locks instead.
     worker_id = os.getenv('UVICORN_WORKER_ID', '0')
     is_main_worker = (worker_id == '0' or not worker_id)
 
@@ -506,54 +573,14 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to initialize diagram cache: %s", e)
 
-    # Send startup notification SMS to admin phones
-    if is_main_worker:
-        try:
-            # Skip SMS notifications in debug mode (frequent restarts during development)
-            is_debug_mode = os.getenv("DEBUG", "").lower() == "true"
-            if is_debug_mode:
-                logger.debug("[LIFESPAN] Startup SMS notification skipped (DEBUG mode enabled)")
-            else:
-                # Check if startup SMS notification is enabled
-                sms_startup_enabled = os.getenv(
-                    "SMS_STARTUP_NOTIFICATION_ENABLED", "true"
-                ).lower() in ("true", "1", "yes")
-                if not sms_startup_enabled:
-                    logger.debug(
-                        "[LIFESPAN] Startup SMS notification disabled "
-                        "(SMS_STARTUP_NOTIFICATION_ENABLED=false)"
-                    )
-                else:
-                    sms_middleware = get_sms_middleware()
-                    if sms_middleware.is_available:
-                        admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
-                        if admin_phones:
-                            # Get startup notification template ID from environment variable
-                            startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
-                            if not startup_template_id:
-                                logger.warning(
-                                    "[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, "
-                                    "skipping startup SMS notification"
-                                )
-                            else:
-                                # Message: "MindGraph已在主服务器启动，短信通知系统启用成功。"
-                                success, message = await sms_middleware.send_notification(
-                                    phones=admin_phones,
-                                    template_id=startup_template_id,
-                                    template_params=[],  # Template has no parameters
-                                    lang="zh"
-                                )
-                                if success:
-                                    logger.info("[LIFESPAN] Startup SMS notification sent successfully: %s", message)
-                                else:
-                                    logger.warning("[LIFESPAN] Failed to send startup SMS notification: %s", message)
-                        else:
-                            logger.debug("[LIFESPAN] No admin phones configured, skipping startup SMS notification")
-                    else:
-                        logger.debug("[LIFESPAN] SMS service not available, skipping startup SMS notification")
-        except Exception as e:  # pylint: disable=broad-except
-            # Don't fail startup if SMS notification fails
-            logger.warning("[LIFESPAN] Failed to send startup SMS notification (non-critical): %s", e)
+    # Send startup notification SMS (Redis lock — once per cluster; not gated on worker id)
+    try:
+        await _send_startup_sms_notification_once()
+    except Exception as e:  # pylint: disable=broad-except
+        logger.warning(
+            "[LIFESPAN] Failed to send startup SMS notification (non-critical): %s",
+            e,
+        )
 
     # Wait for monitor startup messages to complete before showing completion banner
     # This ensures all monitor startup logs appear before "APPLICATION LAUNCH COMPLETE"

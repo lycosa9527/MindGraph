@@ -151,6 +151,7 @@ declare module 'vue' {
     InternationalLanding: typeof import('./components/mindgraph/InternationalLanding.vue')['default']
     IntlDiagramDropdown: typeof import('./components/mindgraph/IntlDiagramDropdown.vue')['default']
     IntlModuleGrid: typeof import('./components/mindgraph/IntlModuleGrid.vue')['default']
+    IntlShareSiteModal: typeof import('./components/mindgraph/IntlShareSiteModal.vue')['default']
     JudgeArea: typeof import('./components/debateverse/JudgeArea.vue')['default']
     KnowledgeSpaceHeader: typeof import('./components/knowledge-space/KnowledgeSpaceHeader.vue')['default']
     KnowledgeSpaceHistory: typeof import('./components/sidebar/KnowledgeSpaceHistory.vue')['default']

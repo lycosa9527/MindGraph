@@ -114,4 +114,11 @@ export default {
   'landing.international.promptPlaceholder': 'Jelaskan diagram Anda, atau pilih jenis di bawah...',
   'landing.international.sectionTitle': 'Pilih jenis diagram',
   'landing.international.modules': 'Modul',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'Mitra virtual Anda untuk pengajaran dan penelitian',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const

@@ -228,13 +228,10 @@ onMounted(() => {
     v-else
     class="mindgraph-container flex flex-col h-full"
   >
-    <!-- Header -->
-    <header class="h-14 px-4 flex items-center justify-between bg-white border-b border-gray-200">
-      <div class="flex items-center gap-2">
-        <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
-        <span class="text-xs text-gray-500">{{ t('landing.international.subtitle') }}</span>
-      </div>
-      <div class="flex items-center gap-2">
+    <!-- Header — title centered; actions anchored right -->
+    <header class="relative h-14 px-4 flex items-center justify-center bg-white border-b border-gray-200">
+      <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
+      <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
         <ElButton
           class="import-btn"
           size="small"

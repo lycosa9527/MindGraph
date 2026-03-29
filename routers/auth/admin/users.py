@@ -22,6 +22,10 @@ from config.database import get_db
 from models.domain.auth import Organization, User
 from models.domain.messages import Messages, Language
 from models.domain.token_usage import TokenUsage
+from services.auth.password_security import (
+    invalidate_user_cache_after_password_write,
+    revoke_refresh_tokens_and_sessions,
+)
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import hash_password
@@ -426,13 +430,8 @@ def reset_user_password_admin(
             detail="Failed to reset password"
         ) from e
 
-    # Invalidate and re-cache user
-    try:
-        user_cache.invalidate(user.id, user.phone)
-        user_cache.cache_user(user)
-        logger.info("[Auth] Admin password reset and cache updated for user ID %s", user.id)
-    except Exception as e:
-        logger.warning("[Auth] Failed to update cache after admin password reset: %s", e)
+    invalidate_user_cache_after_password_write(user, "Admin password reset")
+    revoke_refresh_tokens_and_sessions(user.id, "admin_password_reset")
 
     logger.info("Admin %s reset password for user: %s", current_user.phone, user.phone)
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}

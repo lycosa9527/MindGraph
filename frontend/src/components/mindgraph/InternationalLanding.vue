@@ -9,7 +9,6 @@ import { useRoute, useRouter } from 'vue-router'
 import {
   ElAvatar,
   ElButton,
-  ElDialog,
   ElDropdown,
   ElDropdownItem,
   ElDropdownMenu,
@@ -18,11 +17,11 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { KeyRound, Languages, LogIn, LogOut, Upload, UserRound } from 'lucide-vue-next'
+import { Languages, LogIn, LogOut, Share2, Upload, UserRound } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
-import { AccountInfoModal, ChangePasswordModal } from '@/components/auth'
+import { AccountInfoModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
@@ -33,6 +32,7 @@ import { authFetch } from '@/utils/api'
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
 import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
 import IntlModuleGrid from './IntlModuleGrid.vue'
+import IntlShareSiteModal from './IntlShareSiteModal.vue'
 
 const MAX_PROMPT_LENGTH = 10000
 const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
@@ -250,49 +250,16 @@ function handleCardClick(item: { type: DiagramType }) {
   router.push({ path: '/canvas', query: { type: item.type } })
 }
 
-// ── Collaboration dialogs ──
+// ── Dialogs ──
 
 const showLanguageSettingsModal = ref(false)
+const showShareSiteModal = ref(false)
 const showAccountModal = ref(false)
-const showPasswordModal = ref(false)
-const showOrgSessionsDialog = ref(false)
-const showSharedCodeDialog = ref(false)
-const orgSessionsLoading = ref(false)
-const orgSessions = ref<
-  Array<{ diagram_id: string; title: string; owner_username: string; participant_count: number }>
->([])
+
+// ── Auto-join workshop from QR query ──
+
 const joinCode = ref(['', '', '', '', '', ''])
 const isJoining = ref(false)
-const codeInputRefs = ref<(HTMLInputElement | null)[]>([])
-
-function handleDigitInput(index: number, event: Event) {
-  const target = event.target as HTMLInputElement
-  const value = target.value.replace(/\D/g, '')
-  if (value.length > 0) {
-    joinCode.value[index] = value[value.length - 1]
-    if (index < 5 && codeInputRefs.value[index + 1]) {
-      codeInputRefs.value[index + 1]?.focus()
-    }
-  } else {
-    joinCode.value[index] = ''
-  }
-}
-
-function handleKeyDown(index: number, event: KeyboardEvent) {
-  if (event.key === 'Backspace' && !joinCode.value[index] && index > 0) {
-    codeInputRefs.value[index - 1]?.focus()
-  }
-}
-
-function handlePaste(event: ClipboardEvent) {
-  event.preventDefault()
-  const digits = (event.clipboardData?.getData('text') || '').replace(/\D/g, '').slice(0, 6)
-  digits.split('').forEach((digit, i) => {
-    if (i < 6) joinCode.value[i] = digit
-  })
-  const nextIdx = digits.length < 6 ? digits.length : 5
-  codeInputRefs.value[nextIdx]?.focus()
-}
 
 function getFormattedCode(): string {
   const code = joinCode.value.join('')
@@ -315,7 +282,6 @@ async function joinWorkshop() {
     if (response.ok) {
       const data = await response.json()
       notify.success(t('mindgraphLanding.joinedPresentation', { title: data.workshop.title }))
-      showSharedCodeDialog.value = false
       const enc = encodeURIComponent(code)
       window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
     } else {
@@ -329,60 +295,14 @@ async function joinWorkshop() {
   }
 }
 
-async function openOrgSessionsDialog() {
-  showOrgSessionsDialog.value = true
-  orgSessionsLoading.value = true
-  orgSessions.value = []
-  try {
-    const response = await authFetch('/api/workshop/organization/sessions', { method: 'GET' })
-    if (response.ok) {
-      orgSessions.value = (await response.json()).sessions || []
-    } else {
-      notify.error(t('mindgraphLanding.loadOrgSessionsFailed'))
-    }
-  } catch {
-    notify.error(t('mindgraphLanding.networkError'))
-  } finally {
-    orgSessionsLoading.value = false
-  }
-}
-
-async function joinOrgSession(session: { diagram_id: string }) {
-  isJoining.value = true
-  try {
-    const response = await authFetch('/api/workshop/join-organization', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ diagram_id: session.diagram_id }),
-    })
-    if (response.ok) {
-      const data = await response.json()
-      const enc = encodeURIComponent(data.workshop.code as string)
-      notify.success(t('mindgraphLanding.joinedCollab', { title: data.workshop.title }))
-      showOrgSessionsDialog.value = false
-      window.location.href = `/canvas?diagramId=${encodeURIComponent(data.workshop.diagram_id)}&join_workshop=${enc}`
-    } else {
-      const error = await response.json().catch(() => ({}))
-      notify.error(error.detail || t('mindgraphLanding.joinFailed'))
-    }
-  } catch {
-    notify.error(t('mindgraphLanding.networkError'))
-  } finally {
-    isJoining.value = false
-  }
-}
-
 // ── Avatar menu commands ──
 
 function handleAvatarCommand(cmd: string) {
   if (cmd === 'import') triggerImport()
+  else if (cmd === 'share-site') showShareSiteModal.value = true
   else if (cmd === 'language') showLanguageSettingsModal.value = true
   else if (cmd === 'account') showAccountModal.value = true
-  else if (cmd === 'password') showPasswordModal.value = true
-  else if (cmd === 'collab-org') openOrgSessionsDialog()
-  else if (cmd === 'collab-shared') {
-    showSharedCodeDialog.value = true
-  } else if (cmd === 'logout') authStore.logout()
+  else if (cmd === 'logout') authStore.logout()
 }
 
 // ── Auto-join from QR query ──
@@ -406,64 +326,67 @@ onMounted(() => {
 
 <template>
   <div class="intl-landing">
-    <!-- Top-right module grid + avatar / login -->
-    <div class="intl-top-right">
-      <IntlModuleGrid />
-      <template v-if="authStore.isAuthenticated">
-        <ElDropdown
-          trigger="click"
-          placement="bottom-end"
-          @command="handleAvatarCommand"
-        >
-          <ElAvatar
-            :size="40"
-            class="intl-avatar"
+    <!-- Teleport header to <body> so no ancestor animation/transform/filter
+         can interfere with position:fixed -->
+    <Teleport to="body">
+      <div class="intl-top-right">
+        <IntlModuleGrid />
+        <template v-if="authStore.isAuthenticated">
+          <ElDropdown
+            trigger="click"
+            placement="bottom-end"
+            @command="handleAvatarCommand"
           >
-            {{ userAvatar }}
-          </ElAvatar>
-          <template #dropdown>
-            <ElDropdownMenu>
-              <ElDropdownItem command="import">
-                <Upload class="w-4 h-4 mr-2" />
-                {{ t('mindgraphLanding.import') }}
-              </ElDropdownItem>
-              <ElDropdownItem
-                command="language"
-                divided
-              >
-                <Languages class="w-4 h-4 mr-2" />
-                {{ t('sidebar.languageSettings') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="account">
-                <UserRound class="w-4 h-4 mr-2" />
-                {{ t('auth.accountInfo') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="password">
-                <KeyRound class="w-4 h-4 mr-2" />
-                {{ t('auth.changePassword') }}
-              </ElDropdownItem>
-              <ElDropdownItem
-                command="logout"
-                divided
-              >
-                <LogOut class="w-4 h-4 mr-2" />
-                {{ t('auth.logout') }}
-              </ElDropdownItem>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
-      </template>
-      <template v-else>
-        <ElButton
-          type="primary"
-          round
-          @click="authStore.handleTokenExpired(undefined, undefined)"
-        >
-          <LogIn class="w-4 h-4 mr-1" />
-          {{ t('auth.loginRegister') }}
-        </ElButton>
-      </template>
-    </div>
+            <ElAvatar
+              :size="40"
+              class="intl-avatar"
+            >
+              {{ userAvatar }}
+            </ElAvatar>
+            <template #dropdown>
+              <ElDropdownMenu>
+                <ElDropdownItem command="import">
+                  <Upload class="w-4 h-4 mr-2" />
+                  {{ t('mindgraphLanding.import') }}
+                </ElDropdownItem>
+                <ElDropdownItem command="share-site">
+                  <Share2 class="w-4 h-4 mr-2" />
+                  {{ t('landing.international.shareSite') }}
+                </ElDropdownItem>
+                <ElDropdownItem
+                  command="language"
+                  divided
+                >
+                  <Languages class="w-4 h-4 mr-2" />
+                  {{ t('sidebar.languageSettings') }}
+                </ElDropdownItem>
+                <ElDropdownItem command="account">
+                  <UserRound class="w-4 h-4 mr-2" />
+                  {{ t('auth.accountInfo') }}
+                </ElDropdownItem>
+                <ElDropdownItem
+                  command="logout"
+                  divided
+                >
+                  <LogOut class="w-4 h-4 mr-2" />
+                  {{ t('auth.logout') }}
+                </ElDropdownItem>
+              </ElDropdownMenu>
+            </template>
+          </ElDropdown>
+        </template>
+        <template v-else>
+          <ElButton
+            type="primary"
+            round
+            @click="authStore.handleTokenExpired(undefined, undefined)"
+          >
+            <LogIn class="w-4 h-4 mr-1" />
+            {{ t('auth.loginRegister') }}
+          </ElButton>
+        </template>
+      </div>
+    </Teleport>
 
     <!-- Scrollable content -->
     <div class="intl-scroll">
@@ -577,143 +500,108 @@ onMounted(() => {
                 class="intl-mindmate-logo"
               />
             </div>
-            <h3 class="intl-card-title">MindMate</h3>
-            <p class="intl-card-desc">虚拟教研伙伴</p>
+            <h3 class="intl-card-title">{{ t('landing.international.mindmateCard.title') }}</h3>
+            <p class="intl-card-desc">{{ t('landing.international.mindmateCard.desc') }}</p>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- Org sessions dialog -->
-    <ElDialog
-      v-model="showOrgSessionsDialog"
-      :title="t('mindgraphLanding.dialogSchoolTitle')"
-      width="480px"
-    >
-      <div
-        v-loading="orgSessionsLoading"
-        class="min-h-[120px]"
-      >
-        <p
-          v-if="!orgSessionsLoading && orgSessions.length === 0"
-          class="text-gray-500 text-sm"
-        >
-          {{ t('mindgraphLanding.orgSessionsEmpty') }}
-        </p>
-        <ul
-          v-else
-          class="space-y-2 max-h-[360px] overflow-y-auto"
-        >
-          <li
-            v-for="s in orgSessions"
-            :key="s.diagram_id"
-            class="flex items-center justify-between gap-3 p-3 rounded-lg border border-gray-100 bg-gray-50/80"
-          >
-            <div class="min-w-0 flex-1">
-              <div class="font-medium text-gray-900 truncate">{{ s.title }}</div>
-              <div class="text-xs text-gray-500">
-                {{ s.owner_username }} ·
-                {{ t('mindgraphLanding.participantsOnline', { n: s.participant_count }) }}
-              </div>
-            </div>
-            <ElButton
-              type="primary"
-              size="small"
-              :loading="isJoining"
-              @click="joinOrgSession(s)"
-            >
-              {{ t('mindgraphLanding.join') }}
-            </ElButton>
-          </li>
-        </ul>
-      </div>
-    </ElDialog>
-
-    <!-- Shared code dialog -->
-    <ElDialog
-      v-model="showSharedCodeDialog"
-      :title="t('mindgraphLanding.dialogSharedTitle')"
-      width="400px"
-    >
-      <div>
-        <p class="mb-4 text-gray-600">{{ t('mindgraphLanding.sharedCodeHint') }}</p>
-        <div class="flex justify-center my-5">
-          <div class="flex items-center gap-2">
-            <input
-              v-for="(_digit, index) in joinCode.slice(0, 3)"
-              :key="index"
-              :ref="
-                (el) => {
-                  codeInputRefs[index] = el as HTMLInputElement | null
-                }
-              "
-              v-model="joinCode[index]"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              class="code-box"
-              @input="handleDigitInput(index, $event)"
-              @keydown="handleKeyDown(index, $event)"
-              @paste="handlePaste"
-            />
-            <span class="text-2xl font-semibold text-gray-500 select-none mx-1">-</span>
-            <input
-              v-for="(_digit, index) in joinCode.slice(3, 6)"
-              :key="index + 3"
-              :ref="
-                (el) => {
-                  codeInputRefs[index + 3] = el as HTMLInputElement | null
-                }
-              "
-              v-model="joinCode[index + 3]"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              class="code-box"
-              @input="handleDigitInput(index + 3, $event)"
-              @keydown="handleKeyDown(index + 3, $event)"
-              @paste="handlePaste"
-            />
-          </div>
-        </div>
-        <div class="mt-4 flex justify-end gap-2">
-          <ElButton @click="showSharedCodeDialog = false">
-            {{ t('mindgraphLanding.cancel') }}
-          </ElButton>
-          <ElButton
-            type="primary"
-            :loading="isJoining"
-            @click="joinWorkshop"
-          >
-            {{ t('mindgraphLanding.join') }}
-          </ElButton>
-        </div>
-      </div>
-    </ElDialog>
-
     <LanguageSettingsModal v-model="showLanguageSettingsModal" />
+    <IntlShareSiteModal v-model="showShareSiteModal" />
     <AccountInfoModal
       v-model:visible="showAccountModal"
       @success="authStore.checkAuth()"
     />
-    <ChangePasswordModal v-model:visible="showPasswordModal" />
   </div>
 </template>
 
 <style scoped>
 .intl-landing {
   position: relative;
+  isolation: isolate;
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: var(--el-bg-color, #fff);
+  min-height: 0;
+  overflow: hidden;
+  /* Cool neutral canvas — aligns with card preview (#f8f9fa) + Swiss clarity */
+  background-color: rgb(248 250 252);
+  color-scheme: light;
+  /* Flow animation lives on the full viewport layer (not on .intl-scroll — see below) */
+  background-image: linear-gradient(
+    97deg,
+    transparent 0%,
+    transparent 28%,
+    rgba(148, 163, 184, 0.45) 38%,
+    rgba(255, 255, 255, 0.98) 46%,
+    rgba(102, 126, 234, 0.26) 49.5%,
+    rgba(237, 233, 254, 0.75) 50%,
+    rgba(118, 75, 162, 0.12) 50.8%,
+    rgba(248, 250, 252, 0.95) 53%,
+    rgba(100, 116, 139, 0.28) 61%,
+    transparent 72%,
+    transparent 100%
+  );
+  background-size: 300% 100%;
+  background-position: 0% 50%;
+  background-repeat: no-repeat;
+  animation: intlScrollSheen 19s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.intl-landing::before,
+.intl-landing::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.intl-landing::before {
+  top: -32%;
+  left: -52%;
+  width: 205%;
+  height: 195%;
+  background: linear-gradient(
+    104deg,
+    transparent 0%,
+    rgba(148, 163, 184, 0.22) 34%,
+    rgba(102, 126, 234, 0.18) 48%,
+    rgba(226, 232, 240, 0.82) 50%,
+    rgba(118, 75, 162, 0.14) 51.2%,
+    rgba(148, 163, 184, 0.2) 62%,
+    transparent 100%
+  );
+  filter: blur(11px);
+  transform: translateX(-12%) rotate(1.25deg);
+  animation: intlScrollWindPrimary 34s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+}
+
+.intl-landing::after {
+  top: -20%;
+  right: -72%;
+  width: 190%;
+  height: 180%;
+  background: linear-gradient(
+    -68deg,
+    transparent 0%,
+    rgba(241, 245, 249, 0.95) 40%,
+    rgba(255, 255, 255, 0.75) 49%,
+    rgba(102, 126, 234, 0.1) 51%,
+    rgba(100, 116, 139, 0.16) 58%,
+    transparent 100%
+  );
+  filter: blur(9px);
+  opacity: 1;
+  animation: intlScrollWindSecondary 44s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  animation-delay: -14s;
 }
 
 .intl-top-right {
-  position: absolute;
+  position: fixed;
   top: 16px;
-  right: 20px;
-  z-index: 10;
+  right: max(20px, env(safe-area-inset-right, 20px));
+  z-index: 100;
   display: flex;
   align-items: center;
   gap: 8px;
@@ -730,13 +618,58 @@ onMounted(() => {
   box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
 }
 
-/* ── Scrollable content ── */
-
 .intl-scroll {
-  flex: 1;
+  position: relative;
+  z-index: 1;
+  flex: 1 1 0;
+  width: 100%;
   min-height: 0;
+  box-sizing: border-box;
+  overflow-x: hidden;
   overflow-y: auto;
-  padding: 0 20px 60px;
+  padding: 0 20px 20px;
+}
+
+@keyframes intlScrollSheen {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes intlScrollWindPrimary {
+  0%,
+  100% {
+    transform: translateX(-22%) translateY(0) rotate(1.25deg);
+  }
+  50% {
+    transform: translateX(34%) translateY(4%) rotate(0.9deg);
+  }
+}
+
+@keyframes intlScrollWindSecondary {
+  0%,
+  100% {
+    transform: translateX(20%) translateY(-5%);
+  }
+  50% {
+    transform: translateX(-38%) translateY(7%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .intl-landing {
+    animation: none;
+    background-position: 50% 50%;
+  }
+
+  .intl-landing::before,
+  .intl-landing::after {
+    animation: none;
+  }
 }
 
 /* ── Hero ── */
@@ -748,7 +681,7 @@ onMounted(() => {
   justify-content: center;
   gap: 24px;
   padding-top: 48px;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
 }
 
 .intl-hero-text {
@@ -846,7 +779,7 @@ onMounted(() => {
 
 .intl-prompt-section {
   max-width: 680px;
-  margin: 0 auto 48px;
+  margin: 0 auto 36px;
   padding: 0 20px;
   position: relative;
 }
@@ -939,24 +872,20 @@ onMounted(() => {
   cursor: not-allowed;
 }
 
-/* ── Gallery — same grey as /auth international (AuthLayout .auth-layout--minimal-intl) ── */
+/* ── Gallery (background + wind live on .intl-scroll + .intl-landing) ── */
 
 .intl-gallery {
-  width: calc(100% + 40px);
-  margin-left: -20px;
-  margin-right: -20px;
+  width: 100%;
   margin-top: 0;
-  padding: 32px 30px 48px;
+  padding: 24px 10px 16px;
   box-sizing: border-box;
-  background-color: rgb(249 250 251);
-  color-scheme: light;
 }
 
 .intl-gallery .intl-section-title {
   max-width: 1400px;
   margin-left: auto;
   margin-right: auto;
-  margin-bottom: 24px;
+  margin-bottom: 20px;
   padding-left: 10px;
   padding-right: 10px;
 }
@@ -1106,27 +1035,6 @@ onMounted(() => {
   }
 }
 
-/* ── Code input boxes ── */
-
-.code-box {
-  width: 48px;
-  height: 48px;
-  text-align: center;
-  font-size: 24px;
-  font-weight: 600;
-  border: 2px solid #d1d5db;
-  border-radius: 8px;
-  background: var(--el-bg-color, #fff);
-  color: var(--el-text-color-primary, #1f2937);
-  outline: none;
-  transition: all 0.2s;
-}
-
-.code-box:focus {
-  border-color: #667eea;
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.15);
-}
-
 /* ── Mobile ── */
 
 @media (max-width: 768px) {
@@ -1185,16 +1093,5 @@ onMounted(() => {
 
 .dark .intl-card:hover {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
-}
-
-.dark .code-box {
-  background: #1f2937;
-  border-color: #4b5563;
-  color: #f9fafb;
-}
-
-.dark .code-box:focus {
-  border-color: #667eea;
-  background: #111827;
 }
 </style>

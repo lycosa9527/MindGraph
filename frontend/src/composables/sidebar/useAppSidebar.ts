@@ -98,7 +98,6 @@ export function useAppSidebar() {
 
   const showLoginModal = ref(false)
   const showAccountModal = ref(false)
-  const showPasswordModal = ref(false)
   const showLanguageSettingsModal = ref(false)
 
   function toggleSidebar() {
@@ -140,10 +139,6 @@ export function useAppSidebar() {
 
   function openLoginModal() {
     showLoginModal.value = true
-  }
-
-  function openPasswordModal() {
-    showPasswordModal.value = true
   }
 
   function openAccountModal() {
@@ -241,12 +236,10 @@ export function useAppSidebar() {
     userAvatar,
     showLoginModal,
     showAccountModal,
-    showPasswordModal,
     showLanguageSettingsModal,
     toggleSidebar,
     setMode,
     openLoginModal,
-    openPasswordModal,
     openAccountModal,
     openLanguageSettingsModal,
     handleLogout,

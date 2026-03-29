@@ -113,4 +113,11 @@ export default {
   'landing.international.promptPlaceholder': 'صف مخططك أو اختر نوعًا أدناه…',
   'landing.international.sectionTitle': 'اختر نوع المخطط',
   'landing.international.modules': 'الوحدات',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc': 'شريكك الافتراضي للتدريس والبحث',
+  'landing.international.shareSite': 'Share site',
+  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copy link',
+  'landing.international.shareSiteCopied': 'Link copied',
 } as const
