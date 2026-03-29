@@ -532,8 +532,8 @@ onMounted(() => {
   background-image: linear-gradient(
     97deg,
     transparent 0%,
-    transparent 28%,
-    rgba(148, 163, 184, 0.45) 38%,
+    transparent 32%,
+    rgba(148, 163, 184, 0.32) 38%,
     rgba(255, 255, 255, 0.98) 46%,
     rgba(102, 126, 234, 0.26) 49.5%,
     rgba(237, 233, 254, 0.75) 50%,
@@ -546,7 +546,9 @@ onMounted(() => {
   background-size: 300% 100%;
   background-position: 0% 50%;
   background-repeat: no-repeat;
-  animation: intlScrollSheen 19s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+  /* Linear + negative delay: avoid slow ease at loop join and first paint */
+  animation: intlScrollSheen 19s linear infinite;
+  animation-delay: -6s;
 }
 
 .intl-landing::before,
@@ -565,16 +567,18 @@ onMounted(() => {
   background: linear-gradient(
     104deg,
     transparent 0%,
-    rgba(148, 163, 184, 0.22) 34%,
-    rgba(102, 126, 234, 0.18) 48%,
-    rgba(226, 232, 240, 0.82) 50%,
-    rgba(118, 75, 162, 0.14) 51.2%,
-    rgba(148, 163, 184, 0.2) 62%,
+    transparent 26%,
+    rgba(148, 163, 184, 0.14) 38%,
+    rgba(102, 126, 234, 0.12) 50%,
+    rgba(226, 232, 240, 0.78) 51%,
+    rgba(118, 75, 162, 0.1) 52%,
+    rgba(148, 163, 184, 0.16) 62%,
     transparent 100%
   );
   filter: blur(11px);
-  transform: translateX(-12%) rotate(1.25deg);
-  animation: intlScrollWindPrimary 34s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  transform: translateX(-6%) rotate(1.25deg);
+  animation: intlScrollWindPrimary 28s linear infinite;
+  animation-delay: -10s;
 }
 
 .intl-landing::after {
@@ -593,8 +597,8 @@ onMounted(() => {
   );
   filter: blur(9px);
   opacity: 1;
-  animation: intlScrollWindSecondary 44s cubic-bezier(0.4, 0, 0.2, 1) infinite;
-  animation-delay: -14s;
+  animation: intlScrollWindSecondary 36s linear infinite;
+  animation-delay: -18s;
 }
 
 .intl-top-right {
@@ -643,20 +647,20 @@ onMounted(() => {
 @keyframes intlScrollWindPrimary {
   0%,
   100% {
-    transform: translateX(-22%) translateY(0) rotate(1.25deg);
+    transform: translateX(-6%) translateY(0) rotate(1.25deg);
   }
   50% {
-    transform: translateX(34%) translateY(4%) rotate(0.9deg);
+    transform: translateX(38%) translateY(4%) rotate(0.9deg);
   }
 }
 
 @keyframes intlScrollWindSecondary {
   0%,
   100% {
-    transform: translateX(20%) translateY(-5%);
+    transform: translateX(8%) translateY(-5%);
   }
   50% {
-    transform: translateX(-38%) translateY(7%);
+    transform: translateX(-32%) translateY(7%);
   }
 }
 
