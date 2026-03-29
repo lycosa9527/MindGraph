@@ -326,11 +326,7 @@ function labeledDimensionPrefix(braceMap: boolean, dimensionValue: string): stri
       ? t('diagram.dimension.decompositionZh')
       : t('diagram.dimension.classificationZh')
   }
-  if (uiStore.language === 'az') {
-    return braceMap
-      ? t('diagram.dimension.decompositionAz')
-      : t('diagram.dimension.classificationAz')
-  }
+  // Locale-specific wording comes from each bundle’s *En keys (misnamed; not English-only).
   return braceMap ? t('diagram.dimension.decompositionEn') : t('diagram.dimension.classificationEn')
 }
 

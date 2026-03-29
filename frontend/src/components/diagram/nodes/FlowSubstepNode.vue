@@ -131,7 +131,7 @@ function handleBranchMovePointerUp(): void {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      :max-width="isFlowMap ? 'none' : '94px'"
+      :max-width="isFlowMap ? 'none' : '140px'"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isFlowMap"
@@ -186,7 +186,8 @@ function handleBranchMovePointerUp(): void {
 
 <style scoped>
 .flow-substep-node {
-  width: 100px;
+  width: max-content;
+  min-width: 100px;
   min-height: 50px;
   overflow: visible;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.08);

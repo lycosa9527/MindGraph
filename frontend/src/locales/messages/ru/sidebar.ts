@@ -46,7 +46,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Имя не может быть пустым',
   'sidebar.diagramHistory.renamePrompt': 'Введите новое имя для этой диаграммы',
   'sidebar.diagramHistory.renameTitle': 'Переименовать диаграмму',
-  'sidebar.diagramHistory.title': 'Диаграммы',
+  'sidebar.diagramHistory.title': 'Сохранённые диаграммы',
   'sidebar.diagramType.brace_map': 'Скобочная карта',
   'sidebar.diagramType.bridge_map': 'Мостовая карта',
   'sidebar.diagramType.bubble_map': 'Пузырьковая карта',

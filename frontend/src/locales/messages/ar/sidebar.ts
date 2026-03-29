@@ -46,7 +46,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'لا يمكن أن يكون الاسم فارغًا',
   'sidebar.diagramHistory.renamePrompt': 'أدخل اسمًا جديدًا لهذا المخطط',
   'sidebar.diagramHistory.renameTitle': 'إعادة تسمية المخطط',
-  'sidebar.diagramHistory.title': 'المخططات',
+  'sidebar.diagramHistory.title': 'المخططات المحفوظة',
   'sidebar.diagramType.brace_map': 'Brace Map',
   'sidebar.diagramType.bridge_map': 'Bridge Map',
   'sidebar.diagramType.bubble_map': 'Bubble Map',

@@ -4,8 +4,7 @@ import { nextTick } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
-import { getFlowTopicCenteredPosition } from '@/stores/specLoader/flowMap'
-import type { Connection, DiagramNode, MindGraphNode } from '@/types'
+import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 
 type FitApi = {
@@ -162,18 +161,12 @@ export function useDiagramCanvasEventBus(): {
         const alreadyUpdated = currentText === text.trim()
         if (!alreadyUpdated) {
           diagramStore.pushHistory('Edit node text')
-          if (
-            diagramStore.type === 'flow_map' &&
-            nodeId === 'flow-topic' &&
-            diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')?.data?.orientation ===
-              'vertical'
-          ) {
-            const topicNode = diagramStore.data?.nodes?.find((n) => n.id === 'flow-topic')
-            const currentY = (topicNode?.position as { y?: number })?.y ?? 80
-            const pos = getFlowTopicCenteredPosition(text, currentY)
-            diagramStore.updateNode(nodeId, { text, position: pos })
-          } else {
-            diagramStore.updateNode(nodeId, { text })
+          diagramStore.updateNode(nodeId, { text })
+          if (diagramStore.type === 'flow_map') {
+            const spec = diagramStore.buildFlowMapSpecFromNodes()
+            if (spec) {
+              diagramStore.loadFromSpec(spec as Record<string, unknown>, 'flow_map' as DiagramType)
+            }
           }
         }
         if (

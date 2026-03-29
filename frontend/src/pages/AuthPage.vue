@@ -49,15 +49,17 @@ onBeforeUnmount(() => {
 </script>
 
 <template>
-  <div class="text-center py-6 px-2">
-    <p class="text-stone-400 text-sm tracking-widest uppercase">
-      {{ t('auth.modal.tagline') }}
-    </p>
-  </div>
+  <div>
+    <div class="text-center py-6 px-2">
+      <p class="text-stone-400 text-sm tracking-widest uppercase">
+        {{ t('auth.modal.tagline') }}
+      </p>
+    </div>
 
-  <LoginModal
-    v-model:visible="showLoginModal"
-    light-backdrop
-    @success="onLoginSuccess"
-  />
+    <LoginModal
+      v-model:visible="showLoginModal"
+      light-backdrop
+      @success="onLoginSuccess"
+    />
+  </div>
 </template>

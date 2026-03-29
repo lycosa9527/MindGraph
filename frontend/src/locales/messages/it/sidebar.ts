@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Il nome non può essere vuoto',
   'sidebar.diagramHistory.renamePrompt': 'Inserisci un nuovo nome per questo diagramma',
   'sidebar.diagramHistory.renameTitle': 'Rinomina diagramma',
-  'sidebar.diagramHistory.title': 'Diagrammi',
+  'sidebar.diagramHistory.title': 'Diagrammi salvati',
   'sidebar.diagramType.brace_map': 'Brace Map',
   'sidebar.diagramType.bridge_map': 'Bridge Map',
   'sidebar.diagramType.bubble_map': 'Bubble Map',

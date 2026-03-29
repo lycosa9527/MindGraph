@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.63.0] - 2026-03-29
+
+### Added
+- **International landing — saved diagrams**: `IntlDiagramDropdown.vue` — scrollable library under the prompt bar (rename, delete, slot counter, open on select) wired to `useSavedDiagramsStore` and auth.
+
+### Changed
+- **International UI**: Updates to `InternationalLanding.vue` and `IntlModuleGrid.vue` for diagram entry and module navigation.
+- **Canvas & nodes**: `CanvasToolbar.vue`, `BranchNode`, `BubbleNode`, `FlowSubstepNode`, `InlineEditableText`, `LabelNode` — editing, layout, and interaction polish.
+- **Diagram editor**: `useDiagramOperations`, `useDiagramCanvasEventBus`, `applySelection`; diagram store (`diagram.ts`, mind map / brace map ops, node management, constants, default labels); `specLoader` (`flowMap`, `defaultTemplates`, `utils`).
+- **Auth & routing**: `AuthLayout`, `AuthPage`, `useLoginModal`, `router/index.ts` alignment with auth flows.
+- **Admin**: `AdminTrendChartModal.vue` adjustments.
+- **i18n**: Canvas and sidebar message updates across many locale bundles.
+
 ## [5.62.0] - 2026-03-28
 
 ### Added

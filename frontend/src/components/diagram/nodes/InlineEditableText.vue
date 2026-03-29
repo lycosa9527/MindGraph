@@ -559,7 +559,7 @@ onUnmounted(() => {
             ? 'truncate-text'
             : shouldPreventWrap
               ? 'whitespace-nowrap'
-              : 'whitespace-pre-wrap',
+              : 'inline-edit-display--wrap',
       ]"
       :style="{
         maxWidth: maxWidth,
@@ -677,6 +677,13 @@ onUnmounted(() => {
   padding-left: 0;
   padding-right: 0;
   box-sizing: border-box;
+}
+
+/* Wrap mode: matches measurement element (word-break + overflow-wrap) for consistent layout */
+.inline-edit-display--wrap {
+  white-space: pre-wrap;
+  word-break: break-word;
+  overflow-wrap: break-word;
 }
 
 /* Truncate mode: single line with ellipsis */

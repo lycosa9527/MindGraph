@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'नाम खाली नहीं हो सकता',
   'sidebar.diagramHistory.renamePrompt': 'इस आरेख के लिए नया नाम दर्ज करें',
   'sidebar.diagramHistory.renameTitle': 'आरेख का नाम बदलें',
-  'sidebar.diagramHistory.title': 'आरेख',
+  'sidebar.diagramHistory.title': 'सहेजे गए आरेख',
   'sidebar.diagramType.brace_map': 'ब्रेस मानचित्र',
   'sidebar.diagramType.bridge_map': 'ब्रिज मानचित्र',
   'sidebar.diagramType.bubble_map': 'बुलबुला मानचित्र',

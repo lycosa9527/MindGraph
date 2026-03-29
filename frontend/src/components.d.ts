@@ -149,6 +149,7 @@ declare module 'vue' {
     InlineEditableText: typeof import('./components/diagram/nodes/InlineEditableText.vue')['default']
     InlineRecommendationsPicker: typeof import('./components/canvas/InlineRecommendationsPicker.vue')['default']
     InternationalLanding: typeof import('./components/mindgraph/InternationalLanding.vue')['default']
+    IntlDiagramDropdown: typeof import('./components/mindgraph/IntlDiagramDropdown.vue')['default']
     IntlModuleGrid: typeof import('./components/mindgraph/IntlModuleGrid.vue')['default']
     JudgeArea: typeof import('./components/debateverse/JudgeArea.vue')['default']
     KnowledgeSpaceHeader: typeof import('./components/knowledge-space/KnowledgeSpaceHeader.vue')['default']

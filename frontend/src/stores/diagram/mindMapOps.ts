@@ -1,5 +1,6 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
+import { i18n } from '@/i18n'
 import type { DiagramNode, Position } from '@/types'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
@@ -42,8 +43,8 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
   function addMindMapBranch(
     _side: 'left' | 'right',
-    text = 'New Branch',
-    childText = 'New Child'
+    text = String(i18n.global.t('diagram.newBranch')),
+    childText = String(i18n.global.t('diagram.newChild'))
   ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
@@ -83,7 +84,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     return true
   }
 
-  function addMindMapChild(parentNodeId: string, text = 'New Child'): boolean {
+  function addMindMapChild(parentNodeId: string, text = String(i18n.global.t('diagram.newChild'))): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 

@@ -412,6 +412,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     getDoubleBubbleSpecFromData,
     addDoubleBubbleMapNode,
     removeDoubleBubbleMapNodes,
+    buildFlowMapSpecFromNodes,
     addFlowMapStep,
     addFlowMapSubstep,
     toggleFlowMapOrientation,

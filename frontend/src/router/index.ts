@@ -439,10 +439,6 @@ router.beforeEach(async (to, _from, next) => {
     }
   }
 
-  if (uiStore.uiVersion === 'international' && to.name === 'MindMate') {
-    return next({ name: 'MindGraph' })
-  }
-
   next()
 })
 

@@ -50,7 +50,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Naam mag nie leeg wees nie',
   'sidebar.diagramHistory.renamePrompt': "Voer 'n nuwe naam vir hierdie diagram in",
   'sidebar.diagramHistory.renameTitle': 'Hernoem Diagram',
-  'sidebar.diagramHistory.title': 'Diagramme',
+  'sidebar.diagramHistory.title': 'Gestoorde diagramme',
   'sidebar.diagramType.brace_map': 'Klammertjiekaart',
   'sidebar.diagramType.bridge_map': 'Brugkaart',
   'sidebar.diagramType.bubble_map': 'Bubbekaart',

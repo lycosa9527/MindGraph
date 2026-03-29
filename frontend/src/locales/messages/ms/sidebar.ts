@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Nama tidak boleh kosong',
   'sidebar.diagramHistory.renamePrompt': 'Masukkan nama baharu untuk gambar rajah ini',
   'sidebar.diagramHistory.renameTitle': 'Namakan semula gambar rajah',
-  'sidebar.diagramHistory.title': 'Gambar rajah',
+  'sidebar.diagramHistory.title': 'Gambar rajah tersimpan',
   'sidebar.diagramType.brace_map': 'Peta pendakap',
   'sidebar.diagramType.bridge_map': 'Peta jambatan',
   'sidebar.diagramType.bubble_map': 'Peta gelembung',

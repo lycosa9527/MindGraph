@@ -46,7 +46,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': '名前は空にできません',
   'sidebar.diagramHistory.renamePrompt': 'この図の新しい名前を入力',
   'sidebar.diagramHistory.renameTitle': '図の名前を変更',
-  'sidebar.diagramHistory.title': '図',
+  'sidebar.diagramHistory.title': '保存した図',
   'sidebar.diagramType.brace_map': 'ブレースマップ',
   'sidebar.diagramType.bridge_map': 'ブリッジマップ',
   'sidebar.diagramType.bubble_map': 'バブルマップ',

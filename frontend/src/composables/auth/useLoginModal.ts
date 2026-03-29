@@ -158,7 +158,8 @@ export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit)
       } else {
         document.body.style.overflow = ''
       }
-    }
+    },
+    { immediate: true }
   )
 
   watch(

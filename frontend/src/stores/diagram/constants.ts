@@ -1,3 +1,4 @@
+import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
 import {
@@ -27,15 +28,19 @@ function placeholderStringsForLocales(fn: (lang: LocaleCode) => string): string[
   return UI_LOCALE_CODES.map(fn)
 }
 
+function i18nPlaceholdersForAllLocales(key: string): string[] {
+  return UI_LOCALE_CODES.map((lang) =>
+    String(i18n.global.t(key, {}, { locale: lang }))
+  )
+}
+
 export const PLACEHOLDER_TEXTS = [
-  '主题',
-  '中心主题',
-  '根主题',
-  '事件',
-  ...placeholderStringsForLocales(getConceptMapFocusQuestionDefault),
-  ...placeholderStringsForLocales(getConceptMapRootConceptText),
-  'Topic',
-  'Central Topic',
-  'Root',
-  'Event',
+  ...new Set([
+    ...i18nPlaceholdersForAllLocales('diagram.defaults.topic'),
+    ...i18nPlaceholdersForAllLocales('diagram.defaults.centralTopic'),
+    ...i18nPlaceholdersForAllLocales('diagram.defaults.rootTopic'),
+    ...i18nPlaceholdersForAllLocales('diagram.defaults.mainEvent'),
+    ...placeholderStringsForLocales(getConceptMapFocusQuestionDefault),
+    ...placeholderStringsForLocales(getConceptMapRootConceptText),
+  ]),
 ]

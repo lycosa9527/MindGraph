@@ -50,7 +50,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Le nom ne peut pas être vide',
   'sidebar.diagramHistory.renamePrompt': 'Saisissez un nouveau nom pour ce diagramme',
   'sidebar.diagramHistory.renameTitle': 'Renommer le diagramme',
-  'sidebar.diagramHistory.title': 'Diagrammes',
+  'sidebar.diagramHistory.title': 'Diagrammes enregistrés',
   'sidebar.diagramType.brace_map': 'Carte à accolades',
   'sidebar.diagramType.bridge_map': 'Carte pont',
   'sidebar.diagramType.bubble_map': 'Carte à bulles',

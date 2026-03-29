@@ -9,10 +9,6 @@ function conceptT(key: string, lang: LocaleCode): string {
   return String(i18n.global.t(key, {}, { locale: lang }))
 }
 
-export function defaultUiLocaleGroup(lang: LocaleCode): 'zh' | 'en' {
-  return lang === 'zh' || lang === 'zh-tw' ? 'zh' : 'en'
-}
-
 export function getConceptMapFocusQuestionPrefix(lang: LocaleCode): string {
   return conceptT('diagram.conceptMap.focusQuestionPrefix', lang)
 }

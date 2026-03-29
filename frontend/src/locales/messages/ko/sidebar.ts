@@ -46,7 +46,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': '이름은 비울 수 없습니다',
   'sidebar.diagramHistory.renamePrompt': '이 다이어그램의 새 이름을 입력하세요',
   'sidebar.diagramHistory.renameTitle': '다이어그램 이름 바꾸기',
-  'sidebar.diagramHistory.title': '다이어그램',
+  'sidebar.diagramHistory.title': '저장된 다이어그램',
   'sidebar.diagramType.brace_map': '브레이스 맵',
   'sidebar.diagramType.bridge_map': '브리지 맵',
   'sidebar.diagramType.bubble_map': '버블 맵',

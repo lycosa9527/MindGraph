@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Ad boş olamaz',
   'sidebar.diagramHistory.renamePrompt': 'Bu diyagram için yeni bir ad girin',
   'sidebar.diagramHistory.renameTitle': 'Diyagramı yeniden adlandır',
-  'sidebar.diagramHistory.title': 'Diyagramlar',
+  'sidebar.diagramHistory.title': 'Kaydedilen diyagramlar',
   'sidebar.diagramType.brace_map': 'Süslü parantez haritası',
   'sidebar.diagramType.bridge_map': 'Köprü haritası',
   'sidebar.diagramType.bubble_map': 'Baloncuk haritası',

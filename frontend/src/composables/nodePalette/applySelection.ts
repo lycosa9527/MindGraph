@@ -683,7 +683,7 @@ function applyRemainder(
     } else {
       remainder.forEach((s) => {
         const text = (s.text ?? '').trim()
-        if (text) diagramStore.addMindMapBranch('right', text, 'New Child')
+        if (text) diagramStore.addMindMapBranch('right', text, String(i18n.global.t('diagram.newChild')))
       })
     }
   } else if (diagramTypeVal === 'flow_map') {

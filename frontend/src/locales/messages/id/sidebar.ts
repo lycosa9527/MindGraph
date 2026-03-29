@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Nama tidak boleh kosong',
   'sidebar.diagramHistory.renamePrompt': 'Masukkan nama baru untuk diagram ini',
   'sidebar.diagramHistory.renameTitle': 'Ubah nama diagram',
-  'sidebar.diagramHistory.title': 'Diagram',
+  'sidebar.diagramHistory.title': 'Diagram yang disimpan',
   'sidebar.diagramType.brace_map': 'Peta kurung',
   'sidebar.diagramType.bridge_map': 'Peta jembatan',
   'sidebar.diagramType.bubble_map': 'Peta gelembung',

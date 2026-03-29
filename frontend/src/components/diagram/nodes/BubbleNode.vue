@@ -74,7 +74,7 @@ function handleEditCancel() {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="100px"
+      max-width="140px"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       text-class="px-3 py-2"

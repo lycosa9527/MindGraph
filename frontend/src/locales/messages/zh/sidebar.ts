@@ -46,7 +46,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': '名称不能为空',
   'sidebar.diagramHistory.renamePrompt': '请输入新的图示名称',
   'sidebar.diagramHistory.renameTitle': '重命名图示',
-  'sidebar.diagramHistory.title': '历史图示',
+  'sidebar.diagramHistory.title': '已保存图示',
   'sidebar.diagramType.brace_map': '括号图',
   'sidebar.diagramType.bridge_map': '桥形图',
   'sidebar.diagramType.bubble_map': '气泡图',

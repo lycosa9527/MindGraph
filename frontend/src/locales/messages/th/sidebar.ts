@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'ชื่อต้องไม่เว้นว่าง',
   'sidebar.diagramHistory.renamePrompt': 'ใส่ชื่อใหม่สำหรับไดอะแกรมนี้',
   'sidebar.diagramHistory.renameTitle': 'เปลี่ยนชื่อไดอะแกรม',
-  'sidebar.diagramHistory.title': 'ไดอะแกรม',
+  'sidebar.diagramHistory.title': 'ไดอะแกรมที่บันทึก',
   'sidebar.diagramType.brace_map': 'แผนภูมิปีกกา',
   'sidebar.diagramType.bridge_map': 'แผนภูมิเปรียบเทียบ',
   'sidebar.diagramType.bubble_map': 'แผนภูมิฟอง',

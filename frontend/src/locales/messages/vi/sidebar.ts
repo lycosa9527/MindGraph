@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Tên không được để trống',
   'sidebar.diagramHistory.renamePrompt': 'Nhập tên mới cho sơ đồ này',
   'sidebar.diagramHistory.renameTitle': 'Đổi tên sơ đồ',
-  'sidebar.diagramHistory.title': 'Sơ đồ',
+  'sidebar.diagramHistory.title': 'Sơ đồ đã lưu',
   'sidebar.diagramType.brace_map': 'Sơ đồ ngoặc',
   'sidebar.diagramType.bridge_map': 'Sơ đồ cầu',
   'sidebar.diagramType.bubble_map': 'Sơ đồ bong bóng',

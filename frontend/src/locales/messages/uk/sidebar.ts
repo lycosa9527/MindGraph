@@ -49,7 +49,7 @@ export default {
   'sidebar.diagramHistory.nameRequired': 'Назва не може бути порожньою',
   'sidebar.diagramHistory.renamePrompt': 'Введіть нову назву цієї діаграми',
   'sidebar.diagramHistory.renameTitle': 'Перейменувати діаграму',
-  'sidebar.diagramHistory.title': 'Діаграми',
+  'sidebar.diagramHistory.title': 'Збережені діаграми',
   'sidebar.diagramType.brace_map': 'Діаграма-дужка',
   'sidebar.diagramType.bridge_map': 'Місткова діаграма',
   'sidebar.diagramType.bubble_map': 'Бульбашкова діаграма',

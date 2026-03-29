@@ -46,6 +46,14 @@ const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 // Check if this is a tree map (needs vertical handles)
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 
+const textMaxWidth = computed(() => {
+  if (isTreeMap.value && props.data.style?.width != null) {
+    const px = Number(props.data.style.width)
+    return `${Math.max(60, px - 32)}px`
+  }
+  return '200px'
+})
+
 // Check if this is a bridge map node (should be text-only, including first pair)
 const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
 
@@ -215,7 +223,7 @@ function handleEditCancel() {
       :node-id="id"
       :is-editing="isEditing"
       :readonly="data.hidden === true"
-      max-width="150px"
+      :max-width="textMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       @save="handleTextSave"

@@ -8,6 +8,7 @@
  */
 import { computed, onUnmounted, ref, shallowRef, watch } from 'vue'
 
+import { i18n } from '@/i18n'
 import { useDiagramStore } from '@/stores/diagram'
 import type { DiagramSpec, DiagramType } from '@/types'
 
@@ -77,31 +78,28 @@ interface DiagramConfig {
   arrayFields: Record<string, string>
   protectedNodes: string[]
   maxNodes?: Record<string, number>
-  defaultTexts: Record<string, { en: string | string[]; zh: string | string[] }>
+  defaultTextKeys: Record<string, string | string[]>
 }
 
 const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
-  // Circle Map - old JS uses '新联想' for new context nodes
   circle_map: {
     nodeTypes: ['topic', 'context'],
     arrayFields: { context: 'context' },
     protectedNodes: ['topic'],
-    defaultTexts: {
-      context: { en: 'New Context', zh: '新联想' },
-      topic: { en: 'Main Topic', zh: '主题' },
+    defaultTextKeys: {
+      context: 'diagram.newContext',
+      topic: 'diagram.defaults.topic',
     },
   },
-  // Bubble Map - old JS uses '新属性' for new attribute nodes
   bubble_map: {
     nodeTypes: ['topic', 'attribute'],
     arrayFields: { attribute: 'attributes' },
     protectedNodes: ['topic'],
-    defaultTexts: {
-      attribute: { en: 'New Attribute', zh: '新属性' },
-      topic: { en: 'Main Topic', zh: '主题' },
+    defaultTextKeys: {
+      attribute: 'diagram.newAttribute',
+      topic: 'diagram.defaults.topic',
     },
   },
-  // Double Bubble Map - old JS uses '新相似点' and '左不同点'/'右不同点'
   double_bubble_map: {
     nodeTypes: ['topic1', 'topic2', 'similarity', 'difference'],
     arrayFields: {
@@ -110,79 +108,72 @@ const DIAGRAM_CONFIGS: Record<string, DiagramConfig> = {
       right_difference: 'right_differences',
     },
     protectedNodes: ['topic1', 'topic2'],
-    defaultTexts: {
-      similarity: { en: 'New Similarity', zh: '新相似点' },
-      left_difference: { en: 'Left Difference', zh: '左不同点' },
-      right_difference: { en: 'Right Difference', zh: '右不同点' },
+    defaultTextKeys: {
+      similarity: 'diagram.newSimilarity',
+      left_difference: 'diagram.newLeftDifference',
+      right_difference: 'diagram.newRightDifference',
     },
   },
-  // Brace Map - old JS uses '新部分' and '新子部分'
   brace_map: {
     nodeTypes: ['whole', 'part', 'subpart'],
     arrayFields: { part: 'parts' },
     protectedNodes: ['whole'],
-    defaultTexts: {
-      part: { en: 'New Part', zh: '新部分' },
-      subpart: { en: 'New Subpart', zh: '新子部分' },
+    defaultTextKeys: {
+      part: 'diagram.newPart',
+      subpart: 'diagram.newSubpart',
     },
   },
-  // Bridge Map - old JS uses '新事物A'/'新事物B'
   bridge_map: {
     nodeTypes: ['relation', 'pair'],
     arrayFields: { pair: 'analogies' },
     protectedNodes: [],
-    defaultTexts: {
-      pair: { en: ['New Left', 'New Right'], zh: ['新事物A', '新事物B'] },
+    defaultTextKeys: {
+      pair: ['diagram.newBridgeLeft', 'diagram.newBridgeRight'],
     },
   },
-  // Tree Map - old JS uses '新类别' and '新项目'
   tree_map: {
     nodeTypes: ['main', 'category', 'item'],
     arrayFields: { category: 'children' },
     protectedNodes: ['main'],
-    defaultTexts: {
-      category: { en: 'New Category', zh: '新类别' },
-      item: { en: 'New Item', zh: '新项目' },
+    defaultTextKeys: {
+      category: 'diagram.newCategory',
+      item: 'diagram.newItem',
     },
   },
-  // Flow Map - old JS uses '新步骤' and '新子步骤'
   flow_map: {
     nodeTypes: ['title', 'step', 'substep'],
     arrayFields: { step: 'steps' },
     protectedNodes: ['title'],
-    defaultTexts: {
-      step: { en: 'New Step', zh: '新步骤' },
-      substep: { en: 'New Substep', zh: '新子步骤' },
+    defaultTextKeys: {
+      step: 'diagram.newStep',
+      substep: 'diagram.newSubstep',
     },
   },
-  // Multi-Flow Map - old JS uses '新原因' and '新结果'
   multi_flow_map: {
     nodeTypes: ['event', 'cause', 'effect'],
     arrayFields: { cause: 'causes', effect: 'effects' },
     protectedNodes: ['event'],
-    defaultTexts: {
-      cause: { en: 'New Cause', zh: '新原因' },
-      effect: { en: 'New Effect', zh: '新结果' },
+    defaultTextKeys: {
+      cause: 'diagram.flow.newCause',
+      effect: 'diagram.flow.newEffect',
     },
   },
-  // Concept Map - old JS uses '新概念' and '关联'
   concept_map: {
     nodeTypes: ['concept', 'link'],
     arrayFields: { concept: 'concepts' },
     protectedNodes: [],
-    defaultTexts: {
-      concept: { en: 'New Concept', zh: '新概念' },
-      relation: { en: 'relates to', zh: '关联' },
+    defaultTextKeys: {
+      concept: 'diagram.newConcept',
+      relation: 'diagram.relatesTo',
     },
   },
-  // Mind Map - old JS uses '新分支' and '新子项'
   mindmap: {
     nodeTypes: ['topic', 'branch', 'child'],
     arrayFields: { branch: 'children' },
     protectedNodes: ['topic'],
-    defaultTexts: {
-      branch: { en: 'New Branch', zh: '新分支' },
-      child: { en: 'New Subitem', zh: '新子项' },
+    defaultTextKeys: {
+      branch: 'diagram.newBranch',
+      child: 'diagram.newSubitem',
     },
   },
 }
@@ -221,12 +212,11 @@ export function useDiagramOperations(options: UseDiagramOperationsOptions = {}) 
   // =========================================================================
 
   function getDefaultText(nodeType: string): string {
-    if (!config.value) return 'New Node'
-    const texts = config.value.defaultTexts[nodeType]
-    if (!texts) return 'New Node'
-
-    const textValue = currentLang.value === 'zh' ? texts.zh : texts.en
-    return Array.isArray(textValue) ? textValue[0] : textValue
+    if (!config.value) return String(i18n.global.t('diagram.contextMenu.addNode'))
+    const keyOrKeys = config.value.defaultTextKeys[nodeType]
+    if (!keyOrKeys) return String(i18n.global.t('diagram.contextMenu.addNode'))
+    const key = Array.isArray(keyOrKeys) ? keyOrKeys[0] : keyOrKeys
+    return String(i18n.global.t(key))
   }
 
   function findNodeInSpec(

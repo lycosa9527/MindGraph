@@ -120,10 +120,10 @@ function handleToggleOrientation() {
     ]"
   >
     <div
-      class="rounded-xl shadow-lg p-1.5 flex items-center justify-center border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
+      class="rounded-xl shadow-lg p-1.5 flex items-center justify-center border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md max-w-[min(100vw-1rem,1200px)] overflow-x-auto"
     >
       <div
-        class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5"
+        class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5 min-w-min"
       >
         <template v-if="props.isPresentationMode">
           <ElTooltip

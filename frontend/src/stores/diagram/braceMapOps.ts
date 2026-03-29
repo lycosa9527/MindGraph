@@ -1,3 +1,5 @@
+import { i18n } from '@/i18n'
+
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBraceMapLayout } from '../specLoader'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
@@ -18,7 +20,8 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     if (!parentNode) return false
 
     const isAddingPart = parentId === 'topic' || parentNode.type === 'topic'
-    const partText = text ?? (isAddingPart ? 'New Part' : 'New Subpart')
+    const t = i18n.global.t
+    const partText = text ?? String(isAddingPart ? t('diagram.newPart') : t('diagram.newSubpart'))
     const baseId = Date.now()
     const newId = `brace-part-${baseId}`
 
@@ -31,7 +34,10 @@ export function useBraceMapOpsSlice(ctx: DiagramContext) {
     ctx.addConnection(parentId, newId)
 
     if (isAddingPart) {
-      const [sub1Text, sub2Text] = subpartTexts ?? ['New Subpart 1', 'New Subpart 2']
+      const [sub1Text, sub2Text] = subpartTexts ?? [
+        `${String(t('diagram.newSubpart'))} 1`,
+        `${String(t('diagram.newSubpart'))} 2`,
+      ]
       const sub1Id = `brace-part-${baseId}-1`
       const sub2Id = `brace-part-${baseId}-2`
       ctx.addNode({

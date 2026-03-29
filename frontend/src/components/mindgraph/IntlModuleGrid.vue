@@ -8,8 +8,6 @@ import { useRouter } from 'vue-router'
 
 import {
   ChatDotRound,
-  ChatLineSquare,
-  Connection,
   Document,
   Files,
   MagicStick,
@@ -77,20 +75,6 @@ const canWorkshop = computed(() => {
 })
 
 const modules = computed<ModuleItem[]>(() => [
-  {
-    key: 'mindmate',
-    labelKey: 'sidebar.mindMate',
-    route: '/mindmate',
-    icon: ChatLineSquare,
-    visible: true,
-  },
-  {
-    key: 'mindgraph',
-    labelKey: 'sidebar.mindGraph',
-    route: '/mindgraph',
-    icon: Connection,
-    visible: true,
-  },
   {
     key: 'knowledge-space',
     labelKey: 'sidebar.knowledgeSpace',

@@ -15,6 +15,7 @@ import {
   CONTEXT_FONT_SIZE,
   computeMinDiameterForNoWrap,
   computeTopicRadiusForCircleMap,
+  prefersNoWrapWidthFitForCircleMap,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -161,41 +162,34 @@ export function getTopicCircleDiameter(text: string): number {
 }
 
 /**
- * Calculate adaptive circle size based on text length
- * For context nodes in circle maps, adapts size to fit text content
+ * Calculate adaptive circle size based on text measurement.
+ * Uses DOM-based measurement (or fallback estimation) so the diameter is
+ * correct for any script: Latin, CJK, Arabic, Thai, Devanagari, etc.
  *
  * @param text - Text content of the node
  * @param isTopic - Whether this is a topic node (larger) or context node
  * @returns Diameter in pixels
  */
 export function calculateAdaptiveCircleSize(text: string, isTopic: boolean = false): number {
-  if (!text || !text.trim()) {
-    return isTopic ? 120 : 70
-  }
+  const MIN_TOPIC = 120
+  const MIN_CONTEXT = 70
+  const MAX_CONTEXT = 200
 
-  const textLength = text.trim().length
+  if (!text || !text.trim()) {
+    return isTopic ? MIN_TOPIC : MIN_CONTEXT
+  }
 
   if (isTopic) {
-    // Topic nodes: use measurement-based diameter (single-line, adapts to text length)
     return getTopicCircleDiameter(text)
-  } else {
-    // Context nodes: smaller circles, adapt based on text length
-    if (textLength <= 6) {
-      return 70
-    } else if (textLength <= 12) {
-      return 85
-    } else if (textLength <= 18) {
-      return 100
-    } else if (textLength <= 24) {
-      return 115
-    } else {
-      // For very long text, calculate based on estimated width
-      // Approximate: ~7px per character at 14px font size
-      const estimatedWidth = textLength * 7
-      // Add padding (30px) and ensure minimum size
-      return Math.max(130, Math.min(estimatedWidth + 30, 200))
-    }
   }
+
+  if (prefersNoWrapWidthFitForCircleMap(text)) {
+    const d = computeMinDiameterForNoWrap(text.trim(), CONTEXT_FONT_SIZE, false)
+    return Math.max(MIN_CONTEXT, Math.min(d, MAX_CONTEXT))
+  }
+
+  const d = computeMinDiameterForNoWrap(text.trim(), CONTEXT_FONT_SIZE, false)
+  return Math.max(MIN_CONTEXT, Math.min(d, MAX_CONTEXT))
 }
 
 /** Gap between topic and context ring (px). Larger = more space between center and middle layer. */

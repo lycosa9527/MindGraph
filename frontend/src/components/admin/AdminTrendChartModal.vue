@@ -13,6 +13,8 @@ import { Delete, Loading, Lock, Refresh, Share, Unlock } from '@element-plus/ico
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
+import { intlLocaleForUiCode } from '@/i18n/locales'
+import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 
 Chart.register(...registerables)
@@ -39,6 +41,7 @@ const emit = defineEmits<{
 const { t } = useLanguage()
 const notify = useNotifications()
 const { publicSiteUrl } = usePublicSiteUrl()
+const uiStore = useUIStore()
 
 const chartTitle = ref('')
 const chartLoading = ref(false)
@@ -161,11 +164,12 @@ function renderChart(data: {
   chartInstance?.destroy()
   chartInstance = null
 
+  const intlLocale = intlLocaleForUiCode(uiStore.language)
   const labels = rawData.map((item) => {
     const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
     const date = new Date(dateStr)
     if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString('en-US', {
+      return date.toLocaleString(intlLocale, {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
@@ -173,7 +177,7 @@ function renderChart(data: {
         timeZone: 'Asia/Shanghai',
       })
     }
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(intlLocale, {
       month: 'short',
       day: 'numeric',
       timeZone: 'Asia/Shanghai',
@@ -336,7 +340,7 @@ async function refreshInvitationCode() {
     )
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to refresh')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.refreshFailed'))
       return
     }
     const data = await res.json()
@@ -344,7 +348,7 @@ async function refreshInvitationCode() {
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
-    notify.error('Failed to refresh invitation code')
+    notify.error(t('admin.trendChartErrors.refreshInvitationCodeFailed'))
   } finally {
     refreshCodeLoading.value = false
   }
@@ -360,14 +364,14 @@ async function setManager(userId: number) {
     )
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to set manager')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.setManagerFailed'))
       return
     }
     notify.success(t('notification.saved'))
     addManagerSelect.value = null
     await loadManagersAndUsers()
   } catch {
-    notify.error('Failed to set manager')
+    notify.error(t('admin.trendChartErrors.setManagerFailed'))
   } finally {
     addManagerUserId.value = null
   }
@@ -382,13 +386,13 @@ async function removeManager(userId: number) {
     )
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to remove manager')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.removeManagerFailed'))
       return
     }
     notify.success(t('notification.saved'))
     await loadManagersAndUsers()
   } catch {
-    notify.error('Failed to remove manager')
+    notify.error(t('admin.trendChartErrors.removeManagerFailed'))
   }
 }
 
@@ -420,13 +424,13 @@ async function saveExpiresAt() {
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to save')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.saveFailed'))
       return
     }
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
-    notify.error('Failed to save expiration date')
+    notify.error(t('admin.trendChartErrors.saveExpirationFailed'))
   } finally {
     expiresAtSaving.value = false
   }
@@ -442,13 +446,13 @@ async function saveDisplayName() {
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to save')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.saveFailed'))
       return
     }
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
-    notify.error('Failed to save display name')
+    notify.error(t('admin.trendChartErrors.saveDisplayNameFailed'))
   } finally {
     displayNameSaving.value = false
   }
@@ -465,14 +469,14 @@ async function toggleLock() {
     })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to update')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.updateFailed'))
       return
     }
     orgActiveState.value = newActive
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
-    notify.error('Failed to update organization status')
+    notify.error(t('admin.trendChartErrors.updateOrgStatusFailed'))
   } finally {
     lockLoading.value = false
   }
@@ -507,14 +511,14 @@ async function deleteOrganization() {
     const res = await apiRequest(url, { method: 'DELETE' })
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error((data.detail as string) || 'Failed to delete')
+      notify.error((data.detail as string) || t('admin.trendChartErrors.deleteRecordFailed'))
       return
     }
     notify.success(t('notification.saved'))
     emit('update:visible', false)
     emit('refresh')
   } catch {
-    notify.error('Failed to delete organization')
+    notify.error(t('admin.trendChartErrors.deleteOrgFailed'))
   } finally {
     deleteLoading.value = false
   }

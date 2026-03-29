@@ -3,7 +3,7 @@
  * InternationalLanding - Google-homepage-inspired MindGraph landing page.
  * Centered prompt bar + large diagram cards. Avatar menu in top-right corner.
  */
-import { computed, onMounted, onUnmounted, ref } from 'vue'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
 import {
@@ -21,14 +21,17 @@ import { Loading } from '@element-plus/icons-vue'
 import { KeyRound, Languages, LogIn, LogOut, Upload, UserRound } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
+import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 import { AccountInfoModal, ChangePasswordModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
+import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
+import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
 import IntlModuleGrid from './IntlModuleGrid.vue'
 
 const MAX_PROMPT_LENGTH = 10000
@@ -195,18 +198,51 @@ function handlePromptKeydown(event: KeyboardEvent) {
   }
 }
 
+// ── Diagram dropdown ──
+
+const showDropdown = ref(false)
+const promptSectionRef = ref<HTMLElement | null>(null)
+
 function handlePromptFocus() {
   if (!authStore.isAuthenticated) {
     authStore.handleTokenExpired(undefined, undefined)
+    return
+  }
+  showDropdown.value = true
+}
+
+function handleClickOutside(event: MouseEvent) {
+  if (!promptSectionRef.value) return
+  if (!promptSectionRef.value.contains(event.target as Node)) {
+    showDropdown.value = false
   }
 }
 
+onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside)
+})
+
+function handleDiagramSelect(diagram: SavedDiagram) {
+  showDropdown.value = false
+  nextTick(() => {
+    router.push({
+      path: '/canvas',
+      query: { diagramId: diagram.id.toString() },
+    })
+  })
+}
+
 onUnmounted(() => {
+  document.removeEventListener('mousedown', handleClickOutside)
   landingAbortControllers.value.forEach((c) => c.abort())
   landingAbortControllers.value = []
 })
 
 // ── Card click ──
+
+function handleMindMateClick() {
+  router.push('/mindmate')
+}
 
 function handleCardClick(item: { type: DiagramType }) {
   const zhName = TYPE_TO_ZH_NAME[item.type]
@@ -450,8 +486,11 @@ onMounted(() => {
         </div>
       </div>
 
-      <!-- Pill-shaped prompt bar -->
-      <div class="intl-prompt-section">
+      <!-- Pill-shaped prompt bar + dropdown -->
+      <div
+        ref="promptSectionRef"
+        class="intl-prompt-section"
+      >
         <div
           class="intl-prompt-wrapper"
           :class="{ 'intl-prompt-generating': isGenerating }"
@@ -497,6 +536,15 @@ onMounted(() => {
             </svg>
           </button>
         </div>
+
+        <!-- Saved-diagram dropdown -->
+        <transition name="intl-dd-fade">
+          <IntlDiagramDropdown
+            v-if="showDropdown && authStore.isAuthenticated"
+            class="intl-prompt-dropdown"
+            @select="handleDiagramSelect"
+          />
+        </transition>
       </div>
 
       <!-- Diagram cards -->
@@ -514,6 +562,23 @@ onMounted(() => {
             </div>
             <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
             <p class="intl-card-desc">{{ t(item.descKey) }}</p>
+          </div>
+
+          <!-- MindMate card -->
+          <div
+            class="intl-card intl-card--mindmate"
+            @click="handleMindMateClick"
+          >
+            <div class="intl-card-preview intl-card-preview--avatar">
+              <ElAvatar
+                :src="mindmateAvatar"
+                :size="80"
+                shape="square"
+                class="intl-mindmate-logo"
+              />
+            </div>
+            <h3 class="intl-card-title">MindMate</h3>
+            <p class="intl-card-desc">虚拟教研伙伴</p>
           </div>
         </div>
       </div>
@@ -783,6 +848,34 @@ onMounted(() => {
   max-width: 680px;
   margin: 0 auto 48px;
   padding: 0 20px;
+  position: relative;
+}
+
+.intl-prompt-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 20px;
+  right: 20px;
+  z-index: 50;
+}
+
+/* Dropdown fade transition */
+.intl-dd-fade-enter-active {
+  transition: all 0.2s ease-out;
+}
+
+.intl-dd-fade-leave-active {
+  transition: all 0.15s ease-in;
+}
+
+.intl-dd-fade-enter-from {
+  opacity: 0;
+  transform: translateY(-6px);
+}
+
+.intl-dd-fade-leave-to {
+  opacity: 0;
+  transform: translateY(-4px);
 }
 
 .intl-prompt-wrapper {
@@ -936,6 +1029,24 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
+}
+
+.intl-card-preview--avatar {
+  background: var(--el-fill-color-lighter, #f8f9fa);
+}
+
+.intl-mindmate-logo {
+  border-radius: 16px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
+}
+
+.intl-mindmate-logo :deep(img) {
+  object-fit: cover;
+}
+
+.intl-card--mindmate:hover .intl-mindmate-logo {
+  transform: scale(1.06);
+  transition: transform 0.3s ease;
 }
 
 .intl-card-title {

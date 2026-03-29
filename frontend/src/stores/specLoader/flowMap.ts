@@ -6,7 +6,6 @@ import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
   DEFAULT_PADDING,
-  DEFAULT_STEP_SPACING,
   FLOW_GROUP_GAP,
   FLOW_MAP_PILL_HEIGHT,
   FLOW_MAP_PILL_WIDTH,
@@ -22,6 +21,7 @@ import { measureTextWidth } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
 const FLOW_SUBSTEP_FONT_SIZE = 12
+const FLOW_STEP_FONT_SIZE = 13
 const FLOW_NODE_PADDING_X = 40
 /** Topic node: px-6 = 24px each side; fontWeight bold for accurate measurement */
 const FLOW_TOPIC_FONT_SIZE = 18
@@ -353,10 +353,13 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
   } else {
     // =========================================================================
     // HORIZONTAL LAYOUT: Main topic at left, steps left-to-right
+    // Each step-substep group is sized independently to prevent overlaps
     // =========================================================================
     const stepY = DEFAULT_CENTER_Y - pillHeight / 2
 
-    // Main topic node at left, center-aligned with step nodes on Y
+    // Measure topic node width (adaptive: max-content with minWidth 120px)
+    const topicTextW = measureTextWidth(title, FLOW_TOPIC_FONT_SIZE, { fontWeight: 'bold' })
+    const topicEstWidth = Math.max(pillWidth, topicTextW + FLOW_TOPIC_PADDING_X)
     const topicX = DEFAULT_PADDING
     const topicY = DEFAULT_CENTER_Y - pillHeight / 2
     nodes.push({
@@ -367,29 +370,70 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       data: { orientation: 'horizontal' },
     })
 
-    const stepStartX = DEFAULT_PADDING + pillWidth + FLOW_TOPIC_TO_STEP_GAP
+    // Phase 1: Calculate each step-substep group's footprint width
+    interface HGroupInfo {
+      stepId: string
+      stepText: string
+      substepEntries: { text: string; estimatedWidth: number }[]
+      stepEstimatedWidth: number
+      footprintWidth: number
+    }
 
-    steps.forEach((step, stepIndex) => {
-      const stepId = step.id
-      const substeps = stepToSubsteps[step.text] || []
-      const stepX = stepStartX + stepIndex * DEFAULT_STEP_SPACING
+    const hGroups: HGroupInfo[] = steps.map((step) => {
+      const subs = stepToSubsteps[step.text] || []
+      const stepTextW = measureTextWidth(step.text, FLOW_STEP_FONT_SIZE)
+      const stepEstW = Math.max(pillWidth, stepTextW + FLOW_NODE_PADDING_X)
 
-      // Create step node with groupIndex for mindmapColors
+      const substepEntries = subs.map((txt) => {
+        const w = measureTextWidth(txt, FLOW_SUBSTEP_FONT_SIZE)
+        return {
+          text: txt,
+          estimatedWidth: Math.max(FLOW_MAP_PILL_WIDTH, w + FLOW_NODE_PADDING_X),
+        }
+      })
+
+      const maxSubW = substepEntries.reduce((m, s) => Math.max(m, s.estimatedWidth), 0)
+      return {
+        stepId: step.id,
+        stepText: step.text,
+        substepEntries,
+        stepEstimatedWidth: stepEstW,
+        footprintWidth: Math.max(stepEstW, maxSubW),
+      }
+    })
+
+    // Phase 2: Accumulate X positions with FLOW_MIN_STEP_SPACING gap between groups
+    const stepStartX = DEFAULT_PADDING + topicEstWidth + FLOW_TOPIC_TO_STEP_GAP
+    const hPositions: { groupCenterX: number; stepX: number }[] = []
+    let curX = stepStartX
+
+    hGroups.forEach((g) => {
+      const centerX = curX + g.footprintWidth / 2
+      hPositions.push({
+        groupCenterX: centerX,
+        stepX: centerX - g.stepEstimatedWidth / 2,
+      })
+      curX += g.footprintWidth + FLOW_MIN_STEP_SPACING
+    })
+
+    // Phase 3: Place step nodes, substep nodes, and connections
+    hGroups.forEach((group, stepIndex) => {
+      const { groupCenterX, stepX } = hPositions[stepIndex]
+
       nodes.push({
-        id: stepId,
-        text: step.text,
+        id: group.stepId,
+        text: group.stepText,
         type: 'flow',
         position: { x: stepX, y: stepY },
         data: { groupIndex: stepIndex },
       })
 
-      // Create edge from topic to first step, or previous step (horizontal: left-to-right flow)
       const stepColor = getMindmapBranchColor(stepIndex).border
       if (stepIndex === 0) {
         connections.push({
-          id: `edge-${FLOW_TOPIC_NODE_ID}-${stepId}`,
+          id: `edge-${FLOW_TOPIC_NODE_ID}-${group.stepId}`,
           source: FLOW_TOPIC_NODE_ID,
-          target: stepId,
+          target: group.stepId,
           sourcePosition: 'right',
           targetPosition: 'left',
           sourceHandle: 'right',
@@ -398,11 +442,11 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
           style: { strokeColor: stepColor },
         })
       } else {
-        const prevId = steps[stepIndex - 1].id
+        const prevId = hGroups[stepIndex - 1].stepId
         connections.push({
-          id: `edge-${prevId}-${stepId}`,
+          id: `edge-${prevId}-${group.stepId}`,
           source: prevId,
-          target: stepId,
+          target: group.stepId,
           sourcePosition: 'right',
           targetPosition: 'left',
           sourceHandle: 'right',
@@ -412,33 +456,26 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
         })
       }
 
-      // Create substep nodes below (center-aligned under the step, straight vertical lines)
-      const stepCenterX = stepX + pillWidth / 2
-
-      substeps.forEach((substepText, substepIndex) => {
+      group.substepEntries.forEach((substep, substepIndex) => {
         const substepId = `flow-substep-${stepIndex}-${substepIndex}`
         const substepY =
           stepY +
           pillHeight +
           FLOW_SUBSTEP_OFFSET_X +
           substepIndex * (pillHeight + FLOW_SUBSTEP_SPACING)
-        const estWidth = Math.max(
-          FLOW_MAP_PILL_WIDTH,
-          measureTextWidth(substepText, FLOW_SUBSTEP_FONT_SIZE) + FLOW_NODE_PADDING_X
-        )
-        const substepX = stepCenterX - estWidth / 2
+        const substepX = groupCenterX - substep.estimatedWidth / 2
 
         nodes.push({
           id: substepId,
-          text: substepText,
+          text: substep.text,
           type: 'flowSubstep',
           position: { x: substepX, y: substepY },
           data: { groupIndex: stepIndex },
         })
 
         connections.push({
-          id: `edge-${stepId}-${substepId}`,
-          source: stepId,
+          id: `edge-${group.stepId}-${substepId}`,
+          source: group.stepId,
           target: substepId,
           sourcePosition: 'bottom',
           targetPosition: 'top',

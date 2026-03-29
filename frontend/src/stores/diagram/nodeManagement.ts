@@ -1,4 +1,5 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { i18n } from '@/i18n'
 import type { Connection, DiagramNode } from '@/types'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
@@ -115,12 +116,13 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       }
 
       if (!node.text) {
+        const t = i18n.global.t
         if (isCause || targetCategory === 'causes') {
-          node.text = 'New Cause'
+          node.text = String(t('diagram.flow.newCause'))
         } else if (isEffect || targetCategory === 'effects') {
-          node.text = 'New Effect'
+          node.text = String(t('diagram.flow.newEffect'))
         } else {
-          node.text = 'New Cause'
+          node.text = String(t('diagram.flow.newCause'))
         }
       }
 
