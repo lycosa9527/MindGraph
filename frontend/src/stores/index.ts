@@ -35,5 +35,11 @@ export { useLLMResultsStore, type LLMResult, type LLMModel, type ModelState } fr
 export { useAskOnceStore, type AskOnceMessage, type ModelResponse, type ModelId } from './askonce'
 export { useKnowledgeSpaceStore, type KnowledgeDocument } from './knowledgeSpace'
 export { useFeatureFlagsStore } from './featureFlags'
+export {
+  usePresentationPointerStore,
+  PRESENTATION_POINTER_SCALE_MIN,
+  PRESENTATION_POINTER_SCALE_MAX,
+  PRESENTATION_POINTER_SCALE_STEP,
+} from './presentationPointer'
 export { useLibraryStore } from './library'
 export { useSmartResponseStore, type Watch, type SmartResponseSession } from './smartResponse'

@@ -43,12 +43,21 @@
   cursor: none !important;
 }
 
-/* Highlighter tool: brush-style cursor (overrides cursor: none above) */
+/* Highlighter tool: wide marker-style cursor (overrides cursor: none above) */
 .presentation-active.presentation-highlighter-mode,
 .presentation-active.presentation-highlighter-mode * {
   cursor:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5 27 L11 8 L17 10 L13 29 Z' fill='%23fbbf24' stroke='%23b45309' stroke-width='1' stroke-linejoin='round'/%3E%3Cpath d='M11 8 L21 12 L17 26 L9 22 Z' fill='%23fde68a' opacity='0.95'/%3E%3Cpath d='M7 26 L9 18 L12 19 L10 27 Z' fill='%23f59e0b' opacity='0.55'/%3E%3C/svg%3E")
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M5 27 L11 8 L17 10 L13 29 Z' fill='%23fbbf24' stroke='%23b45309' stroke-width='1.35' stroke-linejoin='round'/%3E%3Cpath d='M11 8 L21 12 L17 26 L9 22 Z' fill='%23fde68a' opacity='0.95'/%3E%3Cpath d='M7 26 L9 18 L12 19 L10 27 Z' fill='%23f59e0b' opacity='0.55'/%3E%3C/svg%3E")
       10 26,
+    crosshair !important;
+}
+
+/* Pen tool: ballpoint / pencil silhouette (clean tip, neutral metal) */
+.presentation-active.presentation-pen-mode,
+.presentation-active.presentation-pen-mode * {
+  cursor:
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='32' height='32' viewBox='0 0 32 32'%3E%3Cpath d='M25 4 L29 8 L11 27 L8 29 L5 26 L22 6 Z' fill='%23475569' stroke='%231e293b' stroke-width='0.75' stroke-linejoin='round'/%3E%3Cpath d='M5 26 L8 29 L4 31 L2 30 Z' fill='%230f172a'/%3E%3Cpath d='M26 5 L28 7 L24 11 L22 9 Z' fill='%2394a3b8'/%3E%3C/svg%3E")
+      4 31,
     crosshair !important;
 }
 

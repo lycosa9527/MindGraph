@@ -25,7 +25,7 @@ export function useDiagramCanvasFit(options: {
   diagramStore: DiagramStore
   panelsStore: PanelsStore
   fitViewOnInit: Ref<boolean>
-  presentationMode: Ref<boolean>
+  presentationRailOpen: Ref<boolean>
   presentationToolIsNotTimer: Ref<boolean>
   nodesLength: Ref<number>
 }): {
@@ -49,7 +49,7 @@ export function useDiagramCanvasFit(options: {
     diagramStore,
     panelsStore,
     fitViewOnInit,
-    presentationMode,
+    presentationRailOpen,
     presentationToolIsNotTimer,
     nodesLength,
   } = options
@@ -111,7 +111,7 @@ export function useDiagramCanvasFit(options: {
   }
 
   function getFitViewRightPx(): string {
-    const railVisible = presentationMode.value && presentationToolIsNotTimer.value
+    const railVisible = presentationRailOpen.value && presentationToolIsNotTimer.value
     const px = railVisible
       ? Math.max(FIT_PADDING.STANDARD_PX, FIT_PADDING.PRESENTATION_SIDE_TOOLBAR_RIGHT_PX)
       : FIT_PADDING.STANDARD_PX
@@ -177,7 +177,7 @@ export function useDiagramCanvasFit(options: {
     fitView({
       padding: {
         top: `${getFitViewTopPx()}px`,
-        right: presentationMode.value ? getFitViewRightPx() : adjustedPadding,
+        right: presentationRailOpen.value ? getFitViewRightPx() : adjustedPadding,
         bottom: `${getFitViewBottomPx()}px`,
         left: adjustedPadding,
       },
@@ -290,7 +290,7 @@ export function useDiagramCanvasFit(options: {
   )
 
   watch(
-    () => presentationMode.value,
+    () => presentationRailOpen.value,
     (active, wasActive) => {
       if (active === wasActive) return
       if (active && getNodes().length > 0) {
@@ -300,9 +300,9 @@ export function useDiagramCanvasFit(options: {
   )
 
   watch(
-    () => Boolean(presentationMode.value && presentationToolIsNotTimer.value),
+    () => Boolean(presentationRailOpen.value && presentationToolIsNotTimer.value),
     () => {
-      if (!presentationMode.value || getNodes().length === 0) return
+      if (!presentationRailOpen.value || getNodes().length === 0) return
       setTimeout(() => fitDiagram(true), ANIMATION.FIT_VIEWPORT_DELAY)
     }
   )

@@ -10,7 +10,9 @@ This script handles the complete installation and setup of MindGraph, including:
 - Logging and data directories
 - Comprehensive verification
 - On Linux with sudo: Redis >= 8.6 and PostgreSQL >= 18.3 via official apt repos
-  (docs/REDIS_SETUP.md, docs/POSTGRES_SETUP.md). Prompts let you skip apt installs.
+  (docs/REDIS_SETUP.md, docs/POSTGRES_SETUP.md). When Redis is 8.6+ and
+  /etc/redis/redis.conf exists, enables key-memory-histograms (startup-only Redis
+  setting) and restarts the service. Prompts let you skip apt installs.
 - Qdrant vector server (Knowledge Space): on Linux with sudo, downloads the official
   release from GitHub, installs systemd (docs/QDRANT_SETUP.md). Optional skip via prompt.
 
@@ -574,6 +576,95 @@ def redis_meets_mindgraph_minimum() -> bool:
     return ver >= MIN_REDIS_VERSION
 
 
+_REDIS_CONF_CANDIDATE_PATHS = (
+    "/etc/redis/redis.conf",
+    "/etc/redis.conf",
+)
+
+
+def _find_redis_conf_path_linux() -> Optional[str]:
+    """Return first existing redis.conf path for typical Debian/Ubuntu Redis.io packages."""
+    for path in _REDIS_CONF_CANDIDATE_PATHS:
+        if Path(path).is_file():
+            return path
+    return None
+
+
+def _apply_key_memory_histograms_to_conf_text(content: str) -> Tuple[str, bool]:
+    """
+    Ensure key-memory-histograms yes in redis.conf text.
+
+    Returns:
+        (new_content, changed) — changed is False if already enabled.
+    """
+    pattern = re.compile(
+        r"^\s*#?\s*key-memory-histograms\s+(yes|no)\s*$",
+        re.IGNORECASE | re.MULTILINE,
+    )
+    if pattern.search(content):
+        new_content, _ = pattern.subn("key-memory-histograms yes", content)
+        return new_content, new_content != content
+    trailing = "" if content.endswith("\n") else "\n"
+    addition = (
+        f"{trailing}"
+        "# MindGraph: INFO keysizes memory histograms (Redis 8.6+)\n"
+        "key-memory-histograms yes\n"
+    )
+    return content + addition, True
+
+
+def ensure_redis_key_memory_histograms_linux() -> None:
+    """
+    Enable key-memory-histograms in redis.conf (must be set at startup; Redis 8.6+).
+
+    No-op when not Linux, not root, Redis unavailable, or version < 8.6.
+    """
+    if platform.system() != "Linux":
+        return
+    try:
+        if os.geteuid() != 0:
+            return
+    except AttributeError:
+        return
+    if not redis_server_responding() or not redis_meets_mindgraph_minimum():
+        return
+    conf_path = _find_redis_conf_path_linux()
+    if not conf_path:
+        print(
+            "[INFO] key-memory-histograms: redis.conf not found; "
+            "set manually in Redis config (Redis 8.6+)",
+        )
+        return
+    try:
+        current = Path(conf_path).read_text(encoding="utf-8", errors="replace")
+    except OSError as exc:
+        print(f"[WARNING] key-memory-histograms: could not read {conf_path}: {exc}")
+        return
+    new_text, changed = _apply_key_memory_histograms_to_conf_text(current)
+    if not changed:
+        return
+    try:
+        Path(conf_path).write_text(new_text, encoding="utf-8")
+    except OSError as exc:
+        print(f"[WARNING] key-memory-histograms: could not write {conf_path}: {exc}")
+        return
+    print(f"[INFO] key-memory-histograms: updated {conf_path}; restarting Redis...")
+    for svc in ("redis-server", "redis"):
+        run_command(
+            f"systemctl restart {svc} 2>/dev/null",
+            f"Restart {svc} after redis.conf update",
+            check=False,
+        )
+    time.sleep(1.0)
+    if redis_server_responding():
+        print("[SUCCESS] key-memory-histograms: Redis restarted and responds to PING")
+    else:
+        print(
+            "[WARNING] key-memory-histograms: Redis did not respond after restart; "
+            "check systemd logs",
+        )
+
+
 def get_postgresql_version() -> Optional[Tuple[int, int, int]]:
     """Parse psql --version (e.g. PostgreSQL 18.3)."""
     if not shutil.which("psql"):
@@ -648,6 +739,7 @@ def install_redis_linux_official_apt() -> bool:
             )
         else:
             print("[SUCCESS] Redis meets minimum version requirement")
+        ensure_redis_key_memory_histograms_linux()
         return True
 
     if redis_server_responding():
@@ -702,6 +794,7 @@ def install_redis_linux_official_apt() -> bool:
             )
         else:
             print("[SUCCESS] Redis installed and meets minimum version requirement")
+        ensure_redis_key_memory_histograms_linux()
         return True
     if redis_server_responding():
         ver = redis_version_reported()

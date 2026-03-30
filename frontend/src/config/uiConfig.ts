@@ -9,20 +9,20 @@
  */
 
 // ============================================================================
-// Presentation mode — global stacking (fixed layers on canvas fullscreen)
+// Presentation tools — z-index stacking (laser, rail, timer overlay)
 // ============================================================================
 /**
  * Single z-index ladder for presentation UI. Higher paints above lower.
  * - Spotlight stays below the side rail so the rail stays clickable.
  * - Laser dot is above the rail (pointer-events: none on laser).
- * - Timer fullscreen modal is above all canvas chrome; Teleport to `body` uses these values.
+ * - Timer overlay is above canvas chrome; Teleport to `body` uses these values.
  * Element Plus overlays (dropdowns ~2000–3000) stay below this range.
  */
 export const PRESENTATION_Z = {
   SPOTLIGHT: 99_998,
   SIDE_RAIL: 100_001,
   LASER: 100_100,
-  /** Fullscreen dim + countdown (Teleport to body; use inline style z-index) */
+  /** Timer dim + countdown (Teleport to body; use inline style z-index) */
   TIMER_OVERLAY: 100_150,
 } as const
 
@@ -39,6 +39,8 @@ export const PANEL = {
   PROPERTY_WIDTH: 320,
   /** MindMate panel width: w-96 = 24rem = 384px */
   MINDMATE_WIDTH: 384,
+  /** Default `right` offset (px) for the floating MindMate panel from the viewport edge */
+  MINDMATE_RIGHT_OFFSET_PX: 16,
   /** Node palette panel width: 50% of viewport when open (split layout with diagram) */
   NODE_PALETTE_WIDTH: 288,
   /** Node palette takes half the canvas area when open */
@@ -107,12 +109,15 @@ export const FIT_PADDING = {
   /** Standard edge padding in pixels */
   STANDARD_PX: 40,
   /**
-   * Right padding in presentation fullscreen: vertical tool rail (~40px) + margin + buffer
+   * Right padding when the vertical presentation rail is visible: rail width + margin + buffer
    * so fit-to-canvas does not place content under PresentationSideToolbar.
    */
-  PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 72,
-  /** Top padding in pixels - clears CanvasTopBar (48px) + CanvasToolbar (top-60px, ~52px) + buffer */
-  TOP_UI_HEIGHT_PX: 124,
+  PRESENTATION_SIDE_TOOLBAR_RIGHT_PX: 50,
+  /**
+   * Top padding in pixels — clears merged canvas chrome only (CanvasTopBar `min-h-12` = 48px).
+   * Previously 64px when header and editing toolbar were separate rows; reclaimed for fit/zoom area.
+   */
+  TOP_UI_HEIGHT_PX: 48,
   /** Extra top padding for concept map - leaves space for menu icon above main topic node (icon ~20px + margin) */
   MAIN_TOPIC_MENU_ICON_PX: 35,
   /** Bottom padding in pixels - ZoomControls + AIModelSelector (bottom-4 + compact bar ~48px + margin) */
@@ -124,10 +129,10 @@ export const FIT_PADDING = {
   /**
    * Standard padding with extra top/bottom for overlay UI.
    * Vue Flow object format: { top, right, bottom, left } - supports "40px" or ratio
-   * top: clears CanvasTopBar + CanvasToolbar; bottom: clears AI selector + Zoom controls
+   * top: clears merged canvas chrome; bottom: clears AI selector + Zoom controls
    */
   STANDARD_WITH_BOTTOM_UI: {
-    top: '124px',
+    top: '48px',
     right: '40px',
     bottom: '88px',
     left: '40px',
@@ -139,12 +144,29 @@ export const FIT_PADDING = {
 } as const
 
 /**
+ * Merged canvas chrome (CanvasTopBar + embedded CanvasToolbar): grid and truncation limits.
+ * Use these for :style bindings or scoped CSS so layout stays consistent and adaptive.
+ */
+export const CANVAS_TOP_BAR = {
+  /** Left column (back + filename + auto-save): cap width so center toolbar keeps space */
+  LEFT_CLUSTER_MAX_WIDTH: 'min(46vw, 17.5rem)',
+  /** Auto-save line next to filename */
+  AUTOSAVE_STATUS_MAX_WIDTH: 'min(11rem, 42vw)',
+  /** Workshop participant name in header chip */
+  PARTICIPANT_NAME_MAX_WIDTH_PX: 140,
+  /** Filename display (non-edit); `ch` = width of "0" in font */
+  FILENAME_DISPLAY_MAX_WIDTH: '12ch',
+  /** Filename edit input cap inside left column */
+  FILE_NAME_INPUT_MAX_WIDTH: 'min(12rem, 100%)',
+} as const
+
+/**
  * Panel inset - space reserved for floating overlays (top bar, toolbar, bottom controls).
  * Used for Node Palette and MindMate panel size/position to avoid overlap.
  */
 export const PANEL_INSET = {
-  /** Top inset (px) - clears CanvasTopBar + CanvasToolbar */
-  TOP: 124,
+  /** Top inset (px) — align with FIT_PADDING.TOP_UI_HEIGHT_PX / merged header row */
+  TOP: 48,
   /** Bottom inset (px) - clears AI selector + Zoom controls */
   BOTTOM: 88,
   /** Total vertical inset for max-height calc */

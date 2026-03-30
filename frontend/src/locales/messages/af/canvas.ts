@@ -197,14 +197,6 @@ export default {
   'canvas.topBar.exportPdf': 'Voer uit as PDF',
   'canvas.topBar.exportPng': 'Voer uit as PNG',
   'canvas.topBar.exportSvg': 'Voer uit as SVG',
-  'canvas.topBar.focusChipHint':
-    '{label}: druk Tab terwyl jy die fokusvraag redigeer om te valideer',
-  'canvas.topBar.focusChipPass': 'OK',
-  'canvas.topBar.focusChipSignIn':
-    'Teken aan, dan druk Tab terwyl jy die fokusvraag redigeer om te valideer',
-  'canvas.topBar.focusChipValidating': '{label} is besig om te valideer…',
-  'canvas.topBar.focusChipWeak': 'Swak',
-  'canvas.topBar.focusQuestionLabel': 'Fokusvraag:',
   'canvas.topBar.reset': 'Herstel',
   'canvas.topBar.resetTemplate': 'Herstel na standaard-sjabloon',
   'canvas.topBar.schoolCollab': 'Skool-samewerking',
@@ -226,6 +218,8 @@ export default {
   'canvas.zoomControls.exitFullscreen': 'Verlaat volledige skerm',
   'canvas.zoomControls.fitCanvas': 'Pas die lystoestel aan',
   'canvas.zoomControls.fullscreen': 'Volledige skerm',
+  'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
+  'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Handgereedskap',
   'canvasPage.collaborationFooter': 'Samewerking',
   'conceptMap.focus.noResult': 'Geen resultaat nie',

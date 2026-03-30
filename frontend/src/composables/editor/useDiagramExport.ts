@@ -4,7 +4,7 @@
  */
 import { ref } from 'vue'
 
-import { toPng, toSvg } from 'html-to-image'
+import { toBlob, toPng, toSvg } from 'html-to-image'
 import { jsPDF } from 'jspdf'
 
 import { useNotifications } from '@/composables'
@@ -12,6 +12,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
+import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'diagram'
@@ -73,15 +74,17 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const dataUrl = await toPng(container, {
-        backgroundColor: '#ffffff',
-        pixelRatio: 2,
-        style: { transform: 'none' },
-      })
+      const blob = await toBlob(
+        container,
+        getDiagramCanvasHtmlToImageOptions()
+      )
+      if (!blob) {
+        throw new Error('PNG export produced empty image')
+      }
 
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
-      triggerDownload(dataUrl, `${baseName}_${timestamp}.png`)
+      triggerDownloadBlob(blob, `${baseName}_${timestamp}.png`)
 
       logDiagramExport('png')
       notify.success(t('canvas.export.pngSuccess'))
@@ -103,10 +106,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const dataUrl = await toSvg(container, {
-        backgroundColor: '#ffffff',
-        style: { transform: 'none' },
-      })
+      const dataUrl = await toSvg(
+        container,
+        getDiagramCanvasHtmlToImageOptions()
+      )
 
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
@@ -132,11 +135,10 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const dataUrl = await toPng(container, {
-        backgroundColor: '#ffffff',
-        pixelRatio: 1,
-        style: { transform: 'none' },
-      })
+      const dataUrl = await toPng(
+        container,
+        getDiagramCanvasHtmlToImageOptions({ pixelRatio: 1 })
+      )
 
       const img = new Image()
       await new Promise<void>((resolve, reject) => {

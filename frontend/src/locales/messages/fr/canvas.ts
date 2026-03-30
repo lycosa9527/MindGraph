@@ -203,14 +203,6 @@ export default {
   'canvas.topBar.exportPdf': 'Exporter au format PDF',
   'canvas.topBar.exportPng': 'Exporter au format PNG',
   'canvas.topBar.exportSvg': 'Exporter au format SVG',
-  'canvas.topBar.focusChipHint':
-    '{label} : appuyez sur Tab pendant la modification de la question centrale pour valider',
-  'canvas.topBar.focusChipPass': 'OK',
-  'canvas.topBar.focusChipSignIn':
-    'Connectez-vous, puis appuyez sur Tab pendant la modification de la question centrale pour valider',
-  'canvas.topBar.focusChipValidating': 'Validation de {label} en cours…',
-  'canvas.topBar.focusChipWeak': 'Faible',
-  'canvas.topBar.focusQuestionLabel': 'Question centrale :',
   'canvas.topBar.reset': 'Réinitialiser',
   'canvas.topBar.resetTemplate': 'Réinitialiser au modèle par défaut',
   'canvas.topBar.schoolCollab': 'Collaboration scolaire',
@@ -234,6 +226,8 @@ export default {
   'canvas.zoomControls.exitFullscreen': 'Quitter le mode plein écran',
   'canvas.zoomControls.fitCanvas': 'Ajuster la zone de dessin',
   'canvas.zoomControls.fullscreen': 'Plein écran',
+  'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
+  'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Outil main',
   'canvasPage.collaborationFooter': 'Collaboration',
   'conceptMap.focus.noResult': 'Aucun résultat',

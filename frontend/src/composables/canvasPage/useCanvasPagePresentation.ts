@@ -1,30 +1,30 @@
 /**
- * Presentation mode: fullscreen, laser/spotlight, timer, zoom control handlers.
+ * Presentation tools: vertical rail (right), laser/spotlight/timer, zoom handlers.
+ * The Play control toggles visibility of the right rail (no browser fullscreen).
  */
-import { computed, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
+import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+import { storeToRefs } from 'pinia'
 
-import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { PRESENTATION_Z } from '@/config/uiConfig'
+import {
+  PRESENTATION_POINTER_SCALE_STEP,
+  usePresentationPointerStore,
+} from '@/stores/presentationPointer'
 import type { PresentationHighlightStroke, PresentationToolId } from '@/types'
 
 const TIMER_DEFAULT_SECONDS = 300
 const SPOTLIGHT_INNER_RADIUS_PX = 150
 const SPOTLIGHT_OUTER_RADIUS_PX = 195
 const LASER_CURSOR_BASE_PX = 22
-const PRESENTATION_POINTER_SCALE_MIN = 0.5
-const PRESENTATION_POINTER_SCALE_MAX = 2.5
-const PRESENTATION_POINTER_SCALE_STEP = 0.1
 
 export function useCanvasPagePresentation() {
-  const notify = useNotifications()
-  const { t } = useLanguage()
-
   const canvasZoom = ref<number | null>(null)
   const handToolActive = ref(false)
-  const isPresentationMode = ref(false)
+  /** When true, the right vertical presentation tools rail is visible. */
+  const presentationRailOpen = ref(false)
   const presentationTool = ref<PresentationToolId>('laser')
   const presentationHighlighterColor = ref(DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR)
   const presentationHighlightStrokes = ref<PresentationHighlightStroke[]>([])
@@ -34,7 +34,8 @@ export function useCanvasPagePresentation() {
     () => presentationTool.value === 'highlighter' || presentationTool.value === 'pen'
   )
 
-  const presentationPointerSizeScale = ref(1)
+  const presentationPointerStore = usePresentationPointerStore()
+  const { laserScale, spotlightScale } = storeToRefs(presentationPointerStore)
 
   const timerTotalSeconds = ref(TIMER_DEFAULT_SECONDS)
   const timerRemainingSeconds = ref(TIMER_DEFAULT_SECONDS)
@@ -115,7 +116,7 @@ export function useCanvasPagePresentation() {
   }
 
   const spotlightStyle = computed(() => {
-    const s = presentationPointerSizeScale.value
+    const s = spotlightScale.value
     const inner = SPOTLIGHT_INNER_RADIUS_PX * s
     const outer = SPOTLIGHT_OUTER_RADIUS_PX * s
     return {
@@ -125,7 +126,7 @@ export function useCanvasPagePresentation() {
   })
 
   const laserCursorStyle = computed(() => {
-    const s = presentationPointerSizeScale.value
+    const s = laserScale.value
     const size = LASER_CURSOR_BASE_PX * s
     const half = size / 2
     return {
@@ -153,7 +154,7 @@ export function useCanvasPagePresentation() {
   }
 
   function handlePresentationPointerSizeKeydown(event: KeyboardEvent) {
-    if (!isPresentationMode.value) return
+    if (!presentationRailOpen.value) return
     if (!event.ctrlKey && !event.metaKey) return
     if (isTypingInInput()) return
 
@@ -165,13 +166,10 @@ export function useCanvasPagePresentation() {
 
     event.preventDefault()
     const delta = increase ? PRESENTATION_POINTER_SCALE_STEP : -PRESENTATION_POINTER_SCALE_STEP
-    presentationPointerSizeScale.value = Math.min(
-      PRESENTATION_POINTER_SCALE_MAX,
-      Math.max(PRESENTATION_POINTER_SCALE_MIN, presentationPointerSizeScale.value + delta)
-    )
+    presentationPointerStore.adjustScaleForTool(presentationTool.value, delta)
   }
 
-  watch(isPresentationMode, (active) => {
+  watch(presentationRailOpen, (active) => {
     if (active) {
       window.addEventListener('mousemove', handleLaserMouseMove)
       window.addEventListener('keydown', handlePresentationPointerSizeKeydown, true)
@@ -186,7 +184,6 @@ export function useCanvasPagePresentation() {
       presentationHighlightStrokes.value = []
       presentationTool.value = 'laser'
       presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
-      presentationPointerSizeScale.value = 1
       timerRunning.value = false
       clearPresentationTimerTick()
       timerTotalSeconds.value = TIMER_DEFAULT_SECONDS
@@ -196,18 +193,6 @@ export function useCanvasPagePresentation() {
 
   function emitFitToCanvas() {
     eventBus.emit('view:fit_to_canvas_requested', { animate: true })
-  }
-
-  function handleFullscreenChange() {
-    if (document.fullscreenElement) {
-      isPresentationMode.value = true
-      setTimeout(emitFitToCanvas, ANIMATION.FIT_VIEWPORT_DELAY)
-    } else {
-      isPresentationMode.value = false
-      nextTick().then(() => {
-        setTimeout(emitFitToCanvas, ANIMATION.FIT_VIEWPORT_DELAY)
-      })
-    }
   }
 
   function handleZoomChange(level: number) {
@@ -231,21 +216,13 @@ export function useCanvasPagePresentation() {
     handToolActive.value = active
   }
 
-  async function handleStartPresentation() {
-    if (isPresentationMode.value) {
-      if (document.fullscreenElement) {
-        await document.exitFullscreen()
-      }
-      return
-    }
-
-    if (!canvasPageRef.value) return
-
-    try {
-      await canvasPageRef.value.requestFullscreen()
-    } catch (err) {
-      console.warn('Fullscreen request failed:', err)
-      notify.error(t('notification.fullscreenFailed'))
+  function handleStartPresentation() {
+    const wasOpen = presentationRailOpen.value
+    presentationRailOpen.value = !presentationRailOpen.value
+    if (wasOpen) {
+      nextTick().then(() => {
+        setTimeout(emitFitToCanvas, ANIMATION.FIT_VIEWPORT_DELAY)
+      })
     }
   }
 
@@ -253,12 +230,7 @@ export function useCanvasPagePresentation() {
     console.log('Selected model:', model)
   }
 
-  onMounted(() => {
-    document.addEventListener('fullscreenchange', handleFullscreenChange)
-  })
-
   onUnmounted(() => {
-    document.removeEventListener('fullscreenchange', handleFullscreenChange)
     window.removeEventListener('mousemove', handleLaserMouseMove)
     window.removeEventListener('keydown', handlePresentationPointerSizeKeydown, true)
     clearPresentationTimerTick()
@@ -266,23 +238,21 @@ export function useCanvasPagePresentation() {
 
   function resetPresentationStateOnLeave(): void {
     handToolActive.value = false
-    isPresentationMode.value = false
+    presentationRailOpen.value = false
     presentationHighlightStrokes.value = []
     presentationTool.value = 'laser'
     presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
-    presentationPointerSizeScale.value = 1
   }
 
   return {
     canvasPageRef,
     canvasZoom,
     handToolActive,
-    isPresentationMode,
+    presentationRailOpen,
     presentationTool,
     presentationHighlighterColor,
     presentationHighlightStrokes,
     presentationHighlighterActive,
-    presentationPointerSizeScale,
     timerTotalSeconds,
     timerRemainingSeconds,
     timerRunning,

@@ -3,6 +3,7 @@
  */
 
 export { default as ConceptMapFocusQuestionModal } from './ConceptMapFocusQuestionModal.vue'
+export { default as CanvasChrome } from './CanvasChrome.vue'
 export { default as CanvasToolbar } from './CanvasToolbar.vue'
 export { default as CanvasTopBar } from './CanvasTopBar.vue'
 export { default as ZoomControls } from './ZoomControls.vue'

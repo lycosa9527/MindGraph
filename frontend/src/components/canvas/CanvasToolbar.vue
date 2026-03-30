@@ -6,7 +6,7 @@ import { computed } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { ArrowDownUp, Brush, X } from 'lucide-vue-next'
+import { ArrowDownUp, Brush } from 'lucide-vue-next'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -23,19 +23,11 @@ import CanvasToolbarStyleDropdown from './CanvasToolbarStyleDropdown.vue'
 import CanvasToolbarTextDropdown from './CanvasToolbarTextDropdown.vue'
 import CanvasToolbarUndoRedo from './CanvasToolbarUndoRedo.vue'
 
+/** When true, flatter styles for use inside CanvasTopBar (single merged chrome row). */
+const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+
 const { t } = useLanguage()
 const notify = useNotifications()
-
-const props = withDefaults(
-  defineProps<{
-    isPresentationMode?: boolean
-  }>(),
-  { isPresentationMode: false }
-)
-
-const emit = defineEmits<{
-  (e: 'exitPresentation'): void
-}>()
 
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
@@ -114,35 +106,20 @@ function handleToggleOrientation() {
 
 <template>
   <div
-    :class="[
-      'canvas-toolbar absolute left-1/2 transform -translate-x-1/2 z-10',
-      props.isPresentationMode ? 'top-4' : 'top-[60px]',
-    ]"
+    class="canvas-toolbar relative z-10 w-full flex justify-center"
+    :class="props.embedded ? 'max-w-none' : 'max-w-[min(100vw-1rem,1200px)]'"
   >
     <div
-      class="rounded-xl shadow-lg p-1.5 flex items-center justify-center border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md max-w-[min(100vw-1rem,1200px)] overflow-x-auto"
+      class="flex items-center justify-center w-full overflow-x-auto"
+      :class="
+        props.embedded
+          ? 'rounded-lg p-1 bg-transparent'
+          : 'rounded-xl shadow-lg p-1.5 border border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md'
+      "
     >
       <div
         class="toolbar-content flex items-center bg-gray-50 dark:bg-gray-700/50 rounded-lg p-1 gap-0.5 min-w-min"
       >
-        <template v-if="props.isPresentationMode">
-          <ElTooltip
-            :content="t('canvas.toolbar.exitFullscreen')"
-            placement="bottom"
-          >
-            <ElButton
-              text
-              size="small"
-              class="text-red-600 hover:text-red-700 dark:text-red-400"
-              @click="emit('exitPresentation')"
-            >
-              <X class="w-4 h-4" />
-              <span>{{ t('canvas.toolbar.exit') }}</span>
-            </ElButton>
-          </ElTooltip>
-          <div class="divider" />
-        </template>
-
         <CanvasToolbarUndoRedo
           :can-undo="diagramStore.canUndo"
           :can-redo="diagramStore.canRedo"

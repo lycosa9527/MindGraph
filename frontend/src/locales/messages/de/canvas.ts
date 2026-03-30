@@ -180,14 +180,6 @@ export default {
   'canvas.topBar.exportPdf': 'Als PDF exportieren',
   'canvas.topBar.exportPng': 'Als PNG exportieren',
   'canvas.topBar.exportSvg': 'Als SVG exportieren',
-  'canvas.topBar.focusChipHint':
-    '{label}: Tab drücken beim Bearbeiten der Fokusfrage zur Bestätigung',
-  'canvas.topBar.focusChipPass': 'OK',
-  'canvas.topBar.focusChipSignIn':
-    'Anmelden, dann Tab drücken beim Bearbeiten der Fokusfrage zur Bestätigung',
-  'canvas.topBar.focusChipValidating': '{label} wird geprüft…',
-  'canvas.topBar.focusChipWeak': 'Schwach',
-  'canvas.topBar.focusQuestionLabel': 'Fokusfrage:',
   'canvas.topBar.reset': 'Zurücksetzen',
   'canvas.topBar.resetTemplate': 'Auf Standardvorlage zurücksetzen',
   'canvas.topBar.schoolCollab': 'Schulzusammenarbeit',
@@ -211,6 +203,8 @@ export default {
   'canvas.zoomControls.exitFullscreen': 'Vollbild beenden',
   'canvas.zoomControls.fitCanvas': 'Leinwand einpassen',
   'canvas.zoomControls.fullscreen': 'Vollbild',
+  'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
+  'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Handwerkzeug',
   'canvas.presentationSideToolbar.ariaLabel': 'Präsentationswerkzeuge',
   'canvas.presentationSideToolbar.laser': 'Laserpointer',

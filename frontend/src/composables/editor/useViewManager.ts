@@ -392,6 +392,7 @@ export function useViewManager(options: UseViewManagerOptions = {}) {
 
   eventBus.onWithOwner('window:resized', () => handleWindowResize(), ownerId)
 
+  // Same event name as DiagramCanvas; nothing emits it in-repo today (reserved API).
   eventBus.onWithOwner('view:fit_for_export_requested', () => fitForExport(), ownerId)
 
   // =========================================================================

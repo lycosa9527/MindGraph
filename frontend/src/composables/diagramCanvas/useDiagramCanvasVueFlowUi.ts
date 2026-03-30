@@ -6,7 +6,7 @@ import type { PresentationToolId } from '@/types'
 
 export interface UseDiagramCanvasVueFlowUiOptions {
   diagramStore: ReturnType<typeof useDiagramStore>
-  presentationMode: Ref<boolean>
+  presentationRailOpen: Ref<boolean>
   handToolActive: Ref<boolean>
   panOnDragButtons: Ref<number[] | null | undefined>
   presentationTool: Ref<PresentationToolId>
@@ -28,7 +28,7 @@ export function useDiagramCanvasVueFlowUi(
 ): UseDiagramCanvasVueFlowUiResult {
   const {
     diagramStore,
-    presentationMode,
+    presentationRailOpen,
     handToolActive,
     panOnDragButtons,
     presentationTool,
@@ -37,7 +37,7 @@ export function useDiagramCanvasVueFlowUi(
 
   const presentationStrokeToolActive = computed(
     () =>
-      presentationMode.value &&
+      presentationRailOpen.value &&
       (presentationTool.value === 'highlighter' || presentationTool.value === 'pen')
   )
 
@@ -49,7 +49,7 @@ export function useDiagramCanvasVueFlowUi(
 
   const effectivePanOnDrag = computed((): number[] => {
     const base = panOnDragButtons.value ?? (handToolActive.value ? [0, 1, 2] : [1, 2])
-    if (!presentationMode.value) {
+    if (!presentationRailOpen.value) {
       return base
     }
     const withoutRight = base.filter((b) => b !== 2)

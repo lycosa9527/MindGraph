@@ -9,10 +9,11 @@ import { useRouter } from 'vue-router'
 
 import { ElButton, ElDialog, ElForm, ElFormItem, ElInput, ElOption, ElSelect } from 'element-plus'
 
-import { toPng } from 'html-to-image'
+import { toBlob } from 'html-to-image'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { type CommunityPost, createCommunityPost, updateCommunityPost } from '@/utils/apiClient'
+import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
 
 /** Stored category values (Chinese) — API / existing posts use these strings */
 const CATEGORY_CATALOG = [
@@ -88,17 +89,6 @@ function close() {
   emit('update:visible', false)
 }
 
-function dataUrlToBlob(dataUrl: string): Blob {
-  const arr = dataUrl.split(',')
-  const mime = arr[0].match(/:(.*?);/)?.[1] ?? 'image/png'
-  const bstr = atob(arr[1])
-  const u8arr = new Uint8Array(bstr.length)
-  for (let i = 0; i < bstr.length; i++) {
-    u8arr[i] = bstr.charCodeAt(i)
-  }
-  return new Blob([u8arr], { type: mime })
-}
-
 async function generateThumbnail(): Promise<Blob | null> {
   const container = props.getContainer()
   if (!container) {
@@ -106,12 +96,11 @@ async function generateThumbnail(): Promise<Blob | null> {
     return null
   }
   try {
-    const dataUrl = await toPng(container, {
-      backgroundColor: '#ffffff',
-      pixelRatio: 2,
-      style: { transform: 'none' },
-    })
-    return dataUrlToBlob(dataUrl)
+    const blob = await toBlob(
+      container,
+      getDiagramCanvasHtmlToImageOptions()
+    )
+    return blob
   } catch (e) {
     console.error('[ExportToCommunity] Thumbnail generation failed:', e)
     notify.error(t('community.shareModal.previewFailed'))

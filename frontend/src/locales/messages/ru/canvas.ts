@@ -174,14 +174,6 @@ export default {
   'canvas.topBar.exportPdf': 'Экспорт в PDF',
   'canvas.topBar.exportPng': 'Экспорт в PNG',
   'canvas.topBar.exportSvg': 'Экспорт в SVG',
-  'canvas.topBar.focusChipHint':
-    '{label}: нажмите Tab при редактировании фокус-вопроса для подтверждения',
-  'canvas.topBar.focusChipPass': 'ОК',
-  'canvas.topBar.focusChipSignIn':
-    'Войдите, затем нажмите Tab при редактировании фокус-вопроса для подтверждения',
-  'canvas.topBar.focusChipValidating': '{label}: проверка…',
-  'canvas.topBar.focusChipWeak': 'Слабо',
-  'canvas.topBar.focusQuestionLabel': 'Фокус-вопрос:',
   'canvas.topBar.reset': 'Сбросить',
   'canvas.topBar.resetTemplate': 'Сбросить к шаблону по умолчанию',
   'canvas.topBar.schoolCollab': 'Школьное сотрудничество',
@@ -203,6 +195,8 @@ export default {
   'canvas.zoomControls.exitFullscreen': 'Выйти из полноэкранного режима',
   'canvas.zoomControls.fitCanvas': 'Подогнать холст',
   'canvas.zoomControls.fullscreen': 'Полный экран',
+  'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
+  'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Инструмент «Рука»',
   'canvas.presentationSideToolbar.ariaLabel': 'Инструменты презентации',
   'canvas.presentationSideToolbar.laser': 'Лазерная указка',

@@ -25,10 +25,10 @@ const props = withDefaults(
   defineProps<{
     /** Canvas zoom (0.1-4) - when provided, display syncs with canvas */
     zoom?: number | null
-    /** When true, fullscreen button shows exit state */
-    isPresentationMode?: boolean
+    /** When true, presentation tools rail is open (Play shows active) */
+    presentationRailOpen?: boolean
   }>(),
-  { zoom: null, isPresentationMode: false }
+  { zoom: null, presentationRailOpen: false }
 )
 
 const zoomLevel = ref(100)
@@ -193,23 +193,23 @@ defineExpose({
 
       <div class="divider" />
 
-      <!-- Fullscreen (canvas chrome hidden) / exit -->
+      <!-- Toggle presentation tools rail (right) -->
       <ElTooltip
         :content="
-          props.isPresentationMode
-            ? t('canvas.zoomControls.exitFullscreen')
-            : t('canvas.zoomControls.fullscreen')
+          props.presentationRailOpen
+            ? t('canvas.zoomControls.hidePresentationTools')
+            : t('canvas.zoomControls.showPresentationTools')
         "
         placement="top"
       >
         <ElButton
           text
           size="small"
-          :class="['zoom-btn', 'presentation', { active: props.isPresentationMode }]"
+          :class="['zoom-btn', 'presentation', { active: props.presentationRailOpen }]"
           @click="handlePresentation"
         >
           <Square
-            v-if="props.isPresentationMode"
+            v-if="props.presentationRailOpen"
             class="w-4 h-4"
           />
           <Play

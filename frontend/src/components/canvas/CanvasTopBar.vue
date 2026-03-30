@@ -23,23 +23,10 @@ import {
 
 import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
-// Using Lucide icons for a more modern, cute look
-import {
-  ArrowLeft,
-  Check,
-  CircleSlash,
-  FileImage,
-  FileJson,
-  FileText,
-  ImageDown,
-  Loader2,
-  RotateCcw,
-  Share2,
-  Users,
-} from 'lucide-vue-next'
+import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from 'lucide-vue-next'
 
-import { DiagramSlotFullModal } from '@/components/canvas'
-import OnlineCollabModal from '@/components/canvas/OnlineCollabModal.vue'
+import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
+import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
 import { useFeatureFlags } from '@/composables'
 import {
   eventBus,
@@ -50,30 +37,18 @@ import {
 } from '@/composables'
 import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
-import { FOCUS_MODELS, type FocusModel } from '@/composables/editor/conceptMapFocusQuestionApi'
-import { getLLMColor } from '@/config/llmModelColors'
-import {
-  useAuthStore,
-  useConceptMapFocusReviewStore,
-  useDiagramStore,
-  useLLMResultsStore,
-  usePanelsStore,
-} from '@/stores'
+import { CANVAS_TOP_BAR } from '@/config/uiConfig'
+import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
-import { useUIStore } from '@/stores/ui'
 import type { DiagramType } from '@/types'
 
 const notify = useNotifications()
-
-const showCanvasCollabButton = false
 
 const props = defineProps<{
   autoSavedStatus?: string | null
   slotFullAndNewDiagram?: boolean
   isDirty?: boolean
   isSaving?: boolean
-  /** Concept map: focus question (standard mode), shown centered in the bar */
-  focusQuestion?: string | null
   /** Snapshot badges to display next to the filename */
   snapshots?: SnapshotMetadata[]
   /** Currently active (recalled) snapshot version */
@@ -91,74 +66,21 @@ const router = useRouter()
 const { promptLanguage, t, currentLanguage } = useLanguage()
 const diagramStore = useDiagramStore()
 
-const focusQuestionCenterTitle = computed(() => {
-  if (!props.focusQuestion) return ''
-  const prefix = t('canvas.topBar.focusQuestionLabel')
-  return `${prefix} ${props.focusQuestion}`
-})
 const savedDiagramsStore = useSavedDiagramsStore()
 const authStore = useAuthStore()
-const focusReviewStore = useConceptMapFocusReviewStore()
-const uiStore = useUIStore()
 const panelsStore = usePanelsStore()
 
-const FOCUS_MODEL_LABELS: Record<FocusModel, string> = {
-  qwen: 'Qwen',
-  deepseek: 'DeepSeek',
-  doubao: 'Doubao',
-}
-
-/**
- * Three LLM focus-question validation chips: only while the topic node alone is selected.
- * Clicking the canvas (clearing selection) or selecting another node hides them — validation is “done” for this focus.
- */
-const showFocusValidationChips = computed(() => {
-  if (diagramStore.type !== 'concept_map' || !props.focusQuestion) return false
-  const nodes = diagramStore.selectedNodes
-  return nodes.length === 1 && nodes[0] === 'topic'
-})
-
-function focusVState(m: FocusModel) {
-  return (
-    focusReviewStore.validationByModel[m] ?? {
-      valid: null,
-      reason: '',
-      error: null,
-      loading: false,
-    }
-  )
-}
-
-function focusChipSurface(m: FocusModel): Record<string, string> {
-  const c = getLLMColor(m, uiStore.isDark)
-  if (!c) return {}
-  return { backgroundColor: c.bg, borderColor: c.border }
-}
-
-function focusChipLabelStyle(m: FocusModel): Record<string, string> {
-  const c = getLLMColor(m, uiStore.isDark)
-  if (!c) return {}
-  return { color: c.text }
-}
-
-function focusChipTooltip(m: FocusModel): string {
-  if (!authStore.isAuthenticated) {
-    return t('canvas.topBar.focusChipSignIn')
-  }
-  const v = focusVState(m)
-  const label = FOCUS_MODEL_LABELS[m]
-  if (v.loading) return t('canvas.topBar.focusChipValidating', { label })
-  if (v.error) return `${label} · ${v.error}`
-  if (v.valid === true) {
-    return `${label} · ${v.reason || t('canvas.topBar.focusChipPass')}`
-  }
-  if (v.valid === false) {
-    return `${label} · ${v.reason || t('canvas.topBar.focusChipWeak')}`
-  }
-  return t('canvas.topBar.focusChipHint', { label })
-}
-
 const { featureCommunity } = useFeatureFlags()
+
+/** Native tooltip: status text + action hint (replaces duplicate :title bindings) */
+const autoSaveHoverTitle = computed(() => {
+  const status = props.autoSavedStatus
+  if (!status) return undefined
+  const hint = props.slotFullAndNewDiagram
+    ? t('canvas.topBar.autoSaveTitleSlotFull')
+    : t('canvas.topBar.autoSaveTitleSave')
+  return `${status} — ${hint}`
+})
 
 // Diagram type from store (when loaded) or route query (for new diagrams)
 const diagramTypeForName = computed(
@@ -192,9 +114,6 @@ const fileName = computed({
 
 const showSlotFullModal = ref(false)
 
-// Diagram presentation mode (shared code) — not Workshop Chat
-const showOnlineCollabModal = ref(false)
-const collabMode = ref<'organization' | 'network'>('organization')
 const currentDiagramId = computed(() => {
   // Priority 1: Use activeDiagramId from store (set when diagram is saved)
   if (savedDiagramsStore.activeDiagramId) {
@@ -374,13 +293,6 @@ function handleOpenMindmate() {
   panelsStore.openMindmate()
 }
 
-function handleCollabCommand(cmd: string) {
-  if (cmd === 'organization' || cmd === 'network') {
-    collabMode.value = cmd
-    showOnlineCollabModal.value = true
-  }
-}
-
 /**
  * Reset canvas to default template: clears diagram, node palette, and saved state.
  * Nothing is persisted. Shows confirmation modal first.
@@ -405,7 +317,6 @@ async function handleReset() {
   savedDiagramsStore.clearActiveDiagram()
   router.replace({ path: '/canvas', query: { type: diagramType } })
   showSlotFullModal.value = false
-  showOnlineCollabModal.value = false
   useLLMResultsStore().reset()
   panelsStore.reset()
   diagramStore.clearHistory()
@@ -418,11 +329,13 @@ async function handleReset() {
 
 <template>
   <div
-    class="canvas-top-bar absolute top-0 left-0 right-0 z-30 w-full h-12 px-3 flex items-center shadow-sm border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
+    class="canvas-top-bar relative w-full min-h-12 px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 shrink-0 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
   >
-    <!-- Left section: Back + filename + save status -->
-    <div class="flex items-center gap-1 shrink-0 min-w-0 z-10">
-      <!-- Back button -->
+    <!-- Col 1: back + title + auto-save -->
+    <div
+      class="flex items-center gap-1 min-w-0 z-10"
+      :style="{ maxWidth: CANVAS_TOP_BAR.LEFT_CLUSTER_MAX_WIDTH }"
+    >
       <ElTooltip
         :content="t('canvas.topBar.back')"
         placement="bottom"
@@ -437,16 +350,16 @@ async function handleReset() {
         </ElButton>
       </ElTooltip>
 
-      <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1" />
+      <div class="h-5 border-r border-gray-200 dark:border-gray-600 mx-1 shrink-0" />
 
-      <!-- File name (editable) + auto-save status -->
-      <div class="flex items-center gap-2 ml-2 min-w-0">
+      <div class="flex items-center gap-1.5 sm:gap-2 ml-1 min-w-0 flex-1 overflow-hidden">
         <ElInput
           v-if="isFileNameEditing"
           ref="fileNameInputRef"
           v-model="fileName"
           size="small"
           class="file-name-input"
+          :style="{ maxWidth: CANVAS_TOP_BAR.FILE_NAME_INPUT_MAX_WIDTH }"
           @blur="handleFileNameBlur"
           @keypress="handleFileNameKeyPress"
         />
@@ -456,16 +369,19 @@ async function handleReset() {
           placement="bottom"
         >
           <span
-            class="file-name-label text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+            class="file-name-label text-xs font-medium text-gray-700 dark:text-gray-200 cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors px-1.5 sm:px-2 py-1 rounded hover:bg-gray-100 dark:hover:bg-gray-700 truncate"
+            :style="{ maxWidth: CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH }"
             @click="handleFileNameClick"
           >
-            {{ fileName.length > 15 ? fileName.slice(0, 15) + '…' : fileName }}
+            {{ fileName }}
           </span>
         </ElTooltip>
 
         <span
           v-if="props.autoSavedStatus"
-          class="auto-saved-status text-xs shrink-0 cursor-pointer transition-colors whitespace-nowrap"
+          class="auto-saved-status text-xs shrink-0 min-w-0 cursor-pointer transition-colors truncate"
+          :style="{ maxWidth: CANVAS_TOP_BAR.AUTOSAVE_STATUS_MAX_WIDTH }"
+          :title="autoSaveHoverTitle"
           :class="[
             props.isSaving
               ? 'text-blue-500 dark:text-blue-400'
@@ -473,11 +389,6 @@ async function handleReset() {
                 ? 'text-amber-500 dark:text-amber-400'
                 : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300',
           ]"
-          :title="
-            props.slotFullAndNewDiagram
-              ? t('canvas.topBar.autoSaveTitleSlotFull')
-              : t('canvas.topBar.autoSaveTitleSave')
-          "
           @click="handleAutoSaveStatusClick"
         >
           {{ props.autoSavedStatus }}
@@ -485,132 +396,50 @@ async function handleReset() {
       </div>
     </div>
 
-    <!-- Spacer pushes snapshot badges toward the right -->
-    <div class="flex-1 min-w-0" />
-
-    <!-- Snapshot version badges: adaptive, pushed right -->
+    <!-- Col 2: editing toolbar — viewport-centered (equal 1fr side columns) -->
     <div
-      v-if="props.snapshots?.length"
-      class="flex items-center gap-1.5 shrink-0 z-10 mr-3"
+      class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]"
     >
-      <ElTooltip
-        v-for="snap in props.snapshots"
-        :key="snap.version_number"
-        :content="t('canvas.topBar.snapshotBadgeTooltip', { n: snap.version_number })"
-        placement="bottom"
-      >
-        <span
-          class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 cursor-pointer transition-colors select-none"
-          :class="
-            snap.version_number === props.activeSnapshotVersion
-              ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
-              : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'
-          "
-          @click="
-            (e: MouseEvent) =>
-              e.ctrlKey || e.metaKey
-                ? emit('snapshotDelete', snap.version_number)
-                : emit('snapshotRecall', snap.version_number)
-          "
-        >
-          {{ snap.version_number }}
-        </span>
-      </ElTooltip>
+      <CanvasToolbar embedded />
     </div>
 
-    <!-- Center: focus question + 3-LLM validation (concept map) -->
+    <!-- Col 3: snapshots + workshop participants + actions -->
     <div
-      v-if="props.focusQuestion"
-      class="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 max-w-[min(92vw,980px)] px-2 z-[5] flex flex-row items-center gap-2 pointer-events-auto"
+      class="flex w-full min-w-0 items-center justify-end gap-1.5 sm:gap-2 md:gap-3 z-10 flex-wrap sm:flex-nowrap"
     >
-      <p
-        class="text-xs text-gray-600 dark:text-gray-300 min-w-0 flex-1 truncate text-left"
-        :title="focusQuestionCenterTitle"
-      >
-        <span class="text-gray-400 dark:text-gray-500">{{
-          t('canvas.topBar.focusQuestionLabel')
-        }}</span>
-        <span class="ml-1">{{ props.focusQuestion }}</span>
-      </p>
       <div
-        v-if="showFocusValidationChips"
-        class="flex shrink-0 items-center flex-nowrap gap-1.5 max-w-[min(44vw,380px)]"
+        v-if="props.snapshots?.length"
+        class="flex items-center gap-1.5 shrink-0"
       >
-        <div
-          v-for="m in FOCUS_MODELS"
-          :key="m"
-          class="flex items-center gap-1 rounded-lg border border-solid px-2 py-1"
-          :class="{ 'opacity-60': !authStore.isAuthenticated }"
-          :style="focusChipSurface(m)"
+        <ElTooltip
+          v-for="snap in props.snapshots"
+          :key="snap.version_number"
+          :content="t('canvas.topBar.snapshotBadgeTooltip', { n: snap.version_number })"
+          placement="bottom"
         >
-          <ElTooltip
-            :content="focusChipTooltip(m)"
-            placement="bottom"
+          <span
+            class="inline-flex items-center justify-center w-5 h-5 rounded-full text-[10px] font-bold shrink-0 cursor-pointer transition-colors select-none"
+            :class="
+              snap.version_number === props.activeSnapshotVersion
+                ? 'bg-blue-500 text-white ring-2 ring-blue-300 ring-offset-1'
+                : 'bg-blue-100 text-blue-600 hover:bg-blue-200 dark:bg-blue-900/40 dark:text-blue-300 dark:hover:bg-blue-800/50'
+            "
+            @click="
+              (e: MouseEvent) =>
+                e.ctrlKey || e.metaKey
+                  ? emit('snapshotDelete', snap.version_number)
+                  : emit('snapshotRecall', snap.version_number)
+            "
           >
-            <span class="inline-flex items-center gap-1">
-              <span
-                class="text-[10px] font-semibold"
-                :style="focusChipLabelStyle(m)"
-                >{{ FOCUS_MODEL_LABELS[m] }}</span
-              >
-              <Loader2
-                v-if="focusVState(m).loading"
-                class="w-3.5 h-3.5 animate-spin text-blue-500 shrink-0"
-              />
-              <template v-else-if="focusVState(m).error">
-                <CircleSlash class="w-3.5 h-3.5 text-amber-600 shrink-0" />
-              </template>
-              <template v-else-if="focusVState(m).valid === true">
-                <Check class="w-3.5 h-3.5 text-emerald-600 shrink-0" />
-              </template>
-              <template v-else-if="focusVState(m).valid === false">
-                <CircleSlash class="w-3.5 h-3.5 text-red-600 shrink-0" />
-              </template>
-            </span>
-          </ElTooltip>
-        </div>
+            {{ snap.version_number }}
+          </span>
+        </ElTooltip>
       </div>
-    </div>
 
-    <!-- Right section: Online collaboration + participants + teaching design + export -->
-    <div class="flex items-center gap-4 shrink-0 z-10">
-      <ElTooltip
-        v-if="showCanvasCollabButton"
-        :content="t('canvas.topBar.collabTooltip')"
-        placement="bottom"
-      >
-        <ElDropdown
-          trigger="click"
-          :disabled="!currentDiagramId"
-          @command="handleCollabCommand"
-        >
-          <ElButton
-            class="workshop-button"
-            size="small"
-            :disabled="!currentDiagramId"
-          >
-            <Users class="w-4 h-4 mr-1" />
-            {{ t('canvas.topBar.collab') }}
-          </ElButton>
-          <template #dropdown>
-            <ElDropdownMenu>
-              <ElDropdownItem command="organization">
-                {{ t('canvas.topBar.schoolCollab') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="network">
-                {{ t('canvas.topBar.sharedCollab') }}
-              </ElDropdownItem>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
-      </ElTooltip>
-
-      <!-- Participant bar (only when collaboration session has a join code) -->
       <div
         v-if="workshopCode && participantsWithNames && participantsWithNames.length > 0"
-        class="flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
+        class="flex items-center gap-1 px-2 py-1 max-w-full min-w-0 bg-gray-100 dark:bg-gray-800 rounded-md border border-gray-200 dark:border-gray-700"
       >
-        <!-- Visible participants (first 10) -->
         <template
           v-for="participant in visibleParticipants"
           :key="participant.user_id"
@@ -619,7 +448,10 @@ async function handleReset() {
             :content="participant.username"
             placement="bottom"
           >
-            <div class="flex items-center gap-1 max-w-[140px]">
+            <div
+              class="flex items-center gap-1 min-w-0"
+              :style="{ maxWidth: `${CANVAS_TOP_BAR.PARTICIPANT_NAME_MAX_WIDTH_PX}px` }"
+            >
               <div
                 class="participant-emoji shrink-0"
                 :style="{ backgroundColor: getUserColor(participant.user_id) }"
@@ -636,7 +468,6 @@ async function handleReset() {
           </ElTooltip>
         </template>
 
-        <!-- Dropdown for additional participants -->
         <ElDropdown
           v-if="dropdownParticipants.length > 0"
           trigger="hover"
@@ -665,8 +496,7 @@ async function handleReset() {
         </ElDropdown>
       </div>
 
-      <!-- Action buttons: 教学设计, Reset, Export (even spacing) -->
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5 sm:gap-2 shrink-0">
         <ElTooltip
           :content="t('canvas.topBar.teachingDesign')"
           placement="bottom"
@@ -675,9 +505,10 @@ async function handleReset() {
             class="mindmate-button"
             size="small"
             :icon="ChatDotRound"
+            :aria-label="t('canvas.topBar.teachingDesign')"
             @click="handleOpenMindmate"
           >
-            {{ t('canvas.topBar.teachingDesign') }}
+            <span class="hidden sm:inline">{{ t('canvas.topBar.teachingDesign') }}</span>
           </ElButton>
         </ElTooltip>
 
@@ -689,9 +520,10 @@ async function handleReset() {
             class="reset-button"
             size="small"
             :icon="RotateCcw"
+            :aria-label="t('canvas.topBar.reset')"
             @click="handleReset"
           >
-            {{ t('canvas.topBar.reset') }}
+            <span class="hidden sm:inline">{{ t('canvas.topBar.reset') }}</span>
           </ElButton>
         </ElTooltip>
 
@@ -703,8 +535,9 @@ async function handleReset() {
             class="export-button"
             size="small"
             :icon="Download"
+            :aria-label="t('canvas.topBar.export')"
           >
-            {{ t('canvas.topBar.export') }}
+            <span class="hidden sm:inline">{{ t('canvas.topBar.export') }}</span>
           </ElButton>
           <template #dropdown>
             <ElDropdownMenu>
@@ -741,7 +574,6 @@ async function handleReset() {
       </div>
     </div>
 
-    <!-- Diagram slot full modal -->
     <DiagramSlotFullModal
       v-model:visible="showSlotFullModal"
       :pending-title="fileName"
@@ -750,18 +582,6 @@ async function handleReset() {
       :pending-language="promptLanguage"
       @success="handleSlotModalSuccess"
       @cancel="handleSlotModalCancel"
-    />
-
-    <OnlineCollabModal
-      v-model:visible="showOnlineCollabModal"
-      :diagram-id="currentDiagramId"
-      :mode="collabMode"
-      @collab-code-changed="
-        (code) => {
-          workshopCode = code
-          eventBus.emit('workshop:code-changed', { code })
-        }
-      "
     />
   </div>
 </template>
@@ -818,23 +638,14 @@ async function handleReset() {
   background-color: rgba(0, 0, 0, 0.2);
 }
 
-.menu-button {
-  font-weight: 500;
-  color: var(--el-text-color-regular);
-  padding: 4px 10px;
-}
-
-.menu-button:hover {
-  background-color: var(--el-fill-color-light);
-  border-radius: 4px;
-}
-
 .file-name-input {
-  width: 180px;
+  min-width: 0;
+  width: 100%;
 }
 
+/* maxWidth from CANVAS_TOP_BAR.FILENAME_DISPLAY_MAX_WIDTH (inline) */
 .file-name-label {
-  max-width: 15ch;
+  min-width: 0;
   display: inline-block;
 }
 
@@ -844,33 +655,11 @@ async function handleReset() {
   color: var(--el-color-primary);
 }
 
-/* Keyboard shortcut styling */
-.shortcut {
-  margin-left: auto;
-  padding-left: 24px;
-  font-size: 12px;
-  color: var(--el-text-color-secondary);
-  font-family: ui-monospace, monospace;
-}
-
 /* Make dropdown items flex for shortcut alignment */
 :deep(.el-dropdown-menu__item) {
   display: flex;
   align-items: center;
   min-width: 180px;
-}
-
-/* Presentation / export buttons - Swiss Design style (matching MindMate) */
-.workshop-button {
-  --el-button-bg-color: #dbeafe;
-  --el-button-border-color: #93c5fd;
-  --el-button-hover-bg-color: #bfdbfe;
-  --el-button-hover-border-color: #60a5fa;
-  --el-button-active-bg-color: #93c5fd;
-  --el-button-active-border-color: #3b82f6;
-  --el-button-text-color: #1e40af;
-  font-weight: 500;
-  border-radius: 9999px;
 }
 
 .export-button {

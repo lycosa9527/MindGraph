@@ -17,6 +17,8 @@ const props = defineProps<{
   currentColor: string
   /** Multiplier for stroke width (presentation Ctrl±) */
   pointerSizeScale?: number
+  /** Extra scale for highlighter vs pen (highlighter marker is drawn thicker) */
+  strokeWidthRoleScale?: number
 }>()
 
 const strokes = defineModel<PresentationHighlightStroke[]>({ default: () => [] })
@@ -29,13 +31,16 @@ const transform = computed(
   () => `translate(${viewport.value.x}, ${viewport.value.y}) scale(${viewport.value.zoom})`
 )
 
-/** Keep apparent stroke width roughly constant on screen (flow space is scaled by zoom). */
-const strokeWidthFlow = computed(() => {
+/** Per-stroke width so pen/highlighter scales are independent (snapshotted at stroke start). */
+function strokeWidthFlowForStroke(stroke: PresentationHighlightStroke): number {
   const z = viewport.value.zoom
-  const s = props.pointerSizeScale ?? 1
-  if (!z || z < 0.05) return 10 * s
-  return (8.5 / z) * s
-})
+  const s = stroke.pointerScale ?? props.pointerSizeScale ?? 1
+  const role = stroke.strokeRoleScale ?? props.strokeWidthRoleScale ?? 1
+  if (!z || z < 0.05) {
+    return 10 * s * role
+  }
+  return (8.5 / z) * s * role
+}
 
 const showLayer = computed(() => strokes.value.length > 0 || props.active)
 
@@ -64,7 +69,17 @@ function onPointerDown(e: PointerEvent) {
   e.stopPropagation()
   const p = screenToFlowCoordinate({ x: e.clientX, y: e.clientY })
   isDrawing.value = true
-  strokes.value = [...strokes.value, { points: [p], color: props.currentColor }]
+  const pointerScale = props.pointerSizeScale ?? 1
+  const strokeRoleScale = props.strokeWidthRoleScale ?? 1
+  strokes.value = [
+    ...strokes.value,
+    {
+      points: [p],
+      color: props.currentColor,
+      pointerScale,
+      strokeRoleScale,
+    },
+  ]
   ;(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId)
 }
 
@@ -80,6 +95,8 @@ function onPointerMove(e: PointerEvent) {
   const nextStroke: PresentationHighlightStroke = {
     points: [...last.points, p],
     color: last.color ?? DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR,
+    pointerScale: last.pointerScale,
+    strokeRoleScale: last.strokeRoleScale,
   }
   const next = [...list]
   next[next.length - 1] = nextStroke
@@ -102,6 +119,8 @@ function onPointerUp(e: PointerEvent) {
     const dup: PresentationHighlightStroke = {
       points: [p, { x: p.x + 0.6, y: p.y + 0.6 }],
       color: last.color ?? DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR,
+      pointerScale: last.pointerScale,
+      strokeRoleScale: last.strokeRoleScale,
     }
     const next = [...list]
     next[next.length - 1] = dup
@@ -127,7 +146,7 @@ function onPointerUp(e: PointerEvent) {
           :d="pointsToPath(stroke.points)"
           fill="none"
           :stroke="stroke.color ?? DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR"
-          :stroke-width="strokeWidthFlow"
+          :stroke-width="strokeWidthFlowForStroke(stroke)"
           stroke-linecap="round"
           stroke-linejoin="round"
         />

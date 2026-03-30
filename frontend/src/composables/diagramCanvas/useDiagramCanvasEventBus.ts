@@ -6,6 +6,7 @@ import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
+import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
 type FitApi = {
   fitToFullCanvas: (animate?: boolean) => void
@@ -114,6 +115,7 @@ export function useDiagramCanvasEventBus(): {
       })
     )
 
+    // Reserved for callers that only want the export framing (no emit sites in repo today).
     unsubscribers.push(
       eventBus.on('view:fit_for_export_requested', () => {
         fitApi.fitForExport()
@@ -122,16 +124,22 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('toolbar:export_requested', async ({ format }) => {
+        if (format === 'json') {
+          await exportByFormat(format)
+          return
+        }
+
+        if (format === 'community') {
+          showExportToCommunityModal.value = true
+          return
+        }
+
         const savedViewport = getViewport()
         fitApi.fitForExport()
         await nextTick()
-        if (format === 'community') {
-          showExportToCommunityModal.value = true
-          setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
-        } else {
-          await exportByFormat(format)
-          setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
-        }
+        await waitForNextPaint()
+        await exportByFormat(format)
+        setViewport(savedViewport, { duration: ANIMATION.DURATION_FAST })
       })
     )
 

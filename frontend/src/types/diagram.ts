@@ -152,4 +152,14 @@ export interface PresentationHighlightStroke {
   points: { x: number; y: number }[]
   /** SVG stroke color (e.g. rgba) */
   color: string
+  /**
+   * Pointer scale from presentation store when the stroke started (highlighter vs pen are independent).
+   * Omitted on legacy strokes: renderer falls back to current tool props.
+   */
+  pointerScale?: number
+  /**
+   * Role factor when the stroke started (e.g. 1.42 highlighter vs 1 pen).
+   * Omitted on legacy strokes: renderer falls back to current tool props.
+   */
+  strokeRoleScale?: number
 }

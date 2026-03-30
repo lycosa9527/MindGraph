@@ -25,7 +25,7 @@ import { storeToRefs } from 'pinia'
 
 import {
   AIModelSelector,
-  CanvasToolbar,
+  CanvasChrome,
   CanvasTopBar,
   ConceptMapFocusReviewPicker,
   ConceptMapLabelPicker,
@@ -62,7 +62,7 @@ import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanva
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
-import { PANEL, PANEL_INSET } from '@/config/uiConfig'
+import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
@@ -78,7 +78,6 @@ import {
   usePanelsStore,
   useUIStore,
 } from '@/stores'
-import { stripConceptMapFocusQuestionPrefix } from '@/stores/diagram/diagramDefaultLabels'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -101,12 +100,10 @@ const {
   canvasPageRef,
   canvasZoom,
   handToolActive,
-  isPresentationMode,
+  presentationRailOpen,
   presentationTool,
   presentationHighlighterColor,
   presentationHighlightStrokes,
-  presentationHighlighterActive,
-  presentationPointerSizeScale,
   timerTotalSeconds,
   timerRemainingSeconds,
   timerRunning,
@@ -161,18 +158,13 @@ const showZoomControls = computed(() => {
   return !(rel || rootPick || focusPick || inlineRecActiveNodeId.value)
 })
 
-/** Topic/focus_question text after optional 「焦点问题:」 — used in top bar as 焦点问题: {body} */
-const conceptMapFocusQuestionDisplay = computed((): string | null => {
-  if (diagramStore.type !== 'concept_map' || !diagramStore.data) return null
-  const topicNode = diagramStore.data.nodes.find((n) => n.id === 'topic' || n.type === 'topic')
-  let raw = topicNode?.text?.trim()
-  if (!raw) {
-    const fq = diagramStore.data.focus_question
-    if (typeof fq === 'string' && fq.trim()) raw = fq.trim()
+/** MindMate `right` offset: shift left when presentation rail is open so it does not cover the rail. */
+const mindMatePanelRight = computed(() => {
+  const base = PANEL.MINDMATE_RIGHT_OFFSET_PX
+  if (presentationRailOpen.value && presentationTool.value !== 'timer') {
+    return `${base + FIT_PADDING.PRESENTATION_SIDE_TOOLBAR_RIGHT_PX}px`
   }
-  if (!raw) return null
-  const body = stripConceptMapFocusQuestionPrefix(raw)
-  return body || null
+  return `${base}px`
 })
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
@@ -258,6 +250,28 @@ const { loadDiagramFromLibrary, handleSnapshotRecall, handleSnapshotDelete } =
   useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory })
 
 registerCanvasPageDiagramEventBus({ canvasZoom })
+
+/** MindMate panel and presentation rail cannot both be active: opening one closes the other. */
+watch(
+  () => panelsStore.mindmatePanel.isOpen,
+  (open) => {
+    if (open && presentationRailOpen.value) {
+      presentationRailOpen.value = false
+      handToolActive.value = false
+    }
+  },
+  { flush: 'sync' }
+)
+
+watch(
+  () => presentationRailOpen.value,
+  (open) => {
+    if (open && panelsStore.mindmatePanel.isOpen) {
+      panelsStore.closeMindmate()
+    }
+  },
+  { flush: 'sync' }
+)
 
 const { handleSaveKey } = useCanvasPageEditorShortcuts({
   workshopCode,
@@ -499,10 +513,6 @@ onMounted(async () => {
 })
 
 onUnmounted(() => {
-  if (document.fullscreenElement) {
-    document.exitFullscreen().catch(() => {})
-  }
-
   diagramAutoSave.flush()
   diagramAutoSave.teardown()
   inlineRecCoordinator.teardown()
@@ -526,15 +536,16 @@ onUnmounted(() => {
     ref="canvasPageRef"
     class="canvas-page flex flex-col h-screen bg-gray-50 relative"
     :class="{
-      'presentation-active': isPresentationMode,
-      'presentation-highlighter-mode': isPresentationMode && presentationHighlighterActive,
-      'presentation-timer-mode': isPresentationMode && presentationTool === 'timer',
+      'presentation-active': presentationRailOpen,
+      'presentation-highlighter-mode': presentationRailOpen && presentationTool === 'highlighter',
+      'presentation-pen-mode': presentationRailOpen && presentationTool === 'pen',
+      'presentation-timer-mode': presentationRailOpen && presentationTool === 'timer',
     }"
   >
     <!-- Laser pointer cursor (presentation mode, laser tool) -->
     <Transition name="laser-fade">
       <div
-        v-if="isPresentationMode && presentationTool === 'laser'"
+        v-if="presentationRailOpen && presentationTool === 'laser'"
         class="laser-cursor"
         :style="laserCursorStyle"
         aria-hidden="true"
@@ -544,7 +555,7 @@ onUnmounted(() => {
     <!-- Spotlight overlay: dark vignette with circular reveal (spotlight tool) -->
     <Transition name="spotlight-fade">
       <div
-        v-if="isPresentationMode && presentationTool === 'spotlight'"
+        v-if="presentationRailOpen && presentationTool === 'spotlight'"
         class="spotlight-overlay"
         :style="spotlightStyle"
         aria-hidden="true"
@@ -553,7 +564,7 @@ onUnmounted(() => {
 
     <!-- Presentation timer: fullscreen dim + large countdown -->
     <PresentationTimerOverlay
-      v-if="isPresentationMode && presentationTool === 'timer'"
+      v-if="presentationRailOpen && presentationTool === 'timer'"
       :remaining-seconds="timerRemainingSeconds"
       :total-seconds="timerTotalSeconds"
       :running="timerRunning"
@@ -566,7 +577,7 @@ onUnmounted(() => {
 
     <!-- Presentation tools: vertical rail (right); hidden during timer so overlay is unobstructed -->
     <PresentationSideToolbar
-      v-if="isPresentationMode && presentationTool !== 'timer'"
+      v-if="presentationRailOpen && presentationTool !== 'timer'"
       :active-tool="presentationTool"
       @selectTool="presentationTool = $event"
       @clearHighlighter="presentationHighlightStrokes = []"
@@ -574,24 +585,23 @@ onUnmounted(() => {
       @exit="handleStartPresentation"
     />
 
-    <!-- Top navigation bar (hidden in presentation mode) -->
-    <CanvasTopBar
-      v-if="!isPresentationMode"
-      :auto-saved-status="autoSavedStatusText"
-      :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
-      :is-dirty="diagramAutoSave.isDirty.value"
-      :is-saving="diagramAutoSave.isSaving.value"
-      :focus-question="conceptMapFocusQuestionDisplay"
-      :snapshots="snapshotHistory.snapshots.value"
-      :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
-      @save-requested="handleSaveKey"
-      @snapshot-recall="handleSnapshotRecall"
-      @snapshot-delete="handleSnapshotDelete"
-    />
+    <CanvasChrome>
+      <CanvasTopBar
+        :auto-saved-status="autoSavedStatusText"
+        :slot-full-and-new-diagram="isSlotsFullAndNewDiagram"
+        :is-dirty="diagramAutoSave.isDirty.value"
+        :is-saving="diagramAutoSave.isSaving.value"
+        :snapshots="snapshotHistory.snapshots.value"
+        :active-snapshot-version="snapshotHistory.activeSnapshotVersion.value"
+        @save-requested="handleSaveKey"
+        @snapshot-recall="handleSnapshotRecall"
+        @snapshot-delete="handleSnapshotDelete"
+      />
+    </CanvasChrome>
 
-    <!-- Collaboration strip when fullscreen presentation hides the top bar -->
+    <!-- Collaboration strip when workshop session is active -->
     <div
-      v-if="isPresentationMode && workshopCode"
+      v-if="workshopCode"
       class="fixed top-0 left-0 right-0 z-40 flex items-center justify-center gap-2 px-3 py-1.5 text-xs text-white bg-slate-800/90 backdrop-blur-sm border-b border-slate-600/60 pointer-events-none"
       role="status"
     >
@@ -600,13 +610,7 @@ onUnmounted(() => {
       <span class="font-mono">{{ workshopCode }}</span>
     </div>
 
-    <!-- Floating toolbar (only UI bar visible in presentation mode) -->
-    <CanvasToolbar
-      :is-presentation-mode="isPresentationMode"
-      @exitPresentation="handleStartPresentation"
-    />
-
-    <!-- Main canvas area - full height, toolbars float over with glass effect -->
+    <!-- Main canvas area - merged chrome (top bar + toolbar) in CanvasChrome -->
     <div class="flex-1 relative overflow-hidden flex flex-row min-h-0">
       <!-- Node Palette panel (瀑布流) - left 50%, inset to clear floating toolbars -->
       <Transition name="node-palette-slide">
@@ -646,8 +650,7 @@ onUnmounted(() => {
           :fit-view-on-init="true"
           :hand-tool-active="handToolActive"
           :collab-locked-node-ids="collabLockedNodeIds"
-          :presentation-mode="isPresentationMode"
-          :presentation-pointer-size-scale="presentationPointerSizeScale"
+          :presentation-rail-open="presentationRailOpen"
           @node-double-click="handleNodeDoubleClick"
         />
       </div>
@@ -660,7 +663,7 @@ onUnmounted(() => {
           :style="{
             width: `${PANEL.MINDMATE_WIDTH}px`,
             top: `${PANEL_INSET.TOP}px`,
-            right: '16px',
+            right: mindMatePanelRight,
             height: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
             minHeight: '400px',
             maxHeight: `calc(100vh - ${PANEL_INSET.VERTICAL_TOTAL}px)`,
@@ -714,7 +717,7 @@ onUnmounted(() => {
         >
           <ZoomControls
             :zoom="canvasZoom"
-            :is-presentation-mode="isPresentationMode"
+            :presentation-rail-open="presentationRailOpen"
             @zoomChange="handleZoomChange"
             @zoomIn="handleZoomIn"
             @zoomOut="handleZoomOut"

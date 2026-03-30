@@ -36,6 +36,7 @@ declare module 'vue' {
     BridgeOverlay: typeof import('./components/diagram/BridgeOverlay.vue')['default']
     BrowserLocaleHintDialog: typeof import('./components/settings/BrowserLocaleHintDialog.vue')['default']
     BubbleNode: typeof import('./components/diagram/nodes/BubbleNode.vue')['default']
+    CanvasChrome: typeof import('./components/canvas/CanvasChrome.vue')['default']
     CanvasToolbar: typeof import('./components/canvas/CanvasToolbar.vue')['default']
     CanvasToolbarAddDelete: typeof import('./components/canvas/CanvasToolbarAddDelete.vue')['default']
     CanvasToolbarAiSection: typeof import('./components/canvas/CanvasToolbarAiSection.vue')['default']

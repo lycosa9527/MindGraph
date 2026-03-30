@@ -174,14 +174,6 @@ export default {
   'canvas.topBar.exportPdf': 'Eksport sebagai PDF',
   'canvas.topBar.exportPng': 'Eksport sebagai PNG',
   'canvas.topBar.exportSvg': 'Eksport sebagai SVG',
-  'canvas.topBar.focusChipHint':
-    '{label}: tekan Tab saat mengedit pertanyaan fokus untuk memvalidasi',
-  'canvas.topBar.focusChipPass': 'OK',
-  'canvas.topBar.focusChipSignIn':
-    'Masuk, lalu tekan Tab saat mengedit pertanyaan fokus untuk memvalidasi',
-  'canvas.topBar.focusChipValidating': '{label} memvalidasi…',
-  'canvas.topBar.focusChipWeak': 'Lemah',
-  'canvas.topBar.focusQuestionLabel': 'Pertanyaan fokus:',
   'canvas.topBar.reset': 'Setel ulang',
   'canvas.topBar.resetTemplate': 'Kembalikan ke templat default',
   'canvas.topBar.schoolCollab': 'Kolaborasi sekolah',
@@ -202,6 +194,8 @@ export default {
   'canvas.zoomControls.exitFullscreen': 'Keluar layar penuh',
   'canvas.zoomControls.fitCanvas': 'Sesuaikan kanvas',
   'canvas.zoomControls.fullscreen': 'Layar penuh',
+  'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
+  'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Alat tangan',
   'canvas.presentationSideToolbar.ariaLabel': 'Alat presentasi',
   'canvas.presentationSideToolbar.laser': 'Penunjuk laser',

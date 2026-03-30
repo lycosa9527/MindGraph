@@ -14,6 +14,8 @@
  */
 import { computed, onMounted, onUnmounted, provide, ref, toRef, unref } from 'vue'
 
+import { storeToRefs } from 'pinia'
+
 import { Background } from '@vue-flow/background'
 import { type GraphNode, VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
@@ -39,7 +41,7 @@ import {
   useConceptMapRelationship,
 } from '@/composables/editor/useConceptMapRelationship'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
-import { useDiagramStore, usePanelsStore, useUIStore } from '@/stores'
+import { useDiagramStore, usePanelsStore, usePresentationPointerStore, useUIStore } from '@/stores'
 import type { MindGraphNode, PresentationHighlightStroke, PresentationToolId } from '@/types'
 
 import BraceOverlay from './BraceOverlay.vue'
@@ -59,8 +61,7 @@ interface Props {
   handToolActive?: boolean
   collabLockedNodeIds?: string[]
   panOnDragButtons?: number[] | null
-  presentationMode?: boolean
-  presentationPointerSizeScale?: number
+  presentationRailOpen?: boolean
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -70,8 +71,7 @@ const props = withDefaults(defineProps<Props>(), {
   handToolActive: false,
   collabLockedNodeIds: () => [],
   panOnDragButtons: null,
-  presentationMode: false,
-  presentationPointerSizeScale: 1,
+  presentationRailOpen: false,
 })
 
 const presentationHighlightStrokes = defineModel<PresentationHighlightStroke[]>(
@@ -148,6 +148,24 @@ function getVueFlowNodesForOverlays(): GraphNode[] {
 const branchMove = useBranchMoveDrag()
 provide('branchMove', branchMove)
 
+const presentationHighlighterStrokeScale = computed(() =>
+  presentationTool.value === 'highlighter' ? 1.42 : 1
+)
+
+const presentationPointerStore = usePresentationPointerStore()
+const { highlighterScale, penScale } = storeToRefs(presentationPointerStore)
+
+const presentationStrokePointerScale = computed(() => {
+  const t = presentationTool.value
+  if (t === 'highlighter') {
+    return highlighterScale.value
+  }
+  if (t === 'pen') {
+    return penScale.value
+  }
+  return 1
+})
+
 const {
   presentationStrokeToolActive,
   presentationStrokeColor,
@@ -158,7 +176,7 @@ const {
   vueFlowBackgroundClasses,
 } = useDiagramCanvasVueFlowUi({
   diagramStore,
-  presentationMode: toRef(props, 'presentationMode'),
+  presentationRailOpen: toRef(props, 'presentationRailOpen'),
   handToolActive: toRef(props, 'handToolActive'),
   panOnDragButtons: toRef(props, 'panOnDragButtons'),
   presentationTool,
@@ -190,7 +208,7 @@ const {
   diagramStore,
   panelsStore,
   fitViewOnInit: toRef(props, 'fitViewOnInit'),
-  presentationMode: toRef(props, 'presentationMode'),
+  presentationRailOpen: toRef(props, 'presentationRailOpen'),
   presentationToolIsNotTimer,
   nodesLength,
 })
@@ -215,7 +233,7 @@ const contextMenu = useDiagramCanvasContextMenu({
   vueFlowWrapper,
   getNodes: () => unref(getVueFlowNodes),
   screenToFlowCoordinate,
-  presentationMode: toRef(props, 'presentationMode'),
+  presentationRailOpen: toRef(props, 'presentationRailOpen'),
   emitPaneClick: () => emit('paneClick'),
   diagramStore,
   dismissAllOptions,
@@ -355,11 +373,12 @@ defineExpose({
         <LearningSheetOverlay />
 
         <PresentationHighlightOverlay
-          v-if="props.presentationMode"
+          v-if="props.presentationRailOpen"
           v-model="presentationHighlightStrokes"
           :active="presentationStrokeToolActive"
           :current-color="presentationStrokeColor"
-          :pointer-size-scale="props.presentationPointerSizeScale"
+          :pointer-size-scale="presentationStrokePointerScale"
+          :stroke-width-role-scale="presentationHighlighterStrokeScale"
         />
 
         <template #zoom-pane>

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.65.0] - 2026-03-30
+
+### Added
+- **CanvasChrome.vue**: Sticky header wrapper that merges the canvas top bar and editing toolbar on one row (`CanvasPage.vue`).
+- **presentationPointer store**: Per-tool scale for laser, spotlight, highlighter, and pen in presentation mode; values persist in `localStorage` and adjust via wheel in `useCanvasPagePresentation`.
+- **diagramHtmlToImage.ts**: Shared `html-to-image` options for diagram and community export (consistent rasterization, exclude Vue Flow minimap, `waitForNextPaint` after DOM updates).
+- **Linux setup — Redis key-memory histograms** (`scripts/setup/setup.py`): When Redis is 8.6+ and `redis.conf` is found, enables `key-memory-histograms yes` and restarts Redis during `install_redis_linux_official_apt()`.
+
+### Changed
+- **Canvas & presentation**: `CanvasToolbar`, `CanvasTopBar`, `ZoomControls`, `PresentationSideToolbar`, `PresentationTimerOverlay`, `ExportToCommunityModal`, `DiagramCanvas`, `PresentationHighlightOverlay`, diagram canvas composables (`useDiagramCanvasEventBus`, context menu, fit, Vue Flow UI, export), `useCanvasPagePresentation`, `useViewManager`, `uiConfig`, and `CanvasPage` layout/CSS.
+- **Types & stores**: Diagram types and store barrel; `components.d.ts` for new canvas exports.
+- **i18n**: Canvas message updates across locale bundles.
+
 ## [5.64.0] - 2026-03-29
 
 ### Added
