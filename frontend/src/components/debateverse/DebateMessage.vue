@@ -16,6 +16,7 @@ import kimiAvatar from '@/assets/kimi-avatar.png'
 // Import avatar images
 import qwenAvatar from '@/assets/qwen-avatar.png'
 import userAvatar from '@/assets/user-avatar.png'
+import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
 import { useLanguage } from '@/composables/core/useLanguage'
 import type { DebateMessage as DebateMessageType } from '@/stores/debateverse'
 import { useDebateVerseStore } from '@/stores/debateverse'
@@ -102,7 +103,7 @@ const md = new MarkdownIt({
 
 const renderedContent = computed(() => {
   if (!props.message.content) return ''
-  return md.render(props.message.content)
+  return sanitizeMarkdownItHtml(md.render(props.message.content))
 })
 
 const hasThinking = computed(() => props.message.thinking && props.message.thinking.length > 0)
@@ -174,7 +175,7 @@ const isJudge = computed(() => participant.value?.role === 'judge' || !participa
           </span>
         </div>
 
-        <!-- Content -->
+        <!-- Content (markdown-it + DOMPurify; see sanitizeMarkdownItHtml) -->
         <div
           class="message-content text-sm text-gray-800 prose prose-sm max-w-none"
           :class="{ 'opacity-70': isStreaming }"

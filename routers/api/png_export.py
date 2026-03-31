@@ -15,6 +15,7 @@ Proprietary License
 
 from pathlib import Path
 from typing import Optional
+import hashlib
 import logging
 import os
 import time
@@ -56,6 +57,16 @@ from .helpers import (
 from .vueflow_screenshot import capture_diagram_screenshot
 
 logger = logging.getLogger(__name__)
+
+
+def _prompt_meta_for_log(text: str) -> str:
+    """Length and SHA-256 prefix for logs (does not log raw user prompt text)."""
+    stripped = (text or "").strip()
+    if not stripped:
+        return "len=0"
+    digest = hashlib.sha256(stripped.encode("utf-8")).hexdigest()[:12]
+    return f"len={len(stripped)} sha256_12={digest}"
+
 
 _PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 TEMP_IMAGES_DIR = _PROJECT_ROOT / "temp_images"
@@ -158,7 +169,11 @@ async def generate_png_from_prompt(
 
     language = (req.language or "zh").strip()
 
-    logger.info("[GeneratePNG] Request: prompt='%s', language='%s'", prompt, language)
+    logger.info(
+        "[GeneratePNG] Request: prompt_meta=%s language=%s",
+        _prompt_meta_for_log(prompt),
+        language,
+    )
 
     try:
         # Use simplified prompt-to-diagram approach (single Qwen call)
@@ -176,8 +191,8 @@ async def generate_png_from_prompt(
         generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
         if is_learning_sheet:
             logger.debug(
-                "[GeneratePNG] Using cleaned prompt for generation: '%s'",
-                generation_prompt,
+                "[GeneratePNG] Using cleaned prompt for generation: %s",
+                _prompt_meta_for_log(generation_prompt),
             )
 
         # Get prompt from centralized system
@@ -371,7 +386,11 @@ async def generate_dingtalk_png(
     try:
         language = (req.language or "zh").strip()
 
-        logger.info("[GenerateDingTalk] Request: prompt='%s', language='%s'", prompt, language)
+        logger.info(
+            "[GenerateDingTalk] Request: prompt_meta=%s language=%s",
+            _prompt_meta_for_log(prompt),
+            language,
+        )
 
         # Handle current_user
         user_id = None
@@ -388,8 +407,8 @@ async def generate_dingtalk_png(
         generation_prompt = _clean_prompt_for_learning_sheet(prompt) if is_learning_sheet else prompt
         if is_learning_sheet:
             logger.debug(
-                "[GenerateDingTalk] Using cleaned prompt for generation: '%s'",
-                generation_prompt,
+                "[GenerateDingTalk] Using cleaned prompt for generation: %s",
+                _prompt_meta_for_log(generation_prompt),
             )
 
         # Use simplified prompt-to-diagram approach (single Qwen call)

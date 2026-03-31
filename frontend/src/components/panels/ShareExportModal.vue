@@ -9,12 +9,12 @@ import { ElButton, ElCheckbox, ElDialog, ElIcon, ElScrollbar } from 'element-plu
 
 import { Close, Download, Select } from '@element-plus/icons-vue'
 
-import DOMPurify from 'dompurify'
 import { toPng } from 'html-to-image'
 import MarkdownIt from 'markdown-it'
 
 import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
 import { useLanguage, useNotifications } from '@/composables'
+import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
 import type { MindMateMessage } from '@/composables/mindmate/useMindMate'
 import { useAuthStore } from '@/stores'
 
@@ -96,8 +96,7 @@ function deselectAll() {
 
 function renderMarkdown(content: string): string {
   if (!content) return ''
-  const html = md.render(content)
-  return DOMPurify.sanitize(html)
+  return sanitizeMarkdownItHtml(md.render(content))
 }
 
 /**

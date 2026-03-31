@@ -3,7 +3,10 @@ Enterprise Mode Authentication for MindGraph
 Author: lycosa9527
 Made by: MindSpring Team
 
-Enterprise mode bypasses JWT validation for VPN/SSO deployments.
+Enterprise mode bypasses JWT validation. Every HTTP request is treated as the same
+preconfigured enterprise user. Use only when the deployment is unreachable from
+the public Internet (e.g. VPN-only, private LAN, zero-trust with network-level auth).
+Misconfiguration on a public host grants full API access to anonymous clients.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -24,16 +27,16 @@ logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
 _REDIS_AVAILABLE = False
-_org_cache = None
-_user_cache = None
+_ORG_CACHE = None
+_USER_CACHE = None
 
 try:
     from services.redis.cache.redis_org_cache import org_cache
     from services.redis.cache.redis_user_cache import user_cache
 
     _REDIS_AVAILABLE = True
-    _org_cache = org_cache
-    _user_cache = user_cache
+    _ORG_CACHE = org_cache
+    _USER_CACHE = user_cache
 except ImportError:
     pass
 
@@ -42,8 +45,8 @@ def get_enterprise_user() -> User:
     """
     Get or create the enterprise mode user.
 
-    Enterprise mode skips JWT validation entirely - this is for deployments
-    behind VPN/SSO where network-level authentication is sufficient.
+    Skips JWT validation entirely. Callers must ensure the service is deployed
+    behind network isolation; do not rely on this mode for Internet-facing hosts.
 
     Returns:
         User object for enterprise mode
@@ -55,8 +58,8 @@ def get_enterprise_user() -> User:
     try:
         # Use cache for org lookup (with SQLite fallback)
         org = None
-        if _REDIS_AVAILABLE and _org_cache is not None:
-            org = _org_cache.get_by_code(ENTERPRISE_DEFAULT_ORG_CODE)
+        if _REDIS_AVAILABLE and _ORG_CACHE is not None:
+            org = _ORG_CACHE.get_by_code(ENTERPRISE_DEFAULT_ORG_CODE)
 
         if not org:
             org = db.query(Organization).filter(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE).first()
@@ -68,8 +71,8 @@ def get_enterprise_user() -> User:
 
         # Use cache for user lookup (with SQLite fallback)
         user = None
-        if _REDIS_AVAILABLE and _user_cache:
-            user = _user_cache.get_by_phone(ENTERPRISE_DEFAULT_USER_PHONE)
+        if _REDIS_AVAILABLE and _USER_CACHE:
+            user = _USER_CACHE.get_by_phone(ENTERPRISE_DEFAULT_USER_PHONE)
 
         if not user:
             # Check if user exists in database
@@ -91,8 +94,8 @@ def get_enterprise_user() -> User:
 
             # Cache the user (non-blocking)
             try:
-                if _REDIS_AVAILABLE and _user_cache:
-                    _user_cache.cache_user(user)
+                if _REDIS_AVAILABLE and _USER_CACHE:
+                    _USER_CACHE.cache_user(user)
             except Exception as e:
                 logger.warning("Failed to cache enterprise user: %s", e)
 

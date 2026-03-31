@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.68.0] - 2026-04-01
+
+### Added
+- **`sanitizeMarkdownItHtml`** (`composables/core/markdownKatexSanitize.ts`): Central helper that runs DOMPurify with the shared KaTeX/markdown tag allowlist so all markdown-it `v-html` paths use one XSS policy.
+- **Startup security posture** (`services/infrastructure/lifecycle/lifespan.py`): Logs `DEBUG`, `LOG_LEVEL`, OpenAPI schema availability, `AUTH_MODE`, and warnings when `AUTH_MODE=enterprise` or `LOG_LEVEL=DEBUG` with `DEBUG=False`.
+
+### Changed
+- **Markdown panels**: `AskOncePanel.vue`, `DebateMessage.vue`, `ShareExportModal.vue`, and `mindmate/MessageBubble.vue` now sanitize rendered HTML via `sanitizeMarkdownItHtml` (replacing ad hoc DOMPurify calls where applicable).
+- **OpenAPI in production** (`main.py`): `/openapi.json` is served only when `DEBUG=True`, matching `/docs` and `/redoc` (reduces schema and route enumeration when debug is off).
+- **PNG export logging** (`routers/api/png_export.py`): Request logs use prompt length and SHA-256 prefix instead of logging raw user prompt text.
+- **Image proxy** (`routers/api/image_proxy.py`): HTTP client no longer follows redirects; 3xx responses return a clear error so callers must supply the final image URL.
+- **Invalid API key logging** (`utils/auth/api_keys.py`): Logs a SHA-256 fingerprint instead of a key prefix.
+- **Enterprise auth documentation**: `env.example`, `utils/auth/config.py`, `utils/auth/enterprise_mode.py`, and `models/domain/env_settings.py` clarify that enterprise mode disables JWT validation and is only for isolated networks; `enterprise_mode` cache globals renamed to `_ORG_CACHE` / `_USER_CACHE` (PEP8).
+
 ## [5.67.0] - 2026-03-31
 
 ### Changed

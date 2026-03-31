@@ -10,6 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import hashlib
 import logging
 import secrets
 from datetime import datetime
@@ -44,7 +45,8 @@ def validate_api_key(api_key: str, db: Session) -> bool:
     key_record = db.query(APIKey).filter(APIKey.key == api_key, APIKey.is_active.is_(True)).first()
 
     if not key_record:
-        logger.warning("Invalid API key attempted: %s...", api_key[:12])
+        fp = hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:16]
+        logger.warning("Invalid API key attempted (sha256_16=%s)", fp)
         return False
 
     # Check expiration

@@ -3,6 +3,8 @@
  * plus standard CommonMark elements (headings, lists, links, code).
  */
 
+import DOMPurify from 'dompurify'
+
 /** Tags produced by markdown-it + highlight.js + @vscode/markdown-it-katex (KaTeX HTML). */
 const MARKDOWN_KATEX_TAGS = [
   'a',
@@ -119,4 +121,15 @@ const MARKDOWN_KATEX_ATTR = [
 export const markdownKatexDomPurifyConfig: { ADD_TAGS: string[]; ADD_ATTR: string[] } = {
   ADD_TAGS: [...MARKDOWN_KATEX_TAGS],
   ADD_ATTR: [...MARKDOWN_KATEX_ATTR],
+}
+
+/**
+ * Sanitize HTML from markdown-it before assigning to v-html.
+ * Use for any user- or model-generated markdown; linkify and future plugins must not bypass XSS controls.
+ */
+export function sanitizeMarkdownItHtml(html: string): string {
+  if (!html) {
+    return ''
+  }
+  return DOMPurify.sanitize(html, markdownKatexDomPurifyConfig)
 }

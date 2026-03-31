@@ -65,6 +65,34 @@ from utils.dependency_checker import DependencyError, check_system_dependencies
 logger = logging.getLogger(__name__)
 
 
+def _log_security_startup_posture() -> None:
+    """
+    Log security-relevant configuration once per main worker.
+
+    Helps operators verify production settings: OpenAPI exposure, auth mode,
+    and verbose logging that may write user prompts to log files.
+    """
+    openapi_schema = "enabled" if config.debug else "disabled"
+    logger.info(
+        "[SECURITY] Startup posture: app_DEBUG=%s LOG_LEVEL=%s OpenAPI_schema=%s",
+        config.debug,
+        config.log_level,
+        openapi_schema,
+    )
+    logger.info("[SECURITY] AUTH_MODE=%s", AUTH_MODE)
+    if AUTH_MODE == "enterprise":
+        logger.warning(
+            "[SECURITY] AUTH_MODE=enterprise: JWT validation is disabled for all requests. "
+            "Use only on isolated networks (VPN, private LAN). "
+            "Never expose this deployment directly to the public Internet."
+        )
+    if not config.debug and config.log_level == "DEBUG":
+        logger.warning(
+            "[SECURITY] LOG_LEVEL=DEBUG while DEBUG=False: verbose logs (including prompts in some code paths) "
+            "may be written to logs/app.log. Prefer LOG_LEVEL=INFO for production."
+        )
+
+
 async def _send_startup_sms_notification_once() -> None:
     """
     Notify admins via SMS at most once per process group.
@@ -143,6 +171,7 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("=" * 80)
         logger.debug("[LIFESPAN] Starting lifespan initialization...")
         logger.debug("[LIFESPAN] Signal handlers registered")
+        _log_security_startup_posture()
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available

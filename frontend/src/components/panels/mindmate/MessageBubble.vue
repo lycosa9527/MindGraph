@@ -5,13 +5,13 @@ import { ElAvatar, ElButton, ElIcon, ElInput, ElTooltip } from 'element-plus'
 
 import { CopyDocument, Edit, RefreshRight, Share } from '@element-plus/icons-vue'
 
-import DOMPurify from 'dompurify'
 import { ThumbsDown, ThumbsUp } from 'lucide-vue-next'
 import MarkdownIt from 'markdown-it'
 
 import mindmateAvatarMd from '@/assets/mindmate-avatar-md.png'
 import ImagePreviewModal from '@/components/common/ImagePreviewModal.vue'
 import { useLanguage } from '@/composables'
+import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
 import type { FeedbackRating, MindMateMessage } from '@/composables/mindmate/useMindMate'
 
 const props = defineProps<{
@@ -70,8 +70,7 @@ function removeThinkBlocks(content: string): string {
 function renderMarkdown(content: string): string {
   if (!content) return ''
   const cleanedContent = removeThinkBlocks(content)
-  const html = md.render(cleanedContent)
-  return DOMPurify.sanitize(html)
+  return sanitizeMarkdownItHtml(md.render(cleanedContent))
 }
 
 // Get file icon based on type
@@ -219,7 +218,7 @@ function handleMarkdownClick(event: MouseEvent) {
 
             <!-- Assistant message - markdown rendered -->
             <template v-else>
-              <!-- eslint-disable vue/no-v-html -- Content is sanitized via DOMPurify -->
+              <!-- eslint-disable vue/no-v-html -- Content is sanitized via sanitizeMarkdownItHtml -->
               <div
                 class="markdown-content text-sm leading-normal"
                 @click="handleMarkdownClick"

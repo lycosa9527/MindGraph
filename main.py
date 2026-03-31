@@ -13,7 +13,7 @@ Features:
 - Full async/await support for 4,000+ concurrent SSE connections
 - FastAPI with Pydantic models for type safety
 - Uvicorn ASGI server (Windows + Ubuntu compatible)
-- Auto-generated OpenAPI documentation at /docs
+- OpenAPI docs and schema at /docs and /openapi.json when DEBUG=True only
 - Comprehensive logging, middleware, and business logic
 
 Status: Production Ready
@@ -50,6 +50,8 @@ app = FastAPI(
     # Disable Swagger UI in production for security (only enable in DEBUG mode)
     docs_url="/docs" if config.debug else None,
     redoc_url="/redoc" if config.debug else None,
+    # Disable OpenAPI JSON schema in production to avoid route/model enumeration
+    openapi_url="/openapi.json" if config.debug else None,
     lifespan=lifespan,
 )
 

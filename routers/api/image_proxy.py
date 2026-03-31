@@ -39,6 +39,7 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
 
     Security:
     - Only allows images from whitelisted domains
+    - Redirects are not followed (prevents SSRF via redirect to internal URLs)
     - Only allows image content types
     - Limits response size to 10MB
     """
@@ -57,10 +58,16 @@ async def proxy_image(url: str = Query(..., description="The image URL to proxy"
         raise HTTPException(status_code=403, detail="Domain not allowed")
 
     try:
+        # Do not follow redirects: a whitelisted host could redirect to internal IPs (SSRF).
         async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.get(url, follow_redirects=True)
+            response = await client.get(url, follow_redirects=False)
 
             if response.status_code != 200:
+                if response.status_code in (301, 302, 303, 307, 308):
+                    raise HTTPException(
+                        status_code=400,
+                        detail="Redirects are not followed; use the final image URL",
+                    )
                 raise HTTPException(status_code=response.status_code, detail="Failed to fetch image")
 
             # Validate content type

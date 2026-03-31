@@ -240,15 +240,19 @@ class AuthSettings(BaseModel):
     )
     AUTH_MODE: AuthMode = Field(
         default=AuthMode.STANDARD,
-        description="Authentication mode (standard/enterprise/demo/bayi)",
+        description=(
+            "Authentication mode (standard/enterprise/demo/bayi). "
+            "Use enterprise only on isolated networks (VPN/private LAN): it disables JWT validation."
+        ),
     )
     ADMIN_PHONES: str = Field(default="", description="Admin phone numbers (comma-separated)")
     ENTERPRISE_DEFAULT_ORG_CODE: Optional[str] = Field(
-        default="DEMO-001", description="Default organization code for enterprise mode"
+        default="DEMO-001",
+        description="Default organization code for enterprise mode (isolated network deployments only)",
     )
     ENTERPRISE_DEFAULT_USER_PHONE: Optional[str] = Field(
         default="enterprise@system.com",
-        description="Default user phone for enterprise mode",
+        description="Default user identity for enterprise mode (no JWT; network perimeter must enforce access)",
     )
     DEMO_PASSKEY: Optional[str] = Field(
         default="888888",

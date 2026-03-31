@@ -47,6 +47,7 @@ TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("
 # ============================================================================
 
 # Authentication Mode: standard, enterprise, demo, bayi
+# enterprise: disables JWT checks—use only on isolated networks (see utils.auth.enterprise_mode).
 AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()
 
 # Enterprise Mode Configuration

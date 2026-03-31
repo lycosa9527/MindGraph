@@ -13,6 +13,7 @@ import { Bottom } from '@element-plus/icons-vue'
 import { Check, ChevronDown, ChevronUp, Copy, Square } from 'lucide-vue-next'
 import MarkdownIt from 'markdown-it'
 
+import { sanitizeMarkdownItHtml } from '@/composables/core/markdownKatexSanitize'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { type ModelId, type ModelResponse, useAskOnceStore } from '@/stores/askonce'
 
@@ -52,7 +53,7 @@ const hasContent = computed(() => props.response.content.length > 0)
 
 const renderedContent = computed(() => {
   if (!props.response.content) return ''
-  return md.render(props.response.content)
+  return sanitizeMarkdownItHtml(md.render(props.response.content))
 })
 
 const statusColor = computed(() => {
@@ -331,7 +332,7 @@ function formatTokens(tokens: number): string {
           {{ t('askOnce.panel.responsePlaceholder') }}
         </div>
 
-        <!-- Content -->
+        <!-- Content (markdown-it + DOMPurify; see sanitizeMarkdownItHtml) -->
         <div
           v-else
           class="markdown-content prose prose-sm max-w-none"
