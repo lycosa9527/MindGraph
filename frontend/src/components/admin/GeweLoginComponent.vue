@@ -121,9 +121,7 @@ async function loadSavedConfig() {
           selectedAutoSliding.value = data.auto_sliding
         }
       }
-    } catch (error) {
-      // Fallback to localStorage if backend fails
-      console.debug('Failed to load preferences from backend, using localStorage:', error)
+    } catch {
       const savedRegionId = localStorage.getItem('gewe_region_id')
       const savedDeviceType = localStorage.getItem('gewe_device_type')
       if (savedRegionId) {
@@ -401,9 +399,8 @@ async function checkLoginStatus() {
       }
       // status === 0 means not scanned yet, continue polling
     }
-  } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : String(error)
-    console.debug('Login check:', msg)
+  } catch {
+    void 0
   }
 }
 

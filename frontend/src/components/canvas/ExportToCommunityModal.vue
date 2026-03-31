@@ -96,10 +96,7 @@ async function generateThumbnail(): Promise<Blob | null> {
     return null
   }
   try {
-    const blob = await toBlob(
-      container,
-      getDiagramCanvasHtmlToImageOptions()
-    )
+    const blob = await toBlob(container, getDiagramCanvasHtmlToImageOptions())
     return blob
   } catch (e) {
     console.error('[ExportToCommunity] Thumbnail generation failed:', e)

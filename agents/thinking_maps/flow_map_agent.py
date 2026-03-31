@@ -15,6 +15,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Tuple, Any, Optional
 import logging
 
@@ -26,14 +27,13 @@ from services.llm import llm_service
 from utils.text_width_estimate import estimate_text_width_px
 
 
-
 logger = logging.getLogger(__name__)
 
 
 class FlowMapAgent(BaseAgent):
     """Utility agent to improve flow map specs before rendering."""
 
-    def __init__(self, model='qwen'):
+    def __init__(self, model="qwen"):
         super().__init__(model=model)
         self.diagram_type = "flow_map"
 
@@ -44,28 +44,28 @@ class FlowMapAgent(BaseAgent):
         dimension_preference: str | None = None,
         fixed_dimension: str | None = None,
         dimension_only_mode: bool | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Generate a flow map from a prompt."""
         token_kwargs = {
-            'user_id': kwargs.get('user_id'),
-            'organization_id': kwargs.get('organization_id'),
-            'request_type': kwargs.get('request_type', 'diagram_generation'),
-            'endpoint_path': kwargs.get('endpoint_path'),
+            "user_id": kwargs.get("user_id"),
+            "organization_id": kwargs.get("organization_id"),
+            "request_type": kwargs.get("request_type", "diagram_generation"),
+            "endpoint_path": kwargs.get("endpoint_path"),
         }
         try:
             spec = await self._generate_flow_map_spec(
                 user_prompt,
                 language,
-                user_id=token_kwargs['user_id'],
-                organization_id=token_kwargs['organization_id'],
-                request_type=token_kwargs['request_type'],
-                endpoint_path=token_kwargs['endpoint_path']
+                user_id=token_kwargs["user_id"],
+                organization_id=token_kwargs["organization_id"],
+                request_type=token_kwargs["request_type"],
+                endpoint_path=token_kwargs["endpoint_path"],
             )
             if not spec:
                 return {
-                    'success': False,
-                    'error': 'Failed to generate flow map specification'
+                    "success": False,
+                    "error": "Failed to generate flow map specification",
                 }
 
             # Validate the generated spec
@@ -73,32 +73,29 @@ class FlowMapAgent(BaseAgent):
             if not is_valid:
                 logger.warning("FlowMapAgent: Validation failed: %s", validation_msg)
                 return {
-                    'success': False,
-                    'error': f'Generated invalid specification: {validation_msg}'
+                    "success": False,
+                    "error": f"Generated invalid specification: {validation_msg}",
                 }
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
-            if not enhanced_result.get('success'):
+            if not enhanced_result.get("success"):
                 return {
-                    'success': False,
-                    'error': enhanced_result.get('error', 'Enhancement failed')
+                    "success": False,
+                    "error": enhanced_result.get("error", "Enhancement failed"),
                 }
-            enhanced_spec = enhanced_result['spec']
+            enhanced_spec = enhanced_result["spec"]
 
             logger.info("FlowMapAgent: Flow map generation completed successfully")
             return {
-                'success': True,
-                'spec': enhanced_spec,
-                'diagram_type': self.diagram_type
+                "success": True,
+                "spec": enhanced_spec,
+                "diagram_type": self.diagram_type,
             }
 
         except Exception as e:
             logger.error("FlowMapAgent: Flow map generation failed: %s", e)
-            return {
-                'success': False,
-                'error': f'Generation failed: {e}'
-            }
+            return {"success": False, "error": f"Generation failed: {e}"}
 
     async def _generate_flow_map_spec(
         self,
@@ -107,8 +104,8 @@ class FlowMapAgent(BaseAgent):
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        request_type: str = "diagram_generation",
+        endpoint_path: Optional[str] = None,
     ) -> Optional[Dict]:
         """Generate the flow map specification using LLM."""
         try:
@@ -138,7 +135,7 @@ class FlowMapAgent(BaseAgent):
                 organization_id=organization_id,
                 request_type=request_type,
                 endpoint_path=endpoint_path,
-                diagram_type='flow_map'
+                diagram_type="flow_map",
             )
 
             if not response:
@@ -155,7 +152,7 @@ class FlowMapAgent(BaseAgent):
                 spec = extract_json_from_response(response_str)
 
                 # Check if we got a non-JSON response error
-                if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+                if isinstance(spec, dict) and spec.get("_error") == "non_json_response":
                     # LLM returned non-JSON asking for more info - retry with more explicit prompt
                     logger.warning(
                         "FlowMapAgent: LLM returned non-JSON response asking for more info. "
@@ -187,7 +184,7 @@ class FlowMapAgent(BaseAgent):
                         organization_id=organization_id,
                         request_type=request_type,
                         endpoint_path=endpoint_path,
-                        diagram_type='flow_map'
+                        diagram_type="flow_map",
                     )
 
                     # Try extraction again
@@ -197,24 +194,18 @@ class FlowMapAgent(BaseAgent):
                         spec = extract_json_from_response(str(retry_response))
 
                         # If still non-JSON, return None
-                        if isinstance(spec, dict) and spec.get('_error') == 'non_json_response':
+                        if isinstance(spec, dict) and spec.get("_error") == "non_json_response":
                             logger.error(
-                                "FlowMapAgent: Retry also returned non-JSON response. "
-                                "Giving up after 1 retry attempt."
+                                "FlowMapAgent: Retry also returned non-JSON response. Giving up after 1 retry attempt."
                             )
                             return None
 
-                if not spec or (isinstance(spec, dict) and spec.get('_error')):
+                if not spec or (isinstance(spec, dict) and spec.get("_error")):
                     # Log the actual response for debugging
-                    response_preview = (
-                        response_str[:500] + "..."
-                        if len(response_str) > 500
-                        else response_str
-                    )
+                    response_preview = response_str[:500] + "..." if len(response_str) > 500 else response_str
                     logger.error(
-                        "FlowMapAgent: Failed to extract JSON from LLM response. "
-                        "Response preview: %s",
-                        response_preview
+                        "FlowMapAgent: Failed to extract JSON from LLM response. Response preview: %s",
+                        response_preview,
                     )
                     return None
 
@@ -264,12 +255,7 @@ class FlowMapAgent(BaseAgent):
 
             title_raw = spec.get("title", "") or spec.get("topic", "")
             steps_raw = spec.get("steps", [])
-            substeps_raw = (
-                spec.get("substeps")
-                or spec.get("sub_steps")
-                or spec.get("subSteps")
-                or []
-            )
+            substeps_raw = spec.get("substeps") or spec.get("sub_steps") or spec.get("subSteps") or []
 
             if not isinstance(title_raw, str) or not isinstance(steps_raw, list):
                 return {"success": False, "error": "Invalid field types in spec"}
@@ -288,15 +274,18 @@ class FlowMapAgent(BaseAgent):
                 # Handle both string and object formats
                 if isinstance(item, str):
                     step_text = item
-                elif isinstance(item, dict) and 'label' in item:
-                    step_text = item['label']
+                elif isinstance(item, dict) and "label" in item:
+                    step_text = item["label"]
                 else:
                     logger.warning("FlowMapAgent: Skipping invalid step item: %s", item)
                     continue
 
                 cleaned = clean_text(step_text)
                 if not cleaned or cleaned in seen:
-                    logger.warning("FlowMapAgent: Skipping empty or duplicate step: '%s'", step_text)
+                    logger.warning(
+                        "FlowMapAgent: Skipping empty or duplicate step: '%s'",
+                        step_text,
+                    )
                     continue
                 seen.add(cleaned)
                 normalized_steps.append(cleaned)
@@ -337,10 +326,18 @@ class FlowMapAgent(BaseAgent):
                     sub_list = entry.get("substeps") or entry.get("sub_steps") or entry.get("subSteps") or []
                     if not isinstance(sub_list, list):
                         continue
-                    logger.debug("FlowMapAgent: Matching substeps for step '%s': %s", step_name, sub_list)
+                    logger.debug(
+                        "FlowMapAgent: Matching substeps for step '%s': %s",
+                        step_name,
+                        sub_list,
+                    )
                     if step_name not in step_to_substeps:
                         step_keys = list(step_to_substeps.keys())
-                        logger.warning("FlowMapAgent: Step '%s' not found in normalized steps %s", step_name, step_keys)
+                        logger.warning(
+                            "FlowMapAgent: Step '%s' not found in normalized steps %s",
+                            step_name,
+                            step_keys,
+                        )
                     add_substeps_for(step_name, sub_list)
 
             # Heuristics for recommended dimensions
@@ -396,9 +393,7 @@ class FlowMapAgent(BaseAgent):
                     max_sub_height = max(current_sub_height, next_sub_height)
                     min_base_spacing = 45  # Matches D3.js minBaseSpacing
                     adaptive_spacing = (
-                        max(min_base_spacing, max_sub_height * 0.4 + 20)
-                        if max_sub_height > 0
-                        else min_base_spacing
+                        max(min_base_spacing, max_sub_height * 0.4 + 20) if max_sub_height > 0 else min_base_spacing
                     )
 
                     total_vertical_spacing += adaptive_spacing
@@ -421,10 +416,7 @@ class FlowMapAgent(BaseAgent):
             if has_substeps:
                 # Add space for substeps: gap + substep width
                 substep_gap = 40  # Gap between step and substeps
-                width = (
-                    base_content_width + substep_gap + max_substep_w
-                    + padding * 2 + extra_padding
-                )
+                width = base_content_width + substep_gap + max_substep_w + padding * 2 + extra_padding
             else:
                 width = base_content_width + padding * 2 + extra_padding
 

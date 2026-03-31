@@ -125,26 +125,18 @@ def resolve_dashboard_install_options(script_dir: str) -> DashboardInstallOption
 
     skip_pip = not prompt_yes_no("Install py-ip2region via pip", default=True)
     force = prompt_yes_no("Re-download files that already exist (replace on disk)", default=False)
-    skip_dashboard = not prompt_yes_no(
-        "Download ECharts and China GeoJSON into static/", default=True
-    )
+    skip_dashboard = not prompt_yes_no("Download ECharts and China GeoJSON into static/", default=True)
     skip_embed = True
     if not skip_dashboard:
         skip_embed = not prompt_yes_no(
             "Embed china-geo into static/js/public-dashboard.js if that file exists",
             default=True,
         )
-    skip_ip2region_db = not prompt_yes_no(
-        "Download ip2region .xdb files into data/", default=True
-    )
+    skip_ip2region_db = not prompt_yes_no("Download ip2region .xdb files into data/", default=True)
     with_ipv6 = False
     if not skip_ip2region_db:
-        with_ipv6 = prompt_yes_no(
-            "Also download IPv6 ip2region database (~35 MB)", default=False
-        )
-    skip_patches = not prompt_yes_no(
-        "Build patch cache from data/ip2region_issue/*.fix", default=True
-    )
+        with_ipv6 = prompt_yes_no("Also download IPv6 ip2region database (~35 MB)", default=False)
+    skip_patches = not prompt_yes_no("Build patch cache from data/ip2region_issue/*.fix", default=True)
     verbose = prompt_yes_no("Run patch lookup self-test after building cache", default=False)
 
     return DashboardInstallOptions(
@@ -159,14 +151,13 @@ def resolve_dashboard_install_options(script_dir: str) -> DashboardInstallOption
         verbose=verbose,
     )
 
+
 # -----------------------------------------------------------------------------
 # Paths & URLs
 # -----------------------------------------------------------------------------
 
 ECHARTS_URL = "https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js"
-CHINA_GEOJSON_URL = (
-    "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
-)
+CHINA_GEOJSON_URL = "https://geo.datav.aliyun.com/areas_v3/bound/100000_full.json"
 
 IP2REGION_V4_URLS = [
     "https://cdn.jsdelivr.net/gh/lionsoul2014/ip2region@master/data/ip2region_v4.xdb",
@@ -231,10 +222,7 @@ def _xdb_file_plausible(path: Path, min_bytes: int) -> bool:
         return False
     size = path.stat().st_size
     if size < min_bytes:
-        print(
-            f"[ERROR] {path.name} is only {size} bytes "
-            f"(expected >= {min_bytes}); delete and retry or check network."
-        )
+        print(f"[ERROR] {path.name} is only {size} bytes (expected >= {min_bytes}); delete and retry or check network.")
         try:
             path.unlink()
         except OSError:
@@ -348,11 +336,7 @@ def _strip_load_china_geo_function(js_content: str) -> str:
                         break
             if end_offset > start:
                 js_content = js_content[:start] + js_content[end_offset + 1 :]
-    return (
-        js_content.replace("await loadChinaGeoJSON();", "").replace(
-            "loadChinaGeoJSON();", ""
-        )
-    )
+    return js_content.replace("await loadChinaGeoJSON();", "").replace("loadChinaGeoJSON();", "")
 
 
 def embed_china_geo(project_root: Path) -> bool:
@@ -360,10 +344,7 @@ def embed_china_geo(project_root: Path) -> bool:
     china_path = project_root / "static" / "data" / "china-geo.json"
     js_path = project_root / "static" / "js" / "public-dashboard.js"
     if not js_path.is_file():
-        msg = (
-            "[INFO] No static/js/public-dashboard.js — skip embed "
-            "(Vue app uses npm echarts)."
-        )
+        msg = "[INFO] No static/js/public-dashboard.js — skip embed (Vue app uses npm echarts)."
         print(msg)
         return True
     if not china_path.is_file():
@@ -593,9 +574,7 @@ def install_ip2region_xdb(
 def parse_dashboard_args() -> None:
     """Parse CLI for dashboard_install.py (--help only; options come from prompts)."""
     parser = argparse.ArgumentParser(
-        description=(
-            "Install dashboard static assets, ip2region xdb DBs, and patch cache."
-        ),
+        description=("Install dashboard static assets, ip2region xdb DBs, and patch cache."),
         epilog=(
             "Interactive prompts choose each step. "
             "Set MINDGRAPH_NON_INTERACTIVE=1 to skip prompts. "

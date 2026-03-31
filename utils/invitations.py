@@ -23,9 +23,7 @@ INVITE_PATTERN = re.compile(r"^[A-Z]{4}-[A-Z0-9]{5}$")
 
 # Exclude confusing letters: O, 0, 1, I, L (avoid O/0, 1/I/l confusion)
 _CONFUSING_CHARS = frozenset("O01IL")
-_SAFE_SUFFIX_CHARS = "".join(
-    c for c in string.ascii_uppercase + string.digits if c not in _CONFUSING_CHARS
-)
+_SAFE_SUFFIX_CHARS = "".join(c for c in string.ascii_uppercase + string.digits if c not in _CONFUSING_CHARS)
 _PREFIX_REPLACE = str.maketrans("OIL", "QJK")  # O->Q, I->J, L->K
 
 

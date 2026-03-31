@@ -89,12 +89,6 @@ class SessionLifecycleManager {
   private startedAt = ref<number | null>(null)
   private debugMode = ref(false)
 
-  constructor() {
-    if (this.debugMode.value) {
-      console.log('[SessionLifecycle] Manager initialized')
-    }
-  }
-
   // ==========================================================================
   // Session Management
   // ==========================================================================
@@ -105,11 +99,13 @@ class SessionLifecycleManager {
   startSession(sessionId: string, diagramType: string): void {
     // Clean up previous session if any
     if (this.managers.value.length > 0) {
-      console.warn('[SessionLifecycle] Starting new session with existing managers', {
-        oldSession: this.currentSessionId.value?.slice(-8),
-        newSession: sessionId.slice(-8),
-        managerCount: this.managers.value.length,
-      })
+      if (import.meta.env.DEV) {
+        console.warn('[SessionLifecycle] Starting new session with existing managers', {
+          oldSession: this.currentSessionId.value?.slice(-8),
+          newSession: sessionId.slice(-8),
+          managerCount: this.managers.value.length,
+        })
+      }
       this.cleanup()
     }
 
@@ -208,11 +204,13 @@ class SessionLifecycleManager {
     // Store session ID before clearing (for event emission)
     const sessionIdToCleanup = this.currentSessionId.value
 
-    console.log('[SessionLifecycle] Cleaning up session', {
-      sessionId: sessionIdToCleanup?.slice(-8),
-      diagramType: this.diagramType.value,
-      managerCount: this.managers.value.length,
-    })
+    if (import.meta.env.DEV && this.debugMode.value) {
+      console.log('[SessionLifecycle] Cleaning up session', {
+        sessionId: sessionIdToCleanup?.slice(-8),
+        diagramType: this.diagramType.value,
+        managerCount: this.managers.value.length,
+      })
+    }
 
     // Emit lifecycle event BEFORE destroying managers
     // This allows managers to cancel operations before destruction
@@ -246,12 +244,14 @@ class SessionLifecycleManager {
           }
           manager.dispose()
           result.success++
-        } else {
+        } else if (import.meta.env.DEV) {
           console.warn(`[SessionLifecycle] Skipping ${name} (no cleanup method)`)
         }
       } catch (error) {
         result.errors++
-        console.error(`[SessionLifecycle] Error destroying ${name}:`, error)
+        if (import.meta.env.DEV) {
+          console.error(`[SessionLifecycle] Error destroying ${name}:`, error)
+        }
       }
     }
 
@@ -264,11 +264,13 @@ class SessionLifecycleManager {
     // Check for listener leaks
     result.leaks = this.detectListenerLeaks()
 
-    console.log('[SessionLifecycle] Session cleanup complete', {
-      success: result.success,
-      errors: result.errors,
-      leaks: result.leaks.length,
-    })
+    if (import.meta.env.DEV && this.debugMode.value) {
+      console.log('[SessionLifecycle] Session cleanup complete', {
+        success: result.success,
+        errors: result.errors,
+        leaks: result.leaks.length,
+      })
+    }
 
     // Emit cleanup completed event
     eventBus.emit('session:cleanup_completed', {
@@ -291,10 +293,12 @@ class SessionLifecycleManager {
         const ownerListeners = remainingListeners[owner]
         if (ownerListeners && ownerListeners.length > 0) {
           leaks.push(owner)
-          console.warn(`[SessionLifecycle] Listener leak detected for ${owner}`, {
-            count: ownerListeners.length,
-            events: ownerListeners.map((l) => l.event),
-          })
+          if (import.meta.env.DEV) {
+            console.warn(`[SessionLifecycle] Listener leak detected for ${owner}`, {
+              count: ownerListeners.length,
+              events: ownerListeners.map((l) => l.event),
+            })
+          }
         }
       })
 
@@ -377,7 +381,9 @@ class SessionLifecycleManager {
    */
   setDebugMode(enabled: boolean): void {
     this.debugMode.value = enabled
-    console.log(`[SessionLifecycle] Debug mode ${enabled ? 'enabled' : 'disabled'}`)
+    if (import.meta.env.DEV) {
+      console.log(`[SessionLifecycle] Debug mode ${enabled ? 'enabled' : 'disabled'}`)
+    }
   }
 }
 
@@ -395,12 +401,6 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
     cleanup: () => sessionLifecycle.cleanup(),
     debug: (enabled: boolean) => sessionLifecycle.setDebugMode(enabled),
   }
-
-  console.log('%c[SessionLifecycle] Debug tools available:', 'color: #2196f3; font-weight: bold;')
-  console.log('  window.debugSessionLifecycle.info()    - View session info')
-  console.log('  window.debugSessionLifecycle.managers() - List registered managers')
-  console.log('  window.debugSessionLifecycle.cleanup()  - Force cleanup')
-  console.log('  window.debugSessionLifecycle.debug(true/false) - Toggle debug mode')
 }
 
 // ============================================================================

@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple, List
 import logging
@@ -22,6 +23,7 @@ logger = logging.getLogger(__name__)
 # Try to import language detection library
 try:
     from langdetect import detect, LangDetectException
+
     LANGDETECT_AVAILABLE = True
 except ImportError:
     LANGDETECT_AVAILABLE = False
@@ -30,30 +32,35 @@ except ImportError:
 # Try to import optional dependencies
 try:
     import PyPDF2
+
     PYPDF2_AVAILABLE = True
 except ImportError:
     PYPDF2_AVAILABLE = False
 
 try:
     import pdfplumber
+
     PDFPLUMBER_AVAILABLE = True
 except ImportError:
     PDFPLUMBER_AVAILABLE = False
 
 try:
     from docx import Document
+
     DOCX_AVAILABLE = True
 except ImportError:
     DOCX_AVAILABLE = False
 
 try:
     import httpx
+
     HTTPX_AVAILABLE = True
 except ImportError:
     HTTPX_AVAILABLE = False
 
 try:
     from config.settings import config
+
     CONFIG_AVAILABLE = True
 except ImportError:
     CONFIG_AVAILABLE = False
@@ -61,18 +68,21 @@ except ImportError:
 try:
     import pytesseract
     from PIL import Image
+
     TESSERACT_AVAILABLE = True
 except ImportError:
     TESSERACT_AVAILABLE = False
 
 try:
     from pptx import Presentation
+
     PPTX_AVAILABLE = True
 except ImportError:
     PPTX_AVAILABLE = False
 
 try:
     from openpyxl import load_workbook
+
     OPENPYXL_AVAILABLE = True
 except ImportError:
     OPENPYXL_AVAILABLE = False
@@ -91,23 +101,35 @@ class DocumentProcessor:
     # Format: (magic_bytes, mime_type, description)
     FILE_SIGNATURES = [
         # PDF
-        (b'%PDF', 'application/pdf', 'PDF'),
+        (b"%PDF", "application/pdf", "PDF"),
         # DOCX (ZIP-based format, starts with PK)
-        (b'PK\x03\x04', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'DOCX'),
+        (
+            b"PK\x03\x04",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "DOCX",
+        ),
         # PPTX (ZIP-based format)
-        (b'PK\x03\x04', 'application/vnd.openxmlformats-officedocument.presentationml.presentation', 'PPTX'),
+        (
+            b"PK\x03\x04",
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "PPTX",
+        ),
         # XLSX (ZIP-based format)
-        (b'PK\x03\x04', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', 'XLSX'),
+        (
+            b"PK\x03\x04",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "XLSX",
+        ),
         # Images
-        (b'\xff\xd8\xff', 'image/jpeg', 'JPEG'),
-        (b'\x89PNG\r\n\x1a\n', 'image/png', 'PNG'),
-        (b'GIF87a', 'image/gif', 'GIF87a'),
-        (b'GIF89a', 'image/gif', 'GIF89a'),
-        (b'BM', 'image/bmp', 'BMP'),
-        (b'II*\x00', 'image/tiff', 'TIFF (little-endian)'),
-        (b'MM\x00*', 'image/tiff', 'TIFF (big-endian)'),
+        (b"\xff\xd8\xff", "image/jpeg", "JPEG"),
+        (b"\x89PNG\r\n\x1a\n", "image/png", "PNG"),
+        (b"GIF87a", "image/gif", "GIF87a"),
+        (b"GIF89a", "image/gif", "GIF89a"),
+        (b"BM", "image/bmp", "BMP"),
+        (b"II*\x00", "image/tiff", "TIFF (little-endian)"),
+        (b"MM\x00*", "image/tiff", "TIFF (big-endian)"),
         # Text files (no magic bytes, but we can check for UTF-8 BOM)
-        (b'\xef\xbb\xbf', 'text/plain', 'UTF-8 BOM'),
+        (b"\xef\xbb\xbf", "text/plain", "UTF-8 BOM"),
     ]
 
     # Maximum magic bytes length to read
@@ -116,15 +138,15 @@ class DocumentProcessor:
     def __init__(self):
         """Initialize document processor."""
         self.supported_types = {
-            'application/pdf': self._extract_pdf,
-            'application/vnd.openxmlformats-officedocument.wordprocessingml.document': self._extract_docx,
-            'text/plain': self._extract_text,
-            'text/markdown': self._extract_text,
-            'image/jpeg': self._extract_image,
-            'image/png': self._extract_image,
-            'image/jpg': self._extract_image,
-            'application/vnd.openxmlformats-officedocument.presentationml.presentation': self._extract_pptx,
-            'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': self._extract_xlsx,
+            "application/pdf": self._extract_pdf,
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document": self._extract_docx,
+            "text/plain": self._extract_text,
+            "text/markdown": self._extract_text,
+            "image/jpeg": self._extract_image,
+            "image/png": self._extract_image,
+            "image/jpg": self._extract_image,
+            "application/vnd.openxmlformats-officedocument.presentationml.presentation": self._extract_pptx,
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": self._extract_xlsx,
         }
 
     def validate_file_content(self, file_path: str, expected_mime_type: str) -> Tuple[bool, Optional[str]]:
@@ -141,7 +163,7 @@ class DocumentProcessor:
             - detected_mime_type: Detected MIME type from magic bytes (None if not detected)
         """
         try:
-            with open(file_path, 'rb') as f:
+            with open(file_path, "rb") as f:
                 header = f.read(self.MAX_MAGIC_LEN)
 
             if not header:
@@ -156,44 +178,42 @@ class DocumentProcessor:
 
             # Special handling for ZIP-based formats (DOCX, PPTX, XLSX)
             # They all start with PK\x03\x04, so we need to check the internal structure
-            if header.startswith(b'PK\x03\x04'):
+            if header.startswith(b"PK\x03\x04"):
                 # Check for Office Open XML structure
                 # DOCX contains word/document.xml
                 # PPTX contains ppt/presentation.xml
                 # XLSX contains xl/workbook.xml
                 try:
-                    with zipfile.ZipFile(file_path, 'r') as zip_file:
+                    with zipfile.ZipFile(file_path, "r") as zip_file:
                         file_list = zip_file.namelist()
 
                         # Check for DOCX
-                        if any('word/document.xml' in f for f in file_list):
-                            detected_type = 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+                        if any("word/document.xml" in f for f in file_list):
+                            detected_type = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
                         # Check for PPTX
-                        elif any('ppt/presentation.xml' in f for f in file_list):
-                            detected_type = 'application/vnd.openxmlformats-officedocument.presentationml.presentation'
+                        elif any("ppt/presentation.xml" in f for f in file_list):
+                            detected_type = "application/vnd.openxmlformats-officedocument.presentationml.presentation"
                         # Check for XLSX
-                        elif any('xl/workbook.xml' in f for f in file_list):
-                            detected_type = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        elif any("xl/workbook.xml" in f for f in file_list):
+                            detected_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
                         else:
                             # It's a ZIP but not a recognized Office format
-                            detected_type = 'application/zip'
+                            detected_type = "application/zip"
                 except Exception as e:
-                    logger.warning(
-                        "[DocumentProcessor] Failed to inspect ZIP structure: %s", e
-                    )
+                    logger.warning("[DocumentProcessor] Failed to inspect ZIP structure: %s", e)
                     # If ZIP inspection fails, assume it matches if expected type is ZIP-based
                     if expected_mime_type in [
-                        'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                        'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                        'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'
+                        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                        "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
                     ]:
                         detected_type = expected_mime_type
 
             # For text files, we can't reliably detect from magic bytes alone
             # But we can check if it's valid UTF-8
-            if expected_mime_type in ['text/plain', 'text/markdown']:
+            if expected_mime_type in ["text/plain", "text/markdown"]:
                 try:
-                    with open(file_path, 'r', encoding='utf-8') as f:
+                    with open(file_path, "r", encoding="utf-8") as f:
                         f.read(1024)  # Try to read first 1KB
                     detected_type = expected_mime_type  # Assume valid if readable as UTF-8
                 except UnicodeDecodeError:
@@ -202,16 +222,15 @@ class DocumentProcessor:
             # Validate match
             if detected_type:
                 # Allow some flexibility for image types
-                if expected_mime_type in ['image/jpeg', 'image/jpg'] and detected_type == 'image/jpeg':
+                if expected_mime_type in ["image/jpeg", "image/jpg"] and detected_type == "image/jpeg":
                     return True, detected_type
                 if expected_mime_type == detected_type:
                     return True, detected_type
                 else:
                     logger.warning(
-                        "[DocumentProcessor] File content mismatch: "
-                        "expected %s, detected %s",
+                        "[DocumentProcessor] File content mismatch: expected %s, detected %s",
                         expected_mime_type,
-                        detected_type
+                        detected_type,
                     )
                     return False, detected_type
 
@@ -219,14 +238,12 @@ class DocumentProcessor:
             # But log a warning
             logger.warning(
                 "[DocumentProcessor] Could not detect file type from magic bytes: %s",
-                file_path
+                file_path,
             )
             return True, None  # Allow processing but warn
 
         except Exception as e:
-            logger.error(
-                "[DocumentProcessor] Failed to validate file content: %s", e
-            )
+            logger.error("[DocumentProcessor] Failed to validate file content: %s", e)
             return False, None
 
     def extract_references(self, text: str, document_id: int) -> List[Dict[str, Any]]:
@@ -244,34 +261,38 @@ class DocumentProcessor:
 
         # Extract citation patterns (e.g., [1], [Smith 2020], (Smith et al., 2020))
         citation_patterns = [
-            r'\[(\d+)\]',  # [1], [2], etc.
-            r'\(([A-Z][a-z]+(?:\s+et\s+al\.)?,\s+\d{4})\)',  # (Smith, 2020) or (Smith et al., 2020)
-            r'\[([A-Z][a-z]+(?:\s+et\s+al\.)?,\s+\d{4})\]',  # [Smith, 2020]
+            r"\[(\d+)\]",  # [1], [2], etc.
+            r"\(([A-Z][a-z]+(?:\s+et\s+al\.)?,\s+\d{4})\)",  # (Smith, 2020) or (Smith et al., 2020)
+            r"\[([A-Z][a-z]+(?:\s+et\s+al\.)?,\s+\d{4})\]",  # [Smith, 2020]
         ]
 
         for pattern in citation_patterns:
             for match in re.finditer(pattern, text):
-                references.append({
-                    "type": "citation",
-                    "text": match.group(0),
-                    "position": match.start(),
-                    "document_id": document_id
-                })
+                references.append(
+                    {
+                        "type": "citation",
+                        "text": match.group(0),
+                        "position": match.start(),
+                        "document_id": document_id,
+                    }
+                )
 
         # Extract cross-references (e.g., "see Section 3", "refer to Chapter 2")
         cross_ref_patterns = [
-            r'(?:see|refer to|see also)\s+(?:section|chapter|figure|table|appendix)\s+(\d+)',
-            r'(?:see|refer to|see also)\s+(?:Section|Chapter|Figure|Table|Appendix)\s+(\d+)',
+            r"(?:see|refer to|see also)\s+(?:section|chapter|figure|table|appendix)\s+(\d+)",
+            r"(?:see|refer to|see also)\s+(?:Section|Chapter|Figure|Table|Appendix)\s+(\d+)",
         ]
 
         for pattern in cross_ref_patterns:
             for match in re.finditer(pattern, text, re.IGNORECASE):
-                references.append({
-                    "type": "cross_reference",
-                    "text": match.group(0),
-                    "position": match.start(),
-                    "document_id": document_id
-                })
+                references.append(
+                    {
+                        "type": "cross_reference",
+                        "text": match.group(0),
+                        "position": match.start(),
+                        "document_id": document_id,
+                    }
+                )
 
         return references
 
@@ -290,9 +311,9 @@ class DocumentProcessor:
             return {}
 
         try:
-            if file_type == 'application/pdf':
+            if file_type == "application/pdf":
                 return self._extract_pdf_metadata(file_path)
-            elif file_type == 'application/vnd.openxmlformats-officedocument.wordprocessingml.document':
+            elif file_type == "application/vnd.openxmlformats-officedocument.wordprocessingml.document":
                 return self._extract_docx_metadata(file_path)
             else:
                 return {}
@@ -300,7 +321,7 @@ class DocumentProcessor:
             logger.warning(
                 "[DocumentProcessor] Failed to extract metadata from %s: %s",
                 file_path,
-                e
+                e,
             )
             return {}
 
@@ -310,22 +331,20 @@ class DocumentProcessor:
         if not PYPDF2_AVAILABLE:
             return metadata
         try:
-            with open(file_path, 'rb') as file:
+            with open(file_path, "rb") as file:
                 pdf_reader = PyPDF2.PdfReader(file)
                 if pdf_reader.metadata:
                     pdf_meta = pdf_reader.metadata
-                    if pdf_meta.get('/Title'):
-                        metadata['title'] = pdf_meta['/Title']
-                    if pdf_meta.get('/Author'):
-                        metadata['author'] = pdf_meta['/Author']
-                    if pdf_meta.get('/CreationDate'):
-                        metadata['creation_date'] = str(pdf_meta['/CreationDate'])
-                    if pdf_meta.get('/Subject'):
-                        metadata['subject'] = pdf_meta['/Subject']
+                    if pdf_meta.get("/Title"):
+                        metadata["title"] = pdf_meta["/Title"]
+                    if pdf_meta.get("/Author"):
+                        metadata["author"] = pdf_meta["/Author"]
+                    if pdf_meta.get("/CreationDate"):
+                        metadata["creation_date"] = str(pdf_meta["/CreationDate"])
+                    if pdf_meta.get("/Subject"):
+                        metadata["subject"] = pdf_meta["/Subject"]
         except Exception as e:
-            logger.debug(
-                "[DocumentProcessor] PDF metadata extraction failed: %s", e
-            )
+            logger.debug("[DocumentProcessor] PDF metadata extraction failed: %s", e)
         return metadata
 
     def _extract_docx_metadata(self, file_path: str) -> Dict[str, Any]:
@@ -337,19 +356,17 @@ class DocumentProcessor:
             doc = Document(file_path)
             core_props = doc.core_properties
             if core_props.title:
-                metadata['title'] = core_props.title
+                metadata["title"] = core_props.title
             if core_props.author:
-                metadata['author'] = core_props.author
+                metadata["author"] = core_props.author
             if core_props.created:
-                metadata['creation_date'] = core_props.created.isoformat()
+                metadata["creation_date"] = core_props.created.isoformat()
             if core_props.subject:
-                metadata['subject'] = core_props.subject
+                metadata["subject"] = core_props.subject
             if core_props.keywords:
-                metadata['keywords'] = core_props.keywords
+                metadata["keywords"] = core_props.keywords
         except Exception as e:
-            logger.debug(
-                "[DocumentProcessor] DOCX metadata extraction failed: %s", e
-            )
+            logger.debug("[DocumentProcessor] DOCX metadata extraction failed: %s", e)
         return metadata
 
     def detect_language(self, text: str) -> Optional[str]:
@@ -403,13 +420,11 @@ class DocumentProcessor:
         if not is_valid:
             if detected_type:
                 raise ValueError(
-                    f"File content does not match claimed type. "
-                    f"Claimed: {file_type}, Detected: {detected_type}"
+                    f"File content does not match claimed type. Claimed: {file_type}, Detected: {detected_type}"
                 )
             else:
                 raise ValueError(
-                    f"File content validation failed. "
-                    f"File may be corrupted or not match type: {file_type}"
+                    f"File content validation failed. File may be corrupted or not match type: {file_type}"
                 )
 
         extractor = self.supported_types[file_type]
@@ -418,9 +433,8 @@ class DocumentProcessor:
             # Handle case where extractor might return a list (shouldn't happen, but defensive)
             if isinstance(text, list):
                 logger.warning(
-                    "[DocumentProcessor] Extractor returned list instead of "
-                    "string for %s, joining",
-                    file_path
+                    "[DocumentProcessor] Extractor returned list instead of string for %s, joining",
+                    file_path,
                 )
                 text = "\n".join(str(item) for item in text)
             # Ensure text is a string
@@ -430,25 +444,19 @@ class DocumentProcessor:
                 raise ValueError(f"No text extracted from {file_path}")
             return text.strip()
         except Exception as e:
-            logger.error(
-                "[DocumentProcessor] Failed to extract text from %s: %s",
-                file_path,
-                e
-            )
+            logger.error("[DocumentProcessor] Failed to extract text from %s: %s", file_path, e)
             raise
 
     def _extract_pdf(self, file_path: str) -> str:
         """Extract text from PDF."""
         if not PYPDF2_AVAILABLE and not PDFPLUMBER_AVAILABLE:
-            raise ImportError(
-                "PyPDF2 or pdfplumber required for PDF extraction"
-            )
+            raise ImportError("PyPDF2 or pdfplumber required for PDF extraction")
 
         # Try PyPDF2 first if available
         if PYPDF2_AVAILABLE:
             try:
                 text_parts = []
-                with open(file_path, 'rb') as file:
+                with open(file_path, "rb") as file:
                     pdf_reader = PyPDF2.PdfReader(file)
                     for page in pdf_reader.pages:
                         text = page.extract_text()
@@ -456,9 +464,7 @@ class DocumentProcessor:
                             text_parts.append(text)
                 return "\n\n".join(text_parts)
             except Exception as e:
-                logger.warning(
-                    "[DocumentProcessor] PyPDF2 failed, trying pdfplumber: %s", e
-                )
+                logger.warning("[DocumentProcessor] PyPDF2 failed, trying pdfplumber: %s", e)
                 # Fallback to pdfplumber if PyPDF2 fails
                 if PDFPLUMBER_AVAILABLE:
                     with pdfplumber.open(file_path) as pdf:
@@ -480,9 +486,7 @@ class DocumentProcessor:
                         text_parts.append(text)
                 return "\n\n".join(text_parts)
 
-        raise ImportError(
-            "PyPDF2 or pdfplumber required for PDF extraction"
-        )
+        raise ImportError("PyPDF2 or pdfplumber required for PDF extraction")
 
     def extract_text_with_pages(self, file_path: str, file_type: str) -> tuple[str, List[Dict[str, Any]]]:
         """
@@ -495,7 +499,7 @@ class DocumentProcessor:
         Returns:
             Tuple of (text, page_info) where page_info is list of page boundaries
         """
-        if file_type == 'application/pdf':
+        if file_type == "application/pdf":
             if not PDFPLUMBER_AVAILABLE:
                 # Fallback: extract text without page info
                 text = self._extract_pdf(file_path)
@@ -511,11 +515,13 @@ class DocumentProcessor:
                             start_pos = current_pos
                             text_parts.append(text)
                             current_pos += len(text) + 2  # +2 for "\n\n"
-                            page_info.append({
-                                'page': page_num,
-                                'start': start_pos,
-                                'end': current_pos
-                            })
+                            page_info.append(
+                                {
+                                    "page": page_num,
+                                    "start": start_pos,
+                                    "end": current_pos,
+                                }
+                            )
                     return "\n\n".join(text_parts), page_info
             except ImportError:
                 # Fallback: extract text without page info
@@ -541,19 +547,15 @@ class DocumentProcessor:
     def _extract_text(self, file_path: str) -> str:
         """Extract text from plain text files."""
         # Try multiple encodings
-        encodings = ['utf-8', 'gbk', 'gb2312', 'latin-1']
+        encodings = ["utf-8", "gbk", "gb2312", "latin-1"]
         for encoding in encodings:
             try:
-                with open(file_path, 'r', encoding=encoding) as file:
+                with open(file_path, "r", encoding=encoding) as file:
                     return file.read()
             except UnicodeDecodeError:
                 continue
             except Exception as e:
-                logger.warning(
-                    "[DocumentProcessor] Failed to read with %s: %s",
-                    encoding,
-                    e
-                )
+                logger.warning("[DocumentProcessor] Failed to read with %s: %s", encoding, e)
                 continue
 
         raise ValueError(f"Failed to decode text file with any encoding: {file_path}")
@@ -569,9 +571,7 @@ class DocumentProcessor:
             try:
                 return self._extract_image_tesseract(file_path)
             except Exception as e2:
-                raise ValueError(
-                    f"OCR failed with both DashScope and Tesseract: {e2}"
-                ) from e2
+                raise ValueError(f"OCR failed with both DashScope and Tesseract: {e2}") from e2
 
     def _extract_image_dashscope(self, file_path: str) -> str:
         """Extract text using DashScope OCR API."""
@@ -583,10 +583,10 @@ class DocumentProcessor:
             raise ValueError("DashScope API key required for OCR")
 
         # Read image and encode
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             image_data = f.read()
 
-        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        image_base64 = base64.b64encode(image_data).decode("utf-8")
 
         headers = {
             "Authorization": f"Bearer {api_key}",
@@ -600,17 +600,13 @@ class DocumentProcessor:
                     {
                         "role": "user",
                         "content": [
-                            {
-                                "image": f"data:image/jpeg;base64,{image_base64}"
-                            },
-                            {
-                                "text": "请提取图片中的所有文字，保持原有格式。"
-                            }
-                        ]
+                            {"image": f"data:image/jpeg;base64,{image_base64}"},
+                            {"text": "请提取图片中的所有文字，保持原有格式。"},
+                        ],
                     }
                 ]
             },
-            "parameters": {}
+            "parameters": {},
         }
 
         base_url = config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
@@ -653,22 +649,20 @@ class DocumentProcessor:
         """Extract text using pytesseract OCR."""
         if not TESSERACT_AVAILABLE:
             raise ImportError(
-                "pytesseract and PIL required for Tesseract OCR. "
-                "Install with: pip install pytesseract Pillow"
+                "pytesseract and PIL required for Tesseract OCR. Install with: pip install pytesseract Pillow"
             )
 
         try:
             image = Image.open(file_path)
-            text = pytesseract.image_to_string(image, lang='chi_sim+eng')  # Chinese + English
+            text = pytesseract.image_to_string(image, lang="chi_sim+eng")  # Chinese + English
             return text
         except Exception as e:
             # Check if this is a TesseractNotFoundError
             error_str = str(e).lower()
-            if 'tesseract' in error_str and ('not found' in error_str or 'not installed' in error_str or 'not in your path' in error_str):
-                logger.error(
-                    "[DocumentProcessor] Tesseract OCR binary not found: %s",
-                    str(e)
-                )
+            if "tesseract" in error_str and (
+                "not found" in error_str or "not installed" in error_str or "not in your path" in error_str
+            ):
+                logger.error("[DocumentProcessor] Tesseract OCR binary not found: %s", str(e))
                 error_msg = (
                     "Tesseract OCR binary not found. "
                     "The pytesseract Python package is installed, but the Tesseract binary is missing or not in PATH.\n"
@@ -730,17 +724,17 @@ class DocumentProcessor:
             # Fallback based on extension
             ext = Path(file_path).suffix.lower()
             ext_to_mime = {
-                '.pdf': 'application/pdf',
-                '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-                '.txt': 'text/plain',
-                '.md': 'text/markdown',
-                '.jpg': 'image/jpeg',
-                '.jpeg': 'image/jpeg',
-                '.png': 'image/png',
-                '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                ".pdf": "application/pdf",
+                ".docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+                ".txt": "text/plain",
+                ".md": "text/markdown",
+                ".jpg": "image/jpeg",
+                ".jpeg": "image/jpeg",
+                ".png": "image/png",
+                ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+                ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
             }
-            mime_type = ext_to_mime.get(ext, 'application/octet-stream')
+            mime_type = ext_to_mime.get(ext, "application/octet-stream")
 
         return mime_type
 
@@ -759,6 +753,6 @@ class DocumentProcessor:
 
 def get_document_processor() -> DocumentProcessor:
     """Get global document processor instance."""
-    if not hasattr(get_document_processor, '_instance'):
+    if not hasattr(get_document_processor, "_instance"):
         get_document_processor._instance = DocumentProcessor()
     return get_document_processor._instance

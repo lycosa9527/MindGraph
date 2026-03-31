@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import Dict, List, Any
 import logging
@@ -17,7 +18,11 @@ import shutil
 
 from sqlalchemy.orm import Session
 
-from models.domain.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk
+from models.domain.knowledge_space import (
+    KnowledgeSpace,
+    KnowledgeDocument,
+    DocumentChunk,
+)
 from services.llm.qdrant_service import get_qdrant_service
 
 
@@ -49,9 +54,7 @@ class StorageManager:
         Returns:
             Dict with storage statistics
         """
-        space = db.query(KnowledgeSpace).filter(
-            KnowledgeSpace.user_id == user_id
-        ).first()
+        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
 
         if not space:
             return {
@@ -75,16 +78,12 @@ class StorageManager:
                     file_storage_bytes += file_path.stat().st_size
 
         # Get document count
-        document_count = db.query(KnowledgeDocument).filter(
-            KnowledgeDocument.space_id == space.id
-        ).count()
+        document_count = db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
 
         # Get chunk count
-        chunk_count = db.query(DocumentChunk).join(
-            KnowledgeDocument
-        ).filter(
-            KnowledgeDocument.space_id == space.id
-        ).count()
+        chunk_count = (
+            db.query(DocumentChunk).join(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
+        )
 
         # Get Qdrant chunk count
         qdrant_chunks = self.qdrant.get_collection_size(user_id)
@@ -137,9 +136,7 @@ class StorageManager:
                     if file_path.is_file():
                         total_file_storage += file_path.stat().st_size
 
-            doc_count = db.query(KnowledgeDocument).filter(
-                KnowledgeDocument.space_id == space.id
-            ).count()
+            doc_count = db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
             total_documents += doc_count
 
             qdrant_chunks = self.qdrant.get_collection_size(space.user_id)
@@ -203,24 +200,27 @@ class StorageManager:
                 continue
 
             # Check if user has knowledge space
-            space = db.query(KnowledgeSpace).filter(
-                KnowledgeSpace.user_id == user_id
-            ).first()
+            space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
 
             if not space:
                 # User has no knowledge space, delete directory
                 try:
                     shutil.rmtree(user_dir)
                     deleted_count += 1
-                    logger.info("[StorageManager] Deleted orphaned directory for user %s", user_id)
+                    logger.info(
+                        "[StorageManager] Deleted orphaned directory for user %s",
+                        user_id,
+                    )
                 except Exception as e:
-                    logger.error("[StorageManager] Failed to delete orphaned directory %s: %s", user_dir, e)
+                    logger.error(
+                        "[StorageManager] Failed to delete orphaned directory %s: %s",
+                        user_dir,
+                        e,
+                    )
                 continue
 
             # Get all document file paths from database
-            documents = db.query(KnowledgeDocument).filter(
-                KnowledgeDocument.space_id == space.id
-            ).all()
+            documents = db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).all()
             valid_paths = {Path(doc.file_path) for doc in documents if doc.file_path}
 
             # Check files in directory
@@ -231,7 +231,11 @@ class StorageManager:
                         deleted_count += 1
                         logger.debug("[StorageManager] Deleted orphaned file: %s", file_path)
                     except Exception as e:
-                        logger.error("[StorageManager] Failed to delete orphaned file %s: %s", file_path, e)
+                        logger.error(
+                            "[StorageManager] Failed to delete orphaned file %s: %s",
+                            file_path,
+                            e,
+                        )
 
         return deleted_count
 
@@ -251,12 +255,14 @@ class StorageManager:
         for space in spaces:
             usage = self.get_user_storage_usage(db, space.user_id)
             if usage["usage_percent"] >= (self.monitor_threshold * 100):
-                alerts.append({
-                    "user_id": space.user_id,
-                    "usage_percent": usage["usage_percent"],
-                    "total_mb": usage["total_mb"],
-                    "max_mb": self.max_storage_per_user / (1024 * 1024),
-                })
+                alerts.append(
+                    {
+                        "user_id": space.user_id,
+                        "usage_percent": usage["usage_percent"],
+                        "total_mb": usage["total_mb"],
+                        "max_mb": self.max_storage_per_user / (1024 * 1024),
+                    }
+                )
 
         return alerts
 

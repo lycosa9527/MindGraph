@@ -1,4 +1,5 @@
 """Voice session lifecycle and Omni client accessors."""
+
 from datetime import datetime
 from typing import Any, Dict, Optional
 import asyncio
@@ -27,12 +28,15 @@ def get_agent_session_id(voice_session_id: str) -> str:
         Agent session ID (scoped to diagram_session_id)
     """
     if voice_session_id in voice_sessions:
-        diagram_session_id = voice_sessions[voice_session_id].get('diagram_session_id')
+        diagram_session_id = voice_sessions[voice_session_id].get("diagram_session_id")
         if diagram_session_id:
             return f"diagram_{diagram_session_id}"
 
     # Fallback: use voice_session_id if diagram_session_id not available (shouldn't happen)
-    logger.warning("Voice session %s has no diagram_session_id, using voice_session_id as fallback", voice_session_id)
+    logger.warning(
+        "Voice session %s has no diagram_session_id, using voice_session_id as fallback",
+        voice_session_id,
+    )
     return voice_session_id
 
 
@@ -40,7 +44,7 @@ def create_voice_session(
     user_id: str,
     diagram_session_id: Optional[str] = None,
     diagram_type: Optional[str] = None,
-    active_panel: Optional[str] = None
+    active_panel: Optional[str] = None,
 ) -> str:
     """
     Create new voice session (session-bound to diagram session).
@@ -64,18 +68,22 @@ def create_voice_session(
     omni_client = OmniClient()
 
     voice_sessions[session_id] = {
-        'session_id': session_id,
-        'user_id': user_id,
-        'diagram_session_id': diagram_session_id,
-        'diagram_type': diagram_type,
-        'active_panel': active_panel or 'mindmate',
-        'created_at': datetime.now(),
-        'last_activity': datetime.now(),
-        'conversation_history': [],
-        'omni_client': omni_client  # Per-session OmniClient instance
+        "session_id": session_id,
+        "user_id": user_id,
+        "diagram_session_id": diagram_session_id,
+        "diagram_type": diagram_type,
+        "active_panel": active_panel or "mindmate",
+        "created_at": datetime.now(),
+        "last_activity": datetime.now(),
+        "conversation_history": [],
+        "omni_client": omni_client,  # Per-session OmniClient instance
     }
 
-    logger.debug("Session created: %s (linked to diagram=%s, has own OmniClient)", session_id, diagram_session_id)
+    logger.debug(
+        "Session created: %s (linked to diagram=%s, has own OmniClient)",
+        session_id,
+        diagram_session_id,
+    )
     return session_id
 
 
@@ -102,7 +110,7 @@ def get_session_omni_client(voice_session_id: str):
         logger.warning("Voice session %s not found", voice_session_id)
         return None
 
-    omni_client = session.get('omni_client')
+    omni_client = session.get("omni_client")
     if not omni_client:
         logger.warning("OmniClient not found for session %s", voice_session_id)
         return None
@@ -113,12 +121,12 @@ def get_session_omni_client(voice_session_id: str):
 def update_panel_context(session_id: str, active_panel: str) -> None:
     """Update active panel context"""
     if session_id in voice_sessions:
-        old_panel = voice_sessions[session_id].get('active_panel', 'unknown')
-        voice_sessions[session_id]['active_panel'] = active_panel
+        old_panel = voice_sessions[session_id].get("active_panel", "unknown")
+        voice_sessions[session_id]["active_panel"] = active_panel
         logger.debug("Panel context updated: %s (%s -> %s)", session_id, old_panel, active_panel)
 
 
-def end_voice_session(session_id: str, reason: str = 'completed') -> None:
+def end_voice_session(session_id: str, reason: str = "completed") -> None:
     """
     End and cleanup session including persistent agent and OmniClient.
 
@@ -133,11 +141,11 @@ def end_voice_session(session_id: str, reason: str = 'completed') -> None:
         session = voice_sessions[session_id]
 
         # Get diagram_session_id before deleting the session
-        diagram_session_id = session.get('diagram_session_id')
+        diagram_session_id = session.get("diagram_session_id")
 
         # CRITICAL: Close OmniClient WebSocket connection before deleting session
         # Each voice session has its own OmniClient instance that must be closed
-        omni_client = session.get('omni_client')
+        omni_client = session.get("omni_client")
         if omni_client:
             try:
                 close_result = omni_client.close()
@@ -153,9 +161,9 @@ def end_voice_session(session_id: str, reason: str = 'completed') -> None:
                 logger.debug("VOIC | Closed Omni client for session %s", session_id)
             except (RuntimeError, AttributeError, asyncio.CancelledError) as e:
                 logger.debug(
-                    "VOIC | Error closing Omni client for session %s "
-                    "(may already be closed): %s",
-                    session_id, e
+                    "VOIC | Error closing Omni client for session %s (may already be closed): %s",
+                    session_id,
+                    e,
                 )
 
         # Delete session from memory
@@ -182,13 +190,17 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
     # CRITICAL: Close all WebSocket connections for this diagram session
     if diagram_session_id in active_websockets:
         ws_list = active_websockets[diagram_session_id].copy()  # Copy to avoid modification during iteration
-        logger.debug("Closing %d WebSocket connection(s) for diagram %s", len(ws_list), diagram_session_id)
+        logger.debug(
+            "Closing %d WebSocket connection(s) for diagram %s",
+            len(ws_list),
+            diagram_session_id,
+        )
         for ws in ws_list:
             try:
                 # Check WebSocket state before attempting to close
                 # This prevents errors when WebSocket is already closed by frontend
-                if hasattr(ws, 'client_state'):
-                    if ws.client_state.name == 'DISCONNECTED':
+                if hasattr(ws, "client_state"):
+                    if ws.client_state.name == "DISCONNECTED":
                         logger.debug("WebSocket already disconnected, skipping close")
                     else:
                         await ws.close(code=1001, reason="Diagram session ended")
@@ -220,20 +232,22 @@ async def cleanup_voice_by_diagram_session(diagram_session_id: str) -> bool:
     # This handles cases where cleanup failed before and multiple sessions exist
     voice_session_ids_to_cleanup = []
     for sid, session in list(voice_sessions.items()):  # Use list() to avoid modification during iteration
-        if session.get('diagram_session_id') == diagram_session_id:
+        if session.get("diagram_session_id") == diagram_session_id:
             voice_session_ids_to_cleanup.append(sid)
 
     if voice_session_ids_to_cleanup:
         logger.debug(
             "Found %d voice session(s) for diagram %s, cleaning up all",
-            len(voice_session_ids_to_cleanup), diagram_session_id
+            len(voice_session_ids_to_cleanup),
+            diagram_session_id,
         )
         for voice_session_id in voice_session_ids_to_cleanup:
             logger.debug(
                 "Cleaning up voice session %s (diagram session %s ended)",
-                voice_session_id, diagram_session_id
+                voice_session_id,
+                diagram_session_id,
             )
-            end_voice_session(voice_session_id, reason='diagram_session_ended')
+            end_voice_session(voice_session_id, reason="diagram_session_ended")
             cleaned_count += 1
         return True
 

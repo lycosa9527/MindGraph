@@ -1,4 +1,5 @@
 """Brace map inline recommendation prompts."""
+
 from typing import Any, Dict, List, Optional
 
 from ._common import (
@@ -21,13 +22,13 @@ def build_brace_dimensions_prompt(
     Extracts user's main topic (whole) and asks LLM to generate topic-specific
     decomposition dimensions. Aligned with prompts/node_palette.get_brace_dimensions_prompt.
     """
-    whole = (context.get('whole') or '').strip()
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    dim_types = BRACE_DIMENSION_TYPES_ZH if language == 'zh' else BRACE_DIMENSION_TYPES_EN
+    whole = (context.get("whole") or "").strip()
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    dim_types = BRACE_DIMENSION_TYPES_ZH if language == "zh" else BRACE_DIMENSION_TYPES_EN
     existing = existing or []
 
-    if language == 'zh':
-        whole_ctx = f'"{whole}"' if whole else '（整体未设置）'
+    if language == "zh":
+        whole_ctx = f'"{whole}"' if whole else "（整体未设置）"
         prompt = f"""为主题{whole_ctx}生成{count}个可能的拆解维度。
 
 教学背景：{context_desc}
@@ -44,7 +45,7 @@ def build_brace_dimensions_prompt(
 
 生成{count}个拆解维度："""
     else:
-        whole_ctx = f'"{whole}"' if whole else '(whole not set)'
+        whole_ctx = f'"{whole}"' if whole else "(whole not set)"
         prompt = f"""Generate {count} possible decomposition dimensions for: {whole_ctx}
 
 Educational Context: {context_desc}
@@ -72,15 +73,15 @@ def build_brace_parts_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for brace map part recommendations."""
-    whole = (context.get('whole') or '').strip()
-    dimension = (context.get('dimension') or '').strip()
-    part_names = context.get('part_names') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['brace_map'][language]
-    dim_types = BRACE_DIMENSION_TYPES_ZH if language == 'zh' else BRACE_DIMENSION_TYPES_EN
+    whole = (context.get("whole") or "").strip()
+    dimension = (context.get("dimension") or "").strip()
+    part_names = context.get("part_names") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["brace_map"][language]
+    dim_types = BRACE_DIMENSION_TYPES_ZH if language == "zh" else BRACE_DIMENSION_TYPES_EN
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         whole_ctx = f"整体：{whole}" if whole else "整体未设置"
         dim_ctx = f"拆解维度：{dimension}" if dimension else "请自选拆解维度"
         prompt = f"""用户正在创建括号图。{whole_ctx}
@@ -99,7 +100,7 @@ def build_brace_parts_prompt(
         if part_names:
             prompt += f"""
 
-图中已有部分：{', '.join(part_names)}。请生成更聚焦、互补的部分推荐，与已有部分形成补充，避免重复。"""
+图中已有部分：{", ".join(part_names)}。请生成更聚焦、互补的部分推荐，与已有部分形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个部分推荐："""
@@ -120,7 +121,7 @@ Generate {count} part recommendations. Requirements:
 3. Each part concise (2-8 words)
 4. Output only part names, one per line, no numbering"""
         if part_names:
-            parts = ', '.join(part_names)
+            parts = ", ".join(part_names)
             prompt += (
                 f"\n\nThe diagram already has parts: {parts}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
@@ -144,16 +145,17 @@ def build_brace_subparts_prompt(
     Second-stage: we are working on part X, it has subparts Y.
     Generate more focused recommendations that build on these.
     """
-    whole = (context.get('whole') or '').strip()
-    dimension = (context.get('dimension') or '').strip()
-    part_name = (context.get('part_name') or '').strip()
-    subpart_texts = context.get('subpart_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
+    whole = (context.get("whole") or "").strip()
+    dimension = (context.get("dimension") or "").strip()
+    part_name = (context.get("part_name") or "").strip()
+    subpart_texts = context.get("subpart_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         whole_ctx = f"整体：{whole}" if whole else "整体未设置"
-        prompt = f"""为以下部分生成{count}个子部分：{part_name}
+        prompt = (
+            f"""为以下部分生成{count}个子部分：{part_name}
 
 {whole_ctx}
 拆解维度：{dimension}
@@ -162,22 +164,24 @@ def build_brace_subparts_prompt(
 
 你能够绘制括号图，对部分进行细分。
 思维方式：细化、分解
-1. 子部分必须属于「{part_name}」""" + (
-            f"，且属于「{dimension}」的拆解视角" if dimension else "，从任一合理拆解视角细分"
-        ) + """
+1. 子部分必须属于「{part_name}」"""
+            + (f"，且属于「{dimension}」的拆解视角" if dimension else "，从任一合理拆解视角细分")
+            + """
 2. 子部分要清晰、互不重叠、完全穷尽（MECE原则）
 3. 使用名词或名词短语，2-8个字
 4. 只输出子部分名称，每行一个，不要编号"""
+        )
         if subpart_texts:
             prompt += f"""
 
-我们正在部分「{part_name}」下工作，该部分已有子部分：{', '.join(subpart_texts)}。请生成更聚焦、互补的子部分推荐，与已有子部分形成补充，避免重复。"""
+我们正在部分「{part_name}」下工作，该部分已有子部分：{", ".join(subpart_texts)}。请生成更聚焦、互补的子部分推荐，与已有子部分形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个子部分："""
     else:
         whole_ctx = f"Whole: {whole}" if whole else "Whole not set"
-        prompt = f"""Generate {count} subparts for: {part_name}
+        prompt = (
+            f"""Generate {count} subparts for: {part_name}
 
 {whole_ctx}
 Decomposition dimension: {dimension}
@@ -186,18 +190,21 @@ Educational Context: {context_desc}
 
 You can draw a brace map to break down parts into subparts.
 Thinking approach: Refinement, Decomposition
-1. Subparts must belong to "{part_name}" """ + (
-            f'and follow the "{dimension}" perspective'
-            if dimension
-            else "from any reasonable decomposition perspective"
-        ) + """
+1. Subparts must belong to "{part_name}" """
+            + (
+                f'and follow the "{dimension}" perspective'
+                if dimension
+                else "from any reasonable decomposition perspective"
+            )
+            + """
 2. Subparts should be clear, mutually exclusive, collectively exhaustive (MECE)
 3. Use nouns or noun phrases, 2-8 words
 4. Output only subpart names, one per line, no numbering"""
+        )
         if subpart_texts:
-            subparts = ', '.join(subpart_texts)
+            subparts = ", ".join(subpart_texts)
             prompt += (
-                f"\n\nWe are working on part \"{part_name}\". "
+                f'\n\nWe are working on part "{part_name}". '
                 f"It has existing subparts: {subparts}. "
                 "Generate more focused, complementary subpart recommendations "
                 "that build on these, avoid repetition."

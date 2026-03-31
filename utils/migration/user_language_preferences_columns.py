@@ -39,16 +39,10 @@ def ensure_user_language_preferences_columns(engine: Engine) -> None:
                 if col_name in existing:
                     continue
                 if dialect == "sqlite":
-                    conn.execute(
-                        text(f"ALTER TABLE {_TABLE} ADD COLUMN {col_name} {sqlite_type}")
-                    )
+                    conn.execute(text(f"ALTER TABLE {_TABLE} ADD COLUMN {col_name} {sqlite_type}"))
                 else:
                     qcol = f'"{col_name}"'
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {quoted_table} ADD COLUMN {qcol} {pg_type}"
-                        )
-                    )
+                    conn.execute(text(f"ALTER TABLE {quoted_table} ADD COLUMN {qcol} {pg_type}"))
                 logger.info("[DBMigration] Added %s.%s", _TABLE, col_name)
     except (OperationalError, ProgrammingError) as exc:
         logger.warning(

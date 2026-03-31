@@ -12,7 +12,12 @@ Proprietary License
 
 import logging
 
-from .config import AUTH_MODE, DEMO_PASSKEY, ADMIN_DEMO_PASSKEY, PUBLIC_DASHBOARD_PASSKEY
+from .config import (
+    AUTH_MODE,
+    DEMO_PASSKEY,
+    ADMIN_DEMO_PASSKEY,
+    PUBLIC_DASHBOARD_PASSKEY,
+)
 
 logger = logging.getLogger(__name__)
 

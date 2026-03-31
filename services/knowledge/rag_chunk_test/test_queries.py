@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any
 
 
@@ -35,7 +36,7 @@ FINANCEBENCH_QUERIES = [
     "What is the difference between active and passive investing?",
     "How do economic indicators predict market trends?",
     "What role do hedge funds play in financial markets?",
-    "Explain the concept of portfolio optimization."
+    "Explain the concept of portfolio optimization.",
 ]
 
 # KG-RAG / BiomixQA Example Queries (Biomedical Domain)
@@ -59,7 +60,7 @@ BIOMEDICAL_QUERIES = [
     "How does the respiratory system exchange gases?",
     "What are the stages of cell division?",
     "How do neurotransmitters affect brain function?",
-    "What is the mechanism of gene expression?"
+    "What is the mechanism of gene expression?",
 ]
 
 # PubMedQA Example Queries (Medical Research Domain)
@@ -83,7 +84,7 @@ MEDICAL_RESEARCH_QUERIES = [
     "How does aging affect the immune system?",
     "What is the relationship between obesity and diabetes?",
     "How do environmental factors influence disease development?",
-    "What are the current guidelines for hypertension management?"
+    "What are the current guidelines for hypertension management?",
 ]
 
 # FRAMES Example Queries (General Knowledge)
@@ -107,7 +108,7 @@ GENERAL_QUERIES = [
     "How do earthquakes occur?",
     "What are the principles of democracy?",
     "How does the human digestive system work?",
-    "What is the significance of the Renaissance period?"
+    "What is the significance of the Renaissance period?",
 ]
 
 
@@ -132,20 +133,12 @@ def get_test_queries(dataset_name: str = "mixed", count: int = 20) -> List[str]:
         queries = GENERAL_QUERIES
     else:
         # Mixed: combine queries from all domains
-        queries = (
-            FINANCEBENCH_QUERIES[:5] +
-            BIOMEDICAL_QUERIES[:5] +
-            MEDICAL_RESEARCH_QUERIES[:5] +
-            GENERAL_QUERIES[:5]
-        )
+        queries = FINANCEBENCH_QUERIES[:5] + BIOMEDICAL_QUERIES[:5] + MEDICAL_RESEARCH_QUERIES[:5] + GENERAL_QUERIES[:5]
 
     return queries[:count]
 
 
-def get_test_queries_with_metadata(
-    dataset_name: str = "mixed",
-    count: int = 20
-) -> List[Dict[str, Any]]:
+def get_test_queries_with_metadata(dataset_name: str = "mixed", count: int = 20) -> List[Dict[str, Any]]:
     """
     Get test queries with metadata format for benchmark testing.
 
@@ -158,12 +151,4 @@ def get_test_queries_with_metadata(
         [{"query": str, "expected_chunk_ids": [], "relevance_scores": {}, "answer": ""}]
     """
     queries = get_test_queries(dataset_name, count)
-    return [
-        {
-            "query": q,
-            "expected_chunk_ids": [],
-            "relevance_scores": {},
-            "answer": ""
-        }
-        for q in queries
-    ]
+    return [{"query": q, "expected_chunk_ids": [], "relevance_scores": {}, "answer": ""} for q in queries]

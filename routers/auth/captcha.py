@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Tuple
 import asyncio
 import base64
@@ -22,20 +23,18 @@ from fastapi import APIRouter, HTTPException, Header, Request, Response, status
 from models.domain.messages import Messages, get_request_language, Language
 from services.auth.captcha_storage import get_captcha_storage
 from services.redis.rate_limiting.redis_rate_limiter import check_captcha_rate_limit
-from utils.auth import (
-    CAPTCHA_SESSION_COOKIE_NAME,
-    RATE_LIMIT_WINDOW_MINUTES,
-    is_https
-)
+from utils.auth import CAPTCHA_SESSION_COOKIE_NAME, RATE_LIMIT_WINDOW_MINUTES, is_https
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+
 # Lazy initialization - get captcha storage when needed (after Redis is initialized)
 def _get_captcha_storage():
     """Get captcha storage instance (lazy initialization)."""
     return get_captcha_storage()
+
 
 # Use closure pattern to avoid global statement and protected-access warnings
 def _create_captcha_storage_ensurer():
@@ -50,6 +49,7 @@ def _create_captcha_storage_ensurer():
         return cache
 
     return _ensure_captcha_storage
+
 
 _ensure_captcha_storage = _create_captcha_storage_ensurer()
 
@@ -83,7 +83,7 @@ def _generate_captcha_svg(code: str) -> str:
     for _ in range(5):
         x1, y1 = random.randint(0, width), random.randint(0, height)
         x2, y2 = random.randint(0, width), random.randint(0, height)
-        color = f"rgb({random.randint(150,200)},{random.randint(150,200)},{random.randint(150,200)})"
+        color = f"rgb({random.randint(150, 200)},{random.randint(150, 200)},{random.randint(150, 200)})"
         svg_parts.append(f'<line x1="{x1}" y1="{y1}" x2="{x2}" y2="{y2}" stroke="{color}" stroke-width="1"/>')
 
     # Add characters with random positioning and rotation
@@ -112,18 +112,18 @@ def _generate_captcha_svg(code: str) -> str:
     for _ in range(30):
         cx, cy = random.randint(0, width), random.randint(0, height)
         r = random.randint(1, 2)
-        color = f"rgb({random.randint(100,180)},{random.randint(100,180)},{random.randint(100,180)})"
+        color = f"rgb({random.randint(100, 180)},{random.randint(100, 180)},{random.randint(100, 180)})"
         svg_parts.append(f'<circle cx="{cx}" cy="{cy}" r="{r}" fill="{color}"/>')
 
-    svg_parts.append('</svg>')
-    return ''.join(svg_parts)
+    svg_parts.append("</svg>")
+    return "".join(svg_parts)
 
 
 @router.get("/captcha/generate")
 async def generate_captcha(
     request: Request,
     response: Response,
-    x_language: Optional[str] = Header(None, alias="X-Language")
+    x_language: Optional[str] = Header(None, alias="X-Language"),
 ):
     """
     Generate SVG captcha image with readable letters (same as MindLLMCross)
@@ -164,10 +164,7 @@ async def generate_captcha(
             accept_language = request.headers.get("Accept-Language", "")
             error_lang: Language = get_request_language(x_language, accept_language)
             error_msg = Messages.error("too_many_login_attempts", error_lang, RATE_LIMIT_WINDOW_MINUTES)
-            raise HTTPException(
-                status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                detail=error_msg
-            )
+            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
     except HTTPException:
         # Re-raise HTTP exceptions (rate limit, etc.)
         raise
@@ -176,10 +173,7 @@ async def generate_captcha(
         accept_language_err = request.headers.get("Accept-Language", "")
         error_lang_err: Language = get_request_language(x_language, accept_language_err)
         error_msg = Messages.error("captcha_generate_failed", error_lang_err)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg
-        ) from e
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg) from e
 
     try:
         # Set session cookie (matches rate limit window duration)
@@ -189,12 +183,12 @@ async def generate_captcha(
             httponly=True,
             secure=is_https(request),
             samesite="lax",
-            max_age=RATE_LIMIT_WINDOW_MINUTES * 60  # 15 minutes
+            max_age=RATE_LIMIT_WINDOW_MINUTES * 60,  # 15 minutes
         )
 
         # Generate 4-character code
-        chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'
-        code = ''.join(random.choices(chars, k=4))
+        chars = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789"
+        code = "".join(random.choices(chars, k=4))
 
         # Generate SVG captcha image (same as MindLLMCross)
         svg = _generate_captcha_svg(code)
@@ -216,18 +210,23 @@ async def generate_captcha(
             success = False
 
         if not success:
-            logger.error("Failed to store captcha %s: Redis unavailable or storage failed", session_id)
-            error_msg = Messages.error("captcha_generate_failed", user_lang)
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=error_msg
+            logger.error(
+                "Failed to store captcha %s: Redis unavailable or storage failed",
+                session_id,
             )
+            error_msg = Messages.error("captcha_generate_failed", user_lang)
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
 
-        logger.debug("Generated captcha: %s for session: %s... (code: %s)", session_id, session_token[:8], code)
+        logger.debug(
+            "Generated captcha: %s for session: %s... (code: %s)",
+            session_id,
+            session_token[:8],
+            code,
+        )
 
         return {
             "captcha_id": session_id,
-            "captcha_image": f"data:image/svg+xml;base64,{img_base64}"
+            "captcha_image": f"data:image/svg+xml;base64,{img_base64}",
         }
     except HTTPException:
         # Re-raise HTTP exceptions
@@ -237,10 +236,7 @@ async def generate_captcha(
         accept_language_exc = request.headers.get("Accept-Language", "")
         error_lang_exc: Language = get_request_language(x_language, accept_language_exc)
         error_msg = Messages.error("captcha_generate_failed", error_lang_exc)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=error_msg
-        ) from e
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg) from e
 
 
 def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
@@ -259,9 +255,7 @@ def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]
 
 
 async def verify_captcha_with_retry(
-    captcha_id: str,
-    user_code: str,
-    max_endpoint_retries: int = 2
+    captcha_id: str, user_code: str, max_endpoint_retries: int = 2
 ) -> Tuple[bool, Optional[str]]:
     """
     Verify captcha with endpoint-level retry for database lock errors.
@@ -289,25 +283,21 @@ async def verify_captcha_with_retry(
 
         # Database lock error - retry with exponential backoff
         if attempt < max_endpoint_retries - 1:
-            delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s
+            delay = 0.1 * (2**attempt)  # 0.1s, 0.2s
             logger.warning(
-                "[Auth] Database lock in verify_captcha, "
-                "endpoint retry %d/%d after %ss delay. "
-                "Captcha ID: %s...",
+                "[Auth] Database lock in verify_captcha, endpoint retry %d/%d after %ss delay. Captcha ID: %s...",
                 attempt + 1,
                 max_endpoint_retries,
                 delay,
-                captcha_id[:8]
+                captcha_id[:8],
             )
             await asyncio.sleep(delay)
         else:
             logger.error(
-                "[Auth] Database lock persists after %d endpoint retries. "
-                "Captcha ID: %s...",
+                "[Auth] Database lock persists after %d endpoint retries. Captcha ID: %s...",
                 max_endpoint_retries,
-                captcha_id[:8]
+                captcha_id[:8],
             )
             return False, "database_locked"
 
     return False, "database_locked"
-

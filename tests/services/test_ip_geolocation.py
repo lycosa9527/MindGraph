@@ -18,7 +18,7 @@ from services.auth.ip_geolocation import (
     IPGeolocationService,
     IP2REGION_AVAILABLE,
     DB_FILE_PATH_V4,
-    DB_FILE_PATH_V6
+    DB_FILE_PATH_V6,
 )
 
 

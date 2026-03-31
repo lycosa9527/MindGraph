@@ -4,6 +4,7 @@ Verify frontend prompt registry JSON matches utils/prompt_output_languages.py.
 Run from repository root, e.g.:
   python scripts/check_prompt_output_languages_sync.py
 """
+
 from __future__ import annotations
 
 import importlib.util
@@ -76,7 +77,10 @@ def main() -> None:
         py_set = set(py_list)
         print(
             "TypeScript vs Python mismatch:",
-            {"only_in_ts": sorted(ts_set - py_set), "only_in_py": sorted(py_set - ts_set)},
+            {
+                "only_in_ts": sorted(ts_set - py_set),
+                "only_in_py": sorted(py_set - ts_set),
+            },
             file=sys.stderr,
         )
         sys.exit(1)

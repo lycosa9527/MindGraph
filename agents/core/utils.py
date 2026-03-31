@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import json
 import re
 import time
@@ -33,7 +34,7 @@ def create_error_response(message: str, error_type: str = "generation", context:
     error_response = {
         "error": message,
         "error_type": error_type,
-        "timestamp": time.time()
+        "timestamp": time.time(),
     }
 
     if context:
@@ -67,14 +68,14 @@ def _salvage_json_string(raw: str) -> str:
     """Attempt to salvage a JSON object from messy LLM output."""
     if not raw:
         return ""
-    s = raw.strip().strip('`')
+    s = raw.strip().strip("`")
     # Remove code fences if present
-    if s.startswith('```'):
-        fence_end = s.rfind('```')
+    if s.startswith("```"):
+        fence_end = s.rfind("```")
         if fence_end > 3:
             s = s[3:fence_end]
     # Find first '{' and balance braces outside strings
-    start = s.find('{')
+    start = s.find("{")
     if start == -1:
         return ""
     buf = []
@@ -86,25 +87,25 @@ def _salvage_json_string(raw: str) -> str:
         if in_str:
             if esc:
                 esc = False
-            elif ch == '\\':
+            elif ch == "\\":
                 esc = True
             elif ch == '"':
                 in_str = False
             continue
         if ch == '"':
             in_str = True
-        elif ch == '{':
+        elif ch == "{":
             depth += 1
-        elif ch == '}':
+        elif ch == "}":
             depth -= 1
             if depth == 0:
                 break
-    candidate = ''.join(buf)
+    candidate = "".join(buf)
     while depth > 0:
-        candidate += '}'
+        candidate += "}"
         depth -= 1
     # Remove trailing commas before } or ]
-    candidate = re.sub(r',\s*(\]|\})', r'\1', candidate)
+    candidate = re.sub(r",\s*(\]|\})", r"\1", candidate)
     return candidate.strip()
 
 
@@ -118,7 +119,11 @@ def extract_yaml_from_code_block(text: str | None) -> str:
     """
     s = (text or "").strip()
     # Regex-based extraction first
-    match = re.search(r"```(?:json|yaml|yml|javascript|js)?\s*\r?\n([\s\S]*?)\r?\n?```", s, re.IGNORECASE)
+    match = re.search(
+        r"```(?:json|yaml|yml|javascript|js)?\s*\r?\n([\s\S]*?)\r?\n?```",
+        s,
+        re.IGNORECASE,
+    )
     if match:
         return match.group(1).strip()
 
@@ -126,7 +131,7 @@ def extract_yaml_from_code_block(text: str | None) -> str:
     if s.startswith("```"):
         # Drop first line (```lang)
         first_nl = s.find("\n")
-        content = s[first_nl + 1:] if first_nl != -1 else s[3:]
+        content = s[first_nl + 1 :] if first_nl != -1 else s[3:]
         last_fence = content.rfind("```")
         if last_fence != -1:
             content = content[:last_fence]
@@ -139,7 +144,7 @@ def _salvage_truncated_json(text: str) -> str | None:
     """Aggressively salvage truncated JSON by completing incomplete strings and structures."""
     try:
         # Find the last complete relationship entry
-        lines = text.split('\n')
+        lines = text.split("\n")
         salvaged_lines = []
         in_relationships = False
         brace_count = 0
@@ -152,26 +157,28 @@ def _salvage_truncated_json(text: str) -> str | None:
 
             if in_relationships:
                 # Count braces to track structure
-                brace_count += line.count('{') - line.count('}')
+                brace_count += line.count("{") - line.count("}")
 
                 # Check if this line is complete (ends with } or ,)
-                if line.strip().endswith('},') or line.strip().endswith('}'):
+                if line.strip().endswith("},") or line.strip().endswith("}"):
                     salvaged_lines.append(line)
-                elif line.strip().endswith(','):
+                elif line.strip().endswith(","):
                     salvaged_lines.append(line)
                 elif '"from"' in line and '"to"' in line and '"label"' in line:
                     # This looks like a complete relationship, add it
-                    if not line.strip().endswith(','):
-                        line = line.rstrip() + ','
+                    if not line.strip().endswith(","):
+                        line = line.rstrip() + ","
                     salvaged_lines.append(line)
-                elif (line.strip().startswith('"from"') or
-                      line.strip().startswith('"to"') or
-                      line.strip().startswith('"label"')):
+                elif (
+                    line.strip().startswith('"from"')
+                    or line.strip().startswith('"to"')
+                    or line.strip().startswith('"label"')
+                ):
                     # This is part of a relationship, try to complete it
                     if '"from"' in line and '"to"' in line and '"label"' in line:
                         # Looks complete, add comma if needed
-                        if not line.strip().endswith(','):
-                            line = line.rstrip() + ','
+                        if not line.strip().endswith(","):
+                            line = line.rstrip() + ","
                         salvaged_lines.append(line)
                     else:
                         # Incomplete, skip this line
@@ -184,14 +191,14 @@ def _salvage_truncated_json(text: str) -> str | None:
         # Close the relationships array and main object
         if in_relationships:
             # Remove trailing comma from last relationship
-            if salvaged_lines and salvaged_lines[-1].strip().endswith(','):
-                salvaged_lines[-1] = salvaged_lines[-1].rstrip(',')
+            if salvaged_lines and salvaged_lines[-1].strip().endswith(","):
+                salvaged_lines[-1] = salvaged_lines[-1].rstrip(",")
 
             # Add closing brackets
-            salvaged_lines.append('  ]')
-            salvaged_lines.append('}')
+            salvaged_lines.append("  ]")
+            salvaged_lines.append("}")
 
-        salvaged_text = '\n'.join(salvaged_lines)
+        salvaged_text = "\n".join(salvaged_lines)
 
         # Validate the salvaged JSON
         json.loads(salvaged_text)
@@ -208,9 +215,9 @@ def _parse_strict_json(text: str) -> dict:
     if not cleaned:
         raise ValueError("Failed to extract content from text")
     # Normalize unicode quotes and remove non-JSON noise
-    cleaned = cleaned.strip().strip('`')
+    cleaned = cleaned.strip().strip("`")
     # Replace smart quotes with ASCII equivalents
-    cleaned = cleaned.replace('\u201c', '"').replace('\u201d', '"').replace('\u2018', "'").replace('\u2019', "'")
+    cleaned = cleaned.replace("\u201c", '"').replace("\u201d", '"').replace("\u2018", "'").replace("\u2019", "'")
     cleaned = cleaned.replace('"', '"').replace('"', '"').replace('"', '"').replace('"', '"')
     # Remove zero-width and control characters
     cleaned = re.sub(r"[\u200B-\u200D\uFEFF]", "", cleaned)

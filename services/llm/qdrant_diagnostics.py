@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict
 import logging
 import random
@@ -40,21 +41,13 @@ def _build_compression_metrics(
     """Build metrics dict from collection stats and compression settings."""
     bytes_per_vector_uncompressed = vector_size * 4
     metadata_overhead = 200
-    estimated_uncompressed = points_count * (
-        bytes_per_vector_uncompressed + metadata_overhead
-    )
+    estimated_uncompressed = points_count * (bytes_per_vector_uncompressed + metadata_overhead)
     if compression_enabled:
         bytes_per_vector_compressed = vector_size * 1
-        estimated_compressed = points_count * (
-            bytes_per_vector_compressed + metadata_overhead
-        )
-        compression_ratio = (
-            estimated_uncompressed / estimated_compressed
-            if estimated_compressed > 0 else 1.0
-        )
+        estimated_compressed = points_count * (bytes_per_vector_compressed + metadata_overhead)
+        compression_ratio = estimated_uncompressed / estimated_compressed if estimated_compressed > 0 else 1.0
         storage_savings = (
-            (1.0 - (estimated_compressed / estimated_uncompressed)) * 100
-            if estimated_uncompressed > 0 else 0.0
+            (1.0 - (estimated_compressed / estimated_uncompressed)) * 100 if estimated_uncompressed > 0 else 0.0
         )
     else:
         estimated_compressed = estimated_uncompressed
@@ -114,10 +107,7 @@ class QdrantDiagnosticsMixin:
                 compression_type,
             )
         except Exception as e:
-            logger.error(
-                "[Qdrant] Failed to get compression metrics for user %s: %s",
-                user_id, e
-            )
+            logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, e)
             return _empty_compression_metrics(str(e))
 
     def get_diagnostics(self, user_id: int) -> Dict[str, Any]:
@@ -140,15 +130,13 @@ class QdrantDiagnosticsMixin:
             "vector_dimensions": None,
             "sample_points": [],
             "payload_keys": set(),
-            "errors": []
+            "errors": [],
         }
 
         try:
             collection_name = self.get_user_collection(user_id)
             if not collection_name:
-                result["errors"].append(
-                    f"Collection does not exist for user {user_id}"
-                )
+                result["errors"].append(f"Collection does not exist for user {user_id}")
                 return result
 
             result["collection_exists"] = True
@@ -158,10 +146,10 @@ class QdrantDiagnosticsMixin:
                 result["points_count"] = info.points_count
                 if info.config and info.config.params and info.config.params.vectors:
                     vectors_config = info.config.params.vectors
-                    if hasattr(vectors_config, 'size'):
+                    if hasattr(vectors_config, "size"):
                         result["vector_dimensions"] = vectors_config.size
-                    elif isinstance(vectors_config, dict) and '' in vectors_config:
-                        result["vector_dimensions"] = vectors_config[''].size
+                    elif isinstance(vectors_config, dict) and "" in vectors_config:
+                        result["vector_dimensions"] = vectors_config[""].size
             except Exception as e:
                 result["errors"].append(f"Failed to get collection info: {e}")
 
@@ -170,15 +158,12 @@ class QdrantDiagnosticsMixin:
                     collection_name=collection_name,
                     limit=5,
                     with_payload=True,
-                    with_vectors=False
+                    with_vectors=False,
                 )
 
                 points = scroll_result[0] if scroll_result else []
                 for point in points:
-                    point_info = {
-                        "id": point.id,
-                        "payload": point.payload
-                    }
+                    point_info = {"id": point.id, "payload": point.payload}
                     result["sample_points"].append(point_info)
 
                     if point.payload:
@@ -191,14 +176,12 @@ class QdrantDiagnosticsMixin:
 
             if result["vector_dimensions"]:
                 try:
-                    test_vector = [
-                        random.random() for _ in range(result["vector_dimensions"])
-                    ]
+                    test_vector = [random.random() for _ in range(result["vector_dimensions"])]
                     test_results = self.client.query_points(
                         collection_name=collection_name,
                         query=test_vector,
                         limit=1,
-                        with_payload=True
+                        with_payload=True,
                     ).points
                     result["test_search_returned"] = len(test_results)
                 except Exception as e:

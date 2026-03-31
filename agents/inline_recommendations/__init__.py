@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from agents.inline_recommendations.cleanup import start_inline_rec_cleanup_scheduler
 from agents.inline_recommendations.generator import (
     get_inline_recommendations_generator,
@@ -15,7 +16,7 @@ from agents.inline_recommendations.generator import (
 )
 
 __all__ = [
-    'get_inline_recommendations_generator',
-    'InlineRecommendationsGenerator',
-    'start_inline_rec_cleanup_scheduler',
+    "get_inline_recommendations_generator",
+    "InlineRecommendationsGenerator",
+    "start_inline_rec_cleanup_scheduler",
 ]

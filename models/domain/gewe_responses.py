@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, Field
@@ -16,16 +17,17 @@ from pydantic import BaseModel, Field
 
 class GeweBaseResponse(BaseModel):
     """Base response model for all Gewe API responses."""
+
     ret: int = Field(..., description="Return code (200 = success)")
     msg: str = Field(..., description="Response message")
     data: Optional[Union[Dict[str, Any], List[Any], str, int, bool]] = Field(
-        None,
-        description="Response data (can be dict, list, or primitive)"
+        None, description="Response data (can be dict, list, or primitive)"
     )
 
 
 class GeweLoginQrCodeData(BaseModel):
     """Login QR code response data."""
+
     qr_img_base64: str = Field(..., alias="qrImgBase64", description="QR code image in base64")
     uuid: str = Field(..., description="UUID for checking login status")
     app_id: Optional[str] = Field(None, alias="appId", description="Device ID")
@@ -33,11 +35,13 @@ class GeweLoginQrCodeData(BaseModel):
 
 class GeweLoginQrCodeResponse(GeweBaseResponse):
     """Response model for get login QR code endpoint."""
+
     data: Optional[GeweLoginQrCodeData] = None
 
 
 class GeweLoginStatusData(BaseModel):
     """Login status check response data."""
+
     status: Optional[int] = Field(None, description="Login status (0: waiting, 1: scanning, 2: success)")
     uuid: Optional[str] = Field(None, description="QR code UUID")
     expired_time: Optional[int] = Field(None, alias="expiredTime", description="QR code expiry seconds")
@@ -50,11 +54,13 @@ class GeweLoginStatusData(BaseModel):
 
 class GeweLoginStatusResponse(GeweBaseResponse):
     """Response model for check login endpoint."""
+
     data: Optional[GeweLoginStatusData] = None
 
 
 class GeweMessageSendData(BaseModel):
     """Message send response data."""
+
     to_wxid: str = Field(..., alias="toWxid", description="Recipient wxid")
     create_time: Optional[int] = Field(None, alias="createTime", description="Message creation timestamp")
     msg_id: Optional[int] = Field(None, alias="msgId", description="Message ID")
@@ -67,11 +73,13 @@ class GeweMessageSendData(BaseModel):
 
 class GeweMessageSendResponse(GeweBaseResponse):
     """Response model for send message endpoints."""
+
     data: Optional[GeweMessageSendData] = None
 
 
 class GeweContactInfo(BaseModel):
     """Contact information model."""
+
     wxid: str = Field(..., description="Contact wxid")
     nickname: Optional[str] = Field(None, description="Nickname")
     remark: Optional[str] = Field(None, description="Remark name")
@@ -87,21 +95,25 @@ class GeweContactInfo(BaseModel):
 
 class GeweContactListResponse(GeweBaseResponse):
     """Response model for get contacts list endpoint."""
+
     data: Optional[List[GeweContactInfo]] = None
 
 
 class GeweContactInfoResponse(GeweBaseResponse):
     """Response model for get contact info endpoint."""
+
     data: Optional[Union[GeweContactInfo, List[GeweContactInfo]]] = None
 
 
 class GeweCheckOnlineData(BaseModel):
     """Check online response data."""
+
     online: bool = Field(..., description="True if online, False if offline")
 
 
 class GeweCheckOnlineResponse(GeweBaseResponse):
     """Response model for check online endpoint."""
+
     data: Optional[Union[bool, GeweCheckOnlineData]] = None
 
 
@@ -123,6 +135,7 @@ class GeweDialogLoginResponse(GeweBaseResponse):
 
 class GeweAccountLoginData(BaseModel):
     """Account login response data."""
+
     app_id: Optional[str] = Field(None, alias="appId", description="Device ID")
     qr_img_base64: Optional[str] = Field(None, alias="qrImgBase64", description="QR code image in base64")
     uuid: Optional[str] = Field(None, description="UUID for checking login status")
@@ -130,23 +143,27 @@ class GeweAccountLoginData(BaseModel):
 
 class GeweAccountLoginResponse(GeweBaseResponse):
     """Response model for account password login endpoint."""
+
     data: Optional[GeweAccountLoginData] = None
 
 
 # Webhook message models
 class GeweWebhookStringField(BaseModel):
     """String field wrapper in webhook messages."""
+
     string: str
 
 
 class GeweWebhookImgBuf(BaseModel):
     """Image buffer in webhook messages."""
+
     i_len: int = Field(0, alias="iLen")
     buffer: Optional[str] = None
 
 
 class GeweWebhookMessageData(BaseModel):
     """Webhook message data structure."""
+
     msg_id: Optional[int] = Field(None, alias="MsgId")
     from_user_name: Optional[GeweWebhookStringField] = Field(None, alias="FromUserName")
     to_user_name: Optional[GeweWebhookStringField] = Field(None, alias="ToUserName")
@@ -166,6 +183,7 @@ class GeweWebhookMessageData(BaseModel):
 
 class GeweWebhookMessage(BaseModel):
     """Webhook message structure from Gewe."""
+
     type_name: str = Field(..., alias="TypeName", description="Message type (AddMsg, ModContacts, etc.)")
     appid: str = Field(..., alias="Appid", description="Device ID")
     wxid: str = Field(..., alias="Wxid", description="WeChat ID")
@@ -177,6 +195,7 @@ class GeweWebhookMessage(BaseModel):
 # Group-related response models
 class GeweGroupInfo(BaseModel):
     """Group information model."""
+
     wxid: str = Field(..., description="Group wxid")
     nickname: Optional[str] = Field(None, description="Group nickname")
     member_count: Optional[int] = Field(None, alias="memberCount", description="Member count")
@@ -187,16 +206,19 @@ class GeweGroupInfo(BaseModel):
 
 class GeweGroupListResponse(GeweBaseResponse):
     """Response model for get group list endpoint."""
+
     data: Optional[List[GeweGroupInfo]] = None
 
 
 class GeweGroupInfoResponse(GeweBaseResponse):
     """Response model for get group info endpoint."""
+
     data: Optional[GeweGroupInfo] = None
 
 
 class GeweGroupMemberInfo(BaseModel):
     """Group member information model."""
+
     wxid: str = Field(..., description="Member wxid")
     nickname: Optional[str] = Field(None, description="Nickname")
     display_name: Optional[str] = Field(None, alias="displayName", description="Display name in group")
@@ -207,6 +229,7 @@ class GeweGroupMemberInfo(BaseModel):
 
 class GeweGroupMemberListResponse(GeweBaseResponse):
     """Response model for get group member list endpoint."""
+
     data: Optional[List[GeweGroupMemberInfo]] = None
 
 
@@ -226,5 +249,5 @@ GeweResponse = Union[
     GeweGroupListResponse,
     GeweGroupInfoResponse,
     GeweGroupMemberListResponse,
-    GeweBaseResponse
+    GeweBaseResponse,
 ]

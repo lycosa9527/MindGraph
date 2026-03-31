@@ -54,6 +54,7 @@ CACHE_LOADER_LOCK_TTL = 300  # 5 minutes - enough for cache loading, auto-releas
 
 class _LockIdManager:
     """Manages the worker lock ID to avoid global variables."""
+
     _lock_id: Optional[str] = None
 
     @classmethod
@@ -119,7 +120,7 @@ def acquire_cache_loader_lock() -> bool:
             CACHE_LOADER_LOCK_KEY,
             worker_lock_id,
             nx=True,  # Only set if not exists
-            ex=CACHE_LOADER_LOCK_TTL  # TTL in seconds
+            ex=CACHE_LOADER_LOCK_TTL,  # TTL in seconds
         )
 
         if acquired:
@@ -129,9 +130,8 @@ def acquire_cache_loader_lock() -> bool:
             # Lock held by another worker - check who
             holder = redis.get(CACHE_LOADER_LOCK_KEY)
             logger.debug(
-                "[CacheLoader] Another worker holds the cache loader lock "
-                "(holder=%s), skipping cache load",
-                holder
+                "[CacheLoader] Another worker holds the cache loader lock (holder=%s), skipping cache load",
+                holder,
             )
             return False  # Return False to indicate lock not acquired
 
@@ -169,9 +169,8 @@ def release_cache_loader_lock() -> bool:
 
         current_holder = redis_client.get(CACHE_LOADER_LOCK_KEY)
         logger.debug(
-            "[CacheLoader] Lock not released (not held by us or already released). "
-            "Current holder: %s",
-            current_holder
+            "[CacheLoader] Lock not released (not held by us or already released). Current holder: %s",
+            current_holder,
         )
         return False
 
@@ -212,7 +211,7 @@ def load_all_users_to_cache() -> Tuple[int, int]:
                         "[CacheLoader] Cached user %d/%d: ID %s",
                         success_count,
                         total_count,
-                        user.id
+                        user.id,
                     )
             except Exception as e:
                 error_count += 1
@@ -220,15 +219,11 @@ def load_all_users_to_cache() -> Tuple[int, int]:
                     "[CacheLoader] Failed to cache user ID %s: %s",
                     user.id,
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
                 # Continue loading other users
 
-        logger.info(
-            "[CacheLoader] Loaded %d/%d users into cache",
-            success_count,
-            total_count
-        )
+        logger.info("[CacheLoader] Loaded %d/%d users into cache", success_count, total_count)
         if error_count > 0:
             logger.warning("[CacheLoader] %d users failed to cache", error_count)
 
@@ -274,14 +269,14 @@ def load_all_orgs_to_cache() -> Tuple[int, int]:
                     "[CacheLoader] Failed to cache org ID %s: %s",
                     org.id,
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
                 # Continue loading other orgs
 
         logger.info(
             "[CacheLoader] Loaded %d/%d organizations into cache",
             success_count,
-            total_count
+            total_count,
         )
         if error_count > 0:
             logger.warning("[CacheLoader] %d organizations failed to cache", error_count)
@@ -292,7 +287,7 @@ def load_all_orgs_to_cache() -> Tuple[int, int]:
         logger.error(
             "[CacheLoader] Failed to load organizations from database: %s",
             e,
-            exc_info=True
+            exc_info=True,
         )
         return 0, 0
     finally:
@@ -347,7 +342,7 @@ def reload_cache_from_database() -> bool:
             "[CacheLoader] Cache reload completed: %d users, %d orgs in %.2fs",
             user_success,
             org_success,
-            elapsed_time
+            elapsed_time,
         )
 
         # Return True if at least some data was loaded successfully
@@ -359,7 +354,7 @@ def reload_cache_from_database() -> bool:
             "[CacheLoader] Cache reload failed after %.2fs: %s",
             elapsed_time,
             e,
-            exc_info=True
+            exc_info=True,
         )
         return False
     finally:

@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from clients.gewe.base import AsyncGeweClient, GeweAPIError
 
-__all__ = ['AsyncGeweClient', 'GeweAPIError']
+from .base import AsyncGeweClient, GeweAPIError
+
+__all__ = ["AsyncGeweClient", "GeweAPIError"]

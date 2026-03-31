@@ -13,6 +13,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 # JSON parsing functions
 from .json_parser import (
     extract_json_from_response,
@@ -38,13 +39,13 @@ from .topic_extraction_utils import (
 
 __all__ = [
     # JSON parsing
-    'extract_json_from_response',
+    "extract_json_from_response",
     # Characteristics generation
-    'generate_characteristics_with_agent',
-    'parse_characteristics_result',
-    'generate_characteristics_fallback',
+    "generate_characteristics_with_agent",
+    "parse_characteristics_result",
+    "generate_characteristics_fallback",
     # Topic extraction
-    'extract_topics_with_agent',
-    'parse_topic_extraction_result',
-    'extract_topics_from_prompt',
+    "extract_topics_with_agent",
+    "parse_topic_extraction_result",
+    "extract_topics_from_prompt",
 ]

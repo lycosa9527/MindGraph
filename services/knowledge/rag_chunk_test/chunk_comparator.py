@@ -11,42 +11,49 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional
 import logging
 import time
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 try:
     from clients.dashscope_embedding import get_embedding_client
+
     HAS_EMBEDDING = True
 except ImportError:
     HAS_EMBEDDING = False
 
 try:
     import spacy
+
     HAS_SPACY = True
 except ImportError:
     HAS_SPACY = False
 
 try:
     from chonkie import TokenChunker
+
     HAS_CHONKIE = True
 except ImportError:
     HAS_CHONKIE = False
 
 try:
     from langchain_text_splitters import RecursiveCharacterTextSplitter
+
     HAS_LANGCHAIN = True
 except ImportError:
     HAS_LANGCHAIN = False
 
 try:
     from llm_chunking.chunker import LLMSemanticChunker
+
     HAS_LLM_CHUNKING = True
 except ImportError:
     HAS_LLM_CHUNKING = False
@@ -54,9 +61,7 @@ except ImportError:
 
 import tiktoken
 
-from services.knowledge.chunking_service import (
-    Chunk
-)
+from services.knowledge.chunking_service import Chunk
 from services.knowledge.rag_chunk_test.qa_generator import QAGenerator
 
 
@@ -73,10 +78,7 @@ class ChunkComparator:
         self._spacy_model = None  # Lazy-loaded spaCy model
 
     def chunk_with_method(
-        self,
-        text: str,
-        method: str,
-        metadata: Optional[Dict[str, Any]] = None
+        self, text: str, method: str, metadata: Optional[Dict[str, Any]] = None
     ) -> tuple[List[Chunk], float]:
         """
         Chunk text using specified method.
@@ -104,7 +106,7 @@ class ChunkComparator:
                 "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
                 method,
                 len(qa_chunks),
-                chunking_time
+                chunking_time,
             )
             return qa_chunks, chunking_time
 
@@ -151,13 +153,15 @@ class ChunkComparator:
                     chunk_start = text.find(chunk_text, current_pos)
                     chunk_end = chunk_start + len(chunk_text)
 
-                    chunks.append(Chunk(
-                        text=chunk_text.strip(),
-                        start_char=chunk_start,
-                        end_char=chunk_end,
-                        chunk_index=chunk_index,
-                        metadata=dict(metadata or {})
-                    ))
+                    chunks.append(
+                        Chunk(
+                            text=chunk_text.strip(),
+                            start_char=chunk_start,
+                            end_char=chunk_end,
+                            chunk_index=chunk_index,
+                            metadata=dict(metadata or {}),
+                        )
+                    )
                     chunk_index += 1
                     current_pos = chunk_end
 
@@ -179,20 +183,22 @@ class ChunkComparator:
                 chunk_start = text.find(chunk_text, current_pos)
                 chunk_end = chunk_start + len(chunk_text)
 
-                chunks.append(Chunk(
-                    text=chunk_text.strip(),
-                    start_char=chunk_start,
-                    end_char=chunk_end,
-                    chunk_index=chunk_index,
-                    metadata=dict(metadata or {})
-                ))
+                chunks.append(
+                    Chunk(
+                        text=chunk_text.strip(),
+                        start_char=chunk_start,
+                        end_char=chunk_end,
+                        chunk_index=chunk_index,
+                        metadata=dict(metadata or {}),
+                    )
+                )
 
             chunking_time = (time.time() - start_time) * 1000
             logger.debug(
                 "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
                 method,
                 len(chunks),
-                chunking_time
+                chunking_time,
             )
             return chunks, chunking_time
 
@@ -212,7 +218,7 @@ class ChunkComparator:
             chunker = TokenChunker(
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                token_counter=chonkie_token_counter
+                token_counter=chonkie_token_counter,
             )
 
             # Chunk the text
@@ -229,20 +235,22 @@ class ChunkComparator:
                 chunk_end = chunk_start + len(chunk_text)
                 current_pos = chunk_end
 
-                chunks.append(Chunk(
-                    text=chunk_text.strip(),
-                    start_char=chunk_start,
-                    end_char=chunk_end,
-                    chunk_index=i,
-                    metadata=dict(metadata or {})
-                ))
+                chunks.append(
+                    Chunk(
+                        text=chunk_text.strip(),
+                        start_char=chunk_start,
+                        end_char=chunk_end,
+                        chunk_index=i,
+                        metadata=dict(metadata or {}),
+                    )
+                )
 
             chunking_time = (time.time() - start_time) * 1000
             logger.debug(
                 "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
                 method,
                 len(chunks),
-                chunking_time
+                chunking_time,
             )
             return chunks, chunking_time
 
@@ -258,7 +266,7 @@ class ChunkComparator:
             splitter = RecursiveCharacterTextSplitter.from_tiktoken_encoder(
                 encoding_name="cl100k_base",
                 chunk_size=chunk_size,
-                chunk_overlap=chunk_overlap
+                chunk_overlap=chunk_overlap,
             )
 
             # Split text into LangChain Document objects
@@ -276,23 +284,22 @@ class ChunkComparator:
                 chunk_end = chunk_start + len(chunk_text)
                 current_pos = chunk_end
 
-                chunks.append(Chunk(
-                    text=chunk_text.strip(),
-                    start_char=chunk_start,
-                    end_char=chunk_end,
-                    chunk_index=i,
-                    metadata={
-                        **(metadata or {}),
-                        **(doc.metadata or {})
-                    }
-                ))
+                chunks.append(
+                    Chunk(
+                        text=chunk_text.strip(),
+                        start_char=chunk_start,
+                        end_char=chunk_end,
+                        chunk_index=i,
+                        metadata={**(metadata or {}), **(doc.metadata or {})},
+                    )
+                )
 
             chunking_time = (time.time() - start_time) * 1000
             logger.debug(
                 "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
                 method,
                 len(chunks),
-                chunking_time
+                chunking_time,
             )
             return chunks, chunking_time
 
@@ -301,17 +308,17 @@ class ChunkComparator:
         if method == "semchunk":
             # Create semchunk service instance directly (thread-safe)
             from services.knowledge.chunking_service import ChunkingService
+
             service = ChunkingService(mode="automatic")
         elif method == "mindchunk":
             # Create mindchunk service instance directly (thread-safe)
             # Need to create LLMSemanticChunker first, then wrap it
             if not HAS_LLM_CHUNKING:
                 raise ValueError(
-                    "MindChunk chunking requires llm_chunking library. "
-                    "Install with: pip install llm-chunking"
+                    "MindChunk chunking requires llm_chunking library. Install with: pip install llm-chunking"
                 )
             from services.knowledge.chunking_service import MindChunkAdapter
-            from llm_chunking.chunker import LLMSemanticChunker
+
             chunker = LLMSemanticChunker()
             service = MindChunkAdapter(chunker)
         else:
@@ -328,16 +335,12 @@ class ChunkComparator:
             "[ChunkComparator] Chunked with %s: %s chunks in %.2fms",
             method,
             len(chunks),
-            chunking_time
+            chunking_time,
         )
 
         return chunks, chunking_time
 
-    def compare_chunk_stats(
-        self,
-        chunks_semchunk: List[Chunk],
-        chunks_mindchunk: List[Chunk]
-    ) -> Dict[str, Any]:
+    def compare_chunk_stats(self, chunks_semchunk: List[Chunk], chunks_mindchunk: List[Chunk]) -> Dict[str, Any]:
         """
         Compare chunk statistics between two methods.
 
@@ -351,30 +354,23 @@ class ChunkComparator:
         stats = {
             "semchunk": self.calculate_chunk_stats(chunks_semchunk),
             "mindchunk": self.calculate_chunk_stats(chunks_mindchunk),
-            "comparison": {}
+            "comparison": {},
         }
 
         # Compare counts
-        stats["comparison"]["chunk_count_diff"] = (
-            len(chunks_mindchunk) - len(chunks_semchunk)
-        )
+        stats["comparison"]["chunk_count_diff"] = len(chunks_mindchunk) - len(chunks_semchunk)
         stats["comparison"]["chunk_count_ratio"] = (
-            len(chunks_mindchunk) / len(chunks_semchunk)
-            if len(chunks_semchunk) > 0 else 0
+            len(chunks_mindchunk) / len(chunks_semchunk) if len(chunks_semchunk) > 0 else 0
         )
 
         # Compare sizes
-        stats["comparison"]["avg_size_diff"] = (
-            stats["mindchunk"]["avg_chars"] - stats["semchunk"]["avg_chars"]
-        )
-        stats["comparison"]["total_chars_diff"] = (
-            stats["mindchunk"]["total_chars"] - stats["semchunk"]["total_chars"]
-        )
+        stats["comparison"]["avg_size_diff"] = stats["mindchunk"]["avg_chars"] - stats["semchunk"]["avg_chars"]
+        stats["comparison"]["total_chars_diff"] = stats["mindchunk"]["total_chars"] - stats["semchunk"]["total_chars"]
 
         # Size distribution comparison
         stats["comparison"]["size_distribution"] = {
             "semchunk": stats["semchunk"]["size_distribution"],
-            "mindchunk": stats["mindchunk"]["size_distribution"]
+            "mindchunk": stats["mindchunk"]["size_distribution"],
         }
 
         return stats
@@ -396,7 +392,7 @@ class ChunkComparator:
                 "avg_chars": 0,
                 "min_chars": 0,
                 "max_chars": 0,
-                "size_distribution": {}
+                "size_distribution": {},
             }
 
         char_lengths = [len(chunk.text) for chunk in chunks]
@@ -405,11 +401,11 @@ class ChunkComparator:
 
         # Size distribution (buckets)
         size_buckets = {
-            "tiny": 0,      # < 100 chars
-            "small": 0,     # 100-500 chars
-            "medium": 0,    # 500-1000 chars
-            "large": 0,     # 1000-2000 chars
-            "xlarge": 0     # > 2000 chars
+            "tiny": 0,  # < 100 chars
+            "small": 0,  # 100-500 chars
+            "medium": 0,  # 500-1000 chars
+            "large": 0,  # 1000-2000 chars
+            "xlarge": 0,  # > 2000 chars
         }
 
         for length in char_lengths:
@@ -430,15 +426,11 @@ class ChunkComparator:
             "avg_chars": round(avg_chars, 2),
             "min_chars": min(char_lengths) if char_lengths else 0,
             "max_chars": max(char_lengths) if char_lengths else 0,
-            "size_distribution": size_buckets
+            "size_distribution": size_buckets,
         }
 
     def compare_two_modes(
-        self,
-        chunks_a: List[Chunk],
-        chunks_b: List[Chunk],
-        mode_a: str,
-        mode_b: str
+        self, chunks_a: List[Chunk], chunks_b: List[Chunk], mode_a: str, mode_b: str
     ) -> Dict[str, Any]:
         """
         Compare two chunking modes.
@@ -457,23 +449,16 @@ class ChunkComparator:
 
         return {
             "chunk_count_diff": len(chunks_b) - len(chunks_a),
-            "chunk_count_ratio": (
-                len(chunks_b) / len(chunks_a)
-                if len(chunks_a) > 0 else 0
-            ),
+            "chunk_count_ratio": (len(chunks_b) / len(chunks_a) if len(chunks_a) > 0 else 0),
             "avg_size_diff": stats_b["avg_chars"] - stats_a["avg_chars"],
             "total_chars_diff": stats_b["total_chars"] - stats_a["total_chars"],
             "size_distribution": {
                 mode_a: stats_a["size_distribution"],
-                mode_b: stats_b["size_distribution"]
-            }
+                mode_b: stats_b["size_distribution"],
+            },
         }
 
-    def calculate_coverage_score(
-        self,
-        retrieved_chunks: List[Chunk],
-        document_text: str
-    ) -> float:
+    def calculate_coverage_score(self, retrieved_chunks: List[Chunk], document_text: str) -> float:
         """
         Calculate coverage score: percentage of document covered by retrieved chunks.
 
@@ -498,10 +483,7 @@ class ChunkComparator:
 
         return min(total_chars_in_chunks / total_doc_chars, 1.0)
 
-    def calculate_chunk_coherence(
-        self,
-        chunks: List[Chunk]
-    ) -> float:
+    def calculate_chunk_coherence(self, chunks: List[Chunk]) -> float:
         """
         Calculate semantic coherence of chunks using embeddings.
 
@@ -515,9 +497,7 @@ class ChunkComparator:
             return 1.0
 
         if not HAS_EMBEDDING or not HAS_NUMPY:
-            logger.warning(
-                "[ChunkComparator] Embedding client or numpy not available for coherence calculation"
-            )
+            logger.warning("[ChunkComparator] Embedding client or numpy not available for coherence calculation")
             return 0.0
 
         try:
@@ -528,9 +508,7 @@ class ChunkComparator:
             embeddings = embedding_client.embed_texts(texts)
 
             if len(embeddings) != len(chunks):
-                logger.warning(
-                    "[ChunkComparator] Embedding count mismatch for coherence calculation"
-                )
+                logger.warning("[ChunkComparator] Embedding count mismatch for coherence calculation")
                 return 0.0
 
             # Calculate pairwise cosine similarity within each chunk
@@ -556,17 +534,10 @@ class ChunkComparator:
             return float(np.mean(similarities))
 
         except Exception as e:
-            logger.warning(
-                "[ChunkComparator] Failed to calculate coherence: %s",
-                e
-            )
+            logger.warning("[ChunkComparator] Failed to calculate coherence: %s", e)
             return 0.0
 
-    def calculate_chunk_overlap(
-        self,
-        chunks_a: List[Chunk],
-        chunks_b: List[Chunk]
-    ) -> Dict[str, float]:
+    def calculate_chunk_overlap(self, chunks_a: List[Chunk], chunks_b: List[Chunk]) -> Dict[str, float]:
         """
         Calculate character-level overlap between chunks from two methods.
 
@@ -578,11 +549,7 @@ class ChunkComparator:
             Dictionary with overlap_ratio, unique_chars_a, unique_chars_b
         """
         if not chunks_a and not chunks_b:
-            return {
-                "overlap_ratio": 0.0,
-                "unique_chars_a": 0.0,
-                "unique_chars_b": 0.0
-            }
+            return {"overlap_ratio": 0.0, "unique_chars_a": 0.0, "unique_chars_b": 0.0}
 
         # Get all unique characters from each method
         chars_a = set()
@@ -608,14 +575,10 @@ class ChunkComparator:
         return {
             "overlap_ratio": overlap_ratio,
             "unique_chars_a": float(unique_chars_a),
-            "unique_chars_b": float(unique_chars_b)
+            "unique_chars_b": float(unique_chars_b),
         }
 
-    def calculate_boundary_quality(
-        self,
-        chunks: List[Chunk],
-        _document_text: str
-    ) -> float:
+    def calculate_boundary_quality(self, chunks: List[Chunk], _document_text: str) -> float:
         """
         Calculate boundary quality: how well chunk boundaries align with semantic breaks.
 
@@ -632,9 +595,7 @@ class ChunkComparator:
             return 1.0
 
         if not HAS_EMBEDDING or not HAS_NUMPY:
-            logger.warning(
-                "[ChunkComparator] Embedding client or numpy not available for boundary quality"
-            )
+            logger.warning("[ChunkComparator] Embedding client or numpy not available for boundary quality")
             return 0.0
 
         try:
@@ -645,9 +606,7 @@ class ChunkComparator:
             embeddings = embedding_client.embed_texts(texts)
 
             if len(embeddings) != len(chunks):
-                logger.warning(
-                    "[ChunkComparator] Embedding count mismatch for boundary quality"
-                )
+                logger.warning("[ChunkComparator] Embedding count mismatch for boundary quality")
                 return 0.0
 
             # Calculate similarity at boundaries (adjacent chunks)
@@ -675,8 +634,5 @@ class ChunkComparator:
             return quality_score
 
         except Exception as e:
-            logger.warning(
-                "[ChunkComparator] Failed to calculate boundary quality: %s",
-                e
-            )
+            logger.warning("[ChunkComparator] Failed to calculate boundary quality: %s", e)
             return 0.0

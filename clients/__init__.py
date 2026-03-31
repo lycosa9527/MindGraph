@@ -11,12 +11,17 @@ Proprietary License
 """
 
 from .dify import AsyncDifyClient
-from .llm import qwen_client_generation, qwen_client_classification, deepseek_client, kimi_client
+from .llm import (
+    qwen_client_generation,
+    qwen_client_classification,
+    deepseek_client,
+    kimi_client,
+)
 
 __all__ = [
-    'AsyncDifyClient',
-    'qwen_client_generation',
-    'qwen_client_classification',
-    'deepseek_client',
-    'kimi_client',
+    "AsyncDifyClient",
+    "qwen_client_generation",
+    "qwen_client_classification",
+    "deepseek_client",
+    "kimi_client",
 ]

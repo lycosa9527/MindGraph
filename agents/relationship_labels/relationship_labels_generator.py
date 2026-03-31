@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import asyncio
 import logging
 import re
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 class _GeneratorHolder:
     """Holds singleton instance to avoid global mutable state."""
 
-    instance: Optional['RelationshipLabelsGenerator'] = None
+    instance: Optional["RelationshipLabelsGenerator"] = None
 
 
 def _strip_parenthetical(text: str) -> str:
@@ -54,9 +55,7 @@ def _get_direction_instruction(link_direction: str | None, language: str) -> str
                 "该连线有箭头，从概念B指向概念A。请生成 3–5 个不同的动词/短语，描述 B 如何导致、引导或指向 A。"
                 "类型宜多样。"
             ),
-            "both": (
-                "该连线两端均有箭头（双向）。请生成 3–5 个不同的动词/短语，描述 A 与 B 如何相互关联或影响。"
-            ),
+            "both": ("该连线两端均有箭头（双向）。请生成 3–5 个不同的动词/短语，描述 A 与 B 如何相互关联或影响。"),
             "none": (
                 "该连线无箭头。这两个概念是平行或对称相关的。"
                 "请生成 3–5 个不同的标签（对称、非方向性），可以是名词、形容词或短语。"
@@ -99,7 +98,7 @@ class RelationshipLabelsGenerator:
 
     def __init__(self) -> None:
         self.llm_service = llm_service
-        self.llm_models = ['qwen', 'deepseek', 'doubao']
+        self.llm_models = ["qwen", "deepseek", "doubao"]
         self.seen_labels: Dict[str, Set[str]] = {}
         self.generated_labels: Dict[str, list] = {}
         self.batch_counts: Dict[str, int] = {}
@@ -119,11 +118,7 @@ class RelationshipLabelsGenerator:
         if language == "zh":
             topic_context = f"主题是：{topic}" if topic else "此图尚未设置主主题。"
         else:
-            topic_context = (
-                f"The topic is about: {topic}"
-                if topic
-                else "No main topic has been set for this map."
-            )
+            topic_context = f"The topic is about: {topic}" if topic else "No main topic has been set for this map."
         direction_instruction = _get_direction_instruction(link_direction, language)
         prompt_key = f"concept_map_relationship_only_{language}"
         template = CONCEPT_MAP_PROMPTS.get(prompt_key)
@@ -168,30 +163,28 @@ class RelationshipLabelsGenerator:
     def _normalize_label(self, text: str) -> str:
         """Normalize label for deduplication."""
         text = text.lower()
-        text = re.sub(r'[^\w\s]', '', text)
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"[^\w\s]", "", text)
+        text = re.sub(r"\s+", " ", text).strip()
         return text
 
-    def _deduplicate_label(
-        self, label: str, session_id: str
-    ) -> Tuple[bool, str, float]:
+    def _deduplicate_label(self, label: str, session_id: str) -> Tuple[bool, str, float]:
         """Check if label is unique. Returns (is_unique, match_type, similarity)."""
         normalized = self._normalize_label(label)
         if session_id not in self.seen_labels:
             self.seen_labels[session_id] = set()
         seen = self.seen_labels[session_id]
         if normalized in seen:
-            return (False, 'exact', 1.0)
+            return (False, "exact", 1.0)
         for seen_text in seen:
             similarity = SequenceMatcher(None, normalized, seen_text).ratio()
             if similarity > 0.85:
-                return (False, 'fuzzy', similarity)
+                return (False, "fuzzy", similarity)
         seen.add(normalized)
-        return (True, 'unique', 0.0)
+        return (True, "unique", 0.0)
 
     def _try_parse_label(self, line: str, session_id: str) -> Optional[str]:
         """Parse and deduplicate a line into a label. Returns label if unique else None."""
-        line = line.strip().lstrip('0123456789.-、）) ').strip()
+        line = line.strip().lstrip("0123456789.-、）) ").strip()
         if not line or len(line) < 2:
             return None
         cleaned = _strip_parenthetical(line)
@@ -205,11 +198,9 @@ class RelationshipLabelsGenerator:
         if session_id not in self.generated_labels:
             self.generated_labels[session_id] = []
         self.generated_labels[session_id].append(label)
-        return {'event': 'label_generated', 'label': label, 'source_llm': llm_name}
+        return {"event": "label_generated", "label": label, "source_llm": llm_name}
 
-    def _parse_lines_to_events(
-        self, lines: List[str], session_id: str, llm_name: str
-    ) -> List[Dict[str, Any]]:
+    def _parse_lines_to_events(self, lines: List[str], session_id: str, llm_name: str) -> List[Dict[str, Any]]:
         """Parse lines into label events. Returns list of event dicts."""
         events: List[Dict[str, Any]] = []
         for line in lines:
@@ -236,23 +227,31 @@ class RelationshipLabelsGenerator:
         total_before = len(self.generated_labels.get(session_id, []))
         logger.debug(
             "[RelLabels] Batch %d | Session: %s | %s ↔ %s",
-            batch_num, session_id[:8], concept_a[:20], concept_b[:20]
+            batch_num,
+            session_id[:8],
+            concept_a[:20],
+            concept_b[:20],
         )
         existing = self.generated_labels.get(session_id, [])
         prompt = self._build_prompt(
-            concept_a, concept_b, topic, link_direction, language,
-            batch_num=batch_num, existing_labels=existing
+            concept_a,
+            concept_b,
+            topic,
+            link_direction,
+            language,
+            batch_num=batch_num,
+            existing_labels=existing,
         )
         if not prompt:
             return None
         return {
-            'batch_num': batch_num,
-            'total_before': total_before,
-            'prompt': prompt,
-            'batch_start_evt': {
-                'event': 'batch_start',
-                'batch_number': batch_num,
-                'llm_count': len(self.llm_models),
+            "batch_num": batch_num,
+            "total_before": total_before,
+            "prompt": prompt,
+            "batch_start_evt": {
+                "event": "batch_start",
+                "batch_number": batch_num,
+                "llm_count": len(self.llm_models),
             },
         }
 
@@ -263,22 +262,20 @@ class RelationshipLabelsGenerator:
         state: Dict[str, Any],
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Process one stream chunk, yield label events."""
-        evt_type = chunk.get('event')
-        llm = chunk.get('llm', '')
-        curr = state['current_lines']
-        pend = state['pending']
-        uniq = state['llm_unique']
-        order = state['llm_order']
-        nidx = state['next_idx']
+        evt_type = chunk.get("event")
+        llm = chunk.get("llm", "")
+        curr = state["current_lines"]
+        pend = state["pending"]
+        uniq = state["llm_unique"]
+        order = state["llm_order"]
+        nidx = state["next_idx"]
 
-        if evt_type == 'token':
-            curr[llm] += chunk.get('token', '')
-            if '\n' in curr[llm]:
-                parts = curr[llm].split('\n')
+        if evt_type == "token":
+            curr[llm] += chunk.get("token", "")
+            if "\n" in curr[llm]:
+                parts = curr[llm].split("\n")
                 curr[llm] = parts[-1]
-                for evt in self._parse_lines_to_events(
-                    parts[:-1], session_id, llm
-                ):
+                for evt in self._parse_lines_to_events(parts[:-1], session_id, llm):
                     pend[llm].append(evt)
                     uniq[llm] += 1
                     for _ in range(len(self.llm_models)):
@@ -287,10 +284,10 @@ class RelationshipLabelsGenerator:
                         if pend[mdl]:
                             yield pend[mdl].pop(0)
                             await asyncio.sleep(0)
-                state['next_idx'] = nidx
+                state["next_idx"] = nidx
 
-        elif evt_type == 'complete':
-            remainder = curr[llm].lstrip('0123456789.-、）) ')
+        elif evt_type == "complete":
+            remainder = curr[llm].lstrip("0123456789.-、）) ")
             for evt in self._parse_lines_to_events([remainder], session_id, llm):
                 pend[llm].append(evt)
                 uniq[llm] += 1
@@ -310,11 +307,11 @@ class RelationshipLabelsGenerator:
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """Stream labels from 3 LLMs. Yields label_generated events."""
         state: Dict[str, Any] = {
-            'current_lines': {m: "" for m in self.llm_models},
-            'llm_unique': {m: 0 for m in self.llm_models},
-            'pending': {m: [] for m in self.llm_models},
-            'llm_order': self.llm_models.copy(),
-            'next_idx': 0,
+            "current_lines": {m: "" for m in self.llm_models},
+            "llm_unique": {m: 0 for m in self.llm_models},
+            "pending": {m: [] for m in self.llm_models},
+            "llm_order": self.llm_models.copy(),
+            "next_idx": 0,
         }
         async for chunk in self.llm_service.stream_progressive(
             prompt=prompt,
@@ -323,20 +320,16 @@ class RelationshipLabelsGenerator:
             max_tokens=300,
             timeout=15.0,
             system_message=(
-                '你是一个有帮助的K12教育助手。'
-                if language == 'zh'
-                else 'You are a helpful K12 education assistant.'
+                "你是一个有帮助的K12教育助手。" if language == "zh" else "You are a helpful K12 education assistant."
             ),
             user_id=user_id,
             organization_id=organization_id,
-            request_type='relationship_labels',
-            diagram_type='concept_map',
-            endpoint_path=endpoint_path or '/thinking_mode/relationship_labels/start',
+            request_type="relationship_labels",
+            diagram_type="concept_map",
+            endpoint_path=endpoint_path or "/thinking_mode/relationship_labels/start",
             session_id=session_id,
         ):
-            async for evt in self._process_stream_chunk(
-                chunk, session_id, state
-            ):
+            async for evt in self._process_stream_chunk(chunk, session_id, state):
                 yield evt
 
     async def generate_batch(
@@ -360,20 +353,18 @@ class RelationshipLabelsGenerator:
             - {'event': 'batch_complete', 'total_unique': N}
             - {'event': 'error', 'message': str}
         """
-        prep = self._prepare_batch(
-            session_id, concept_a, concept_b, topic, link_direction, language
-        )
+        prep = self._prepare_batch(session_id, concept_a, concept_b, topic, link_direction, language)
         if prep is None:
-            yield {'event': 'error', 'message': 'Failed to build prompt'}
+            yield {"event": "error", "message": "Failed to build prompt"}
             return
 
-        yield prep['batch_start_evt']
+        yield prep["batch_start_evt"]
         batch_start = time.time()
         async for evt in self._stream_labels(
             session_id=session_id,
-            prompt=prep['prompt'],
+            prompt=prep["prompt"],
             language=language,
-            batch_num=prep['batch_num'],
+            batch_num=prep["batch_num"],
             user_id=user_id,
             organization_id=organization_id,
             endpoint_path=endpoint_path,
@@ -382,18 +373,16 @@ class RelationshipLabelsGenerator:
 
         total_after = len(self.generated_labels.get(session_id, []))
         yield {
-            'event': 'batch_complete',
-            'batch_number': prep['batch_num'],
-            'batch_duration': round(time.time() - batch_start, 2),
-            'new_unique_labels': total_after - prep['total_before'],
-            'total_labels': total_after,
+            "event": "batch_complete",
+            "batch_number": prep["batch_num"],
+            "batch_duration": round(time.time() - batch_start, 2),
+            "new_unique_labels": total_after - prep["total_before"],
+            "total_labels": total_after,
         }
 
     def end_session(self, session_id: str, reason: str = "complete") -> None:
         """Clean up session state."""
-        logger.debug(
-            "[RelLabels] Session ended: %s (reason: %s)", session_id[:8], reason
-        )
+        logger.debug("[RelLabels] Session ended: %s (reason: %s)", session_id[:8], reason)
         self.session_start_times.pop(session_id, None)
         self.generated_labels.pop(session_id, None)
         self.seen_labels.pop(session_id, None)

@@ -54,17 +54,6 @@ export function getFlowTopicCenteredPosition(
   })
   const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
   const x = Math.round(stepCenterX - topicEstWidth / 2)
-  const topicCenterX = x + topicEstWidth / 2
-  console.log('[FlowMap] getFlowTopicCenteredPosition', {
-    text,
-    currentY,
-    DEFAULT_CENTER_X: stepCenterX,
-    measuredTextWidth,
-    topicEstWidth,
-    x,
-    topicCenterX,
-    centerOffset: topicCenterX - stepCenterX,
-  })
   return { x, y: currentY }
 }
 
@@ -168,23 +157,6 @@ export function loadFlowMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     const topicEstWidth = Math.max(FLOW_MAP_PILL_WIDTH, measuredTextWidth + FLOW_TOPIC_PADDING_X)
     const topicX = Math.round(stepCenterX - topicEstWidth / 2)
     const topicY = DEFAULT_PADDING + 40
-    const topicCenterX = topicX + topicEstWidth / 2
-    console.log('[FlowMap] layout (vertical)', {
-      DEFAULT_CENTER_X,
-      stepX,
-      stepCenterX,
-      pillWidth,
-      title,
-      measuredTextWidth,
-      FLOW_TOPIC_PADDING_X,
-      topicEstWidth,
-      topicX,
-      topicY,
-      topicCenterX,
-      stepColumnLeft: stepX,
-      stepColumnRight: stepX + pillWidth,
-      centerOffset: topicCenterX - stepCenterX,
-    })
     nodes.push({
       id: FLOW_TOPIC_NODE_ID,
       text: title,

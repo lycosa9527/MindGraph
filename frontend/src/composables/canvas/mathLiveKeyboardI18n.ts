@@ -2,7 +2,10 @@
  * i18n wiring for MathLive custom keyboard key labels (K-12 equations + chem formulas tabs).
  * LaTeX / \\ce{...} inserts are fixed in layout builders; only visible labels are translated.
  */
-import type { K12ChemFormulasKeyLabels, K12EquationsKeyLabels } from '@/composables/canvas/mathLiveCustomKeyboardLayouts'
+import type {
+  K12ChemFormulasKeyLabels,
+  K12EquationsKeyLabels,
+} from '@/composables/canvas/mathLiveCustomKeyboardLayouts'
 
 type TFn = (key: string) => string
 

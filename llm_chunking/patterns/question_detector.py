@@ -1,4 +1,4 @@
-﻿"""
+"""
 Question detection for exercise books and Q&A documents.
 
 Detects question boundaries using patterns:
@@ -24,16 +24,13 @@ class QuestionDetector:
     # Question patterns
     PATTERNS = [
         # "Question 1:", "Q1:", "Problem 1:"
-        r'(?:Question|Q|Problem|Exercise)\s*(\d+)[\.\):]\s*(.+?)(?=(?:Question|Q|Problem|Exercise)\s*\d+[\.\):]|$)',
-
+        r"(?:Question|Q|Problem|Exercise)\s*(\d+)[\.\):]\s*(.+?)(?=(?:Question|Q|Problem|Exercise)\s*\d+[\.\):]|$)",
         # Numbered questions: "1.", "2.", etc.
-        r'^(\d+)[\.\)]\s+(.+?)(?=^\d+[\.\)]|$)',
-
+        r"^(\d+)[\.\)]\s+(.+?)(?=^\d+[\.\)]|$)",
         # Multiple choice (has A), B), C), D))
-        r'(.+?)\n(?:[A-E]\)|\([A-E]\)).+?(?=\n\n|$)',
-
+        r"(.+?)\n(?:[A-E]\)|\([A-E]\)).+?(?=\n\n|$)",
         # Quiz sections: "Quiz 1:", "Test 2:"
-        r'(Quiz|Test|Exam)\s+(\d+)[\.\):]\s*(.+?)(?=(?:Quiz|Test|Exam)\s+\d+[\.\):]|$)',
+        r"(Quiz|Test|Exam)\s+(\d+)[\.\):]\s*(.+?)(?=(?:Quiz|Test|Exam)\s+\d+[\.\):]|$)",
     ]
 
     def __init__(self):
@@ -65,13 +62,15 @@ class QuestionDetector:
                 question_text = match.group(0)
                 question_number = match.group(1) if len(match.groups()) > 0 else None
 
-                questions.append({
-                    "number": question_number,
-                    "text": question_text.strip(),
-                    "start_pos": start_pos,
-                    "end_pos": match.end(),
-                    "type": self._classify_question_type(question_text)
-                })
+                questions.append(
+                    {
+                        "number": question_number,
+                        "text": question_text.strip(),
+                        "start_pos": start_pos,
+                        "end_pos": match.end(),
+                        "type": self._classify_question_type(question_text),
+                    }
+                )
 
         # Sort by position
         questions.sort(key=lambda x: x["start_pos"])
@@ -91,15 +90,15 @@ class QuestionDetector:
         question_lower = question_text.lower()
 
         # Multiple choice
-        if re.search(r'[A-E]\)|\([A-E]\)', question_text):
+        if re.search(r"[A-E]\)|\([A-E]\)", question_text):
             return "multiple_choice"
 
         # True/False
-        if re.search(r'\b(True|False|T|F)[\.\):]', question_text, re.IGNORECASE):
+        if re.search(r"\b(True|False|T|F)[\.\):]", question_text, re.IGNORECASE):
             return "true_false"
 
         # Calculation
-        if re.search(r'\b(calculate|compute|solve|derive|find)', question_lower):
+        if re.search(r"\b(calculate|compute|solve|derive|find)", question_lower):
             return "calculation"
 
         # Essay (long questions)
@@ -122,7 +121,7 @@ class QuestionDetector:
         options = []
 
         # Match A), B), C), D) patterns
-        option_pattern = r'([A-E])[\.\)]\s*(.+?)(?=[A-E][\.\)]|$)'
+        option_pattern = r"([A-E])[\.\)]\s*(.+?)(?=[A-E][\.\)]|$)"
         for match in re.finditer(option_pattern, question_text, re.MULTILINE):
             option_text = match.group(2).strip()
             options.append(option_text)
@@ -139,7 +138,7 @@ class QuestionDetector:
         Returns:
             List of quiz section dicts
         """
-        quiz_pattern = r'(Quiz|Test|Exam)\s+(\d+)[\.\):]\s*(.+?)(?=(?:Quiz|Test|Exam)\s+\d+[\.\):]|$)'
+        quiz_pattern = r"(Quiz|Test|Exam)\s+(\d+)[\.\):]\s*(.+?)(?=(?:Quiz|Test|Exam)\s+\d+[\.\):]|$)"
 
         sections = []
         for match in re.finditer(quiz_pattern, text, re.MULTILINE | re.DOTALL):
@@ -150,13 +149,15 @@ class QuestionDetector:
             # Count questions in section
             questions = self.detect_questions(section_text)
 
-            sections.append({
-                "type": section_type,
-                "number": section_number,
-                "text": section_text,
-                "start_pos": match.start(),
-                "end_pos": match.end(),
-                "question_count": len(questions),
-            })
+            sections.append(
+                {
+                    "type": section_type,
+                    "number": section_number,
+                    "text": section_text,
+                    "start_pos": match.start(),
+                    "end_pos": match.end(),
+                    "question_count": len(questions),
+                }
+            )
 
         return sections

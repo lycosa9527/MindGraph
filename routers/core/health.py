@@ -24,7 +24,9 @@ from config.database import check_integrity, engine, DATABASE_URL
 from models.domain.auth import User
 from models.responses import DatabaseHealthResponse
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
-from services.infrastructure.recovery.database_check_state import get_database_check_state_manager
+from services.infrastructure.recovery.database_check_state import (
+    get_database_check_state_manager,
+)
 from services.llm import llm_service
 from services.redis.redis_client import is_redis_available, RedisOps
 from utils.auth import get_current_user
@@ -70,19 +72,17 @@ async def _check_application_health() -> Dict[str, Any]:
     try:
         # Import app lazily to avoid circular import
         import main  # pylint: disable=import-outside-toplevel
+
         app = main.app
-        uptime = time.time() - app.state.start_time if hasattr(app.state, 'start_time') else 0
+        uptime = time.time() - app.state.start_time if hasattr(app.state, "start_time") else 0
         return {
             "status": "healthy",
             "version": config.version,
-            "uptime_seconds": round(uptime, 1)
+            "uptime_seconds": round(uptime, 1),
         }
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Application health check failed: %s", e, exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 def _fetch_redis_memory_stats(redis_client: Any) -> Dict[str, Any]:
@@ -111,30 +111,19 @@ async def _check_redis_health() -> Dict[str, Any]:
     """Check Redis health status with timeout."""
     try:
         if not is_redis_available():
-            return {
-                "status": "unavailable",
-                "message": "Redis not connected"
-            }
+            return {"status": "unavailable", "message": "Redis not connected"}
 
         # Add timeout protection
-        ping_result = await asyncio.wait_for(
-            asyncio.to_thread(RedisOps.ping),
-            timeout=2.0
-        )
+        ping_result = await asyncio.wait_for(asyncio.to_thread(RedisOps.ping), timeout=2.0)
 
         if ping_result:
-            info = await asyncio.wait_for(
-                asyncio.to_thread(RedisOps.info, "server"),
-                timeout=2.0
-            )
+            info = await asyncio.wait_for(asyncio.to_thread(RedisOps.info, "server"), timeout=2.0)
             # Check if info() returned empty dict (indicates failure)
             if not info:
-                return {
-                    "status": "unhealthy",
-                    "message": "Redis info failed"
-                }
+                return {"status": "unhealthy", "message": "Redis info failed"}
 
             from services.redis.redis_client import get_redis  # pylint: disable=import-outside-toplevel
+
             redis_client = get_redis()
 
             memory = {}
@@ -159,22 +148,13 @@ async def _check_redis_health() -> Dict[str, Any]:
                 result["hotkeys"] = hotkeys
             return result
 
-        return {
-            "status": "unhealthy",
-            "message": "Ping failed"
-        }
+        return {"status": "unhealthy", "message": "Ping failed"}
     except asyncio.TimeoutError:
         logger.warning("Redis health check timed out")
-        return {
-            "status": "error",
-            "error": "Health check timed out"
-        }
+        return {"status": "error", "error": "Health check timed out"}
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Redis health check failed: %s", e, exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 async def _check_database_health() -> Dict[str, Any]:
@@ -190,7 +170,7 @@ async def _check_database_health() -> Dict[str, Any]:
                 "status": "healthy",
                 "database_healthy": True,
                 "database_message": "Database check in progress (long-running operation)",
-                "database_stats": {}
+                "database_stats": {},
             }
 
         # Try to start a new check
@@ -202,7 +182,7 @@ async def _check_database_health() -> Dict[str, Any]:
                 "status": "healthy",
                 "database_healthy": True,
                 "database_message": "Database check in progress (long-running operation)",
-                "database_stats": {}
+                "database_stats": {},
             }
 
         # Add timeout protection for database check
@@ -226,13 +206,11 @@ async def _check_database_health() -> Dict[str, Any]:
                         db_name = DATABASE_URL.split("/")[-1].split("?")[0]
                         result = conn.execute(
                             text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
-                            {"db_name": db_name}
+                            {"db_name": db_name},
                         )
                         size_row = result.fetchone()
                         if size_row:
-                            current_stats = {
-                                "size": size_row[0] if size_row else "unknown"
-                            }
+                            current_stats = {"size": size_row[0] if size_row else "unknown"}
                 else:
                     current_stats = {}
             except Exception as e:  # pylint: disable=broad-except
@@ -243,7 +221,7 @@ async def _check_database_health() -> Dict[str, Any]:
                 "status": "healthy" if is_healthy else "unhealthy",
                 "database_healthy": is_healthy,
                 "database_message": message,
-                "database_stats": current_stats
+                "database_stats": current_stats,
             }
 
         result = await asyncio.wait_for(_do_check(), timeout=5.0)
@@ -255,59 +233,49 @@ async def _check_database_health() -> Dict[str, Any]:
         # Check if check is still in progress (legitimate long-running check)
         if await state_manager.is_check_in_progress():
             logger.info(
-                "Database health check timed out but check is still in progress "
-                "(long-running operation, not an error)"
+                "Database health check timed out but check is still in progress (long-running operation, not an error)"
             )
             return {
                 "status": "healthy",
                 "database_healthy": True,
                 "database_message": "Database check in progress (long-running operation)",
-                "database_stats": {}
+                "database_stats": {},
             }
 
         # Real timeout - check is not in progress, something went wrong
         logger.warning("Database health check timed out (check not in progress)")
         if check_started:
             await state_manager.complete_check(success=False)
-        return {
-            "status": "error",
-            "error": "Health check timed out"
-        }
+        return {"status": "error", "error": "Health check timed out"}
     except ImportError as e:
         logger.error("Database check module not available: %s", e)
         if check_started:
             await state_manager.complete_check(success=False)
         return {
             "status": "unavailable",
-            "message": "Database check module not available"
+            "message": "Database check module not available",
         }
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Database health check failed: %s", e, exc_info=True)
         if check_started:
             await state_manager.complete_check(success=False)
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 async def _check_processes_health() -> Dict[str, Any]:
     """Check process monitor health status."""
     try:
         # pylint: disable=import-outside-toplevel
-        from services.infrastructure.monitoring.process_monitor import get_process_monitor
+        from services.infrastructure.monitoring.process_monitor import (
+            get_process_monitor,
+        )
+
         process_monitor = get_process_monitor()
         status = process_monitor.get_status()
 
         # Determine overall status
-        unhealthy_count = sum(
-            1 for service_status in status.values()
-            if service_status.get('status') == 'unhealthy'
-        )
-        degraded_count = sum(
-            1 for service_status in status.values()
-            if service_status.get('status') == 'degraded'
-        )
+        unhealthy_count = sum(1 for service_status in status.values() if service_status.get("status") == "unhealthy")
+        degraded_count = sum(1 for service_status in status.values() if service_status.get("status") == "degraded")
 
         overall_status = "healthy"
         if unhealthy_count > 0:
@@ -320,19 +288,13 @@ async def _check_processes_health() -> Dict[str, Any]:
             "services": status,
             "unhealthy_count": unhealthy_count,
             "degraded_count": degraded_count,
-            "total_services": len(status)
+            "total_services": len(status),
         }
     except ImportError:
-        return {
-            "status": "unavailable",
-            "message": "Process monitor not available"
-        }
+        return {"status": "unavailable", "message": "Process monitor not available"}
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Process health check failed: %s", e, exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 async def _check_llm_health() -> Dict[str, Any]:
@@ -341,23 +303,19 @@ async def _check_llm_health() -> Dict[str, Any]:
         # Add timeout protection (LLM checks can take 5+ seconds per model)
         health_data = await asyncio.wait_for(
             llm_service.health_check(),
-            timeout=30.0  # Allow up to 30 seconds for all models
+            timeout=30.0,  # Allow up to 30 seconds for all models
         )
 
         metrics = llm_service.get_performance_metrics()
         circuit_states = {}
         if metrics and isinstance(metrics, dict):
             circuit_states = {
-                model: data.get('circuit_state', 'closed')
-                for model, data in metrics.items()
-                if isinstance(data, dict)
+                model: data.get("circuit_state", "closed") for model, data in metrics.items() if isinstance(data, dict)
             }
 
-        available_models = health_data.get('available_models', [])
+        available_models = health_data.get("available_models", [])
         unhealthy_count = sum(
-            1 for model in available_models
-            if model in health_data
-            and health_data[model].get('status') != 'healthy'
+            1 for model in available_models if model in health_data and health_data[model].get("status") != "healthy"
         )
 
         return {
@@ -367,20 +325,17 @@ async def _check_llm_health() -> Dict[str, Any]:
             "unhealthy_count": unhealthy_count,
             "total_models": len(available_models),
             "circuit_states": circuit_states,
-            "health_data": health_data
+            "health_data": health_data,
         }
     except asyncio.TimeoutError:
         logger.warning("LLM health check timed out")
         return {
             "status": "error",
-            "error": "Health check timed out (exceeded 30 seconds)"
+            "error": "Health check timed out (exceeded 30 seconds)",
         }
     except Exception as e:  # pylint: disable=broad-except
         logger.error("LLM health check failed: %s", e, exc_info=True)
-        return {
-            "status": "error",
-            "error": str(e)
-        }
+        return {"status": "error", "error": str(e)}
 
 
 @router.get("/health")
@@ -390,9 +345,7 @@ async def health_check():
 
 
 @router.get("/health/websocket")
-async def websocket_metrics_check(
-    _current_user: User = Depends(get_current_user)
-):
+async def websocket_metrics_check(_current_user: User = Depends(get_current_user)):
     """
     WebSocket counters (per process) and optional Redis aggregate active count.
     Requires authentication.
@@ -401,9 +354,7 @@ async def websocket_metrics_check(
 
 
 @router.get("/health/redis")
-async def redis_health_check(
-    _current_user: User = Depends(get_current_user)
-):
+async def redis_health_check(_current_user: User = Depends(get_current_user)):
     """
     Redis health check endpoint.
 
@@ -412,23 +363,23 @@ async def redis_health_check(
     timeout so the endpoint never blocks the event loop or hangs indefinitely.
     """
     if not is_redis_available():
-        return {
-            "status": "unavailable",
-            "message": "Redis not connected"
-        }
+        return {"status": "unavailable", "message": "Redis not connected"}
 
     try:
         ping_ok = await asyncio.wait_for(
-            asyncio.to_thread(RedisOps.ping), timeout=2.0,
+            asyncio.to_thread(RedisOps.ping),
+            timeout=2.0,
         )
         if not ping_ok:
             return {"status": "unhealthy", "message": "Ping failed"}
 
         info = await asyncio.wait_for(
-            asyncio.to_thread(RedisOps.info, "server"), timeout=2.0,
+            asyncio.to_thread(RedisOps.info, "server"),
+            timeout=2.0,
         )
 
         from services.redis.redis_client import get_redis  # pylint: disable=import-outside-toplevel
+
         redis_client = get_redis()
 
         memory: Dict[str, Any] = {}
@@ -462,11 +413,7 @@ async def redis_health_check(
 def _sync_database_health_check() -> Dict[str, Any]:
     """Run the synchronous database health probe (called via ``to_thread``)."""
     is_healthy = check_integrity()
-    message = (
-        "Database connection and integrity check passed"
-        if is_healthy
-        else "Database integrity check failed"
-    )
+    message = "Database connection and integrity check passed" if is_healthy else "Database integrity check failed"
 
     current_stats: Dict[str, Any] = {}
     try:
@@ -495,9 +442,7 @@ def _sync_database_health_check() -> Dict[str, Any]:
 
 
 @router.get("/health/database", response_model=DatabaseHealthResponse)
-async def database_health_check(
-    _current_user: User = Depends(get_current_user)
-):
+async def database_health_check(_current_user: User = Depends(get_current_user)):
     """
     Database health check endpoint.
 
@@ -550,7 +495,7 @@ async def database_health_check(
 @router.get("/health/all")
 async def comprehensive_health_check(
     include_llm: bool = Query(False, description="Include LLM service health checks (makes actual API calls)"),
-    _current_user: User = Depends(get_current_user)
+    _current_user: User = Depends(get_current_user),
 ):
     """
     Comprehensive health check endpoint that checks all system components.
@@ -608,14 +553,14 @@ async def comprehensive_health_check(
 
     for check_name, result in zip(check_names, results):
         if isinstance(result, Exception):
-            logger.error("%s health check raised exception: %s", check_name, result, exc_info=True)
-            checks[check_name] = {
-                "status": "error",
-                "error": str(result)
-            }
-            overall_status, overall_status_code = _update_overall_status(
-                overall_status, overall_status_code, "error"
+            logger.error(
+                "%s health check raised exception: %s",
+                check_name,
+                result,
+                exc_info=True,
             )
+            checks[check_name] = {"status": "error", "error": str(result)}
+            overall_status, overall_status_code = _update_overall_status(overall_status, overall_status_code, "error")
             errors.append(f"{check_name} check failed: {str(result)}")
         else:
             # Validate result structure
@@ -623,7 +568,7 @@ async def comprehensive_health_check(
                 logger.error("%s returned invalid result structure: %s", check_name, result)
                 checks[check_name] = {
                     "status": "error",
-                    "error": "Invalid result structure"
+                    "error": "Invalid result structure",
                 }
                 overall_status, overall_status_code = _update_overall_status(
                     overall_status, overall_status_code, "error"
@@ -640,7 +585,12 @@ async def comprehensive_health_check(
             # Log errors for non-healthy checks
             if check_status not in ("healthy", "skipped"):
                 error_msg = result.get("error") or result.get("message", "Unknown error")
-                logger.warning("%s health check returned %s: %s", check_name, check_status, error_msg)
+                logger.warning(
+                    "%s health check returned %s: %s",
+                    check_name,
+                    check_status,
+                    error_msg,
+                )
                 if check_status == "error":
                     errors.append(f"{check_name} check failed: {error_msg}")
 
@@ -649,16 +599,15 @@ async def comprehensive_health_check(
         checks["llm_services"] = {
             "status": "skipped",
             "message": (
-                "LLM health check disabled by default. "
-                "Use ?include_llm=true to enable (makes actual API calls)."
-            )
+                "LLM health check disabled by default. Use ?include_llm=true to enable (makes actual API calls)."
+            ),
         }
 
     # Build response
     response_data = {
         "status": overall_status,
         "timestamp": check_timestamp,
-        "checks": checks
+        "checks": checks,
     }
 
     if errors:
@@ -674,19 +623,14 @@ async def comprehensive_health_check(
         "healthy": healthy_count,
         "unhealthy": unhealthy_count,
         "skipped": skipped_count,
-        "total": total_count
+        "total": total_count,
     }
 
-    return JSONResponse(
-        content=response_data,
-        status_code=overall_status_code
-    )
+    return JSONResponse(content=response_data, status_code=overall_status_code)
 
 
 @router.get("/health/processes")
-async def processes_health_check(
-    _current_user: User = Depends(get_current_user)
-):
+async def processes_health_check(_current_user: User = Depends(get_current_user)):
     """
     Process monitor health check endpoint.
 
@@ -700,19 +644,16 @@ async def processes_health_check(
     """
     try:
         # pylint: disable=import-outside-toplevel
-        from services.infrastructure.monitoring.process_monitor import get_process_monitor
+        from services.infrastructure.monitoring.process_monitor import (
+            get_process_monitor,
+        )
+
         process_monitor = get_process_monitor()
         status = process_monitor.get_status()
 
         # Determine overall status
-        unhealthy_count = sum(
-            1 for service_status in status.values()
-            if service_status.get('status') == 'unhealthy'
-        )
-        degraded_count = sum(
-            1 for service_status in status.values()
-            if service_status.get('status') == 'degraded'
-        )
+        unhealthy_count = sum(1 for service_status in status.values() if service_status.get("status") == "unhealthy")
+        degraded_count = sum(1 for service_status in status.values() if service_status.get("status") == "degraded")
 
         overall_status = "healthy"
         status_code = 200
@@ -729,27 +670,21 @@ async def processes_health_check(
             "unhealthy_count": unhealthy_count,
             "degraded_count": degraded_count,
             "total_services": len(status),
-            "timestamp": int(time.time())
+            "timestamp": int(time.time()),
         }
 
-        return JSONResponse(
-            content=response_data,
-            status_code=status_code
-        )
+        return JSONResponse(content=response_data, status_code=status_code)
     except ImportError:
         return JSONResponse(
             content={
                 "status": "unavailable",
-                "message": "Process monitor not available"
+                "message": "Process monitor not available",
             },
-            status_code=503
+            status_code=503,
         )
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Process health check error: %s", e, exc_info=True)
-        raise HTTPException(
-            status_code=500,
-            detail=f"Process health check failed: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Process health check failed: {str(e)}") from e
 
 
 @router.get("/status")
@@ -757,10 +692,11 @@ async def get_status():
     """Application status endpoint with metrics"""
     # Import app lazily to avoid circular import
     import main  # pylint: disable=import-outside-toplevel
+
     app = main.app
 
     memory = psutil.virtual_memory()
-    uptime = time.time() - app.state.start_time if hasattr(app.state, 'start_time') else 0
+    uptime = time.time() - app.state.start_time if hasattr(app.state, "start_time") else 0
 
     return {
         "status": "running",
@@ -768,5 +704,5 @@ async def get_status():
         "version": config.version,
         "uptime_seconds": round(uptime, 1),
         "memory_percent": round(memory.percent, 1),
-        "timestamp": time.time()
+        "timestamp": time.time(),
     }

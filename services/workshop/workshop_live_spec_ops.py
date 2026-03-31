@@ -44,10 +44,14 @@ def ensure_live_spec_seeded(
         return existing
     db = SessionLocal()
     try:
-        diagram = db.query(Diagram).filter(
-            Diagram.id == diagram_id,
-            ~Diagram.is_deleted,
-        ).first()
+        diagram = (
+            db.query(Diagram)
+            .filter(
+                Diagram.id == diagram_id,
+                ~Diagram.is_deleted,
+            )
+            .first()
+        )
         if not diagram:
             return {}
         return seed_live_spec_from_diagram(redis, code, diagram, ttl_sec)
@@ -84,9 +88,7 @@ def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
     raw_did = redis.get(code_to_diagram_key(code))
     if not raw_did:
         return
-    diagram_id_val = (
-        raw_did if isinstance(raw_did, str) else raw_did.decode("utf-8")
-    )
+    diagram_id_val = raw_did if isinstance(raw_did, str) else raw_did.decode("utf-8")
     flush_live_spec_to_db(code, diagram_id_val)
 
 
@@ -107,10 +109,14 @@ def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
 
     db = SessionLocal()
     try:
-        diagram = db.query(Diagram).filter(
-            Diagram.id == diagram_id,
-            ~Diagram.is_deleted,
-        ).first()
+        diagram = (
+            db.query(Diagram)
+            .filter(
+                Diagram.id == diagram_id,
+                ~Diagram.is_deleted,
+            )
+            .first()
+        )
         if not diagram:
             return False
         diagram.spec = text

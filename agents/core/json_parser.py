@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Optional, Any
 import json
 import logging
@@ -21,9 +22,7 @@ load_dotenv()
 logger = logging.getLogger(__name__)
 
 
-def extract_json_from_response(
-    response_content: Any, allow_partial: bool = False
-) -> Optional[Dict[str, Any]]:
+def extract_json_from_response(response_content: Any, allow_partial: bool = False) -> Optional[Dict[str, Any]]:
     """
     Extract JSON from LLM response content.
 
@@ -65,21 +64,17 @@ def extract_json_from_response(
         try:
             return json.loads(cleaned)
         except json.JSONDecodeError as e:
-            return _handle_json_decode_error(
-                cleaned, e, allow_partial
-            )
+            return _handle_json_decode_error(cleaned, e, allow_partial)
 
     except Exception as e:
         # Unexpected error - log with full context
         content_str = str(response_content)
-        content_preview = (
-            content_str[:500] + "..." if len(content_str) > 500 else content_str
-        )
+        content_preview = content_str[:500] + "..." if len(content_str) > 500 else content_str
         logger.error(
             "Unexpected error extracting JSON: %s. Content preview: %s",
             e,
             content_preview,
-            exc_info=True
+            exc_info=True,
         )
         return None
 
@@ -95,12 +90,12 @@ def _extract_json_content(content: str) -> Optional[str]:
         Extracted JSON content string or None
     """
     # Check for markdown code blocks
-    json_match = re.search(r'```(?:json)?\s*\n(.*?)\n```', content, re.DOTALL)
+    json_match = re.search(r"```(?:json)?\s*\n(.*?)\n```", content, re.DOTALL)
     if json_match:
         return json_match.group(1).strip()
 
     # Find the root JSON object by finding the first { and matching its closing }
-    first_brace = content.find('{')
+    first_brace = content.find("{")
     if first_brace != -1:
         json_content = _extract_balanced_json_object(content, first_brace)
         if json_content:
@@ -110,7 +105,7 @@ def _extract_json_content(content: str) -> Optional[str]:
         return _extract_json_fallback(content, first_brace)
 
     # No opening brace found, try array pattern
-    arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
+    arr_match = re.search(r"\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]", content, re.DOTALL)
     if arr_match:
         return arr_match.group(0)
 
@@ -140,7 +135,7 @@ def _extract_balanced_json_object(content: str, first_brace: int) -> Optional[st
             escape_next = False
             continue
 
-        if char == '\\':
+        if char == "\\":
             escape_next = True
             continue
 
@@ -150,9 +145,9 @@ def _extract_balanced_json_object(content: str, first_brace: int) -> Optional[st
             continue
 
         if not in_string:
-            if char == '{':
+            if char == "{":
                 brace_count += 1
-            elif char == '}':
+            elif char == "}":
                 brace_count -= 1
                 if brace_count == 0:
                     json_end = i + 1
@@ -160,9 +155,9 @@ def _extract_balanced_json_object(content: str, first_brace: int) -> Optional[st
 
     # If balanced matching failed, try to find the largest complete JSON object
     if brace_count != 0:
-        last_brace = content.rfind('}')
+        last_brace = content.rfind("}")
         if last_brace > first_brace:
-            candidate = content[first_brace:last_brace + 1]
+            candidate = content[first_brace : last_brace + 1]
             # Quick validation: check if it has root-level fields we expect
             if '"whole"' in candidate or '"topic"' in candidate or '"dimension"' in candidate:
                 return candidate
@@ -181,8 +176,8 @@ def _extract_json_fallback(content: str, first_brace: int) -> Optional[str]:  # 
     Returns:
         Extracted JSON content string or None
     """
-    obj_match = re.search(r'\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}', content, re.DOTALL)
-    arr_match = re.search(r'\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]', content, re.DOTALL)
+    obj_match = re.search(r"\{[^{}]*(?:\{[^{}]*\}[^{}]*)*\}", content, re.DOTALL)
+    arr_match = re.search(r"\[[^\[\]]*(?:\[[^\[\]]*\][^\[\]]*)*\]", content, re.DOTALL)
 
     if obj_match:
         return obj_match.group(0)
@@ -190,7 +185,7 @@ def _extract_json_fallback(content: str, first_brace: int) -> Optional[str]:  # 
         return arr_match.group(0)
 
     # Last fallback: try greedy match for { ... }
-    greedy_match = re.search(r'\{.*\}', content, re.DOTALL)
+    greedy_match = re.search(r"\{.*\}", content, re.DOTALL)
     if greedy_match:
         return greedy_match.group(0)
 
@@ -211,42 +206,39 @@ def _handle_no_json_content(content: str) -> Optional[Dict[str, Any]]:
 
     # Detect non-JSON responses (LLM asking for more information)
     non_json_patterns = [
-        r'请你提供',  # "Please provide"
-        r'请你补充',  # "Please supplement/add"
-        r'这样我就能',  # "so I can"
-        r'Please provide',
-        r'Please.*more.*information',
-        r'so I can',
-        r'需要.*信息',  # "need information"
-        r'告知.*信息',  # "inform about information"
+        r"请你提供",  # "Please provide"
+        r"请你补充",  # "Please supplement/add"
+        r"这样我就能",  # "so I can"
+        r"Please provide",
+        r"Please.*more.*information",
+        r"so I can",
+        r"需要.*信息",  # "need information"
+        r"告知.*信息",  # "inform about information"
     ]
 
     for pattern in non_json_patterns:
         if re.search(pattern, content, re.IGNORECASE):
             logger.warning(
-                "Detected non-JSON response (LLM asking for more info): "
-                "Pattern '%s' matched. Content preview: %s",
+                "Detected non-JSON response (LLM asking for more info): Pattern '%s' matched. Content preview: %s",
                 pattern,
-                content_preview
+                content_preview,
             )
             # Return structured error instead of None to allow retry logic
             return {
-                '_error': 'non_json_response',
-                '_content': content,
-                '_type': 'llm_requesting_info'
+                "_error": "non_json_response",
+                "_content": content,
+                "_type": "llm_requesting_info",
             }
 
     logger.error(
         "Failed to extract JSON: No JSON structure found in response. Content: %s",
-        content_preview
+        content_preview,
     )
     return None
 
 
 def _handle_json_decode_error(
-    cleaned: str,
-    error: json.JSONDecodeError,
-    allow_partial: bool
+    cleaned: str, error: json.JSONDecodeError, allow_partial: bool
 ) -> Optional[Dict[str, Any]]:
     """
     Handle JSON decode errors by attempting repair and partial recovery.
@@ -259,14 +251,14 @@ def _handle_json_decode_error(
     Returns:
         Parsed JSON dict if repair/recovery succeeded, None otherwise
     """
-    error_pos = getattr(error, 'pos', None)
+    error_pos = getattr(error, "pos", None)
     error_msg = str(error)
     content_preview = cleaned[:500] + "..." if len(cleaned) > 500 else cleaned
 
     logger.debug(
         "Initial JSON parse failed: %s (position: %s). Attempting repair...",
         error_msg,
-        error_pos
+        error_pos,
     )
 
     # Attempt to repair common structural issues
@@ -283,11 +275,10 @@ def _handle_json_decode_error(
         partial_result = _extract_partial_json(cleaned)
         if partial_result:
             logger.warning(
-                "Partial JSON recovery succeeded. Original error: %s (position: %s). "
-                "Recovered %s valid branches.",
+                "Partial JSON recovery succeeded. Original error: %s (position: %s). Recovered %s valid branches.",
                 error_msg,
                 error_pos,
-                partial_result.get('_recovered_count', 0)
+                partial_result.get("_recovered_count", 0),
             )
             return partial_result
 
@@ -296,7 +287,7 @@ def _handle_json_decode_error(
         "Failed to parse JSON: %s (position: %s). Content preview: %s",
         error_msg,
         error_pos,
-        content_preview
+        content_preview,
     )
     return None
 
@@ -338,11 +329,9 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
             children_start = text.find("'children'")
 
         if children_start != -1:
-            array_start = text.find('[', children_start)
+            array_start = text.find("[", children_start)
             if array_start != -1:
-                recovered_branches = _extract_branches_from_array(
-                    text[array_start:]
-                )
+                recovered_branches = _extract_branches_from_array(text[array_start:])
 
         # Step 3: Build result structure
         if not topic and not recovered_branches:
@@ -369,7 +358,7 @@ def _extract_partial_json(text: str) -> Optional[Dict]:
         logger.info(
             "Partial JSON recovery: extracted %s branches, %s warnings",
             len(recovered_branches),
-            len(warnings)
+            len(warnings),
         )
         return result
 
@@ -387,7 +376,7 @@ def _extract_topic_from_text(text: str) -> Optional[str]:
         # Try alternative patterns
         topic_match = re.search(r'"topic"\s*:\s*"([^"]*(?:\\.[^"]*)*)"', text)
         if topic_match:
-            topic = topic_match.group(1).replace('\\"', '"').replace('\\n', '\n')
+            topic = topic_match.group(1).replace('\\"', '"').replace("\\n", "\n")
 
     return topic
 
@@ -405,13 +394,9 @@ def _extract_branches_from_array(array_text: str) -> list:
     recovered_branches = []
 
     # Pattern 1: Mind map format with "label"
-    branch_pattern_label = (
-        r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
-    )
+    branch_pattern_label = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
     # Pattern 2: Tree map format with "text"
-    branch_pattern_text = (
-        r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
-    )
+    branch_pattern_text = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
     # Pattern 3: Tree map format without id (just "text")
     branch_pattern_text_no_id = r'\{\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"[^}]*\}'
 
@@ -441,9 +426,9 @@ def _build_mind_map_branch(match: re.Match) -> Optional[Dict]:
     try:
         branch_text = match.group(0)
         branch_id = match.group(1)
-        branch_label = match.group(2).replace('\\"', '"').replace('\\n', '\n')
+        branch_label = match.group(2).replace('\\"', '"').replace("\\n", "\n")
 
-        children_list = _extract_children_from_branch(branch_text, 'label')
+        children_list = _extract_children_from_branch(branch_text, "label")
         branch_obj = {"id": branch_id, "label": branch_label}
         if children_list:
             branch_obj["children"] = children_list
@@ -459,9 +444,9 @@ def _build_tree_map_branch_with_id(match: re.Match) -> Optional[Dict]:
     try:
         branch_text = match.group(0)
         branch_id = match.group(1)
-        branch_text_value = match.group(2).replace('\\"', '"').replace('\\n', '\n')
+        branch_text_value = match.group(2).replace('\\"', '"').replace("\\n", "\n")
 
-        children_list = _extract_children_from_branch(branch_text, 'text')
+        children_list = _extract_children_from_branch(branch_text, "text")
         branch_obj = {"id": branch_id, "text": branch_text_value}
         if children_list:
             branch_obj["children"] = children_list
@@ -476,10 +461,10 @@ def _build_tree_map_branch_no_id(match: re.Match) -> Optional[Dict]:
     """Build tree map branch object without id from regex match."""
     try:
         branch_text = match.group(0)
-        branch_text_value = match.group(1).replace('\\"', '"').replace('\\n', '\n')
+        branch_text_value = match.group(1).replace('\\"', '"').replace("\\n", "\n")
 
-        children_list = _extract_children_from_branch(branch_text, 'text')
-        branch_id = branch_text_value.lower().replace(' ', '-')[:20]
+        children_list = _extract_children_from_branch(branch_text, "text")
+        branch_id = branch_text_value.lower().replace(" ", "-")[:20]
         branch_obj = {"id": branch_id, "text": branch_text_value}
         if children_list:
             branch_obj["children"] = children_list
@@ -506,28 +491,24 @@ def _extract_children_from_branch(branch_text: str, field_name: str) -> list:
 
     if children_match:
         children_content = children_match.group(1)
-        if field_name == 'label':
-            child_pattern = (
-                r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
-            )
+        if field_name == "label":
+            child_pattern = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"label"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
             for child_match in re.finditer(child_pattern, children_content):
                 child_id = child_match.group(1)
-                child_label = child_match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                child_label = child_match.group(2).replace('\\"', '"').replace("\\n", "\n")
                 children_list.append({"id": child_id, "label": child_label})
         else:  # field_name == 'text'
-            child_pattern_with_id = (
-                r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
-            )
+            child_pattern_with_id = r'\{\s*"id"\s*:\s*"([^"]+)"\s*,\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
             child_pattern_text_only = r'\{\s*"text"\s*:\s*"([^"]*(?:\\.[^"]*)*)"\s*\}'
 
             for child_match in re.finditer(child_pattern_with_id, children_content):
                 child_id = child_match.group(1)
-                child_text = child_match.group(2).replace('\\"', '"').replace('\\n', '\n')
+                child_text = child_match.group(2).replace('\\"', '"').replace("\\n", "\n")
                 children_list.append({"id": child_id, "text": child_text})
 
             for child_match in re.finditer(child_pattern_text_only, children_content):
-                child_text = child_match.group(1).replace('\\"', '"').replace('\\n', '\n')
-                child_id = child_text.lower().replace(' ', '-')[:20]
+                child_text = child_match.group(1).replace('\\"', '"').replace("\\n", "\n")
+                child_id = child_text.lower().replace(" ", "-")[:20]
                 children_list.append({"id": child_id, "text": child_text})
 
     return children_list
@@ -603,14 +584,14 @@ def _fix_missing_commas(text: str) -> str:
     """Fix missing commas between objects."""
     # Pattern 0c: Fix missing colons in object structures (brace map specific)
     missing_comma_between_objects = r'\}\s*(?=\{"name":)'
-    text = re.sub(missing_comma_between_objects, '},', text)
+    text = re.sub(missing_comma_between_objects, "},", text)
 
     # Pattern 0d: Fix missing commas between objects in arrays (general case)
     missing_comma_between_array_objects = r'\}\s*(?=\{"text":)'
-    text = re.sub(missing_comma_between_array_objects, '},', text)
+    text = re.sub(missing_comma_between_array_objects, "},", text)
 
     # Pattern 0e: Fix missing commas between children array elements
-    text = re.sub(r'\}\s*(?=\{"(?:text|id|label|name)":)', '},', text)
+    text = re.sub(r'\}\s*(?=\{"(?:text|id|label|name)":)', "},", text)
 
     return text
 
@@ -629,7 +610,7 @@ def _fix_duplicate_objects(text: str) -> str:
             incomplete_obj = match.group(1)
 
             # Check if the incomplete object is missing a closing brace
-            if incomplete_obj.rstrip().endswith('}'):
+            if incomplete_obj.rstrip().endswith("}"):
                 continue  # It's complete, skip
 
             # Find the next object starting after the incomplete one
@@ -644,7 +625,7 @@ def _fix_duplicate_objects(text: str) -> str:
                     text = text[:incomplete_start] + text[incomplete_end:]
                     logger.debug(
                         "Fixed duplicate object: removed incomplete object with id '%s'",
-                        incomplete_id
+                        incomplete_id,
                     )
 
     return text
@@ -652,9 +633,7 @@ def _fix_duplicate_objects(text: str) -> str:
 
 def _fix_incomplete_objects_before_different(text: str) -> str:
     """Fix incomplete objects missing closing brace before next different object."""
-    incomplete_before_different = (
-        r'(\{"id":\s*"([^"]+)")\s+(?=\{"id":\s*"([^"]+)"[^}]*\})'
-    )
+    incomplete_before_different = r'(\{"id":\s*"([^"]+)")\s+(?=\{"id":\s*"([^"]+)"[^}]*\})'
     matches = list(re.finditer(incomplete_before_different, text))
     if matches:
         for match in reversed(matches):
@@ -663,10 +642,10 @@ def _fix_incomplete_objects_before_different(text: str) -> str:
             # Only fix if IDs are different (not duplicates handled by Pattern 1)
             if incomplete_id != next_id:
                 incomplete = match.group(1)
-                if not incomplete.rstrip().endswith('}'):
+                if not incomplete.rstrip().endswith("}"):
                     # Close the incomplete object
-                    fixed = incomplete.rstrip() + '},'
-                    text = text[:match.start()] + fixed + text[match.end():]
+                    fixed = incomplete.rstrip() + "},"
+                    text = text[: match.start()] + fixed + text[match.end() :]
                     logger.debug("Fixed incomplete object before different object")
 
     return text
@@ -681,14 +660,14 @@ def _fix_incomplete_objects_at_end(text: str) -> str:
             obj_start = match.group(1)
             closing = match.group(2)
             # Check if object is incomplete
-            if not obj_start.rstrip().endswith('}'):
-                fixed_obj = obj_start.rstrip() + '}'
-                if closing == ']':
+            if not obj_start.rstrip().endswith("}"):
+                fixed_obj = obj_start.rstrip() + "}"
+                if closing == "]":
                     # In array context, check if we need a comma
-                    before = text[:match.start()].rstrip()
-                    if before and not before.endswith('[') and not before.endswith(','):
-                        fixed_obj += ','
-                text = text[:match.start()] + fixed_obj + closing + text[match.end():]
+                    before = text[: match.start()].rstrip()
+                    if before and not before.endswith("[") and not before.endswith(","):
+                        fixed_obj += ","
+                text = text[: match.start()] + fixed_obj + closing + text[match.end() :]
                 logger.debug("Fixed incomplete object at end")
 
     return text
@@ -696,10 +675,8 @@ def _fix_incomplete_objects_at_end(text: str) -> str:
 
 def _remove_consecutive_duplicates(text: str) -> str:
     """Remove consecutive duplicate complete objects."""
-    consecutive_duplicate = (
-        r'(\{"id":\s*"([^"]+)",\s*"[^"]+":\s*"[^"]+"[^}]*\})\s*,\s*\1'
-    )
-    return re.sub(consecutive_duplicate, r'\1', text)
+    consecutive_duplicate = r'(\{"id":\s*"([^"]+)",\s*"[^"]+":\s*"[^"]+"[^}]*\})\s*,\s*\1'
+    return re.sub(consecutive_duplicate, r"\1", text)
 
 
 def _fix_missing_commas_around_error(text: str, error_pos: int) -> str:
@@ -713,10 +690,10 @@ def _fix_missing_commas_around_error(text: str, error_pos: int) -> str:
     error_context = text[start_check:end_check]
 
     # Look for } followed by whitespace and then { or [
-    missing_comma_pattern = r'\}\s+(?=[\{\[])'
+    missing_comma_pattern = r"\}\s+(?=[\{\[])"
     if re.search(missing_comma_pattern, error_context):
         # Fix missing commas in the error context
-        fixed_context = re.sub(r'\}\s+(?=\{)', '},', error_context)
+        fixed_context = re.sub(r"\}\s+(?=\{)", "},", error_context)
         text = text[:start_check] + fixed_context + text[end_check:]
         logger.debug("Fixed missing comma around error position %s", error_pos)
 
@@ -751,7 +728,7 @@ def _remove_js_comments_safely(text: str) -> str:
             i += 1
             continue
 
-        if char == '\\':
+        if char == "\\":
             # Escape character - next char is escaped
             result.append(char)
             escape_next = True
@@ -772,19 +749,19 @@ def _remove_js_comments_safely(text: str) -> str:
             continue
 
         # Outside string - check for comments
-        if i < len(text) - 1 and text[i:i+2] == '//':
+        if i < len(text) - 1 and text[i : i + 2] == "//":
             # Single-line comment - skip until end of line
-            while i < len(text) and text[i] != '\n':
+            while i < len(text) and text[i] != "\n":
                 i += 1
             # Keep the newline if present
-            if i < len(text) and text[i] == '\n':
-                result.append('\n')
+            if i < len(text) and text[i] == "\n":
+                result.append("\n")
                 i += 1
-        elif i < len(text) - 1 and text[i:i+2] == '/*':
+        elif i < len(text) - 1 and text[i : i + 2] == "/*":
             # Multi-line comment - skip until */
             i += 2
             while i < len(text):
-                if i + 1 < len(text) and text[i:i+2] == '*/':
+                if i + 1 < len(text) and text[i : i + 2] == "*/":
                     i += 2
                     break
                 i += 1
@@ -793,7 +770,7 @@ def _remove_js_comments_safely(text: str) -> str:
             result.append(char)
             i += 1
 
-    return ''.join(result)
+    return "".join(result)
 
 
 def _escape_chinese_quotes_in_strings(text: str) -> str:
@@ -826,7 +803,7 @@ def _escape_chinese_quotes_in_strings(text: str) -> str:
             i += 1
             continue
 
-        if char == '\\':
+        if char == "\\":
             # Escape character - next char is escaped
             result.append(char)
             escape_next = True
@@ -842,9 +819,9 @@ def _escape_chinese_quotes_in_strings(text: str) -> str:
 
         if in_string:
             # Inside string - escape Chinese quotation marks
-            if char == '\u201c':  # Chinese left double quotation mark "
+            if char == "\u201c":  # Chinese left double quotation mark "
                 result.append('\\"')
-            elif char == '\u201d':  # Chinese right double quotation mark "
+            elif char == "\u201d":  # Chinese right double quotation mark "
                 result.append('\\"')
             else:
                 result.append(char)
@@ -855,7 +832,7 @@ def _escape_chinese_quotes_in_strings(text: str) -> str:
         result.append(char)
         i += 1
 
-    return ''.join(result)
+    return "".join(result)
 
 
 def _clean_json_string(text: str) -> str:
@@ -878,30 +855,30 @@ def _clean_json_string(text: str) -> str:
         Cleaned text
     """
     # Remove markdown code block markers if still present
-    text = re.sub(r'```(?:json)?\s*\n?', '', text)
-    text = re.sub(r'```\s*\n?', '', text)
+    text = re.sub(r"```(?:json)?\s*\n?", "", text)
+    text = re.sub(r"```\s*\n?", "", text)
 
     # Remove leading/trailing whitespace and backticks
-    text = text.strip().strip('`')
+    text = text.strip().strip("`")
 
     # Escape Chinese quotation marks inside JSON strings FIRST (before other quote replacements)
     text = _escape_chinese_quotes_in_strings(text)
 
     # Replace smart quotes with ASCII equivalents (legitimate fix)
     # Note: We do this AFTER escaping Chinese quotes to avoid double-processing
-    text = text.replace('\u201c', '"').replace('\u201d', '"')
-    text = text.replace('\u2018', "'").replace('\u2019', "'")
+    text = text.replace("\u201c", '"').replace("\u201d", '"')
+    text = text.replace("\u2018", "'").replace("\u2019", "'")
     text = text.replace('"', '"').replace('"', '"')
     text = text.replace('"', '"').replace('"', '"')
 
     # Remove zero-width and control characters (legitimate fix)
-    text = re.sub(r'[\u200B-\u200D\uFEFF]', '', text)
-    text = re.sub(r'[\x00-\x08\x0B\x0C\x0E-\x1F]', '', text)
+    text = re.sub(r"[\u200B-\u200D\uFEFF]", "", text)
+    text = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F]", "", text)
 
     # Remove JS-style comments (only outside string values to avoid corrupting URLs/paths)
     text = _remove_js_comments_safely(text)
 
     # Remove trailing commas before ] or } (common JSON extension, legitimate fix)
-    text = re.sub(r',\s*(\]|\})', r'\1', text)
+    text = re.sub(r",\s*(\]|\})", r"\1", text)
 
     return text.strip()

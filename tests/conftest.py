@@ -25,9 +25,10 @@ def verify_imports():
     """Verify imports work after path setup."""
     try:
         import importlib
-        importlib.util.find_spec('services')
-        importlib.util.find_spec('config')
-        importlib.util.find_spec('clients')
+
+        importlib.util.find_spec("services")
+        importlib.util.find_spec("config")
+        importlib.util.find_spec("clients")
     except (ImportError, AttributeError) as e:
         print(f"Warning: Could not import modules: {e}")
         print(f"Project root: {project_root}")
@@ -36,4 +37,3 @@ def verify_imports():
 
 # Verify imports work
 verify_imports()
-

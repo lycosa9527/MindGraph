@@ -66,10 +66,9 @@ def _merge_connection_patches(
             continue
         idx = next(
             (
-                i for i, c in enumerate(conns)
-                if isinstance(c, dict)
-                and c.get("source") == source
-                and c.get("target") == target
+                i
+                for i, c in enumerate(conns)
+                if isinstance(c, dict) and c.get("source") == source and c.get("target") == target
             ),
             -1,
         )

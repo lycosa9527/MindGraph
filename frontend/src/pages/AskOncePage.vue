@@ -134,10 +134,11 @@ async function streamFromModel(
     return store.responses[modelId].content
   } catch (error: unknown) {
     if (error instanceof Error && error.name === 'AbortError') {
-      console.log(`[AskOnce] ${modelId} stream aborted`)
       store.updateModelResponse(modelId, { status: 'idle' })
     } else {
-      console.error(`[AskOnce] ${modelId} error:`, error)
+      if (import.meta.env.DEV) {
+        console.error(`[AskOnce] ${modelId} error:`, error)
+      }
       store.updateModelResponse(modelId, {
         status: 'error',
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -342,13 +343,22 @@ onUnmounted(() => {
     <!-- Input Area -->
     <section class="px-6 py-4 bg-white border-b border-gray-200">
       <div class="max-w-5xl mx-auto">
+        <label
+          class="sr-only"
+          for="ask-once-main-prompt"
+        >
+          {{ placeholderText }}
+        </label>
         <ElInput
+          id="ask-once-main-prompt"
           :model-value="promptInput"
           type="textarea"
+          name="ask-once-main-prompt"
           :rows="3"
           :placeholder="placeholderText"
           :disabled="!authStore.isAuthenticated"
           resize="vertical"
+          :aria-label="placeholderText"
           @update:model-value="handleInputChange"
           @keydown="handleKeydown"
           @focus="handleInputFocus"
@@ -402,10 +412,14 @@ onUnmounted(() => {
       width="600px"
     >
       <div class="mb-4">
-        <label class="block text-sm text-gray-600 mb-2">
+        <label
+          class="block text-sm text-gray-600 mb-2"
+          for="ask-once-template-select"
+        >
           {{ t('askOnce.selectTemplate') }}
         </label>
         <ElSelect
+          id="ask-once-template-select"
           v-model="selectedTemplate"
           :placeholder="t('askOnce.selectTemplatePlaceholder')"
           class="w-full"
@@ -420,14 +434,20 @@ onUnmounted(() => {
         </ElSelect>
       </div>
       <div>
-        <label class="block text-sm text-gray-600 mb-2">
+        <label
+          class="block text-sm text-gray-600 mb-2"
+          for="ask-once-system-prompt"
+        >
           {{ t('askOnce.promptContent') }}
         </label>
         <ElInput
+          id="ask-once-system-prompt"
           v-model="systemPromptDraft"
           type="textarea"
+          name="ask-once-system-prompt"
           :rows="10"
           :placeholder="t('askOnce.promptEditPlaceholder')"
+          :aria-label="t('askOnce.promptContent')"
         />
       </div>
       <template #footer>

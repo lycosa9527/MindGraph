@@ -147,8 +147,7 @@ def _pg_quote_literal(value: str) -> str:
 def _validate_pg_identifier(name: str, label: str) -> Optional[str]:
     if not _PG_IDENT.match(name):
         return (
-            f"{label} {name!r} is not a safe PostgreSQL identifier "
-            "(use letters, digits, underscore; see DATABASE_URL)"
+            f"{label} {name!r} is not a safe PostgreSQL identifier (use letters, digits, underscore; see DATABASE_URL)"
         )
     return None
 
@@ -203,7 +202,11 @@ $$;
 
     check_db = _run(
         [
-            "sudo", "-u", "postgres", "psql", "-tAc",
+            "sudo",
+            "-u",
+            "postgres",
+            "psql",
+            "-tAc",
             f"SELECT 1 FROM pg_database WHERE datname = '{database}'",
         ],
         check=False,
@@ -214,9 +217,7 @@ $$;
         if not ok2:
             return err2 or "CREATE DATABASE failed"
 
-    ok3, err3 = _pg_sudo_sql(
-        f"GRANT ALL PRIVILEGES ON DATABASE {database} TO {user};"
-    )
+    ok3, err3 = _pg_sudo_sql(f"GRANT ALL PRIVILEGES ON DATABASE {database} TO {user};")
     if not ok3:
         return err3 or "GRANT DATABASE failed"
 
@@ -226,8 +227,16 @@ $$;
     )
     result = _run(
         [
-            "sudo", "-u", "postgres", "psql", "-v", "ON_ERROR_STOP=1",
-            "-d", database, "-c", grants_schema,
+            "sudo",
+            "-u",
+            "postgres",
+            "psql",
+            "-v",
+            "ON_ERROR_STOP=1",
+            "-d",
+            database,
+            "-c",
+            grants_schema,
         ],
         check=False,
     )
@@ -270,9 +279,7 @@ def _provision_postgresql_local(cfg: dict[str, Any], database_url: str) -> tuple
     if not psql:
         return False, "psql not found; install postgresql-client"
 
-    return _postgres_apply_role_db_grants(
-        user, password, database, database_url, psql
-    )
+    return _postgres_apply_role_db_grants(user, password, database, database_url, psql)
 
 
 # -----------------------------------------------------------------------------
@@ -312,10 +319,7 @@ def _provision_redis_local(redis_url: str, host: str, port: int) -> tuple[bool, 
         if _redis_ping(redis_url):
             return True, "Redis started via systemd"
 
-    return False, (
-        "Redis did not respond to PING. Install/start Redis (see docs/REDIS_SETUP.md) "
-        f"for {host}:{port}"
-    )
+    return False, (f"Redis did not respond to PING. Install/start Redis (see docs/REDIS_SETUP.md) for {host}:{port}")
 
 
 # -----------------------------------------------------------------------------
@@ -402,9 +406,7 @@ def _sync_celery_keys_in_dotenv(
 
     text = env_path.read_text(encoding="utf-8") if env_path.is_file() else ""
     lines = text.splitlines()
-    keys_present = any(
-        line.strip().startswith("CELERY_BROKER_URL=") for line in lines
-    )
+    keys_present = any(line.strip().startswith("CELERY_BROKER_URL=") for line in lines)
     if keys_present:
         return True, "CELERY_BROKER_URL already in .env (not overwriting)"
 
@@ -418,7 +420,10 @@ def _sync_celery_keys_in_dotenv(
         handle.write("\n".join(append) + "\n")
     os.environ["CELERY_BROKER_URL"] = base
     os.environ["CELERY_RESULT_BACKEND"] = base
-    return True, f"Appended CELERY_BROKER_URL / CELERY_RESULT_BACKEND ({base.split('@')[-1]})"
+    return (
+        True,
+        f"Appended CELERY_BROKER_URL / CELERY_RESULT_BACKEND ({base.split('@')[-1]})",
+    )
 
 
 # -----------------------------------------------------------------------------
@@ -434,16 +439,10 @@ def _step_postgresql(
     pg_cfg = _parse_database_url(database_url)
     if args.skip_postgres or not pg_cfg or not _is_local_host(pg_cfg["host"]):
         if pg_cfg and not _is_local_host(pg_cfg["host"]):
-            print(
-                f"[INFO] DATABASE_URL host is remote ({pg_cfg['host']}); "
-                "skipping local PostgreSQL create"
-            )
+            print(f"[INFO] DATABASE_URL host is remote ({pg_cfg['host']}); skipping local PostgreSQL create")
         return 0
     if args.dry_run:
-        print(
-            "[DRY-RUN] Would provision PostgreSQL "
-            f"user={pg_cfg['user']} db={pg_cfg['database']}"
-        )
+        print(f"[DRY-RUN] Would provision PostgreSQL user={pg_cfg['user']} db={pg_cfg['database']}")
         return 0
     if not is_root:
         print(
@@ -471,9 +470,7 @@ def _step_redis(
         return 0
     rp = _parse_redis_url(redis_url)
     if not rp or not _is_local_host(rp["host"]):
-        print(
-            "[WARN] Redis not reachable at REDIS_URL (remote host); fix network/firewall"
-        )
+        print("[WARN] Redis not reachable at REDIS_URL (remote host); fix network/firewall")
         return 0
     if not is_root:
         print(
@@ -500,10 +497,7 @@ def _step_qdrant(
         return
     qh, qp = q_ep
     if not (_is_local_host(qh) and qp == 6333):
-        print(
-            f"[INFO] Qdrant endpoint {qh}:{qp} — local auto-install only supports "
-            "localhost:6333; verify manually"
-        )
+        print(f"[INFO] Qdrant endpoint {qh}:{qp} — local auto-install only supports localhost:6333; verify manually")
         return
     if args.dry_run:
         print("[DRY-RUN] Would ensure Qdrant on localhost:6333")
@@ -515,10 +509,7 @@ def _step_qdrant(
         ok, msg = _provision_qdrant_linux(project_root)
         print(("[OK] " if ok else "[FAIL] ") + msg)
         return
-    print(
-        "[WARN] Qdrant not reachable; run as root on Linux or install manually "
-        "(docs/QDRANT_SETUP.md)"
-    )
+    print("[WARN] Qdrant not reachable; run as root on Linux or install manually (docs/QDRANT_SETUP.md)")
 
 
 def _step_celery_sync(
@@ -530,9 +521,7 @@ def _step_celery_sync(
     if args.skip_celery_sync or not redis_url or not env_path.is_file():
         return
     if args.dry_run:
-        print(
-            "[DRY-RUN] Would append CELERY_BROKER_URL / CELERY_RESULT_BACKEND if missing"
-        )
+        print("[DRY-RUN] Would append CELERY_BROKER_URL / CELERY_RESULT_BACKEND if missing")
         return
     ok, msg = _sync_celery_keys_in_dotenv(env_path, redis_url, celery_db)
     print(("[OK] " if ok else "[INFO] ") + msg)
@@ -540,9 +529,7 @@ def _step_celery_sync(
 
 def main() -> int:
     """Load .env and provision local PostgreSQL, Redis, Qdrant; sync Celery broker URLs."""
-    parser = argparse.ArgumentParser(
-        description="Provision PostgreSQL, Redis, Qdrant, Celery env from .env"
-    )
+    parser = argparse.ArgumentParser(description="Provision PostgreSQL, Redis, Qdrant, Celery env from .env")
     parser.add_argument(
         "--env-file",
         type=Path,
@@ -603,10 +590,7 @@ def main() -> int:
     _step_qdrant(args, file_vars, project_root, is_root)
     _step_celery_sync(args, env_path, redis_url, celery_db)
 
-    print(
-        "[INFO] Done. Next: pip install -r requirements.txt && "
-        "python scripts/db/run_migrations.py && python main.py"
-    )
+    print("[INFO] Done. Next: pip install -r requirements.txt && python scripts/db/run_migrations.py && python main.py")
     return 0
 
 

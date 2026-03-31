@@ -30,6 +30,7 @@ _user_cache = None
 try:
     from services.redis.cache.redis_org_cache import org_cache
     from services.redis.cache.redis_user_cache import user_cache
+
     _REDIS_AVAILABLE = True
     _org_cache = org_cache
     _user_cache = user_cache
@@ -58,13 +59,11 @@ def get_enterprise_user() -> User:
             org = _org_cache.get_by_code(ENTERPRISE_DEFAULT_ORG_CODE)
 
         if not org:
-            org = db.query(Organization).filter(
-                Organization.code == ENTERPRISE_DEFAULT_ORG_CODE
-            ).first()
+            org = db.query(Organization).filter(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE).first()
             if not org:
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found"
+                    detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found",
                 )
 
         # Use cache for user lookup (with SQLite fallback)
@@ -74,9 +73,7 @@ def get_enterprise_user() -> User:
 
         if not user:
             # Check if user exists in database
-            user = db.query(User).filter(
-                User.phone == ENTERPRISE_DEFAULT_USER_PHONE
-            ).first()
+            user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
 
             if not user:
                 # Auto-create enterprise user
@@ -85,7 +82,7 @@ def get_enterprise_user() -> User:
                     password_hash=hash_password("ent-no-pwd"),
                     name="Enterprise User",
                     organization_id=org.id,
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
                 )
                 db.add(user)
                 db.commit()

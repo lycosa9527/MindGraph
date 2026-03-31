@@ -67,9 +67,9 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
       steps: range(4, 'diagram.defaults.stepN', lang),
       substeps: Array.from({ length: 4 }, (_, si) => ({
         step: lt('diagram.defaults.stepN', lang, { n: si + 1 }),
-        substeps: Array.from({ length: 2 }, (_, ssi) => (
+        substeps: Array.from({ length: 2 }, (_, ssi) =>
           lt('diagram.defaults.substepNM', lang, { n: si + 1, m: ssi + 1 })
-        )),
+        ),
       })),
     },
     multi_flow_map: {
@@ -119,7 +119,10 @@ export function getDefaultTemplate(
   if (!CACHE.has(language)) {
     CACHE.set(language, templatesForLocale(language))
   }
-  const table = CACHE.get(language)!
+  const table = CACHE.get(language)
+  if (table === undefined) {
+    return null
+  }
   const spec = table[normalized]
   return spec ? { ...spec } : null
 }

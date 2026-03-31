@@ -18,6 +18,7 @@ Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict, List
 import asyncio
 import json
@@ -28,7 +29,7 @@ from services.infrastructure.utils.browser import BrowserContextManager
 
 logger = logging.getLogger(__name__)
 
-EXPORT_SPEC_SESSION_KEY = 'mindgraph_export_spec'
+EXPORT_SPEC_SESSION_KEY = "mindgraph_export_spec"
 RENDER_TIMEOUT_SECONDS = 20
 RENDER_POLL_INTERVAL_MS = 500
 POST_RENDER_SETTLE_MS = 500
@@ -42,10 +43,10 @@ def _get_base_url() -> str:
     1. FRONTEND_URL env var (e.g. http://localhost:5173 for Vite dev server)
     2. Backend origin at http://localhost:{PORT} (production: backend serves dist/)
     """
-    frontend_url = os.getenv('FRONTEND_URL', '').rstrip('/')
+    frontend_url = os.getenv("FRONTEND_URL", "").rstrip("/")
     if frontend_url:
         return frontend_url
-    port = os.getenv('PORT', '9527')
+    port = os.getenv("PORT", "9527")
     return f"http://localhost:{port}"
 
 
@@ -60,7 +61,8 @@ def _build_export_spec(diagram_data: Dict[str, Any], diagram_type: str) -> str:
 
 
 def _log_debug_info(
-    console_messages: List[str], page_errors: List[str],
+    console_messages: List[str],
+    page_errors: List[str],
 ) -> None:
     """Log browser console messages and errors for debugging."""
     if console_messages:
@@ -72,7 +74,8 @@ def _log_debug_info(
             logger.error("[VueFlowScreenshot]   %s", msg)
     if page_errors:
         logger.error(
-            "[VueFlowScreenshot] Page errors (%d):", len(page_errors),
+            "[VueFlowScreenshot] Page errors (%d):",
+            len(page_errors),
         )
         for err in page_errors:
             logger.error("[VueFlowScreenshot]   %s", err)
@@ -81,9 +84,7 @@ def _log_debug_info(
 async def _inject_spec_and_navigate(page, base_url: str, spec_json: str):
     """Inject spec via init script and navigate directly to /export-render."""
     escaped_spec = json.dumps(spec_json)
-    await page.add_init_script(
-        f"sessionStorage.setItem('{EXPORT_SPEC_SESSION_KEY}', {escaped_spec});"
-    )
+    await page.add_init_script(f"sessionStorage.setItem('{EXPORT_SPEC_SESSION_KEY}', {escaped_spec});")
     logger.debug("[VueFlowScreenshot] Spec will be injected via init script")
 
     export_url = f"{base_url}/export-render"
@@ -92,7 +93,9 @@ async def _inject_spec_and_navigate(page, base_url: str, spec_json: str):
 
 
 async def _wait_for_render(
-    page, console_messages: List[str], page_errors: List[str],
+    page,
+    console_messages: List[str],
+    page_errors: List[str],
 ) -> None:
     """Poll window.__MINDGRAPH_RENDER_COMPLETE and check for errors."""
     logger.debug("[VueFlowScreenshot] Waiting for render completion")
@@ -119,7 +122,9 @@ async def _wait_for_render(
 
 
 async def _screenshot_canvas(
-    page, console_messages: List[str], page_errors: List[str],
+    page,
+    console_messages: List[str],
+    page_errors: List[str],
 ) -> bytes:
     """Wait for Vue Flow nodes, then screenshot the canvas wrapper."""
     logger.debug("[VueFlowScreenshot] Render complete, waiting for nodes")
@@ -135,9 +140,7 @@ async def _screenshot_canvas(
 
     await asyncio.sleep(POST_RENDER_SETTLE_MS / 1000)
 
-    await page.evaluate(
-        "document.querySelectorAll('.el-notification, .el-message').forEach(el => el.remove())"
-    )
+    await page.evaluate("document.querySelectorAll('.el-notification, .el-message').forEach(el => el.remove())")
 
     wrapper = await page.query_selector(".vue-flow-wrapper")
     if not wrapper:
@@ -180,7 +183,9 @@ async def capture_diagram_screenshot(
 
     logger.debug(
         "[VueFlowScreenshot] Starting capture: type=%s, viewport=%dx%d",
-        diagram_type, width, height,
+        diagram_type,
+        width,
+        height,
     )
 
     async with BrowserContextManager() as context:
@@ -188,25 +193,34 @@ async def capture_diagram_screenshot(
         page.set_default_timeout(30000)
         page.set_default_navigation_timeout(30000)
 
-        page.on("console", lambda msg: (
-            console_messages.append(f"{msg.type}: {msg.text}"),
-            logger.debug("[VueFlowScreenshot] CONSOLE: %s: %s", msg.type, msg.text),
-        ))
-        page.on("pageerror", lambda err: (
-            page_errors.append(str(err)),
-            logger.error("[VueFlowScreenshot] PAGE ERROR: %s", err),
-        ))
+        page.on(
+            "console",
+            lambda msg: (
+                console_messages.append(f"{msg.type}: {msg.text}"),
+                logger.debug("[VueFlowScreenshot] CONSOLE: %s: %s", msg.type, msg.text),
+            ),
+        )
+        page.on(
+            "pageerror",
+            lambda err: (
+                page_errors.append(str(err)),
+                logger.error("[VueFlowScreenshot] PAGE ERROR: %s", err),
+            ),
+        )
 
         try:
             await _inject_spec_and_navigate(page, base_url, spec_json)
             await _wait_for_render(page, console_messages, page_errors)
             screenshot_bytes = await _screenshot_canvas(
-                page, console_messages, page_errors,
+                page,
+                console_messages,
+                page_errors,
             )
 
             logger.info(
                 "[VueFlowScreenshot] Screenshot captured: %d bytes, type=%s",
-                len(screenshot_bytes), diagram_type,
+                len(screenshot_bytes),
+                diagram_type,
             )
             return screenshot_bytes
 
@@ -215,6 +229,8 @@ async def capture_diagram_screenshot(
         except Exception as exc:
             _log_debug_info(console_messages, page_errors)
             logger.error(
-                "[VueFlowScreenshot] Unexpected error: %s", exc, exc_info=True,
+                "[VueFlowScreenshot] Unexpected error: %s",
+                exc,
+                exc_info=True,
             )
             raise RuntimeError(f"Vue Flow screenshot failed: {exc}") from exc

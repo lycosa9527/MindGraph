@@ -14,14 +14,28 @@ import logging
 import uuid as uuid_module
 from typing import Optional
 
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, Request, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    Request,
+    UploadFile,
+    status,
+)
 from sqlalchemy import func, update
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session, joinedload
 
 from config.database import get_db
 from models.domain.auth import User
-from models.domain.community import CommunityPost, CommunityPostComment, CommunityPostLike
+from models.domain.community import (
+    CommunityPost,
+    CommunityPostComment,
+    CommunityPostLike,
+)
 from routers.api.helpers import check_endpoint_rate_limit, get_rate_limit_identifier
 from routers.features.community_helpers import (
     COMMUNITY_THUMBNAIL_DIR,
@@ -41,14 +55,33 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api/community", tags=["Community"])
 
-ALLOWED_DIAGRAM_TYPES = frozenset({
-    "mind_map", "mindmap", "concept_map", "bubble_map", "double_bubble_map",
-    "circle_map", "tree_map", "brace_map", "flow_map", "multi_flow_map",
-    "bridge_map", "MindGraph", "MindMate",
-})
-ALLOWED_CATEGORIES = frozenset({
-    "学习笔记", "教学设计", "读书感悟", "工作总结", "创意灵感", "知识整理",
-})
+ALLOWED_DIAGRAM_TYPES = frozenset(
+    {
+        "mind_map",
+        "mindmap",
+        "concept_map",
+        "bubble_map",
+        "double_bubble_map",
+        "circle_map",
+        "tree_map",
+        "brace_map",
+        "flow_map",
+        "multi_flow_map",
+        "bridge_map",
+        "MindGraph",
+        "MindMate",
+    }
+)
+ALLOWED_CATEGORIES = frozenset(
+    {
+        "学习笔记",
+        "教学设计",
+        "读书感悟",
+        "工作总结",
+        "创意灵感",
+        "知识整理",
+    }
+)
 ALLOWED_SORT = frozenset({"newest", "likes", "comments"})
 
 
@@ -90,11 +123,7 @@ def _format_post_response(
             "id": post.author_id,
             "name": post.author.name or "Anonymous",
             "avatar": post.author.avatar or "👤",
-            "organization": (
-                post.author.organization.name
-                if post.author.organization
-                else None
-            ),
+            "organization": (post.author.organization.name if post.author.organization else None),
         },
         "likes_count": post.likes_count,
         "comments_count": post.comments_count,
@@ -211,19 +240,14 @@ def list_posts(
 
     total = query.count()
     posts = (
-        query.options(
-            joinedload(CommunityPost.author).joinedload(User.organization)
-        )
+        query.options(joinedload(CommunityPost.author).joinedload(User.organization))
         .offset((page - 1) * page_size)
         .limit(page_size)
         .all()
     )
 
     return {
-        "posts": [
-            _format_post_response(p, current_user, db)
-            for p in posts
-        ],
+        "posts": [_format_post_response(p, current_user, db) for p in posts],
         "total": total,
         "page": page,
         "page_size": page_size,
@@ -252,7 +276,15 @@ async def create_post(
     post_id, spec_obj = prepare_post_id_and_spec(spec)
 
     post = await save_post_and_thumbnail(
-        post_id, spec_obj, thumbnail, title, description, category, diagram_type, current_user.id, db
+        post_id,
+        spec_obj,
+        thumbnail,
+        title,
+        description,
+        category,
+        diagram_type,
+        current_user.id,
+        db,
     )
 
     logger.info("[Community] User %s created post %s", current_user.id, post_id)
@@ -275,9 +307,7 @@ def get_post(
 
     post = (
         db.query(CommunityPost)
-        .options(
-            joinedload(CommunityPost.author).joinedload(User.organization)
-        )
+        .options(joinedload(CommunityPost.author).joinedload(User.organization))
         .filter(CommunityPost.id == post_id)
         .first()
     )
@@ -369,9 +399,7 @@ def list_likes(
         .limit(limit)
         .all()
     )
-    total = (
-        db.query(CommunityPostLike).filter(CommunityPostLike.post_id == post_id).count()
-    )
+    total = db.query(CommunityPostLike).filter(CommunityPostLike.post_id == post_id).count()
     names = [like.user.name or "Anonymous" for like in likes if like.user]
 
     return {"names": names, "total": total}
@@ -387,14 +415,10 @@ async def create_comment(
 ):
     """Add a comment to a post."""
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "community_comment", identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("community_comment", identifier, max_requests=60, window_seconds=60)
 
     _validate_post_id(post_id)
-    post = await asyncio.to_thread(
-        lambda: db.query(CommunityPost).filter(CommunityPost.id == post_id).first()
-    )
+    post = await asyncio.to_thread(lambda: db.query(CommunityPost).filter(CommunityPost.id == post_id).first())
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
@@ -452,14 +476,10 @@ async def delete_comment(
 ):
     """Delete a comment. Author, org manager (same org as commenter), or admin."""
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "community_comment_delete", identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("community_comment_delete", identifier, max_requests=60, window_seconds=60)
 
     _validate_post_id(post_id)
-    post = await asyncio.to_thread(
-        lambda: db.query(CommunityPost).filter(CommunityPost.id == post_id).first()
-    )
+    post = await asyncio.to_thread(lambda: db.query(CommunityPost).filter(CommunityPost.id == post_id).first())
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
@@ -488,9 +508,7 @@ async def delete_comment(
         db.execute(
             update(CommunityPost)
             .where(CommunityPost.id == post_id)
-            .values(
-                comments_count=func.greatest(0, CommunityPost.comments_count - 1)
-            )
+            .values(comments_count=func.greatest(0, CommunityPost.comments_count - 1))
         )
         db.commit()
 
@@ -539,9 +557,7 @@ async def update_post(
     post = await asyncio.to_thread(
         lambda: (
             db.query(CommunityPost)
-            .options(
-                joinedload(CommunityPost.author).joinedload(User.organization)
-            )
+            .options(joinedload(CommunityPost.author).joinedload(User.organization))
             .filter(CommunityPost.id == post_id)
             .first()
         )
@@ -550,8 +566,7 @@ async def update_post(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
     if not _can_edit_post(post, current_user):
         edit_err = (
-            "You can only edit your own posts, or posts from users in your "
-            "organization (managers), or any post (admin)"
+            "You can only edit your own posts, or posts from users in your organization (managers), or any post (admin)"
         )
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=edit_err)
 
@@ -592,9 +607,7 @@ def delete_post(
     _validate_post_id(post_id)
     post = (
         db.query(CommunityPost)
-        .options(
-            joinedload(CommunityPost.author).joinedload(User.organization)
-        )
+        .options(joinedload(CommunityPost.author).joinedload(User.organization))
         .filter(CommunityPost.id == post_id)
         .first()
     )
@@ -638,14 +651,10 @@ async def toggle_like(
 ):
     """Toggle like on a post."""
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "community_like", identifier, max_requests=120, window_seconds=60
-    )
+    await check_endpoint_rate_limit("community_like", identifier, max_requests=120, window_seconds=60)
 
     _validate_post_id(post_id)
-    post = await asyncio.to_thread(
-        lambda: db.query(CommunityPost).filter(CommunityPost.id == post_id).first()
-    )
+    post = await asyncio.to_thread(lambda: db.query(CommunityPost).filter(CommunityPost.id == post_id).first())
     if not post:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Post not found")
 
@@ -671,9 +680,7 @@ async def toggle_like(
             return False
         db.add(CommunityPostLike(post_id=post_id, user_id=current_user.id))
         db.execute(
-            update(CommunityPost)
-            .where(CommunityPost.id == post_id)
-            .values(likes_count=CommunityPost.likes_count + 1)
+            update(CommunityPost).where(CommunityPost.id == post_id).values(likes_count=CommunityPost.likes_count + 1)
         )
         return True
 
@@ -686,6 +693,7 @@ async def toggle_like(
     try:
         await asyncio.to_thread(_sync_commit_refresh)
     except IntegrityError:
+
         def _sync_handle_integrity():
             db.rollback()
             db.refresh(post)

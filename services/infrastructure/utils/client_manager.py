@@ -18,6 +18,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import TYPE_CHECKING, Any, Dict, List
 import logging
 from threading import Lock
@@ -34,6 +35,7 @@ class ClientManager:
     Thread-safe manager for all LLM clients.
     Ensures only one instance of each client exists (singleton per client type).
     """
+
     def __init__(self):
         self._clients: Dict[str, Any] = {}
         self._lock = Lock()
@@ -61,40 +63,38 @@ class ClientManager:
                 DeepSeekClient,
                 KimiClient,
                 HunyuanClient,
-                VolcengineClient
+                VolcengineClient,
             )
             from clients.omni_client import OmniClient  # pylint: disable=import-outside-toplevel
 
             try:
                 # Initialize Qwen clients (two instances for different purposes)
-                self._clients['qwen'] = QwenClient('generation')
-                self._clients['qwen-turbo'] = QwenClient('classification')
-                self._clients['qwen-plus'] = QwenClient('generation')
+                self._clients["qwen"] = QwenClient("generation")
+                self._clients["qwen-turbo"] = QwenClient("classification")
+                self._clients["qwen-plus"] = QwenClient("generation")
 
                 # Initialize other LLM clients
-                self._clients['deepseek'] = DeepSeekClient()
+                self._clients["deepseek"] = DeepSeekClient()
                 # Note: KimiClient (Dashscope) is initialized but NEVER USED
                 # Load balancer always routes 'kimi' → 'ark-kimi' (Volcengine)
                 # due to higher limits (5,000 RPM vs 60 RPM)
-                self._clients['kimi'] = KimiClient()  # Dashscope client (not used, kept for backward compatibility)
-                self._clients['hunyuan'] = HunyuanClient()
+                self._clients["kimi"] = KimiClient()  # Dashscope client (not used, kept for backward compatibility)
+                self._clients["hunyuan"] = HunyuanClient()
 
                 # Initialize Volcengine ARK clients (using endpoints for higher RPM)
                 # Note: ark-qwen is NOT registered - Qwen always routes to Dashscope
                 # Only DeepSeek is load-balanced (Route A: Dashscope, Route B: Volcengine)
                 # Kimi ALWAYS uses Volcengine endpoint (5,000 RPM vs Dashscope's 60 RPM)
                 # Doubao always uses Volcengine endpoint
-                self._clients['ark-deepseek'] = VolcengineClient('ark-deepseek')
-                self._clients['ark-kimi'] = VolcengineClient('ark-kimi')  # PRIMARY route for Kimi
-                self._clients['ark-doubao'] = VolcengineClient('ark-doubao')
+                self._clients["ark-deepseek"] = VolcengineClient("ark-deepseek")
+                self._clients["ark-kimi"] = VolcengineClient("ark-kimi")  # PRIMARY route for Kimi
+                self._clients["ark-doubao"] = VolcengineClient("ark-doubao")
                 # Map logical 'doubao' to 'ark-doubao' for consistency
-                self._clients['doubao'] = self._clients['ark-doubao']
-                logger.debug(
-                    "[ClientManager] Volcengine ARK clients initialized (using endpoints)"
-                )
+                self._clients["doubao"] = self._clients["ark-doubao"]
+                logger.debug("[ClientManager] Volcengine ARK clients initialized (using endpoints)")
 
                 # Initialize Qwen Omni client (for VoiceAgent)
-                self._clients['omni'] = OmniClient()
+                self._clients["omni"] = OmniClient()
                 logger.debug("[ClientManager] Omni client initialized")
 
                 # Optional: ChatGLM (if configured)
@@ -105,17 +105,10 @@ class ClientManager:
                 #     self._clients['chatglm'] = ChatGLMClient()
 
                 self._initialized = True
-                logger.debug(
-                    "[ClientManager] Initialized %s LLM clients",
-                    len(self._clients)
-                )
+                logger.debug("[ClientManager] Initialized %s LLM clients", len(self._clients))
 
             except Exception as e:
-                logger.error(
-                    "[ClientManager] Initialization failed: %s",
-                    e,
-                    exc_info=True
-                )
+                logger.error("[ClientManager] Initialization failed: %s", e, exc_info=True)
                 raise
 
     def get_client(self, model: str) -> Any:
@@ -133,16 +126,11 @@ class ClientManager:
             RuntimeError: If clients not initialized
         """
         if not self._initialized:
-            raise RuntimeError(
-                "ClientManager not initialized. Call initialize() first."
-            )
+            raise RuntimeError("ClientManager not initialized. Call initialize() first.")
 
         if model not in self._clients:
-            available = ', '.join(self._clients.keys())
-            raise ValueError(
-                f"Unsupported model: {model}. "
-                f"Available models: {available}"
-            )
+            available = ", ".join(self._clients.keys())
+            raise ValueError(f"Unsupported model: {model}. Available models: {available}")
 
         return self._clients[model]
 
@@ -173,7 +161,7 @@ class ClientManager:
     @property
     def omni_client(self):
         """Get Omni client for VoiceAgent"""
-        return self.get_client('omni')
+        return self.get_client("omni")
 
 
 # Singleton instance

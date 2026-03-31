@@ -46,36 +46,36 @@ class LLMLoadBalancer:
     """
 
     # Provider constants
-    PROVIDER_DASHSCOPE = 'dashscope'
-    PROVIDER_VOLCENGINE = 'volcengine'
+    PROVIDER_DASHSCOPE = "dashscope"
+    PROVIDER_VOLCENGINE = "volcengine"
 
     # Fixed model mappings (for non-load-balanced models)
     FIXED_MODEL_MAP = {
         # Logical models (frontend buttons)
-        'qwen': 'qwen',  # → Dashscope qwen-plus-latest (15,000 RPM, 1,200,000 TPM)
+        "qwen": "qwen",  # → Dashscope qwen-plus-latest (15,000 RPM, 1,200,000 TPM)
         # → Volcengine Kimi via endpoint (ALWAYS - 5,000 RPM, 500,000 TPM vs Dashscope's 60 RPM, 100,000 TPM)
-        'kimi': 'ark-kimi',
-        'doubao': 'ark-doubao',  # → Volcengine Doubao via endpoint (higher RPM than Dashscope)
+        "kimi": "ark-kimi",
+        "doubao": "ark-doubao",  # → Volcengine Doubao via endpoint (higher RPM than Dashscope)
         # DeepSeek load balancing:
         # - Dashscope route (deepseek-v3.1/v3.2): 15,000 RPM, 1,200,000-1,500,000 TPM
         # - Volcengine route (ark-deepseek v3.2): 15,000 RPM, 1,500,000 TPM
         # Internal aliases
-        'qwen-turbo': 'qwen-turbo',  # → Dashscope qwen-turbo
-        'qwen-plus': 'qwen-plus',    # → Dashscope qwen-plus
-        'qwen-plus-latest': 'qwen-plus',  # → Dashscope qwen-plus-latest
+        "qwen-turbo": "qwen-turbo",  # → Dashscope qwen-turbo
+        "qwen-plus": "qwen-plus",  # → Dashscope qwen-plus
+        "qwen-plus-latest": "qwen-plus",  # → Dashscope qwen-plus-latest
         # Unaffected
-        'hunyuan': 'hunyuan',  # → Tencent hunyuan
-        'omni': 'omni',        # → Voice agent
+        "hunyuan": "hunyuan",  # → Tencent hunyuan
+        "omni": "omni",  # → Voice agent
     }
 
     def __init__(
         self,
-        strategy: str = 'round_robin',
+        strategy: str = "round_robin",
         weights: Optional[Dict[str, int]] = None,
         enabled: bool = True,
-        dashscope_rate_limiter: Optional['DashscopeRateLimiter'] = None,
+        dashscope_rate_limiter: Optional["DashscopeRateLimiter"] = None,
         load_balancer_rate_limiter: Optional[LoadBalancerRateLimiter] = None,
-        rate_limit_aware: bool = True
+        rate_limit_aware: bool = True,
     ):
         """
         Initialize load balancer.
@@ -90,31 +90,32 @@ class LLMLoadBalancer:
         """
         self.strategy = strategy
         # Normalize weights to dashscope/volcengine format
-        self.weights = self._normalize_weights(weights or {'dashscope': 50, 'volcengine': 50})
+        self.weights = self._normalize_weights(weights or {"dashscope": 50, "volcengine": 50})
         self.enabled = enabled
         self._counter = 0  # Local fallback for round_robin if Redis unavailable
         self._use_redis = is_redis_available()
         self.dashscope_rate_limiter = dashscope_rate_limiter  # Shared Dashscope limiter
         self.load_balancer_rate_limiter = load_balancer_rate_limiter  # Volcengine limiter only
         self.rate_limit_aware = rate_limit_aware and (
-            dashscope_rate_limiter is not None or
-            load_balancer_rate_limiter is not None
+            dashscope_rate_limiter is not None or load_balancer_rate_limiter is not None
         )
 
         # Validate strategy
-        valid_strategies = ['weighted', 'random', 'round_robin']
+        valid_strategies = ["weighted", "random", "round_robin"]
         if strategy not in valid_strategies:
             logger.warning(
-                "[LoadBalancer] Invalid strategy '%s', "
-                "must be one of %s. Using 'round_robin'.",
-                strategy, valid_strategies
+                "[LoadBalancer] Invalid strategy '%s', must be one of %s. Using 'round_robin'.",
+                strategy,
+                valid_strategies,
             )
-            self.strategy = 'round_robin'
+            self.strategy = "round_robin"
 
         logger.info(
-            "[LoadBalancer] Initialized: strategy=%s, "
-            "weights=%s, enabled=%s, redis=%s",
-            self.strategy, self.weights, enabled, self._use_redis
+            "[LoadBalancer] Initialized: strategy=%s, weights=%s, enabled=%s, redis=%s",
+            self.strategy,
+            self.weights,
+            enabled,
+            self._use_redis,
         )
 
     def _normalize_weights(self, weights: Dict[str, int]) -> Dict[str, int]:
@@ -123,25 +124,25 @@ class LLMLoadBalancer:
         Validates and normalizes weights to sum to 100.
         """
         normalized = {
-            'dashscope': weights.get('dashscope', 50),
-            'volcengine': weights.get('volcengine', 50)
+            "dashscope": weights.get("dashscope", 50),
+            "volcengine": weights.get("volcengine", 50),
         }
 
         # Validate weights are in valid range (0-100)
-        normalized['dashscope'] = max(0, min(100, normalized['dashscope']))
-        normalized['volcengine'] = max(0, min(100, normalized['volcengine']))
+        normalized["dashscope"] = max(0, min(100, normalized["dashscope"]))
+        normalized["volcengine"] = max(0, min(100, normalized["volcengine"]))
 
         # Normalize weights to sum to 100 for proper probability distribution
-        total = normalized['dashscope'] + normalized['volcengine']
+        total = normalized["dashscope"] + normalized["volcengine"]
         if total > 0:
             # Preserve integer values while normalizing
-            dashscope_weight = normalized['dashscope']
-            normalized['dashscope'] = int(round(dashscope_weight * 100 / total))
-            normalized['volcengine'] = 100 - normalized['dashscope']  # Ensure they sum to exactly 100
+            dashscope_weight = normalized["dashscope"]
+            normalized["dashscope"] = int(round(dashscope_weight * 100 / total))
+            normalized["volcengine"] = 100 - normalized["dashscope"]  # Ensure they sum to exactly 100
         else:
             # If both are 0, default to 50/50
             logger.warning("Load balancing weights sum to 0, using default 50/50")
-            normalized = {'dashscope': 50, 'volcengine': 50}
+            normalized = {"dashscope": 50, "volcengine": 50}
 
         return normalized
 
@@ -190,11 +191,11 @@ class LLMLoadBalancer:
             dashscope_available = True
             if self.dashscope_rate_limiter:
                 stats = self.dashscope_rate_limiter.get_stats()
-                current_qpm = stats.get('current_qpm', 0)
-                active_requests = stats.get('active_requests', 0)
+                current_qpm = stats.get("current_qpm", 0)
+                active_requests = stats.get("active_requests", 0)
                 dashscope_available = (
-                    current_qpm < self.dashscope_rate_limiter.qpm_limit and
-                    active_requests < self.dashscope_rate_limiter.concurrent_limit
+                    current_qpm < self.dashscope_rate_limiter.qpm_limit
+                    and active_requests < self.dashscope_rate_limiter.concurrent_limit
                 )
 
             # Check Volcengine availability using load balancer rate limiter
@@ -215,25 +216,24 @@ class LLMLoadBalancer:
             # If both available, fall through to strategy selection
 
         # Apply configured strategy
-        if self.strategy == 'weighted':
+        if self.strategy == "weighted":
             # Stateless! Each request independently rolls dice
             # Perfect for multi-worker - no coordination needed
             rand = random.randint(1, 100)
             provider = (
-                self.PROVIDER_DASHSCOPE
-                if rand <= self.weights.get('dashscope', 50)
-                else self.PROVIDER_VOLCENGINE
+                self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 50) else self.PROVIDER_VOLCENGINE
             )
             logger.debug(
                 "[LoadBalancer] Weighted selection: rand=%s, provider=%s",
-                rand, provider
+                rand,
+                provider,
             )
             return provider
 
-        elif self.strategy == 'random':
+        elif self.strategy == "random":
             return random.choice([self.PROVIDER_DASHSCOPE, self.PROVIDER_VOLCENGINE])
 
-        elif self.strategy == 'round_robin':
+        elif self.strategy == "round_robin":
             # Use Redis for shared counter across workers
             # HOW IT WORKS ACROSS WORKERS (example with 5 workers):
             # All workers share the same Redis counter, so number of workers doesn't matter!
@@ -251,14 +251,11 @@ class LLMLoadBalancer:
                 counter = RedisOps.increment(ROUND_ROBIN_KEY, ttl_seconds=86400)  # 24h TTL
                 if counter is not None:
                     # Even counter → Dashscope, odd → Volcengine
-                    provider = (
-                        self.PROVIDER_DASHSCOPE
-                        if counter % 2 == 0
-                        else self.PROVIDER_VOLCENGINE
-                    )
+                    provider = self.PROVIDER_DASHSCOPE if counter % 2 == 0 else self.PROVIDER_VOLCENGINE
                     logger.debug(
                         "[LoadBalancer] Round-robin (Redis): counter=%s, provider=%s",
-                        counter, provider
+                        counter,
+                        provider,
                     )
                     return provider
                 else:
@@ -274,14 +271,11 @@ class LLMLoadBalancer:
             # Worker 2: Request 1 → Dashscope, Request 2 → Volcengine
             # Result: Both workers send first request to Dashscope (not ideal)
             self._counter += 1
-            provider = (
-                self.PROVIDER_DASHSCOPE
-                if self._counter % 2 == 0
-                else self.PROVIDER_VOLCENGINE
-            )
+            provider = self.PROVIDER_DASHSCOPE if self._counter % 2 == 0 else self.PROVIDER_VOLCENGINE
             logger.debug(
                 "[LoadBalancer] Round-robin (local): counter=%s, provider=%s",
-                self._counter, provider
+                self._counter,
+                provider,
             )
             return provider
 
@@ -310,15 +304,17 @@ class LLMLoadBalancer:
             map_model('kimi') → 'ark-kimi' (Volcengine, ALWAYS - never Dashscope)
         """
         # DeepSeek is the only load-balanced model
-        if logical_model == 'deepseek':
+        if logical_model == "deepseek":
             provider = self._select_deepseek_provider()
             if provider == self.PROVIDER_VOLCENGINE:
-                physical = 'ark-deepseek'
+                physical = "ark-deepseek"
             else:
-                physical = 'deepseek'
+                physical = "deepseek"
             logger.debug(
                 "[LoadBalancer] map_model: %s → %s (provider=%s)",
-                logical_model, physical, provider
+                logical_model,
+                physical,
+                provider,
             )
             return physical
 
@@ -326,18 +322,15 @@ class LLMLoadBalancer:
         physical = self.FIXED_MODEL_MAP.get(logical_model, logical_model)
 
         # Safety check: Ensure Kimi always uses Volcengine (5,000 RPM vs Dashscope's 60 RPM)
-        if logical_model == 'kimi' and physical != 'ark-kimi':
+        if logical_model == "kimi" and physical != "ark-kimi":
             logger.warning(
                 "[LoadBalancer] Kimi mapped to %s instead of ark-kimi! "
                 "Force routing to Volcengine (5,000 RPM vs Dashscope's 60 RPM)",
-                physical
+                physical,
             )
-            physical = 'ark-kimi'
+            physical = "ark-kimi"
 
-        logger.debug(
-            "[LoadBalancer] map_model: %s → %s (fixed)",
-            logical_model, physical
-        )
+        logger.debug("[LoadBalancer] map_model: %s → %s (fixed)", logical_model, physical)
         return physical
 
     def get_provider_from_model(self, model: str) -> Optional[str]:
@@ -356,9 +349,9 @@ class LLMLoadBalancer:
             get_provider_from_model('qwen') → None
         """
         # Check if it's a physical DeepSeek model
-        if model == 'ark-deepseek':
+        if model == "ark-deepseek":
             return self.PROVIDER_VOLCENGINE
-        if model == 'deepseek':
+        if model == "deepseek":
             return self.PROVIDER_DASHSCOPE
 
         # Check if it's a logical DeepSeek model (would need to map first)
@@ -367,11 +360,7 @@ class LLMLoadBalancer:
         return None
 
     def record_provider_metrics(
-        self,
-        provider: str,
-        success: bool,
-        duration: float,
-        error: Optional[str] = None
+        self, provider: str, success: bool, duration: float, error: Optional[str] = None
     ) -> None:
         """
         Record performance metrics for a provider in Redis.
@@ -421,27 +410,23 @@ class LLMLoadBalancer:
                 metrics = json.loads(metrics_json)
             else:
                 metrics = {
-                    'min_duration': float('inf'),
-                    'max_duration': 0.0,
-                    'last_updated': time.time()
+                    "min_duration": float("inf"),
+                    "max_duration": 0.0,
+                    "last_updated": time.time(),
                 }
 
-            metrics['min_duration'] = min(metrics.get('min_duration', duration), duration)
-            metrics['max_duration'] = max(metrics.get('max_duration', 0.0), duration)
-            metrics['last_updated'] = time.time()
+            metrics["min_duration"] = min(metrics.get("min_duration", duration), duration)
+            metrics["max_duration"] = max(metrics.get("max_duration", 0.0), duration)
+            metrics["last_updated"] = time.time()
 
             # Store metadata with 1 hour TTL
-            RedisOps.set_with_ttl(
-                metrics_key,
-                json.dumps(metrics),
-                ttl_seconds=3600
-            )
+            RedisOps.set_with_ttl(metrics_key, json.dumps(metrics), ttl_seconds=3600)
 
             # Track recent requests in sliding window (last 100 requests)
             window_data = {
-                'timestamp': time.time(),
-                'success': success,
-                'duration': duration
+                "timestamp": time.time(),
+                "success": success,
+                "duration": duration,
             }
             RedisOps.list_push(window_key, json.dumps(window_data))
 
@@ -482,11 +467,11 @@ class LLMLoadBalancer:
         """
         if not self._use_redis:
             return {
-                'success_rate': 1.0,  # Assume healthy if no metrics
-                'avg_duration': 0.0,
-                'total_requests': 0,
-                'recent_failures': 0,
-                'healthy': True
+                "success_rate": 1.0,  # Assume healthy if no metrics
+                "avg_duration": 0.0,
+                "total_requests": 0,
+                "recent_failures": 0,
+                "healthy": True,
             }
 
         try:
@@ -497,11 +482,11 @@ class LLMLoadBalancer:
             metrics_json = RedisOps.get(metrics_key)
             if not metrics_json:
                 return {
-                    'success_rate': 1.0,
-                    'avg_duration': 0.0,
-                    'total_requests': 0,
-                    'recent_failures': 0,
-                    'healthy': True
+                    "success_rate": 1.0,
+                    "avg_duration": 0.0,
+                    "total_requests": 0,
+                    "recent_failures": 0,
+                    "healthy": True,
                 }
 
             # Get counters from atomic Redis keys
@@ -517,8 +502,8 @@ class LLMLoadBalancer:
             successful = int(successful_str) if successful_str else 0
             total_duration = float(total_duration_str) if total_duration_str else 0.0
 
-            # Get metadata from JSON
-            json.loads(metrics_json) if metrics_json else {}
+            # Get metadata from JSON (validate parse; result unused here)
+            _ = json.loads(metrics_json) if metrics_json else {}
 
             success_rate = successful / total if total > 0 else 1.0
             avg_duration = total_duration / total if total > 0 else 0.0
@@ -533,7 +518,7 @@ class LLMLoadBalancer:
                 for entry_json in window_data:
                     try:
                         entry = json.loads(entry_json)
-                        if not entry.get('success', True):
+                        if not entry.get("success", True):
                             recent_failures += 1
                     except (json.JSONDecodeError, KeyError):
                         continue
@@ -542,21 +527,21 @@ class LLMLoadBalancer:
             healthy = success_rate > 0.8 and recent_failures < 10
 
             return {
-                'success_rate': success_rate,
-                'avg_duration': avg_duration,
-                'total_requests': total,
-                'recent_failures': recent_failures,
-                'healthy': healthy
+                "success_rate": success_rate,
+                "avg_duration": avg_duration,
+                "total_requests": total,
+                "recent_failures": recent_failures,
+                "healthy": healthy,
             }
 
         except Exception as e:
             logger.debug("[LoadBalancer] Failed to get provider health from Redis: %s", e)
             return {
-                'success_rate': 1.0,
-                'avg_duration': 0.0,
-                'total_requests': 0,
-                'recent_failures': 0,
-                'healthy': True
+                "success_rate": 1.0,
+                "avg_duration": 0.0,
+                "total_requests": 0,
+                "recent_failures": 0,
+                "healthy": True,
             }
 
     def _select_health_aware_provider(self) -> str:
@@ -576,51 +561,41 @@ class LLMLoadBalancer:
         volcengine_health = self.get_provider_health(self.PROVIDER_VOLCENGINE)
 
         # If both healthy, use weighted selection
-        if dashscope_health['healthy'] and volcengine_health['healthy']:
+        if dashscope_health["healthy"] and volcengine_health["healthy"]:
             rand = random.randint(1, 100)
             provider = (
-                self.PROVIDER_DASHSCOPE
-                if rand <= self.weights.get('dashscope', 50)
-                else self.PROVIDER_VOLCENGINE
+                self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 50) else self.PROVIDER_VOLCENGINE
             )
             logger.debug(
                 "[LoadBalancer] Health-aware: both healthy, using weighted: %s",
-                provider
+                provider,
             )
             return provider
 
         # If one is unhealthy, prefer the healthy one
-        if dashscope_health['healthy'] and not volcengine_health['healthy']:
+        if dashscope_health["healthy"] and not volcengine_health["healthy"]:
             logger.warning(
                 "[LoadBalancer] Health-aware: Volcengine unhealthy "
                 "(success_rate=%.2f%%, recent_failures=%s), routing to Dashscope",
-                volcengine_health['success_rate'] * 100,
-                volcengine_health['recent_failures']
+                volcengine_health["success_rate"] * 100,
+                volcengine_health["recent_failures"],
             )
             return self.PROVIDER_DASHSCOPE
 
-        if volcengine_health['healthy'] and not dashscope_health['healthy']:
+        if volcengine_health["healthy"] and not dashscope_health["healthy"]:
             logger.warning(
                 "[LoadBalancer] Health-aware: Dashscope unhealthy "
                 "(success_rate=%.2f%%, recent_failures=%s), routing to Volcengine",
-                dashscope_health['success_rate'] * 100,
-                dashscope_health['recent_failures']
+                dashscope_health["success_rate"] * 100,
+                dashscope_health["recent_failures"],
             )
             return self.PROVIDER_VOLCENGINE
 
         # Both unhealthy - use weighted selection (better than random)
-        logger.warning(
-            "[LoadBalancer] Health-aware: Both providers unhealthy, "
-            "using weighted selection"
-        )
+        logger.warning("[LoadBalancer] Health-aware: Both providers unhealthy, using weighted selection")
         rand = random.randint(1, 100)
-        provider = (
-            self.PROVIDER_DASHSCOPE
-            if rand <= self.weights.get('dashscope', 50)
-            else self.PROVIDER_VOLCENGINE
-        )
+        provider = self.PROVIDER_DASHSCOPE if rand <= self.weights.get("dashscope", 50) else self.PROVIDER_VOLCENGINE
         return provider
-
 
 
 # Singleton instance (initialized by LLMService)
@@ -632,12 +607,12 @@ _load_balancer: Optional[LLMLoadBalancer] = None
 
 
 def initialize_load_balancer(
-    strategy: str = 'round_robin',
+    strategy: str = "round_robin",
     weights: Optional[Dict[str, int]] = None,
     enabled: bool = True,
-    dashscope_rate_limiter: Optional['DashscopeRateLimiter'] = None,
+    dashscope_rate_limiter: Optional["DashscopeRateLimiter"] = None,
     load_balancer_rate_limiter: Optional[LoadBalancerRateLimiter] = None,
-    rate_limit_aware: bool = True
+    rate_limit_aware: bool = True,
 ) -> LLMLoadBalancer:
     """
     Initialize the global load balancer.
@@ -663,6 +638,6 @@ def initialize_load_balancer(
         enabled=enabled,
         dashscope_rate_limiter=dashscope_rate_limiter,
         load_balancer_rate_limiter=load_balancer_rate_limiter,
-        rate_limit_aware=rate_limit_aware
+        rate_limit_aware=rate_limit_aware,
     )
     return _load_balancer

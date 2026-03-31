@@ -26,19 +26,19 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
     These occur when request body/parameters don't match the expected schema.
     Common causes: missing required fields, wrong data types, invalid formats.
     """
-    path = getattr(request.url, 'path', '') if request and request.url else ''
+    path = getattr(request.url, "path", "") if request and request.url else ""
 
     # Extract validation errors
-    errors = exc.errors() if hasattr(exc, 'errors') else []
+    errors = exc.errors() if hasattr(exc, "errors") else []
     error_details = []
     for error in errors:
-        loc = error.get('loc', [])
-        msg = error.get('msg', '')
+        loc = error.get("loc", [])
+        msg = error.get("msg", "")
         error_details.append(f"{'.'.join(str(x) for x in loc)}: {msg}")
 
     # Log at DEBUG level for common validation issues (expected client errors)
     # Log at WARNING level for unusual validation errors
-    error_summary = '; '.join(error_details[:3])  # Show first 3 errors
+    error_summary = "; ".join(error_details[:3])  # Show first 3 errors
     if len(error_details) > 3:
         error_summary += f" ... and {len(error_details) - 3} more"
 
@@ -48,8 +48,8 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
         status_code=422,
         content={
             "detail": error_details,
-            "message": "Request validation failed. Please check your request parameters."
-        }
+            "message": "Request validation failed. Please check your request parameters.",
+        },
     )
 
 
@@ -60,7 +60,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
     Returns FastAPI-standard format: {"detail": "error message"}
     This matches FastAPI's default HTTPException response format.
     """
-    path = getattr(request.url, 'path', '') if request and request.url else ''
+    path = getattr(request.url, "path", "") if request and request.url else ""
     detail = exc.detail or ""
 
     # Suppress warnings for expected security checks:
@@ -94,7 +94,7 @@ async def http_exception_handler(request: Request, exc: HTTPException):
         logger.warning("HTTP %s: %s", exc.status_code, exc.detail)
     return JSONResponse(
         status_code=exc.status_code,
-        content={"detail": exc.detail}  # Use "detail" to match FastAPI standard
+        content={"detail": exc.detail},  # Use "detail" to match FastAPI standard
     )
 
 
@@ -102,9 +102,9 @@ async def general_exception_handler(request: Request, exc: Exception):
     """Handle all unhandled exceptions"""
     exception_type = type(exc).__name__
     exception_message = str(exc)
-    request_path = getattr(request.url, 'path', '') if request and request.url else ''
+    request_path = getattr(request.url, "path", "") if request and request.url else ""
 
-    stack_trace = ''.join(traceback.format_exception(type(exc), exc, exc.__traceback__))
+    stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
     logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)
 
@@ -124,15 +124,16 @@ async def general_exception_handler(request: Request, exc: Exception):
                 exception_type=exception_type,
                 error_message=exception_message,
                 stack_trace=stack_trace,
-                request_path=request_path
+                request_path=request_path,
             )
         except Exception as alert_error:  # pylint: disable=broad-except
-            logger.error("Failed to send unhandled exception alert: %s", alert_error, exc_info=True)
+            logger.error(
+                "Failed to send unhandled exception alert: %s",
+                alert_error,
+                exc_info=True,
+            )
 
-    return JSONResponse(
-        status_code=500,
-        content=error_response
-    )
+    return JSONResponse(status_code=500, content=error_response)
 
 
 def _is_critical_exception(exception_type: str, exception_message: str) -> bool:
@@ -155,7 +156,7 @@ def _is_critical_exception(exception_type: str, exception_message: str) -> bool:
         "MemoryError",
         "OSError",
         "SystemError",
-        "RuntimeError"
+        "RuntimeError",
     )
 
     critical_keywords = (
@@ -166,7 +167,7 @@ def _is_critical_exception(exception_type: str, exception_message: str) -> bool:
         "disk",
         "file system",
         "critical",
-        "fatal"
+        "fatal",
     )
 
     if exception_type in critical_exception_types:

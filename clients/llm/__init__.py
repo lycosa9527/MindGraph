@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Union
 import logging
 import os
@@ -39,8 +40,8 @@ def _initialize_clients():
     doubao_cli = None
 
     try:
-        qwen_client_cls = QwenClient(model_type='classification')  # qwen-plus-latest
-        qwen_client_gen = QwenClient(model_type='generation')         # qwen-plus
+        qwen_client_cls = QwenClient(model_type="classification")  # qwen-plus-latest
+        qwen_client_gen = QwenClient(model_type="generation")  # qwen-plus
         qwen_client_main = qwen_client_cls  # Legacy compatibility
 
         # Multi-LLM clients - Dedicated classes for each provider
@@ -50,19 +51,17 @@ def _initialize_clients():
         # Note: doubao_client uses VolcengineClient with endpoint for higher RPM
         # Fallback to DoubaoClient only if endpoint not configured (for backward compatibility)
         try:
-            doubao_cli = VolcengineClient('ark-doubao')
+            doubao_cli = VolcengineClient("ark-doubao")
         except ValueError:
             # Endpoint not configured, fallback to legacy DoubaoClient
-            logger.warning(
-                "[clients.llm] ARK_DOUBAO_ENDPOINT not configured, using legacy DoubaoClient"
-            )
+            logger.warning("[clients.llm] ARK_DOUBAO_ENDPOINT not configured, using legacy DoubaoClient")
             doubao_cli = DoubaoClient()
 
         # Only log from main worker to avoid duplicate messages
-        if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+        if os.getenv("UVICORN_WORKER_ID") is None or os.getenv("UVICORN_WORKER_ID") == "0":
             logger.info("[LLMClients] LLM clients initialized successfully (Qwen, DeepSeek, Kimi, Hunyuan, Doubao)")
     except Exception as e:
-        logger.warning('Failed to initialize LLM clients: %s', e)
+        logger.warning("Failed to initialize LLM clients: %s", e)
 
     return (
         qwen_client_main,
@@ -71,7 +70,7 @@ def _initialize_clients():
         deepseek_cli,
         kimi_cli,
         hunyuan_cli,
-        doubao_cli
+        doubao_cli,
     )
 
 
@@ -83,12 +82,12 @@ def _initialize_clients():
     deepseek_client,
     kimi_client,
     hunyuan_client,
-    doubao_client
+    doubao_client,
 ) = _initialize_clients()
 
 
 def get_llm_client(
-    model_id: str = 'qwen'
+    model_id: str = "qwen",
 ) -> Union[
     QwenClient,
     DeepSeekClient,
@@ -96,7 +95,7 @@ def get_llm_client(
     HunyuanClient,
     DoubaoClient,
     VolcengineClient,
-    MockLLMClient
+    MockLLMClient,
 ]:
     """
     Get an LLM client by model ID.
@@ -108,23 +107,23 @@ def get_llm_client(
         LLM client instance or MockLLMClient if client not available
     """
     client_map = {
-        'qwen': qwen_client_generation,
-        'deepseek': deepseek_client,
-        'kimi': kimi_client,
-        'hunyuan': hunyuan_client,
-        'doubao': doubao_client
+        "qwen": qwen_client_generation,
+        "deepseek": deepseek_client,
+        "kimi": kimi_client,
+        "hunyuan": hunyuan_client,
+        "doubao": doubao_client,
     }
 
     client = client_map.get(model_id)
 
     if client is not None:
-        logger.debug('Using %s LLM client', model_id)
+        logger.debug("Using %s LLM client", model_id)
         return client
     else:
         logger.error(
             'LLM client not available for model "%s". This should not happen in production. '
-            'Falling back to deprecated mock client. Please check LLM configuration.',
-            model_id
+            "Falling back to deprecated mock client. Please check LLM configuration.",
+            model_id,
         )
         # DEPRECATED: Mock client fallback - should not be used in production
         # Real LLM clients should always be configured
@@ -132,20 +131,20 @@ def get_llm_client(
 
 
 __all__ = [
-    'QwenClient',
-    'DeepSeekClient',
-    'KimiClient',
-    'DoubaoClient',
-    'VolcengineClient',
-    'HunyuanClient',
-    'MockLLMClient',
-    'qwen_client',
-    'qwen_client_classification',
-    'qwen_client_generation',
-    'deepseek_client',
-    'kimi_client',
-    'hunyuan_client',
-    'doubao_client',
-    'get_llm_client',
-    'close_httpx_clients',
+    "QwenClient",
+    "DeepSeekClient",
+    "KimiClient",
+    "DoubaoClient",
+    "VolcengineClient",
+    "HunyuanClient",
+    "MockLLMClient",
+    "qwen_client",
+    "qwen_client_classification",
+    "qwen_client_generation",
+    "deepseek_client",
+    "kimi_client",
+    "hunyuan_client",
+    "doubao_client",
+    "get_llm_client",
+    "close_httpx_clients",
 ]

@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
@@ -41,23 +42,20 @@ def serialize_document(document) -> dict:
         "uploader": {
             "id": document.uploader_id,
             "name": document.uploader.name if document.uploader else None,
-        }
+        },
     }
 
 
 def require_admin(current_user: User = Depends(get_current_user)) -> User:
     """Require admin access."""
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
     return current_user
 
 
 def get_optional_user(
     request: Request,
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security)
+    credentials: Optional[HTTPAuthorizationCredentials] = Depends(security),
 ) -> Optional[User]:
     """
     Get current user if authenticated, otherwise return None.

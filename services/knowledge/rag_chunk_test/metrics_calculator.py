@@ -11,13 +11,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional
 import logging
 
 from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
-from services.knowledge.rag_chunk_test.answer_quality_evaluator import AnswerQualityEvaluator
+from services.knowledge.rag_chunk_test.answer_quality_evaluator import (
+    AnswerQualityEvaluator,
+)
 from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
-from services.knowledge.rag_chunk_test.cross_method_comparator import CrossMethodComparator
+from services.knowledge.rag_chunk_test.cross_method_comparator import (
+    CrossMethodComparator,
+)
 from services.knowledge.retrieval_test_service import RetrievalTestService
 
 logger = logging.getLogger(__name__)
@@ -31,7 +36,7 @@ class MetricsCalculator:
         chunk_comparator: ChunkComparator,
         answer_quality_evaluator: AnswerQualityEvaluator,
         diversity_evaluator: DiversityEvaluator,
-        cross_method_comparator: CrossMethodComparator
+        cross_method_comparator: CrossMethodComparator,
     ):
         """Initialize metrics calculator with required evaluators."""
         self.chunk_comparator = chunk_comparator
@@ -45,7 +50,7 @@ class MetricsCalculator:
         modes: Optional[List[str]] = None,
         retrieval_results: Optional[Dict[str, List[Dict[str, Any]]]] = None,
         queries: Optional[List[str]] = None,
-        expected_chunks_map: Optional[Dict[str, List[int]]] = None
+        expected_chunks_map: Optional[Dict[str, List[int]]] = None,
     ) -> Dict[str, Any]:
         """
         Calculate average metrics across all queries.
@@ -92,7 +97,7 @@ class MetricsCalculator:
                     "recall_at_k": {
                         k: sum(m.get("recall_at_k", {}).get(k, 0) for m in mode_metrics) / len(mode_metrics)
                         for k in k_values
-                    }
+                    },
                 }
 
         # Calculate Hit Rate@K and MAP if we have retrieval results
@@ -107,10 +112,7 @@ class MetricsCalculator:
                 relevant_lists = []
 
                 for query in queries:
-                    query_results = [
-                        r for r in retrieval_results.get(mode, [])
-                        if r.get("query") == query
-                    ]
+                    query_results = [r for r in retrieval_results.get(mode, []) if r.get("query") == query]
                     if query_results:
                         result = query_results[0]["result"]
                         retrieved_ids = [r["chunk_id"] for r in result.get("results", [])]
@@ -124,15 +126,11 @@ class MetricsCalculator:
                     hit_rates = {k: [] for k in k_values}
                     for retrieved_ids, relevant_ids in zip(retrieved_lists, relevant_lists):
                         for k in k_values:
-                            hit_rate = retrieval_service.calculate_hit_rate_at_k(
-                                retrieved_ids, relevant_ids, k
-                            )
+                            hit_rate = retrieval_service.calculate_hit_rate_at_k(retrieved_ids, relevant_ids, k)
                             hit_rates[k].append(hit_rate)
 
                     avg_metrics[mode]["hit_rate_at_k"] = {
-                        k: sum(hit_rates[k]) / len(hit_rates[k])
-                        if hit_rates[k] else 0.0
-                        for k in k_values
+                        k: sum(hit_rates[k]) / len(hit_rates[k]) if hit_rates[k] else 0.0 for k in k_values
                     }
 
                     # Calculate MAP
@@ -146,7 +144,7 @@ class MetricsCalculator:
         retrieval_results: Dict[str, List[Dict[str, Any]]],
         modes: List[str],
         _queries: List[str],
-        expected_chunks_map: Optional[Dict[str, List[int]]] = None
+        expected_chunks_map: Optional[Dict[str, List[int]]] = None,
     ) -> Dict[str, Any]:
         """
         Calculate average metrics per mode from individual retrieval results.
@@ -181,9 +179,7 @@ class MetricsCalculator:
                 expected_ids = expected_chunks_map.get(query, []) if expected_chunks_map else []
 
                 if expected_ids:
-                    metrics = retrieval_service.calculate_quality_metrics(
-                        retrieved_ids, expected_ids
-                    )
+                    metrics = retrieval_service.calculate_quality_metrics(retrieved_ids, expected_ids)
                     all_metrics.append(metrics)
                     retrieved_lists.append(retrieved_ids)
                     relevant_lists.append(expected_ids)
@@ -202,7 +198,7 @@ class MetricsCalculator:
                     "recall_at_k": {
                         k: sum(m.get("recall_at_k", {}).get(k, 0) for m in all_metrics) / len(all_metrics)
                         for k in k_values
-                    }
+                    },
                 }
 
                 # Calculate Hit Rate@K and MAP
@@ -210,15 +206,11 @@ class MetricsCalculator:
                     hit_rates = {k: [] for k in k_values}
                     for retrieved_ids, relevant_ids in zip(retrieved_lists, relevant_lists):
                         for k in k_values:
-                            hit_rate = retrieval_service.calculate_hit_rate_at_k(
-                                retrieved_ids, relevant_ids, k
-                            )
+                            hit_rate = retrieval_service.calculate_hit_rate_at_k(retrieved_ids, relevant_ids, k)
                             hit_rates[k].append(hit_rate)
 
                     avg_metrics[mode]["hit_rate_at_k"] = {
-                        k: sum(hit_rates[k]) / len(hit_rates[k])
-                        if hit_rates[k] else 0.0
-                        for k in k_values
+                        k: sum(hit_rates[k]) / len(hit_rates[k]) if hit_rates[k] else 0.0 for k in k_values
                     }
 
                     map_score = retrieval_service.calculate_map(retrieved_lists, relevant_lists)
@@ -236,7 +228,7 @@ class MetricsCalculator:
         expected_chunks_map: Optional[Dict[str, List[int]]],
         _chunk_stats: Dict[str, Any],
         avg_metrics: Optional[Dict[str, Any]] = None,
-        answers_map: Optional[Dict[str, str]] = None
+        answers_map: Optional[Dict[str, str]] = None,
     ) -> Dict[str, Any]:
         """
         Calculate comprehensive metrics organized by dimension.
@@ -262,7 +254,7 @@ class MetricsCalculator:
             "diversity_efficiency": {},
             "cross_method": {},
             "query_count": len(queries),
-            "note": "All metrics are averaged across queries unless otherwise specified"
+            "note": "All metrics are averaged across queries unless otherwise specified",
         }
 
         # Create document text map for coverage calculation
@@ -288,19 +280,13 @@ class MetricsCalculator:
                     doc_id = doc.get("id", "")
                     doc_text = doc_text_map.get(doc_id, "")
                     # Find chunks for this document
-                    doc_chunks = [
-                        c for c in mode_chunks
-                        if c.metadata.get("document_id") == doc_id
-                    ]
+                    doc_chunks = [c for c in mode_chunks if c.metadata.get("document_id") == doc_id]
                     if doc_text and doc_chunks:
-                        coverage = self.chunk_comparator.calculate_coverage_score(
-                            doc_chunks, doc_text
-                        )
+                        coverage = self.chunk_comparator.calculate_coverage_score(doc_chunks, doc_text)
                         coverage_scores.append(coverage)
 
                 evaluation_results["chunk_quality"][mode]["coverage_score"] = (
-                    sum(coverage_scores) / len(coverage_scores)
-                    if coverage_scores else 0.0
+                    sum(coverage_scores) / len(coverage_scores) if coverage_scores else 0.0
                 )
 
                 # Semantic coherence
@@ -311,7 +297,7 @@ class MetricsCalculator:
                     logger.warning(
                         "[RAGChunkTest] Failed to calculate coherence for %s: %s",
                         mode,
-                        e
+                        e,
                     )
                     evaluation_results["chunk_quality"][mode]["semantic_coherence"] = 0.0
 
@@ -327,17 +313,11 @@ class MetricsCalculator:
                     if not answer:
                         continue
 
-                    query_results = [
-                        r for r in mode_retrieval_results
-                        if r.get("query") == query
-                    ]
+                    query_results = [r for r in mode_retrieval_results if r.get("query") == query]
                     if query_results:
                         result = query_results[0]["result"]
                         retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])]
-                        retrieved_chunks = [
-                            c for c in mode_chunks
-                            if c.chunk_index in retrieved_chunk_ids
-                        ]
+                        retrieved_chunks = [c for c in mode_chunks if c.chunk_index in retrieved_chunk_ids]
 
                         if retrieved_chunks:
                             # Find document text for context recall
@@ -345,9 +325,7 @@ class MetricsCalculator:
                             doc_text = doc_text_map.get(doc_id, "")
 
                             # Calculate answer coverage
-                            coverage = self.answer_quality_evaluator.calculate_answer_coverage(
-                                retrieved_chunks, answer
-                            )
+                            coverage = self.answer_quality_evaluator.calculate_answer_coverage(retrieved_chunks, answer)
                             answer_coverage_scores.append(coverage)
 
                             # Calculate answer completeness
@@ -364,16 +342,15 @@ class MetricsCalculator:
                                 context_recall_scores.append(context_recall)
 
                 evaluation_results["answer_quality"][mode]["answer_coverage"] = (
-                    sum(answer_coverage_scores) / len(answer_coverage_scores)
-                    if answer_coverage_scores else 0.0
+                    sum(answer_coverage_scores) / len(answer_coverage_scores) if answer_coverage_scores else 0.0
                 )
                 evaluation_results["answer_quality"][mode]["answer_completeness"] = (
                     sum(answer_completeness_scores) / len(answer_completeness_scores)
-                    if answer_completeness_scores else 0.0
+                    if answer_completeness_scores
+                    else 0.0
                 )
                 evaluation_results["answer_quality"][mode]["context_recall"] = (
-                    sum(context_recall_scores) / len(context_recall_scores)
-                    if context_recall_scores else 0.0
+                    sum(context_recall_scores) / len(context_recall_scores) if context_recall_scores else 0.0
                 )
 
             # Diversity & Efficiency Metrics
@@ -389,19 +366,13 @@ class MetricsCalculator:
                     for query_result in mode_retrieval_results:
                         result = query_result.get("result", {})
                         retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])]
-                        retrieved_chunks = [
-                            c for c in mode_chunks
-                            if c.chunk_index in retrieved_chunk_ids
-                        ]
+                        retrieved_chunks = [c for c in mode_chunks if c.chunk_index in retrieved_chunk_ids]
                         if len(retrieved_chunks) > 1:
-                            diversity = self.diversity_evaluator.calculate_intra_list_diversity(
-                                retrieved_chunks
-                            )
+                            diversity = self.diversity_evaluator.calculate_intra_list_diversity(retrieved_chunks)
                             diversity_scores.append(diversity)
 
                     evaluation_results["diversity_efficiency"][mode]["semantic_diversity"] = (
-                        sum(diversity_scores) / len(diversity_scores)
-                        if diversity_scores else 0.0
+                        sum(diversity_scores) / len(diversity_scores) if diversity_scores else 0.0
                     )
 
                     # Diversity at K
@@ -412,26 +383,17 @@ class MetricsCalculator:
                         for query_result in mode_retrieval_results:
                             result = query_result.get("result", {})
                             retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])[:k]]
-                            retrieved_chunks = [
-                                c for c in mode_chunks
-                                if c.chunk_index in retrieved_chunk_ids
-                            ]
+                            retrieved_chunks = [c for c in mode_chunks if c.chunk_index in retrieved_chunk_ids]
                             if len(retrieved_chunks) > 1:
-                                diversity = self.diversity_evaluator.calculate_diversity_at_k(
-                                    retrieved_chunks, k
-                                )
+                                diversity = self.diversity_evaluator.calculate_diversity_at_k(retrieved_chunks, k)
                                 k_diversity_scores.append(diversity)
                         diversity_at_k[k] = (
-                            sum(k_diversity_scores) / len(k_diversity_scores)
-                            if k_diversity_scores else 0.0
+                            sum(k_diversity_scores) / len(k_diversity_scores) if k_diversity_scores else 0.0
                         )
                     evaluation_results["diversity_efficiency"][mode]["diversity_at_k"] = diversity_at_k
 
                     # Latency metrics
-                    timing_data = [
-                        r.get("result", {}).get("timing", {})
-                        for r in mode_retrieval_results
-                    ]
+                    timing_data = [r.get("result", {}).get("timing", {}) for r in mode_retrieval_results]
                     latency_metrics = self.diversity_evaluator.calculate_latency_metrics(timing_data)
                     evaluation_results["diversity_efficiency"][mode].update(latency_metrics)
 
@@ -443,29 +405,19 @@ class MetricsCalculator:
 
             if chunks_a and chunks_b:
                 # Chunk alignment
-                alignment = self.cross_method_comparator.calculate_chunk_alignment(
-                    chunks_a, chunks_b
-                )
+                alignment = self.cross_method_comparator.calculate_chunk_alignment(chunks_a, chunks_b)
                 evaluation_results["cross_method"]["chunk_alignment"] = alignment
 
                 # Overlap analysis
-                overlap = self.cross_method_comparator.analyze_method_overlap(
-                    chunks_a, chunks_b
-                )
+                overlap = self.cross_method_comparator.analyze_method_overlap(chunks_a, chunks_b)
                 evaluation_results["cross_method"]["overlap_analysis"] = overlap
 
                 # Complementarity (if we have retrieval results and expected chunks)
                 if expected_chunks_map and retrieval_results.get(mode_a) and retrieval_results.get(mode_b):
                     complementarity_scores = []
                     for query in queries:
-                        result_a = [
-                            r for r in retrieval_results[mode_a]
-                            if r.get("query") == query
-                        ]
-                        result_b = [
-                            r for r in retrieval_results[mode_b]
-                            if r.get("query") == query
-                        ]
+                        result_a = [r for r in retrieval_results[mode_a] if r.get("query") == query]
+                        result_b = [r for r in retrieval_results[mode_b] if r.get("query") == query]
                         if result_a and result_b:
                             retrieved_a = [r["chunk_id"] for r in result_a[0]["result"].get("results", [])]
                             retrieved_b = [r["chunk_id"] for r in result_b[0]["result"].get("results", [])]
@@ -477,8 +429,7 @@ class MetricsCalculator:
                                 complementarity_scores.append(comp)
 
                     evaluation_results["cross_method"]["complementarity"] = (
-                        sum(complementarity_scores) / len(complementarity_scores)
-                        if complementarity_scores else 0.0
+                        sum(complementarity_scores) / len(complementarity_scores) if complementarity_scores else 0.0
                     )
 
         return evaluation_results

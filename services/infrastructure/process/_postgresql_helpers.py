@@ -34,11 +34,11 @@ def verify_postgresql_on_port(host: str, port: int, db_url: Optional[str] = None
     if psycopg2 is None:
         return False
     try:
-        if db_url and 'postgresql' in db_url:
+        if db_url and "postgresql" in db_url:
             conn = psycopg2.connect(db_url, connect_timeout=2)
             conn.close()
             return True
-        test_url = f'postgresql://postgres@{host}:{port}/postgres'
+        test_url = f"postgresql://postgres@{host}:{port}/postgres"
         conn = psycopg2.connect(test_url, connect_timeout=2)
         conn.close()
         return True
@@ -53,17 +53,17 @@ def cleanup_stale_pid_file(data_path: Path) -> None:
     Args:
         data_path: Path to PostgreSQL data directory
     """
-    pid_file = data_path / 'postmaster.pid'
+    pid_file = data_path / "postmaster.pid"
     if not pid_file.exists():
         return
 
     try:
-        with open(pid_file, 'r', encoding='utf-8') as f:
+        with open(pid_file, "r", encoding="utf-8") as f:
             pid_line = f.readline().strip()
             if pid_line and pid_line.isdigit():
                 pid = int(pid_line)
                 # Check if process is still running
-                if sys.platform != 'win32':
+                if sys.platform != "win32":
                     try:
                         os.kill(pid, 0)  # Signal 0 doesn't kill, just checks existence
                         # Process exists - PID file is valid
@@ -103,18 +103,13 @@ def ensure_postgres_directory_ownership(data_path: Path) -> bool:
     Returns:
         bool: True if setup successful, False otherwise
     """
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         return True
 
     # Check if postgres user exists
     postgres_user_exists = False
     try:
-        result = subprocess.run(
-            ['id', '-u', 'postgres'],
-            capture_output=True,
-            timeout=2,
-            check=False
-        )
+        result = subprocess.run(["id", "-u", "postgres"], capture_output=True, timeout=2, check=False)
         postgres_user_exists = result.returncode == 0
     except (subprocess.SubprocessError, FileNotFoundError):
         pass
@@ -123,11 +118,20 @@ def ensure_postgres_directory_ownership(data_path: Path) -> bool:
     if not postgres_user_exists:
         try:
             create_result = subprocess.run(
-                ['useradd', '-r', '-s', '/bin/bash', '-d', '/var/lib/postgresql', '-m', 'postgres'],
+                [
+                    "useradd",
+                    "-r",
+                    "-s",
+                    "/bin/bash",
+                    "-d",
+                    "/var/lib/postgresql",
+                    "-m",
+                    "postgres",
+                ],
                 capture_output=True,
                 timeout=5,
                 check=False,
-                text=True
+                text=True,
             )
             if create_result.returncode == 0:
                 postgres_user_exists = True
@@ -167,31 +171,31 @@ def ensure_postgres_directory_ownership(data_path: Path) -> bool:
 
         # Get postgres user UID/GID
         id_result = subprocess.run(
-            ['id', '-u', 'postgres'],
+            ["id", "-u", "postgres"],
             capture_output=True,
             timeout=2,
             check=True,
-            text=True
+            text=True,
         )
         postgres_uid = int(id_result.stdout.strip())
 
         gid_result = subprocess.run(
-            ['id', '-g', 'postgres'],
+            ["id", "-g", "postgres"],
             capture_output=True,
             timeout=2,
             check=True,
-            text=True
+            text=True,
         )
         postgres_gid = int(gid_result.stdout.strip())
 
         # Only change ownership if needed
         if current_uid != postgres_uid or current_gid != postgres_gid:
             chown_result = subprocess.run(
-                ['chown', '-R', 'postgres:postgres', str(data_path)],
+                ["chown", "-R", "postgres:postgres", str(data_path)],
                 check=False,
                 timeout=10,
                 capture_output=True,
-                text=True
+                text=True,
             )
             if chown_result.returncode != 0:
                 try:
@@ -203,11 +207,11 @@ def ensure_postgres_directory_ownership(data_path: Path) -> bool:
 
         # Set permissions to 700
         chmod_result = subprocess.run(
-            ['chmod', '700', str(data_path)],
+            ["chmod", "700", str(data_path)],
             check=False,
             timeout=5,
             capture_output=True,
-            text=True
+            text=True,
         )
         if chmod_result.returncode != 0:
             try:
@@ -218,13 +222,13 @@ def ensure_postgres_directory_ownership(data_path: Path) -> bool:
         # Verify postgres user can access (test as postgres user, not using sudo since we're root)
         # Use su instead of sudo for more reliable access
         test_result = subprocess.run(
-            ['su', '-', 'postgres', '-c', f'test -w "{data_path}" && echo OK'],
+            ["su", "-", "postgres", "-c", f'test -w "{data_path}" && echo OK'],
             check=False,
             timeout=5,
             capture_output=True,
-            text=True
+            text=True,
         )
-        if test_result.returncode != 0 or 'OK' not in test_result.stdout:
+        if test_result.returncode != 0 or "OK" not in test_result.stdout:
             try:
                 print("[WARNING] Verification failed - postgres user may not have access")
                 print(f"[POSTGRESQL] Directory: {data_path}")

@@ -6,6 +6,7 @@ Run: python scripts/db/check_diagram_counts.py
 
 Shows 智能补全次数 (auto-complete count) per teacher for Teacher Usage page.
 """
+
 import sys
 from pathlib import Path
 from typing import Callable, cast

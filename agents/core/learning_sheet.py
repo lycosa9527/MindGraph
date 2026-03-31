@@ -8,13 +8,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import re
 
 logger = logging.getLogger(__name__)
 
 
-def _detect_learning_sheet_from_prompt(user_prompt: str, language: str = 'zh') -> bool:
+def _detect_learning_sheet_from_prompt(user_prompt: str, language: str = "zh") -> bool:
     """
     Detect if the prompt is requesting a learning sheet.
 
@@ -28,7 +29,7 @@ def _detect_learning_sheet_from_prompt(user_prompt: str, language: str = 'zh') -
     # language parameter kept for API compatibility but not used
     del language
 
-    learning_sheet_keywords = ['半成品', '学习单']
+    learning_sheet_keywords = ["半成品", "学习单"]
     is_learning_sheet = any(keyword in user_prompt for keyword in learning_sheet_keywords)
 
     if is_learning_sheet:
@@ -51,16 +52,18 @@ def _clean_prompt_for_learning_sheet(user_prompt: str) -> str:
     Returns:
         str: Cleaned prompt with learning sheet keywords removed
     """
-    learning_sheet_keywords = ['半成品', '学习单']
+    learning_sheet_keywords = ["半成品", "学习单"]
 
     cleaned_prompt = user_prompt
     for keyword in learning_sheet_keywords:
-        cleaned_prompt = cleaned_prompt.replace(keyword, '').strip()
+        cleaned_prompt = cleaned_prompt.replace(keyword, "").strip()
 
     # Clean up any extra whitespace or punctuation left behind
-    cleaned_prompt = re.sub(r'\s+', ' ', cleaned_prompt)  # Multiple spaces -> single space
-    cleaned_prompt = re.sub(r'的图+$', '的', cleaned_prompt)  # "的图" at end -> "的" (for cases like "流程图的半成品图" -> "流程图的")
-    cleaned_prompt = re.sub(r'的+$', '', cleaned_prompt)  # Remove trailing "的"
+    cleaned_prompt = re.sub(r"\s+", " ", cleaned_prompt)  # Multiple spaces -> single space
+    cleaned_prompt = re.sub(
+        r"的图+$", "的", cleaned_prompt
+    )  # "的图" at end -> "的" (for cases like "流程图的半成品图" -> "流程图的")
+    cleaned_prompt = re.sub(r"的+$", "", cleaned_prompt)  # Remove trailing "的"
     cleaned_prompt = cleaned_prompt.strip()
 
     logger.debug("Cleaned prompt: '%s' -> '%s'", user_prompt, cleaned_prompt)

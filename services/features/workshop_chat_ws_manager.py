@@ -37,6 +37,7 @@ def _dumps(obj: Any) -> str:
     """Serialize a dict to a JSON string."""
     return json.dumps(obj, ensure_ascii=False)
 
+
 logger = logging.getLogger(__name__)
 
 TYPING_EXPIRE_SECONDS = 5
@@ -46,14 +47,20 @@ class _UserConnection:
     """Tracks a single user's WebSocket state."""
 
     __slots__ = (
-        "websocket", "user_id", "username", "avatar",
+        "websocket",
+        "user_id",
+        "username",
+        "avatar",
         "subscribed_channels",
         "presence_org_id",
     )
 
     def __init__(
-        self, websocket: WebSocket, user_id: int,
-        username: str, avatar: Optional[str],
+        self,
+        websocket: WebSocket,
+        user_id: int,
+        username: str,
+        avatar: Optional[str],
     ):
         self.websocket = websocket
         self.user_id = user_id
@@ -77,8 +84,11 @@ class ChatConnectionManager:
         return set(self._connections.keys())
 
     def connect(
-        self, websocket: WebSocket, user_id: int,
-        username: str, avatar: Optional[str] = None,
+        self,
+        websocket: WebSocket,
+        user_id: int,
+        username: str,
+        avatar: Optional[str] = None,
     ) -> None:
         """Register a new WebSocket connection."""
         old = self._connections.get(user_id)
@@ -86,7 +96,10 @@ class ChatConnectionManager:
             self._remove_subscriptions(user_id)
 
         self._connections[user_id] = _UserConnection(
-            websocket, user_id, username, avatar,
+            websocket,
+            user_id,
+            username,
+            avatar,
         )
         logger.info("[ChatWS] User %d (%s) connected", user_id, username)
         try:
@@ -106,7 +119,8 @@ class ChatConnectionManager:
         if presence_org is not None and is_ws_fanout_enabled():
             try:
                 workshop_chat_presence_store.remove_presence_org_user(
-                    presence_org, user_id,
+                    presence_org,
+                    user_id,
                 )
             except Exception as exc:  # pylint: disable=broad-except
                 logger.debug("Presence org user removal failed: %s", exc)
@@ -128,7 +142,8 @@ class ChatConnectionManager:
         if is_ws_fanout_enabled():
             try:
                 workshop_chat_presence_store.touch_presence_org_user(
-                    org_id, user_id,
+                    org_id,
+                    user_id,
                 )
             except Exception as exc:  # pylint: disable=broad-except
                 logger.debug("Presence org user touch failed: %s", exc)
@@ -147,7 +162,8 @@ class ChatConnectionManager:
             return
         try:
             workshop_chat_presence_store.touch_presence_org_user(
-                conn.presence_org_id, user_id,
+                conn.presence_org_id,
+                user_id,
             )
         except Exception as exc:  # pylint: disable=broad-except
             logger.debug("Presence heartbeat refresh failed: %s", exc)
@@ -161,24 +177,33 @@ class ChatConnectionManager:
                 )
             except Exception as exc:  # pylint: disable=broad-except
                 logger.debug("Presence org online users lookup failed: %s", exc)
-        return {
-            uid for uid, conn in self._connections.items()
-            if conn.presence_org_id == org_id
-        }
+        return {uid for uid, conn in self._connections.items() if conn.presence_org_id == org_id}
 
     async def broadcast_presence_to_presence_org(
-        self, user_id: int, status: str, org_id: int,
+        self,
+        user_id: int,
+        status: str,
+        org_id: int,
         exclude_user: Optional[int] = None,
     ) -> None:
         """Notify everyone in the same presence org (workshop contacts list)."""
-        payload = _dumps({
-            "type": "presence", "user_id": user_id, "status": status,
-        })
+        payload = _dumps(
+            {
+                "type": "presence",
+                "user_id": user_id,
+                "status": status,
+            }
+        )
         if is_ws_fanout_enabled():
-            await publish_chat_fanout_async({
-                "v": 1, "k": "po", "oid": org_id,
-                "ex": exclude_user, "d": payload,
-            })
+            await publish_chat_fanout_async(
+                {
+                    "v": 1,
+                    "k": "po",
+                    "oid": org_id,
+                    "ex": exclude_user,
+                    "d": payload,
+                }
+            )
             return
         tasks = []
         for uid, conn in self._connections.items():
@@ -210,7 +235,9 @@ class ChatConnectionManager:
             self._channel_subscribers.setdefault(ch_id, set()).add(user_id)
 
     def is_user_subscribed_to_channel(
-        self, user_id: int, channel_id: int,
+        self,
+        user_id: int,
+        channel_id: int,
     ) -> bool:
         """Return True if the user is connected and subscribed to the channel."""
         conn = self._connections.get(user_id)
@@ -219,16 +246,23 @@ class ChatConnectionManager:
         return channel_id in conn.subscribed_channels
 
     async def broadcast_to_channel(
-        self, channel_id: int, payload: Dict[str, Any],
+        self,
+        channel_id: int,
+        payload: Dict[str, Any],
         exclude_user: Optional[int] = None,
     ) -> None:
         """Send a message to all subscribers of a channel."""
         data = _dumps(payload)
         if is_ws_fanout_enabled():
-            await publish_chat_fanout_async({
-                "v": 1, "k": "ch", "cid": channel_id,
-                "ex": exclude_user, "d": data,
-            })
+            await publish_chat_fanout_async(
+                {
+                    "v": 1,
+                    "k": "ch",
+                    "cid": channel_id,
+                    "ex": exclude_user,
+                    "d": data,
+                }
+            )
             return
         subscriber_ids = self._channel_subscribers.get(channel_id, set()).copy()
         if exclude_user:
@@ -243,14 +277,21 @@ class ChatConnectionManager:
             await asyncio.gather(*tasks)
 
     async def send_to_user(
-        self, user_id: int, payload: Dict[str, Any],
+        self,
+        user_id: int,
+        payload: Dict[str, Any],
     ) -> bool:
         """Send a message to a specific user if online."""
         data = _dumps(payload)
         if is_ws_fanout_enabled():
-            await publish_chat_fanout_async({
-                "v": 1, "k": "u", "uid": user_id, "d": data,
-            })
+            await publish_chat_fanout_async(
+                {
+                    "v": 1,
+                    "k": "u",
+                    "uid": user_id,
+                    "d": data,
+                }
+            )
             return True
         conn = self._connections.get(user_id)
         if not conn:
@@ -258,8 +299,11 @@ class ChatConnectionManager:
         return await self._safe_send(conn.websocket, data, user_id)
 
     async def broadcast_typing_channel(
-        self, channel_id: int, user_id: int,
-        username: str, topic_id: Optional[int] = None,
+        self,
+        channel_id: int,
+        user_id: int,
+        username: str,
+        topic_id: Optional[int] = None,
     ) -> None:
         """Broadcast typing indicator for a channel or topic."""
         self.cleanup_typing_state()
@@ -271,17 +315,24 @@ class ChatConnectionManager:
 
         msg_type = "typing_topic" if topic_id else "typing_channel"
         payload: Dict[str, Any] = {
-            "type": msg_type, "channel_id": channel_id,
-            "user_id": user_id, "username": username,
+            "type": msg_type,
+            "channel_id": channel_id,
+            "user_id": user_id,
+            "username": username,
         }
         if topic_id:
             payload["topic_id"] = topic_id
         await self.broadcast_to_channel(
-            channel_id, payload, exclude_user=user_id,
+            channel_id,
+            payload,
+            exclude_user=user_id,
         )
 
     async def broadcast_typing_dm(
-        self, sender_id: int, recipient_id: int, username: str,
+        self,
+        sender_id: int,
+        recipient_id: int,
+        username: str,
     ) -> None:
         """Broadcast typing indicator for a DM conversation."""
         self.cleanup_typing_state()
@@ -291,12 +342,19 @@ class ChatConnectionManager:
             return
         self._typing_state[key] = now
 
-        await self.send_to_user(recipient_id, {
-            "type": "typing_dm", "sender_id": sender_id, "username": username,
-        })
+        await self.send_to_user(
+            recipient_id,
+            {
+                "type": "typing_dm",
+                "sender_id": sender_id,
+                "username": username,
+            },
+        )
 
     async def broadcast_presence(
-        self, user_id: int, status: str,
+        self,
+        user_id: int,
+        status: str,
         channel_ids: Optional[Set[int]] = None,
     ) -> None:
         """Broadcast presence change to channels the user is in.
@@ -315,10 +373,7 @@ class ChatConnectionManager:
     def cleanup_typing_state(self) -> None:
         """Remove expired typing indicators."""
         now = time.time()
-        expired = [
-            k for k, v in self._typing_state.items()
-            if now - v > TYPING_EXPIRE_SECONDS
-        ]
+        expired = [k for k, v in self._typing_state.items() if now - v > TYPING_EXPIRE_SECONDS]
         for key in expired:
             del self._typing_state[key]
 

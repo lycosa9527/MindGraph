@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Any
 import logging
 
@@ -30,16 +31,16 @@ class LLMUtils:
         """
         # Generous timeouts for complex diagrams
         timeouts = {
-            'qwen': 70.0,
-            'qwen-turbo': 70.0,
-            'qwen-plus': 70.0,
-            'deepseek': 70.0,
-            'ark-deepseek': 70.0,  # Volcengine DeepSeek (Route B)
-            'ark-kimi': 70.0,      # Volcengine Kimi (both routes)
-            'hunyuan': 70.0,
-            'kimi': 70.0,
-            'doubao': 70.0,
-            'chatglm': 70.0
+            "qwen": 70.0,
+            "qwen-turbo": 70.0,
+            "qwen-plus": 70.0,
+            "deepseek": 70.0,
+            "ark-deepseek": 70.0,  # Volcengine DeepSeek (Route B)
+            "ark-kimi": 70.0,  # Volcengine Kimi (both routes)
+            "hunyuan": 70.0,
+            "kimi": 70.0,
+            "doubao": 70.0,
+            "chatglm": 70.0,
         }
         return timeouts.get(model, 70.0)
 
@@ -51,7 +52,7 @@ class LLMUtils:
         rate_limiter: Optional[Any],
         load_balancer_rate_limiter: Optional[Any],
         kimi_rate_limiter: Optional[Any],
-        doubao_rate_limiter: Optional[Any]
+        doubao_rate_limiter: Optional[Any],
     ) -> Optional[Any]:
         """
         Get the appropriate rate limiter for a model request.
@@ -69,23 +70,22 @@ class LLMUtils:
             Rate limiter instance or None
         """
         # For DeepSeek with load balancing, select appropriate rate limiter
-        if model == 'deepseek':
-            if provider == 'volcengine' or actual_model == 'ark-deepseek':
+        if model == "deepseek":
+            if provider == "volcengine" or actual_model == "ark-deepseek":
                 # DeepSeek Volcengine route → use load balancer Volcengine limiter
-                if (load_balancer_rate_limiter and
-                        load_balancer_rate_limiter.enabled):
-                    return load_balancer_rate_limiter.get_limiter('volcengine')
-            elif provider == 'dashscope' or actual_model == 'deepseek':
+                if load_balancer_rate_limiter and load_balancer_rate_limiter.enabled:
+                    return load_balancer_rate_limiter.get_limiter("volcengine")
+            elif provider == "dashscope" or actual_model == "deepseek":
                 # DeepSeek Dashscope route → use shared Dashscope limiter
                 return rate_limiter
 
         # For Kimi: use Volcengine endpoint-specific rate limiter
-        if model == 'kimi' or actual_model == 'ark-kimi':
+        if model == "kimi" or actual_model == "ark-kimi":
             if kimi_rate_limiter and kimi_rate_limiter.enabled:
                 return kimi_rate_limiter
 
         # For Doubao: use Volcengine endpoint-specific rate limiter
-        if model == 'doubao' or actual_model == 'ark-doubao':
+        if model == "doubao" or actual_model == "ark-doubao":
             if doubao_rate_limiter and doubao_rate_limiter.enabled:
                 return doubao_rate_limiter
 

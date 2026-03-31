@@ -2,6 +2,7 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
+
 import logging
 import shutil
 from pathlib import Path
@@ -10,7 +11,11 @@ from typing import List
 from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
-from models.domain.knowledge_space import KnowledgeDocument, KnowledgeSpace, DocumentVersion
+from models.domain.knowledge_space import (
+    KnowledgeDocument,
+    KnowledgeSpace,
+    DocumentVersion,
+)
 
 
 logger = logging.getLogger(__name__)
@@ -22,7 +27,7 @@ def rollback_document(
     document_id: int,
     version_number: int,
     storage_dir: Path,
-    reindex_chunks_func
+    reindex_chunks_func,
 ) -> KnowledgeDocument:
     """
     Rollback document to a previous version.
@@ -39,21 +44,25 @@ def rollback_document(
         Rolled back KnowledgeDocument instance
     """
     # Verify ownership
-    document = db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-        and_(
-            KnowledgeDocument.id == document_id,
-            KnowledgeSpace.user_id == user_id
-        )
-    ).first()
+    document = (
+        db.query(KnowledgeDocument)
+        .join(KnowledgeSpace)
+        .filter(and_(KnowledgeDocument.id == document_id, KnowledgeSpace.user_id == user_id))
+        .first()
+    )
 
     if not document:
         raise ValueError(f"Document {document_id} not found or access denied")
 
     # Get version
-    version = db.query(DocumentVersion).filter(
-        DocumentVersion.document_id == document_id,
-        DocumentVersion.version_number == version_number
-    ).first()
+    version = (
+        db.query(DocumentVersion)
+        .filter(
+            DocumentVersion.document_id == document_id,
+            DocumentVersion.version_number == version_number,
+        )
+        .first()
+    )
 
     if not version:
         raise ValueError(f"Version {version_number} not found for document {document_id}")
@@ -64,8 +73,8 @@ def rollback_document(
 
     try:
         # Update document status
-        document.status = 'processing'
-        document.processing_progress = 'rollback'
+        document.status = "processing"
+        document.processing_progress = "rollback"
         document.processing_progress_percent = 0
         db.commit()
 
@@ -81,12 +90,16 @@ def rollback_document(
         # Reindex from version file
         reindex_chunks_func(document, version.file_hash)
 
-        logger.info("[KnowledgeSpace] Rolled back document %s to version %s", document_id, version_number)
+        logger.info(
+            "[KnowledgeSpace] Rolled back document %s to version %s",
+            document_id,
+            version_number,
+        )
         return document
 
     except Exception as e:
         logger.error("[KnowledgeSpace] Failed to rollback document %s: %s", document_id, e)
-        document.status = 'failed'
+        document.status = "failed"
         document.error_message = str(e)
         document.processing_progress = None
         document.processing_progress_percent = 0
@@ -94,11 +107,7 @@ def rollback_document(
         raise
 
 
-def get_document_versions(
-    db: Session,
-    user_id: int,
-    document_id: int
-) -> List[DocumentVersion]:
+def get_document_versions(db: Session, user_id: int, document_id: int) -> List[DocumentVersion]:
     """
     Get all versions for a document.
 
@@ -111,16 +120,19 @@ def get_document_versions(
         List of DocumentVersion instances
     """
     # Verify ownership
-    document = db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-        and_(
-            KnowledgeDocument.id == document_id,
-            KnowledgeSpace.user_id == user_id
-        )
-    ).first()
+    document = (
+        db.query(KnowledgeDocument)
+        .join(KnowledgeSpace)
+        .filter(and_(KnowledgeDocument.id == document_id, KnowledgeSpace.user_id == user_id))
+        .first()
+    )
 
     if not document:
         raise ValueError(f"Document {document_id} not found or access denied")
 
-    return db.query(DocumentVersion).filter(
-        DocumentVersion.document_id == document_id
-    ).order_by(DocumentVersion.version_number.desc()).all()
+    return (
+        db.query(DocumentVersion)
+        .filter(DocumentVersion.document_id == document_id)
+        .order_by(DocumentVersion.version_number.desc())
+        .all()
+    )

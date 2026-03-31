@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -18,7 +19,11 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from models.domain.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk
+from models.domain.knowledge_space import (
+    KnowledgeSpace,
+    KnowledgeDocument,
+    DocumentChunk,
+)
 from models.responses import CompressionMetricsResponse
 from services.llm.qdrant_service import get_qdrant_service
 from utils.auth import get_current_user
@@ -30,9 +35,7 @@ router = APIRouter()
 
 
 @router.get("/metrics/compression", response_model=CompressionMetricsResponse)
-def get_compression_metrics(
-    current_user: User = Depends(get_current_user)
-):
+def get_compression_metrics(current_user: User = Depends(get_current_user)):
     """
     Get compression metrics for user's knowledge space vector database.
 
@@ -51,19 +54,13 @@ def get_compression_metrics(
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get compression metrics for user %s: %s",
             current_user.id,
-            e
+            e,
         )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve compression metrics"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to retrieve compression metrics") from e
 
 
 @router.get("/debug/qdrant-diagnostics")
-def get_qdrant_diagnostics(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+def get_qdrant_diagnostics(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Get diagnostic information for user's Qdrant collection.
 
@@ -82,44 +79,51 @@ def get_qdrant_diagnostics(
         diagnostics = qdrant_service.get_diagnostics(current_user.id)
 
         # Add database chunk info for comparison
-        space = db.query(KnowledgeSpace).filter(
-            KnowledgeSpace.user_id == current_user.id
-        ).first()
+        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == current_user.id).first()
 
         database_info = {
             "space_exists": space is not None,
             "documents_count": 0,
             "completed_documents_count": 0,
             "total_chunks_count": 0,
-            "chunk_ids_sample": []
+            "chunk_ids_sample": [],
         }
 
         if space:
             # Get document counts
-            database_info["documents_count"] = db.query(KnowledgeDocument).filter(
-                KnowledgeDocument.space_id == space.id
-            ).count()
+            database_info["documents_count"] = (
+                db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
+            )
 
-            database_info["completed_documents_count"] = db.query(KnowledgeDocument).filter(
-                KnowledgeDocument.space_id == space.id,
-                KnowledgeDocument.status == 'completed'
-            ).count()
+            database_info["completed_documents_count"] = (
+                db.query(KnowledgeDocument)
+                .filter(
+                    KnowledgeDocument.space_id == space.id,
+                    KnowledgeDocument.status == "completed",
+                )
+                .count()
+            )
 
             # Get total chunks across all documents
-            completed_doc_ids = [d.id for d in db.query(KnowledgeDocument).filter(
-                KnowledgeDocument.space_id == space.id,
-                KnowledgeDocument.status == 'completed'
-            ).all()]
+            completed_doc_ids = [
+                d.id
+                for d in db.query(KnowledgeDocument)
+                .filter(
+                    KnowledgeDocument.space_id == space.id,
+                    KnowledgeDocument.status == "completed",
+                )
+                .all()
+            ]
 
             if completed_doc_ids:
-                database_info["total_chunks_count"] = db.query(DocumentChunk).filter(
-                    DocumentChunk.document_id.in_(completed_doc_ids)
-                ).count()
+                database_info["total_chunks_count"] = (
+                    db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(completed_doc_ids)).count()
+                )
 
                 # Sample chunk IDs
-                sample_chunks = db.query(DocumentChunk).filter(
-                    DocumentChunk.document_id.in_(completed_doc_ids)
-                ).limit(5).all()
+                sample_chunks = (
+                    db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(completed_doc_ids)).limit(5).all()
+                )
                 database_info["chunk_ids_sample"] = [c.id for c in sample_chunks]
 
         # Summary diagnosis
@@ -144,16 +148,13 @@ def get_qdrant_diagnostics(
         return {
             "qdrant": diagnostics,
             "database": database_info,
-            "diagnosis": diagnosis
+            "diagnosis": diagnosis,
         }
 
     except Exception as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get Qdrant diagnostics for user %s: %s",
             current_user.id,
-            e
+            e,
         )
-        raise HTTPException(
-            status_code=500,
-            detail=f"Failed to retrieve diagnostics: {str(e)}"
-        ) from e
+        raise HTTPException(status_code=500, detail=f"Failed to retrieve diagnostics: {str(e)}") from e

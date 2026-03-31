@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Tuple
 import logging
 import re
@@ -19,9 +20,7 @@ from utils.prompt_output_languages import is_prompt_output_language
 logger = logging.getLogger(__name__)
 
 
-def parse_topic_extraction_result(
-    result: str, language: str = 'zh'
-) -> Tuple[str, str]:
+def parse_topic_extraction_result(result: str, language: str = "zh") -> Tuple[str, str]:
     """
     Parse the result from topic extraction agent.
 
@@ -61,14 +60,14 @@ def _extract_topics_from_json(topics: str) -> Optional[Tuple[str, str]]:
     Returns:
         Tuple of (topic1, topic2) or None if extraction fails
     """
-    json_match = re.search(r'```json\s*\n(.*?)\n```', topics, re.DOTALL)
+    json_match = re.search(r"```json\s*\n(.*?)\n```", topics, re.DOTALL)
     if json_match:
         json_content = json_match.group(1).strip()
         try:
             data = json.loads(json_content)
-            if 'left' in data and 'right' in data:
-                left_topic = data['left'].strip()
-                right_topic = data['right'].strip()
+            if "left" in data and "right" in data:
+                left_topic = data["left"].strip()
+                right_topic = data["right"].strip()
                 if left_topic != "A" and right_topic != "B":
                     return left_topic, right_topic
         except json.JSONDecodeError:
@@ -87,7 +86,7 @@ def _extract_topics_from_text(topics: str, language: str) -> Optional[Tuple[str,
     Returns:
         Tuple of (topic1, topic2) or None if extraction fails
     """
-    if language == 'zh':
+    if language == "zh":
         # Handle Chinese "和" separator
         if "和" in topics:
             parts = topics.split("和")
@@ -95,7 +94,7 @@ def _extract_topics_from_text(topics: str, language: str) -> Optional[Tuple[str,
                 return parts[0].strip(), parts[1].strip()
 
         # For Chinese, extract Chinese characters
-        chinese_words = re.findall(r'[\u4e00-\u9fff]+', topics)
+        chinese_words = re.findall(r"[\u4e00-\u9fff]+", topics)
         if len(chinese_words) >= 2:
             return chinese_words[0], chinese_words[1]
     else:
@@ -106,7 +105,7 @@ def _extract_topics_from_text(topics: str, language: str) -> Optional[Tuple[str,
                 return parts[0].strip(), parts[1].strip()
 
         # For English, extract English words
-        words = re.findall(r'\b\w+\b', topics)
+        words = re.findall(r"\b\w+\b", topics)
         if len(words) >= 2:
             return words[0], words[1]
 
@@ -123,12 +122,12 @@ def extract_topics_from_prompt(user_prompt: str) -> Tuple[str, str]:
     Returns:
         tuple: (topic1, topic2) extracted topics
     """
-    is_zh = any('\u4e00' <= ch <= '\u9fff' for ch in user_prompt)
+    is_zh = any("\u4e00" <= ch <= "\u9fff" for ch in user_prompt)
 
     if is_zh:
         # For Chinese prompts
         # Look for specific car brands and other topics
-        car_brands = ['宝马', '奔驰', '奥迪', '大众', '丰田', '本田', '福特', '雪佛兰']
+        car_brands = ["宝马", "奔驰", "奥迪", "大众", "丰田", "本田", "福特", "雪佛兰"]
         found_brands = []
         for brand in car_brands:
             if brand in user_prompt:
@@ -139,27 +138,78 @@ def extract_topics_from_prompt(user_prompt: str) -> Tuple[str, str]:
 
         # For Chinese prompts - use generic character extraction
         # Fallback: extract individual Chinese characters (2-4 characters each)
-        chinese_words = re.findall(r'[\u4e00-\u9fff]{2,4}', user_prompt)
+        chinese_words = re.findall(r"[\u4e00-\u9fff]{2,4}", user_prompt)
         if len(chinese_words) >= 2:
             return chinese_words[0], chinese_words[1]
     else:
         # For English prompts - use generic word extraction
         # Fallback: extract any two distinct words, but filter out common verbs and prepositions
         common_words_to_skip = [
-            'compare', 'and', 'or', 'the', 'a', 'an', 'is', 'are', 'was', 'were',
-            'be', 'been', 'being', 'have', 'has', 'had', 'do', 'does', 'did',
-            'will', 'would', 'could', 'should', 'may', 'might', 'can', 'must',
-            'shall', 'about', 'with', 'for', 'to', 'of', 'in', 'on', 'at', 'by',
-            'from', 'up', 'down', 'out', 'off', 'over', 'under', 'between',
-            'among', 'through', 'during', 'before', 'after', 'since', 'until',
-            'while', 'when', 'where', 'why', 'how', 'what', 'which', 'who',
-            'whom', 'whose'
+            "compare",
+            "and",
+            "or",
+            "the",
+            "a",
+            "an",
+            "is",
+            "are",
+            "was",
+            "were",
+            "be",
+            "been",
+            "being",
+            "have",
+            "has",
+            "had",
+            "do",
+            "does",
+            "did",
+            "will",
+            "would",
+            "could",
+            "should",
+            "may",
+            "might",
+            "can",
+            "must",
+            "shall",
+            "about",
+            "with",
+            "for",
+            "to",
+            "of",
+            "in",
+            "on",
+            "at",
+            "by",
+            "from",
+            "up",
+            "down",
+            "out",
+            "off",
+            "over",
+            "under",
+            "between",
+            "among",
+            "through",
+            "during",
+            "before",
+            "after",
+            "since",
+            "until",
+            "while",
+            "when",
+            "where",
+            "why",
+            "how",
+            "what",
+            "which",
+            "who",
+            "whom",
+            "whose",
         ]
-        words = re.findall(r'\b\w+\b', user_prompt.lower())
-        filtered_words = [
-            word for word in words
-            if word not in common_words_to_skip and len(word) > 2
-        ]
+        words = re.findall(r"\b\w+\b", user_prompt.lower())
+        filtered_words = [word for word in words if word not in common_words_to_skip and len(word) > 2]
         if len(filtered_words) >= 2:
             return filtered_words[0], filtered_words[1]
 
@@ -167,9 +217,7 @@ def extract_topics_from_prompt(user_prompt: str) -> Tuple[str, str]:
     return "Topic A", "Topic B"
 
 
-def extract_topics_with_agent(
-    user_prompt: str, language: str = 'zh'
-) -> Tuple[str, str]:
+def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> Tuple[str, str]:
     """
     Use LangChain agent to extract two topics for comparison.
 
@@ -190,13 +238,14 @@ def extract_topics_with_agent(
 
     if not isinstance(language, str) or not is_prompt_output_language(language):
         logger.warning("Invalid language '%s', defaulting to 'zh'", language)
-        language = 'zh'
+        language = "zh"
 
     registry_lang = template_lang_for_registry(language)
 
     logger.debug("Agent: Extracting topics from prompt: %s", user_prompt)
     # Create the topic extraction function
     from .prompt_helpers import create_topic_extraction_chain  # pylint: disable=import-outside-toplevel
+
     topic_func = create_topic_extraction_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)

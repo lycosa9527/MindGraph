@@ -21,6 +21,7 @@ Options:
     --dry-run   Print what would be inserted, do not write to DB.
     --force     Run even if diagram_edit logs already exist (default: skip).
 """
+
 import argparse
 import sys
 from datetime import datetime, timedelta, timezone
@@ -54,9 +55,7 @@ def backfill_diagram_edit(db: Session, dry_run: bool, force: bool) -> int:
 
     Returns inserted_count.
     """
-    existing = db.query(UserActivityLog).filter(
-        UserActivityLog.activity_type == "diagram_edit"
-    ).count()
+    existing = db.query(UserActivityLog).filter(UserActivityLog.activity_type == "diagram_edit").count()
     if existing > 0 and not force:
         print(
             f"Found {existing} existing diagram_edit logs. "
@@ -65,9 +64,7 @@ def backfill_diagram_edit(db: Session, dry_run: bool, force: bool) -> int:
         return 0
 
     beijing_now = datetime.now(BEIJING_TZ)
-    cutoff = (beijing_now - timedelta(days=90)).replace(
-        hour=0, minute=0, second=0, microsecond=0
-    )
+    cutoff = (beijing_now - timedelta(days=90)).replace(hour=0, minute=0, second=0, microsecond=0)
     cutoff_utc = cutoff.astimezone(timezone.utc).replace(tzinfo=None)
 
     teachers = db.query(User.id).filter(User.role == "user").all()
@@ -114,9 +111,7 @@ def backfill_diagram_edit(db: Session, dry_run: bool, force: bool) -> int:
 
 def main():
     """Run backfill."""
-    parser = argparse.ArgumentParser(
-        description="Backfill teacher activity logs (diagram_edit) from diagrams table"
-    )
+    parser = argparse.ArgumentParser(description="Backfill teacher activity logs (diagram_edit) from diagrams table")
     parser.add_argument(
         "--dry-run",
         action="store_true",
@@ -139,9 +134,7 @@ def main():
 
     db = SessionLocal()
     try:
-        inserted = backfill_diagram_edit(
-            db, dry_run=args.dry_run, force=args.force
-        )
+        inserted = backfill_diagram_edit(db, dry_run=args.dry_run, force=args.force)
         mode = "Would insert" if args.dry_run else "Inserted"
         print(f"{mode}: {inserted} diagram_edit logs")
     finally:

@@ -10,12 +10,14 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import json
 from datetime import datetime
 from typing import Optional, List, Dict, Any
 import logging
 
-from sqlalchemy import select, delete, and_, func
+from sqlalchemy import select, delete, and_
+from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.orm import Session
 
 from models.domain.gewe_contact import GeweContact
@@ -56,7 +58,7 @@ class GeweContactDB:
         alias: Optional[str] = None,
         contact_type: Optional[str] = None,
         region: Optional[str] = None,
-        extra_data: Optional[Dict[str, Any]] = None
+        extra_data: Optional[Dict[str, Any]] = None,
     ) -> bool:
         """
         Save or update contact in database.
@@ -88,12 +90,7 @@ class GeweContactDB:
             # JSONB columns accept dicts directly — no json.dumps needed.
 
             existing = self.db.execute(
-                select(GeweContact).where(
-                    and_(
-                        GeweContact.app_id == app_id,
-                        GeweContact.wxid == wxid
-                    )
-                )
+                select(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid == wxid))
             ).scalar_one_or_none()
 
             if existing:
@@ -116,7 +113,7 @@ class GeweContactDB:
                     contact_type=contact_type,
                     region=region,
                     extra_data=extra_data,
-                    last_updated=datetime.utcnow()
+                    last_updated=datetime.utcnow(),
                 )
                 self.db.add(contact)
 
@@ -136,11 +133,7 @@ class GeweContactDB:
             self.db.rollback()
             return False
 
-    def save_contacts_batch(
-        self,
-        app_id: str,
-        contacts: List[Dict[str, Any]]
-    ) -> int:
+    def save_contacts_batch(self, app_id: str, contacts: List[Dict[str, Any]]) -> int:
         """
         Save multiple contacts in batch.
 
@@ -166,17 +159,13 @@ class GeweContactDB:
                 alias=contact.get("alias") or contact.get("Alias"),
                 contact_type=contact.get("type"),
                 region=contact.get("region"),
-                extra_data=contact
+                extra_data=contact,
             ):
                 saved_count += 1
 
         return saved_count
 
-    def get_contact(
-        self,
-        app_id: str,
-        wxid: str
-    ) -> Optional[Dict[str, Any]]:
+    def get_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:
         """
         Get contact from database with Redis cache lookup.
 
@@ -209,12 +198,7 @@ class GeweContactDB:
         # Cache miss - load from database
         try:
             contact = self.db.execute(
-                select(GeweContact).where(
-                    and_(
-                        GeweContact.app_id == app_id,
-                        GeweContact.wxid == wxid
-                    )
-                )
+                select(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid == wxid))
             ).scalar_one_or_none()
 
             if not contact:
@@ -228,7 +212,7 @@ class GeweContactDB:
                 "alias": contact.alias,
                 "type": contact.contact_type,
                 "region": contact.region,
-                "last_updated": contact.last_updated.isoformat() if contact.last_updated else None
+                "last_updated": contact.last_updated.isoformat() if contact.last_updated else None,
             }
 
             # JSONB extra_data is already a dict; legacy Text rows are handled gracefully.
@@ -247,7 +231,7 @@ class GeweContactDB:
                     self._redis.set_with_ttl(
                         cache_key,
                         json.dumps(result, ensure_ascii=False),
-                        CONTACT_CACHE_TTL
+                        CONTACT_CACHE_TTL,
                     )
                 except Exception as exc:
                     logger.debug("Failed to cache contact %s:%s: %s", app_id, wxid, exc)
@@ -262,7 +246,7 @@ class GeweContactDB:
         app_id: str,
         contact_type: Optional[str] = None,
         offset: Optional[int] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get contacts list with optional filtering and pagination.
@@ -277,9 +261,7 @@ class GeweContactDB:
             List of contact dictionaries
         """
         try:
-            query = select(GeweContact).where(
-                GeweContact.app_id == app_id
-            )
+            query = select(GeweContact).where(GeweContact.app_id == app_id)
 
             if contact_type:
                 query = query.where(GeweContact.contact_type == contact_type)
@@ -303,7 +285,7 @@ class GeweContactDB:
                     "alias": contact.alias,
                     "type": contact.contact_type,
                     "region": contact.region,
-                    "last_updated": contact.last_updated.isoformat() if contact.last_updated else None
+                    "last_updated": contact.last_updated.isoformat() if contact.last_updated else None,
                 }
 
                 if contact.extra_data:
@@ -322,11 +304,7 @@ class GeweContactDB:
             logger.error("Failed to get contacts: %s", e, exc_info=True)
             return []
 
-    def delete_contact(
-        self,
-        app_id: str,
-        wxid: str
-    ) -> bool:
+    def delete_contact(self, app_id: str, wxid: str) -> bool:
         """
         Delete contact from database.
 
@@ -339,12 +317,7 @@ class GeweContactDB:
         """
         try:
             result = self.db.execute(
-                delete(GeweContact).where(
-                    and_(
-                        GeweContact.app_id == app_id,
-                        GeweContact.wxid == wxid
-                    )
-                )
+                delete(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid == wxid))
             )
             self.db.commit()
 
@@ -362,11 +335,7 @@ class GeweContactDB:
             self.db.rollback()
             return False
 
-    def get_contacts_count(
-        self,
-        app_id: str,
-        contact_type: Optional[str] = None
-    ) -> int:
+    def get_contacts_count(self, app_id: str, contact_type: Optional[str] = None) -> int:
         """
         Get count of contacts.
 
@@ -378,9 +347,7 @@ class GeweContactDB:
             Contact count
         """
         try:
-            query = select(func.count()).select_from(GeweContact).where(
-                GeweContact.app_id == app_id
-            )
+            query = select(sql_count()).select_from(GeweContact).where(GeweContact.app_id == app_id)
 
             if contact_type:
                 query = query.where(GeweContact.contact_type == contact_type)

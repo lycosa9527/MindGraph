@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
 import base64
@@ -24,7 +25,7 @@ from utils.dashscope_error_handler import (
     handle_dashscope_response,
     DashScopeError,
     should_retry,
-    get_retry_delay
+    get_retry_delay,
 )
 
 logger = logging.getLogger(__name__)
@@ -59,8 +60,9 @@ class DashScopeEmbeddingClient:
             raise ValueError("DashScope API key is required")
 
         self.model = (
-            model or os.getenv("DASHSCOPE_EMBEDDING_MODEL") or
-            getattr(config, 'DASHSCOPE_EMBEDDING_MODEL', 'text-embedding-v4')
+            model
+            or os.getenv("DASHSCOPE_EMBEDDING_MODEL")
+            or getattr(config, "DASHSCOPE_EMBEDDING_MODEL", "text-embedding-v4")
         )
         self.base_url = config.DASHSCOPE_API_URL or "https://dashscope.aliyuncs.com/api/v1/"
 
@@ -88,9 +90,10 @@ class DashScopeEmbeddingClient:
             self.batch_size = min(int(os.getenv("EMBEDDING_BATCH_SIZE", "25")), 25)
 
         logger.info(
-            "[DashScopeEmbedding] Initialized with model=%s "
-            "(multimodal=%s, OpenAI-compatible=%s)",
-            self.model, self.is_multimodal, self.use_openai_compatible
+            "[DashScopeEmbedding] Initialized with model=%s (multimodal=%s, OpenAI-compatible=%s)",
+            self.model,
+            self.is_multimodal,
+            self.use_openai_compatible,
         )
 
     @staticmethod
@@ -100,7 +103,7 @@ class DashScopeEmbeddingClient:
             "qwen2.5-vl-embedding",
             "tongyi-embedding-vision-plus",
             "tongyi-embedding-vision-flash",
-            "multimodal-embedding-v1"
+            "multimodal-embedding-v1",
         ]
         return model in multimodal_models
 
@@ -110,7 +113,7 @@ class DashScopeEmbeddingClient:
         input_type: str = "document",
         dimensions: Optional[int] = None,
         instruct: Optional[str] = None,
-        output_type: str = "dense"
+        output_type: str = "dense",
     ) -> List[List[float]]:
         """
         Make embedding API request.
@@ -141,9 +144,10 @@ class DashScopeEmbeddingClient:
         for i, text in enumerate(texts):
             if len(text) > max_chars:
                 logger.debug(
-                    "[DashScopeEmbedding] Text %d length %d chars exceeds %d "
-                    "token limit, truncating",
-                    i, len(text), max_tokens_per_text
+                    "[DashScopeEmbedding] Text %d length %d chars exceeds %d token limit, truncating",
+                    i,
+                    len(text),
+                    max_tokens_per_text,
                 )
                 truncated_texts.append(text[:max_chars])
             else:
@@ -168,13 +172,7 @@ class DashScopeEmbeddingClient:
                 payload["dimensions"] = dimensions
         else:
             # Standard DashScope API format
-            payload = {
-                "model": self.model,
-                "input": {
-                    "texts": texts
-                },
-                "parameters": {}
-            }
+            payload = {"model": self.model, "input": {"texts": texts}, "parameters": {}}
 
             # Add text_type (for v2, v3, v4)
             if input_type:
@@ -188,16 +186,15 @@ class DashScopeEmbeddingClient:
             if instruct and self.model.startswith("text-embedding-v4"):
                 if input_type != "query":
                     logger.warning(
-                        "[DashScopeEmbedding] instruct parameter requires "
-                        "input_type='query', ignoring instruct"
+                        "[DashScopeEmbedding] instruct parameter requires input_type='query', ignoring instruct"
                     )
                 else:
                     payload["parameters"]["instruct"] = instruct
 
             # Add output_type (for v3, v4)
-            if (output_type != "dense" and
-                    (self.model.startswith("text-embedding-v3") or
-                     self.model.startswith("text-embedding-v4"))):
+            if output_type != "dense" and (
+                self.model.startswith("text-embedding-v3") or self.model.startswith("text-embedding-v4")
+            ):
                 payload["parameters"]["output_type"] = output_type
 
         max_retries = 3
@@ -220,9 +217,11 @@ class DashScopeEmbeddingClient:
                         if should_retry(error, attempt, max_retries):
                             delay = get_retry_delay(attempt, error)
                             logger.warning(
-                                "[DashScopeEmbedding] Error on attempt %d/%d: %s. "
-                                "Retrying in %ds...",
-                                attempt, max_retries, error.message, delay
+                                "[DashScopeEmbedding] Error on attempt %d/%d: %s. Retrying in %ds...",
+                                attempt,
+                                max_retries,
+                                error.message,
+                                delay,
                             )
                             time.sleep(delay)
                             continue
@@ -254,9 +253,8 @@ class DashScopeEmbeddingClient:
                         # Check for NaN or Inf values
                         if np.isnan(embedding_array).any() or np.isinf(embedding_array).any():
                             logger.warning(
-                                "[DashScopeEmbedding] Invalid embedding (NaN/Inf) "
-                                "at index %d, skipping this embedding",
-                                i
+                                "[DashScopeEmbedding] Invalid embedding (NaN/Inf) at index %d, skipping this embedding",
+                                i,
                             )
                             continue
 
@@ -267,25 +265,24 @@ class DashScopeEmbeddingClient:
                             normalized_embeddings.append(normalized)
                         else:
                             logger.warning(
-                                "[DashScopeEmbedding] Zero-norm embedding at index %d, "
-                                "skipping this embedding",
-                                i
+                                "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping this embedding",
+                                i,
                             )
                             continue
 
                     except Exception as e:  # pylint: disable=broad-except
                         logger.error(
-                            "[DashScopeEmbedding] Failed to normalize embedding "
-                            "at index %d: %s",
-                            i, e
+                            "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
+                            i,
+                            e,
                         )
                         continue
 
                 if len(normalized_embeddings) != len(raw_embeddings):
                     logger.warning(
-                        "[DashScopeEmbedding] Normalized %d/%d embeddings "
-                        "(some were invalid)",
-                        len(normalized_embeddings), len(raw_embeddings)
+                        "[DashScopeEmbedding] Normalized %d/%d embeddings (some were invalid)",
+                        len(normalized_embeddings),
+                        len(raw_embeddings),
                     )
 
                 # Success - return embeddings
@@ -298,38 +295,43 @@ class DashScopeEmbeddingClient:
                 if should_retry(e, attempt, max_retries):
                     delay = get_retry_delay(attempt, e)
                     logger.warning(
-                        "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. "
-                        "Retrying in %ds...",
-                        attempt, max_retries, e.message, delay
+                        "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
+                        attempt,
+                        max_retries,
+                        e.message,
+                        delay,
                     )
                     time.sleep(delay)
                     continue
                 else:
                     # Don't retry, raise immediately
                     logger.error(
-                        "[DashScopeEmbedding] DashScope API error: %s "
-                        "(code: %s, type: %s)",
-                        e.message, e.error_code, e.error_type
+                        "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
+                        e.message,
+                        e.error_code,
+                        e.error_type,
                     )
                     raise
             except httpx.HTTPError as e:
                 # Network/HTTP errors - retry if transient
                 status_code = None
                 if isinstance(e, httpx.HTTPStatusError):
-                    response = getattr(e, 'response', None)
+                    response = getattr(e, "response", None)
                     if response is not None:
                         status_code = response.status_code
                 last_error = DashScopeError(
                     message=f"HTTP error: {str(e)}",
                     status_code=status_code,
-                    retryable=True
+                    retryable=True,
                 )
                 if should_retry(last_error, attempt, max_retries):
                     delay = get_retry_delay(attempt)
                     logger.warning(
-                        "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. "
-                        "Retrying in %ds...",
-                        attempt, max_retries, e, delay
+                        "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
+                        attempt,
+                        max_retries,
+                        e,
+                        delay,
                     )
                     time.sleep(delay)
                     continue
@@ -352,7 +354,7 @@ class DashScopeEmbeddingClient:
         texts: List[str],
         text_type: str = "document",
         dimensions: Optional[int] = None,
-        output_type: str = "dense"
+        output_type: str = "dense",
     ) -> List[List[float]]:
         """
         Embed multiple texts (for documents).
@@ -376,23 +378,25 @@ class DashScopeEmbeddingClient:
         # Process in batches
         all_embeddings = []
         for i in range(0, len(texts), self.batch_size):
-            batch = texts[i:i + self.batch_size]
+            batch = texts[i : i + self.batch_size]
             try:
                 batch_embeddings = self._make_request(
                     batch,
                     input_type=text_type,
                     dimensions=dimensions,
-                    output_type=output_type
+                    output_type=output_type,
                 )
                 all_embeddings.extend(batch_embeddings)
                 logger.debug(
                     "[DashScopeEmbedding] Embedded batch %d, size=%d",
-                    i//self.batch_size + 1, len(batch)
+                    i // self.batch_size + 1,
+                    len(batch),
                 )
             except Exception as e:  # pylint: disable=broad-except
                 logger.error(
                     "[DashScopeEmbedding] Failed to embed batch starting at index %d: %s",
-                    i, e
+                    i,
+                    e,
                 )
                 raise
 
@@ -403,7 +407,7 @@ class DashScopeEmbeddingClient:
         query: str,
         dimensions: Optional[int] = None,
         instruct: Optional[str] = None,
-        output_type: str = "dense"
+        output_type: str = "dense",
     ) -> List[float]:
         """
         Embed a single query text.
@@ -430,7 +434,7 @@ class DashScopeEmbeddingClient:
                 input_type="query",
                 dimensions=dimensions,
                 instruct=instruct,
-                output_type=output_type
+                output_type=output_type,
             )
             if embeddings and len(embeddings) > 0:
                 return embeddings[0]
@@ -472,10 +476,7 @@ class DashScopeEmbeddingClient:
             logger.error("[DashScopeEmbedding] Failed to embed image: %s", e)
             raise
 
-    def embed_multimodal(
-        self,
-        contents: List[Union[str, Dict[str, str]]]
-    ) -> List[List[float]]:
+    def embed_multimodal(self, contents: List[Union[str, Dict[str, str]]]) -> List[List[float]]:
         """
         Embed multimodal content (text, images, videos).
 
@@ -536,10 +537,7 @@ class DashScopeEmbeddingClient:
 
         return f"data:image/{ext};base64,{image_data}"
 
-    def _make_multimodal_request(
-        self,
-        contents: List[Dict[str, Any]]
-    ) -> List[List[float]]:
+    def _make_multimodal_request(self, contents: List[Dict[str, Any]]) -> List[List[float]]:
         """
         Make multimodal embedding API request.
 
@@ -554,18 +552,13 @@ class DashScopeEmbeddingClient:
             "Content-Type": "application/json",
         }
 
-        payload = {
-            "model": self.model,
-            "input": {
-                "contents": contents
-            }
-        }
+        payload = {"model": self.model, "input": {"contents": contents}}
 
         # Add parameters for tongyi-embedding-vision-plus
         if self.model == "tongyi-embedding-vision-plus":
             payload["parameters"] = {
                 "output_type": "dense",
-                "dimension": 1024  # Default dimension
+                "dimension": 1024,  # Default dimension
             }
 
         max_retries = 3
@@ -588,9 +581,11 @@ class DashScopeEmbeddingClient:
                         if should_retry(error, attempt, max_retries):
                             delay = get_retry_delay(attempt, error)
                             logger.warning(
-                                "[DashScopeEmbedding] Error on attempt %d/%d: %s. "
-                                "Retrying in %ds...",
-                                attempt, max_retries, error.message, delay
+                                "[DashScopeEmbedding] Error on attempt %d/%d: %s. Retrying in %ds...",
+                                attempt,
+                                max_retries,
+                                error.message,
+                                delay,
                             )
                             time.sleep(delay)
                             continue
@@ -617,7 +612,7 @@ class DashScopeEmbeddingClient:
                                 logger.warning(
                                     "[DashScopeEmbedding] Invalid embedding (NaN/Inf) "
                                     "at index %d, skipping this embedding",
-                                    i
+                                    i,
                                 )
                                 continue
 
@@ -628,25 +623,24 @@ class DashScopeEmbeddingClient:
                                 normalized_embeddings.append(normalized)
                             else:
                                 logger.warning(
-                                    "[DashScopeEmbedding] Zero-norm embedding at index %d, "
-                                    "skipping this embedding",
-                                    i
+                                    "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping this embedding",
+                                    i,
                                 )
                                 continue
 
                         except Exception as e:  # pylint: disable=broad-except
                             logger.error(
-                                "[DashScopeEmbedding] Failed to normalize embedding "
-                                "at index %d: %s",
-                                i, e
+                                "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
+                                i,
+                                e,
                             )
                             continue
 
                     if len(normalized_embeddings) != len(raw_embeddings):
                         logger.warning(
-                            "[DashScopeEmbedding] Normalized %d/%d embeddings "
-                            "(some were invalid)",
-                            len(normalized_embeddings), len(raw_embeddings)
+                            "[DashScopeEmbedding] Normalized %d/%d embeddings (some were invalid)",
+                            len(normalized_embeddings),
+                            len(raw_embeddings),
                         )
 
                     # Success - return embeddings
@@ -661,38 +655,43 @@ class DashScopeEmbeddingClient:
                 if should_retry(e, attempt, max_retries):
                     delay = get_retry_delay(attempt, e)
                     logger.warning(
-                        "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. "
-                        "Retrying in %ds...",
-                        attempt, max_retries, e.message, delay
+                        "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
+                        attempt,
+                        max_retries,
+                        e.message,
+                        delay,
                     )
                     time.sleep(delay)
                     continue
                 else:
                     # Don't retry, raise immediately
                     logger.error(
-                        "[DashScopeEmbedding] DashScope API error: %s "
-                        "(code: %s, type: %s)",
-                        e.message, e.error_code, e.error_type
+                        "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
+                        e.message,
+                        e.error_code,
+                        e.error_type,
                     )
                     raise
             except httpx.HTTPError as e:
                 # Network/HTTP errors - retry if transient
                 status_code = None
                 if isinstance(e, httpx.HTTPStatusError):
-                    response = getattr(e, 'response', None)
+                    response = getattr(e, "response", None)
                     if response is not None:
                         status_code = response.status_code
                 last_error = DashScopeError(
                     message=f"HTTP error: {str(e)}",
                     status_code=status_code,
-                    retryable=True
+                    retryable=True,
                 )
                 if should_retry(last_error, attempt, max_retries):
                     delay = get_retry_delay(attempt)
                     logger.warning(
-                        "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. "
-                        "Retrying in %ds...",
-                        attempt, max_retries, e, delay
+                        "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
+                        attempt,
+                        max_retries,
+                        e,
+                        delay,
                     )
                     time.sleep(delay)
                     continue
@@ -701,10 +700,7 @@ class DashScopeEmbeddingClient:
                     raise
             except Exception as e:  # pylint: disable=broad-except
                 # Other errors - don't retry
-                logger.error(
-                    "[DashScopeEmbedding] Error embedding multimodal content: %s",
-                    e
-                )
+                logger.error("[DashScopeEmbedding] Error embedding multimodal content: %s", e)
                 raise
 
         # If we exhausted retries, raise last error

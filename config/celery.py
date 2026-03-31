@@ -25,13 +25,14 @@ from services.llm import llm_service
 from services.redis.redis_client import (
     RedisStartupError,
     init_redis_sync,
-    is_redis_available
+    is_redis_available,
 )
 
 
 # Load environment variables from .env file
 # This ensures Celery workers have access to all environment variables
 load_dotenv()
+
 
 # Configure Celery logging to match application format
 class UnifiedFormatter(logging.Formatter):
@@ -41,65 +42,66 @@ class UnifiedFormatter(logging.Formatter):
     """
 
     COLORS = {
-        'DEBUG': '\033[37m',      # Gray
-        'INFO': '\033[36m',       # Cyan
-        'WARNING': '\033[33m',    # Yellow
-        'ERROR': '\033[31m',      # Red
-        'CRITICAL': '\033[35m',   # Magenta
-        'RESET': '\033[0m',
-        'BOLD': '\033[1m'
+        "DEBUG": "\033[37m",  # Gray
+        "INFO": "\033[36m",  # Cyan
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
+        "CRITICAL": "\033[35m",  # Magenta
+        "RESET": "\033[0m",
+        "BOLD": "\033[1m",
     }
 
     def format(self, record):
         # Timestamp: HH:MM:SS
-        timestamp = self.formatTime(record, '%H:%M:%S')
+        timestamp = self.formatTime(record, "%H:%M:%S")
 
         # Level abbreviation
         level_name = record.levelname
-        if level_name == 'CRITICAL':
-            level_name = 'CRIT'
-        elif level_name == 'WARNING':
-            level_name = 'WARN'
+        if level_name == "CRITICAL":
+            level_name = "CRIT"
+        elif level_name == "WARNING":
+            level_name = "WARN"
 
-        color = self.COLORS.get(level_name, '')
-        reset = self.COLORS['RESET']
+        color = self.COLORS.get(level_name, "")
+        reset = self.COLORS["RESET"]
 
-        if level_name == 'CRIT':
+        if level_name == "CRIT":
             colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
         else:
             colored_level = f"{color}{level_name.ljust(5)}{reset}"
 
         # Source abbreviation - handle Celery-specific loggers
         source = record.name
-        if 'celery' in source.lower():
-            if 'worker' in source.lower() or 'mainprocess' in source.lower():
-                source = 'CELE'
-            elif 'task' in source.lower():
-                source = 'TASK'
-            elif 'forkpoolworker' in source.lower():
+        if "celery" in source.lower():
+            if "worker" in source.lower() or "mainprocess" in source.lower():
+                source = "CELE"
+            elif "task" in source.lower():
+                source = "TASK"
+            elif "forkpoolworker" in source.lower():
                 # Extract worker number from ForkPoolWorker-1, ForkPoolWorker-2, etc.
-                source = 'CELE'
+                source = "CELE"
             else:
-                source = 'CELE'
-        elif source.startswith('services'):
-            source = 'SERV'
-        elif source.startswith('clients'):
-            source = 'CLIE'
-        elif source.startswith('config'):
-            source = 'CONF'
-        elif source.startswith('routers'):
-            source = 'API'
-        elif source == '__main__':
-            source = 'MAIN'
+                source = "CELE"
+        elif source.startswith("services"):
+            source = "SERV"
+        elif source.startswith("clients"):
+            source = "CLIE"
+        elif source.startswith("config"):
+            source = "CONF"
+        elif source.startswith("routers"):
+            source = "API"
+        elif source == "__main__":
+            source = "MAIN"
         else:
             source = source[:4].upper()
 
         source = source.ljust(4)
 
         # Process ID
-        pid = record.process if hasattr(record, 'process') else os.getpid()
+        pid = record.process if hasattr(record, "process") else os.getpid()
 
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {record.getMessage()}"
+
 
 # Configure Celery logging
 def setup_celery_logging():
@@ -126,19 +128,19 @@ def setup_celery_logging():
         log_file,
         maxBytes=10 * 1024 * 1024,  # 10MB
         backupCount=10,
-        encoding='utf-8'
+        encoding="utf-8",
     )
     file_handler.setFormatter(UnifiedFormatter())
 
     # Configure Celery loggers - including all variants
     celery_loggers = [
-        'celery',
-        'celery.worker',
-        'celery.task',
-        'celery.worker.strategy',
-        'celery.beat',
-        'celery.app',
-        'celery.app.trace',
+        "celery",
+        "celery.worker",
+        "celery.task",
+        "celery.worker.strategy",
+        "celery.beat",
+        "celery.app",
+        "celery.app.trace",
     ]
 
     for logger_name in celery_loggers:
@@ -157,7 +159,7 @@ def setup_celery_logging():
     # Also configure any existing logger that starts with 'celery'
     # This catches MainProcess and ForkPoolWorker loggers
     for logger_name in list(logging.Logger.manager.loggerDict.keys()):
-        if isinstance(logger_name, str) and 'celery' in logger_name.lower():
+        if isinstance(logger_name, str) and "celery" in logger_name.lower():
             celery_logger = logging.getLogger(logger_name)
             celery_logger.handlers = []
             celery_logger.addHandler(console_handler)
@@ -167,19 +169,20 @@ def setup_celery_logging():
 
     # Set all application loggers to DEBUG for verbose logging
     app_loggers = [
-        'services',
-        'llm_chunking',
-        'tasks',
-        'clients',
-        'agents',
-        'routers',
-        'utils',
-        'config',
+        "services",
+        "llm_chunking",
+        "tasks",
+        "clients",
+        "agents",
+        "routers",
+        "utils",
+        "config",
     ]
     for logger_prefix in app_loggers:
         app_logger = logging.getLogger(logger_prefix)
         app_logger.setLevel(logging.DEBUG)
         app_logger.propagate = True  # Let it propagate to root
+
 
 # Setup logging before creating Celery app
 setup_celery_logging()
@@ -226,48 +229,43 @@ def _log_celery_error(title: str, details: list[str]) -> None:
 
 
 # Redis configuration
-REDIS_HOST = os.getenv('REDIS_HOST', 'localhost')
-REDIS_PORT = os.getenv('REDIS_PORT', '6379')
-REDIS_DB = os.getenv('REDIS_CELERY_DB', '1')  # Use DB 1 for Celery (DB 0 for caching)
+REDIS_HOST = os.getenv("REDIS_HOST", "localhost")
+REDIS_PORT = os.getenv("REDIS_PORT", "6379")
+REDIS_DB = os.getenv("REDIS_CELERY_DB", "1")  # Use DB 1 for Celery (DB 0 for caching)
 
-BROKER_URL = os.getenv('CELERY_BROKER_URL', f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
-BACKEND_URL = os.getenv('CELERY_RESULT_BACKEND', f'redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}')
+BROKER_URL = os.getenv("CELERY_BROKER_URL", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
+BACKEND_URL = os.getenv("CELERY_RESULT_BACKEND", f"redis://{REDIS_HOST}:{REDIS_PORT}/{REDIS_DB}")
 
 # Create Celery app
 celery_app = Celery(
-    'mindgraph',
+    "mindgraph",
     broker=BROKER_URL,
     backend=BACKEND_URL,
-    include=['tasks.knowledge_space_tasks'],  # Register tasks
+    include=["tasks.knowledge_space_tasks"],  # Register tasks
 )
 
 # Celery configuration
 celery_app.conf.update(
     # Task settings
-    task_serializer='json',
-    accept_content=['json'],
-    result_serializer='json',
-    timezone='Asia/Shanghai',
+    task_serializer="json",
+    accept_content=["json"],
+    result_serializer="json",
+    timezone="Asia/Shanghai",
     enable_utc=True,
-
     # Task execution settings
     task_acks_late=True,  # Acknowledge after task completes (reliability)
     task_reject_on_worker_lost=True,  # Requeue if worker crashes
-
     # Worker settings
     worker_prefetch_multiplier=1,  # One task at a time per worker (for long-running tasks)
     worker_concurrency=2,  # 2 concurrent tasks per worker
-
     # Result settings
     result_expires=3600,  # Results expire after 1 hour
-
     # Task queues (like Dify's queue isolation)
     task_routes={
-        'knowledge_space.*': {'queue': 'knowledge'},
+        "knowledge_space.*": {"queue": "knowledge"},
     },
-
     # Default queue
-    task_default_queue='default',
+    task_default_queue="default",
 )
 
 
@@ -287,9 +285,9 @@ def init_celery_worker_check() -> bool:
     logger.info("[Celery] Checking Celery worker availability...")
 
     # Retry configuration
-    max_retries = int(os.getenv('CELERY_CHECK_MAX_RETRIES', '5'))
-    initial_delay = float(os.getenv('CELERY_CHECK_INITIAL_DELAY', '1.0'))
-    max_delay = float(os.getenv('CELERY_CHECK_MAX_DELAY', '16.0'))
+    max_retries = int(os.getenv("CELERY_CHECK_MAX_RETRIES", "5"))
+    initial_delay = float(os.getenv("CELERY_CHECK_INITIAL_DELAY", "1.0"))
+    max_delay = float(os.getenv("CELERY_CHECK_MAX_DELAY", "16.0"))
 
     last_exception = None
     for attempt in range(max_retries):
@@ -302,11 +300,12 @@ def init_celery_worker_check() -> bool:
             if active_workers is None:
                 # No workers found or connection failed - retry
                 if attempt < max_retries - 1:
-                    delay = min(initial_delay * (2 ** attempt), max_delay)
+                    delay = min(initial_delay * (2**attempt), max_delay)
                     logger.warning(
-                        "[Celery] No workers found (attempt %d/%d). "
-                        "Retrying in %.1f seconds...",
-                        attempt + 1, max_retries, delay
+                        "[Celery] No workers found (attempt %d/%d). Retrying in %.1f seconds...",
+                        attempt + 1,
+                        max_retries,
+                        delay,
                     )
                     time.sleep(delay)
                     last_exception = None
@@ -327,18 +326,19 @@ def init_celery_worker_check() -> bool:
                         "  python main.py",
                         "",
                         "Ensure Redis is running (required for Celery broker).",
-                    ]
+                    ],
                 )
                 raise CeleryStartupError("Celery worker not available") from None
 
             if not active_workers:
                 # Empty dict means no workers - retry
                 if attempt < max_retries - 1:
-                    delay = min(initial_delay * (2 ** attempt), max_delay)
+                    delay = min(initial_delay * (2**attempt), max_delay)
                     logger.warning(
-                        "[Celery] No active workers found (attempt %d/%d). "
-                        "Retrying in %.1f seconds...",
-                        attempt + 1, max_retries, delay
+                        "[Celery] No active workers found (attempt %d/%d). Retrying in %.1f seconds...",
+                        attempt + 1,
+                        max_retries,
+                        delay,
                     )
                     time.sleep(delay)
                     last_exception = None
@@ -357,7 +357,7 @@ def init_celery_worker_check() -> bool:
                         "",
                         "Or use the server launcher which starts Celery automatically:",
                         "  python main.py",
-                    ]
+                    ],
                 )
                 raise CeleryStartupError("No active Celery workers found") from None
 
@@ -366,7 +366,8 @@ def init_celery_worker_check() -> bool:
             if attempt > 0:
                 logger.info(
                     "[Celery] Found %d active worker(s) after %d retry attempt(s)",
-                    worker_count, attempt
+                    worker_count,
+                    attempt,
                 )
             else:
                 logger.info("[Celery] Found %d active worker(s)", worker_count)
@@ -379,11 +380,13 @@ def init_celery_worker_check() -> bool:
             # Connection error or other unexpected error - retry
             last_exception = exc
             if attempt < max_retries - 1:
-                delay = min(initial_delay * (2 ** attempt), max_delay)
+                delay = min(initial_delay * (2**attempt), max_delay)
                 logger.warning(
-                    "[Celery] Worker check failed: %s (attempt %d/%d). "
-                    "Retrying in %.1f seconds...",
-                    exc, attempt + 1, max_retries, delay
+                    "[Celery] Worker check failed: %s (attempt %d/%d). Retrying in %.1f seconds...",
+                    exc,
+                    attempt + 1,
+                    max_retries,
+                    delay,
                 )
                 time.sleep(delay)
                 continue
@@ -403,7 +406,7 @@ def init_celery_worker_check() -> bool:
                     "",
                     "Or use the server launcher which starts Celery automatically:",
                     "  python main.py",
-                ]
+                ],
             )
             raise CeleryStartupError(f"Failed to check Celery worker: {exc}") from exc
 
@@ -437,7 +440,6 @@ def _init_worker_services():
     except (OSError, ConnectionError) as e:
         worker_logger.warning("[Celery] Redis connection error: %s", e)
 
-
     # Initialize LLM service for MindChunk
     try:
         # Check if API key is configured
@@ -459,35 +461,35 @@ def _init_worker_services():
             # Verify initialization succeeded
             if llm_service.client_manager.is_initialized():
                 worker_logger.info("[Celery] ✓ LLM service initialized successfully in worker process")
-                worker_logger.debug("[Celery] Available models: %s", llm_service.client_manager.get_available_models())
+                worker_logger.debug(
+                    "[Celery] Available models: %s",
+                    llm_service.client_manager.get_available_models(),
+                )
             else:
                 worker_logger.error("[Celery] ✗ LLM service initialization failed - is_initialized() returned False")
         else:
             worker_logger.info("[Celery] LLM service already initialized in worker process")
     except ImportError as e:
         worker_logger.error(
-            "[Celery] Failed to import LLM service dependencies: %s. "
-            "MindChunk will not be available.",
-            e
+            "[Celery] Failed to import LLM service dependencies: %s. MindChunk will not be available.",
+            e,
         )
     except LLMServiceError as e:
         worker_logger.error(
-            "[Celery] LLM service initialization error: %s. "
-            "MindChunk will not be available.",
-            e
+            "[Celery] LLM service initialization error: %s. MindChunk will not be available.",
+            e,
         )
     except (OSError, ConnectionError) as e:
         worker_logger.error(
-            "[Celery] LLM service connection error: %s. "
-            "MindChunk will not be available.",
-            e
+            "[Celery] LLM service connection error: %s. MindChunk will not be available.",
+            e,
         )
     except RuntimeError as e:
         worker_logger.error(
-            "[Celery] LLM service runtime error: %s. "
-            "MindChunk will not be available.",
-            e
+            "[Celery] LLM service runtime error: %s. MindChunk will not be available.",
+            e,
         )
+
 
 # Register signal handlers for worker initialization
 @worker_process_init.connect
@@ -497,15 +499,20 @@ def on_worker_process_init(_sender=None, **_kwargs):
     setup_celery_logging()
 
     # Use module-level logger (already defined at line 188)
-    worker_name = os.environ.get('CELERY_WORKER_NAME', 'unknown')
+    worker_name = os.environ.get("CELERY_WORKER_NAME", "unknown")
     pid = os.getpid()
 
-    logger.info("[Celery] ===== ForkPoolWorker process started: PID=%s, Worker=%s =====", pid, worker_name)
+    logger.info(
+        "[Celery] ===== ForkPoolWorker process started: PID=%s, Worker=%s =====",
+        pid,
+        worker_name,
+    )
     logger.info("[Celery] Initializing services in worker process...")
 
     _init_worker_services()
 
     logger.info("[Celery] ===== ForkPoolWorker process ready: PID=%s =====", pid)
+
 
 @worker_ready.connect
 def on_worker_ready(_sender=None, **_kwargs):
@@ -522,6 +529,7 @@ def on_worker_ready(_sender=None, **_kwargs):
     # which runs in each ForkPoolWorker process, not in MainProcess.
     # MainProcess doesn't need LLM service - only worker processes do.
 
+
 # For running worker directly: celery -A config.celery worker --loglevel=info
-if __name__ == '__main__':
+if __name__ == "__main__":
     celery_app.start()

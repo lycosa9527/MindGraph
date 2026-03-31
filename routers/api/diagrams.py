@@ -56,7 +56,11 @@ from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.workshop import workshop_service
 from utils.auth import get_current_user
 
-from .helpers import check_endpoint_rate_limit, get_rate_limit_identifier, log_diagram_edit
+from .helpers import (
+    check_endpoint_rate_limit,
+    get_rate_limit_identifier,
+    log_diagram_edit,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +81,7 @@ async def create_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
 
@@ -103,13 +105,9 @@ async def create_diagram(
         raise HTTPException(status_code=500, detail="Diagram created but ID is missing")
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
-        raise HTTPException(
-            status_code=500, detail="Diagram created but failed to retrieve"
-        )
+        raise HTTPException(status_code=500, detail="Diagram created but failed to retrieve")
 
-    logger.info(
-        "[Diagrams] Created diagram %s for user %s", diagram_id, current_user.id
-    )
+    logger.info("[Diagrams] Created diagram %s for user %s", diagram_id, current_user.id)
 
     return DiagramResponse(
         id=diagram["id"],
@@ -118,12 +116,8 @@ async def create_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"])
-        if diagram.get("created_at")
-        else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"])
-        if diagram.get("updated_at")
-        else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
     )
 
 
@@ -141,9 +135,7 @@ async def list_diagrams(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
     result = await cache.list_diagrams(current_user.id, page, page_size)
@@ -157,9 +149,7 @@ async def list_diagrams(
                 title=d["title"],
                 diagram_type=d["diagram_type"],
                 thumbnail=d.get("thumbnail"),
-                updated_at=datetime.fromisoformat(d["updated_at"])
-                if d.get("updated_at")
-                else datetime.utcnow(),
+                updated_at=datetime.fromisoformat(d["updated_at"]) if d.get("updated_at") else datetime.utcnow(),
                 is_pinned=d.get("is_pinned", False),
             )
         )
@@ -187,9 +177,7 @@ async def get_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
     diagram = await cache.get_diagram(current_user.id, diagram_id)
@@ -204,12 +192,8 @@ async def get_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"])
-        if diagram.get("created_at")
-        else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"])
-        if diagram.get("updated_at")
-        else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
     )
 
 
@@ -228,9 +212,7 @@ async def update_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
 
@@ -242,9 +224,7 @@ async def update_diagram(
     # Merge updates
     title = req.title if req.title is not None else existing["title"]
     spec = req.spec if req.spec is not None else existing["spec"]
-    thumbnail = (
-        req.thumbnail if req.thumbnail is not None else existing.get("thumbnail")
-    )
+    thumbnail = req.thumbnail if req.thumbnail is not None else existing.get("thumbnail")
 
     success, _, error = await cache.save_diagram(
         user_id=current_user.id,
@@ -262,13 +242,9 @@ async def update_diagram(
     # Get updated diagram
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
-        raise HTTPException(
-            status_code=500, detail="Diagram updated but failed to retrieve"
-        )
+        raise HTTPException(status_code=500, detail="Diagram updated but failed to retrieve")
 
-    logger.info(
-        "[Diagrams] Updated diagram %s for user %s", diagram_id, current_user.id
-    )
+    logger.info("[Diagrams] Updated diagram %s for user %s", diagram_id, current_user.id)
 
     edit_count = getattr(req, "edit_count", None)
     log_diagram_edit(current_user, db, count=edit_count if edit_count else 1)
@@ -280,12 +256,8 @@ async def update_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"])
-        if diagram.get("created_at")
-        else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"])
-        if diagram.get("updated_at")
-        else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
     )
 
 
@@ -302,9 +274,7 @@ async def delete_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
     success, error = await cache.delete_diagram(current_user.id, diagram_id)
@@ -314,9 +284,7 @@ async def delete_diagram(
             raise HTTPException(status_code=404, detail=error)
         raise HTTPException(status_code=400, detail=error or "Failed to delete diagram")
 
-    logger.info(
-        "[Diagrams] Deleted diagram %s for user %s", diagram_id, current_user.id
-    )
+    logger.info("[Diagrams] Deleted diagram %s for user %s", diagram_id, current_user.id)
 
     return {"success": True, "message": "Diagram deleted"}
 
@@ -335,9 +303,7 @@ async def duplicate_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
     success, new_id, error = await cache.duplicate_diagram(current_user.id, diagram_id)
@@ -347,20 +313,14 @@ async def duplicate_diagram(
             raise HTTPException(status_code=403, detail=error)
         if "not found" in (error or "").lower():
             raise HTTPException(status_code=404, detail=error)
-        raise HTTPException(
-            status_code=400, detail=error or "Failed to duplicate diagram"
-        )
+        raise HTTPException(status_code=400, detail=error or "Failed to duplicate diagram")
 
     # Get the new diagram
     if not new_id:
-        raise HTTPException(
-            status_code=500, detail="Diagram duplicated but ID is missing"
-        )
+        raise HTTPException(status_code=500, detail="Diagram duplicated but ID is missing")
     diagram = await cache.get_diagram(current_user.id, new_id)
     if not diagram:
-        raise HTTPException(
-            status_code=500, detail="Diagram duplicated but failed to retrieve"
-        )
+        raise HTTPException(status_code=500, detail="Diagram duplicated but failed to retrieve")
 
     logger.info(
         "[Diagrams] Duplicated diagram %s to %s for user %s",
@@ -376,12 +336,8 @@ async def duplicate_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"])
-        if diagram.get("created_at")
-        else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"])
-        if diagram.get("updated_at")
-        else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
     )
 
 
@@ -399,9 +355,7 @@ async def pin_diagram(
     """
     # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagrams", identifier, max_requests=100, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
     success, error = await cache.pin_diagram(current_user.id, diagram_id, pinned)
@@ -412,9 +366,7 @@ async def pin_diagram(
         raise HTTPException(status_code=400, detail=error or "Failed to pin diagram")
 
     action = "Pinned" if pinned else "Unpinned"
-    logger.info(
-        "[Diagrams] %s diagram %s for user %s", action, diagram_id, current_user.id
-    )
+    logger.info("[Diagrams] %s diagram %s for user %s", action, diagram_id, current_user.id)
 
     return {
         "success": True,
@@ -439,9 +391,7 @@ async def start_workshop(
     Rate limited: 10 requests per minute per user.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "workshop", identifier, max_requests=10, window_seconds=60
-    )
+    await check_endpoint_rate_limit("workshop", identifier, max_requests=10, window_seconds=60)
 
     visibility = body.visibility if body else "organization"
     duration = body.duration if body else "today"
@@ -450,9 +400,7 @@ async def start_workshop(
     )
 
     if not code:
-        raise HTTPException(
-            status_code=400, detail=error_msg or "Failed to start presentation mode"
-        )
+        raise HTTPException(status_code=400, detail=error_msg or "Failed to start presentation mode")
 
     logger.info(
         "[Diagrams] Started presentation mode %s for diagram %s (user %s)",
@@ -486,16 +434,12 @@ async def stop_workshop(
     Rate limited: 10 requests per minute per user.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "workshop", identifier, max_requests=10, window_seconds=60
-    )
+    await check_endpoint_rate_limit("workshop", identifier, max_requests=10, window_seconds=60)
 
     success = await workshop_service.stop_workshop(diagram_id, current_user.id)
 
     if not success:
-        raise HTTPException(
-            status_code=404, detail="Presentation mode not found or not authorized"
-        )
+        raise HTTPException(status_code=404, detail="Presentation mode not found or not authorized")
 
     logger.info(
         "[Diagrams] Stopped presentation mode for diagram %s (user %s)",
@@ -521,13 +465,9 @@ async def get_workshop_status(
     Rate limited: 30 requests per minute per user.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "workshop", identifier, max_requests=30, window_seconds=60
-    )
+    await check_endpoint_rate_limit("workshop", identifier, max_requests=30, window_seconds=60)
 
-    status, err = await workshop_service.get_workshop_status(
-        diagram_id, current_user.id
-    )
+    status, err = await workshop_service.get_workshop_status(diagram_id, current_user.id)
 
     if err == "not_found" or status is None:
         raise HTTPException(status_code=404, detail="Diagram not found")
@@ -549,9 +489,7 @@ async def join_workshop(
     Rate limited: 20 requests per minute per user.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "workshop", identifier, max_requests=20, window_seconds=60
-    )
+    await check_endpoint_rate_limit("workshop", identifier, max_requests=20, window_seconds=60)
 
     workshop_info = await workshop_service.join_workshop(code, current_user.id)
 
@@ -583,13 +521,9 @@ async def list_organization_workshop_sessions(
     List active organization-scoped workshops for the same school (校内).
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "workshop", identifier, max_requests=30, window_seconds=60
-    )
+    await check_endpoint_rate_limit("workshop", identifier, max_requests=30, window_seconds=60)
 
-    sessions = await workshop_service.list_organization_workshop_sessions(
-        current_user.id
-    )
+    sessions = await workshop_service.list_organization_workshop_sessions(current_user.id)
     return {"success": True, "sessions": sessions}
 
 
@@ -603,13 +537,9 @@ async def join_workshop_organization(
     Join a 校内 session by diagram id (no meeting code in the UI).
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "workshop", identifier, max_requests=20, window_seconds=60
-    )
+    await check_endpoint_rate_limit("workshop", identifier, max_requests=20, window_seconds=60)
 
-    workshop_info = await workshop_service.join_workshop_by_diagram(
-        body.diagram_id, current_user.id
-    )
+    workshop_info = await workshop_service.join_workshop_by_diagram(body.diagram_id, current_user.id)
 
     if not workshop_info:
         raise HTTPException(
@@ -636,7 +566,7 @@ async def generate_qrcode(
 ):
     """
     Generate a QR code image from text data.
-    
+
     Returns PNG image of the QR code.
     No authentication required - QR codes are public data.
     """
@@ -711,23 +641,16 @@ async def take_snapshot(
     versions are renumbered when the limit is reached.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagram_snapshots", identifier, max_requests=60, window_seconds=60)
 
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    diagram = db.query(Diagram).filter_by(
-        id=diagram_id, user_id=current_user.id, is_deleted=False
-    ).first()
+    diagram = db.query(Diagram).filter_by(id=diagram_id, user_id=current_user.id, is_deleted=False).first()
     if not diagram:
         raise HTTPException(
             status_code=409,
-            detail=(
-                "Snapshot storage needs the diagram saved to the database. "
-                "Save the diagram, then try again."
-            ),
+            detail=("Snapshot storage needs the diagram saved to the database. Save the diagram, then try again."),
         )
 
     # Strip llm_results unconditionally — snapshots are diagram content only.
@@ -738,16 +661,11 @@ async def take_snapshot(
     if spec_size_kb > MAX_SPEC_SIZE_KB:
         raise HTTPException(
             status_code=413,
-            detail=(
-                f"Snapshot spec too large ({spec_size_kb:.1f} KB > {MAX_SPEC_SIZE_KB} KB)"
-            ),
+            detail=(f"Snapshot spec too large ({spec_size_kb:.1f} KB > {MAX_SPEC_SIZE_KB} KB)"),
         )
 
     existing = (
-        db.query(DiagramSnapshot)
-        .filter_by(diagram_id=diagram_id)
-        .order_by(DiagramSnapshot.version_number.asc())
-        .all()
+        db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id).order_by(DiagramSnapshot.version_number.asc()).all()
     )
 
     if len(existing) >= _SNAPSHOT_MAX:
@@ -774,17 +692,20 @@ async def take_snapshot(
         db.rollback()
         logger.warning(
             "[Snapshots] Concurrent snapshot conflict for diagram %s user %s",
-            diagram_id, current_user.id
+            diagram_id,
+            current_user.id,
         )
         raise HTTPException(
             status_code=409,
-            detail="Another snapshot was taken at the same time. Please try again."
+            detail="Another snapshot was taken at the same time. Please try again.",
         ) from None
     db.refresh(snapshot)
 
     logger.info(
         "[Snapshots] User %s took snapshot v%d for diagram %s",
-        current_user.id, new_version, diagram_id
+        current_user.id,
+        new_version,
+        diagram_id,
     )
     return SnapshotMetadata(
         id=snapshot.id,
@@ -806,9 +727,7 @@ async def list_snapshots(
     Returns snapshots ordered by version_number ascending (oldest first).
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagram_snapshots", identifier, max_requests=60, window_seconds=60)
 
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
@@ -849,18 +768,12 @@ async def delete_snapshot(
     without an extra round-trip.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagram_snapshots", identifier, max_requests=60, window_seconds=60)
 
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    snapshot = (
-        db.query(DiagramSnapshot)
-        .filter_by(diagram_id=diagram_id, version_number=version_number)
-        .first()
-    )
+    snapshot = db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id, version_number=version_number).first()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     if snapshot.user_id != current_user.id:
@@ -873,10 +786,7 @@ async def delete_snapshot(
     db.flush()
 
     remaining = (
-        db.query(DiagramSnapshot)
-        .filter_by(diagram_id=diagram_id)
-        .order_by(DiagramSnapshot.version_number.asc())
-        .all()
+        db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id).order_by(DiagramSnapshot.version_number.asc()).all()
     )
     for idx, snap in enumerate(remaining, start=1):
         if snap.version_number != idx:
@@ -885,7 +795,10 @@ async def delete_snapshot(
 
     logger.info(
         "[Snapshots] User %s deleted snapshot v%d for diagram %s (%d remaining)",
-        current_user.id, version_number, diagram_id, len(remaining),
+        current_user.id,
+        version_number,
+        diagram_id,
+        len(remaining),
     )
     return SnapshotListResponse(
         snapshots=[
@@ -917,18 +830,12 @@ async def recall_snapshot(
     This endpoint does not modify the diagram or its snapshots.
     """
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        "diagram_snapshots", identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("diagram_snapshots", identifier, max_requests=60, window_seconds=60)
 
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    snapshot = (
-        db.query(DiagramSnapshot)
-        .filter_by(diagram_id=diagram_id, version_number=version_number)
-        .first()
-    )
+    snapshot = db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id, version_number=version_number).first()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     if snapshot.user_id != current_user.id:
@@ -936,7 +843,9 @@ async def recall_snapshot(
 
     logger.info(
         "[Snapshots] User %s recalled snapshot v%d for diagram %s",
-        current_user.id, version_number, diagram_id
+        current_user.id,
+        version_number,
+        diagram_id,
     )
     return SnapshotRecallResponse(
         version_number=snapshot.version_number,

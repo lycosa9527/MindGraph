@@ -28,22 +28,22 @@ import websockets
 from websockets.exceptions import ConnectionClosed, WebSocketException
 
 
-
-
-logger = logging.getLogger('TTS')
+logger = logging.getLogger("TTS")
 
 
 class SessionMode(str, Enum):
     """TTS session modes"""
+
     SERVER_COMMIT = "server_commit"  # Server handles segmentation
     COMMIT = "commit"  # Client controls segmentation
 
 
 class AudioFormat(str, Enum):
     """Audio output formats"""
+
     PCM_24000HZ_MONO_16BIT = "pcm"  # PCM format, sample_rate specified separately
     PCM_16000HZ_MONO_16BIT = "pcm"  # PCM format, sample_rate specified separately
-    PCM_8000HZ_MONO_16BIT = "pcm"   # PCM format, sample_rate specified separately
+    PCM_8000HZ_MONO_16BIT = "pcm"  # PCM format, sample_rate specified separately
     MP3_24000HZ_MONO = "mp3"
     OPUS_24000HZ_MONO = "opus"
     WAV_24000HZ_MONO = "wav"
@@ -128,9 +128,7 @@ class TTSRealtimeClient:
 
             # Connect with API key in headers
             # Note: websockets library uses 'additional_headers' parameter
-            headers = {
-                "Authorization": f"Bearer {self.api_key}"
-            }
+            headers = {"Authorization": f"Bearer {self.api_key}"}
 
             self.ws = await websockets.connect(
                 url,
@@ -185,10 +183,7 @@ class TTSRealtimeClient:
         if self.language_type:
             session_config["language_type"] = self.language_type
 
-        event = {
-            "type": "session.update",
-            "session": session_config
-        }
+        event = {"type": "session.update", "session": session_config}
 
         await self._send_event(event)
         logger.debug("[TTS] Sent session.update: %s", session_config)
@@ -206,10 +201,7 @@ class TTSRealtimeClient:
         # According to official API: input_text_buffer.append uses "text" field
         # In server_commit mode: server handles segmentation automatically
         # In commit mode: text is buffered until commit() is called
-        event = {
-            "type": "input_text_buffer.append",
-            "text": text
-        }
+        event = {"type": "input_text_buffer.append", "text": text}
 
         await self._send_event(event)
         logger.debug("[TTS] Appended text: %s...", text[:50])
@@ -220,17 +212,13 @@ class TTSRealtimeClient:
             logger.warning("[TTS] commit_text() only works in commit mode")
             return
 
-        event = {
-            "type": "input_text_buffer.commit"
-        }
+        event = {"type": "input_text_buffer.commit"}
         await self._send_event(event)
         logger.debug("[TTS] Committed text buffer")
 
     async def finish_session(self):
         """Finish the session (no more text will be sent)"""
-        event = {
-            "type": "session.finish"
-        }
+        event = {"type": "session.finish"}
         await self._send_event(event)
         logger.debug("[TTS] Finished session")
 
@@ -351,9 +339,7 @@ class TTSRealtimeClient:
         logger.info("[TTS] Connection closed")
 
     async def synthesize_stream(
-        self,
-        text_chunks: AsyncGenerator[str, None],
-        voice: Optional[str] = None
+        self, text_chunks: AsyncGenerator[str, None], voice: Optional[str] = None
     ) -> AsyncGenerator[bytes, None]:
         """
         Stream TTS audio as text chunks arrive.

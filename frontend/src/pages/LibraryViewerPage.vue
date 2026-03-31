@@ -99,8 +99,6 @@ async function checkBookmarkStatus() {
       isBookmarked.value = false
       bookmarkId.value = null
     } else {
-      // Other errors - log at debug level but don't show error to user
-      console.debug('[LibraryViewerPage] Bookmark check failed (non-404):', error)
       isBookmarked.value = false
       bookmarkId.value = null
     }
@@ -114,22 +112,12 @@ async function handleToggleBookmark() {
     return
   }
 
-  console.log('[LibraryViewerPage] handleToggleBookmark called', {
-    documentId: documentId.value,
-    currentPage: currentPage.value,
-    isBookmarked: isBookmarked.value,
-    bookmarkId: bookmarkId.value,
-  })
-
   if (!documentId.value || !currentPage.value) {
-    console.warn('[LibraryViewerPage] Cannot toggle bookmark: missing documentId or currentPage')
     return
   }
 
   try {
     if (isBookmarked.value && bookmarkId.value) {
-      // Delete bookmark
-      console.log('[LibraryViewerPage] Deleting bookmark:', bookmarkId.value)
       await libraryStore.deleteBookmark(bookmarkId.value)
       isBookmarked.value = false
       bookmarkId.value = null
@@ -139,15 +127,15 @@ async function handleToggleBookmark() {
       const data = {
         page_number: currentPage.value,
       }
-      console.log('[LibraryViewerPage] Creating bookmark:', data)
       const bookmark = await libraryStore.createBookmark(documentId.value, data)
-      console.log('[LibraryViewerPage] Bookmark created:', bookmark)
       isBookmarked.value = true
       bookmarkId.value = bookmark.id
       notify.success(t('libraryViewer.bookmarkAdded'))
     }
   } catch (error) {
-    console.error('[LibraryViewerPage] Failed to toggle bookmark:', error)
+    if (import.meta.env.DEV) {
+      console.error('[LibraryViewerPage] Failed to toggle bookmark:', error)
+    }
     if (error instanceof Error) {
       notify.error(error.message || t('libraryViewer.operationFailed'))
     } else {
@@ -172,13 +160,11 @@ async function navigateToPageFromQuery() {
 
   // Wait for document to be loaded and totalPages to be available
   if (!libraryStore.currentDocument || totalPages.value === 0) {
-    console.log('[LibraryViewerPage] Waiting for document to load...')
     return
   }
 
   // Check if page is valid
   if (pageNum > totalPages.value) {
-    console.warn(`[LibraryViewerPage] Page ${pageNum} exceeds total pages ${totalPages.value}`)
     return
   }
 
@@ -191,20 +177,17 @@ async function navigateToPageFromQuery() {
   }
 
   if (!viewerRef.value) {
-    console.error('[LibraryViewerPage] Viewer not ready after waiting')
     return
   }
 
   // Check if we're already on the correct page
   if (currentPage.value === pageNum) {
-    console.log(`[LibraryViewerPage] Already on page ${pageNum}`)
     return
   }
 
   // If we've already navigated and we're on the wrong page, don't navigate again
   // (this prevents multiple navigation calls from different watchers)
   if (hasNavigatedToPage.value && currentPage.value !== pageNum) {
-    console.log(`[LibraryViewerPage] Navigation already attempted, waiting...`)
     return
   }
 
@@ -212,7 +195,6 @@ async function navigateToPageFromQuery() {
   await new Promise((resolve) => setTimeout(resolve, 200))
 
   // Navigate to the specified page
-  console.log(`[LibraryViewerPage] Navigating to page ${pageNum} from query parameter`)
   hasNavigatedToPage.value = true
   viewerRef.value.goToPage(pageNum)
 

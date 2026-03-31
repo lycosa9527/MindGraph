@@ -164,10 +164,12 @@ async def canvas_collab_websocket(
         )
         try:
             if websocket.client_state == WebSocketState.CONNECTED:
-                await websocket.send_json({
-                    "type": "error",
-                    "message": f"Presentation mode error: {str(e)}",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "error",
+                        "message": f"Presentation mode error: {str(e)}",
+                    }
+                )
         except Exception as exc:
             logger.debug("Failed to send WebSocket error message: %s", exc)
     finally:

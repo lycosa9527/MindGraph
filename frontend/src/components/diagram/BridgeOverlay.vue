@@ -14,11 +14,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { DEFAULT_NODE_HEIGHT, DEFAULT_NODE_WIDTH } from '@/composables/diagrams/layoutConfig'
 import { useDiagramStore } from '@/stores'
 
-// Helper function to get timestamp for logging
-function getTimestamp(): string {
-  return new Date().toISOString()
-}
-
 // Vue Flow instance for viewport tracking and getting nodes with measured dimensions
 const { viewport: vueFlowViewport, getViewport, getNodes } = useVueFlow()
 
@@ -89,10 +84,6 @@ const bridgePairs = computed<BridgePair[]>(() => {
   // This ensures the computed updates immediately when nodes are added/removed
   const storeNodes = diagramStore.data?.nodes || []
 
-  // Force dependency on store nodes array to ensure reactivity
-  // Create a string key from node IDs to force recalculation when nodes change
-  const nodesKey = storeNodes.map((n) => n.id).join(',')
-
   const vueFlowNodes = getNodes.value
 
   // Create a map of Vue Flow nodes by ID for dimension lookup
@@ -115,16 +106,6 @@ const bridgePairs = computed<BridgePair[]>(() => {
     }
   })
 
-  // Debug: log when nodes change
-  if (isBridgeMap.value && nodesKey) {
-    console.debug(`[BridgeOverlay] [${getTimestamp()}] bridgePairs recalculating:`, {
-      nodesKey,
-      storeNodesCount: storeNodes.length,
-      vueFlowNodesCount: vueFlowNodes.length,
-      bridgeMapNodes: storeNodes.filter((n) => n.data?.diagramType === 'bridge_map').length,
-    })
-  }
-
   // Helper to get node dimensions
   const getNodeDimensions = (node: (typeof nodes)[0] & NodeWithDimensions) => {
     const width = node.dimensions?.width ?? node.measured?.width ?? DEFAULT_NODE_WIDTH
@@ -139,19 +120,6 @@ const bridgePairs = computed<BridgePair[]>(() => {
     // Check for pairIndex and position in node.data
     const rawPairIndex = node.data?.pairIndex
     const position = node.data?.position // 'left' or 'right'
-
-    // Debug: log nodes that don't have pairIndex/position
-    if (
-      isBridgeMap.value &&
-      rawPairIndex === undefined &&
-      node.data?.diagramType === 'bridge_map'
-    ) {
-      console.debug(
-        `[BridgeOverlay] [${getTimestamp()}] Node missing pairIndex:`,
-        node.id,
-        node.data
-      )
-    }
 
     if (
       rawPairIndex === undefined ||
@@ -204,29 +172,6 @@ const bridgePairs = computed<BridgePair[]>(() => {
     .filter((pair) => pair.leftNode.id && pair.rightNode.id)
     .sort((a, b) => a.pairIndex - b.pairIndex)
 
-  // Debug: log detected pairs with detailed position info
-  if (isBridgeMap.value && pairs.length > 0) {
-    console.debug(`[BridgeOverlay] [${getTimestamp()}] Detected pairs:`, {
-      count: pairs.length,
-      pairs: pairs.map((p) => ({
-        pairIndex: p.pairIndex,
-        leftNode: {
-          id: p.leftNode.id,
-          x: p.leftNode.x,
-          width: p.leftNode.width,
-          rightEdge: p.leftNode.x + p.leftNode.width,
-        },
-        rightNode: {
-          id: p.rightNode.id,
-          x: p.rightNode.x,
-          width: p.rightNode.width,
-          rightEdge: p.rightNode.x + p.rightNode.width,
-        },
-      })),
-      pairIndices: pairs.map((p) => p.pairIndex),
-    })
-  }
-
   return pairs
 })
 
@@ -253,21 +198,7 @@ const horizontalBridgeLine = computed(() => {
     }, 0) /
     (bridgePairs.value.length * 2)
 
-  const result = { x1, y1: centerY, x2, y2: centerY }
-
-  if (isBridgeMap.value) {
-    console.debug(`[BridgeOverlay] [${getTimestamp()}] horizontalBridgeLine calculated:`, {
-      pairsCount: bridgePairs.value.length,
-      x1: result.x1,
-      x2: result.x2,
-      width: result.x2 - result.x1,
-      y1: result.y1,
-      firstPairIndex: firstPair.pairIndex,
-      lastPairIndex: lastPair.pairIndex,
-    })
-  }
-
-  return result
+  return { x1, y1: centerY, x2, y2: centerY }
 })
 
 /**
@@ -434,7 +365,6 @@ function handlePairMouseEnter(pairIndex: number) {
     clearTimeout(hoverLeaveTimeout)
     hoverLeaveTimeout = null
   }
-  console.debug(`[BridgeOverlay] Pair ${pairIndex} hovered`)
   hoveredPairIndex.value = pairIndex
 }
 
@@ -477,15 +407,10 @@ function attachNodeListeners() {
         !node.data?.isDimensionLabel
     )
 
-    console.debug(
-      `[BridgeOverlay] Attaching listeners to ${bridgeMapNodes.length} bridge map nodes`
-    )
-
     bridgeMapNodes.forEach((node) => {
       // Find the DOM element for this node
       const nodeElement = document.querySelector(`[data-id="${node.id}"]`) as HTMLElement
       if (!nodeElement) {
-        console.debug(`[BridgeOverlay] Node element not found for ${node.id}`)
         return
       }
 
@@ -512,7 +437,6 @@ function attachNodeListeners() {
       // Add new listeners
       nodeElement.addEventListener('mouseenter', mouseenterHandler)
       nodeElement.addEventListener('mouseleave', mouseleaveHandler)
-      console.debug(`[BridgeOverlay] Attached listeners to node ${node.id} (pair ${pairIndex})`)
     })
   })
 }

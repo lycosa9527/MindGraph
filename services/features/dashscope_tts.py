@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import Optional, AsyncGenerator
 import logging
@@ -30,16 +31,16 @@ logger = logging.getLogger(__name__)
 
 # Default voice mapping for different roles
 VOICE_MAPPING = {
-    'qwen': 'Kai',         # Qwen uses Kai voice
-    'doubao': 'Cherry',    # Doubao uses Cherry voice
-    'deepseek': 'Serena',  # DeepSeek uses Serena voice
-    'kimi': 'Mia',         # Kimi uses Mia voice
-    'judge': 'Neil',       # 阿闻 - 专业新闻主持人
-    'default': 'Cherry',
+    "qwen": "Kai",  # Qwen uses Kai voice
+    "doubao": "Cherry",  # Doubao uses Cherry voice
+    "deepseek": "Serena",  # DeepSeek uses Serena voice
+    "kimi": "Mia",  # Kimi uses Mia voice
+    "judge": "Neil",  # 阿闻 - 专业新闻主持人
+    "default": "Cherry",
 }
 
 # Model selection - using flash-realtime for best performance
-TTS_MODEL = 'qwen3-tts-flash-realtime'
+TTS_MODEL = "qwen3-tts-flash-realtime"
 
 # ============================================================================
 # Helper Functions
@@ -49,6 +50,7 @@ TTS_MODEL = 'qwen3-tts-flash-realtime'
 # ============================================================================
 # TTS Service
 # ============================================================================
+
 
 class DashscopeTtsService:
     """Service for generating speech using Dashscope real-time TTS"""
@@ -60,7 +62,7 @@ class DashscopeTtsService:
     def _initialize_api_key(self):
         """Initialize Dashscope API key from environment or config"""
         # Try environment variable first
-        self.api_key = os.getenv('DASHSCOPE_API_KEY')
+        self.api_key = os.getenv("DASHSCOPE_API_KEY")
 
         # Fallback to QWEN_API_KEY (same as Dashscope)
         if not self.api_key:
@@ -78,15 +80,15 @@ class DashscopeTtsService:
     def get_voice_for_model(self, model_id: Optional[str]) -> str:
         """Get voice name for a given model ID"""
         if not model_id:
-            return VOICE_MAPPING['default']
+            return VOICE_MAPPING["default"]
 
         # Normalize physical model names to logical names
         # Handle cases like 'ark-kimi' -> 'kimi', 'ark-doubao' -> 'doubao', 'ark-deepseek' -> 'deepseek'
         model_id = model_id.lower()
-        if model_id.startswith('ark-'):
+        if model_id.startswith("ark-"):
             model_id = model_id[4:]  # Remove 'ark-' prefix
 
-        return VOICE_MAPPING.get(model_id, VOICE_MAPPING['default'])
+        return VOICE_MAPPING.get(model_id, VOICE_MAPPING["default"])
 
     async def synthesize_text(
         self,
@@ -162,7 +164,7 @@ class DashscopeTtsService:
 
             # Combine audio chunks
             if audio_chunks:
-                audio_bytes = b''.join(audio_chunks)
+                audio_bytes = b"".join(audio_chunks)
                 logger.info("[TTS] Successfully synthesized %s bytes", len(audio_bytes))
                 return audio_bytes
             else:
@@ -252,7 +254,7 @@ class DashscopeTtsService:
             output_path.parent.mkdir(parents=True, exist_ok=True)
 
             # Write audio file
-            with open(output_path, 'wb') as f:
+            with open(output_path, "wb") as f:
                 f.write(audio_bytes)
 
             logger.info("[TTS] Saved audio to %s", output_path)
@@ -268,6 +270,7 @@ class DashscopeTtsService:
 # ============================================================================
 
 _tts_service: Optional[DashscopeTtsService] = None
+
 
 def get_tts_service() -> DashscopeTtsService:
     """Get global TTS service instance"""

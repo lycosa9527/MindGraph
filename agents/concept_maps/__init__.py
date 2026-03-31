@@ -11,4 +11,4 @@ Proprietary License
 
 from .concept_map_agent import ConceptMapAgent
 
-__all__ = ['ConceptMapAgent']
+__all__ = ["ConceptMapAgent"]

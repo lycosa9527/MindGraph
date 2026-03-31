@@ -118,7 +118,8 @@ export default {
   'landing.international.mindmateCard.desc': 'พันธมิตรเสมือนด้านการสอนและการวิจัยของคุณ',
   'landing.international.shareSite': 'Share site',
   'landing.international.shareSiteModalTitle': 'Share site',
-  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteModalHint':
+    'Scan with a phone or tablet camera to open this page.',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
 } as const

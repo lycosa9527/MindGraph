@@ -3,6 +3,7 @@
 Aligned with prompts/node_palette.get_tree_dimensions_prompt,
 get_tree_categories_prompt, get_tree_items_prompt.
 """
+
 from typing import Any, Dict, List, Optional
 
 from ._common import (
@@ -24,13 +25,13 @@ def build_tree_dimensions_prompt(
     Extracts topic and asks LLM to generate topic-specific classification
     dimensions. Aligned with prompts/node_palette.get_tree_dimensions_prompt.
     """
-    topic = (context.get('topic') or '').strip()
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    dim_types = TREE_DIMENSION_TYPES_ZH if language == 'zh' else TREE_DIMENSION_TYPES_EN
+    topic = (context.get("topic") or "").strip()
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    dim_types = TREE_DIMENSION_TYPES_ZH if language == "zh" else TREE_DIMENSION_TYPES_EN
     existing = existing or []
 
-    if language == 'zh':
-        topic_ctx = f'"{topic}"' if topic else '（主题未设置）'
+    if language == "zh":
+        topic_ctx = f'"{topic}"' if topic else "（主题未设置）"
         prompt = f"""为主题{topic_ctx}生成{count}个可能的分类维度。
 
 教学背景：{context_desc}
@@ -47,7 +48,7 @@ def build_tree_dimensions_prompt(
 
 生成{count}个分类维度："""
     else:
-        topic_ctx = f'"{topic}"' if topic else '(topic not set)'
+        topic_ctx = f'"{topic}"' if topic else "(topic not set)"
         prompt = f"""Generate {count} possible classification dimensions for topic: {topic_ctx}
 
 Educational Context: {context_desc}
@@ -75,13 +76,13 @@ def build_tree_categories_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for tree map category recommendations."""
-    topic = (context.get('topic') or '').strip()
-    dimension = (context.get('dimension') or '').strip()
-    category_names = context.get('category_names') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
+    topic = (context.get("topic") or "").strip()
+    dimension = (context.get("dimension") or "").strip()
+    category_names = context.get("category_names") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         header = (
             f"为主题「{topic}」生成{count}个分类类别，使用分类维度：{dimension}"
             if dimension
@@ -101,7 +102,7 @@ def build_tree_categories_prompt(
         if category_names:
             prompt += f"""
 
-图中已有类别：{', '.join(category_names)}。请生成更聚焦、互补的类别推荐，与已有类别形成补充，避免重复。"""
+图中已有类别：{", ".join(category_names)}。请生成更聚焦、互补的类别推荐，与已有类别形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个类别："""
@@ -127,7 +128,7 @@ Requirements:
 4. Output only category names, one per line, no numbering
 5. Do NOT generate sub-items, only category names"""
         if category_names:
-            cats = ', '.join(category_names)
+            cats = ", ".join(category_names)
             prompt += (
                 f"\n\nThe diagram already has categories: {cats}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
@@ -151,14 +152,14 @@ def build_tree_items_prompt(
     Second-stage: we are working on category X, it has items Y.
     Generate more focused recommendations that build on these.
     """
-    topic = (context.get('topic') or '').strip()
-    dimension = (context.get('dimension') or '').strip()
-    category_name = (context.get('category_name') or '').strip()
-    item_texts = context.get('item_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
+    topic = (context.get("topic") or "").strip()
+    dimension = (context.get("dimension") or "").strip()
+    category_name = (context.get("category_name") or "").strip()
+    item_texts = context.get("item_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"主题：{topic}" if topic else "主题未设置"
         prompt = f"""为类别「{category_name}」生成{count}个具体条目
 
@@ -175,7 +176,7 @@ def build_tree_items_prompt(
         if item_texts:
             prompt += f"""
 
-我们正在类别「{category_name}」下工作，该类别已有条目：{', '.join(item_texts)}。请生成更聚焦、互补的条目推荐，与已有条目形成补充，避免重复。"""
+我们正在类别「{category_name}」下工作，该类别已有条目：{", ".join(item_texts)}。请生成更聚焦、互补的条目推荐，与已有条目形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个条目："""
@@ -194,9 +195,9 @@ Requirements:
 3. Use nouns or noun phrases, 2-8 words
 4. Output only item names, one per line, no numbering"""
         if item_texts:
-            items = ', '.join(item_texts)
+            items = ", ".join(item_texts)
             prompt += (
-                f"\n\nWe are working on category \"{category_name}\". "
+                f'\n\nWe are working on category "{category_name}". '
                 f"It has existing items: {items}. "
                 "Generate more focused, complementary item recommendations "
                 "that build on these, avoid repetition."

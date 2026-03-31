@@ -30,7 +30,6 @@ def get_table_migration_order() -> List[str]:
         "organizations",
         "users",
         "api_keys",
-
         # ========================================================================
         # TIER 2: Tables that depend on Tier 1
         # ========================================================================
@@ -49,52 +48,42 @@ def get_table_migration_order() -> List[str]:
         "query_templates",  # References knowledge_spaces
         "evaluation_datasets",  # References knowledge_spaces
         "evaluation_results",  # References evaluation_datasets
-
         # Diagram tables (depend on users)
         "diagrams",  # References users
-
         # Token usage (depends on users)
         "token_usage",  # References users
-
         # Debate tables (depend on users)
         "debate_sessions",  # References users
         "debate_participants",  # References debate_sessions, users
         "debate_messages",  # References debate_sessions, debate_participants
         "debate_judgments",  # References debate_sessions
-
         # School zone tables (depend on diagrams, users)
         "shared_diagrams",  # References diagrams, users
         "shared_diagram_likes",  # References shared_diagrams, users
         "shared_diagram_comments",  # References shared_diagrams, users
-
         # Community tables (depend on users)
         "community_posts",  # References users
         "community_post_likes",  # References community_posts, users
         "community_post_comments",  # References community_posts, users
-
         # Other tables (depend on users)
         "pinned_conversations",  # References users
         "dashboard_activities",  # References users
         "update_notifications",  # References organizations (optional)
         "update_notification_dismissed",  # References update_notifications, users
-
         # Library tables (depend on users)
         "library_documents",  # References users
         "library_danmaku",  # References library_documents, users
         "library_danmaku_likes",  # References library_danmaku, users
         "library_danmaku_replies",  # References library_danmaku, users (self-ref parent)
         "library_bookmarks",  # References library_documents, users
-
         # User activity and usage (depend on users)
         "user_activity_log",  # References users
         "user_usage_stats",  # References users
         "teacher_usage_config",  # No foreign keys
-
         # Gewe/WeChat tables (standalone, no FK to users)
         "gewe_messages",
         "gewe_contacts",
         "gewe_group_members",
-
         # Workshop Chat tables (depend on users, chat_channels, chat_messages, direct_messages)
         "chat_channels",
         "channel_members",
@@ -105,7 +94,6 @@ def get_table_migration_order() -> List[str]:
         "starred_messages",
         "file_attachments",
         "user_topic_preferences",
-
         # ========================================================================
         # TIER 3: Chunk test tables (depend on knowledge space tables)
         # ========================================================================

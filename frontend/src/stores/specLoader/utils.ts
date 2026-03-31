@@ -238,9 +238,7 @@ export function calculateCircleMapLayout(
 
   // (g) Topic: DOM overrides win; else text-adaptive radius
   const topicR =
-    overrides?.topicR != null &&
-    Number.isFinite(overrides.topicR) &&
-    overrides.topicR > 0
+    overrides?.topicR != null && Number.isFinite(overrides.topicR) && overrides.topicR > 0
       ? Math.max(DEFAULT_TOPIC_RADIUS, overrides.topicR)
       : Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
 

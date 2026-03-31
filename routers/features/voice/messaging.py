@@ -1,4 +1,5 @@
 """WebSocket messaging and Omni instruction strings for voice."""
+
 from typing import Any, Dict, Optional
 
 from fastapi import WebSocket
@@ -15,9 +16,9 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
     """
     try:
         # Check WebSocket state - FastAPI WebSocket has client_state attribute
-        if hasattr(websocket, 'client_state'):
+        if hasattr(websocket, "client_state"):
             # WebSocketState enum: CONNECTING, CONNECTED, DISCONNECTED
-            if websocket.client_state.name == 'DISCONNECTED':
+            if websocket.client_state.name == "DISCONNECTED":
                 logger.debug("WebSocket is disconnected, skipping send")
                 return False
         await websocket.send_json(message)
@@ -34,46 +35,46 @@ async def safe_websocket_send(websocket: WebSocket, message: Dict[str, Any]) -> 
 
 def build_voice_instructions(context: Dict[str, Any]) -> str:
     """Build voice instructions from context with full diagram data"""
-    diagram_type = context.get('diagram_type', 'unknown')
-    active_panel = context.get('active_panel', 'mindmate')
-    selected_nodes = context.get('selected_nodes', [])
-    diagram_data = context.get('diagram_data', {})
+    diagram_type = context.get("diagram_type", "unknown")
+    active_panel = context.get("active_panel", "mindmate")
+    selected_nodes = context.get("selected_nodes", [])
+    diagram_data = context.get("diagram_data", {})
 
     # Extract center topic based on diagram type
-    center_text = ''
-    if diagram_type == 'double_bubble_map':
-        left = diagram_data.get('left', '')
-        right = diagram_data.get('right', '')
+    center_text = ""
+    if diagram_type == "double_bubble_map":
+        left = diagram_data.get("left", "")
+        right = diagram_data.get("right", "")
         if left and right:
             center_text = f"{left} 和 {right}"
         elif left:
             center_text = left
         elif right:
             center_text = right
-    elif diagram_type == 'flow_map':
-        center_text = diagram_data.get('title', '')
-    elif diagram_type == 'multi_flow_map':
-        center_text = diagram_data.get('event', '')
-    elif diagram_type == 'brace_map':
-        center_text = diagram_data.get('whole', '')
-    elif diagram_type == 'bridge_map':
-        center_text = diagram_data.get('dimension', '')
+    elif diagram_type == "flow_map":
+        center_text = diagram_data.get("title", "")
+    elif diagram_type == "multi_flow_map":
+        center_text = diagram_data.get("event", "")
+    elif diagram_type == "brace_map":
+        center_text = diagram_data.get("whole", "")
+    elif diagram_type == "bridge_map":
+        center_text = diagram_data.get("dimension", "")
     else:
         # Default: most diagrams use center.text
-        center_text = diagram_data.get('center', {}).get('text', '')
+        center_text = diagram_data.get("center", {}).get("text", "")
 
-    children = diagram_data.get('children', [])
+    children = diagram_data.get("children", [])
 
     # Format nodes list for Omni to understand (with IDs for precise selection)
     nodes_list = ""
     if children:
         for i, node in enumerate(children[:15]):  # Limit to 15 nodes
             if isinstance(node, str):
-                nodes_list += f"\n  {i+1}. \"{node}\""
+                nodes_list += f'\n  {i + 1}. "{node}"'
             elif isinstance(node, dict):
-                node_id = node.get('id', f'node_{i}')
-                text = node.get('text') or node.get('label') or str(node)
-                nodes_list += f"\n  {i+1}. \"{text}\" (id: {node_id})"
+                node_id = node.get("id", f"node_{i}")
+                text = node.get("text") or node.get("label") or str(node)
+                nodes_list += f'\n  {i + 1}. "{text}" (id: {node_id})'
         if len(children) > 15:
             nodes_list += f"\n  ... and {len(children) - 15} more nodes"
 
@@ -81,8 +82,8 @@ def build_voice_instructions(context: Dict[str, Any]) -> str:
 
 【Current Diagram】
 - Type: {diagram_type}
-- Center topic: {center_text or 'Not set'}
-- Nodes ({len(children)} total):{nodes_list if nodes_list else ' None'}
+- Center topic: {center_text or "Not set"}
+- Nodes ({len(children)} total):{nodes_list if nodes_list else " None"}
 
 【Current State】
 - Active panel: {active_panel}
@@ -146,19 +147,19 @@ def parse_double_bubble_target(target: str) -> Optional[Dict[str, str]]:
 
     # Try different separators in order of likelihood
     separators = [
-        '和',      # Chinese: and
-        '与',      # Chinese: and (alternative)
-        ' vs ',    # English: versus (with spaces)
-        ' vs',     # English: versus (space before)
-        'vs ',     # English: versus (space after)
-        'vs',      # English: versus (no spaces)
-        ' and ',   # English: and (with spaces)
-        ' and',    # English: and (space before)
-        'and ',    # English: and (space after)
-        ' and',    # English: and (space before, lowercase)
-        'and',     # English: and (no spaces)
-        '/',       # Slash separator
-        '|',       # Pipe separator
+        "和",  # Chinese: and
+        "与",  # Chinese: and (alternative)
+        " vs ",  # English: versus (with spaces)
+        " vs",  # English: versus (space before)
+        "vs ",  # English: versus (space after)
+        "vs",  # English: versus (no spaces)
+        " and ",  # English: and (with spaces)
+        " and",  # English: and (space before)
+        "and ",  # English: and (space after)
+        " and",  # English: and (space before, lowercase)
+        "and",  # English: and (no spaces)
+        "/",  # Slash separator
+        "|",  # Pipe separator
     ]
 
     for sep in separators:
@@ -168,13 +169,13 @@ def parse_double_bubble_target(target: str) -> Optional[Dict[str, str]]:
                 left = parts[0].strip()
                 right = parts[1].strip()
                 if left and right:
-                    return {'left': left, 'right': right}
+                    return {"left": left, "right": right}
 
     # If no separator found, return None (parsing failed)
     return None
 
 
-def build_greeting_message(diagram_type: str = 'unknown', language: str = 'zh') -> str:
+def build_greeting_message(diagram_type: str = "unknown", language: str = "zh") -> str:
     """
     Build personalized greeting message based on diagram type and language.
 
@@ -187,62 +188,41 @@ def build_greeting_message(diagram_type: str = 'unknown', language: str = 'zh') 
     """
     # Chinese greetings
     greetings_zh = {
-        'circle_map': '你好！我是你的思维助手。我可以帮你完善圆圈图，探索更多观察和想法。有什么我可以帮你的吗？',
-        'bubble_map': '嗨！我来帮你描述事物的特征。告诉我你想添加什么形容词或特点吧！',
-        'tree_map': '你好！我可以帮你整理分类。让我们一起把想法分门别类吧！',
-        'flow_map': '嗨！我来帮你梳理流程。告诉我每一步的顺序，我会协助你理清思路！',
-        'brace_map': '你好！我可以帮你分析整体与部分的关系。让我们一起探索吧！',
-        'bridge_map': '嗨！我来帮你找出事物之间的类比关系。准备好了吗？',
-        'double_bubble_map': '你好！我可以帮你比较两个事物。告诉我它们的相同点和不同点吧！',
-        'multi_flow_map': '嗨！我来帮你分析因果关系。让我们一起找出原因和结果！',
-        'mind_map': '你好！我是你的思维导图助手。告诉我你的主题，我会帮你展开更多想法！',
-        'concept_map': '嗨！我来帮你理清概念之间的关系。让我们一起建立知识网络吧！',
-        'default': '你好！我是你的AI助手，很高兴为你服务。你可以问我任何关于思维图的问题，或者让我帮你更新图表内容。'
+        "circle_map": "你好！我是你的思维助手。我可以帮你完善圆圈图，探索更多观察和想法。有什么我可以帮你的吗？",
+        "bubble_map": "嗨！我来帮你描述事物的特征。告诉我你想添加什么形容词或特点吧！",
+        "tree_map": "你好！我可以帮你整理分类。让我们一起把想法分门别类吧！",
+        "flow_map": "嗨！我来帮你梳理流程。告诉我每一步的顺序，我会协助你理清思路！",
+        "brace_map": "你好！我可以帮你分析整体与部分的关系。让我们一起探索吧！",
+        "bridge_map": "嗨！我来帮你找出事物之间的类比关系。准备好了吗？",
+        "double_bubble_map": "你好！我可以帮你比较两个事物。告诉我它们的相同点和不同点吧！",
+        "multi_flow_map": "嗨！我来帮你分析因果关系。让我们一起找出原因和结果！",
+        "mind_map": "你好！我是你的思维导图助手。告诉我你的主题，我会帮你展开更多想法！",
+        "concept_map": "嗨！我来帮你理清概念之间的关系。让我们一起建立知识网络吧！",
+        "default": "你好！我是你的AI助手，很高兴为你服务。你可以问我任何关于思维图的问题，或者让我帮你更新图表内容。",
     }
 
     # English greetings
     greetings_en = {
-        'circle_map': (
-            'Hi! I\'m your thinking assistant. I can help you enhance your Circle Map '
-            'with more observations and ideas. How can I help?'
+        "circle_map": (
+            "Hi! I'm your thinking assistant. I can help you enhance your Circle Map "
+            "with more observations and ideas. How can I help?"
         ),
-        'bubble_map': (
-            'Hello! I\'m here to help you describe things. Tell me what adjectives '
-            'or characteristics you want to add!'
+        "bubble_map": (
+            "Hello! I'm here to help you describe things. Tell me what adjectives or characteristics you want to add!"
         ),
-        'tree_map': (
-            'Hi! I can help you organize by categories. Let\'s classify your ideas together!'
+        "tree_map": ("Hi! I can help you organize by categories. Let's classify your ideas together!"),
+        "flow_map": ("Hello! I'm here to help you map processes. Tell me the sequence, and I'll help you clarify!"),
+        "brace_map": ("Hi! I can help you analyze whole-part relationships. Let's explore together!"),
+        "bridge_map": ("Hello! I'm here to help you find analogies. Ready to compare?"),
+        "double_bubble_map": ("Hi! I can help you compare two things. Tell me their similarities and differences!"),
+        "multi_flow_map": ("Hello! I'm here to help you analyze cause and effect. Let's find the reasons and results!"),
+        "mind_map": ("Hi! I'm your mind map assistant. Tell me your topic, and I'll help you brainstorm ideas!"),
+        "concept_map": ("Hello! I'm here to help you connect concepts. Let's build a knowledge network together!"),
+        "default": (
+            "Hello! I'm your AI assistant, happy to help. Ask me anything about your diagram, "
+            "or let me help you update it."
         ),
-        'flow_map': (
-            'Hello! I\'m here to help you map processes. Tell me the sequence, '
-            'and I\'ll help you clarify!'
-        ),
-        'brace_map': (
-            'Hi! I can help you analyze whole-part relationships. Let\'s explore together!'
-        ),
-        'bridge_map': (
-            'Hello! I\'m here to help you find analogies. Ready to compare?'
-        ),
-        'double_bubble_map': (
-            'Hi! I can help you compare two things. Tell me their similarities and differences!'
-        ),
-        'multi_flow_map': (
-            'Hello! I\'m here to help you analyze cause and effect. '
-            'Let\'s find the reasons and results!'
-        ),
-        'mind_map': (
-            'Hi! I\'m your mind map assistant. Tell me your topic, '
-            'and I\'ll help you brainstorm ideas!'
-        ),
-        'concept_map': (
-            'Hello! I\'m here to help you connect concepts. '
-            'Let\'s build a knowledge network together!'
-        ),
-        'default': (
-            'Hello! I\'m your AI assistant, happy to help. Ask me anything about your diagram, '
-            'or let me help you update it.'
-        )
     }
 
-    greetings = greetings_zh if language == 'zh' else greetings_en
-    return greetings.get(diagram_type, greetings['default'])
+    greetings = greetings_zh if language == "zh" else greetings_en
+    return greetings.get(diagram_type, greetings["default"])

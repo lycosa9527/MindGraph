@@ -31,7 +31,6 @@ Proprietary License
 """
 
 
-
 logger = logging.getLogger(__name__)
 
 # Key prefix
@@ -65,7 +64,6 @@ class DashboardSessionManager:
 
     def __init__(self):
         """Initialize session manager."""
-        pass
 
     def _use_redis(self) -> bool:
         """Check if Redis should be used."""
@@ -107,18 +105,14 @@ class DashboardSessionManager:
             session_data = {
                 "ip": ip_address,
                 "created_at": now.isoformat(),
-                "expires_at": expires_at.isoformat()
+                "expires_at": expires_at.isoformat(),
             }
 
             # Store in Redis with TTL
             session_key = _get_session_key(token)
             redis = get_redis()
             if redis:
-                redis.setex(
-                    session_key,
-                    SESSION_TTL_SECONDS,
-                    json.dumps(session_data)
-                )
+                redis.setex(session_key, SESSION_TTL_SECONDS, json.dumps(session_data))
                 token_preview = token[:20] + "..."
                 logger.debug("[DashboardSession] Created session: %s", token_preview)
 
@@ -171,7 +165,7 @@ class DashboardSessionManager:
 
                 # Check expiration
                 if expires_at_str:
-                    expires_at = datetime.fromisoformat(expires_at_str.replace('Z', '+00:00'))
+                    expires_at = datetime.fromisoformat(expires_at_str.replace("Z", "+00:00"))
                     if datetime.now(timezone.utc) > expires_at:
                         token_preview = token[:20] + "..."
                         logger.debug("[DashboardSession] Session expired: %s", token_preview)
@@ -185,10 +179,9 @@ class DashboardSessionManager:
                     # This allows sessions created without IP to work, and handles proxy scenarios
                     if session_ip and client_ip and session_ip != client_ip:
                         logger.warning(
-                            "[DashboardSession] IP mismatch: session IP %s != "
-                            "client IP %s",
+                            "[DashboardSession] IP mismatch: session IP %s != client IP %s",
                             session_ip,
-                            client_ip
+                            client_ip,
                         )
                         return False
 
@@ -273,6 +266,3 @@ def get_dashboard_session_manager() -> DashboardSessionManager:
     if _session_manager is None:
         _session_manager = DashboardSessionManager()
     return _session_manager
-
-
-

@@ -68,8 +68,6 @@ export function normalizeKatexDelimitersForMarkdownIt(text: string): string {
  */
 export function joinLabelAndMathSnippet(prefix: string, mathSnippet: string): string {
   const gap =
-    /[A-Za-z0-9_]$/.test(prefix) && mathSnippet.startsWith('$') && !prefix.endsWith(' ')
-      ? ' '
-      : ''
+    /[A-Za-z0-9_]$/.test(prefix) && mathSnippet.startsWith('$') && !prefix.endsWith(' ') ? ' ' : ''
   return prefix + gap + mathSnippet
 }

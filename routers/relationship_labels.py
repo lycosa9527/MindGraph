@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import json
 import logging
 from datetime import datetime
@@ -42,12 +43,10 @@ logger = logging.getLogger(__name__)
 async def _stream_labels(req, user: User | None, is_next: bool):
     """Async generator yielding SSE chunks from relationship labels generator."""
     generator = get_relationship_labels_generator()
-    user_id = user.id if user and hasattr(user, 'id') else None
-    org_id = getattr(user, 'organization_id', None) if user else None
+    user_id = user.id if user and hasattr(user, "id") else None
+    org_id = getattr(user, "organization_id", None) if user else None
     endpoint = (
-        '/thinking_mode/relationship_labels/next_batch'
-        if is_next
-        else '/thinking_mode/relationship_labels/start'
+        "/thinking_mode/relationship_labels/next_batch" if is_next else "/thinking_mode/relationship_labels/start"
     )
     chunk_count = 0
     try:
@@ -55,9 +54,9 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             session_id=req.session_id,
             concept_a=req.concept_a,
             concept_b=req.concept_b,
-            topic=req.topic or '',
+            topic=req.topic or "",
             link_direction=req.link_direction,
-            language=req.language or 'en',
+            language=req.language or "en",
             user_id=user_id,
             organization_id=org_id,
             endpoint_path=endpoint,
@@ -65,39 +64,35 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             chunk_count += 1
             yield f"data: {json.dumps(chunk)}\n\n"
     except LLMContentFilterError as e:
-        msg = getattr(e, 'user_message', None) or (
-            "无法处理您的请求。" if req.language == 'zh'
-            else "Content could not be processed."
+        msg = getattr(e, "user_message", None) or (
+            "无法处理您的请求。" if req.language == "zh" else "Content could not be processed."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMRateLimitError as e:
-        msg = getattr(e, 'user_message', None) or (
-            "AI服务繁忙，请稍后重试。" if req.language == 'zh'
-            else "AI service busy. Please retry."
+        msg = getattr(e, "user_message", None) or (
+            "AI服务繁忙，请稍后重试。" if req.language == "zh" else "AI service busy. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMTimeoutError as e:
-        msg = getattr(e, 'user_message', None) or (
-            "请求超时，请重试。" if req.language == 'zh'
-            else "Request timed out. Please retry."
+        msg = getattr(e, "user_message", None) or (
+            "请求超时，请重试。" if req.language == "zh" else "Request timed out. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMServiceError as e:
-        msg = getattr(e, 'user_message', None) or (
-            "AI服务错误，请稍后重试。" if req.language == 'zh'
-            else "AI service error. Please retry."
+        msg = getattr(e, "user_message", None) or (
+            "AI服务错误，请稍后重试。" if req.language == "zh" else "AI service error. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except Exception as e:
         logger.error("[RelLabels] Stream error: %s", str(e), exc_info=True)
-        msg = "请求失败，请重试。" if req.language == 'zh' else "Request failed. Please retry."
+        msg = "请求失败，请重试。" if req.language == "zh" else "Request failed. Please retry."
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     finally:
         if chunk_count == 0:
             yield f"data: {json.dumps({'event': 'error', 'message': 'No response'})}\n\n"
 
 
-@router.post('/thinking_mode/relationship_labels/start')
+@router.post("/thinking_mode/relationship_labels/start")
 def start_relationship_labels(
     req: RelationshipLabelsStartRequest,
     current_user: User = Depends(get_current_user),
@@ -110,15 +105,17 @@ def start_relationship_labels(
     """
     logger.debug(
         "[RelLabels] Start: %s | %s ↔ %s",
-        req.session_id[:8], req.concept_a[:20], req.concept_b[:20]
+        req.session_id[:8],
+        req.concept_a[:20],
+        req.concept_b[:20],
     )
 
     # Log relationship_labels for teacher usage tracking
-    if current_user and getattr(current_user, 'role', None) == 'user':
+    if current_user and getattr(current_user, "role", None) == "user":
         try:
             log_entry = UserActivityLog(
                 user_id=current_user.id,
-                activity_type='relationship_labels',
+                activity_type="relationship_labels",
                 created_at=datetime.utcnow(),
             )
             db.add(log_entry)
@@ -132,16 +129,16 @@ def start_relationship_labels(
 
     return StreamingResponse(
         _stream_labels(req, current_user, is_next=False),
-        media_type='text/event-stream',
+        media_type="text/event-stream",
         headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive',
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
         },
     )
 
 
-@router.post('/thinking_mode/relationship_labels/next_batch')
+@router.post("/thinking_mode/relationship_labels/next_batch")
 async def next_relationship_labels_batch(
     req: RelationshipLabelsNextRequest,
     current_user: User = Depends(get_current_user),
@@ -153,20 +150,22 @@ async def next_relationship_labels_batch(
     """
     logger.debug(
         "[RelLabels] Next batch: %s | %s ↔ %s",
-        req.session_id[:8], req.concept_a[:20], req.concept_b[:20]
+        req.session_id[:8],
+        req.concept_a[:20],
+        req.concept_b[:20],
     )
     return StreamingResponse(
         _stream_labels(req, current_user, is_next=True),
-        media_type='text/event-stream',
+        media_type="text/event-stream",
         headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive',
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
         },
     )
 
 
-@router.post('/thinking_mode/relationship_labels/cleanup')
+@router.post("/thinking_mode/relationship_labels/cleanup")
 async def cleanup_relationship_labels(
     req: RelationshipLabelsCleanupRequest,
     _current_user: User = Depends(get_current_user),

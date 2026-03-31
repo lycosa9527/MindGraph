@@ -30,6 +30,7 @@ from typing import Dict, Optional, Any
 
 try:
     from services.redis.redis_client import get_redis, is_redis_available, RedisOps
+
     _REDIS_AVAILABLE = True
 except ImportError:
     get_redis = None
@@ -44,7 +45,7 @@ from services.infrastructure.process.process_manager import (
     start_postgresql_server,
     stop_qdrant_server,
     stop_celery_worker,
-    stop_postgresql_server
+    stop_postgresql_server,
 )
 
 try:
@@ -59,6 +60,7 @@ except ImportError:
 
 try:
     from config.settings import config
+
     _CONFIG_AVAILABLE = True
 except ImportError:
     config = None
@@ -66,6 +68,7 @@ except ImportError:
 
 try:
     import psycopg2
+
     _PSYCOPG2_AVAILABLE = True
 except ImportError:
     psycopg2 = None
@@ -77,17 +80,23 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ============================================================================
 
-PROCESS_MONITOR_ENABLED = os.getenv("PROCESS_MONITOR_ENABLED", "true").lower() in ("true", "1", "yes")
+PROCESS_MONITOR_ENABLED = os.getenv("PROCESS_MONITOR_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 PROCESS_MONITOR_INTERVAL_SECONDS = int(os.getenv("PROCESS_MONITOR_INTERVAL_SECONDS", "30"))
 PROCESS_MONITOR_MAX_RESTARTS = int(os.getenv("PROCESS_MONITOR_MAX_RESTARTS", "3"))
 PROCESS_MONITOR_RESTART_WINDOW_SECONDS = int(os.getenv("PROCESS_MONITOR_RESTART_WINDOW_SECONDS", "300"))
-PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED = (
-    os.getenv("PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED", "true").lower()
-    in ("true", "1", "yes")
+PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED = os.getenv("PROCESS_MONITOR_CIRCUIT_BREAKER_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "yes",
 )
-PROCESS_MONITOR_SMS_ALERTS_ENABLED = (
-    os.getenv("PROCESS_MONITOR_SMS_ALERTS_ENABLED", "true").lower()
-    in ("true", "1", "yes")
+PROCESS_MONITOR_SMS_ALERTS_ENABLED = os.getenv("PROCESS_MONITOR_SMS_ALERTS_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "yes",
 )
 PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS = int(os.getenv("PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS", "600"))
 
@@ -103,8 +112,10 @@ STATUS_KEY_PREFIX = "process_monitor:status:"
 # Service Status Enum
 # ============================================================================
 
+
 class ServiceStatus(Enum):
     """Service health status"""
+
     HEALTHY = "healthy"
     DEGRADED = "degraded"
     UNHEALTHY = "unhealthy"
@@ -117,9 +128,11 @@ class ServiceStatus(Enum):
 # Service Metrics Dataclass
 # ============================================================================
 
+
 @dataclass
 class ServiceMetrics:
     """Metrics for a monitored service"""
+
     service_name: str
     status: ServiceStatus = ServiceStatus.UNKNOWN
     last_check_time: Optional[float] = None
@@ -152,6 +165,7 @@ class ServiceMetrics:
 # ============================================================================
 # Process Monitor Class
 # ============================================================================
+
 
 class ProcessMonitor:
     """
@@ -203,7 +217,7 @@ class ProcessMonitor:
                 MONITOR_LOCK_KEY,
                 f"{os.getpid()}:{time.time()}",
                 ex=MONITOR_LOCK_TTL,
-                nx=True
+                nx=True,
             )
 
             return bool(lock_acquired)
@@ -234,15 +248,11 @@ class ProcessMonitor:
             lock_value = await asyncio.to_thread(redis_client.get, MONITOR_LOCK_KEY)
             if lock_value:
                 if isinstance(lock_value, bytes):
-                    lock_pid = lock_value.decode('utf-8').split(':', maxsplit=1)[0]
+                    lock_pid = lock_value.decode("utf-8").split(":", maxsplit=1)[0]
                 else:
-                    lock_pid = str(lock_value).split(':', maxsplit=1)[0]
+                    lock_pid = str(lock_value).split(":", maxsplit=1)[0]
                 if lock_pid == str(os.getpid()):
-                    await asyncio.to_thread(
-                        redis_client.expire,
-                        MONITOR_LOCK_KEY,
-                        MONITOR_LOCK_TTL
-                    )
+                    await asyncio.to_thread(redis_client.expire, MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
                     return True
             return False
         except Exception as e:
@@ -264,10 +274,7 @@ class ProcessMonitor:
             if RedisOps is None:
                 return ServiceStatus.UNHEALTHY
 
-            ping_result = await asyncio.wait_for(
-                asyncio.to_thread(RedisOps.ping),
-                timeout=2.0
-            )
+            ping_result = await asyncio.wait_for(asyncio.to_thread(RedisOps.ping), timeout=2.0)
 
             if ping_result:
                 return ServiceStatus.HEALTHY
@@ -295,15 +302,12 @@ class ProcessMonitor:
             # HTTP check (run in thread pool to avoid blocking)
             def check_http():
                 try:
-                    urllib.request.urlopen('http://localhost:6333/collections', timeout=2)
+                    urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
                     return True
                 except Exception:
                     return False
 
-            http_ok = await asyncio.wait_for(
-                asyncio.to_thread(check_http),
-                timeout=2.5
-            )
+            http_ok = await asyncio.wait_for(asyncio.to_thread(check_http), timeout=2.5)
 
             if not http_ok:
                 return ServiceStatus.UNHEALTHY
@@ -313,7 +317,10 @@ class ProcessMonitor:
                 return_code = ServerState.qdrant_process.poll()
                 if return_code is not None:
                     # Process has terminated
-                    logger.warning("[ProcessMonitor] Qdrant process terminated (return code: %s)", return_code)
+                    logger.warning(
+                        "[ProcessMonitor] Qdrant process terminated (return code: %s)",
+                        return_code,
+                    )
                     return ServiceStatus.UNHEALTHY
 
             return ServiceStatus.HEALTHY
@@ -354,7 +361,10 @@ class ProcessMonitor:
                 return_code = ServerState.celery_worker_process.poll()
                 if return_code is not None:
                     # Process has terminated
-                    logger.warning("[ProcessMonitor] Celery process terminated (return code: %s)", return_code)
+                    logger.warning(
+                        "[ProcessMonitor] Celery process terminated (return code: %s)",
+                        return_code,
+                    )
                     return ServiceStatus.UNHEALTHY
 
             return ServiceStatus.HEALTHY
@@ -378,8 +388,8 @@ class ProcessMonitor:
             # Store reference for type checking
             pg_module = psycopg2
 
-            db_url = os.getenv('DATABASE_URL', '')
-            if not db_url or 'postgresql' not in db_url.lower():
+            db_url = os.getenv("DATABASE_URL", "")
+            if not db_url or "postgresql" not in db_url.lower():
                 # Not using PostgreSQL, skip check
                 return ServiceStatus.HEALTHY
 
@@ -392,10 +402,7 @@ class ProcessMonitor:
                 except Exception:
                     return False
 
-            connection_ok = await asyncio.wait_for(
-                asyncio.to_thread(check_connection),
-                timeout=2.5
-            )
+            connection_ok = await asyncio.wait_for(asyncio.to_thread(check_connection), timeout=2.5)
 
             if not connection_ok:
                 return ServiceStatus.UNHEALTHY
@@ -405,7 +412,10 @@ class ProcessMonitor:
                 return_code = ServerState.postgresql_process.poll()
                 if return_code is not None:
                     # Process has terminated
-                    logger.warning("[ProcessMonitor] PostgreSQL process terminated (return code: %s)", return_code)
+                    logger.warning(
+                        "[ProcessMonitor] PostgreSQL process terminated (return code: %s)",
+                        return_code,
+                    )
                     return ServiceStatus.UNHEALTHY
 
             return ServiceStatus.HEALTHY
@@ -461,15 +471,8 @@ class ProcessMonitor:
                 return 0
 
             key = f"{RESTART_COUNTER_KEY_PREFIX}{service_name}"
-            count = await asyncio.to_thread(
-                redis_client.incr,
-                key
-            )
-            await asyncio.to_thread(
-                redis_client.expire,
-                key,
-                PROCESS_MONITOR_RESTART_WINDOW_SECONDS
-            )
+            count = await asyncio.to_thread(redis_client.incr, key)
+            await asyncio.to_thread(redis_client.expire, key, PROCESS_MONITOR_RESTART_WINDOW_SECONDS)
             return int(count)
         except Exception as e:
             logger.warning("[ProcessMonitor] Failed to increment restart count: %s", e)
@@ -519,7 +522,7 @@ class ProcessMonitor:
                 redis_client.setex,
                 key,
                 PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
-                str(time.time())
+                str(time.time()),
             )
         except Exception as e:
             logger.warning("[ProcessMonitor] Failed to set SMS cooldown: %s", e)
@@ -543,17 +546,14 @@ class ProcessMonitor:
             await CriticalAlertService.send_runtime_error_alert(
                 component=service_name.capitalize(),
                 error_message=reason,
-                details=(
-                    f"Process monitor detected {service_name} failure. "
-                    "Check service status and logs."
-                )
+                details=(f"Process monitor detected {service_name} failure. Check service status and logs."),
             )
             self.metrics[service_name].last_sms_alert_time = time.time()
         except Exception as e:
             logger.error(
                 "[ProcessMonitor] Error sending SMS alert via critical alert service: %s",
                 e,
-                exc_info=True
+                exc_info=True,
             )
 
     async def _restart_service(self, service_name: str) -> bool:
@@ -577,7 +577,10 @@ class ProcessMonitor:
                 # Start new process (run in thread pool)
                 process = await asyncio.to_thread(start_qdrant_server)
                 if process is not None:
-                    logger.info("[ProcessMonitor] Qdrant restarted successfully (PID: %s)", process.pid)
+                    logger.info(
+                        "[ProcessMonitor] Qdrant restarted successfully (PID: %s)",
+                        process.pid,
+                    )
                     return True
                 else:
                     # Process already running externally
@@ -592,7 +595,10 @@ class ProcessMonitor:
                 # Start new process (run in thread pool)
                 process = await asyncio.to_thread(start_celery_worker)
                 if process is not None:
-                    logger.info("[ProcessMonitor] Celery restarted successfully (PID: %s)", process.pid)
+                    logger.info(
+                        "[ProcessMonitor] Celery restarted successfully (PID: %s)",
+                        process.pid,
+                    )
                     return True
 
             elif service_name == "postgresql":
@@ -603,7 +609,10 @@ class ProcessMonitor:
                 # Start new process (run in thread pool)
                 process = await asyncio.to_thread(start_postgresql_server)
                 if process is not None:
-                    logger.info("[ProcessMonitor] PostgreSQL restarted successfully (PID: %s)", process.pid)
+                    logger.info(
+                        "[ProcessMonitor] PostgreSQL restarted successfully (PID: %s)",
+                        process.pid,
+                    )
                     return True
                 else:
                     # Process already running externally
@@ -612,7 +621,12 @@ class ProcessMonitor:
 
             return False
         except Exception as e:
-            logger.error("[ProcessMonitor] Failed to restart %s: %s", service_name, e, exc_info=True)
+            logger.error(
+                "[ProcessMonitor] Failed to restart %s: %s",
+                service_name,
+                e,
+                exc_info=True,
+            )
             return False
 
     async def _check_and_restart_service(self, service_name: str, status: ServiceStatus) -> None:
@@ -649,7 +663,7 @@ class ProcessMonitor:
                 "[ProcessMonitor] %s status changed: %s -> %s",
                 service_name.upper(),
                 old_status.value,
-                status.value
+                status.value,
             )
 
         # Handle restart logic (only for Qdrant, Celery, and PostgreSQL, not Redis)
@@ -664,13 +678,19 @@ class ProcessMonitor:
 
             if process is None:
                 # Process not managed by us (external/systemd)
-                logger.debug("[ProcessMonitor] %s not managed by app, skipping restart", service_name)
+                logger.debug(
+                    "[ProcessMonitor] %s not managed by app, skipping restart",
+                    service_name,
+                )
                 return
 
             return_code = process.poll()
             if return_code is None:
                 # Process still running but health check failed
-                logger.warning("[ProcessMonitor] %s process running but health check failed", service_name)
+                logger.warning(
+                    "[ProcessMonitor] %s process running but health check failed",
+                    service_name,
+                )
                 return
 
             # Process is dead - attempt restart
@@ -681,16 +701,15 @@ class ProcessMonitor:
                     if not metrics.circuit_breaker_open:
                         metrics.circuit_breaker_open = True
                         logger.error(
-                            "[ProcessMonitor] Circuit breaker OPEN for %s "
-                            "(%d restarts in %d seconds)",
+                            "[ProcessMonitor] Circuit breaker OPEN for %s (%d restarts in %d seconds)",
                             service_name,
                             restart_count,
-                            PROCESS_MONITOR_RESTART_WINDOW_SECONDS
+                            PROCESS_MONITOR_RESTART_WINDOW_SECONDS,
                         )
                         # Send SMS alert for circuit breaker
                         await self._send_sms_alert(
                             service_name,
-                            f"Circuit breaker triggered - {service_name} failed {restart_count} times"
+                            f"Circuit breaker triggered - {service_name} failed {restart_count} times",
                         )
                     return
 
@@ -711,27 +730,27 @@ class ProcessMonitor:
         if service_name == "redis" and status == ServiceStatus.UNHEALTHY:
             logger.critical("[ProcessMonitor] Redis is DOWN - application cannot function")
             # Send SMS immediately (no cooldown for critical services)
-            await self._send_sms_alert(
-                service_name,
-                "Redis is down - application cannot function"
-            )
+            await self._send_sms_alert(service_name, "Redis is down - application cannot function")
 
         # Handle repeated failures (3+ consecutive) - only send alert once per failure streak
         if metrics.consecutive_failures == 3:
             logger.warning(
                 "[ProcessMonitor] %s has failed %d consecutive times",
                 service_name.upper(),
-                metrics.consecutive_failures
+                metrics.consecutive_failures,
             )
             # Send SMS alert if not in cooldown (only on 3rd failure, not every time)
             await self._send_sms_alert(
                 service_name,
-                f"{service_name} has failed {metrics.consecutive_failures} consecutive times"
+                f"{service_name} has failed {metrics.consecutive_failures} consecutive times",
             )
 
     async def _monitor_loop(self) -> None:
         """Main monitoring loop - runs periodically"""
-        logger.info("[ProcessMonitor] Starting monitoring loop (interval: %ds)", PROCESS_MONITOR_INTERVAL_SECONDS)
+        logger.info(
+            "[ProcessMonitor] Starting monitoring loop (interval: %ds)",
+            PROCESS_MONITOR_INTERVAL_SECONDS,
+        )
 
         while not self._shutdown_event.is_set():
             try:
@@ -744,40 +763,45 @@ class ProcessMonitor:
 
                 # Perform health checks (run in parallel for efficiency)
                 # Check if using PostgreSQL
-                db_url = os.getenv('DATABASE_URL', '')
-                using_postgresql = 'postgresql' in db_url.lower()
+                db_url = os.getenv("DATABASE_URL", "")
+                using_postgresql = "postgresql" in db_url.lower()
 
                 # Check if RAG is enabled (determines if Celery and Qdrant are needed)
-                rag_enabled = (
-                    _CONFIG_AVAILABLE and
-                    config is not None and
-                    config.FEATURE_KNOWLEDGE_SPACE
-                )
+                rag_enabled = _CONFIG_AVAILABLE and config is not None and config.FEATURE_KNOWLEDGE_SPACE
 
                 if using_postgresql:
                     if rag_enabled:
-                        redis_status, qdrant_status, celery_status, postgresql_status = await asyncio.gather(
+                        (
+                            redis_status,
+                            qdrant_status,
+                            celery_status,
+                            postgresql_status,
+                        ) = await asyncio.gather(
                             self._check_redis_health(),
                             self._check_qdrant_health(),
                             self._check_celery_health(),
                             self._check_postgresql_health(),
-                            return_exceptions=False
+                            return_exceptions=False,
                         )
                     else:
                         redis_status, postgresql_status = await asyncio.gather(
                             self._check_redis_health(),
                             self._check_postgresql_health(),
-                            return_exceptions=False
+                            return_exceptions=False,
                         )
                         qdrant_status = ServiceStatus.HEALTHY  # RAG disabled, skip Qdrant
                         celery_status = ServiceStatus.HEALTHY  # RAG disabled, skip Celery
                 else:
                     if rag_enabled:
-                        redis_status, qdrant_status, celery_status = await asyncio.gather(
+                        (
+                            redis_status,
+                            qdrant_status,
+                            celery_status,
+                        ) = await asyncio.gather(
                             self._check_redis_health(),
                             self._check_qdrant_health(),
                             self._check_celery_health(),
-                            return_exceptions=False
+                            return_exceptions=False,
                         )
                     else:
                         redis_status = await self._check_redis_health()
@@ -800,24 +824,25 @@ class ProcessMonitor:
                     statuses.append(celery_status)
                 if using_postgresql:
                     statuses.append(postgresql_status)
-                unhealthy_count = sum(
-                    1 for status in statuses
-                    if status == ServiceStatus.UNHEALTHY
-                )
+                unhealthy_count = sum(1 for status in statuses if status == ServiceStatus.UNHEALTHY)
                 total_services = len(statuses)
                 if unhealthy_count >= 2:
-                    logger.error("[ProcessMonitor] Multiple services down (%d/%d)", unhealthy_count, total_services)
+                    logger.error(
+                        "[ProcessMonitor] Multiple services down (%d/%d)",
+                        unhealthy_count,
+                        total_services,
+                    )
                     # Send SMS alert for multiple failures (with cooldown to prevent spam)
                     current_time = time.time()
                     cooldown_expired = (
-                        self._last_multiple_failure_alert_time is None or
-                        current_time - self._last_multiple_failure_alert_time >=
-                        PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS
+                        self._last_multiple_failure_alert_time is None
+                        or current_time - self._last_multiple_failure_alert_time
+                        >= PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS
                     )
                     if cooldown_expired:
                         await self._send_sms_alert(
                             "system",
-                            f"Multiple services down ({unhealthy_count}/{total_services})"
+                            f"Multiple services down ({unhealthy_count}/{total_services})",
                         )
                         self._last_multiple_failure_alert_time = current_time
                 else:
@@ -892,14 +917,12 @@ class ProcessMonitor:
         Returns:
             Dictionary with service status and metrics
         """
-        return {
-            service_name: metrics.to_dict()
-            for service_name, metrics in self.metrics.items()
-        }
+        return {service_name: metrics.to_dict() for service_name, metrics in self.metrics.items()}
 
 
 class ProcessMonitorSingleton:
     """Singleton wrapper for ProcessMonitor to avoid global statement"""
+
     _instance: Optional[ProcessMonitor] = None
 
     @classmethod

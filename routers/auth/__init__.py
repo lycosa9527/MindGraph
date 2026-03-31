@@ -13,7 +13,18 @@ Proprietary License
 from fastapi import APIRouter
 
 # Import all sub-routers
-from . import registration, login, sms, captcha, password, session, public, avatar, phone, preferences
+from . import (
+    registration,
+    login,
+    sms,
+    captcha,
+    password,
+    session,
+    public,
+    avatar,
+    phone,
+    preferences,
+)
 from .admin import admin_router
 
 # Import utilities
@@ -51,17 +62,16 @@ router.include_router(admin_router)
 
 # Export router and utilities
 __all__ = [
-    'router',
-    'BEIJING_TIMEZONE',
-    'get_beijing_now',
-    'get_beijing_today_start_utc',
-    'utc_to_beijing_iso',
-    'track_user_activity',
-    'set_auth_cookies',
-    'commit_user_with_retry',
-    'get_language_dependency',
-    'require_admin',
-    'require_admin_or_manager',
-    'require_manager',
+    "router",
+    "BEIJING_TIMEZONE",
+    "get_beijing_now",
+    "get_beijing_today_start_utc",
+    "utc_to_beijing_iso",
+    "track_user_activity",
+    "set_auth_cookies",
+    "commit_user_with_retry",
+    "get_language_dependency",
+    "require_admin",
+    "require_admin_or_manager",
+    "require_manager",
 ]
-

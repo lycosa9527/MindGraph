@@ -30,13 +30,13 @@ class LibraryPageMixin:
     def get_document(self, document_id: int, use_cache: bool = True) -> Optional["LibraryDocument"]:
         """
         Get a single library document - provided by LibraryDocumentMixin.
-        
+
         This is a stub that will be overridden by LibraryDocumentMixin when classes are composed.
-        
+
         Args:
             document_id: Document ID
             use_cache: If True, use cache (ignored in stub, used by actual implementation)
-        
+
         Raises:
             NotImplementedError: This method must be provided by LibraryDocumentMixin
         """
@@ -65,9 +65,7 @@ class LibraryPageMixin:
         return self.get_page_image_path_from_document(document, page_number)
 
     def get_page_image_path_from_document(
-        self,
-        document: Optional["LibraryDocument"],
-        page_number: int
+        self, document: Optional["LibraryDocument"], page_number: int
     ) -> Optional[Path]:
         """
         Get path to page image from document object (avoids duplicate DB query).
@@ -88,11 +86,7 @@ class LibraryPageMixin:
             return None
 
         # Resolve pages directory path
-        pages_dir = resolve_library_path(
-            pages_dir_path,
-            self.storage_dir,
-            Path.cwd()
-        )
+        pages_dir = resolve_library_path(pages_dir_path, self.storage_dir, Path.cwd())
 
         if not pages_dir or not pages_dir.exists():
             return None
@@ -122,8 +116,4 @@ class LibraryPageMixin:
         if not use_images or not pages_dir_path:
             return None
 
-        return resolve_library_path(
-            pages_dir_path,
-            self.storage_dir,
-            Path.cwd()
-        )
+        return resolve_library_path(pages_dir_path, self.storage_dir, Path.cwd())

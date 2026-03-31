@@ -23,7 +23,15 @@ import {
 
 import { ChatDotRound, Download } from '@element-plus/icons-vue'
 
-import { ArrowLeft, FileImage, FileJson, FileText, ImageDown, RotateCcw, Share2 } from 'lucide-vue-next'
+import {
+  ArrowLeft,
+  FileImage,
+  FileJson,
+  FileText,
+  ImageDown,
+  RotateCcw,
+  Share2,
+} from 'lucide-vue-next'
 
 import CanvasToolbar from '@/components/canvas/CanvasToolbar.vue'
 import DiagramSlotFullModal from '@/components/canvas/DiagramSlotFullModal.vue'
@@ -397,9 +405,7 @@ async function handleReset() {
     </div>
 
     <!-- Col 2: editing toolbar — viewport-centered (equal 1fr side columns) -->
-    <div
-      class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]"
-    >
+    <div class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]">
       <CanvasToolbar embedded />
     </div>
 

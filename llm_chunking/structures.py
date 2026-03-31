@@ -6,6 +6,7 @@ Defines three main structure types:
 - ParentChildStructure: Hierarchical chunks (parent-child)
 - QAStructure: Question-answer pairs
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Any, Optional
 
@@ -26,12 +27,7 @@ class ChunkStructure(ABC):
         """Return structure type identifier."""
 
     @abstractmethod
-    def chunk(
-        self,
-        text: str,
-        structure: Optional[DocumentStructure] = None,
-        **kwargs
-    ) -> List[Any]:
+    def chunk(self, text: str, structure: Optional[DocumentStructure] = None, **kwargs) -> List[Any]:
         """
         Chunk text according to structure.
 
@@ -64,7 +60,7 @@ class GeneralStructure(ChunkStructure):
         structure: Optional[DocumentStructure] = None,
         chunk_size: int = 500,
         overlap: int = 50,
-        **kwargs
+        **kwargs,
     ) -> List[Chunk]:
         """
         Create flat chunks.
@@ -116,7 +112,7 @@ class ParentChildStructure(ChunkStructure):
         structure: Optional[DocumentStructure] = None,
         parent_max_tokens: int = 2000,
         child_max_tokens: int = 500,
-        **kwargs
+        **kwargs,
     ) -> List[ParentChunk]:
         """
         Create hierarchical chunks.
@@ -154,7 +150,7 @@ class QAStructure(ChunkStructure):
         text: str,
         structure: Optional[DocumentStructure] = None,
         generate_questions: bool = True,
-        **kwargs
+        **kwargs,
     ) -> List[QAChunk]:
         """
         Create Q&A chunks.
@@ -190,10 +186,7 @@ def get_structure(structure_type: str, **kwargs) -> ChunkStructure:
     }
 
     if structure_type not in structures:
-        raise ValueError(
-            f"Unknown structure type: {structure_type}. "
-            f"Must be one of: {list(structures.keys())}"
-        )
+        raise ValueError(f"Unknown structure type: {structure_type}. Must be one of: {list(structures.keys())}")
 
     structure_class = structures[structure_type]
     return structure_class(**kwargs)

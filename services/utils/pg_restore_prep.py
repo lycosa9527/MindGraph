@@ -36,17 +36,14 @@ def _db_user_and_name_from_url(db_url: str) -> tuple[str, str]:
 def _log_database_privilege_hint(exc: Exception, db_url: str) -> None:
     """If exc is insufficient privilege on CREATE SCHEMA, log fix SQL."""
     msg = str(exc).lower()
-    if (
-        "permission denied for database" not in msg
-        and "insufficient privilege" not in msg
-    ):
+    if "permission denied for database" not in msg and "insufficient privilege" not in msg:
         return
     user, dbname = _db_user_and_name_from_url(db_url)
     logger.error(
         "The app user cannot run CREATE SCHEMA (the database is often owned "
         "by postgres after createdb). As the postgres superuser, run one of:\n"
-        "  sudo -u postgres psql -c \"ALTER DATABASE %s OWNER TO %s;\"\n"
-        "  sudo -u postgres psql -c \"GRANT CREATE ON DATABASE %s TO %s;\"",
+        '  sudo -u postgres psql -c "ALTER DATABASE %s OWNER TO %s;"\n'
+        '  sudo -u postgres psql -c "GRANT CREATE ON DATABASE %s TO %s;"',
         dbname,
         user,
         dbname,

@@ -26,6 +26,7 @@ _USER_CACHE = None
 
 try:
     from services.redis.cache.redis_user_cache import user_cache as redis_user_cache
+
     _REDIS_AVAILABLE = True
     _USER_CACHE = redis_user_cache
 except ImportError:
@@ -51,8 +52,7 @@ def check_account_lockout(user) -> Tuple[bool, str]:
                 f"Please try again in {minutes_left} minute."
             )
         return True, (
-            f"Account temporarily locked due to too many failed attempts. "
-            f"Please try again in {minutes_left} minutes."
+            f"Account temporarily locked due to too many failed attempts. Please try again in {minutes_left} minutes."
         )
 
     return False, ""
@@ -99,9 +99,7 @@ def reset_failed_attempts(user, db: Session) -> None:
             _USER_CACHE.invalidate(user.id, user.phone)
             _USER_CACHE.cache_user(user)
         except Exception as e:
-            logger.debug(
-                "[Auth] Failed to update cache after reset_failed_attempts: %s", e
-            )
+            logger.debug("[Auth] Failed to update cache after reset_failed_attempts: %s", e)
 
 
 def increment_failed_attempts(user, db: Session) -> None:
@@ -126,5 +124,5 @@ def increment_failed_attempts(user, db: Session) -> None:
             except Exception as e:
                 logger.debug(
                     "[Auth] Failed to update cache after increment_failed_attempts: %s",
-                    e
+                    e,
                 )

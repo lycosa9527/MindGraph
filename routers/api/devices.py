@@ -13,8 +13,9 @@ from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Session
 
+from config.database import get_db
 from models.domain.auth import User
-from routers.core.dependencies import get_current_user, get_db
+from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
 
@@ -131,7 +132,7 @@ def list_unassigned_devices(
 @router.get("/{watch_id}", response_model=DeviceResponse)
 def get_device(
     watch_id: str,
-    current_user: User = Depends(get_current_user),
+    _current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
 ):
     """Get device details"""

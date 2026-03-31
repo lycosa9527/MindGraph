@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -18,13 +19,22 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from models.domain.knowledge_space import KnowledgeQuery, KnowledgeSpace, QueryFeedback, QueryTemplate
-from models.requests.requests_knowledge_space import RetrievalTestRequest, QueryFeedbackRequest, QueryTemplateRequest
+from models.domain.knowledge_space import (
+    KnowledgeQuery,
+    KnowledgeSpace,
+    QueryFeedback,
+    QueryTemplate,
+)
+from models.requests.requests_knowledge_space import (
+    RetrievalTestRequest,
+    QueryFeedbackRequest,
+    QueryTemplateRequest,
+)
 from models.responses import (
     RetrievalTestHistoryResponse,
     RetrievalTestHistoryItem,
     QueryAnalyticsResponse,
-    QueryTemplateResponse
+    QueryTemplateResponse,
 )
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service
@@ -41,7 +51,7 @@ router = APIRouter()
 def test_retrieval(
     request: RetrievalTestRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Test retrieval functionality for user's knowledge space.
@@ -57,7 +67,7 @@ def test_retrieval(
             query=request.query,
             method=request.method,
             top_k=request.top_k,
-            score_threshold=request.score_threshold
+            score_threshold=request.score_threshold,
         )
         return result
     except ValueError as e:
@@ -66,16 +76,13 @@ def test_retrieval(
         logger.error(
             "[KnowledgeSpaceAPI] Retrieval test failed for user %s: %s",
             current_user.id,
-            e
+            e,
         )
         raise HTTPException(status_code=500, detail="Retrieval test failed") from e
 
 
 @router.get("/queries/retrieval-test-history")
-def get_retrieval_test_history(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+def get_retrieval_test_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Get retrieval test history for user.
 
@@ -84,60 +91,63 @@ def get_retrieval_test_history(
     """
     try:
         # Get user's knowledge space
-        space = db.query(KnowledgeSpace).filter(
-            KnowledgeSpace.user_id == current_user.id
-        ).first()
+        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == current_user.id).first()
 
         if not space:
             return RetrievalTestHistoryResponse(queries=[], total=0)
 
         # Fetch retrieval test queries (most recent first)
         # Only keep 10 most recent, so we only fetch 10
-        queries = db.query(KnowledgeQuery).filter(
-            KnowledgeQuery.space_id == space.id,
-            KnowledgeQuery.source == 'retrieval_test'
-        ).order_by(KnowledgeQuery.created_at.desc()).limit(10).all()
+        queries = (
+            db.query(KnowledgeQuery)
+            .filter(
+                KnowledgeQuery.space_id == space.id,
+                KnowledgeQuery.source == "retrieval_test",
+            )
+            .order_by(KnowledgeQuery.created_at.desc())
+            .limit(10)
+            .all()
+        )
 
         # Convert to response format
         history_items = []
         for q in queries:
-            history_items.append(RetrievalTestHistoryItem(
-                id=q.id,
-                query=q.query,
-                method=q.method,
-                top_k=q.top_k,
-                score_threshold=q.score_threshold,
-                result_count=q.result_count,
-                timing={
-                    'embedding_ms': q.embedding_ms,
-                    'search_ms': q.search_ms,
-                    'rerank_ms': q.rerank_ms,
-                    'total_ms': q.total_ms,
-                },
-                created_at=q.created_at.isoformat()
-            ))
+            history_items.append(
+                RetrievalTestHistoryItem(
+                    id=q.id,
+                    query=q.query,
+                    method=q.method,
+                    top_k=q.top_k,
+                    score_threshold=q.score_threshold,
+                    result_count=q.result_count,
+                    timing={
+                        "embedding_ms": q.embedding_ms,
+                        "search_ms": q.search_ms,
+                        "rerank_ms": q.rerank_ms,
+                        "total_ms": q.total_ms,
+                    },
+                    created_at=q.created_at.isoformat(),
+                )
+            )
 
         return RetrievalTestHistoryResponse(
             queries=history_items,
-            total=len(history_items)  # Max 10
+            total=len(history_items),  # Max 10
         )
     except Exception as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get retrieval test history for user %s: %s",
             current_user.id,
-            e
+            e,
         )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve test history"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to retrieve test history") from e
 
 
 @router.get("/queries/analytics")
 def get_query_analytics(
     days: int = 30,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get query performance analytics.
@@ -152,12 +162,9 @@ def get_query_analytics(
         logger.error(
             "[KnowledgeSpaceAPI] Failed to get query analytics for user %s: %s",
             current_user.id,
-            e
+            e,
         )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to retrieve analytics"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to retrieve analytics") from e
 
 
 @router.post("/queries/{query_id}/feedback")
@@ -165,7 +172,7 @@ def submit_query_feedback(
     query_id: int,
     request: QueryFeedbackRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Submit feedback for a query result.
@@ -173,10 +180,12 @@ def submit_query_feedback(
     Requires authentication. Verifies ownership.
     """
     # Verify query ownership
-    query = db.query(KnowledgeQuery).join(KnowledgeSpace).filter(
-        KnowledgeQuery.id == query_id,
-        KnowledgeSpace.user_id == current_user.id
-    ).first()
+    query = (
+        db.query(KnowledgeQuery)
+        .join(KnowledgeSpace)
+        .filter(KnowledgeQuery.id == query_id, KnowledgeSpace.user_id == current_user.id)
+        .first()
+    )
 
     if not query:
         raise HTTPException(status_code=404, detail="Query not found")
@@ -189,7 +198,7 @@ def submit_query_feedback(
             feedback_type=request.feedback_type,
             feedback_score=request.feedback_score,
             relevant_chunk_ids=request.relevant_chunk_ids,
-            irrelevant_chunk_ids=request.irrelevant_chunk_ids
+            irrelevant_chunk_ids=request.irrelevant_chunk_ids,
         )
         db.add(feedback)
         db.commit()
@@ -200,26 +209,23 @@ def submit_query_feedback(
             "query_id": feedback.query_id,
             "feedback_type": feedback.feedback_type,
             "feedback_score": feedback.feedback_score,
-            "created_at": feedback.created_at.isoformat()
+            "created_at": feedback.created_at.isoformat(),
         }
     except Exception as e:
         logger.error(
             "[KnowledgeSpaceAPI] Failed to submit feedback for query %s: %s",
             query_id,
-            e
+            e,
         )
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to submit feedback"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to submit feedback") from e
 
 
 @router.post("/query-templates")
 def create_query_template(
     request: QueryTemplateRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Create a query template.
@@ -235,7 +241,7 @@ def create_query_template(
             space_id=space.id,
             name=request.name,
             template_text=request.template_text,
-            parameters=request.parameters or {}
+            parameters=request.parameters or {},
         )
         db.add(template)
         db.commit()
@@ -249,25 +255,16 @@ def create_query_template(
             usage_count=template.usage_count,
             success_rate=template.success_rate,
             created_at=template.created_at.isoformat(),
-            updated_at=template.updated_at.isoformat()
+            updated_at=template.updated_at.isoformat(),
         )
     except Exception as e:
-        logger.error(
-            "[KnowledgeSpaceAPI] Failed to create query template: %s",
-            e
-        )
+        logger.error("[KnowledgeSpaceAPI] Failed to create query template: %s", e)
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to create template"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to create template") from e
 
 
 @router.get("/query-templates")
-def list_query_templates(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+def list_query_templates(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     List query templates for user.
 
@@ -276,10 +273,12 @@ def list_query_templates(
     service = KnowledgeSpaceService(db, current_user.id)
     space = service.create_knowledge_space()
 
-    templates = db.query(QueryTemplate).filter(
-        QueryTemplate.user_id == current_user.id,
-        QueryTemplate.space_id == space.id
-    ).order_by(QueryTemplate.usage_count.desc()).all()
+    templates = (
+        db.query(QueryTemplate)
+        .filter(QueryTemplate.user_id == current_user.id, QueryTemplate.space_id == space.id)
+        .order_by(QueryTemplate.usage_count.desc())
+        .all()
+    )
 
     return {
         "templates": [
@@ -291,9 +290,9 @@ def list_query_templates(
                 usage_count=t.usage_count,
                 success_rate=t.success_rate,
                 created_at=t.created_at.isoformat(),
-                updated_at=t.updated_at.isoformat()
+                updated_at=t.updated_at.isoformat(),
             )
             for t in templates
         ],
-        "total": len(templates)
+        "total": len(templates),
     }

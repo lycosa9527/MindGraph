@@ -59,7 +59,7 @@ def create_access_token(user) -> str:
         "org_id": user.organization_id,
         "jti": token_id,
         "type": "access",
-        "exp": expire
+        "exp": expire,
     }
 
     token = jwt.encode(payload, get_jwt_secret(), algorithm=JWT_ALGORITHM)
@@ -83,14 +83,14 @@ def create_refresh_token(user_id: int) -> tuple[str, str]:
     refresh_token = secrets.token_urlsafe(32)
 
     # Hash for storage (never store the raw token)
-    token_hash = hashlib.sha256(refresh_token.encode('utf-8')).hexdigest()
+    token_hash = hashlib.sha256(refresh_token.encode("utf-8")).hexdigest()
 
     return refresh_token, token_hash
 
 
 def hash_refresh_token(token: str) -> str:
     """Hash a refresh token for lookup"""
-    return hashlib.sha256(token.encode('utf-8')).hexdigest()
+    return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
 
 def compute_device_hash(request: Request) -> str:
@@ -129,11 +129,11 @@ def compute_device_hash(request: Request) -> str:
         accept_language,
         accept_encoding,
         sec_ch_platform,
-        sec_ch_mobile
+        sec_ch_mobile,
     ]
 
     fingerprint_str = "|".join(fingerprint_parts)
-    return hashlib.sha256(fingerprint_str.encode('utf-8')).hexdigest()[:16]
+    return hashlib.sha256(fingerprint_str.encode("utf-8")).hexdigest()[:16]
 
 
 def decode_access_token(token: str) -> dict:
@@ -160,7 +160,4 @@ def decode_access_token(token: str) -> dict:
             logger.debug("Token expired: %s (expected when user inactive)", e)
         else:
             logger.warning("Invalid token: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token"
-        ) from e
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token") from e

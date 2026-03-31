@@ -15,6 +15,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import Optional, Tuple
 import logging
@@ -30,6 +31,7 @@ import playwright
 
 
 logger = logging.getLogger(__name__)
+
 
 def _get_chromium_version(executable_path: str) -> Optional[str]:
     """
@@ -49,7 +51,7 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             browser = p.chromium.launch(
                 executable_path=executable_path,
                 headless=True,
-                args=['--no-sandbox', '--disable-dev-shm-usage', '--disable-gpu']
+                args=["--no-sandbox", "--disable-dev-shm-usage", "--disable-gpu"],
             )
             try:
                 # Get version from browser object
@@ -58,12 +60,12 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
                     version_str = str(version).strip()
                     # browser.version returns version directly (e.g., "141.0.7390.37")
                     # or sometimes "Chromium 141.0.7390.37"
-                    version_match = re.search(r'(\d+\.\d+\.\d+\.\d+)', version_str)
+                    version_match = re.search(r"(\d+\.\d+\.\d+\.\d+)", version_str)
                     if version_match:
                         browser.close()
                         return version_match.group(1)
                     # If it's already a version-like string, return it
-                    if re.match(r'^\d+\.\d+\.\d+\.\d+$', version_str):
+                    if re.match(r"^\d+\.\d+\.\d+\.\d+$", version_str):
                         browser.close()
                         return version_str
                 browser.close()
@@ -84,11 +86,11 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
             text=True,
             timeout=3,
             stderr=subprocess.DEVNULL,
-            check=False
+            check=False,
         )
         if result.returncode == 0 and result.stdout:
             # Parse version from output like "Chromium 141.0.7390.37" or "Google Chrome 141.0.7390.37"
-            version_match = re.search(r'(\d+\.\d+\.\d+\.\d+)', result.stdout)
+            version_match = re.search(r"(\d+\.\d+\.\d+\.\d+)", result.stdout)
             if version_match:
                 return version_match.group(1)
     except subprocess.TimeoutExpired:
@@ -98,9 +100,9 @@ def _get_chromium_version(executable_path: str) -> Optional[str]:
 
     # Method 3: Extract revision from path (fallback for Playwright browsers)
     # Only use this if we couldn't get actual version
-    if 'chromium-' in executable_path and 'ms-playwright' in executable_path:
+    if "chromium-" in executable_path and "ms-playwright" in executable_path:
         try:
-            revision_match = re.search(r'chromium-(\d+)', executable_path)
+            revision_match = re.search(r"chromium-(\d+)", executable_path)
             if revision_match:
                 # Return revision as fallback (will be compared as revision number)
                 return revision_match.group(1)
@@ -122,9 +124,10 @@ def _compare_versions(version1: str, version2: str) -> int:
     Returns:
         -1 if version1 < version2, 0 if equal, 1 if version1 > version2
     """
+
     def version_tuple(v: str) -> Tuple[int, ...]:
         # If it's just a revision number (single number), treat as major version
-        parts = v.split('.')
+        parts = v.split(".")
         if len(parts) == 1:
             # Single number - likely a revision, treat as major version
             return (int(parts[0]), 0, 0, 0)
@@ -191,7 +194,7 @@ def _get_local_chromium_executable():
         possible_paths = [
             browsers_dir / "chrome-mac" / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
             browsers_dir / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
-            browsers_dir / "chrome"
+            browsers_dir / "chrome",
         ]
         for path in possible_paths:
             if path.exists():
@@ -201,7 +204,7 @@ def _get_local_chromium_executable():
         # Linux: browsers/chromium/chrome-linux/chrome
         possible_paths = [
             browsers_dir / "chrome-linux" / "chrome",
-            browsers_dir / "chrome"
+            browsers_dir / "chrome",
         ]
         for path in possible_paths:
             if path.exists():
@@ -226,7 +229,10 @@ def _get_best_chromium_executable() -> Optional[str]:
         return local_chromium
 
     if playwright_chromium and not local_chromium:
-        logger.debug("Using Playwright Chromium (local browser not found): %s", playwright_chromium)
+        logger.debug(
+            "Using Playwright Chromium (local browser not found): %s",
+            playwright_chromium,
+        )
         return playwright_chromium
 
     # If neither is available, return None
@@ -243,7 +249,10 @@ def _get_best_chromium_executable() -> Optional[str]:
         return local_chromium
 
     if not local_version:
-        logger.debug("Using Playwright Chromium (local version check failed): %s", playwright_chromium)
+        logger.debug(
+            "Using Playwright Chromium (local version check failed): %s",
+            playwright_chromium,
+        )
         return playwright_chromium
 
     if not playwright_version:
@@ -253,8 +262,10 @@ def _get_best_chromium_executable() -> Optional[str]:
     # At this point, both local_version and playwright_version are guaranteed to be non-None
     # Check if one is a revision number (single number) and the other is a full version
     assert local_version is not None and playwright_version is not None
-    local_is_revision = '.' not in local_version
-    playwright_is_revision = '.' not in playwright_version
+    local_ver = str(local_version)
+    playwright_ver = str(playwright_version)
+    local_is_revision = "." not in local_ver
+    playwright_is_revision = "." not in playwright_ver
 
     # If one is a revision and the other is a full version, prefer the full version
     # (revision numbers cannot be reliably compared to version numbers)
@@ -262,14 +273,16 @@ def _get_best_chromium_executable() -> Optional[str]:
     if local_is_revision and not playwright_is_revision:
         logger.info(
             "Using Playwright Chromium (v%s) - has full version vs local revision %s",
-            playwright_version, local_version
+            playwright_version,
+            local_version,
         )
         return playwright_chromium
 
     if playwright_is_revision and not local_is_revision:
         logger.info(
             "Using local Chromium (v%s) - has full version vs Playwright revision %s",
-            local_version, playwright_version
+            local_version,
+            playwright_version,
         )
         return local_chromium
 
@@ -279,14 +292,16 @@ def _get_best_chromium_executable() -> Optional[str]:
         # Playwright version is newer
         logger.info(
             "Using Playwright Chromium (v%s) - newer than local (v%s)",
-            playwright_version, local_version
+            playwright_version,
+            local_version,
         )
         return playwright_chromium
     elif comparison > 0:
         # Local version is newer (unlikely but possible)
         logger.info(
             "Using local Chromium (v%s) - newer than Playwright (v%s)",
-            local_version, playwright_version
+            local_version,
+            playwright_version,
         )
         return local_chromium
     else:
@@ -302,12 +317,12 @@ async def log_browser_diagnostics():
     Only logs warnings/errors from main process to reduce noise in multi-worker setups.
     """
     # Only log warnings/errors from main process (worker 0) to reduce duplicate logs
-    worker_id = os.getenv('UVICORN_WORKER_ID')
-    is_main_process = worker_id is None or worker_id == '0'
+    worker_id = os.getenv("UVICORN_WORKER_ID")
+    is_main_process = worker_id is None or worker_id == "0"
 
     try:
         logger.debug("[Browser] Python executable: %s", sys.executable)
-        logger.debug("[Browser] Python version: %s", sys.version.split('\n', maxsplit=1)[0])
+        logger.debug("[Browser] Python version: %s", sys.version.split("\n", maxsplit=1)[0])
 
         # Check if Playwright module is available
         try:
@@ -374,15 +389,15 @@ class BrowserContextManager:
             # Check if browsers are actually installed
             try:
                 result = subprocess.run(
-                    [sys.executable, '-m', 'playwright', 'install', '--list'],
+                    [sys.executable, "-m", "playwright", "install", "--list"],
                     capture_output=True,
                     text=True,
                     timeout=10,
-                    check=False
+                    check=False,
                 )
                 if result.returncode == 0:
                     logger.error("[Browser] Playwright browsers check output:\n%s", result.stdout)
-                    if 'chromium' in result.stdout.lower():
+                    if "chromium" in result.stdout.lower():
                         logger.error("[Browser] Browsers ARE installed but Playwright can't access them!")
             except Exception as check_error:
                 logger.error("[Browser] Could not check browser installation: %s", check_error)
@@ -401,39 +416,40 @@ class BrowserContextManager:
         # Get best available Chromium (compares versions, prefers newer)
         chromium_executable = _get_best_chromium_executable()
         launch_options = {
-            'headless': True,
-            'args': [
-                '--no-sandbox',
-                '--disable-dev-shm-usage',
-                '--disable-gpu',
-                '--disable-web-security',
-                '--disable-features=VizDisplayCompositor',
-                '--memory-pressure-off',
-                '--max_old_space_size=4096',
-                '--disable-background-networking',
-                '--disable-background-timer-throttling',
-                '--disable-renderer-backgrounding',
-                '--disable-backgrounding-occluded-windows',
-                '--disable-ipc-flooding-protection'
-            ]
+            "headless": True,
+            "args": [
+                "--no-sandbox",
+                "--disable-dev-shm-usage",
+                "--disable-gpu",
+                "--disable-web-security",
+                "--disable-features=VizDisplayCompositor",
+                "--memory-pressure-off",
+                "--max_old_space_size=4096",
+                "--disable-background-networking",
+                "--disable-background-timer-throttling",
+                "--disable-renderer-backgrounding",
+                "--disable-backgrounding-occluded-windows",
+                "--disable-ipc-flooding-protection",
+            ],
         }
 
         if chromium_executable:
             logger.debug("Using Chromium executable: %s", chromium_executable)
-            launch_options['executable_path'] = chromium_executable
+            launch_options["executable_path"] = chromium_executable
 
         self.browser = await self.playwright.chromium.launch(**launch_options)
 
         # Create fresh context with high resolution for crisp PNG output
         self.context = await self.browser.new_context(
-            viewport={'width': 1200, 'height': 800},
+            viewport={"width": 1200, "height": 800},
             device_scale_factor=3,  # 3x for high-DPI displays (Retina quality)
-            user_agent='MindGraph/2.0 (PNG Generator)'
+            user_agent="MindGraph/2.0 (PNG Generator)",
         )
 
         logger.debug(
             "Fresh browser context created - type: %s, id: %s",
-            type(self.context), id(self.context)
+            type(self.context),
+            id(self.context),
         )
         return self.context
 
@@ -453,6 +469,7 @@ class BrowserContextManager:
 
         logger.debug("Fresh browser instance cleaned up")
 
+
 # Only log from main worker to avoid duplicate messages
-if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+if os.getenv("UVICORN_WORKER_ID") is None or os.getenv("UVICORN_WORKER_ID") == "0":
     logger.debug("Browser manager module loaded")

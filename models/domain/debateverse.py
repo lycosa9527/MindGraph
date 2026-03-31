@@ -15,12 +15,20 @@ Proprietary License
 from datetime import datetime
 import uuid
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, ForeignKey, Boolean, Index
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    Text,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    Index,
+)
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
 from models.domain.auth import Base
-
 
 
 def generate_uuid():
@@ -34,6 +42,7 @@ class DebateSession(Base):
 
     Stores debate metadata including topic, format, current stage, and status.
     """
+
     __tablename__ = "debate_sessions"
 
     id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
@@ -41,14 +50,14 @@ class DebateSession(Base):
 
     # Debate metadata
     topic = Column(String(500), nullable=False)
-    format = Column(String(50), default='us_parliamentary')  # Debate format
+    format = Column(String(50), default="us_parliamentary")  # Debate format
 
     # Stage management
-    current_stage = Column(String(50), default='setup', index=True)
+    current_stage = Column(String(50), default="setup", index=True)
     # Stages: setup, coin_toss, opening, rebuttal, cross_exam, closing, judgment, completed
 
     # Status
-    status = Column(String(50), default='pending', index=True)
+    status = Column(String(50), default="pending", index=True)
     # Status: pending, active, completed, cancelled
 
     # Coin toss result (if completed)
@@ -64,12 +73,17 @@ class DebateSession(Base):
     user = relationship("User", backref="debate_sessions")
     participants = relationship("DebateParticipant", back_populates="session", cascade="all, delete-orphan")
     messages = relationship("DebateMessage", back_populates="session", cascade="all, delete-orphan")
-    judgment = relationship("DebateJudgment", back_populates="session", uselist=False, cascade="all, delete-orphan")
+    judgment = relationship(
+        "DebateJudgment",
+        back_populates="session",
+        uselist=False,
+        cascade="all, delete-orphan",
+    )
 
     # Composite index for efficient queries
     __table_args__ = (
-        Index('ix_debate_sessions_user_updated', 'user_id', 'updated_at', 'status'),
-        Index('ix_debate_sessions_stage_status', 'current_stage', 'status'),
+        Index("ix_debate_sessions_user_updated", "user_id", "updated_at", "status"),
+        Index("ix_debate_sessions_stage_status", "current_stage", "status"),
     )
 
     def __repr__(self):
@@ -82,6 +96,7 @@ class DebateParticipant(Base):
 
     Links users or AI models to debate sessions with specific roles.
     """
+
     __tablename__ = "debate_participants"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -112,9 +127,7 @@ class DebateParticipant(Base):
     messages = relationship("DebateMessage", back_populates="participant", cascade="all, delete-orphan")
 
     # Composite index
-    __table_args__ = (
-        Index('ix_debate_participants_session_role', 'session_id', 'role'),
-    )
+    __table_args__ = (Index("ix_debate_participants_session_role", "session_id", "role"),)
 
     def __repr__(self):
         return f"<DebateParticipant {self.id}: {self.name} ({self.role})>"
@@ -126,6 +139,7 @@ class DebateMessage(Base):
 
     Stores all messages in a debate including content, thinking, stage, and audio.
     """
+
     __tablename__ = "debate_messages"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -162,8 +176,8 @@ class DebateMessage(Base):
 
     # Composite indexes
     __table_args__ = (
-        Index('ix_debate_messages_session_stage', 'session_id', 'stage', 'round_number'),
-        Index('ix_debate_messages_session_created', 'session_id', 'created_at'),
+        Index("ix_debate_messages_session_stage", "session_id", "stage", "round_number"),
+        Index("ix_debate_messages_session_created", "session_id", "created_at"),
     )
 
     def __repr__(self):
@@ -176,10 +190,17 @@ class DebateJudgment(Base):
 
     Stores judge's final evaluation, scores, and detailed analysis.
     """
+
     __tablename__ = "debate_judgments"
 
     id = Column(Integer, primary_key=True, index=True)
-    session_id = Column(String(36), ForeignKey("debate_sessions.id"), nullable=False, unique=True, index=True)
+    session_id = Column(
+        String(36),
+        ForeignKey("debate_sessions.id"),
+        nullable=False,
+        unique=True,
+        index=True,
+    )
     judge_participant_id = Column(Integer, ForeignKey("debate_participants.id"), nullable=False, index=True)
 
     # Verdict
@@ -207,7 +228,11 @@ class DebateJudgment(Base):
 
     # Relationships
     session = relationship("DebateSession", back_populates="judgment")
-    judge = relationship("DebateParticipant", foreign_keys=[judge_participant_id], backref="judgments_made")
+    judge = relationship(
+        "DebateParticipant",
+        foreign_keys=[judge_participant_id],
+        backref="judgments_made",
+    )
     best_debater = relationship("DebateParticipant", foreign_keys=[best_debater_id])
 
     def __repr__(self):

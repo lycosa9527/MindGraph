@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import asyncio
 import json
 import logging
@@ -57,16 +58,9 @@ def _avoid_section(avoid: Optional[List[str]], lang: str) -> str:
     lines = "\n".join(f"- {a}" for a in avoid[:50])
     if lang == "zh":
         return (
-            "以下备选问题已在界面上出现过，请再给出 5 条**不同**的新备选"
-            "（勿重复或仅微调同义重复）：\n"
-            + lines
-            + "\n"
+            "以下备选问题已在界面上出现过，请再给出 5 条**不同**的新备选（勿重复或仅微调同义重复）：\n" + lines + "\n"
         )
-    return (
-        "These alternatives were already shown; produce 5 **new** distinct options:\n"
-        + lines
-        + "\n"
-    )
+    return "These alternatives were already shown; produce 5 **new** distinct options:\n" + lines + "\n"
 
 
 def _avoid_section_root(avoid: Optional[List[str]], lang: str) -> str:
@@ -75,16 +69,9 @@ def _avoid_section_root(avoid: Optional[List[str]], lang: str) -> str:
     lines = "\n".join(f"- {a}" for a in avoid[:50])
     if lang == "zh":
         return (
-            "以下备选根概念已在界面上出现过，请再给出 5 条**不同**的新备选"
-            "（勿重复或仅微调同义重复）：\n"
-            + lines
-            + "\n"
+            "以下备选根概念已在界面上出现过，请再给出 5 条**不同**的新备选（勿重复或仅微调同义重复）：\n" + lines + "\n"
         )
-    return (
-        "These root alternatives were already shown; produce 5 **new** distinct options:\n"
-        + lines
-        + "\n"
-    )
+    return "These root alternatives were already shown; produce 5 **new** distinct options:\n" + lines + "\n"
 
 
 def _get_validate_prompts(lang: str) -> Tuple[str, str]:
@@ -419,12 +406,7 @@ async def focus_question_validate(
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
 
-    results = await asyncio.gather(
-        *[
-            _validate_one_model(m, question, lang, user_id, org_id)
-            for m in FOCUS_MODELS
-        ]
-    )
+    results = await asyncio.gather(*[_validate_one_model(m, question, lang, user_id, org_id) for m in FOCUS_MODELS])
     return JSONResponse({"results": list(results)})
 
 
@@ -451,11 +433,7 @@ async def focus_question_suggestions_stream(
 
     async def event_gen() -> AsyncIterator[str]:
         tasks = {
-            asyncio.create_task(
-                _suggestions_for_model_task(
-                    m, question, lang, avoid, user_id, org_id
-                )
-            ): m
+            asyncio.create_task(_suggestions_for_model_task(m, question, lang, avoid, user_id, org_id)): m
             for m in FOCUS_MODELS
         }
         try:
@@ -523,11 +501,7 @@ async def root_concept_suggestions_stream(
 
     async def event_gen() -> AsyncIterator[str]:
         tasks = {
-            asyncio.create_task(
-                _root_suggestions_for_model_task(
-                    m, question, lang, avoid, user_id, org_id
-                )
-            ): m
+            asyncio.create_task(_root_suggestions_for_model_task(m, question, lang, avoid, user_id, org_id)): m
             for m in FOCUS_MODELS
         }
         try:

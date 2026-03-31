@@ -42,15 +42,12 @@ def create_enum_types(pg_engine: Any) -> None:
             for column in table.columns:
                 # Check if column type is an Enum
                 col_type = column.type
-                if hasattr(col_type, 'name') and hasattr(col_type, 'enums'):
+                if hasattr(col_type, "name") and hasattr(col_type, "enums"):
                     enum_name = col_type.name
                     enum_values = col_type.enums
                     if enum_name and enum_values:
                         # Convert enum values to strings (they might be Enum objects)
-                        enum_values_str = [
-                            str(val) if not isinstance(val, str) else val
-                            for val in enum_values
-                        ]
+                        enum_values_str = [str(val) if not isinstance(val, str) else val for val in enum_values]
                         enum_types[enum_name] = enum_values_str
 
         if not enum_types:
@@ -59,7 +56,8 @@ def create_enum_types(pg_engine: Any) -> None:
 
         logger.info(
             "[Migration] Creating %d ENUM type(s): %s",
-            len(enum_types), ', '.join(enum_types.keys())
+            len(enum_types),
+            ", ".join(enum_types.keys()),
         )
 
         with pg_engine.connect() as conn:
@@ -84,10 +82,7 @@ def create_enum_types(pg_engine: Any) -> None:
                     for val in enum_values:
                         escaped_val = val.replace("'", "''")
                         escaped_values.append(f"'{escaped_val}'")
-                    create_sql = (
-                        f'CREATE TYPE "{enum_name}" AS ENUM '
-                        f'({", ".join(escaped_values)})'
-                    )
+                    create_sql = f'CREATE TYPE "{enum_name}" AS ENUM ({", ".join(escaped_values)})'
                     conn.execute(text(create_sql))
                     conn.commit()
                     logger.info("[Migration] Created ENUM type: %s", enum_name)
@@ -96,12 +91,13 @@ def create_enum_types(pg_engine: Any) -> None:
                     if "already exists" in error_msg or "duplicate" in error_msg:
                         logger.debug(
                             "[Migration] ENUM type %s already exists (race condition)",
-                            enum_name
+                            enum_name,
                         )
                     else:
                         logger.warning(
                             "[Migration] Failed to create ENUM type %s: %s",
-                            enum_name, enum_error
+                            enum_name,
+                            enum_error,
                         )
     except Exception as e:
         logger.warning("[Migration] Error creating ENUM types: %s", e)
@@ -111,7 +107,7 @@ def create_table_without_indexes(
     pg_engine: Any,
     table_name: str,
     table: Any,
-    existing_tables: Optional[Set[str]] = None
+    existing_tables: Optional[Set[str]] = None,
 ) -> bool:
     """
     Create a PostgreSQL table without indexes to avoid index creation failures.
@@ -140,7 +136,8 @@ def create_table_without_indexes(
             if parent_table not in existing_tables and parent_table != table_name:
                 logger.debug(
                     "[Migration] Cannot create table %s: parent table %s doesn't exist",
-                    table_name, parent_table
+                    table_name,
+                    parent_table,
                 )
                 return False
 
@@ -155,16 +152,16 @@ def create_table_without_indexes(
 
             # Add NOT NULL if needed
             if not column.nullable and not column.primary_key:
-                col_def += ' NOT NULL'
+                col_def += " NOT NULL"
 
             # Add DEFAULT if needed
             if column.default is not None:
-                if hasattr(column.default, 'arg'):
+                if hasattr(column.default, "arg"):
                     default_val = column.default.arg
                     if isinstance(default_val, (int, float)):
-                        col_def += f' DEFAULT {default_val}'
+                        col_def += f" DEFAULT {default_val}"
                     elif isinstance(default_val, bool):
-                        col_def += f' DEFAULT {str(default_val).upper()}'
+                        col_def += f" DEFAULT {str(default_val).upper()}"
                     elif isinstance(default_val, str):
                         # Escape single quotes in default string
                         escaped = default_val.replace("'", "''")
@@ -186,13 +183,12 @@ def create_table_without_indexes(
             child_col = fk.parent.name
 
             # Get ON DELETE action
-            on_delete = 'CASCADE'  # Default
+            on_delete = "CASCADE"  # Default
             if fk.ondelete:
                 on_delete = fk.ondelete.upper()
 
             constraints.append(
-                f'FOREIGN KEY ("{child_col}") REFERENCES "{parent_table}" '
-                f'("{parent_col}") ON DELETE {on_delete}'
+                f'FOREIGN KEY ("{child_col}") REFERENCES "{parent_table}" ("{parent_col}") ON DELETE {on_delete}'
             )
 
         # Add constraints from table.constraints
@@ -204,43 +200,33 @@ def create_table_without_indexes(
             constraint_type = type(constraint).__name__
 
             # Skip constraints already handled
-            if constraint_type in ('PrimaryKeyConstraint', 'ForeignKeyConstraint'):
+            if constraint_type in ("PrimaryKeyConstraint", "ForeignKeyConstraint"):
                 continue
 
-            if constraint_type == 'UniqueConstraint':
+            if constraint_type == "UniqueConstraint":
                 # Handle UniqueConstraint
-                if hasattr(constraint, 'columns'):
+                if hasattr(constraint, "columns"):
                     unique_cols = [f'"{col.name}"' for col in constraint.columns]
                     if unique_cols:
-                        constraint_name = getattr(constraint, 'name', None)
+                        constraint_name = getattr(constraint, "name", None)
                         if constraint_name:
-                            constraints.append(
-                                f'CONSTRAINT "{constraint_name}" UNIQUE '
-                                f'({", ".join(unique_cols)})'
-                            )
+                            constraints.append(f'CONSTRAINT "{constraint_name}" UNIQUE ({", ".join(unique_cols)})')
                         else:
-                            constraints.append(
-                                f'UNIQUE ({", ".join(unique_cols)})'
-                            )
+                            constraints.append(f"UNIQUE ({', '.join(unique_cols)})")
 
-            elif constraint_type == 'CheckConstraint':
+            elif constraint_type == "CheckConstraint":
                 # Handle CheckConstraint
-                if hasattr(constraint, 'sqltext'):
+                if hasattr(constraint, "sqltext"):
                     check_expr = str(constraint.sqltext)
-                    constraint_name = getattr(constraint, 'name', None)
+                    constraint_name = getattr(constraint, "name", None)
                     if constraint_name:
-                        constraints.append(
-                            f'CONSTRAINT "{constraint_name}" CHECK ({check_expr})'
-                        )
+                        constraints.append(f'CONSTRAINT "{constraint_name}" CHECK ({check_expr})')
                     else:
-                        constraints.append(f'CHECK ({check_expr})')
+                        constraints.append(f"CHECK ({check_expr})")
 
         # Combine all parts
         all_parts = column_defs + constraints
-        create_sql = (
-            f'CREATE TABLE IF NOT EXISTS "{table_name}" '
-            f'({", ".join(all_parts)})'
-        )
+        create_sql = f'CREATE TABLE IF NOT EXISTS "{table_name}" ({", ".join(all_parts)})'
 
         # Execute CREATE TABLE
         with pg_engine.connect() as conn:
@@ -255,7 +241,7 @@ def create_table_without_indexes(
         else:
             logger.error(
                 "[Migration] Table %s creation reported success but table doesn't exist",
-                table_name
+                table_name,
             )
             return False
 
@@ -281,7 +267,7 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
     """
     try:
         inspector = inspect(pg_engine)
-        existing_indexes = {idx['name'] for idx in inspector.get_indexes(table_name)}
+        existing_indexes = {idx["name"] for idx in inspector.get_indexes(table_name)}
 
         with pg_engine.connect() as conn:
             # Create indexes from table.indexes
@@ -289,82 +275,77 @@ def create_table_indexes(pg_engine: Any, table_name: str, table: Any) -> None:
                 if index.name in existing_indexes:
                     logger.debug(
                         "[Migration] Index %s already exists on table %s",
-                        index.name, table_name
+                        index.name,
+                        table_name,
                     )
                     continue
 
                 # Build index columns
                 index_cols = [f'"{col.name}"' for col in index.columns]
-                index_sql = (
-                    f'CREATE INDEX IF NOT EXISTS "{index.name}" '
-                    f'ON "{table_name}" ({", ".join(index_cols)})'
-                )
+                index_sql = f'CREATE INDEX IF NOT EXISTS "{index.name}" ON "{table_name}" ({", ".join(index_cols)})'
 
                 try:
                     conn.execute(text(index_sql))
                     conn.commit()
                     logger.debug(
                         "[Migration] Created index %s on table %s",
-                        index.name, table_name
+                        index.name,
+                        table_name,
                     )
                 except Exception as idx_error:
                     error_msg = str(idx_error).lower()
                     if "already exists" in error_msg or "duplicate" in error_msg:
                         logger.debug(
                             "[Migration] Index %s already exists (race condition)",
-                            index.name
+                            index.name,
                         )
                     else:
                         logger.warning(
                             "[Migration] Failed to create index %s on table %s: %s",
-                            index.name, table_name, idx_error
+                            index.name,
+                            table_name,
+                            idx_error,
                         )
 
             # Create indexes from column.index=True
             for column in table.columns:
-                if getattr(column, 'index', False) and not isinstance(column.index, bool):
+                if getattr(column, "index", False) and not isinstance(column.index, bool):
                     # Index object already handled above
                     continue
-                elif getattr(column, 'index', False):
+                elif getattr(column, "index", False):
                     # Implicit index from index=True
                     index_name = f"ix_{table_name}_{column.name}"
                     if index_name in existing_indexes:
                         continue
 
-                    index_sql = (
-                        f'CREATE INDEX IF NOT EXISTS "{index_name}" '
-                        f'ON "{table_name}" ("{column.name}")'
-                    )
+                    index_sql = f'CREATE INDEX IF NOT EXISTS "{index_name}" ON "{table_name}" ("{column.name}")'
                     try:
                         conn.execute(text(index_sql))
                         conn.commit()
                         logger.debug(
                             "[Migration] Created implicit index %s on table %s",
-                            index_name, table_name
+                            index_name,
+                            table_name,
                         )
                     except Exception as idx_error:
                         error_msg = str(idx_error).lower()
                         if "already exists" in error_msg or "duplicate" in error_msg:
                             logger.debug(
                                 "[Migration] Index %s already exists (race condition)",
-                                index_name
+                                index_name,
                             )
                         else:
                             logger.warning(
                                 "[Migration] Failed to create implicit index %s: %s",
-                                index_name, idx_error
+                                index_name,
+                                idx_error,
                             )
     except Exception as e:
-        logger.warning(
-            "[Migration] Error creating indexes for table %s: %s",
-            table_name, e
-        )
+        logger.warning("[Migration] Error creating indexes for table %s: %s", table_name, e)
 
 
 def ensure_missing_tables_created(
-    pg_engine: Any,
-    missing_tables: Set[str],
-    expected_tables: Set[str]
+    pg_engine: Any, missing_tables: Set[str], expected_tables: Set[str]
 ) -> Tuple[bool, Optional[str]]:
     """
     Create missing PostgreSQL tables with retries for dependency resolution.
@@ -384,7 +365,7 @@ def ensure_missing_tables_created(
         logger.warning(
             "[Migration] Found %d table(s) not in migration order: %s",
             len(tables_not_in_order),
-            ', '.join(sorted(tables_not_in_order))
+            ", ".join(sorted(tables_not_in_order)),
         )
         tables_to_create.extend(sorted(tables_not_in_order))
 
@@ -395,9 +376,7 @@ def ensure_missing_tables_created(
     for table_name in tables_to_create:
         try:
             table = Base.metadata.tables[table_name]
-            if create_table_without_indexes(
-                pg_engine, table_name, table, existing_tables_set
-            ):
+            if create_table_without_indexes(pg_engine, table_name, table, existing_tables_set):
                 create_table_indexes(pg_engine, table_name, table)
                 inspector = inspect(pg_engine)
                 if table_name in inspector.get_table_names():
@@ -406,42 +385,47 @@ def ensure_missing_tables_created(
                 else:
                     logger.error(
                         "[Migration] ✗ Table creation reported success but table %s doesn't exist",
-                        table_name
+                        table_name,
                     )
                     tables_failed.append(table_name)
             else:
                 tables_failed.append(table_name)
         except (OperationalError, ProgrammingError) as table_error:
             error_msg = str(table_error).lower()
-            if ("already exists" in error_msg or
-                    "duplicate" in error_msg or
-                    ("relation" in error_msg and "exists" in error_msg)):
+            if (
+                "already exists" in error_msg
+                or "duplicate" in error_msg
+                or ("relation" in error_msg and "exists" in error_msg)
+            ):
                 inspector = inspect(pg_engine)
                 if table_name in inspector.get_table_names():
                     existing_tables_set = set(inspector.get_table_names())
                 else:
                     logger.warning(
-                        "[Migration] Table %s creation error (likely index): %s. "
-                        "Table doesn't exist, will retry.",
-                        table_name, table_error
+                        "[Migration] Table %s creation error (likely index): %s. Table doesn't exist, will retry.",
+                        table_name,
+                        table_error,
                     )
                     tables_failed.append(table_name)
             elif "undefinedtable" in error_msg or "does not exist" in error_msg:
                 logger.debug(
                     "[Migration] Table %s depends on missing parent table: %s",
-                    table_name, table_error
+                    table_name,
+                    table_error,
                 )
                 tables_failed.append(table_name)
             else:
                 logger.error(
                     "[Migration] ✗ Failed to create table %s: %s",
-                    table_name, table_error
+                    table_name,
+                    table_error,
                 )
                 tables_failed.append(table_name)
         except Exception as table_error:
             logger.error(
                 "[Migration] ✗ Unexpected error creating table %s: %s",
-                table_name, table_error
+                table_name,
+                table_error,
             )
             tables_failed.append(table_name)
 
@@ -452,8 +436,10 @@ def ensure_missing_tables_created(
 
         logger.info(
             "[Migration] Retry pass %d/%d: Retrying %d failed table(s): %s",
-            retry_pass + 1, max_retries, len(tables_failed),
-            ', '.join(tables_failed)
+            retry_pass + 1,
+            max_retries,
+            len(tables_failed),
+            ", ".join(tables_failed),
         )
 
         inspector = inspect(pg_engine)
@@ -464,7 +450,7 @@ def ensure_missing_tables_created(
             if table_name in existing_tables:
                 logger.debug(
                     "[Migration] Table %s now exists (created by another process)",
-                    table_name
+                    table_name,
                 )
                 continue
 
@@ -479,70 +465,80 @@ def ensure_missing_tables_created(
                     except AttributeError as e:
                         logger.error(
                             "[Migration] Error getting parent table for FK %s in table %s: %s",
-                            fk.parent.name if hasattr(fk, 'parent') else 'unknown',
-                            table_name, e
+                            fk.parent.name if hasattr(fk, "parent") else "unknown",
+                            table_name,
+                            e,
                         )
                         continue
 
                 if parent_tables_missing:
                     logger.warning(
                         "[Migration] Table %s still waiting for parent tables: %s (existing: %s)",
-                        table_name, ', '.join(parent_tables_missing),
-                        ', '.join(sorted(existing_tables))[:200]
+                        table_name,
+                        ", ".join(parent_tables_missing),
+                        ", ".join(sorted(existing_tables))[:200],
                     )
                     retry_failed.append(table_name)
                     continue
 
-                if create_table_without_indexes(
-                    pg_engine, table_name, table, existing_tables
-                ):
+                if create_table_without_indexes(pg_engine, table_name, table, existing_tables):
                     create_table_indexes(pg_engine, table_name, table)
                     inspector = inspect(pg_engine)
                     if table_name in inspector.get_table_names():
                         logger.info(
                             "[Migration] ✓ Created table (retry %d): %s",
-                            retry_pass + 1, table_name
+                            retry_pass + 1,
+                            table_name,
                         )
                         inspector = inspect(pg_engine)
                         existing_tables = set(inspector.get_table_names())
                     else:
                         logger.error(
                             "[Migration] ✗ Table creation reported success but table %s still missing",
-                            table_name
+                            table_name,
                         )
                         retry_failed.append(table_name)
                 else:
                     retry_failed.append(table_name)
             except (OperationalError, ProgrammingError) as table_error:
                 error_msg = str(table_error).lower()
-                if ("already exists" in error_msg or
-                        "duplicate" in error_msg or
-                        ("relation" in error_msg and "exists" in error_msg)):
+                if (
+                    "already exists" in error_msg
+                    or "duplicate" in error_msg
+                    or ("relation" in error_msg and "exists" in error_msg)
+                ):
                     inspector = inspect(pg_engine)
                     if table_name in inspector.get_table_names():
                         existing_tables = set(inspector.get_table_names())
                     else:
                         logger.warning(
                             "[Migration] Table %s creation error (likely index): %s. Will retry.",
-                            table_name, table_error
+                            table_name,
+                            table_error,
                         )
                         retry_failed.append(table_name)
                 elif "undefinedtable" in error_msg or "does not exist" in error_msg:
                     logger.debug(
                         "[Migration] Table %s still depends on missing parent (retry %d): %s",
-                        retry_pass + 1, table_name, table_error
+                        retry_pass + 1,
+                        table_name,
+                        table_error,
                     )
                     retry_failed.append(table_name)
                 else:
                     logger.error(
                         "[Migration] ✗ Failed to create table %s (retry %d): %s",
-                        retry_pass + 1, table_name, table_error
+                        retry_pass + 1,
+                        table_name,
+                        table_error,
                     )
                     retry_failed.append(table_name)
             except Exception as table_error:
                 logger.error(
                     "[Migration] ✗ Unexpected error creating table %s (retry %d): %s",
-                    retry_pass + 1, table_name, table_error
+                    retry_pass + 1,
+                    table_name,
+                    table_error,
                 )
                 retry_failed.append(table_name)
 
@@ -556,14 +552,14 @@ def ensure_missing_tables_created(
         logger.error(
             "[Migration] CRITICAL: %d table(s) still missing after creation attempt: %s",
             len(still_missing),
-            ', '.join(sorted(still_missing))
+            ", ".join(sorted(still_missing)),
         )
-        return False, f"Failed to create required tables: {', '.join(sorted(still_missing))}"
+        return (
+            False,
+            f"Failed to create required tables: {', '.join(sorted(still_missing))}",
+        )
 
-    logger.info(
-        "[Migration] ✓ All %d required tables exist in PostgreSQL",
-        len(expected_tables)
-    )
+    logger.info("[Migration] ✓ All %d required tables exist in PostgreSQL", len(expected_tables))
     return True, None
 
 

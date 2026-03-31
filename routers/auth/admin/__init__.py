@@ -39,5 +39,4 @@ admin_router.include_router(bayi.router)
 admin_router.include_router(teacher_usage.router)
 admin_router.include_router(feature_org_access.router)
 
-__all__ = ['admin_router']
-
+__all__ = ["admin_router"]

@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import json
 import logging
 import traceback
@@ -48,8 +49,8 @@ def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
 def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     """Deterministic two-stage generation for concept maps (no fallback parsing errors)."""
     # Stage 1: keys
-    key_prompt = get_prompt('concept_map_keys', language, 'generation')
-    raw_keys = _invoke_llm_prompt(key_prompt, {'user_prompt': user_prompt})
+    key_prompt = get_prompt("concept_map_keys", language, "generation")
+    raw_keys = _invoke_llm_prompt(key_prompt, {"user_prompt": user_prompt})
 
     # Use improved parsing for better error handling
     try:
@@ -59,17 +60,17 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     except Exception as e:  # pylint: disable=broad-except
         logger.warning(
             "ConceptMapAgent parsing failed for keys, falling back to strict parsing: %s",
-            e
+            e,
         )
         # Fallback to strict parsing if ConceptMapAgent is not available
         keys_obj = _parse_strict_json(raw_keys)
         logger.debug("Used strict parsing fallback for keys generation")
-    topic = (keys_obj.get('topic') or user_prompt).strip()
-    keys_raw = keys_obj.get('keys') or []
+    topic = (keys_obj.get("topic") or user_prompt).strip()
+    keys_raw = keys_obj.get("keys") or []
     keys = []
     seen_keys = set()
     for k in keys_raw:
-        name = k.get('name') if isinstance(k, dict) else k
+        name = k.get("name") if isinstance(k, dict) else k
         if isinstance(name, str):
             name = name.strip()
             if name and name.lower() not in seen_keys:
@@ -84,7 +85,7 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
         pass
 
     # Stage 2: parts for each key
-    parts_prompt = get_prompt('concept_map_parts', language, 'generation')
+    parts_prompt = get_prompt("concept_map_parts", language, "generation")
 
     # Budget total concepts <= 30
     max_concepts_total = 30
@@ -93,7 +94,7 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
 
     def fetch_parts(k: str) -> tuple:
         try:
-            raw = _invoke_llm_prompt(parts_prompt, {'topic': topic, 'key': k})
+            raw = _invoke_llm_prompt(parts_prompt, {"topic": topic, "key": k})
 
             # Use improved parsing for better error handling
             try:
@@ -102,21 +103,21 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
                 logger.debug("Used ConceptMapAgent improved parsing for parts of key '%s'", k)
             except Exception:  # pylint: disable=broad-except
                 logger.debug(
-                    "ConceptMapAgent parsing failed for parts of key '%s', "
-                    "using strict parsing fallback", k
+                    "ConceptMapAgent parsing failed for parts of key '%s', using strict parsing fallback",
+                    k,
                 )
                 # Fallback to strict parsing if ConceptMapAgent is not available
                 obj = _parse_strict_json(raw)
-            plist = obj.get('parts') or []
+            plist = obj.get("parts") or []
             parts_collected = []
             seen = set()
             for p in plist:
-                name = p.get('name') if isinstance(p, dict) else p
-                label = p.get('label') if isinstance(p, dict) else None
+                name = p.get("name") if isinstance(p, dict) else p
+                label = p.get("label") if isinstance(p, dict) else None
                 if isinstance(name, str):
                     name = name.strip()
                     if name and name.lower() not in seen:
-                        parts_collected.append({'name': name, 'label': (label or '').strip()[:60]})
+                        parts_collected.append({"name": name, "label": (label or "").strip()[:60]})
                         seen.add(name.lower())
                 if len(parts_collected) >= per_key_cap:
                     break
@@ -136,24 +137,30 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     # Merge into standard concept map spec
     concepts = []
     seen_concepts = set()
-    for name in keys + [p.get('name') for arr in parts_results.values() for p in arr]:
+    for name in keys + [p.get("name") for arr in parts_results.values() for p in arr]:
         low = name.lower()
         if low not in seen_concepts and len(concepts) < max_concepts_total:
             concepts.append(name)
             seen_concepts.add(low)
     relationships = []
     # topic -> key relationships (use label if present)
-    for k in (keys_obj.get('keys') or []):
-        name = k.get('name') if isinstance(k, dict) else None
-        label = k.get('label') if isinstance(k, dict) else 'related to'
+    for k in keys_obj.get("keys") or []:
+        name = k.get("name") if isinstance(k, dict) else None
+        label = k.get("label") if isinstance(k, dict) else "related to"
         if isinstance(name, str) and name.strip():
             if name in concepts:
-                relationships.append({'from': topic, 'to': name, 'label': label or 'related to'})
+                relationships.append({"from": topic, "to": name, "label": label or "related to"})
     # key -> part relationships
     for key, plist in parts_results.items():
         for p in plist:
-            if p.get('name') in concepts:
-                relationships.append({'from': key, 'to': p.get('name'), 'label': (p.get('label') or 'includes')})
+            if p.get("name") in concepts:
+                relationships.append(
+                    {
+                        "from": key,
+                        "to": p.get("name"),
+                        "label": (p.get("label") or "includes"),
+                    }
+                )
 
     # Final trim to satisfy validator (<= 30 concepts)
     if len(concepts) > max_concepts_total:
@@ -161,31 +168,27 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     allowed = set(concepts)
     allowed_with_topic = allowed.union({topic})
     relationships = [
-        r for r in relationships
-        if r.get('from') in allowed_with_topic and r.get('to') in allowed_with_topic
+        r for r in relationships if r.get("from") in allowed_with_topic and r.get("to") in allowed_with_topic
     ]
     # Prune keys and parts to allowed concepts
     keys = [k for k in keys if k in allowed]
-    parts_results = {
-        k: [p for p in (parts_results.get(k, []) or []) if p.get('name') in allowed]
-        for k in keys
-    }
+    parts_results = {k: [p for p in (parts_results.get(k, []) or []) if p.get("name") in allowed] for k in keys}
 
     # Include keys and parts for sector layout
     spec = {
-        'topic': topic,
-        'concepts': concepts,
-        'relationships': relationships,
-        'keys': [{'name': k} for k in keys],
-        'key_parts': {k: parts_results.get(k, []) for k in keys}
+        "topic": topic,
+        "concepts": concepts,
+        "relationships": relationships,
+        "keys": [{"name": k} for k in keys],
+        "key_parts": {k: parts_results.get(k, []) for k in keys},
     }
     return spec
 
 
 def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     """One-shot concept map generation with keys, parts, and relationships together."""
-    unified_prompt = get_prompt('concept_map_unified', language, 'generation')
-    raw = _invoke_llm_prompt(unified_prompt, {'user_prompt': user_prompt})
+    unified_prompt = get_prompt("concept_map_unified", language, "generation")
+    raw = _invoke_llm_prompt(unified_prompt, {"user_prompt": user_prompt})
 
     # Use the improved ConceptMapAgent parsing for better error handling
     try:
@@ -193,22 +196,20 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
         obj = agent.parse_json_response(raw)
         logger.debug("Used ConceptMapAgent improved parsing for unified generation")
     except Exception as e:  # pylint: disable=broad-except
-        logger.warning(
-            "ConceptMapAgent parsing failed, falling back to strict parsing: %s", e
-        )
+        logger.warning("ConceptMapAgent parsing failed, falling back to strict parsing: %s", e)
         # Fallback to strict parsing if ConceptMapAgent is not available
         try:
             obj = _parse_strict_json(raw)
             logger.debug("Used strict parsing fallback for unified generation")
         except Exception as e2:  # pylint: disable=broad-except
             logger.error("All parsing methods failed for unified generation: %s", e2)
-            return {'error': f'Concept map parsing failed: {e2}'}
+            return {"error": f"Concept map parsing failed: {e2}"}
     # Extract - prioritize concepts from ConceptMapAgent parsing
-    topic = (obj.get('topic') or user_prompt).strip()
-    concepts_raw = obj.get('concepts') or []
-    keys_raw = obj.get('keys') or []
-    key_parts_raw = obj.get('key_parts') or {}
-    rels_raw = obj.get('relationships') or []
+    topic = (obj.get("topic") or user_prompt).strip()
+    concepts_raw = obj.get("concepts") or []
+    keys_raw = obj.get("keys") or []
+    key_parts_raw = obj.get("key_parts") or {}
+    rels_raw = obj.get("relationships") or []
 
     # First, use concepts if they were successfully extracted
     if concepts_raw and isinstance(concepts_raw, list):
@@ -229,7 +230,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
         keys = []
         seen_k = set()
         for k in keys_raw:
-            name = k.get('name') if isinstance(k, dict) else k
+            name = k.get("name") if isinstance(k, dict) else k
             if isinstance(name, str):
                 name = name.strip()
                 if name and name.lower() not in seen_k:
@@ -243,7 +244,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
             out = []
             seen_local = set()
             for p in plist:
-                name = p.get('name') if isinstance(k, dict) else p
+                name = p.get("name") if isinstance(k, dict) else p
                 if isinstance(name, str):
                     name = name.strip()
                     low = name.lower()
@@ -280,28 +281,26 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
         if key in pair_seen:
             return
         pair_seen.add(key)
-        relationships.append({'from': frm, 'to': to, 'label': (label or 'related to')[:60]})
+        relationships.append({"from": frm, "to": to, "label": (label or "related to")[:60]})
+
     # Add mandatory topic->key and key->part
     for k in keys_raw:
-        name = k.get('name') if isinstance(k, dict) else None
-        label = (k.get('label') if isinstance(k, dict) else 'related to')
+        name = k.get("name") if isinstance(k, dict) else None
+        label = k.get("label") if isinstance(k, dict) else "related to"
         if isinstance(name, str) and name.strip() and name in allowed:
             add_rel(topic, name, label)
     for key, plist in parts_results.items():
         for p in plist:
-            add_rel(key, p, 'includes')
+            add_rel(key, p, "includes")
     # Add extra from rels_raw (deduped, within allowed)
     for r in rels_raw:
-        add_rel(r.get('from'), r.get('to'), r.get('label'))
+        add_rel(r.get("from"), r.get("to"), r.get("label"))
     return {
-        'topic': topic,
-        'concepts': list(allowed),
-        'relationships': relationships,
-        'keys': [{'name': k} for k in keys if k in allowed],
-        'key_parts': {
-            k: [{'name': p} for p in parts_results.get(k, []) if p in allowed]
-            for k in keys if k in allowed
-        }
+        "topic": topic,
+        "concepts": list(allowed),
+        "relationships": relationships,
+        "keys": [{"name": k} for k in keys if k in allowed],
+        "key_parts": {k: [{"name": p} for p in parts_results.get(k, []) if p in allowed] for k in keys if k in allowed},
     }
 
 
@@ -317,7 +316,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
         central_topic = extract_central_topic_llm(user_prompt, language)
 
         if isinstance(central_topic, list):
-            central_topic = ' '.join(central_topic)
+            central_topic = " ".join(central_topic)
 
         logger.debug("Using central topic for 30-concept generation: %s", central_topic)
 
@@ -329,13 +328,13 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
         else:
             # Fallback if prompt not found
             logger.warning("Concept 30 generation prompt not found in centralized system, using fallback")
-            if language == 'zh':
+            if language == "zh":
                 concept_prompt = f"为主题{central_topic}生成30个相关概念，输出JSON格式"
             else:
                 concept_prompt = f"Generate 30 related concepts for topic {central_topic}, output JSON format"
 
         # Get concepts from LLM
-        concepts_response = _invoke_llm_prompt(concept_prompt, {'central_topic': central_topic})
+        concepts_response = _invoke_llm_prompt(concept_prompt, {"central_topic": central_topic})
 
         if not concepts_response:
             raise ValueError("No response from LLM for concept generation")
@@ -355,7 +354,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
 
         # Handle both dict and list formats
         if isinstance(concepts_data, dict):
-            concepts = concepts_data.get('concepts', [])
+            concepts = concepts_data.get("concepts", [])
         elif isinstance(concepts_data, list):
             concepts = concepts_data
         else:
@@ -377,12 +376,12 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
             raise ValueError("No concepts generated")
 
         # Generate relationships using systematic approach
-        if language == 'zh':
+        if language == "zh":
             rel_prompt = f"""
 我们正在生成此概念图中概念之间的关系。主题是：{central_topic}
 
 概念列表：
-{', '.join(concepts)}
+{", ".join(concepts)}
 
 关系生成策略：
 1. 主题-概念关系：为每个概念与主题创建有意义的关系
@@ -412,7 +411,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
 We are generating relationships between concepts in this concept map. The topic is about: {central_topic}
 
 Concepts:
-{', '.join(concepts)}
+{", ".join(concepts)}
 
 Relationship Strategy:
 1. Topic-Concept relationships: Create meaningful connections between each concept and the topic
@@ -439,7 +438,7 @@ Requirements:
 """
 
         # Get relationships from LLM
-        relationships_response = _invoke_llm_prompt(rel_prompt, {'central_topic': central_topic, 'concepts': concepts})
+        relationships_response = _invoke_llm_prompt(rel_prompt, {"central_topic": central_topic, "concepts": concepts})
 
         if not relationships_response:
             raise ValueError("No response from LLM for relationship generation")
@@ -453,35 +452,34 @@ Requirements:
                 rel_data = agent.parse_json_response(relationships_response)
                 logger.debug("Used ConceptMapAgent improved parsing for relationships")
             except Exception as e:  # pylint: disable=broad-except
-                logger.warning(
-                    "ConceptMapAgent parsing failed for relationships: %s", e
-                )
+                logger.warning("ConceptMapAgent parsing failed for relationships: %s", e)
                 rel_data = _parse_strict_json(relationships_response)
                 logger.debug("Used strict parsing for relationships")
 
-        relationships = rel_data.get('relationships', [])
+        relationships = rel_data.get("relationships", [])
 
         if not relationships:
             raise ValueError("No relationships generated")
 
         # Build the final specification
         spec = {
-            'topic': central_topic,
-            'concepts': concepts,  # Exactly 30 concepts
-            'relationships': relationships,
-            '_method': 'enhanced_30',  # Mark for identification
-            '_concept_count': len(concepts),
-            '_stage_info': {
-                'original_prompt': user_prompt,
-                'extracted_topic': central_topic,
-                'concept_count': len(concepts),
-                'relationship_count': len(relationships)
-            }
+            "topic": central_topic,
+            "concepts": concepts,  # Exactly 30 concepts
+            "relationships": relationships,
+            "_method": "enhanced_30",  # Mark for identification
+            "_concept_count": len(concepts),
+            "_stage_info": {
+                "original_prompt": user_prompt,
+                "extracted_topic": central_topic,
+                "concept_count": len(concepts),
+                "relationship_count": len(relationships),
+            },
         }
 
         logger.debug(
-            "Enhanced 30-concept generation completed successfully with %d concepts "
-            "and %d relationships", len(concepts), len(relationships)
+            "Enhanced 30-concept generation completed successfully with %d concepts and %d relationships",
+            len(concepts),
+            len(relationships),
         )
         return spec
 
@@ -493,7 +491,7 @@ Requirements:
         return generate_concept_map_unified(user_prompt, language)
 
 
-def generate_concept_map_robust(user_prompt: str, language: str, method: str = 'auto') -> dict:
+def generate_concept_map_robust(user_prompt: str, language: str, method: str = "auto") -> dict:
     """Robust concept map generation with multiple approaches.
 
     Args:
@@ -505,7 +503,7 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
         dict: Concept map specification
     """
     # NEW: Try the enhanced concept-first method (RECOMMENDED)
-    if method in ['auto', 'three_stage']:
+    if method in ["auto", "three_stage"]:
         try:
             # Use existing topic extraction + enhanced 30-concept generation
             return generate_concept_map_enhanced_30(user_prompt, language)
@@ -513,26 +511,20 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = '
             logger.warning("Enhanced 30-concept generation failed: %s", e)
             # Try with fewer concepts as fallback
             try:
-                logger.debug(
-                    "Attempting fallback with simplified two-stage generation..."
-                )
+                logger.debug("Attempting fallback with simplified two-stage generation...")
                 result = generate_concept_map_two_stage(user_prompt, language)
-                if isinstance(result, dict) and result.get('topic'):
+                if isinstance(result, dict) and result.get("topic"):
                     return result
                 logger.warning(
                     "Simplified two-stage generation failed: %s",
-                    result.get('error', 'unknown')
+                    result.get("error", "unknown"),
                 )
-                raise ValueError(
-                    "All concept map generation methods failed"
-                ) from e
+                raise ValueError("All concept map generation methods failed") from e
             except Exception as fallback_error:  # pylint: disable=broad-except
-                logger.warning(
-                    "Simplified two-stage fallback also failed: %s", fallback_error
-                )
+                logger.warning("Simplified two-stage fallback also failed: %s", fallback_error)
 
     # If method is specified, try that first
-    if method == 'network_first':
+    if method == "network_first":
         logger.warning("Network-first method is not available, falling back to enhanced 30-concept generation")
 
     # With increased token limits, the enhanced method should work

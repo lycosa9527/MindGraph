@@ -9,9 +9,18 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    UniqueConstraint,
+)
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -26,6 +35,7 @@ class Organization(Base):
     Represents schools or educational institutions.
     Each organization has a unique code and invitation code for registration.
     """
+
     __tablename__ = "organizations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -55,15 +65,14 @@ class User(Base):
     - 'manager': Organization manager, can access org-scoped admin dashboard
     - 'admin': Full admin access to all data
     """
+
     __tablename__ = "users"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     phone: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    organization_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("organizations.id"), nullable=True
-    )
+    organization_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
     avatar: Mapped[str | None] = mapped_column(String(50), nullable=True, default="🐈‍⬛")
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
 
@@ -75,7 +84,8 @@ class User(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     workshop_last_seen_at: Mapped[datetime | None] = mapped_column(
-        DateTime, nullable=True,
+        DateTime,
+        nullable=True,
     )
 
     # Client preferences (interface + LLM prompt language); persisted for signed-in users
@@ -99,6 +109,7 @@ class APIKey(Base):
     - Active/inactive status
     - Optional organization linkage
     """
+
     __tablename__ = "api_keys"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -119,9 +130,7 @@ class APIKey(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Optional: Link to organization
-    organization_id: Mapped[int | None] = mapped_column(
-        Integer, ForeignKey("organizations.id"), nullable=True
-    )
+    organization_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
 
     def __repr__(self):
         return f"<APIKey {self.name}: {self.key[:12]}...>"
@@ -134,6 +143,7 @@ class UpdateNotification(Base):
     Stores the current announcement settings.
     Only one active record should exist (id=1).
     """
+
     __tablename__ = "update_notifications"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -144,7 +154,7 @@ class UpdateNotification(Base):
 
     # Scheduling - optional start/end dates
     start_date = Column(DateTime, nullable=True)  # Show after this date
-    end_date = Column(DateTime, nullable=True)    # Hide after this date
+    end_date = Column(DateTime, nullable=True)  # Hide after this date
 
     # Targeting - optional organization filter
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
@@ -159,6 +169,7 @@ class UpdateNotificationDismissed(Base):
     When user dismisses, their user_id + version is stored.
     When version changes, old records can be cleaned up.
     """
+
     __tablename__ = "update_notification_dismissed"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -167,9 +178,7 @@ class UpdateNotificationDismissed(Base):
     dismissed_at = Column(DateTime, default=datetime.utcnow)
 
     # Unique constraint: one dismiss record per user per version (prevents duplicates)
-    __table_args__ = (
-        UniqueConstraint('user_id', 'version', name='uq_user_version_dismissed'),
-    )
+    __table_args__ = (UniqueConstraint("user_id", "version", name="uq_user_version_dismissed"),)
 
 
 # NOTE: Captcha model removed - captchas are now stored in Redis

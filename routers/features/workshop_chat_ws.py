@@ -27,7 +27,9 @@ from routers.features.workshop_chat.dependencies import (
     require_post_permission,
 )
 from services.features.workshop_chat import (
-    channel_service, message_service, dm_service,
+    channel_service,
+    message_service,
+    dm_service,
 )
 from services.features.workshop_chat.presence_last_seen import (
     record_workshop_last_seen,
@@ -66,24 +68,39 @@ async def _ws_channel_post_gate(
     """Load channel, enforce membership (except announce), posting policy; else error."""
     channel = channel_service.get_channel(db, channel_id)
     if not channel:
-        await websocket.send_text(json.dumps({
-            "type": "error", "message": "Channel not found",
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "error",
+                    "message": "Channel not found",
+                }
+            )
+        )
         return None
     if channel.channel_type != "announce":
         if not channel_service.is_channel_member(db, channel_id, user.id):
-            await websocket.send_text(json.dumps({
-                "type": "error", "message": "You must join this channel first",
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "message": "You must join this channel first",
+                    }
+                )
+            )
             return None
     try:
         require_post_permission(channel, user)
     except HTTPException as exc:
         detail = exc.detail
         msg = detail if isinstance(detail, str) else "Forbidden"
-        await websocket.send_text(json.dumps({
-            "type": "error", "message": msg,
-        }))
+        await websocket.send_text(
+            json.dumps(
+                {
+                    "type": "error",
+                    "message": msg,
+                }
+            )
+        )
         return None
     return channel
 
@@ -139,7 +156,10 @@ async def chat_websocket(websocket: WebSocket):
         user.id,
     )
     chat_ws_manager.connect(
-        websocket, user.id, user.name or f"User {user.id}", user.avatar,
+        websocket,
+        user.id,
+        user.name or f"User {user.id}",
+        user.avatar,
     )
     rate_limiter = WebsocketMessageRateLimiter(
         DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -149,25 +169,33 @@ async def chat_websocket(websocket: WebSocket):
         while True:
             raw = await websocket.receive_text()
             if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
-                await websocket.send_text(json.dumps({
-                    "type": "error", "message": "Message too large",
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "message": "Message too large",
+                        }
+                    )
+                )
                 continue
             if not rate_limiter.allow():
                 try:
                     record_ws_rate_limit_hit()
                 except Exception as exc:
                     logger.debug("Failed to record rate limit metric: %s", exc)
-                await websocket.send_text(json.dumps({
-                    "type": "error", "message": "Rate limit exceeded",
-                }))
+                await websocket.send_text(
+                    json.dumps(
+                        {
+                            "type": "error",
+                            "message": "Rate limit exceeded",
+                        }
+                    )
+                )
                 continue
             try:
                 data = json.loads(raw)
             except json.JSONDecodeError:
-                await websocket.send_text(
-                    json.dumps({"type": "error", "message": "Invalid JSON"})
-                )
+                await websocket.send_text(json.dumps({"type": "error", "message": "Invalid JSON"}))
                 continue
             await _handle_message(websocket, user, data)
     except WebSocketDisconnect:
@@ -178,12 +206,18 @@ async def chat_websocket(websocket: WebSocket):
         old_channels, presence_org = chat_ws_manager.disconnect(user.id)
         if presence_org is not None:
             await chat_ws_manager.broadcast_presence_to_presence_org(
-                user.id, "offline", presence_org, exclude_user=user.id,
+                user.id,
+                "offline",
+                presence_org,
+                exclude_user=user.id,
             )
         await chat_ws_manager.broadcast_presence(
-            user.id, "offline", channel_ids=old_channels,
+            user.id,
+            "offline",
+            channel_ids=old_channels,
         )
         if presence_org is not None:
+
             def _sync_record_last_seen():
                 db_local = SessionLocal()
                 try:
@@ -201,13 +235,13 @@ async def _handle_message(websocket: WebSocket, user, data: dict):
     if handler:
         await handler(websocket, user, data)
     else:
-        await websocket.send_text(
-            json.dumps({"type": "error", "message": f"Unknown type: {msg_type}"})
-        )
+        await websocket.send_text(json.dumps({"type": "error", "message": f"Unknown type: {msg_type}"}))
 
 
 async def _handle_subscribe_channels(
-    _websocket: WebSocket, user, data: dict,
+    _websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Subscribe to channel broadcasts (only channels user is a member of)."""
     channel_ids = data.get("channel_ids", [])
@@ -218,17 +252,16 @@ async def _handle_subscribe_channels(
         return
     db = SessionLocal()
     try:
-        valid_ids = [
-            cid for cid in channel_ids
-            if channel_service.is_channel_member(db, cid, user.id)
-        ]
+        valid_ids = [cid for cid in channel_ids if channel_service.is_channel_member(db, cid, user.id)]
     finally:
         db.close()
     chat_ws_manager.subscribe_channels(user.id, valid_ids)
 
 
 async def _handle_subscribe_presence(
-    websocket: WebSocket, user, data: dict,
+    websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Scope org-wide presence for the workshop contacts list (sidebar).
 
@@ -240,23 +273,33 @@ async def _handle_subscribe_presence(
         effective = get_effective_org_id(user, requested)
     except HTTPException:
         logger.warning(
-            "[ChatWS] subscribe_presence rejected for user %s", user.id,
+            "[ChatWS] subscribe_presence rejected for user %s",
+            user.id,
         )
         return
     chat_ws_manager.set_presence_org(user.id, effective)
     online_here = chat_ws_manager.online_user_ids_for_presence_org(effective)
     others = [uid for uid in online_here if uid != user.id]
-    await websocket.send_text(json.dumps({
-        "type": "presence_snapshot",
-        "user_ids": others,
-    }))
+    await websocket.send_text(
+        json.dumps(
+            {
+                "type": "presence_snapshot",
+                "user_ids": others,
+            }
+        )
+    )
     await chat_ws_manager.broadcast_presence_to_presence_org(
-        user.id, "active", effective, exclude_user=user.id,
+        user.id,
+        "active",
+        effective,
+        exclude_user=user.id,
     )
 
 
 async def _handle_channel_message(
-    websocket: WebSocket, user, data: dict,
+    websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Handle a channel message sent via WebSocket."""
     channel_id = data.get("channel_id")
@@ -272,32 +315,50 @@ async def _handle_channel_message(
         try:
             result = await asyncio.to_thread(
                 lambda: message_service.send_message(
-                    db, channel_id, user.id, content,
+                    db,
+                    channel_id,
+                    user.id,
+                    content,
                 )
             )
         except MentionResolutionError as exc:
-            await websocket.send_text(json.dumps({
-                "type": "error",
-                "code": "invalid_mentions",
-                "unknown": exc.unknown_names,
-                "ambiguous": exc.ambiguous_names,
-                "message": "Invalid or ambiguous @mentions in message",
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "code": "invalid_mentions",
+                        "unknown": exc.unknown_names,
+                        "ambiguous": exc.ambiguous_names,
+                        "message": "Invalid or ambiguous @mentions in message",
+                    }
+                )
+            )
             return
-        await chat_ws_manager.send_to_user(user.id, {
-            "type": "channel_message", "channel_id": channel_id,
-            "message": result,
-        })
-        await chat_ws_manager.broadcast_to_channel(channel_id, {
-            "type": "channel_message", "channel_id": channel_id,
-            "message": result,
-        }, exclude_user=user.id)
+        await chat_ws_manager.send_to_user(
+            user.id,
+            {
+                "type": "channel_message",
+                "channel_id": channel_id,
+                "message": result,
+            },
+        )
+        await chat_ws_manager.broadcast_to_channel(
+            channel_id,
+            {
+                "type": "channel_message",
+                "channel_id": channel_id,
+                "message": result,
+            },
+            exclude_user=user.id,
+        )
     finally:
         await asyncio.to_thread(db.close)
 
 
 async def _handle_topic_message(
-    websocket: WebSocket, user, data: dict,
+    websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Handle a topic message sent via WebSocket."""
     channel_id = data.get("channel_id")
@@ -314,32 +375,53 @@ async def _handle_topic_message(
         try:
             result = await asyncio.to_thread(
                 lambda: message_service.send_message(
-                    db, channel_id, user.id, content, topic_id=topic_id,
+                    db,
+                    channel_id,
+                    user.id,
+                    content,
+                    topic_id=topic_id,
                 )
             )
         except MentionResolutionError as exc:
-            await websocket.send_text(json.dumps({
-                "type": "error",
-                "code": "invalid_mentions",
-                "unknown": exc.unknown_names,
-                "ambiguous": exc.ambiguous_names,
-                "message": "Invalid or ambiguous @mentions in message",
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "code": "invalid_mentions",
+                        "unknown": exc.unknown_names,
+                        "ambiguous": exc.ambiguous_names,
+                        "message": "Invalid or ambiguous @mentions in message",
+                    }
+                )
+            )
             return
-        await chat_ws_manager.send_to_user(user.id, {
-            "type": "topic_message", "channel_id": channel_id,
-            "topic_id": topic_id, "message": result,
-        })
-        await chat_ws_manager.broadcast_to_channel(channel_id, {
-            "type": "topic_message", "channel_id": channel_id,
-            "topic_id": topic_id, "message": result,
-        }, exclude_user=user.id)
+        await chat_ws_manager.send_to_user(
+            user.id,
+            {
+                "type": "topic_message",
+                "channel_id": channel_id,
+                "topic_id": topic_id,
+                "message": result,
+            },
+        )
+        await chat_ws_manager.broadcast_to_channel(
+            channel_id,
+            {
+                "type": "topic_message",
+                "channel_id": channel_id,
+                "topic_id": topic_id,
+                "message": result,
+            },
+            exclude_user=user.id,
+        )
     finally:
         await asyncio.to_thread(db.close)
 
 
 async def _handle_dm(
-    websocket: WebSocket, user, data: dict,
+    websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Handle a DM sent via WebSocket (same org only)."""
     recipient_id = data.get("recipient_id")
@@ -350,55 +432,80 @@ async def _handle_dm(
     db = await asyncio.to_thread(SessionLocal)
     try:
         recipient = await asyncio.to_thread(
-            lambda: db.query(UserModel).filter(
-                UserModel.id == recipient_id,
-            ).first()
+            lambda: (
+                db.query(UserModel)
+                .filter(
+                    UserModel.id == recipient_id,
+                )
+                .first()
+            )
         )
         if not recipient:
-            await websocket.send_text(json.dumps({
-                "type": "error", "message": "User not found",
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "message": "User not found",
+                    }
+                )
+            )
             return
         sender = await asyncio.to_thread(
-            lambda: db.query(UserModel).filter(
-                UserModel.id == user.id,
-            ).first()
+            lambda: (
+                db.query(UserModel)
+                .filter(
+                    UserModel.id == user.id,
+                )
+                .first()
+            )
         )
-        if (
-            not sender
-            or not sender.organization_id
-            or sender.organization_id != recipient.organization_id
-        ):
-            await websocket.send_text(json.dumps({
-                "type": "error",
-                "message": "Cannot message users outside your organization",
-            }))
+        if not sender or not sender.organization_id or sender.organization_id != recipient.organization_id:
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "message": "Cannot message users outside your organization",
+                    }
+                )
+            )
             return
         try:
-            result = await asyncio.to_thread(
-                lambda: dm_service.send(db, user.id, recipient_id, content)
-            )
+            result = await asyncio.to_thread(lambda: dm_service.send(db, user.id, recipient_id, content))
         except MentionResolutionError as exc:
-            await websocket.send_text(json.dumps({
-                "type": "error",
-                "code": "invalid_mentions",
-                "unknown": exc.unknown_names,
-                "ambiguous": exc.ambiguous_names,
-                "message": "Invalid or ambiguous @mentions in message",
-            }))
+            await websocket.send_text(
+                json.dumps(
+                    {
+                        "type": "error",
+                        "code": "invalid_mentions",
+                        "unknown": exc.unknown_names,
+                        "ambiguous": exc.ambiguous_names,
+                        "message": "Invalid or ambiguous @mentions in message",
+                    }
+                )
+            )
             return
-        await chat_ws_manager.send_to_user(user.id, {
-            "type": "dm", "message": result,
-        })
-        await chat_ws_manager.send_to_user(recipient_id, {
-            "type": "dm", "message": result,
-        })
+        await chat_ws_manager.send_to_user(
+            user.id,
+            {
+                "type": "dm",
+                "message": result,
+            },
+        )
+        await chat_ws_manager.send_to_user(
+            recipient_id,
+            {
+                "type": "dm",
+                "message": result,
+            },
+        )
     finally:
         await asyncio.to_thread(db.close)
 
 
 async def _handle_typing_channel(
-    _websocket: WebSocket, user, data: dict,
+    _websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Broadcast typing in a channel (only if subscribed)."""
     channel_id = data.get("channel_id")
@@ -407,12 +514,16 @@ async def _handle_typing_channel(
     if not chat_ws_manager.is_user_subscribed_to_channel(user.id, channel_id):
         return
     await chat_ws_manager.broadcast_typing_channel(
-        channel_id, user.id, user.name or f"User {user.id}",
+        channel_id,
+        user.id,
+        user.name or f"User {user.id}",
     )
 
 
 async def _handle_typing_topic(
-    _websocket: WebSocket, user, data: dict,
+    _websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Broadcast typing in a topic (only if subscribed)."""
     channel_id = data.get("channel_id")
@@ -422,13 +533,17 @@ async def _handle_typing_topic(
     if not chat_ws_manager.is_user_subscribed_to_channel(user.id, channel_id):
         return
     await chat_ws_manager.broadcast_typing_channel(
-        channel_id, user.id, user.name or f"User {user.id}",
+        channel_id,
+        user.id,
+        user.name or f"User {user.id}",
         topic_id=topic_id,
     )
 
 
 async def _handle_typing_dm(
-    _websocket: WebSocket, user, data: dict,
+    _websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Broadcast typing in a DM (same org only)."""
     recipient_id = data.get("recipient_id")
@@ -438,17 +553,21 @@ async def _handle_typing_dm(
     def _sync_check_same_org():
         db_local = SessionLocal()
         try:
-            recipient = db_local.query(UserModel).filter(
-                UserModel.id == recipient_id,
-            ).first()
-            sender = db_local.query(UserModel).filter(
-                UserModel.id == user.id,
-            ).first()
-            return (
-                recipient is not None
-                and sender is not None
-                and sender.organization_id == recipient.organization_id
+            recipient = (
+                db_local.query(UserModel)
+                .filter(
+                    UserModel.id == recipient_id,
+                )
+                .first()
             )
+            sender = (
+                db_local.query(UserModel)
+                .filter(
+                    UserModel.id == user.id,
+                )
+                .first()
+            )
+            return recipient is not None and sender is not None and sender.organization_id == recipient.organization_id
         finally:
             db_local.close()
 
@@ -456,12 +575,16 @@ async def _handle_typing_dm(
     if not can_send:
         return
     await chat_ws_manager.broadcast_typing_dm(
-        user.id, recipient_id, user.name or f"User {user.id}",
+        user.id,
+        recipient_id,
+        user.name or f"User {user.id}",
     )
 
 
 async def _handle_read_channel(
-    _websocket: WebSocket, user, data: dict,
+    _websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Update last-read position for a channel."""
     channel_id = data.get("channel_id")
@@ -475,7 +598,9 @@ async def _handle_read_channel(
 
 
 async def _handle_presence(
-    _websocket: WebSocket, user, data: dict,
+    _websocket: WebSocket,
+    user,
+    data: dict,
 ):
     """Rebroadcast a client-driven presence update (active / idle)."""
     presence_status = data.get("status")
@@ -485,7 +610,10 @@ async def _handle_presence(
     org_pid = chat_ws_manager.get_presence_org_id(user.id)
     if org_pid is not None:
         await chat_ws_manager.broadcast_presence_to_presence_org(
-            user.id, presence_status, org_pid, exclude_user=user.id,
+            user.id,
+            presence_status,
+            org_pid,
+            exclude_user=user.id,
         )
     else:
         await chat_ws_manager.broadcast_presence(user.id, presence_status)

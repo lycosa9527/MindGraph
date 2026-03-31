@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Optional
 import asyncio
 import logging
@@ -28,14 +29,14 @@ class HTTPXClientManager:
     - Proper cleanup on shutdown
     """
 
-    _instance: Optional['HTTPXClientManager'] = None
+    _instance: Optional["HTTPXClientManager"] = None
 
     def __init__(self):
         self._clients: Dict[str, httpx.AsyncClient] = {}
         self._lock = asyncio.Lock()
 
     @classmethod
-    def get_instance(cls) -> 'HTTPXClientManager':
+    def get_instance(cls) -> "HTTPXClientManager":
         """Get singleton instance."""
         if cls._instance is None:
             cls._instance = cls()
@@ -46,7 +47,7 @@ class HTTPXClientManager:
         provider: str,
         base_url: str,
         timeout: float = 60.0,
-        stream_timeout: float = 120.0
+        stream_timeout: float = 120.0,
     ) -> httpx.AsyncClient:
         """
         Get or create an httpx AsyncClient for a provider.
@@ -67,16 +68,16 @@ class HTTPXClientManager:
                     timeout=httpx.Timeout(
                         timeout,
                         connect=10.0,
-                        read=stream_timeout  # Longer read timeout for streaming
+                        read=stream_timeout,  # Longer read timeout for streaming
                     ),
                     http2=True,  # Enable HTTP/2 for better multiplexing
                     limits=httpx.Limits(
                         max_connections=100,
                         max_keepalive_connections=20,
-                        keepalive_expiry=30.0
-                    )
+                        keepalive_expiry=30.0,
+                    ),
                 )
-                logger.debug('[HTTPXClientManager] Created client for %s', provider)
+                logger.debug("[HTTPXClientManager] Created client for %s", provider)
             return self._clients[provider]
 
     async def close_all(self) -> None:
@@ -85,7 +86,7 @@ class HTTPXClientManager:
             for provider, client in self._clients.items():
                 if not client.is_closed:
                     await client.aclose()
-                    logger.debug('[HTTPXClientManager] Closed client for %s', provider)
+                    logger.debug("[HTTPXClientManager] Closed client for %s", provider)
             self._clients.clear()
 
 

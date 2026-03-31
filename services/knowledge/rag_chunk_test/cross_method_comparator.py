@@ -11,17 +11,20 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any
 import logging
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 try:
     from clients.dashscope_embedding import get_embedding_client
+
     HAS_EMBEDDING = True
 except ImportError:
     HAS_EMBEDDING = False
@@ -38,11 +41,7 @@ class CrossMethodComparator:
     def __init__(self):
         """Initialize cross-method comparator."""
 
-    def calculate_chunk_alignment(
-        self,
-        chunks_a: List[Chunk],
-        chunks_b: List[Chunk]
-    ) -> float:
+    def calculate_chunk_alignment(self, chunks_a: List[Chunk], chunks_b: List[Chunk]) -> float:
         """
         Calculate semantic alignment between chunks from two methods.
 
@@ -59,9 +58,7 @@ class CrossMethodComparator:
             return 0.0
 
         if not HAS_EMBEDDING or not HAS_NUMPY:
-            logger.warning(
-                "[CrossMethodComparator] Embedding client or numpy not available"
-            )
+            logger.warning("[CrossMethodComparator] Embedding client or numpy not available")
             return 0.0
 
         try:
@@ -75,9 +72,7 @@ class CrossMethodComparator:
             embeddings_b = embedding_client.embed_texts(texts_b)
 
             if len(embeddings_a) != len(chunks_a) or len(embeddings_b) != len(chunks_b):
-                logger.warning(
-                    "[CrossMethodComparator] Embedding count mismatch"
-                )
+                logger.warning("[CrossMethodComparator] Embedding count mismatch")
                 return 0.0
 
             # For each chunk in A, find best match in B
@@ -106,17 +101,11 @@ class CrossMethodComparator:
             return float(np.mean(best_matches))
 
         except Exception as e:
-            logger.warning(
-                "[CrossMethodComparator] Failed to calculate alignment: %s",
-                e
-            )
+            logger.warning("[CrossMethodComparator] Failed to calculate alignment: %s", e)
             return 0.0
 
     def calculate_complementarity(
-        self,
-        retrieved_a: List[int],
-        retrieved_b: List[int],
-        relevant_chunks: List[int]
+        self, retrieved_a: List[int], retrieved_b: List[int], relevant_chunks: List[int]
     ) -> float:
         """
         Calculate complementarity: how well methods complement each other.
@@ -159,11 +148,7 @@ class CrossMethodComparator:
 
         return normalized
 
-    def analyze_method_overlap(
-        self,
-        chunks_a: List[Chunk],
-        chunks_b: List[Chunk]
-    ) -> Dict[str, Any]:
+    def analyze_method_overlap(self, chunks_a: List[Chunk], chunks_b: List[Chunk]) -> Dict[str, Any]:
         """
         Analyze overlap between chunks from two methods.
 
@@ -179,7 +164,7 @@ class CrossMethodComparator:
                 "character_overlap_percent": 0.0,
                 "unique_chunks_a": 0,
                 "unique_chunks_b": 0,
-                "shared_chunks": 0
+                "shared_chunks": 0,
             }
 
         # Character-level overlap
@@ -194,10 +179,7 @@ class CrossMethodComparator:
         overlap_chars = chars_a & chars_b
         union_chars = chars_a | chars_b
 
-        character_overlap = (
-            len(overlap_chars) / len(union_chars) * 100
-            if union_chars else 0.0
-        )
+        character_overlap = len(overlap_chars) / len(union_chars) * 100 if union_chars else 0.0
 
         # Chunk-level overlap (using text similarity threshold)
         # Simple approach: exact text matches
@@ -212,5 +194,5 @@ class CrossMethodComparator:
             "character_overlap_percent": round(character_overlap, 2),
             "unique_chunks_a": len(unique_a),
             "unique_chunks_b": len(unique_b),
-            "shared_chunks": len(shared_texts)
+            "shared_chunks": len(shared_texts),
         }

@@ -14,23 +14,26 @@ import sys
 import signal
 from typing import Optional, Any
 
-from services.infrastructure.process._redis_manager import start_redis_server as _start_redis_server
+from services.infrastructure.process._redis_manager import (
+    start_redis_server as _start_redis_server,
+)
 from services.infrastructure.process._celery_manager import (
     start_celery_worker as _start_celery_worker,
-    stop_celery_worker as _stop_celery_worker
+    stop_celery_worker as _stop_celery_worker,
 )
 from services.infrastructure.process._qdrant_manager import (
     start_qdrant_server as _start_qdrant_server,
-    stop_qdrant_server as _stop_qdrant_server
+    stop_qdrant_server as _stop_qdrant_server,
 )
 from services.infrastructure.process._postgresql_manager import (
     start_postgresql_server as _start_postgresql_server,
-    stop_postgresql_server as _stop_postgresql_server
+    stop_postgresql_server as _stop_postgresql_server,
 )
 
 
 class ServerState:
     """Module-level state for server processes"""
+
     celery_worker_process: Optional[Any] = None
     celery_stdout_file: Optional[Any] = None
     celery_stderr_file: Optional[Any] = None
@@ -112,7 +115,7 @@ def setup_signal_handlers() -> None:
 
     This ensures SIGTERM/SIGINT kills all worker processes, not just the main process.
     """
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         return
 
     def signal_handler(signum, _frame) -> None:
@@ -121,7 +124,7 @@ def setup_signal_handlers() -> None:
             return
 
         ServerState.shutdown_in_progress = True
-        sig_name = 'SIGTERM' if signum == signal.SIGTERM else 'SIGINT'
+        sig_name = "SIGTERM" if signum == signal.SIGTERM else "SIGINT"
         try:
             print(f"\n[SHUTDOWN] Received {sig_name}, stopping all workers...")
         except (ValueError, OSError):
@@ -132,9 +135,9 @@ def setup_signal_handlers() -> None:
         stop_postgresql_server()
 
         try:
-            if hasattr(os, 'getpgid') and hasattr(os, 'killpg'):
+            if hasattr(os, "getpgid") and hasattr(os, "killpg"):
                 pgid = os.getpgid(os.getpid())
-                sigkill = getattr(signal, 'SIGKILL', signal.SIGTERM)
+                sigkill = getattr(signal, "SIGKILL", signal.SIGTERM)
                 os.killpg(pgid, sigkill)
             else:
                 sys.exit(0)
@@ -149,7 +152,7 @@ def setup_signal_handlers() -> None:
         sys.exit(0)
 
     try:
-        if hasattr(os, 'setpgrp'):
+        if hasattr(os, "setpgrp"):
             os.setpgrp()
     except OSError:
         pass

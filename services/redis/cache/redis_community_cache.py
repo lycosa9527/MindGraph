@@ -36,8 +36,14 @@ POST_TTL_SECONDS = 300
 VERSION_TTL_SECONDS = 86400  # 24 h safety net; refreshed on every increment
 
 
-def _list_cache_key(mine: bool, type_filter: Optional[str], category: Optional[str],
-                    sort: str, page: int, page_size: int) -> str:
+def _list_cache_key(
+    mine: bool,
+    type_filter: Optional[str],
+    category: Optional[str],
+    sort: str,
+    page: int,
+    page_size: int,
+) -> str:
     """Build cache key for list endpoint."""
     parts = f"{mine}:{type_filter or ''}:{category or ''}:{sort}:{page}:{page_size}"
     h = hashlib.sha256(parts.encode()).hexdigest()[:16]

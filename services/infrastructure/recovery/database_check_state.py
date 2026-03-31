@@ -25,6 +25,7 @@ from typing import Optional, Tuple
 
 try:
     from services.redis.redis_client import get_redis, is_redis_available
+
     _REDIS_AVAILABLE = True
 except ImportError:
     get_redis = None
@@ -79,14 +80,14 @@ class DatabaseCheckStateManager:
                     DB_CHECK_STATE_KEY,
                     "in_progress",
                     ex=DB_CHECK_TIMEOUT_SECONDS,
-                    nx=True
+                    nx=True,
                 )
                 if result:
                     await asyncio.to_thread(
                         redis_client.set,
                         DB_CHECK_START_TIME_KEY,
                         str(time.time()),
-                        ex=DB_CHECK_TIMEOUT_SECONDS
+                        ex=DB_CHECK_TIMEOUT_SECONDS,
                     )
                     logger.debug("[DatabaseCheckState] Database check started (Redis)")
                     return True
@@ -131,7 +132,7 @@ class DatabaseCheckStateManager:
                     redis_client.set,
                     DB_CHECK_STATE_KEY,
                     state,
-                    ex=60  # Keep state for 1 minute after completion
+                    ex=60,  # Keep state for 1 minute after completion
                 )
                 logger.debug("[DatabaseCheckState] Database check completed: %s (Redis)", state)
                 return
@@ -158,27 +159,22 @@ class DatabaseCheckStateManager:
                 state = await asyncio.to_thread(redis_client.get, DB_CHECK_STATE_KEY)
                 if state:
                     if isinstance(state, bytes):
-                        state = state.decode('utf-8')
+                        state = state.decode("utf-8")
                     if state == "in_progress":
                         # Check if it's been too long (stale state)
-                        start_time_str = await asyncio.to_thread(
-                            redis_client.get, DB_CHECK_START_TIME_KEY
-                        )
+                        start_time_str = await asyncio.to_thread(redis_client.get, DB_CHECK_START_TIME_KEY)
                         if start_time_str:
                             if isinstance(start_time_str, bytes):
-                                start_time_str = start_time_str.decode('utf-8')
+                                start_time_str = start_time_str.decode("utf-8")
                             try:
                                 start_time = float(start_time_str)
                                 elapsed = time.time() - start_time
                                 if elapsed > DB_CHECK_TIMEOUT_SECONDS:
                                     logger.warning(
-                                        "[DatabaseCheckState] Stale check state detected "
-                                        "(%.1fs old), clearing",
-                                        elapsed
+                                        "[DatabaseCheckState] Stale check state detected (%.1fs old), clearing",
+                                        elapsed,
                                     )
-                                    await asyncio.to_thread(
-                                        redis_client.delete, DB_CHECK_STATE_KEY
-                                    )
+                                    await asyncio.to_thread(redis_client.delete, DB_CHECK_STATE_KEY)
                                     return False
                             except (ValueError, TypeError):
                                 pass
@@ -195,9 +191,8 @@ class DatabaseCheckStateManager:
                 elapsed = time.time() - start_time
                 if elapsed > DB_CHECK_TIMEOUT_SECONDS:
                     logger.warning(
-                        "[DatabaseCheckState] Stale in-memory state detected "
-                        "(%.1fs old), clearing",
-                        elapsed
+                        "[DatabaseCheckState] Stale in-memory state detected (%.1fs old), clearing",
+                        elapsed,
                     )
                     self._in_memory_state = None
                     self._in_memory_start_time = None
@@ -220,7 +215,7 @@ class DatabaseCheckStateManager:
                 state = await asyncio.to_thread(redis_client.get, DB_CHECK_STATE_KEY)
                 if state:
                     if isinstance(state, bytes):
-                        return state.decode('utf-8')
+                        return state.decode("utf-8")
                     return str(state)
                 return None
             except Exception as e:

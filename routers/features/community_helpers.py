@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 COMMUNITY_THUMBNAIL_DIR = Path("static/community")
 COMMUNITY_THUMBNAIL_DIR.mkdir(parents=True, exist_ok=True)
 THUMBNAIL_MAX_BYTES = 2 * 1024 * 1024  # 2MB
-PNG_MAGIC = b'\x89PNG\r\n\x1a\n'
+PNG_MAGIC = b"\x89PNG\r\n\x1a\n"
 SPEC_MAX_BYTES = 500 * 1024  # 500KB
 
 

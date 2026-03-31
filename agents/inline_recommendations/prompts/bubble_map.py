@@ -3,6 +3,7 @@
 Aligned with agents/node_palette/bubble_map_palette.py.
 Follows concept map relationship label prompt structure (concrete examples, RULES, OUTPUT).
 """
+
 from typing import Any, Dict, List, Optional
 
 from ._common import append_batch_note, THINKING_APPROACH
@@ -16,13 +17,13 @@ def build_bubble_attributes_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for bubble map attribute recommendations."""
-    topic = (context.get('topic') or '').strip()
-    attribute_texts = context.get('attribute_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['bubble_map'][language]
+    topic = (context.get("topic") or "").strip()
+    attribute_texts = context.get("attribute_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["bubble_map"][language]
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"为以下主题生成{count}个气泡图属性词：{topic}" if topic else "主题未设置"
         prompt = f"""{topic_ctx}
 
@@ -37,7 +38,7 @@ def build_bubble_attributes_prompt(
         if attribute_texts:
             prompt += f"""
 
-图中已有属性：{', '.join(attribute_texts)}。请生成更聚焦、互补的属性推荐，与已有属性形成补充，避免重复。"""
+图中已有属性：{", ".join(attribute_texts)}。请生成更聚焦、互补的属性推荐，与已有属性形成补充，避免重复。"""
         prompt += f"""
 
 规则：
@@ -61,11 +62,7 @@ def build_bubble_attributes_prompt(
 
 输出：至少{count}行。每行一个属性词。"""
     else:
-        topic_ctx = (
-            f"Generate {count} Bubble Map attribute words for: {topic}"
-            if topic
-            else "Topic not set"
-        )
+        topic_ctx = f"Generate {count} Bubble Map attribute words for: {topic}" if topic else "Topic not set"
         prompt = f"""{topic_ctx}
 
 Educational Context: {context_desc}
@@ -77,7 +74,7 @@ Thinking approach: {thinking}
 3. Be able to diverge and associate from multiple angles, the wider the angle the better
 4. Feature words should be as concise as possible"""
         if attribute_texts:
-            attrs = ', '.join(attribute_texts)
+            attrs = ", ".join(attribute_texts)
             prompt += (
                 f"\n\nThe diagram already has attributes: {attrs}. "
                 "Generate more focused, complementary recommendations, avoid repetition."

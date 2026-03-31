@@ -98,47 +98,48 @@ class DirectMessageService:
             last = row.content
             created = row.created_at
             sender_sid = row.sender_id
-            conversations.append({
-                "partner_id": partner_id,
-                "partner_name": row.name if row.name else f"User {partner_id}",
-                "partner_avatar": row.avatar if row.avatar else None,
-                "last_message": {
-                    "content": last[:100] if last else None,
-                    "created_at": created.isoformat() if created else None,
-                    "is_mine": sender_sid == user_id if sender_sid is not None else False,
-                },
-                "unread_count": int(row.unread_count or 0),
-            })
+            conversations.append(
+                {
+                    "partner_id": partner_id,
+                    "partner_name": row.name if row.name else f"User {partner_id}",
+                    "partner_avatar": row.avatar if row.avatar else None,
+                    "last_message": {
+                        "content": last[:100] if last else None,
+                        "created_at": created.isoformat() if created else None,
+                        "is_mine": sender_sid == user_id if sender_sid is not None else False,
+                    },
+                    "unread_count": int(row.unread_count or 0),
+                }
+            )
 
         conversations.sort(
-            key=lambda c: c["last_message"]["created_at"] or "", reverse=True,
+            key=lambda c: c["last_message"]["created_at"] or "",
+            reverse=True,
         )
         return conversations
 
     @staticmethod
     def get_messages(
-        db: Session, user_id: int, partner_id: int,
-        anchor: int = 0, num_before: int = DEFAULT_PAGE_SIZE,
+        db: Session,
+        user_id: int,
+        partner_id: int,
+        anchor: int = 0,
+        num_before: int = DEFAULT_PAGE_SIZE,
         num_after: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get DM messages between two users, anchor-based (like channel history)."""
         num_before = min(num_before, MAX_PAGE_SIZE)
         num_after = min(num_after, MAX_PAGE_SIZE)
         pair_filter = or_(
-            (DirectMessage.sender_id == user_id)
-            & (DirectMessage.recipient_id == partner_id),
-            (DirectMessage.sender_id == partner_id)
-            & (DirectMessage.recipient_id == user_id),
+            (DirectMessage.sender_id == user_id) & (DirectMessage.recipient_id == partner_id),
+            (DirectMessage.sender_id == partner_id) & (DirectMessage.recipient_id == user_id),
         )
         messages: List[DirectMessage] = []
 
         if num_before > 0:
-            before_q = (
-                db.query(DirectMessage)
-                .filter(
-                    pair_filter,
-                    DirectMessage.is_deleted.is_(False),
-                )
+            before_q = db.query(DirectMessage).filter(
+                pair_filter,
+                DirectMessage.is_deleted.is_(False),
             )
             if anchor > 0:
                 before_q = before_q.filter(DirectMessage.id < anchor)
@@ -161,9 +162,12 @@ class DirectMessageService:
 
         return [
             {
-                "id": m.id, "sender_id": m.sender_id,
-                "recipient_id": m.recipient_id, "content": m.content,
-                "message_type": m.message_type, "is_read": m.is_read,
+                "id": m.id,
+                "sender_id": m.sender_id,
+                "recipient_id": m.recipient_id,
+                "content": m.content,
+                "message_type": m.message_type,
+                "is_read": m.is_read,
                 "mentioned_user_ids": list(m.mentioned_user_ids or []),
                 "created_at": m.created_at.isoformat(),
                 "edited_at": m.edited_at.isoformat() if m.edited_at else None,
@@ -181,16 +185,17 @@ class DirectMessageService:
     ) -> List[Dict[str, Any]]:
         """DM narrow search: same pair filter as history; FTS on PG else ILIKE."""
         match = dm_content_match(
-            db, DirectMessage.content, text, limit,
+            db,
+            DirectMessage.content,
+            text,
+            limit,
         )
         if match is None:
             return []
         pred, rank_expr, lim = match
         pair_filter = or_(
-            (DirectMessage.sender_id == user_id)
-            & (DirectMessage.recipient_id == partner_id),
-            (DirectMessage.sender_id == partner_id)
-            & (DirectMessage.recipient_id == user_id),
+            (DirectMessage.sender_id == user_id) & (DirectMessage.recipient_id == partner_id),
+            (DirectMessage.sender_id == partner_id) & (DirectMessage.recipient_id == user_id),
         )
         query = db.query(DirectMessage).filter(
             pair_filter,
@@ -198,17 +203,9 @@ class DirectMessageService:
             pred,
         )
         if rank_expr is not None:
-            rows = (
-                query.order_by(rank_expr.desc(), DirectMessage.id.desc())
-                .limit(lim)
-                .all()
-            )
+            rows = query.order_by(rank_expr.desc(), DirectMessage.id.desc()).limit(lim).all()
         else:
-            rows = (
-                query.order_by(DirectMessage.id.desc())
-                .limit(lim)
-                .all()
-            )
+            rows = query.order_by(DirectMessage.id.desc()).limit(lim).all()
         return [
             {
                 "id": m.id,
@@ -226,8 +223,11 @@ class DirectMessageService:
 
     @staticmethod
     def send(
-        db: Session, sender_id: int, recipient_id: int,
-        content: str, message_type: str = "text",
+        db: Session,
+        sender_id: int,
+        recipient_id: int,
+        content: str,
+        message_type: str = "text",
     ) -> Dict[str, Any]:
         """Send a direct message."""
         sender = db.query(User).filter(User.id == sender_id).first()
@@ -235,11 +235,16 @@ class DirectMessageService:
             raise ValueError("Sender not found")
         org_id = sender.organization_id
         mention_ids = resolve_mentioned_user_ids(
-            db, sender, org_id, content[:MAX_CONTENT_LENGTH],
+            db,
+            sender,
+            org_id,
+            content[:MAX_CONTENT_LENGTH],
         )
         msg = DirectMessage(
-            sender_id=sender_id, recipient_id=recipient_id,
-            content=content[:MAX_CONTENT_LENGTH], message_type=message_type,
+            sender_id=sender_id,
+            recipient_id=recipient_id,
+            content=content[:MAX_CONTENT_LENGTH],
+            message_type=message_type,
             mentioned_user_ids=mention_ids or None,
         )
         db.add(msg)
@@ -247,11 +252,14 @@ class DirectMessageService:
         db.refresh(msg)
 
         return {
-            "id": msg.id, "sender_id": msg.sender_id,
+            "id": msg.id,
+            "sender_id": msg.sender_id,
             "sender_name": sender.name if sender else f"User {sender_id}",
             "sender_avatar": sender.avatar if sender else None,
-            "recipient_id": msg.recipient_id, "content": msg.content,
-            "message_type": msg.message_type, "is_read": msg.is_read,
+            "recipient_id": msg.recipient_id,
+            "content": msg.content,
+            "message_type": msg.message_type,
+            "is_read": msg.is_read,
             "mentioned_user_ids": list(msg.mentioned_user_ids or []),
             "created_at": msg.created_at.isoformat(),
         }

@@ -26,6 +26,7 @@ class UserUsageStats(Base):
     Metrics are computed from token_usage and user_activity_log.
     Updated on login and token usage (async).
     """
+
     __tablename__ = "user_usage_stats"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -52,10 +53,6 @@ class UserUsageStats(Base):
     tier1: Mapped[str] = mapped_column(String(50), nullable=False, default="unused")
     tier2: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    computed_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
-    )
+    computed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
 
-    __table_args__ = (
-        Index("idx_user_usage_stats_tier1_tier2", "tier1", "tier2"),
-    )
+    __table_args__ = (Index("idx_user_usage_stats_tier1_tier2", "tier1", "tier2"),)

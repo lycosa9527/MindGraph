@@ -29,7 +29,6 @@ import uuid
 from services.redis.redis_client import is_redis_available, get_redis
 
 
-
 logger = logging.getLogger(__name__)
 
 # Redis key prefixes
@@ -84,8 +83,8 @@ class DashscopeRateLimiter:
         qpm_limit: int = 200,
         concurrent_limit: int = 50,
         enabled: bool = True,
-        provider: str = 'dashscope',
-        endpoint: Optional[str] = None
+        provider: str = "dashscope",
+        endpoint: Optional[str] = None,
     ):
         """
         Initialize rate limiter.
@@ -105,28 +104,26 @@ class DashscopeRateLimiter:
         self.endpoint = endpoint
 
         # Select provider-specific Redis keys
-        if provider == 'volcengine':
+        if provider == "volcengine":
             # Validate endpoint parameter for Volcengine provider
-            valid_endpoints = ['ark-deepseek', 'ark-kimi', 'ark-doubao']
+            valid_endpoints = ["ark-deepseek", "ark-kimi", "ark-doubao"]
             if not endpoint:
                 raise ValueError(
-                    f"Endpoint parameter is required for Volcengine provider. "
-                    f"Valid endpoints: {valid_endpoints}"
+                    f"Endpoint parameter is required for Volcengine provider. Valid endpoints: {valid_endpoints}"
                 )
             if endpoint not in valid_endpoints:
                 raise ValueError(
-                    f"Invalid endpoint '{endpoint}' for Volcengine provider. "
-                    f"Valid endpoints: {valid_endpoints}"
+                    f"Invalid endpoint '{endpoint}' for Volcengine provider. Valid endpoints: {valid_endpoints}"
                 )
 
             # Map endpoint to specific Redis keys
-            if endpoint == 'ark-deepseek':
+            if endpoint == "ark-deepseek":
                 self.qpm_key = RATE_QPM_KEY_VOLCENGINE_DEEPSEEK
                 self.concurrent_key = RATE_CONCURRENT_KEY_VOLCENGINE_DEEPSEEK
-            elif endpoint == 'ark-kimi':
+            elif endpoint == "ark-kimi":
                 self.qpm_key = RATE_QPM_KEY_VOLCENGINE_KIMI
                 self.concurrent_key = RATE_CONCURRENT_KEY_VOLCENGINE_KIMI
-            elif endpoint == 'ark-doubao':
+            elif endpoint == "ark-doubao":
                 self.qpm_key = RATE_QPM_KEY_VOLCENGINE_DOUBAO
                 self.concurrent_key = RATE_CONCURRENT_KEY_VOLCENGINE_DOUBAO
         else:  # Default to dashscope
@@ -134,7 +131,7 @@ class DashscopeRateLimiter:
             self.concurrent_key = RATE_CONCURRENT_KEY_DASHSCOPE
 
         # Generate unique request ID prefix for this worker
-        self._worker_id = os.getenv('WORKER_ID', str(os.getpid()))
+        self._worker_id = os.getenv("WORKER_ID", str(os.getpid()))
 
         # In-memory fallback (kept for single-worker testing only)
         # NOTE: Redis is REQUIRED for multi-worker deployments
@@ -161,13 +158,24 @@ class DashscopeRateLimiter:
             logger.info(
                 "[RateLimiter] Initialized: Provider=%s, QPM=%s, Concurrent=%s, "
                 "Enabled=%s, Redis keys: QPM=%s, Concurrent=%s, Endpoint=%s",
-                provider, qpm_limit, concurrent_limit, enabled, self.qpm_key, self.concurrent_key, endpoint
+                provider,
+                qpm_limit,
+                concurrent_limit,
+                enabled,
+                self.qpm_key,
+                self.concurrent_key,
+                endpoint,
             )
         else:
             logger.info(
                 "[RateLimiter] Initialized: Provider=%s, QPM=%s, Concurrent=%s, "
                 "Enabled=%s, Redis keys: QPM=%s, Concurrent=%s",
-                provider, qpm_limit, concurrent_limit, enabled, self.qpm_key, self.concurrent_key
+                provider,
+                qpm_limit,
+                concurrent_limit,
+                enabled,
+                self.qpm_key,
+                self.concurrent_key,
             )
 
     def _use_redis(self) -> bool:
@@ -280,11 +288,11 @@ class DashscopeRateLimiter:
                         self.qpm_limit,
                         request_id,
                         now,
-                        one_minute_ago
+                        one_minute_ago,
                     )
                 except Exception as script_error:
                     # Script might not exist (Redis restart), reload it
-                    if 'NOSCRIPT' in str(script_error) or 'not found' in str(script_error).lower():
+                    if "NOSCRIPT" in str(script_error) or "not found" in str(script_error).lower():
                         logger.warning("[RateLimiter] Lua script not found, reloading...")
                         try:
                             self._acquire_script_sha = redis.script_load(acquire_script)
@@ -299,17 +307,23 @@ class DashscopeRateLimiter:
                                 self.qpm_limit,
                                 request_id,
                                 now,
-                                one_minute_ago
+                                one_minute_ago,
                             )
                         except Exception as retry_error:
-                            logger.error("[RateLimiter] Failed to reload Lua script: %s", retry_error)
+                            logger.error(
+                                "[RateLimiter] Failed to reload Lua script: %s",
+                                retry_error,
+                            )
                             raise RuntimeError(
                                 f"Rate limiting requires Redis. Lua script execution failed: {retry_error}. "
                                 "Please ensure Redis is running and configured correctly."
                             ) from retry_error
                     else:
                         # Other Redis errors
-                        logger.error("[RateLimiter] Lua script execution failed: %s", script_error)
+                        logger.error(
+                            "[RateLimiter] Lua script execution failed: %s",
+                            script_error,
+                        )
                         raise RuntimeError(
                             f"Rate limiting requires Redis. Lua script execution failed: {script_error}. "
                             "Please ensure Redis is running and configured correctly."
@@ -333,14 +347,19 @@ class DashscopeRateLimiter:
                             logger.warning("[RateLimiter] Failed to update wait stats: %s", e)
                         # Log at INFO level if wait was significant (>1s), DEBUG otherwise
                         if wait_duration > 1.0:
-                            provider_name = self.provider or 'unknown'
-                            endpoint_name = self.endpoint or ''
+                            provider_name = self.provider or "unknown"
+                            endpoint_name = self.endpoint or ""
                             logger.info(
                                 "[RateLimiter] %s %s Waited %.2fs before acquiring rate limit slot",
-                                provider_name, endpoint_name, wait_duration
+                                provider_name,
+                                endpoint_name,
+                                wait_duration,
                             )
                         else:
-                            logger.debug("[RateLimiter] Waited %.2fs before acquiring", wait_duration)
+                            logger.debug(
+                                "[RateLimiter] Waited %.2fs before acquiring",
+                                wait_duration,
+                            )
 
                     # Get current stats for debug log
                     try:
@@ -349,7 +368,10 @@ class DashscopeRateLimiter:
 
                         logger.debug(
                             "[RateLimiter] Acquired (Redis): %s/%s concurrent, %s/%s QPM",
-                            current_concurrent, self.concurrent_limit, current_qpm, self.qpm_limit
+                            current_concurrent,
+                            self.concurrent_limit,
+                            current_qpm,
+                            self.qpm_limit,
                         )
                     except Exception as e:
                         logger.debug("[RateLimiter] Failed to get stats for logging: %s", e)
@@ -358,41 +380,52 @@ class DashscopeRateLimiter:
 
                 else:
                     # Limit reached, wait and retry
-                    limit_type = result[1] if len(result) > 1 else 'unknown'
+                    limit_type = result[1] if len(result) > 1 else "unknown"
                     current_value = result[2] if len(result) > 2 else 0
 
                     if wait_start is None:
                         wait_start = time.time()
                         last_log_time = wait_start
                         self._local_total_waits += 1
-                        provider_name = self.provider or 'unknown'
-                        endpoint_name = self.endpoint or ''
-                        if limit_type == 'concurrent_limit':
+                        provider_name = self.provider or "unknown"
+                        endpoint_name = self.endpoint or ""
+                        if limit_type == "concurrent_limit":
                             logger.info(
                                 "[RateLimiter] %s %s Concurrent limit reached (%s/%s), waiting...",
-                                provider_name, endpoint_name, current_value, self.concurrent_limit
+                                provider_name,
+                                endpoint_name,
+                                current_value,
+                                self.concurrent_limit,
                             )
-                        elif limit_type == 'qpm_limit':
+                        elif limit_type == "qpm_limit":
                             logger.warning(
                                 "[RateLimiter] %s %s QPM limit reached (%s/%s), waiting...",
-                                provider_name, endpoint_name, current_value, self.qpm_limit
+                                provider_name,
+                                endpoint_name,
+                                current_value,
+                                self.qpm_limit,
                             )
 
                     # Log periodic updates during long waits (every 5 seconds)
                     wait_duration = time.time() - wait_start
                     current_time = time.time()
                     if wait_duration > 5.0 and (last_log_time is None or current_time - last_log_time >= 5.0):
-                        provider_name = self.provider or 'unknown'
-                        endpoint_name = self.endpoint or ''
-                        limit_value = self.concurrent_limit if limit_type == 'concurrent_limit' else self.qpm_limit
+                        provider_name = self.provider or "unknown"
+                        endpoint_name = self.endpoint or ""
+                        limit_value = self.concurrent_limit if limit_type == "concurrent_limit" else self.qpm_limit
                         logger.warning(
                             "[RateLimiter] %s %s Still waiting for %s (%s/%s), waited %.1fs...",
-                            provider_name, endpoint_name, limit_type, current_value, limit_value, wait_duration
+                            provider_name,
+                            endpoint_name,
+                            limit_type,
+                            current_value,
+                            limit_value,
+                            wait_duration,
                         )
                         last_log_time = current_time
 
                     # Wait before retrying
-                    await asyncio.sleep(0.1 if limit_type == 'concurrent_limit' else 1.0)
+                    await asyncio.sleep(0.1 if limit_type == "concurrent_limit" else 1.0)
 
         except Exception as e:
             logger.error("[RateLimiter] Redis acquire failed: %s", e)
@@ -413,7 +446,8 @@ class DashscopeRateLimiter:
                     self._local_total_waits += 1
                     logger.debug(
                         "[RateLimiter] (memory) Concurrent limit reached (%s/%s), waiting...",
-                        self._memory_active, self.concurrent_limit
+                        self._memory_active,
+                        self.concurrent_limit,
                     )
                 await asyncio.sleep(0.1)
 
@@ -430,7 +464,8 @@ class DashscopeRateLimiter:
                     self._local_total_waits += 1
                     logger.warning(
                         "[RateLimiter] (memory) QPM limit reached (%s/%s), waiting...",
-                        len(self._memory_timestamps), self.qpm_limit
+                        len(self._memory_timestamps),
+                        self.qpm_limit,
                     )
                 await asyncio.sleep(1.0)
 
@@ -449,11 +484,17 @@ class DashscopeRateLimiter:
             if wait_start:
                 wait_duration = time.time() - wait_start
                 self._local_total_wait_time += wait_duration
-                logger.debug("[RateLimiter] (memory) Waited %.2fs before acquiring", wait_duration)
+                logger.debug(
+                    "[RateLimiter] (memory) Waited %.2fs before acquiring",
+                    wait_duration,
+                )
 
             logger.debug(
                 "[RateLimiter] Acquired (memory): %s/%s concurrent, %s/%s QPM",
-                self._memory_active, self.concurrent_limit, len(self._memory_timestamps), self.qpm_limit
+                self._memory_active,
+                self.concurrent_limit,
+                len(self._memory_timestamps),
+                self.qpm_limit,
             )
 
     async def release(self) -> None:
@@ -488,7 +529,8 @@ class DashscopeRateLimiter:
 
             logger.debug(
                 "[RateLimiter] Released (Redis): %s/%s concurrent",
-                current, self.concurrent_limit
+                current,
+                self.concurrent_limit,
             )
 
         except Exception as e:
@@ -501,24 +543,25 @@ class DashscopeRateLimiter:
             self._memory_active = max(0, self._memory_active - 1)
             logger.debug(
                 "[RateLimiter] Released (memory): %s/%s concurrent",
-                self._memory_active, self.concurrent_limit
+                self._memory_active,
+                self.concurrent_limit,
             )
 
     def get_stats(self) -> Dict[str, Any]:
         """Get rate limiter statistics."""
         stats = {
-            'enabled': self.enabled,
-            'provider': self.provider,
-            'qpm_limit': self.qpm_limit,
-            'concurrent_limit': self.concurrent_limit,
-            'qpm_key': self.qpm_key,
-            'concurrent_key': self.concurrent_key,
-            'storage': 'redis' if self._use_redis() else 'memory',
-            'worker_id': self._worker_id,
+            "enabled": self.enabled,
+            "provider": self.provider,
+            "qpm_limit": self.qpm_limit,
+            "concurrent_limit": self.concurrent_limit,
+            "qpm_key": self.qpm_key,
+            "concurrent_key": self.concurrent_key,
+            "storage": "redis" if self._use_redis() else "memory",
+            "worker_id": self._worker_id,
             # Local stats (this worker only)
-            'local_total_requests': self._local_total_requests,
-            'local_total_waits': self._local_total_waits,
-            'local_total_wait_time': round(self._local_total_wait_time, 2),
+            "local_total_requests": self._local_total_requests,
+            "local_total_waits": self._local_total_waits,
+            "local_total_wait_time": round(self._local_total_wait_time, 2),
         }
 
         if self._use_redis():
@@ -536,38 +579,40 @@ class DashscopeRateLimiter:
                     # Get global stats
                     global_stats = redis.hgetall(RATE_STATS_KEY) or {}
 
-                    stats.update({
-                        'current_qpm': current_qpm,
-                        'active_requests': current_concurrent,
-                        'global_total_requests': int(global_stats.get('total_requests', 0)),
-                        'global_total_waits': int(global_stats.get('total_waits', 0)),
-                        'global_total_wait_time': float(global_stats.get('total_wait_time', 0)),
-                    })
+                    stats.update(
+                        {
+                            "current_qpm": current_qpm,
+                            "active_requests": current_concurrent,
+                            "global_total_requests": int(global_stats.get("total_requests", 0)),
+                            "global_total_waits": int(global_stats.get("total_waits", 0)),
+                            "global_total_wait_time": float(global_stats.get("total_wait_time", 0)),
+                        }
+                    )
 
-                    total_waits = stats['global_total_waits']
+                    total_waits = stats["global_total_waits"]
                     if total_waits > 0:
-                        stats['avg_wait_time'] = round(
-                            stats['global_total_wait_time'] / total_waits, 2
-                        )
+                        stats["avg_wait_time"] = round(stats["global_total_wait_time"] / total_waits, 2)
                     else:
-                        stats['avg_wait_time'] = 0.0
+                        stats["avg_wait_time"] = 0.0
 
                 except Exception as e:
                     logger.warning("[RateLimiter] Failed to get Redis stats: %s", e)
-                    stats['redis_stats_error'] = str(e)
+                    stats["redis_stats_error"] = str(e)
         else:
             # Memory stats
-            stats.update({
-                'current_qpm': len(self._memory_timestamps),
-                'active_requests': self._memory_active,
-                'total_requests': self._local_total_requests,
-                'total_waits': self._local_total_waits,
-                'total_wait_time': round(self._local_total_wait_time, 2),
-                'avg_wait_time': round(
-                    self._local_total_wait_time / self._local_total_waits
-                    if self._local_total_waits > 0 else 0, 2
-                )
-            })
+            stats.update(
+                {
+                    "current_qpm": len(self._memory_timestamps),
+                    "active_requests": self._memory_active,
+                    "total_requests": self._local_total_requests,
+                    "total_waits": self._local_total_waits,
+                    "total_wait_time": round(self._local_total_wait_time, 2),
+                    "avg_wait_time": round(
+                        self._local_total_wait_time / self._local_total_waits if self._local_total_waits > 0 else 0,
+                        2,
+                    ),
+                }
+            )
 
         return stats
 
@@ -588,7 +633,11 @@ class DashscopeRateLimiter:
                 redis.delete(self.qpm_key)
                 # Clear concurrent counter
                 redis.delete(self.concurrent_key)
-                logger.debug("[RateLimiter] Cleared state: QPM=%s, Concurrent=%s", self.qpm_key, self.concurrent_key)
+                logger.debug(
+                    "[RateLimiter] Cleared state: QPM=%s, Concurrent=%s",
+                    self.qpm_key,
+                    self.concurrent_key,
+                )
             except Exception as e:
                 logger.warning("[RateLimiter] Failed to clear state: %s", e)
 
@@ -605,6 +654,7 @@ class DashscopeRateLimiter:
 # Singleton instance (will be initialized by LLMService)
 class RateLimiterSingleton:
     """Singleton container for rate limiter instance."""
+
     _instance: Optional[DashscopeRateLimiter] = None
 
     @classmethod
@@ -624,9 +674,7 @@ def get_rate_limiter() -> Optional[DashscopeRateLimiter]:
 
 
 def initialize_rate_limiter(
-    qpm_limit: int = 200,
-    concurrent_limit: int = 50,
-    enabled: bool = True
+    qpm_limit: int = 200, concurrent_limit: int = 50, enabled: bool = True
 ) -> DashscopeRateLimiter:
     """
     Initialize the global rate limiter.
@@ -639,11 +687,7 @@ def initialize_rate_limiter(
     Returns:
         Initialized rate limiter instance
     """
-    instance = DashscopeRateLimiter(
-        qpm_limit=qpm_limit,
-        concurrent_limit=concurrent_limit,
-        enabled=enabled
-    )
+    instance = DashscopeRateLimiter(qpm_limit=qpm_limit, concurrent_limit=concurrent_limit, enabled=enabled)
     RateLimiterSingleton.set(instance)
     return instance
 
@@ -680,14 +724,14 @@ class LoadBalancerRateLimiter:
                 pass
     """
 
-    PROVIDER_DASHSCOPE = 'dashscope'
-    PROVIDER_VOLCENGINE = 'volcengine'
+    PROVIDER_DASHSCOPE = "dashscope"
+    PROVIDER_VOLCENGINE = "volcengine"
 
     def __init__(
         self,
         volcengine_qpm: int = 13500,
         volcengine_concurrent: int = 500,
-        enabled: bool = True
+        enabled: bool = True,
     ):
         """
         Initialize load balancer rate limiter.
@@ -709,15 +753,17 @@ class LoadBalancerRateLimiter:
             qpm_limit=volcengine_qpm,
             concurrent_limit=volcengine_concurrent,
             enabled=enabled,
-            provider='volcengine',
-            endpoint='ark-deepseek'  # DeepSeek Volcengine endpoint
+            provider="volcengine",
+            endpoint="ark-deepseek",  # DeepSeek Volcengine endpoint
         )
 
         logger.info(
             "[LoadBalancerRateLimiter] Initialized: "
             "Volcengine(QPM=%s, Concurrent=%s), Enabled=%s. "
             "Note: Dashscope route uses shared Dashscope rate limiter.",
-            volcengine_qpm, volcengine_concurrent, enabled
+            volcengine_qpm,
+            volcengine_concurrent,
+            enabled,
         )
 
     def get_limiter(self, provider: str) -> DashscopeRateLimiter:
@@ -791,15 +837,15 @@ class LoadBalancerRateLimiter:
 
         # Check concurrent limit
         # FIXED: Removed incorrect 'or' operator - use active_requests directly
-        active = stats.get('active_requests', 0)
-        concurrent_limit = stats.get('concurrent_limit', 0)
+        active = stats.get("active_requests", 0)
+        concurrent_limit = stats.get("concurrent_limit", 0)
 
         if active >= concurrent_limit:
             return False
 
         # Check QPM limit (approximate)
-        current_qpm = stats.get('current_qpm', 0)
-        qpm_limit = stats.get('qpm_limit', 0)
+        current_qpm = stats.get("current_qpm", 0)
+        qpm_limit = stats.get("qpm_limit", 0)
 
         if current_qpm >= qpm_limit:
             return False
@@ -809,9 +855,9 @@ class LoadBalancerRateLimiter:
     def get_stats(self) -> Dict[str, Any]:
         """Get statistics for Volcengine provider."""
         return {
-            'enabled': self.enabled,
-            'volcengine': self.volcengine_limiter.get_stats(),
-            'note': 'Dashscope route uses shared Dashscope rate limiter (not included here)'
+            "enabled": self.enabled,
+            "volcengine": self.volcengine_limiter.get_stats(),
+            "note": "Dashscope route uses shared Dashscope rate limiter (not included here)",
         }
 
     async def __aenter__(self):
@@ -820,4 +866,4 @@ class LoadBalancerRateLimiter:
 
     async def __aexit__(self, exc_type, _exc_val, _exc_tb):
         """Context manager support."""
-        pass
+        return None

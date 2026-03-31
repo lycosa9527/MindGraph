@@ -7,7 +7,9 @@ from typing import Any, Dict, List
 from fastapi import WebSocket
 
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
-from services.features.workshop_ws_connection_state import ACTIVE_EDITORS as active_editors
+from services.features.workshop_ws_connection_state import (
+    ACTIVE_EDITORS as active_editors,
+)
 from services.redis.redis_client import get_redis
 from services.workshop.workshop_live_spec import spec_for_snapshot
 from services.workshop.workshop_live_spec_ops import ensure_live_spec_seeded
@@ -44,12 +46,14 @@ async def _send_live_spec_snapshot(
         )
         snap = spec_for_snapshot(doc) if doc else {}
         ver = int(doc.get("v", 1)) if doc else 1
-        await websocket.send_json({
-            "type": "snapshot",
-            "diagram_id": diagram_id,
-            "spec": snap,
-            "version": ver,
-        })
+        await websocket.send_json(
+            {
+                "type": "snapshot",
+                "diagram_id": diagram_id,
+                "spec": snap,
+                "version": ver,
+            }
+        )
     except Exception as exc:
         logger.debug("Failed to send snapshot to client: %s", exc)
 
@@ -67,15 +71,17 @@ async def _replay_remote_node_editing_states(
             if editor_user_id != user.id:
                 color = user_colors[editor_user_id % len(user_colors)]
                 emoji = user_emojis[editor_user_id % len(user_emojis)]
-                await websocket.send_json({
-                    "type": "node_editing",
-                    "node_id": node_id,
-                    "user_id": editor_user_id,
-                    "username": editor_username,
-                    "editing": True,
-                    "color": color,
-                    "emoji": emoji,
-                })
+                await websocket.send_json(
+                    {
+                        "type": "node_editing",
+                        "node_id": node_id,
+                        "user_id": editor_user_id,
+                        "username": editor_username,
+                        "editing": True,
+                        "color": color,
+                        "emoji": emoji,
+                    }
+                )
 
 
 async def send_canvas_collab_join_handshake(
@@ -106,13 +112,13 @@ async def send_canvas_collab_join_handshake(
 
     await _send_live_spec_snapshot(websocket, code, diagram_id)
 
-    editor_map = (
-        load_editors(code)
-        if is_ws_fanout_enabled()
-        else active_editors.get(code, {})
-    )
+    editor_map = load_editors(code) if is_ws_fanout_enabled() else active_editors.get(code, {})
     await _replay_remote_node_editing_states(
-        websocket, user, editor_map, user_colors, user_emojis,
+        websocket,
+        user,
+        editor_map,
+        user_colors,
+        user_emojis,
     )
 
     await broadcast_to_others(

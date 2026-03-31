@@ -9,6 +9,7 @@ Admin-only endpoint for teacher engagement classification:
 Reads from user_usage_stats (pre-computed). Groups: unused, continuous,
 rejection, stopped, intermittent.
 """
+
 import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any
@@ -71,6 +72,7 @@ class ClassificationThresholds(BaseModel):
         }
     )
 
+
 GROUP_IDS = ["unused", "continuous", "rejection", "stopped", "intermittent"]
 
 
@@ -96,22 +98,14 @@ def get_teacher_usage(
     """
     beijing_now = get_beijing_now()
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
-    cutoff_90d = (
-        (beijing_today - timedelta(days=90))
-        .astimezone(timezone.utc)
-        .replace(tzinfo=None)
-    )
+    cutoff_90d = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
 
     teachers = db.query(User).filter(User.role == "user").all()
     teacher_ids = [u.id for u in teachers]
 
     stats_map = {}
     try:
-        stats_rows = (
-            db.query(UserUsageStats)
-            .filter(UserUsageStats.user_id.in_(teacher_ids))
-            .all()
-        )
+        stats_rows = db.query(UserUsageStats).filter(UserUsageStats.user_id.in_(teacher_ids)).all()
         for row in stats_rows:
             stats_map[row.user_id] = (row.tier1, row.tier2)
     except Exception as exc:
@@ -145,9 +139,7 @@ def get_teacher_usage(
             .group_by(TokenUsage.user_id)
             .all()
         )
-        user_autocomplete_count = {
-            int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows
-        }
+        user_autocomplete_count = {int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows}
 
     user_concept_gen_count: dict[int, int] = {}
     user_rel_labels_count: dict[int, int] = {}
@@ -162,9 +154,7 @@ def get_teacher_usage(
                 .group_by(UserActivityLog.user_id)
                 .all()
             )
-            user_concept_gen_count = {
-                int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows
-            }
+            user_concept_gen_count = {int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows}
             rel_labels_rows = (
                 db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
                 .filter(
@@ -174,9 +164,7 @@ def get_teacher_usage(
                 .group_by(UserActivityLog.user_id)
                 .all()
             )
-            user_rel_labels_count = {
-                int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows
-            }
+            user_rel_labels_count = {int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows}
         except Exception as exc:
             logger.debug("Failed to fetch activity log counts: %s", exc)
 
@@ -290,9 +278,7 @@ def get_teacher_usage_users(
             .group_by(TokenUsage.user_id)
             .all()
         )
-        user_autocomplete_count = {
-            int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows
-        }
+        user_autocomplete_count = {int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows}
         try:
             concept_gen_rows = (
                 db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
@@ -303,9 +289,7 @@ def get_teacher_usage_users(
                 .group_by(UserActivityLog.user_id)
                 .all()
             )
-            user_concept_gen_count = {
-                int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows
-            }
+            user_concept_gen_count = {int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows}
             rel_labels_rows = (
                 db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
                 .filter(
@@ -315,9 +299,7 @@ def get_teacher_usage_users(
                 .group_by(UserActivityLog.user_id)
                 .all()
             )
-            user_rel_labels_count = {
-                int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows
-            }
+            user_rel_labels_count = {int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows}
         except Exception as exc:
             logger.debug("Failed to fetch paginated activity log counts: %s", exc)
     total = len(teachers)
@@ -361,11 +343,7 @@ def get_user_weekly_tokens(
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
-    cutoff_90d = (
-        (beijing_today - timedelta(days=90))
-        .astimezone(timezone.utc)
-        .replace(tzinfo=None)
-    )
+    cutoff_90d = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
     try:
         weekly_rows = (
             db.query(
@@ -406,21 +384,9 @@ def get_user_detail(
     beijing_now = get_beijing_now()
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     today_start = beijing_today.astimezone(timezone.utc).replace(tzinfo=None)
-    week_ago = (
-        (beijing_today - timedelta(days=7))
-        .astimezone(timezone.utc)
-        .replace(tzinfo=None)
-    )
-    month_ago = (
-        (beijing_today - timedelta(days=30))
-        .astimezone(timezone.utc)
-        .replace(tzinfo=None)
-    )
-    cutoff_90d = (
-        (beijing_today - timedelta(days=90))
-        .astimezone(timezone.utc)
-        .replace(tzinfo=None)
-    )
+    week_ago = (beijing_today - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
+    month_ago = (beijing_today - timedelta(days=30)).astimezone(timezone.utc).replace(tzinfo=None)
+    cutoff_90d = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
     diagrams = 0
     concept_gen = 0
     rel_labels = 0
@@ -463,11 +429,7 @@ def get_user_detail(
         rel_labels = int(rl_row.cnt or 0) if rl_row else 0
 
         activity_trends = []
-        beijing_start = (
-            (beijing_today - timedelta(days=90))
-            .astimezone(timezone.utc)
-            .replace(tzinfo=None)
-        )
+        beijing_start = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
         date_list = []
         current = beijing_today - timedelta(days=90)
         while current <= beijing_now:

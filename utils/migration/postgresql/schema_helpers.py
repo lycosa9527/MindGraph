@@ -43,16 +43,15 @@ def _python_column_default_sql(column: Column, default: ColumnDefault) -> str:
     # Callable defaults (e.g., datetime.utcnow) are not expressible in ALTER TABLE.
     if column.nullable:
         logger.debug(
-            "[DBMigration] Column '%s' has callable default, "
-            "using NULL for nullable column",
-            column.name
+            "[DBMigration] Column '%s' has callable default, using NULL for nullable column",
+            column.name,
         )
         return "DEFAULT NULL"
     logger.warning(
         "[DBMigration] Column '%s' has callable default but is "
         "NOT NULL. Default will be handled by application, "
         "not database.",
-        column.name
+        column.name,
     )
     return ""
 
@@ -94,7 +93,7 @@ def create_index_if_needed(conn: Any, table_name: str, column: Column) -> bool:
         # Check if column has index=True
         # In SQLAlchemy, index=True creates an implicit index
         # column.index can be True (boolean), an Index object, or False/None
-        column_index = getattr(column, 'index', False)
+        column_index = getattr(column, "index", False)
         if not column_index:
             return True  # No index needed
 
@@ -103,12 +102,12 @@ def create_index_if_needed(conn: Any, table_name: str, column: Column) -> bool:
 
         # Check if index already exists
         inspector = inspect(conn)
-        existing_indexes = [idx['name'] for idx in inspector.get_indexes(table_name)]
+        existing_indexes = [idx["name"] for idx in inspector.get_indexes(table_name)]
         if index_name in existing_indexes:
             logger.debug(
                 "[DBMigration] Index '%s' already exists on table '%s'",
                 index_name,
-                table_name
+                table_name,
             )
             return True
 
@@ -117,26 +116,22 @@ def create_index_if_needed(conn: Any, table_name: str, column: Column) -> bool:
         quoted_column = quoted_name(column.name, quote=True)
 
         # Create index
-        create_index_sql = (
-            f"CREATE INDEX IF NOT EXISTS {index_name} "
-            f"ON {quoted_table}({quoted_column})"
-        )
+        create_index_sql = f"CREATE INDEX IF NOT EXISTS {index_name} ON {quoted_table}({quoted_column})"
         conn.execute(text(create_index_sql))
         conn.commit()
         logger.info(
             "[DBMigration] Created index '%s' on column '%s' in table '%s'",
             index_name,
             column.name,
-            table_name
+            table_name,
         )
         return True
     except Exception as e:
         logger.warning(
-            "[DBMigration] Failed to create index for column '%s' in "
-            "table '%s': %s",
+            "[DBMigration] Failed to create index for column '%s' in table '%s': %s",
             column.name,
             table_name,
-            e
+            e,
         )
         # Don't fail the migration if index creation fails
         try:
@@ -161,7 +156,7 @@ def create_table_indexes(conn: Any, table_name: str, table: Any) -> int:
     indexes_created = 0
     try:
         inspector = inspect(conn)
-        existing_indexes = {idx['name'] for idx in inspector.get_indexes(table_name)}
+        existing_indexes = {idx["name"] for idx in inspector.get_indexes(table_name)}
 
         # Create indexes from table.indexes (explicit Index objects)
         for index in table.indexes:
@@ -169,22 +164,16 @@ def create_table_indexes(conn: Any, table_name: str, table: Any) -> int:
                 logger.debug(
                     "[DBMigration] Index '%s' already exists on table '%s'",
                     index.name,
-                    table_name
+                    table_name,
                 )
                 continue
 
             # Build index columns with proper quoting
-            index_cols = [
-                str(quoted_name(col.name, quote=True))
-                for col in index.columns
-            ]
+            index_cols = [str(quoted_name(col.name, quote=True)) for col in index.columns]
             quoted_table = quoted_name(table_name, quote=True)
             quoted_index = quoted_name(index.name, quote=True)
 
-            index_sql = (
-                f'CREATE INDEX IF NOT EXISTS {quoted_index} '
-                f'ON {quoted_table} ({", ".join(index_cols)})'
-            )
+            index_sql = f"CREATE INDEX IF NOT EXISTS {quoted_index} ON {quoted_table} ({', '.join(index_cols)})"
 
             try:
                 conn.execute(text(index_sql))
@@ -193,23 +182,21 @@ def create_table_indexes(conn: Any, table_name: str, table: Any) -> int:
                 logger.info(
                     "[DBMigration] Created index '%s' on table '%s'",
                     index.name,
-                    table_name
+                    table_name,
                 )
             except Exception as idx_error:
                 error_msg = str(idx_error).lower()
                 if "already exists" in error_msg or "duplicate" in error_msg:
                     logger.debug(
-                        "[DBMigration] Index '%s' already exists "
-                        "(race condition)",
-                        index.name
+                        "[DBMigration] Index '%s' already exists (race condition)",
+                        index.name,
                     )
                 else:
                     logger.warning(
-                        "[DBMigration] Failed to create index '%s' on "
-                        "table '%s': %s",
+                        "[DBMigration] Failed to create index '%s' on table '%s': %s",
                         index.name,
                         table_name,
-                        idx_error
+                        idx_error,
                     )
                     try:
                         conn.rollback()
@@ -217,11 +204,7 @@ def create_table_indexes(conn: Any, table_name: str, table: Any) -> int:
                         pass
 
     except Exception as e:
-        logger.warning(
-            "[DBMigration] Error creating indexes for table '%s': %s",
-            table_name,
-            e
-        )
+        logger.warning("[DBMigration] Error creating indexes for table '%s': %s", table_name, e)
         try:
             conn.rollback()
         except Exception:
@@ -260,11 +243,7 @@ def add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
 
         conn.execute(text(sql))
         conn.commit()
-        logger.info(
-            "[DBMigration] Added column '%s' to table '%s'",
-            column.name,
-            table_name
-        )
+        logger.info("[DBMigration] Added column '%s' to table '%s'", column.name, table_name)
 
         # Create index if needed
         create_index_if_needed(conn, table_name, column)
@@ -275,7 +254,7 @@ def add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
             "[DBMigration] Failed to add column '%s' to table '%s': %s",
             column.name,
             table_name,
-            e
+            e,
         )
         try:
             conn.rollback()
@@ -284,47 +263,41 @@ def add_column_postgresql(conn: Any, table_name: str, column: Column) -> bool:
         return False
 
 
-def _create_or_align_pk_sequence(
-    conn: Any, table_name: str, column: Column
-) -> bool:
+def _create_or_align_pk_sequence(conn: Any, table_name: str, column: Column) -> bool:
     """Create missing PK sequence or align an existing one. Caller filters column type."""
     column_name = column.name
     sequence_name = f"{table_name}_{column_name}_seq"
     quoted_table = quoted_name(table_name, quote=True)
     quoted_column = quoted_name(column_name, quote=True)
 
-    sequence_exists = conn.execute(text(
-        "SELECT EXISTS(SELECT 1 FROM pg_sequences "
-        "WHERE schemaname = 'public' AND sequencename = :seq_name)"
-    ), {"seq_name": sequence_name}).scalar()
+    sequence_exists = conn.execute(
+        text("SELECT EXISTS(SELECT 1 FROM pg_sequences WHERE schemaname = 'public' AND sequencename = :seq_name)"),
+        {"seq_name": sequence_name},
+    ).scalar()
 
-    max_id = conn.execute(
-        text(f'SELECT MAX({quoted_column}) FROM {quoted_table}')
-    ).scalar() or 0
+    max_id = conn.execute(text(f"SELECT MAX({quoted_column}) FROM {quoted_table}")).scalar() or 0
 
     if not sequence_exists:
         logger.info(
-            "[DBMigration] Sequence %s does not exist for %s.%s. "
-            "Creating it...",
+            "[DBMigration] Sequence %s does not exist for %s.%s. Creating it...",
             sequence_name,
             table_name,
-            column_name
+            column_name,
         )
 
-        col_info = conn.execute(text(
-            """
+        col_info = conn.execute(
+            text(
+                """
             SELECT data_type, column_default
             FROM information_schema.columns
             WHERE table_name = :table_name AND column_name = :column_name
             """
-        ), {"table_name": table_name, "column_name": column_name}).fetchone()
+            ),
+            {"table_name": table_name, "column_name": column_name},
+        ).fetchone()
 
         if not col_info:
-            logger.warning(
-                "[DBMigration] Could not find column %s.%s",
-                table_name,
-                column_name
-            )
+            logger.warning("[DBMigration] Could not find column %s.%s", table_name, column_name)
             return False
 
         quoted_sequence = quoted_name(sequence_name, quote=True)
@@ -332,70 +305,49 @@ def _create_or_align_pk_sequence(
         logger.info("[DBMigration] Created sequence %s", sequence_name)
 
         if max_id > 0:
-            conn.execute(
-                text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
-            )
-            logger.info(
-                "[DBMigration] Set sequence %s to %d",
-                sequence_name,
-                max_id + 1
-            )
+            conn.execute(text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)"))
+            logger.info("[DBMigration] Set sequence %s to %d", sequence_name, max_id + 1)
         else:
             conn.execute(text(f"SELECT setval('{sequence_name}', 1, false)"))
             logger.info("[DBMigration] Set sequence %s to 1", sequence_name)
 
-        conn.execute(text(
-            f'ALTER TABLE {quoted_table} '
-            f'ALTER COLUMN {quoted_column} SET DEFAULT '
-            f'nextval(\'{sequence_name}\')'
-        ))
+        conn.execute(
+            text(f"ALTER TABLE {quoted_table} ALTER COLUMN {quoted_column} SET DEFAULT nextval('{sequence_name}')")
+        )
         logger.info(
             "[DBMigration] Set column default to use sequence for %s.%s",
             table_name,
-            column_name
+            column_name,
         )
 
-        conn.execute(text(
-            f"ALTER SEQUENCE {quoted_sequence} "
-            f"OWNED BY {quoted_table}.{quoted_column}"
-        ))
+        conn.execute(text(f"ALTER SEQUENCE {quoted_sequence} OWNED BY {quoted_table}.{quoted_column}"))
         logger.info("[DBMigration] Set sequence owner")
 
         conn.commit()
         logger.info(
             "[DBMigration] ✓ Successfully fixed sequence for %s.%s",
             table_name,
-            column_name
+            column_name,
         )
         return True
 
     quoted_sequence = quoted_name(sequence_name, quote=True)
-    last_value = conn.execute(
-        text(f"SELECT last_value FROM {quoted_sequence}")
-    ).scalar()
+    last_value = conn.execute(text(f"SELECT last_value FROM {quoted_sequence}")).scalar()
 
     if last_value <= max_id:
         logger.info(
-            "[DBMigration] Sequence value (%d) is <= max ID (%d). "
-            "Updating...",
+            "[DBMigration] Sequence value (%d) is <= max ID (%d). Updating...",
             last_value,
-            max_id
+            max_id,
         )
-        conn.execute(
-            text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)")
-        )
+        conn.execute(text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)"))
         conn.commit()
-        logger.info(
-            "[DBMigration] ✓ Updated sequence %s to %d",
-            sequence_name,
-            max_id + 1
-        )
+        logger.info("[DBMigration] ✓ Updated sequence %s to %d", sequence_name, max_id + 1)
         return True
     logger.debug(
-        "[DBMigration] Sequence %s is already set correctly "
-        "(value: %d)",
+        "[DBMigration] Sequence %s is already set correctly (value: %d)",
         sequence_name,
-        last_value
+        last_value,
     )
     return True
 
@@ -420,14 +372,12 @@ def fix_postgresql_sequence(conn: Any, table_name: str, column: Column) -> bool:
         if not column.primary_key:
             return True
 
-        autoincrement = getattr(column, 'autoincrement', False)
+        autoincrement = getattr(column, "autoincrement", False)
         if not autoincrement:
             return True
 
         column_type_str = str(column.type).upper()
-        if ('INTEGER' not in column_type_str and
-                'BIGINT' not in column_type_str and
-                'SMALLINT' not in column_type_str):
+        if "INTEGER" not in column_type_str and "BIGINT" not in column_type_str and "SMALLINT" not in column_type_str:
             return True
 
         return _create_or_align_pk_sequence(conn, table_name, column)
@@ -437,7 +387,7 @@ def fix_postgresql_sequence(conn: Any, table_name: str, column: Column) -> bool:
             "[DBMigration] Failed to fix sequence for %s.%s: %s",
             table_name,
             column.name,
-            e
+            e,
         )
         try:
             conn.rollback()

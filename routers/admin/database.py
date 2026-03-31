@@ -49,11 +49,7 @@ router = APIRouter(
 
 _backup_dir_env = os.getenv("BACKUP_DIR", "backup")
 _project_root = Path(__file__).resolve().parents[2]
-BACKUP_DIR = (
-    Path(_backup_dir_env)
-    if Path(_backup_dir_env).is_absolute()
-    else _project_root / _backup_dir_env
-)
+BACKUP_DIR = Path(_backup_dir_env) if Path(_backup_dir_env).is_absolute() else _project_root / _backup_dir_env
 
 _RAW_DB_URL = os.getenv(
     "DATABASE_URL",
@@ -66,18 +62,21 @@ def _raw_pg_url() -> str:
     url = _RAW_DB_URL
     for prefix in ("postgresql+psycopg://", "postgresql+psycopg2://"):
         if url.startswith(prefix):
-            return "postgresql://" + url[len(prefix):]
+            return "postgresql://" + url[len(prefix) :]
     return url
 
 
 # ── request bodies ────────────────────────────────────────────────────
 
+
 class FilenameBody(BaseModel):
     """Request body carrying a backup filename."""
+
     filename: str
 
 
 # ── endpoints ─────────────────────────────────────────────────────────
+
 
 @router.get("/stats")
 async def database_stats(
@@ -127,12 +126,8 @@ async def analyze_sqlite_file(
 
     try:
         result = analyze_sqlite(sqlite_path, engine)
-        result["user_mapping"] = {
-            str(k): v for k, v in result["user_mapping"].items()
-        }
-        result["org_mapping"] = {
-            str(k): v for k, v in result["org_mapping"].items()
-        }
+        result["user_mapping"] = {str(k): v for k, v in result["user_mapping"].items()}
+        result["org_mapping"] = {str(k): v for k, v in result["org_mapping"].items()}
         return result
     except Exception as exc:
         logger.error("[AdminDB] analyze failed: %s", exc, exc_info=True)
@@ -161,7 +156,9 @@ async def cleanup_sqlite_orphans_endpoint(
         return cleanup_sqlite_orphans(sqlite_path)
     except Exception as exc:
         logger.error(
-            "[AdminDB] SQLite orphan cleanup failed: %s", exc, exc_info=True,
+            "[AdminDB] SQLite orphan cleanup failed: %s",
+            exc,
+            exc_info=True,
         )
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -264,7 +261,10 @@ async def import_dump(
 
     try:
         result = import_postgres_dump(
-            _raw_pg_url(), BACKUP_DIR, body.filename, pg_engine=engine,
+            _raw_pg_url(),
+            BACKUP_DIR,
+            body.filename,
+            pg_engine=engine,
         )
         if not result["success"]:
             raise HTTPException(
@@ -283,6 +283,7 @@ async def import_dump(
 
 
 # ── helpers ───────────────────────────────────────────────────────────
+
 
 def _reject_path_traversal(filename: str) -> None:
     """Reject filenames containing path-traversal sequences."""

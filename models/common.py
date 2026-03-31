@@ -11,12 +11,13 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from enum import Enum
 
+from enum import Enum
 
 
 class DiagramType(str, Enum):
     """Supported diagram types"""
+
     BUBBLE_MAP = "bubble_map"
     BRIDGE_MAP = "bridge_map"
     TREE_MAP = "tree_map"
@@ -31,6 +32,7 @@ class DiagramType(str, Enum):
 
 class LLMModel(str, Enum):
     """Supported LLM models"""
+
     QWEN = "qwen"
     DEEPSEEK = "deepseek"
     KIMI = "kimi"
@@ -40,6 +42,7 @@ class LLMModel(str, Enum):
 
 class Language(str, Enum):
     """Supported languages"""
+
     ZH = "zh"
     EN = "en"
     AZ = "az"

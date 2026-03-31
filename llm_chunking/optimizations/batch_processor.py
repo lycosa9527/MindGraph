@@ -3,14 +3,15 @@
 Groups multiple items into batches for efficient LLM API calls.
 Reduces API calls by 10x (10 items per batch).
 """
+
 from typing import List, TypeVar, Callable, Awaitable, Optional
 import logging
 
 
 logger = logging.getLogger(__name__)
 
-T = TypeVar('T')
-R = TypeVar('R')
+T = TypeVar("T")
+R = TypeVar("R")
 
 
 class BatchProcessor:
@@ -37,7 +38,7 @@ class BatchProcessor:
         self,
         items: List[T],
         processor: Callable[[List[T]], Awaitable[List[R]]],
-        progress_callback: Optional[Callable[[int, int], None]] = None
+        progress_callback: Optional[Callable[[int, int], None]] = None,
     ) -> List[R]:
         """
         Process items in batches.
@@ -57,12 +58,14 @@ class BatchProcessor:
         total_batches = (len(items) + self.batch_size - 1) // self.batch_size
 
         for i in range(0, len(items), self.batch_size):
-            batch = items[i:i + self.batch_size]
+            batch = items[i : i + self.batch_size]
             batch_num = i // self.batch_size + 1
 
             logger.info(
                 "Processing batch %d/%d (%d items)",
-                batch_num, total_batches, len(batch)
+                batch_num,
+                total_batches,
+                len(batch),
             )
 
             if progress_callback:
@@ -87,5 +90,5 @@ class BatchProcessor:
         """
         batches = []
         for i in range(0, len(items), self.batch_size):
-            batches.append(items[i:i + self.batch_size])
+            batches.append(items[i : i + self.batch_size])
         return batches

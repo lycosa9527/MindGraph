@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime, timedelta
 from typing import Optional, List
 import logging
@@ -49,7 +50,7 @@ class GeweMessageDB:
         from_wxid: str,
         msg_type: int,
         content: Optional[str] = None,
-        is_group: bool = False
+        is_group: bool = False,
     ) -> bool:
         """
         Save message to database.
@@ -80,9 +81,9 @@ class GeweMessageDB:
                 sender_wxid=sender_wxid,
                 from_wxid=from_wxid,
                 msg_type=msg_type,
-                content=content or '',
+                content=content or "",
                 is_group=is_group,
-                timestamp=datetime.utcnow()
+                timestamp=datetime.utcnow(),
             )
             self.db.add(message)
             self.db.commit()
@@ -105,7 +106,7 @@ class GeweMessageDB:
         from_wxid: Optional[str] = None,
         msg_type: Optional[int] = None,
         is_group: Optional[bool] = None,
-        limit: int = 100
+        limit: int = 100,
     ) -> List[GeweMessage]:
         """
         Query message records.
@@ -124,11 +125,12 @@ class GeweMessageDB:
             List of GeweMessage objects
         """
         try:
-            query = select(GeweMessage).where(
-                GeweMessage.app_id == app_id
-            ).order_by(
-                GeweMessage.timestamp.desc()
-            ).limit(limit)
+            query = (
+                select(GeweMessage)
+                .where(GeweMessage.app_id == app_id)
+                .order_by(GeweMessage.timestamp.desc())
+                .limit(limit)
+            )
 
             if start_time:
                 query = query.where(GeweMessage.timestamp >= start_time)
@@ -163,11 +165,7 @@ class GeweMessageDB:
         """
         try:
             cutoff_time = datetime.utcnow() - timedelta(days=days)
-            result = self.db.execute(
-                delete(GeweMessage).where(
-                    GeweMessage.timestamp < cutoff_time
-                )
-            )
+            result = self.db.execute(delete(GeweMessage).where(GeweMessage.timestamp < cutoff_time))
             self.db.commit()
             deleted_count = result.rowcount
             logger.info("Cleaned up %d old messages (older than %d days)", deleted_count, days)
@@ -181,7 +179,7 @@ class GeweMessageDB:
         self,
         app_id: str,
         start_time: Optional[datetime] = None,
-        end_time: Optional[datetime] = None
+        end_time: Optional[datetime] = None,
     ) -> int:
         """
         Get count of messages for an app.

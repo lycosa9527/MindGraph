@@ -16,8 +16,8 @@ import { useLanguage, useNotifications } from '@/composables'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
-import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { useDiagramStore } from '@/stores'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 
 const props = withDefaults(
@@ -110,6 +110,10 @@ const resolvedPlaceholder = computed(() => {
   }
   return String(t('diagram.editable.placeholder'))
 })
+
+/** Stable id/name for autofill and label association (Lighthouse / a11y). */
+const fieldHtmlId = computed(() => `diagram-inline-edit-${props.nodeId}`)
+const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 
 // Local editing state
 const localIsEditing = ref(false)
@@ -579,12 +583,15 @@ onUnmounted(() => {
         <textarea
           v-if="multiline"
           ref="inputRef"
+          :id="fieldHtmlId"
           v-model="editText"
           dir="auto"
           class="inline-edit-input"
           :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
           :style="inputStyle"
+          :name="fieldHtmlId"
           :placeholder="resolvedPlaceholder"
+          :aria-label="fieldAriaLabel"
           :maxlength="maxLength"
           rows="2"
           @keydown="handleKeydown"
@@ -595,13 +602,16 @@ onUnmounted(() => {
         <template v-else>
           <input
             ref="inputRef"
+            :id="fieldHtmlId"
             v-model="editText"
             dir="auto"
             type="text"
             class="inline-edit-input"
             :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
             :style="inputStyle"
+            :name="fieldHtmlId"
             :placeholder="resolvedPlaceholder"
+            :aria-label="fieldAriaLabel"
             :maxlength="maxLength"
             @keydown="handleKeydown"
             @blur="handleBlur"

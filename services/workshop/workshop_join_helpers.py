@@ -24,9 +24,7 @@ def restore_workshop_redis_from_db_row(
         "diagram_id": diagram_id,
         "owner_id": str(diagram.user_id),
         "created_at": (
-            diagram.workshop_started_at.isoformat()
-            if diagram.workshop_started_at
-            else datetime.utcnow().isoformat()
+            diagram.workshop_started_at.isoformat() if diagram.workshop_started_at else datetime.utcnow().isoformat()
         ),
     }
     redis.setex(

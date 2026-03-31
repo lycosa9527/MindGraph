@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional, Callable, TYPE_CHECKING
 import logging
 import uuid
@@ -19,20 +20,24 @@ from sqlalchemy.orm import Session
 
 from services.knowledge.rag_chunk_test.benchmark_loaders import (
     get_benchmark_loader,
-    UserDocumentLoader
+    UserDocumentLoader,
 )
 from services.knowledge.rag_chunk_test.chunk_comparator import ChunkComparator
 from services.knowledge.rag_chunk_test.retrieval_evaluator import RetrievalEvaluator
-from services.knowledge.rag_chunk_test.answer_quality_evaluator import AnswerQualityEvaluator
+from services.knowledge.rag_chunk_test.answer_quality_evaluator import (
+    AnswerQualityEvaluator,
+)
 from services.knowledge.rag_chunk_test.diversity_evaluator import DiversityEvaluator
-from services.knowledge.rag_chunk_test.cross_method_comparator import CrossMethodComparator
+from services.knowledge.rag_chunk_test.cross_method_comparator import (
+    CrossMethodComparator,
+)
 from services.knowledge.rag_chunk_test.metrics_calculator import MetricsCalculator
 from services.knowledge.rag_chunk_test.summary_generator import SummaryGenerator
 from services.knowledge.progress_tracking import (
     format_progress_string,
     get_progress_percent,
     validate_progress,
-    ensure_completion_progress
+    ensure_completion_progress,
 )
 
 if TYPE_CHECKING:
@@ -56,7 +61,7 @@ class RAGChunkTestService:
             self.chunk_comparator,
             self.answer_quality_evaluator,
             self.diversity_evaluator,
-            self.cross_method_comparator
+            self.cross_method_comparator,
         )
         self.summary_generator = SummaryGenerator()
 
@@ -66,7 +71,7 @@ class RAGChunkTestService:
         user_id: int,
         dataset_name: Optional[str] = None,
         document_ids: Optional[List[int]] = None,
-        queries: Optional[List[str]] = None
+        queries: Optional[List[str]] = None,
     ) -> Dict[str, Any]:
         """
         Run chunk test with benchmark dataset or user documents.
@@ -97,7 +102,7 @@ class RAGChunkTestService:
         dataset_name: str,
         custom_queries: Optional[List[str]] = None,
         modes: Optional[List[str]] = None,
-        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None
+        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None,
     ) -> Dict[str, Any]:
         """
         Test chunking methods with benchmark dataset.
@@ -116,7 +121,7 @@ class RAGChunkTestService:
         logger.info(
             "[RAGChunkTest] Starting benchmark test: dataset=%s, user=%s",
             dataset_name,
-            user_id
+            user_id,
         )
 
         # Load dataset
@@ -131,9 +136,7 @@ class RAGChunkTestService:
         else:
             queries = [q.get("query", "") for q in dataset_queries if q.get("query")]
             answers_map = {
-                q.get("query", ""): q.get("answer", "")
-                for q in dataset_queries
-                if q.get("query") and q.get("answer")
+                q.get("query", ""): q.get("answer", "") for q in dataset_queries if q.get("query") and q.get("answer")
             }
 
         if not queries:
@@ -141,9 +144,7 @@ class RAGChunkTestService:
 
         # Extract expected chunks and relevance scores
         expected_chunks_map = {
-            q.get("query", ""): q.get("expected_chunk_ids", [])
-            for q in dataset_queries
-            if q.get("query")
+            q.get("query", ""): q.get("expected_chunk_ids", []) for q in dataset_queries if q.get("query")
         }
         relevance_scores_map = {
             q.get("query", ""): q.get("relevance_scores", {})
@@ -161,7 +162,7 @@ class RAGChunkTestService:
             relevance_scores_map=relevance_scores_map if relevance_scores_map else None,
             modes=modes,
             answers_map=answers_map if answers_map else None,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
         )
 
     def test_user_documents(
@@ -171,7 +172,7 @@ class RAGChunkTestService:
         document_ids: List[int],
         queries: List[str],
         modes: Optional[List[str]] = None,
-        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None
+        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None,
     ) -> Dict[str, Any]:
         """
         Test chunking methods with user's uploaded documents.
@@ -192,12 +193,11 @@ class RAGChunkTestService:
             modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
 
         logger.info(
-            "[RAGChunkTest] Starting user documents test: "
-            "documents=%s, queries=%s, user=%s, modes=%s",
+            "[RAGChunkTest] Starting user documents test: documents=%s, queries=%s, user=%s, modes=%s",
             len(document_ids),
             len(queries),
             user_id,
-            modes
+            modes,
         )
 
         # Load user documents
@@ -214,7 +214,7 @@ class RAGChunkTestService:
             documents=documents,
             queries=queries,
             modes=modes,
-            progress_callback=progress_callback
+            progress_callback=progress_callback,
         )
 
     def compare_chunking_methods(
@@ -227,7 +227,7 @@ class RAGChunkTestService:
         relevance_scores_map: Optional[Dict[str, Dict[int, float]]] = None,
         modes: Optional[List[str]] = None,
         answers_map: Optional[Dict[str, str]] = None,
-        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None
+        progress_callback: Optional[Callable[[str, Optional[str], str, int, List[str]], Optional[bool]]] = None,
     ) -> Dict[str, Any]:
         """
         Compare chunking methods (semchunk vs mindchunk vs qa).
@@ -251,11 +251,10 @@ class RAGChunkTestService:
             modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
 
         logger.info(
-            "[RAGChunkTest] Comparing chunking methods: "
-            "documents=%s, queries=%s, modes=%s",
+            "[RAGChunkTest] Comparing chunking methods: documents=%s, queries=%s, modes=%s",
             len(documents),
             len(queries),
-            modes
+            modes,
         )
 
         # Use test user ID to avoid interfering with real user data
@@ -267,44 +266,58 @@ class RAGChunkTestService:
         def update_progress(status: str, method: Optional[str], stage: str, progress: int) -> bool:
             """Helper to update progress via callback. Returns False if cancelled."""
             nonlocal previous_progress
-            
+
             # Validate progress to ensure it never decreases
-            validated_progress, is_valid = validate_progress(
-                progress,
-                previous_progress,
-                f'{stage} ({method})' if method else stage
+            validated_progress, _is_valid = validate_progress(
+                progress, previous_progress, f"{stage} ({method})" if method else stage
             )
             previous_progress = validated_progress
-            
+
             # Use standardized progress string format
             progress_string = format_progress_string(stage, method)
             logger.debug(
                 "[RAGChunkTest] Updating progress: status=%s, method=%s, stage=%s, "
                 "progress=%s%% (validated: %s%%), progress_string=%s, completed_methods=%s",
-                status, method, stage, progress, validated_progress, progress_string, completed_methods
+                status,
+                method,
+                stage,
+                progress,
+                validated_progress,
+                progress_string,
+                completed_methods,
             )
             if progress_callback:
                 try:
                     # Use validated progress in callback
-                    result = progress_callback(status, method, stage, validated_progress, completed_methods.copy())
+                    result = progress_callback(
+                        status,
+                        method,
+                        stage,
+                        validated_progress,
+                        completed_methods.copy(),
+                    )
                     # If callback returns False, processing was cancelled
                     if result is False:
                         logger.info(
                             "[RAGChunkTest] Progress callback returned False, "
                             "indicating cancellation: stage=%s, method=%s",
-                            stage, method
+                            stage,
+                            method,
                         )
                         return False
                     logger.debug(
                         "[RAGChunkTest] Progress callback completed successfully: "
                         "stage=%s, method=%s, progress=%s%%, progress_string=%s",
-                        stage, method, progress, progress_string
+                        stage,
+                        method,
+                        progress,
+                        progress_string,
                     )
                 except Exception as callback_error:
                     logger.error(
                         "[RAGChunkTest] Error in progress callback: %s",
                         callback_error,
-                        exc_info=True
+                        exc_info=True,
                     )
                     # Don't stop execution on callback errors, but log them
             return True
@@ -317,11 +330,11 @@ class RAGChunkTestService:
             "dataset_info": {
                 "document_count": len(documents),
                 "query_count": len(queries),
-                "modes": modes
+                "modes": modes,
             },
             "chunking_comparison": {},
             "retrieval_comparison": {},
-            "summary": {}
+            "summary": {},
         }
 
         # Step 1: Chunk all documents with specified methods (0-50% progress)
@@ -332,14 +345,13 @@ class RAGChunkTestService:
 
         for method_idx, mode in enumerate(modes):
             # Use standardized progress calculation
-            progress_value = get_progress_percent(
-                'chunking',
-                method_index=method_idx,
-                total_methods=total_methods
-            )
+            progress_value = get_progress_percent("chunking", method_index=method_idx, total_methods=total_methods)
             logger.info(
                 "[RAGChunkTest] Starting chunking with method %s (%d/%d): progress=%s%%",
-                mode, method_idx + 1, total_methods, progress_value
+                mode,
+                method_idx + 1,
+                total_methods,
+                progress_value,
             )
             if not update_progress("processing", mode, "chunking", progress_value):
                 logger.warning("[RAGChunkTest] Test cancelled before starting method %s", mode)
@@ -351,11 +363,7 @@ class RAGChunkTestService:
                 doc_metadata["document_id"] = doc.get("id", "")
 
                 try:
-                    chunks, time_ms = self.chunk_comparator.chunk_with_method(
-                        doc_text,
-                        mode,
-                        doc_metadata
-                    )
+                    chunks, time_ms = self.chunk_comparator.chunk_with_method(doc_text, mode, doc_metadata)
                     all_chunks[mode].extend(chunks)
                     chunking_times[mode].append(time_ms)
                 except Exception as e:
@@ -363,21 +371,21 @@ class RAGChunkTestService:
                         "[RAGChunkTest] %s failed for document %s: %s",
                         mode,
                         doc.get("id"),
-                        e
+                        e,
                     )
                     # Continue with other modes
                     all_chunks[mode].extend([])
 
                 # Update progress within method using standardized calculation
                 # Interpolate between method start and end progress
-                method_start = get_progress_percent('chunking', method_idx, total_methods)
-                method_end = get_progress_percent('chunking', method_idx + 1, total_methods)
+                method_start = get_progress_percent("chunking", method_idx, total_methods)
+                method_end = get_progress_percent("chunking", method_idx + 1, total_methods)
                 doc_progress = method_start + int((method_end - method_start) * (doc_idx + 1) / total_docs)
                 if not update_progress("processing", mode, "chunking", doc_progress):
                     raise RuntimeError("Test cancelled by user")
 
             completed_methods.append(mode)
-            method_end_progress = get_progress_percent('chunking', method_idx + 1, total_methods)
+            method_end_progress = get_progress_percent("chunking", method_idx + 1, total_methods)
             if not update_progress("processing", mode, "chunking", method_end_progress):
                 raise RuntimeError("Test cancelled by user")
 
@@ -388,19 +396,13 @@ class RAGChunkTestService:
             chunk_stats[mode] = self.chunk_comparator.calculate_chunk_stats(all_chunks[mode])
             chunk_stats[mode]["chunking_times"] = {
                 "total_ms": sum(chunking_times[mode]),
-                "avg_ms": (
-                    sum(chunking_times[mode]) / len(chunking_times[mode])
-                    if chunking_times[mode] else 0
-                )
+                "avg_ms": (sum(chunking_times[mode]) / len(chunking_times[mode]) if chunking_times[mode] else 0),
             }
 
         # Add comparison if we have exactly 2 modes
         if len(modes) == 2:
             chunk_stats["comparison"] = self.chunk_comparator.compare_two_modes(
-                all_chunks[modes[0]],
-                all_chunks[modes[1]],
-                modes[0],
-                modes[1]
+                all_chunks[modes[0]], all_chunks[modes[1]], modes[0], modes[1]
             )
 
         results["chunking_comparison"] = chunk_stats
@@ -427,7 +429,7 @@ class RAGChunkTestService:
                                 "processing",
                                 mode,
                                 "retrieval",
-                                int(50 + progress_per_query * (query_idx * total_methods + method_idx))
+                                int(50 + progress_per_query * (query_idx * total_methods + method_idx)),
                             ):
                                 raise RuntimeError("Test cancelled by user")
                             collection_name = f"test_{mode}_{uuid.uuid4().hex[:8]}"
@@ -443,30 +445,21 @@ class RAGChunkTestService:
                                 progress: int,
                                 captured_query_idx: int = query_idx,
                                 captured_method_idx: int = method_idx,
-                                captured_mode: str = mode
+                                captured_mode: str = mode,
                             ) -> None:
                                 """Nested callback to report retrieval sub-stages."""
                                 # Map internal progress (0-100) to overall progress
                                 # range. Retrieval phase is 50-80%, so each
                                 # query+method gets 30% / (total_queries *
                                 # total_methods)
-                                base_progress = (
-                                    50 + progress_per_query *
-                                    (captured_query_idx * total_methods +
-                                     captured_method_idx)
+                                base_progress = 50 + progress_per_query * (
+                                    captured_query_idx * total_methods + captured_method_idx
                                 )
-                                stage_progress = int(
-                                    base_progress +
-                                    (progress_per_query * progress / 100)
-                                )
+                                stage_progress = int(base_progress + (progress_per_query * progress / 100))
                                 # Use method parameter or fallback to mode from
                                 # closure
-                                callback_method = (
-                                    method if method is not None else captured_mode
-                                )
-                                update_progress(
-                                    status, callback_method, stage, stage_progress
-                                )
+                                callback_method = method if method is not None else captured_mode
+                                update_progress(status, callback_method, stage, stage_progress)
 
                             result = self.retrieval_evaluator.test_retrieval(
                                 all_chunks[mode],
@@ -478,12 +471,9 @@ class RAGChunkTestService:
                                 progress_callback=retrieval_progress_callback,
                                 method_name=mode,
                                 db=_db,
-                                user_id=_user_id
+                                user_id=_user_id,
                             )
-                            retrieval_results[mode].append({
-                                "query": query,
-                                "result": result
-                            })
+                            retrieval_results[mode].append({"query": query, "result": result})
                             # Cleanup immediately after successful test
                             self.retrieval_evaluator.cleanup_test_collection(test_user_id, collection_name)
                             created_collections.remove((test_user_id, collection_name))
@@ -492,7 +482,7 @@ class RAGChunkTestService:
                                 "[RAGChunkTest] %s retrieval failed for query '%s': %s",
                                 mode,
                                 query[:50],
-                                e
+                                e,
                             )
                             # Collection will be cleaned up in finally block
         finally:
@@ -503,14 +493,14 @@ class RAGChunkTestService:
                     logger.debug(
                         "[RAGChunkTest] Cleaned up test collection: %s (user_id=%s)",
                         collection_name,
-                        user_id
+                        user_id,
                     )
                 except Exception as cleanup_error:
                     logger.warning(
                         "[RAGChunkTest] Failed to cleanup collection %s (user_id=%s): %s",
                         collection_name,
                         user_id,
-                        cleanup_error
+                        cleanup_error,
                     )
 
         # Step 4: Compare retrieval results
@@ -518,8 +508,7 @@ class RAGChunkTestService:
         if len(modes) == 2 and retrieval_results[modes[0]] and retrieval_results[modes[1]]:
             comparison_results = []
             for idx, query in enumerate(queries):
-                if (idx < len(retrieval_results[modes[0]]) and
-                    idx < len(retrieval_results[modes[1]])):
+                if idx < len(retrieval_results[modes[0]]) and idx < len(retrieval_results[modes[1]]):
                     result_a = retrieval_results[modes[0]][idx]["result"]
                     result_b = retrieval_results[modes[1]][idx]["result"]
 
@@ -532,7 +521,7 @@ class RAGChunkTestService:
                         expected_chunks,
                         relevance_scores,
                         mode_a=modes[0],
-                        mode_b=modes[1]
+                        mode_b=modes[1],
                     )
                     comparison["query"] = query
                     comparison_results.append(comparison)
@@ -542,33 +531,27 @@ class RAGChunkTestService:
                 modes,
                 retrieval_results,
                 queries,
-                expected_chunks_map
+                expected_chunks_map,
             )
             results["retrieval_comparison"] = {
                 "per_query": comparison_results,
                 "average": avg_metrics_result,
                 "query_count": len(queries),
-                "note": "Metrics are averaged across all queries"
+                "note": "Metrics are averaged across all queries",
             }
         else:
             avg_metrics_result = self.metrics_calculator.calculate_average_metrics_per_mode(
-                retrieval_results,
-                modes,
-                queries,
-                expected_chunks_map
+                retrieval_results, modes, queries, expected_chunks_map
             )
             # Store individual results for each mode
             results["retrieval_comparison"] = {
                 "per_mode": {
-                    mode: [
-                        {"query": r["query"], "result": r["result"]}
-                        for r in retrieval_results[mode]
-                    ]
+                    mode: [{"query": r["query"], "result": r["result"]} for r in retrieval_results[mode]]
                     for mode in modes
                 },
                 "average": avg_metrics_result,
                 "query_count": len(queries),
-                "note": "Metrics are averaged across all queries"
+                "note": "Metrics are averaged across all queries",
             }
 
         # Step 3: Calculate comprehensive metrics by dimension (80-95% progress)
@@ -586,7 +569,7 @@ class RAGChunkTestService:
             expected_chunks_map,
             chunk_stats,
             avg_metrics,
-            answers_map
+            answers_map,
         )
         if not update_progress("processing", None, "evaluation", 95):
             raise RuntimeError("Test cancelled by user")
@@ -594,8 +577,7 @@ class RAGChunkTestService:
         # Step 4: Generate summary (95-100% progress)
         logger.info("[RAGChunkTest] Generating summary: progress=95%%")
         results["summary"] = self.summary_generator.generate_summary(
-            chunk_stats,
-            results.get("retrieval_comparison", {})
+            chunk_stats, results.get("retrieval_comparison", {})
         )
 
         # Mark as completed - ensure progress reaches 100%
@@ -607,17 +589,13 @@ class RAGChunkTestService:
 
         logger.info(
             "[RAGChunkTest] Test completed: chunks=%s",
-            {mode: len(all_chunks[mode]) for mode in modes}
+            {mode: len(all_chunks[mode]) for mode in modes},
         )
 
         return results
 
     def get_chunks_for_test(
-        self,
-        db: Session,
-        user_id: int,
-        test_result: "ChunkTestResult",
-        method: str
+        self, db: Session, user_id: int, test_result: "ChunkTestResult", method: str
     ) -> List[Dict[str, Any]]:
         """
         Regenerate chunks for a test result using a specific method.
@@ -657,18 +635,14 @@ class RAGChunkTestService:
             doc_metadata["document_id"] = doc.get("id", "")
 
             try:
-                chunks, _ = self.chunk_comparator.chunk_with_method(
-                    doc_text,
-                    method,
-                    doc_metadata
-                )
+                chunks, _ = self.chunk_comparator.chunk_with_method(doc_text, method, doc_metadata)
                 all_chunks.extend(chunks)
             except Exception as e:
                 logger.warning(
                     "[RAGChunkTest] Failed to chunk document %s with method %s: %s",
                     doc.get("id"),
                     method,
-                    e
+                    e,
                 )
 
         # Convert chunks to dict format
@@ -680,7 +654,7 @@ class RAGChunkTestService:
                 "metadata": chunk.metadata or {},
             }
             # Add position info if available
-            if hasattr(chunk, 'start_char') and hasattr(chunk, 'end_char'):
+            if hasattr(chunk, "start_char") and hasattr(chunk, "end_char"):
                 chunk_dict["start_char"] = chunk.start_char
                 chunk_dict["end_char"] = chunk.end_char
 
@@ -691,6 +665,6 @@ class RAGChunkTestService:
 
 def get_rag_chunk_test_service() -> RAGChunkTestService:
     """Get global RAG chunk test service instance."""
-    if not hasattr(get_rag_chunk_test_service, 'instance'):
+    if not hasattr(get_rag_chunk_test_service, "instance"):
         get_rag_chunk_test_service.instance = RAGChunkTestService()
     return get_rag_chunk_test_service.instance

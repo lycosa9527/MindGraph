@@ -3,6 +3,7 @@
 Splits routers/features/voice.py into routers/features/voice/ package. Output required manual
 fixes (imports, target= in diagram_add, etc.); prefer editing the package directly.
 """
+
 from __future__ import annotations
 
 from pathlib import Path

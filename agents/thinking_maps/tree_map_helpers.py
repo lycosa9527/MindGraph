@@ -3,6 +3,7 @@ Tree map enhancement helpers.
 
 Extracted from tree_map_agent to reduce complexity and improve maintainability.
 """
+
 from typing import Dict, List, Set, Tuple
 
 from utils.text_width_estimate import estimate_text_width_px
@@ -23,12 +24,7 @@ def ensure_node(node: Dict) -> Tuple[str, str]:
 
 def make_id_from(text: str, existing_ids: Set[str]) -> str:
     """Generate unique id from text."""
-    base = (
-        text.lower()
-        .replace(" ", "-")
-        .replace("/", "-")
-        .replace("\\", "-")
-    ) or "node"
+    base = (text.lower().replace(" ", "-").replace("/", "-").replace("\\", "-")) or "node"
     candidate = base
     counter = 1
     while candidate in existing_ids:
@@ -94,9 +90,7 @@ def normalize_children(
         used_ids.add(cid)
 
         leaves_raw = child.get("children", [])
-        normalized_leaves = _normalize_leaves(
-            leaves_raw, used_ids, max_leaves_per_branch
-        )
+        normalized_leaves = _normalize_leaves(leaves_raw, used_ids, max_leaves_per_branch)
 
         result.append({"id": cid, "text": ctext, "children": normalized_leaves})
         if len(result) >= max_branches:
@@ -122,17 +116,11 @@ def compute_recommended_dimensions(
     """Compute recommended canvas dimensions from content."""
     padding = 40
     root_r = _text_radius(topic, 20, 22)
-    branch_widths = [
-        _text_radius(b["text"], 16, 16) * 2 + 20
-        for b in normalized_children
-    ]
+    branch_widths = [_text_radius(b["text"], 16, 16) * 2 + 20 for b in normalized_children]
     leaf_counts = [len(b.get("children", [])) for b in normalized_children]
     max_leaf_count = max(leaf_counts) if leaf_counts else 0
 
-    total_width = (
-        sum(branch_widths)
-        + max(0, len(branch_widths) - 1) * 40
-    )
+    total_width = sum(branch_widths) + max(0, len(branch_widths) - 1) * 40
     base_width = max(total_width + padding * 2, 700)
     branch_row_h = max(60, root_r + 60)
     leaves_block_h = 90 if max_leaf_count > 0 else 0

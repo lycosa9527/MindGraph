@@ -34,15 +34,17 @@ from services.infrastructure.monitoring.critical_alert import CriticalAlertServi
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
 from services.infrastructure.recovery.recovery_startup import check_database_on_startup
-from services.infrastructure.lifecycle.startup import (
-    _handle_shutdown_signal
-)
+from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.llm import llm_service
 from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
 from services.redis.cache.redis_cache_loader import reload_cache_from_database
-from services.redis.redis_client import RedisStartupError, close_redis_sync, init_redis_sync
+from services.redis.redis_client import (
+    RedisStartupError,
+    close_redis_sync,
+    init_redis_sync,
+)
 from services.redis.redis_distributed_lock import (
     acquire_startup_sms_notification_lock,
     release_startup_sms_notification_lock,
@@ -52,6 +54,7 @@ from services.redis.redis_token_buffer import get_token_tracker
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.workshop import start_workshop_cleanup_scheduler
+
 # PDF auto-import removed - no longer needed for image-based viewing
 from services.utils.update_notifier import update_notifier
 from agents.inline_recommendations import start_inline_rec_cleanup_scheduler
@@ -74,36 +77,24 @@ async def _send_startup_sms_notification_once() -> None:
         logger.debug("[LIFESPAN] Startup SMS notification skipped (DEBUG mode enabled)")
         return
 
-    sms_startup_enabled = os.getenv(
-        "SMS_STARTUP_NOTIFICATION_ENABLED", "true"
-    ).lower() in ("true", "1", "yes")
+    sms_startup_enabled = os.getenv("SMS_STARTUP_NOTIFICATION_ENABLED", "true").lower() in ("true", "1", "yes")
     if not sms_startup_enabled:
-        logger.debug(
-            "[LIFESPAN] Startup SMS notification disabled "
-            "(SMS_STARTUP_NOTIFICATION_ENABLED=false)"
-        )
+        logger.debug("[LIFESPAN] Startup SMS notification disabled (SMS_STARTUP_NOTIFICATION_ENABLED=false)")
         return
 
     sms_middleware = get_sms_middleware()
     if not sms_middleware.is_available:
-        logger.debug(
-            "[LIFESPAN] SMS service not available, skipping startup SMS notification"
-        )
+        logger.debug("[LIFESPAN] SMS service not available, skipping startup SMS notification")
         return
 
     admin_phones = [phone.strip() for phone in ADMIN_PHONES if phone.strip()]
     if not admin_phones:
-        logger.debug(
-            "[LIFESPAN] No admin phones configured, skipping startup SMS notification"
-        )
+        logger.debug("[LIFESPAN] No admin phones configured, skipping startup SMS notification")
         return
 
     startup_template_id = os.getenv("TENCENT_SMS_TEMPLATE_STARTUP", "").strip()
     if not startup_template_id:
-        logger.warning(
-            "[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, "
-            "skipping startup SMS notification"
-        )
+        logger.warning("[LIFESPAN] TENCENT_SMS_TEMPLATE_STARTUP not configured, skipping startup SMS notification")
         return
 
     lock_token = await acquire_startup_sms_notification_lock()
@@ -143,8 +134,8 @@ async def lifespan(fastapi_app: FastAPI):
     # Only log startup messages from first worker to avoid repetition.
     # Note: Uvicorn does not set UVICORN_WORKER_ID; default '0' applies to all workers.
     # Features that must run once per cluster (e.g. startup SMS) use Redis locks instead.
-    worker_id = os.getenv('UVICORN_WORKER_ID', '0')
-    is_main_worker = (worker_id == '0' or not worker_id)
+    worker_id = os.getenv("UVICORN_WORKER_ID", "0")
+    is_main_worker = worker_id == "0" or not worker_id
 
     if is_main_worker:
         logger.debug("=" * 80)
@@ -177,10 +168,7 @@ async def lifespan(fastapi_app: FastAPI):
             CriticalAlertService.send_startup_failure_alert_sync(
                 component="Redis",
                 error_message=f"Redis startup failed: {str(e)}",
-                details=(
-                    "Application cannot start without Redis. "
-                    "Check Redis connection and configuration."
-                )
+                details=("Application cannot start without Redis. Check Redis connection and configuration."),
             )
         except Exception as alert_error:  # pylint: disable=broad-except
             logger.error("Failed to send startup failure alert: %s", alert_error)
@@ -206,7 +194,7 @@ async def lifespan(fastapi_app: FastAPI):
                     details=(
                         "Application cannot start without Qdrant when Knowledge Space is enabled. "
                         "Check Qdrant connection and configuration."
-                    )
+                    ),
                 )
             except Exception as alert_error:  # pylint: disable=broad-except
                 logger.error("Failed to send startup failure alert: %s", alert_error)
@@ -234,7 +222,7 @@ async def lifespan(fastapi_app: FastAPI):
                     details=(
                         "Application cannot start without Celery worker when Knowledge Space is enabled. "
                         "Start Celery worker: celery -A config.celery worker --loglevel=info"
-                    )
+                    ),
                 )
             except Exception as alert_error:  # pylint: disable=broad-except
                 logger.error("Failed to send startup failure alert: %s", alert_error)
@@ -262,10 +250,7 @@ async def lifespan(fastapi_app: FastAPI):
             CriticalAlertService.send_startup_failure_alert_sync(
                 component="Dependencies",
                 error_message=f"System dependency check failed: {str(e)}",
-                details=(
-                    "Required system dependencies are missing. "
-                    "Check Tesseract OCR installation."
-                )
+                details=("Required system dependencies are missing. Check Tesseract OCR installation."),
             )
         except Exception as alert_error:  # pylint: disable=broad-except
             if is_main_worker:
@@ -295,9 +280,8 @@ async def lifespan(fastapi_app: FastAPI):
                 component="Database",
                 error_message="Database recovery failed or was aborted",
                 details=(
-                    "Database integrity check failed and recovery was not successful. "
-                    "Manual intervention required."
-                )
+                    "Database integrity check failed and recovery was not successful. Manual intervention required."
+                ),
             )
         except Exception as alert_error:  # pylint: disable=broad-except
             if is_main_worker:
@@ -348,7 +332,10 @@ async def lifespan(fastapi_app: FastAPI):
                 logger.debug("[LIFESPAN] Library storage ready: %s", _library_dir.resolve())
         except Exception as lib_dir_exc:  # pylint: disable=broad-except
             if is_main_worker:
-                logger.warning("[LIFESPAN] Could not create library storage directory: %s", lib_dir_exc)
+                logger.warning(
+                    "[LIFESPAN] Could not create library storage directory: %s",
+                    lib_dir_exc,
+                )
 
         # Load cache from database and IP geolocation database in parallel
         # Note: Both use Redis lock/distributed coordination to ensure only one worker loads
@@ -356,16 +343,17 @@ async def lifespan(fastapi_app: FastAPI):
             logger.debug("[LIFESPAN] Loading cache and IP database...")
 
         # Check if user auth cache preloading is enabled
-        preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in ("1", "true", "yes")
+        preload_auth_cache = os.getenv("PRELOAD_USER_AUTH_CACHE", "true").lower() in (
+            "1",
+            "true",
+            "yes",
+        )
 
         def load_user_cache():
             """Load user cache from database (runs in thread pool)."""
             if not preload_auth_cache:
                 if is_main_worker:
-                    logger.info(
-                        "[CacheLoader] User auth cache preloading skipped "
-                        "(PRELOAD_USER_AUTH_CACHE disabled)"
-                    )
+                    logger.info("[CacheLoader] User auth cache preloading skipped (PRELOAD_USER_AUTH_CACHE disabled)")
                 return True  # Return True to indicate skip was intentional
 
             try:
@@ -389,8 +377,7 @@ async def lifespan(fastapi_app: FastAPI):
                 else:
                     if is_main_worker:
                         logger.warning(
-                            "IP Geolocation database not available "
-                            "(database file missing or failed to load)"
+                            "IP Geolocation database not available (database file missing or failed to load)"
                         )
                     return False
             except Exception as e:  # pylint: disable=broad-except
@@ -402,14 +389,17 @@ async def lifespan(fastapi_app: FastAPI):
         cache_result, ip_db_result = await asyncio.gather(
             asyncio.to_thread(load_user_cache),
             asyncio.to_thread(load_ip_database),
-            return_exceptions=True
+            return_exceptions=True,
         )
-
 
         # Handle results
         if isinstance(cache_result, Exception):
             if is_main_worker:
-                logger.error("Failed to load cache from database: %s", cache_result, exc_info=True)
+                logger.error(
+                    "Failed to load cache from database: %s",
+                    cache_result,
+                    exc_info=True,
+                )
         elif cache_result:
             # Cache loading completed (either by this worker or another worker via lock)
             # The actual loading logs come from reload_cache_from_database() itself
@@ -419,12 +409,9 @@ async def lifespan(fastapi_app: FastAPI):
             # cache_result is False - cache loading failed
             if preload_auth_cache:
                 if is_main_worker:
+                    logger.warning("[CacheLoader] Cache loading returned False - cache may not be preloaded")
                     logger.warning(
-                        "[CacheLoader] Cache loading returned False - cache may not be preloaded"
-                    )
-                    logger.warning(
-                        "[CacheLoader] WARNING: User authentication data may not be "
-                        "preloaded into Redis cache"
+                        "[CacheLoader] WARNING: User authentication data may not be preloaded into Redis cache"
                     )
 
         if isinstance(ip_db_result, Exception):
@@ -478,9 +465,7 @@ async def lifespan(fastapi_app: FastAPI):
         except NotImplementedError:
             logger.error("=" * 80)
             logger.error("CRITICAL: Playwright browsers are not installed!")
-            logger.error(
-                "PNG generation endpoints (/api/generate_png, /api/generate_dingtalk) will fail."
-            )
+            logger.error("PNG generation endpoints (/api/generate_png, /api/generate_dingtalk) will fail.")
             logger.error("To fix: conda activate python3.13 && playwright install chromium")
             logger.error("=" * 80)
         except Exception as e:  # pylint: disable=broad-except
@@ -499,9 +484,7 @@ async def lifespan(fastapi_app: FastAPI):
     # Start workshop cleanup scheduler (removes expired workshop codes from database)
     workshop_cleanup_task = None
     try:
-        workshop_cleanup_task = asyncio.create_task(
-            start_workshop_cleanup_scheduler(interval_hours=6)
-        )
+        workshop_cleanup_task = asyncio.create_task(start_workshop_cleanup_scheduler(interval_hours=6))
         if is_main_worker:
             logger.debug("Workshop cleanup scheduler started")
     except Exception as e:  # pylint: disable=broad-except
@@ -526,7 +509,7 @@ async def lifespan(fastapi_app: FastAPI):
         backup_scheduler_task = asyncio.create_task(start_backup_scheduler())
         # Don't log here - the scheduler will log whether it acquired the lock
     except Exception as e:  # pylint: disable=broad-except
-        if worker_id == '0' or not worker_id:
+        if worker_id == "0" or not worker_id:
             logger.warning("Failed to start backup scheduler: %s", e)
 
     # PDF auto-import removed - no longer needed for image-based viewing

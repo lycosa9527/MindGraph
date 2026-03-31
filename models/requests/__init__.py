@@ -45,6 +45,7 @@ from .requests_knowledge_space import (
     MetadataUpdateRequest,
     RollbackRequest,
 )
+
 __all__ = [
     # Diagram Requests
     "GenerateRequest",

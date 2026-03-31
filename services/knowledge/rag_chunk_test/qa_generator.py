@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional
 import logging
 import re
@@ -49,7 +50,7 @@ class QAGenerator:
         self,
         text: str,
         metadata: Optional[Dict[str, Any]] = None,
-        language: str = "English"
+        language: str = "English",
     ) -> List[Chunk]:
         """
         Generate Q&A chunks from text using LLM.
@@ -64,8 +65,7 @@ class QAGenerator:
         """
         if not self.llm_service:
             raise RuntimeError(
-                "[QAGenerator] LLM service not available. "
-                "QA mode requires LLM service to be initialized."
+                "[QAGenerator] LLM service not available. QA mode requires LLM service to be initialized."
             )
 
         if not text or not text.strip():
@@ -77,7 +77,7 @@ class QAGenerator:
         logger.info(
             "[QAGenerator] Generating Q&A pairs for text length=%s, language=%s",
             len(text),
-            language
+            language,
         )
 
         try:
@@ -97,26 +97,22 @@ class QAGenerator:
             response = loop.run_until_complete(
                 self.llm_service.chat(
                     prompt=text,
-                    model='qwen',
+                    model="qwen",
                     max_tokens=2000,
                     temperature=0.01,
-                    system_message=system_prompt
+                    system_message=system_prompt,
                 )
             )
 
             if not response or not response.strip():
-                logger.warning(
-                    "[QAGenerator] Empty response from LLM service"
-                )
+                logger.warning("[QAGenerator] Empty response from LLM service")
                 return []
 
             # Parse Q&A pairs from response
             qa_pairs = self._parse_qa_response(response)
 
             if not qa_pairs:
-                logger.warning(
-                    "[QAGenerator] No Q&A pairs parsed from LLM response"
-                )
+                logger.warning("[QAGenerator] No Q&A pairs parsed from LLM response")
                 return []
 
             # Convert Q&A pairs to Chunk objects
@@ -138,7 +134,7 @@ class QAGenerator:
                     "answer": answer,
                     "question": question,
                     "qa_index": idx,
-                    "structure_type": "qa"
+                    "structure_type": "qa",
                 }
 
                 chunk = Chunk(
@@ -146,26 +142,17 @@ class QAGenerator:
                     start_char=start_char,
                     end_char=end_char,
                     chunk_index=idx,
-                    metadata=chunk_metadata
+                    metadata=chunk_metadata,
                 )
                 chunks.append(chunk)
 
-            logger.info(
-                "[QAGenerator] Generated %s Q&A chunks from text",
-                len(chunks)
-            )
+            logger.info("[QAGenerator] Generated %s Q&A chunks from text", len(chunks))
 
             return chunks
 
         except Exception as e:
-            logger.error(
-                "[QAGenerator] Failed to generate Q&A pairs: %s",
-                e,
-                exc_info=True
-            )
-            raise RuntimeError(
-                f"[QAGenerator] QA generation failed: {e}"
-            ) from e
+            logger.error("[QAGenerator] Failed to generate Q&A pairs: %s", e, exc_info=True)
+            raise RuntimeError(f"[QAGenerator] QA generation failed: {e}") from e
 
     def _parse_qa_response(self, response: str) -> List[tuple[str, str]]:
         """
@@ -189,9 +176,6 @@ class QAGenerator:
                 cleaned_answer = re.sub(r"\n\s*", "\n", answer.strip())
                 qa_pairs.append((question.strip(), cleaned_answer))
 
-        logger.debug(
-            "[QAGenerator] Parsed %s Q&A pairs from response",
-            len(qa_pairs)
-        )
+        logger.debug("[QAGenerator] Parsed %s Q&A pairs from response", len(qa_pairs))
 
         return qa_pairs

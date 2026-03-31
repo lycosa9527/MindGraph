@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from collections import Counter
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import datetime, timedelta
@@ -34,7 +35,7 @@ from models.domain.knowledge_space import (
     KnowledgeQuery,
     QueryFeedback,
     DocumentRelationship,
-    ChunkAttachment
+    ChunkAttachment,
 )
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.keyword_search_service import get_keyword_search_service
@@ -47,6 +48,7 @@ logger = logging.getLogger(__name__)
 
 class RerankMode:
     """Reranking mode constants matching Dify's approach."""
+
     RERANKING_MODEL = "reranking_model"
     WEIGHTED_SCORE = "weighted_score"
     NONE = "none"
@@ -85,11 +87,10 @@ class RAGService:
                 self.reranking_mode = RerankMode.WEIGHTED_SCORE
 
         logger.info(
-            "[RAGService] Initialized with method=%s, reranking_mode=%s, "
-            "parallel_workers=%s",
+            "[RAGService] Initialized with method=%s, reranking_mode=%s, parallel_workers=%s",
             self.default_method,
             self.reranking_mode,
-            self.parallel_workers
+            self.parallel_workers,
         )
 
     def has_knowledge_base(self, db: Session, user_id: int) -> bool:
@@ -104,20 +105,29 @@ class RAGService:
             True if user has completed documents
         """
         try:
-            count = db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-                KnowledgeSpace.user_id == user_id,
-                KnowledgeDocument.status == 'completed'
-            ).count()
+            count = (
+                db.query(KnowledgeDocument)
+                .join(KnowledgeSpace)
+                .filter(
+                    KnowledgeSpace.user_id == user_id,
+                    KnowledgeDocument.status == "completed",
+                )
+                .count()
+            )
             return count > 0
         except Exception as e:
-            logger.error("[RAGService] Failed to check knowledge base for user %s: %s", user_id, e)
+            logger.error(
+                "[RAGService] Failed to check knowledge base for user %s: %s",
+                user_id,
+                e,
+            )
             return False
 
     def _apply_metadata_post_filter(
         self,
         db: Session,
         chunk_ids: List[int],
-        metadata_filter: Optional[Dict[str, Any]]
+        metadata_filter: Optional[Dict[str, Any]],
     ) -> List[int]:
         """
         Apply metadata filters that Qdrant doesn't support directly.
@@ -136,9 +146,7 @@ class RAGService:
             return chunk_ids
 
         # Get chunks with their documents
-        chunks = db.query(DocumentChunk).filter(
-            DocumentChunk.id.in_(chunk_ids)
-        ).join(KnowledgeDocument).all()
+        chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).join(KnowledgeDocument).all()
 
         filtered_chunk_ids = []
 
@@ -186,10 +194,7 @@ class RAGService:
                 if isinstance(filter_custom, dict):
                     doc_custom = document.custom_fields or {}
                     # Check if all filter custom fields match
-                    if not all(
-                        doc_custom.get(k) == v
-                        for k, v in filter_custom.items()
-                    ):
+                    if not all(doc_custom.get(k) == v for k, v in filter_custom.items()):
                         continue
 
             # Filter by metadata fields
@@ -198,17 +203,14 @@ class RAGService:
                 if isinstance(filter_metadata, dict):
                     doc_metadata = document.doc_metadata or {}
                     # Check if all filter metadata fields match
-                    if not all(
-                        doc_metadata.get(k) == v
-                        for k, v in filter_metadata.items()
-                    ):
+                    if not all(doc_metadata.get(k) == v for k, v in filter_metadata.items()):
                         continue
 
             # Structure-based filtering (chunk-level)
             # Filter by page_number
             if "page_number" in metadata_filter:
                 filter_page = metadata_filter["page_number"]
-                chunk_page = chunk_metadata.get('page_number')
+                chunk_page = chunk_metadata.get("page_number")
                 if isinstance(filter_page, dict):
                     # Range filter: {"gte": 1, "lte": 10}
                     if chunk_page is None:
@@ -228,25 +230,25 @@ class RAGService:
 
             # Filter by section_title
             if "section_title" in metadata_filter:
-                chunk_section = chunk_metadata.get('section_title', '')
+                chunk_section = chunk_metadata.get("section_title", "")
                 if chunk_section != metadata_filter["section_title"]:
                     continue
 
             # Filter by section_level
             if "section_level" in metadata_filter:
-                chunk_level = chunk_metadata.get('section_level')
+                chunk_level = chunk_metadata.get("section_level")
                 if chunk_level != metadata_filter["section_level"]:
                     continue
 
             # Filter by has_table
             if "has_table" in metadata_filter:
-                chunk_has_table = chunk_metadata.get('has_table', False)
+                chunk_has_table = chunk_metadata.get("has_table", False)
                 if chunk_has_table != metadata_filter["has_table"]:
                     continue
 
             # Filter by has_code
             if "has_code" in metadata_filter:
-                chunk_has_code = chunk_metadata.get('has_code', False)
+                chunk_has_code = chunk_metadata.get("has_code", False)
                 if chunk_has_code != metadata_filter["has_code"]:
                     continue
 
@@ -263,7 +265,7 @@ class RAGService:
         top_k: int = 5,
         score_threshold: float = 0.0,
         include_related: bool = True,
-        max_related: int = 3
+        max_related: int = 3,
     ) -> List[str]:
         """
         Retrieve context including related documents.
@@ -286,9 +288,9 @@ class RAGService:
             db=db,
             user_id=user_id,
             query=query,
-            method=method or 'hybrid',
+            method=method or "hybrid",
             top_k=top_k,
-            score_threshold=score_threshold
+            score_threshold=score_threshold,
         )
 
         if not include_related:
@@ -296,17 +298,24 @@ class RAGService:
 
         # Get chunk IDs from initial results by matching texts
         # This is a workaround - ideally retrieve_context would return IDs
-        initial_chunks = db.query(DocumentChunk).filter(
-            DocumentChunk.text.in_(initial_texts[:top_k])  # Limit to avoid too many matches
-        ).all()
+        initial_chunks = (
+            db.query(DocumentChunk)
+            .filter(
+                DocumentChunk.text.in_(initial_texts[:top_k])  # Limit to avoid too many matches
+            )
+            .all()
+        )
         document_ids = list(set(chunk.document_id for chunk in initial_chunks))
 
         # Find related documents
         related_doc_ids = set()
         for doc_id in document_ids:
-            relationships = db.query(DocumentRelationship).filter(
-                DocumentRelationship.source_document_id == doc_id
-            ).limit(max_related).all()
+            relationships = (
+                db.query(DocumentRelationship)
+                .filter(DocumentRelationship.source_document_id == doc_id)
+                .limit(max_related)
+                .all()
+            )
 
             for rel in relationships:
                 related_doc_ids.add(rel.target_document_id)
@@ -317,10 +326,10 @@ class RAGService:
                 db=db,
                 user_id=user_id,
                 query=query,
-                method=method or 'hybrid',
+                method=method or "hybrid",
                 top_k=max_related * 2,  # Get more chunks from related docs
                 score_threshold=score_threshold,
-                metadata_filter={"document_id": list(related_doc_ids)}
+                metadata_filter={"document_id": list(related_doc_ids)},
             )
 
             # Combine initial and related texts (deduplicate)
@@ -328,7 +337,7 @@ class RAGService:
         else:
             all_texts = initial_texts
 
-        return all_texts[:top_k + max_related * 2]  # Limit total results
+        return all_texts[: top_k + max_related * 2]  # Limit total results
 
     def retrieve_context(
         self,
@@ -338,10 +347,10 @@ class RAGService:
         method: Optional[str] = None,
         top_k: int = 5,
         score_threshold: float = 0.0,
-        source: str = 'api',
+        source: str = "api",
         source_context: Optional[Dict[str, Any]] = None,
         metadata_filter: Optional[Dict[str, Any]] = None,
-        attachment_ids: Optional[List[int]] = None  # NEW: For multimodal image queries
+        attachment_ids: Optional[List[int]] = None,  # NEW: For multimodal image queries
     ) -> List[str]:
         """
         Retrieve relevant context chunks for query.
@@ -376,15 +385,15 @@ class RAGService:
             logger.warning("[RAGService] Rate limit exceeded for user %s: %s", user_id, error_msg)
             raise HTTPException(
                 status_code=429,
-                detail=f"Knowledge base rate limit exceeded: {error_msg}"
+                detail=f"Knowledge base rate limit exceeded: {error_msg}",
             )
 
         start_time = time.time()
         timing: Dict[str, Optional[float]] = {
-            'embedding_ms': None,
-            'search_ms': None,
-            'rerank_ms': None,
-            'total_ms': None
+            "embedding_ms": None,
+            "search_ms": None,
+            "rerank_ms": None,
+            "total_ms": None,
         }
 
         try:
@@ -395,13 +404,10 @@ class RAGService:
             # Get chunk IDs from search (with timing)
             # Note: embedding time is included in vector_search/hybrid_search
             search_start = time.time()
-            if method == 'semantic':
+            if method == "semantic":
                 # Get more for reranking
-                chunk_ids = self.vector_search(
-                    db, user_id, query, top_k * 2,
-                    metadata_filter=metadata_filter
-                )
-            elif method == 'keyword':
+                chunk_ids = self.vector_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
+            elif method == "keyword":
                 chunk_ids = self.keyword_search_func(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
             else:  # hybrid
                 chunk_ids = self.hybrid_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
@@ -409,12 +415,12 @@ class RAGService:
             # Apply post-filtering for advanced metadata (tags, date ranges, etc.)
             chunk_ids = self._apply_metadata_post_filter(db, chunk_ids, metadata_filter)
 
-            timing['search_ms'] = (time.time() - search_start) * 1000
+            timing["search_ms"] = (time.time() - search_start) * 1000
             # Embedding time is included in search time for semantic/hybrid methods
             # For keyword-only, embedding_ms stays None
-            if method != 'keyword':
+            if method != "keyword":
                 # Rough estimate: embedding is ~30-50% of search time for semantic/hybrid
-                timing['embedding_ms'] = timing['search_ms'] * 0.4 if timing['search_ms'] else None
+                timing["embedding_ms"] = timing["search_ms"] * 0.4 if timing["search_ms"] else None
 
             if not chunk_ids:
                 # Record query even if no results
@@ -430,14 +436,12 @@ class RAGService:
                         result_count=0,
                         timing=timing,
                         source=source,
-                        source_context=source_context
+                        source_context=source_context,
                     )
                 return []
 
             # Lookup text from database
-            chunks = db.query(DocumentChunk).filter(
-                DocumentChunk.id.in_(chunk_ids)
-            ).all()
+            chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).all()
 
             # Extract text and metadata
             chunk_texts = [(chunk.text, chunk.id) for chunk in chunks]
@@ -445,7 +449,7 @@ class RAGService:
             # Apply reranking based on mode (Dify's approach)
             rerank_start = time.time()
             results = []
-            if method == 'hybrid' and len(chunk_texts) > 1:
+            if method == "hybrid" and len(chunk_texts) > 1:
                 # Deduplicate before reranking (Dify's approach)
                 deduplicated_texts = self._deduplicate_chunk_texts(chunk_texts)
 
@@ -457,12 +461,15 @@ class RAGService:
                             query=query,
                             documents=texts,
                             top_n=top_k,
-                            score_threshold=score_threshold
+                            score_threshold=score_threshold,
                         )
                         results = [item["document"] for item in reranked]
                     except Exception as rerank_error:
                         # If reranking fails, fall back to original results without reranking
-                        logger.warning("[RAGService] Reranking failed, using original results: %s", rerank_error)
+                        logger.warning(
+                            "[RAGService] Reranking failed, using original results: %s",
+                            rerank_error,
+                        )
                         results = [text for text, _ in deduplicated_texts[:top_k]]
                 elif self.reranking_mode == RerankMode.WEIGHTED_SCORE:
                     # Use weighted score (already done in hybrid_search)
@@ -478,19 +485,22 @@ class RAGService:
                         query=query,
                         documents=texts,
                         top_n=top_k,
-                        score_threshold=score_threshold
+                        score_threshold=score_threshold,
                     )
                     results = [item["document"] for item in reranked]
                 except Exception as rerank_error:
                     # If reranking fails, fall back to original results without reranking
-                    logger.warning("[RAGService] Reranking failed, using original results: %s", rerank_error)
+                    logger.warning(
+                        "[RAGService] Reranking failed, using original results: %s",
+                        rerank_error,
+                    )
                     results = [text for text, _ in chunk_texts[:top_k]]
             else:
                 # Return top K without reranking
                 results = [text for text, _ in chunk_texts[:top_k]]
 
-            timing['rerank_ms'] = (time.time() - rerank_start) * 1000
-            timing['total_ms'] = (time.time() - start_time) * 1000
+            timing["rerank_ms"] = (time.time() - rerank_start) * 1000
+            timing["total_ms"] = (time.time() - start_time) * 1000
 
             # Record query for analytics
             if space_id:
@@ -505,7 +515,7 @@ class RAGService:
                     result_count=len(results),
                     timing=timing,
                     source=source,
-                    source_context=source_context
+                    source_context=source_context,
                 )
 
             return results
@@ -516,7 +526,7 @@ class RAGService:
             try:
                 space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
                 if space:
-                    timing['total_ms'] = (time.time() - start_time) * 1000
+                    timing["total_ms"] = (time.time() - start_time) * 1000
                     self._record_query(
                         db=db,
                         user_id=user_id,
@@ -528,7 +538,7 @@ class RAGService:
                         result_count=0,
                         timing=timing,
                         source=source,
-                        source_context=source_context
+                        source_context=source_context,
                     )
             except Exception as record_error:
                 logger.error("[RAGService] Failed to record query: %s", record_error)
@@ -540,7 +550,7 @@ class RAGService:
         user_id: int,
         query: str,
         top_k: int,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[int]:
         """
         Semantic search using vector similarity.
@@ -559,11 +569,10 @@ class RAGService:
             query_embedding = self.embedding_cache.embed_query_cached(query)
 
             logger.debug(
-                "[RAGService] vector_search: user=%s, query_len=%s, "
-                "embedding_dim=%s",
+                "[RAGService] vector_search: user=%s, query_len=%s, embedding_dim=%s",
                 user_id,
                 len(query),
-                len(query_embedding)
+                len(query_embedding),
             )
 
             # Search Qdrant with metadata filter
@@ -571,16 +580,15 @@ class RAGService:
                 user_id=user_id,
                 query_embedding=query_embedding,
                 top_k=top_k,
-                metadata_filter=metadata_filter
+                metadata_filter=metadata_filter,
             )
 
             logger.debug("[RAGService] vector_search: Qdrant returned %s results", len(results))
             if results:
                 logger.debug(
-                    "[RAGService] vector_search: First result: id=%s, "
-                    "score=%.4f",
-                    results[0]['id'],
-                    results[0]['score']
+                    "[RAGService] vector_search: First result: id=%s, score=%.4f",
+                    results[0]["id"],
+                    results[0]["score"],
                 )
 
             return [r["id"] for r in results]
@@ -594,7 +602,7 @@ class RAGService:
         user_id: int,
         query: str,
         top_k: int,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[int]:
         """
         Keyword search using full-text search.
@@ -614,7 +622,7 @@ class RAGService:
                 user_id=user_id,
                 query=query,
                 top_k=top_k,
-                metadata_filter=metadata_filter
+                metadata_filter=metadata_filter,
             )
             return [r["chunk_id"] for r in results]
         except Exception as e:
@@ -628,7 +636,7 @@ class RAGService:
         query: str,
         top_k: int,
         weights: Optional[Dict[str, float]] = None,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[int]:
         """
         Hybrid search combining vector and keyword search (Dify's approach).
@@ -658,11 +666,19 @@ class RAGService:
                 # Submit both searches in parallel
                 vector_future = executor.submit(
                     self._vector_search_with_scores,
-                    db, user_id, query, top_k * 2, metadata_filter
+                    db,
+                    user_id,
+                    query,
+                    top_k * 2,
+                    metadata_filter,
                 )
                 keyword_future = executor.submit(
                     self._keyword_search_with_scores,
-                    db, user_id, query, top_k * 2, metadata_filter
+                    db,
+                    user_id,
+                    query,
+                    top_k * 2,
+                    metadata_filter,
                 )
 
                 # Wait for both to complete, handle errors (Dify's approach)
@@ -742,7 +758,7 @@ class RAGService:
         user_id: int,
         query: str,
         top_k: int,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Vector search returning results with scores."""
         try:
@@ -751,7 +767,7 @@ class RAGService:
                 user_id=user_id,
                 query_embedding=query_embedding,
                 top_k=top_k,
-                metadata_filter=metadata_filter
+                metadata_filter=metadata_filter,
             )
             return [{"id": r["id"], "score": r["score"]} for r in results]
         except Exception as e:
@@ -764,7 +780,7 @@ class RAGService:
         user_id: int,
         query: str,
         top_k: int,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Keyword search returning results with scores."""
         try:
@@ -773,17 +789,14 @@ class RAGService:
                 user_id=user_id,
                 query=query,
                 top_k=top_k,
-                metadata_filter=metadata_filter
+                metadata_filter=metadata_filter,
             )
             return [{"chunk_id": r["chunk_id"], "score": r["score"]} for r in results]
         except Exception as e:
             logger.error("[RAGService] Keyword search with scores failed: %s", e)
             return []
 
-    def _deduplicate_chunk_texts(
-        self,
-        chunk_texts: List[tuple]
-    ) -> List[tuple]:
+    def _deduplicate_chunk_texts(self, chunk_texts: List[tuple]) -> List[tuple]:
         """
         Deduplicate chunks by text content, keeping first occurrence.
 
@@ -813,7 +826,7 @@ class RAGService:
         attachment_ids: List[int],
         top_k: int,
         score_threshold: float,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[str]:
         """
         Retrieve chunks by image similarity (multimodal search).
@@ -831,13 +844,20 @@ class RAGService:
         """
         try:
             # Get attachments
-            attachments = db.query(ChunkAttachment).filter(
-                ChunkAttachment.id.in_(attachment_ids),
-                ChunkAttachment.attachment_type == 'image'
-            ).all()
+            attachments = (
+                db.query(ChunkAttachment)
+                .filter(
+                    ChunkAttachment.id.in_(attachment_ids),
+                    ChunkAttachment.attachment_type == "image",
+                )
+                .all()
+            )
 
             if not attachments:
-                logger.warning("[RAGService] No valid image attachments found for IDs: %s", attachment_ids)
+                logger.warning(
+                    "[RAGService] No valid image attachments found for IDs: %s",
+                    attachment_ids,
+                )
                 return []
 
             # Generate embeddings for images
@@ -845,9 +865,8 @@ class RAGService:
 
             if not embedding_client.is_multimodal:
                 logger.warning(
-                    "[RAGService] Current embedding model %s does not support multimodal. "
-                    "Cannot perform image search.",
-                    embedding_client.model
+                    "[RAGService] Current embedding model %s does not support multimodal. Cannot perform image search.",
+                    embedding_client.model,
                 )
                 return []
 
@@ -883,7 +902,7 @@ class RAGService:
                 query_embedding=avg_embedding,
                 top_k=top_k,
                 score_threshold=score_threshold,
-                metadata_filter=metadata_filter
+                metadata_filter=metadata_filter,
             )
 
             # Get chunk texts
@@ -924,12 +943,19 @@ class RAGService:
         # Get successful queries (with positive feedback) from last 30 days
         cutoff_date = datetime.utcnow() - timedelta(days=30)
 
-        successful_queries = db.query(KnowledgeQuery).join(QueryFeedback).filter(
-            KnowledgeQuery.space_id == space.id,
-            KnowledgeQuery.created_at >= cutoff_date,
-            QueryFeedback.feedback_type == 'positive',
-            QueryFeedback.feedback_score >= 4
-        ).distinct().limit(100).all()
+        successful_queries = (
+            db.query(KnowledgeQuery)
+            .join(QueryFeedback)
+            .filter(
+                KnowledgeQuery.space_id == space.id,
+                KnowledgeQuery.created_at >= cutoff_date,
+                QueryFeedback.feedback_type == "positive",
+                QueryFeedback.feedback_score >= 4,
+            )
+            .distinct()
+            .limit(100)
+            .all()
+        )
 
         # Extract related terms from successful queries
         related_terms = set()
@@ -974,35 +1000,41 @@ class RAGService:
                 "common_queries": [],
                 "low_performing_queries": [],
                 "average_scores": {},
-                "suggestions": []
+                "suggestions": [],
             }
 
         cutoff_date = datetime.utcnow() - timedelta(days=days)
 
         # Get queries with feedback
-        queries_with_feedback = db.query(KnowledgeQuery).join(QueryFeedback).filter(
-            KnowledgeQuery.space_id == space.id,
-            KnowledgeQuery.created_at >= cutoff_date
-        ).all()
+        queries_with_feedback = (
+            db.query(KnowledgeQuery)
+            .join(QueryFeedback)
+            .filter(
+                KnowledgeQuery.space_id == space.id,
+                KnowledgeQuery.created_at >= cutoff_date,
+            )
+            .all()
+        )
 
         # Analyze common queries
         query_counts = Counter(q.query for q in queries_with_feedback)
-        common_queries = [
-            {"query": query, "count": count}
-            for query, count in query_counts.most_common(10)
-        ]
+        common_queries = [{"query": query, "count": count} for query, count in query_counts.most_common(10)]
 
         # Analyze query performance by method
         method_scores = {}
-        for method in ['semantic', 'keyword', 'hybrid']:
+        for method in ["semantic", "keyword", "hybrid"]:
             method_queries = [q for q in queries_with_feedback if q.method == method]
             if method_queries:
                 feedbacks = []
                 for q in method_queries:
-                    q_feedbacks = db.query(QueryFeedback).filter(
-                        QueryFeedback.query_id == q.id,
-                        QueryFeedback.feedback_score.isnot(None)
-                    ).all()
+                    q_feedbacks = (
+                        db.query(QueryFeedback)
+                        .filter(
+                            QueryFeedback.query_id == q.id,
+                            QueryFeedback.feedback_score.isnot(None),
+                        )
+                        .all()
+                    )
                     feedbacks.extend([f.feedback_score for f in q_feedbacks])
 
                 if feedbacks:
@@ -1015,12 +1047,14 @@ class RAGService:
             if q_feedbacks:
                 avg_score = sum(f.feedback_score for f in q_feedbacks if f.feedback_score) / len(q_feedbacks)
                 if avg_score < 3.0:
-                    low_performing.append({
-                        "query": q.query,
-                        "method": q.method,
-                        "average_score": avg_score,
-                        "feedback_count": len(q_feedbacks)
-                    })
+                    low_performing.append(
+                        {
+                            "query": q.query,
+                            "method": q.method,
+                            "average_score": avg_score,
+                            "feedback_count": len(q_feedbacks),
+                        }
+                    )
 
         # Generate suggestions
         suggestions = []
@@ -1028,9 +1062,7 @@ class RAGService:
             best_method = max(method_scores.items(), key=lambda x: x[1])[0]
             worst_method = min(method_scores.items(), key=lambda x: x[1])[0]
             if method_scores[best_method] - method_scores[worst_method] > 0.5:
-                score_diff = (
-                    method_scores[best_method] - method_scores[worst_method]
-                )
+                score_diff = method_scores[best_method] - method_scores[worst_method]
                 suggestions.append(
                     f"Consider using {best_method} method instead of "
                     f"{worst_method} for better results "
@@ -1047,7 +1079,7 @@ class RAGService:
             "common_queries": common_queries,
             "low_performing_queries": low_performing[:10],  # Top 10
             "average_scores": method_scores,
-            "suggestions": suggestions
+            "suggestions": suggestions,
         }
 
     @staticmethod
@@ -1086,8 +1118,8 @@ class RAGService:
         score_threshold: float,
         result_count: int,
         timing: Dict[str, Optional[float]],
-        source: str = 'api',
-        source_context: Optional[Dict[str, Any]] = None
+        source: str = "api",
+        source_context: Optional[Dict[str, Any]] = None,
     ) -> None:
         """
         Record query for analytics (like Dify's DatasetQuery).
@@ -1114,23 +1146,22 @@ class RAGService:
                 top_k=top_k,
                 score_threshold=score_threshold,
                 result_count=result_count,
-                embedding_ms=timing.get('embedding_ms'),
-                search_ms=timing.get('search_ms'),
-                rerank_ms=timing.get('rerank_ms'),
-                total_ms=timing.get('total_ms'),
+                embedding_ms=timing.get("embedding_ms"),
+                search_ms=timing.get("search_ms"),
+                rerank_ms=timing.get("rerank_ms"),
+                total_ms=timing.get("total_ms"),
                 source=source,
-                source_context=source_context
+                source_context=source_context,
             )
             db.add(query_record)
             db.commit()
-            total_ms = timing.get('total_ms')
+            total_ms = timing.get("total_ms")
             logger.debug(
-                "[RAGService] Recorded query for user %s: method=%s, "
-                "results=%s, time=%.2fms",
+                "[RAGService] Recorded query for user %s: method=%s, results=%s, time=%.2fms",
                 user_id,
                 method,
                 result_count,
-                total_ms if total_ms else 0.0
+                total_ms if total_ms else 0.0,
             )
         except Exception as e:
             db.rollback()
@@ -1141,7 +1172,7 @@ class RAGService:
         _user_id: int,
         prompt: str,
         context_chunks: List[str],
-        max_context_length: int = 2000
+        max_context_length: int = 2000,
     ) -> str:
         """
         Enhance prompt with knowledge base context.
@@ -1179,6 +1210,7 @@ class RAGService:
 
 class RAGServiceSingleton:
     """Singleton wrapper for RAG service instance."""
+
     _instance: Optional[RAGService] = None
 
     @classmethod

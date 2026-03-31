@@ -3,6 +3,7 @@ Chunk test evaluation endpoints.
 
 Handles manual evaluation and chunk viewing.
 """
+
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
@@ -28,7 +29,7 @@ def get_chunk_test_chunks(
     test_id: int,
     method: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get chunks for a test result using a specific method (on-demand generation).
@@ -44,10 +45,11 @@ def get_chunk_test_chunks(
         List of chunks with text, metadata, and position info
     """
     check_feature_enabled()
-    test_result = db.query(ChunkTestResult).filter(
-        ChunkTestResult.id == test_id,
-        ChunkTestResult.user_id == current_user.id
-    ).first()
+    test_result = (
+        db.query(ChunkTestResult)
+        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
+        .first()
+    )
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -56,23 +58,18 @@ def get_chunk_test_chunks(
     if method not in valid_methods:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid method. Must be one of: {', '.join(valid_methods)}"
+            detail=f"Invalid method. Must be one of: {', '.join(valid_methods)}",
         )
 
     try:
         service = get_rag_chunk_test_service()
-        chunks = service.get_chunks_for_test(
-            db=db,
-            user_id=current_user.id,
-            test_result=test_result,
-            method=method
-        )
+        chunks = service.get_chunks_for_test(db=db, user_id=current_user.id, test_result=test_result, method=method)
 
         return {
             "chunks": chunks,
             "method": method,
             "test_id": test_id,
-            "count": len(chunks)
+            "count": len(chunks),
         }
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
@@ -82,12 +79,9 @@ def get_chunk_test_chunks(
             test_id,
             method,
             e,
-            exc_info=True
+            exc_info=True,
         )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to generate chunks"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to generate chunks") from e
 
 
 @router.post("/chunk-test/{test_id}/evaluate")
@@ -95,7 +89,7 @@ def manual_evaluate_chunks(
     test_id: int,
     request: ManualEvaluationRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Manually evaluate chunks using DashScope LLM models.
@@ -115,10 +109,11 @@ def manual_evaluate_chunks(
         Evaluation results with scores
     """
     check_feature_enabled()
-    test_result = db.query(ChunkTestResult).filter(
-        ChunkTestResult.id == test_id,
-        ChunkTestResult.user_id == current_user.id
-    ).first()
+    test_result = (
+        db.query(ChunkTestResult)
+        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
+        .first()
+    )
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -133,16 +128,13 @@ def manual_evaluate_chunks(
     if method not in valid_methods:
         raise HTTPException(
             status_code=400,
-            detail=f"Invalid method. Must be one of: {', '.join(valid_methods)}"
+            detail=f"Invalid method. Must be one of: {', '.join(valid_methods)}",
         )
 
     try:
         service = get_rag_chunk_test_service()
         chunks_data = service.get_chunks_for_test(
-            db=db,
-            user_id=current_user.id,
-            test_result=test_result,
-            method=method
+            db=db, user_id=current_user.id, test_result=test_result, method=method
         )
 
         if not chunks_data:
@@ -155,7 +147,7 @@ def manual_evaluate_chunks(
                 start_char=int(chunk_dict.get("start_char", 0)),
                 end_char=int(chunk_dict.get("end_char", 0)),
                 chunk_index=int(chunk_dict["chunk_index"]),
-                metadata=dict(chunk_dict.get("metadata", {}))
+                metadata=dict(chunk_dict.get("metadata", {})),
             )
             chunks.append(chunk)
 
@@ -169,39 +161,21 @@ def manual_evaluate_chunks(
         results = []
 
         if answer:
-            answer_eval = evaluator.evaluate_answer_relevance(
-                chunks=chunks,
-                query=query,
-                answer=answer,
-                model=model
-            )
-            results.append({
-                "type": "answer_relevance",
-                "evaluation": answer_eval
-            })
+            answer_eval = evaluator.evaluate_answer_relevance(chunks=chunks, query=query, answer=answer, model=model)
+            results.append({"type": "answer_relevance", "evaluation": answer_eval})
 
         chunk_evals = []
         for chunk in chunks:
-            chunk_eval = evaluator.evaluate_chunk_quality(
-                chunk=chunk,
-                query=query,
-                model=model
-            )
-            chunk_evals.append({
-                "chunk_index": chunk.chunk_index,
-                "evaluation": chunk_eval
-            })
-        results.append({
-            "type": "chunk_quality",
-            "evaluations": chunk_evals
-        })
+            chunk_eval = evaluator.evaluate_chunk_quality(chunk=chunk, query=query, model=model)
+            chunk_evals.append({"chunk_index": chunk.chunk_index, "evaluation": chunk_eval})
+        results.append({"type": "chunk_quality", "evaluations": chunk_evals})
 
         return {
             "test_id": test_id,
             "method": method,
             "query": query,
             "chunk_count": len(chunks),
-            "results": results
+            "results": results,
         }
 
     except ValueError as e:
@@ -211,9 +185,6 @@ def manual_evaluate_chunks(
             "[ChunkTestEvaluation] Failed to evaluate chunks for test %s: %s",
             test_id,
             e,
-            exc_info=True
+            exc_info=True,
         )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to evaluate chunks"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to evaluate chunks") from e

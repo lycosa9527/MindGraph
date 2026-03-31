@@ -81,7 +81,9 @@ def _handle_chat_raw(payload: str) -> None:
 
         async def _run() -> None:
             await chat_ws_manager.deliver_local_channel_broadcast(
-                cid, exclude, data_str,
+                cid,
+                exclude,
+                data_str,
             )
 
         _schedule_delivery(_run())
@@ -107,7 +109,9 @@ def _handle_chat_raw(payload: str) -> None:
 
         async def _run_po() -> None:
             await chat_ws_manager.deliver_local_presence_org(
-                oid, exclude, data_str,
+                oid,
+                exclude,
+                data_str,
             )
 
         _schedule_delivery(_run_po())
@@ -137,7 +141,10 @@ def _handle_workshop_raw(payload: str) -> None:
 
     async def _run() -> None:
         await deliver_local_workshop_broadcast(
-            code, mode, exclude, data_str,
+            code,
+            mode,
+            exclude,
+            data_str,
         )
 
     _schedule_delivery(_run())

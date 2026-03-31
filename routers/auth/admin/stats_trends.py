@@ -21,7 +21,11 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.domain.auth import User, Organization
 from models.domain.token_usage import TokenUsage
-from ..dependencies import get_language_dependency, require_admin, require_admin_or_manager
+from ..dependencies import (
+    get_language_dependency,
+    require_admin,
+    require_admin_or_manager,
+)
 from .stats import _resolve_school_org_id
 from ..helpers import get_beijing_now, BEIJING_TIMEZONE
 from .stats import _sql_count
@@ -39,11 +43,11 @@ def get_stats_trends_admin(
     service: Optional[str] = None,  # For tokens: 'mindgraph' | 'mindmate' to filter by service
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    _lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get time-series trends data for dashboard charts (ADMIN ONLY)"""
     # service filter only applies when metric is 'tokens'
-    service_filter = service if metric == 'tokens' else None
+    service_filter = service if metric == "tokens" else None
 
     # Special case: days=0 means all-time (no limit)
     all_time = False
@@ -90,21 +94,20 @@ def get_stats_trends_admin(
 
     trends_data = []
 
-    if metric == 'users':
+    if metric == "users":
         # Daily cumulative user count
         try:
-            initial_count = db.query(_sql_count(User.id)).filter(
-                User.created_at < start_date_utc
-            ).scalar() or 0
+            initial_count = db.query(_sql_count(User.id)).filter(User.created_at < start_date_utc).scalar() or 0
 
-            user_counts = db.query(
-                func.date(User.created_at).label('date'),
-                _sql_count(User.id).label('count')
-            ).filter(
-                User.created_at >= start_date_utc
-            ).group_by(
-                func.date(User.created_at)
-            ).all()
+            user_counts = (
+                db.query(
+                    func.date(User.created_at).label("date"),
+                    _sql_count(User.id).label("count"),
+                )
+                .filter(User.created_at >= start_date_utc)
+                .group_by(func.date(User.created_at))
+                .all()
+            )
 
             # Map UTC dates to Beijing dates
             counts_by_date = {}
@@ -124,31 +127,29 @@ def get_stats_trends_admin(
                 date_str = str(date)
                 if date_str in counts_by_date:
                     cumulative += counts_by_date[date_str]
-                trends_data.append({
-                    "date": date_str,
-                    "value": cumulative
-                })
+                trends_data.append({"date": date_str, "value": cumulative})
         except Exception as e:
             logger.error("Error fetching user trends: %s", e)
             # Return zeros if error
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
 
-    elif metric == 'organizations':
+    elif metric == "organizations":
         # Daily cumulative organization count
         try:
-            initial_count = db.query(_sql_count(Organization.id)).filter(
-                Organization.created_at < start_date_utc
-            ).scalar() or 0
+            initial_count = (
+                db.query(_sql_count(Organization.id)).filter(Organization.created_at < start_date_utc).scalar() or 0
+            )
 
-            org_counts = db.query(
-                func.date(Organization.created_at).label('date'),
-                _sql_count(Organization.id).label('count')
-            ).filter(
-                Organization.created_at >= start_date_utc
-            ).group_by(
-                func.date(Organization.created_at)
-            ).all()
+            org_counts = (
+                db.query(
+                    func.date(Organization.created_at).label("date"),
+                    _sql_count(Organization.id).label("count"),
+                )
+                .filter(Organization.created_at >= start_date_utc)
+                .group_by(func.date(Organization.created_at))
+                .all()
+            )
 
             counts_by_date = {}
             for row in org_counts:
@@ -165,26 +166,24 @@ def get_stats_trends_admin(
                 date_str = str(date)
                 if date_str in counts_by_date:
                     cumulative += counts_by_date[date_str]
-                trends_data.append({
-                    "date": date_str,
-                    "value": cumulative
-                })
+                trends_data.append({"date": date_str, "value": cumulative})
         except Exception as e:
             logger.error("Error fetching organization trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
 
-    elif metric == 'registrations':
+    elif metric == "registrations":
         # Daily new user registrations (non-cumulative)
         try:
-            reg_counts = db.query(
-                func.date(User.created_at).label('date'),
-                _sql_count(User.id).label('count')
-            ).filter(
-                User.created_at >= start_date_utc
-            ).group_by(
-                func.date(User.created_at)
-            ).all()
+            reg_counts = (
+                db.query(
+                    func.date(User.created_at).label("date"),
+                    _sql_count(User.id).label("count"),
+                )
+                .filter(User.created_at >= start_date_utc)
+                .group_by(func.date(User.created_at))
+                .all()
+            )
 
             # Map UTC dates to Beijing dates
             counts_by_date = {}
@@ -200,46 +199,35 @@ def get_stats_trends_admin(
 
             for date in date_list:
                 date_str = str(date)
-                trends_data.append({
-                    "date": date_str,
-                    "value": counts_by_date.get(date_str, 0)
-                })
+                trends_data.append({"date": date_str, "value": counts_by_date.get(date_str, 0)})
         except Exception as e:
             logger.error("Error fetching registration trends: %s", e)
             for date in date_list:
                 trends_data.append({"date": str(date), "value": 0})
 
-    elif metric == 'tokens':
+    elif metric == "tokens":
         # Daily token usage (non-cumulative)
         # Optional service filter: mindgraph | mindmate (matches token-stats breakdown)
         try:
             token_counts_query = db.query(
-                func.date(TokenUsage.created_at).label('date'),
-                func.sum(TokenUsage.total_tokens).label('total_tokens'),
-                func.sum(TokenUsage.input_tokens).label('input_tokens'),
-                func.sum(TokenUsage.output_tokens).label('output_tokens')
-            ).filter(
-                TokenUsage.success
-            )
-            if service_filter == 'mindmate':
-                token_counts_query = token_counts_query.filter(
-                    TokenUsage.request_type == 'mindmate'
-                )
-            elif service_filter == 'mindgraph':
+                func.date(TokenUsage.created_at).label("date"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            ).filter(TokenUsage.success)
+            if service_filter == "mindmate":
+                token_counts_query = token_counts_query.filter(TokenUsage.request_type == "mindmate")
+            elif service_filter == "mindgraph":
                 token_counts_query = token_counts_query.filter(
                     or_(
-                        TokenUsage.request_type != 'mindmate',
-                        TokenUsage.request_type.is_(None)
+                        TokenUsage.request_type != "mindmate",
+                        TokenUsage.request_type.is_(None),
                     )
                 )
             # Apply date filter only if not all-time query
             if start_date_utc is not None:
-                token_counts_query = token_counts_query.filter(
-                    TokenUsage.created_at >= start_date_utc
-                )
-            token_counts = token_counts_query.group_by(
-                func.date(TokenUsage.created_at)
-            ).all()
+                token_counts_query = token_counts_query.filter(TokenUsage.created_at >= start_date_utc)
+            token_counts = token_counts_query.group_by(func.date(TokenUsage.created_at)).all()
 
             # Map UTC dates to Beijing dates
             tokens_by_date = {}
@@ -252,7 +240,11 @@ def get_stats_trends_admin(
                 beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
                 beijing_date_str = str(beijing_datetime.date())
                 if beijing_date_str not in tokens_by_date:
-                    tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+                    tokens_by_date[beijing_date_str] = {
+                        "total": 0,
+                        "input": 0,
+                        "output": 0,
+                    }
                 tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
                 tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
@@ -260,33 +252,26 @@ def get_stats_trends_admin(
             for date in date_list:
                 date_str = str(date)
                 tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
-                trends_data.append({
-                    "date": date_str,
-                    "value": tokens["total"],
-                    "input": tokens["input"],
-                    "output": tokens["output"]
-                })
+                trends_data.append(
+                    {
+                        "date": date_str,
+                        "value": tokens["total"],
+                        "input": tokens["input"],
+                        "output": tokens["output"],
+                    }
+                )
         except Exception as e:
             logger.error("Error fetching token trends: %s", e)
             for date in date_list:
-                trends_data.append({
-                    "date": str(date),
-                    "value": 0,
-                    "input": 0,
-                    "output": 0
-                })
+                trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
 
     else:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=f"Invalid metric: {metric}. Must be one of: users, organizations, registrations, tokens"
+            detail=f"Invalid metric: {metric}. Must be one of: users, organizations, registrations, tokens",
         )
 
-    return {
-        "metric": metric,
-        "days": days,
-        "data": trends_data
-    }
+    return {"metric": metric, "days": days, "data": trends_data}
 
 
 @router.get("/admin/stats/school/trends", dependencies=[Depends(require_admin_or_manager)])
@@ -297,7 +282,7 @@ def get_school_token_trends(
     hourly: bool = False,
     current_user: User = Depends(require_admin_or_manager),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
     Get token trends for a school (ADMIN or MANAGER).
@@ -306,10 +291,7 @@ def get_school_token_trends(
     org_id = _resolve_school_org_id(organization_id, current_user)
     org = db.query(Organization).filter(Organization.id == org_id).first()
     if not org:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Organization not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
     result = get_organization_token_trends_admin(
         _request=request,
         organization_id=org_id,
@@ -318,7 +300,7 @@ def get_school_token_trends(
         hourly=hourly,
         _current_user=current_user,
         db=db,
-        _lang=lang
+        _lang=lang,
     )
     return result
 
@@ -332,13 +314,13 @@ def get_organization_token_trends_admin(
     hourly: bool = False,  # If True, return hourly data (only for days=1)
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    _lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get token usage trends for a specific organization (ADMIN ONLY)"""
     if not organization_id and not organization_name:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Either organization_id or organization_name must be provided"
+            detail="Either organization_id or organization_name must be provided",
         )
 
     # Special case: days=0 means all-time (no limit)
@@ -360,10 +342,7 @@ def get_organization_token_trends_admin(
         org = db.query(Organization).filter(Organization.name == organization_name).first()
 
     if not org:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Organization not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
 
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
@@ -404,19 +383,14 @@ def get_organization_token_trends_admin(
         try:
             # Query hourly token usage
             token_counts = db.query(
-                func.strftime('%Y-%m-%d %H:00:00', TokenUsage.created_at).label('datetime'),
-                func.sum(TokenUsage.total_tokens).label('total_tokens'),
-                func.sum(TokenUsage.input_tokens).label('input_tokens'),
-                func.sum(TokenUsage.output_tokens).label('output_tokens')
-            ).filter(
-                TokenUsage.organization_id == org.id,
-                TokenUsage.success
-            )
+                func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at).label("datetime"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            ).filter(TokenUsage.organization_id == org.id, TokenUsage.success)
             if start_date_utc is not None:
                 token_counts = token_counts.filter(TokenUsage.created_at >= start_date_utc)
-            token_counts = token_counts.group_by(
-                func.strftime('%Y-%m-%d %H:00:00', TokenUsage.created_at)
-            ).all()
+            token_counts = token_counts.group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at)).all()
 
             # Map UTC datetimes to Beijing hours
             tokens_by_hour = {}
@@ -428,7 +402,11 @@ def get_organization_token_trends_admin(
                 beijing_datetime = utc_datetime.astimezone(BEIJING_TIMEZONE)
                 beijing_hour_str = beijing_datetime.strftime("%Y-%m-%d %H:00:00")
                 if beijing_hour_str not in tokens_by_hour:
-                    tokens_by_hour[beijing_hour_str] = {"total": 0, "input": 0, "output": 0}
+                    tokens_by_hour[beijing_hour_str] = {
+                        "total": 0,
+                        "input": 0,
+                        "output": 0,
+                    }
                 tokens_by_hour[beijing_hour_str]["total"] += int(row.total_tokens or 0)
                 tokens_by_hour[beijing_hour_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_hour[beijing_hour_str]["output"] += int(row.output_tokens or 0)
@@ -436,21 +414,25 @@ def get_organization_token_trends_admin(
             for hour in hour_list:
                 hour_str = hour.strftime("%Y-%m-%d %H:00:00")
                 tokens = tokens_by_hour.get(hour_str, {"total": 0, "input": 0, "output": 0})
-                trends_data.append({
-                    "date": hour_str,
-                    "value": tokens["total"],
-                    "input": tokens["input"],
-                    "output": tokens["output"]
-                })
+                trends_data.append(
+                    {
+                        "date": hour_str,
+                        "value": tokens["total"],
+                        "input": tokens["input"],
+                        "output": tokens["output"],
+                    }
+                )
         except Exception as e:
             logger.error("Error fetching hourly organization token trends: %s", e)
             for hour in hour_list:
-                trends_data.append({
-                    "date": hour.strftime("%Y-%m-%d %H:00:00"),
-                    "value": 0,
-                    "input": 0,
-                    "output": 0
-                })
+                trends_data.append(
+                    {
+                        "date": hour.strftime("%Y-%m-%d %H:00:00"),
+                        "value": 0,
+                        "input": 0,
+                        "output": 0,
+                    }
+                )
     else:
         # Daily token usage for this organization (non-cumulative)
         # Generate all dates in range using Beijing dates (for display)
@@ -462,19 +444,14 @@ def get_organization_token_trends_admin(
 
         try:
             token_counts = db.query(
-                func.date(TokenUsage.created_at).label('date'),
-                func.sum(TokenUsage.total_tokens).label('total_tokens'),
-                func.sum(TokenUsage.input_tokens).label('input_tokens'),
-                func.sum(TokenUsage.output_tokens).label('output_tokens')
-            ).filter(
-                TokenUsage.organization_id == org.id,
-                TokenUsage.success
-            )
+                func.date(TokenUsage.created_at).label("date"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            ).filter(TokenUsage.organization_id == org.id, TokenUsage.success)
             if start_date_utc is not None:
                 token_counts = token_counts.filter(TokenUsage.created_at >= start_date_utc)
-            token_counts = token_counts.group_by(
-                func.date(TokenUsage.created_at)
-            ).all()
+            token_counts = token_counts.group_by(func.date(TokenUsage.created_at)).all()
 
             # Map UTC dates to Beijing dates
             tokens_by_date = {}
@@ -487,7 +464,11 @@ def get_organization_token_trends_admin(
                 beijing_datetime = utc_datetime.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
                 beijing_date_str = str(beijing_datetime.date())
                 if beijing_date_str not in tokens_by_date:
-                    tokens_by_date[beijing_date_str] = {"total": 0, "input": 0, "output": 0}
+                    tokens_by_date[beijing_date_str] = {
+                        "total": 0,
+                        "input": 0,
+                        "output": 0,
+                    }
                 tokens_by_date[beijing_date_str]["total"] += int(row.total_tokens or 0)
                 tokens_by_date[beijing_date_str]["input"] += int(row.input_tokens or 0)
                 tokens_by_date[beijing_date_str]["output"] += int(row.output_tokens or 0)
@@ -495,27 +476,24 @@ def get_organization_token_trends_admin(
             for date in date_list:
                 date_str = str(date)
                 tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
-                trends_data.append({
-                    "date": date_str,
-                    "value": tokens["total"],
-                    "input": tokens["input"],
-                    "output": tokens["output"]
-                })
+                trends_data.append(
+                    {
+                        "date": date_str,
+                        "value": tokens["total"],
+                        "input": tokens["input"],
+                        "output": tokens["output"],
+                    }
+                )
         except Exception as e:
             logger.error("Error fetching organization token trends: %s", e)
             for date in date_list:
-                trends_data.append({
-                    "date": str(date),
-                    "value": 0,
-                    "input": 0,
-                    "output": 0
-                })
+                trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
 
     return {
         "organization_id": org.id,
         "organization_name": org.name,
         "days": days,
-        "data": trends_data
+        "data": trends_data,
     }
 
 
@@ -525,14 +503,11 @@ def get_user_token_trends_admin(
     user_id: Optional[int] = None,
     days: Optional[int] = 10,  # Number of days to look back, default 10
     db: Session = Depends(get_db),
-    _lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get token usage trends for a specific user (ADMIN ONLY)"""
     if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="user_id must be provided"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="user_id must be provided")
 
     # Special case: days=0 means all-time (no limit)
     all_time = False
@@ -547,10 +522,7 @@ def get_user_token_trends_admin(
 
     user = db.query(User).filter(User.id == user_id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()
@@ -588,19 +560,14 @@ def get_user_token_trends_admin(
     # Daily token usage for this user (non-cumulative)
     try:
         token_counts = db.query(
-            func.date(TokenUsage.created_at).label('date'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens'),
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens')
-        ).filter(
-            TokenUsage.user_id == user.id,
-            TokenUsage.success
-        )
+            func.date(TokenUsage.created_at).label("date"),
+            func.sum(TokenUsage.total_tokens).label("total_tokens"),
+            func.sum(TokenUsage.input_tokens).label("input_tokens"),
+            func.sum(TokenUsage.output_tokens).label("output_tokens"),
+        ).filter(TokenUsage.user_id == user.id, TokenUsage.success)
         if start_date_utc is not None:
             token_counts = token_counts.filter(TokenUsage.created_at >= start_date_utc)
-        token_counts = token_counts.group_by(
-            func.date(TokenUsage.created_at)
-        ).all()
+        token_counts = token_counts.group_by(func.date(TokenUsage.created_at)).all()
 
         # Map UTC dates to Beijing dates
         tokens_by_date = {}
@@ -621,26 +588,23 @@ def get_user_token_trends_admin(
         for date in date_list:
             date_str = str(date)
             tokens = tokens_by_date.get(date_str, {"total": 0, "input": 0, "output": 0})
-            trends_data.append({
-                "date": date_str,
-                "value": tokens["total"],
-                "input": tokens["input"],
-                "output": tokens["output"]
-            })
+            trends_data.append(
+                {
+                    "date": date_str,
+                    "value": tokens["total"],
+                    "input": tokens["input"],
+                    "output": tokens["output"],
+                }
+            )
     except Exception as e:
         logger.error("Error fetching user token trends: %s", e)
         for date in date_list:
-            trends_data.append({
-                "date": str(date),
-                "value": 0,
-                "input": 0,
-                "output": 0
-            })
+            trends_data.append({"date": str(date), "value": 0, "input": 0, "output": 0})
 
     return {
         "user_id": user.id,
         "user_name": user.name or user.phone,
         "user_phone": user.phone,
         "days": days,
-        "data": trends_data
+        "data": trends_data,
     }

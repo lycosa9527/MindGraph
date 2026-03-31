@@ -41,6 +41,7 @@ from config.database import DATABASE_URL, engine, libpq_database_url
 
 try:
     from dotenv import load_dotenv
+
     env_path = project_root / ".env"
     if env_path.exists():
         load_dotenv(dotenv_path=env_path)
@@ -53,8 +54,15 @@ except ImportError:
     psycopg2 = None
 
 try:
-    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn
+    from rich.progress import (
+        Progress,
+        SpinnerColumn,
+        BarColumn,
+        TextColumn,
+        TimeElapsedColumn,
+    )
     from rich.console import Console
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -73,8 +81,8 @@ except ImportError:
 
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] %(levelname)s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="[%(asctime)s] %(levelname)s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger(__name__)
 
@@ -90,26 +98,26 @@ def _find_process_on_port(port: int) -> Optional[int]:
     Cross-platform: netstat on Windows, lsof on Linux/Mac.
     """
     try:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             result = subprocess.run(
-                ['netstat', '-ano'],
+                ["netstat", "-ano"],
                 capture_output=True,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
             )
-            for line in result.stdout.split('\n'):
-                if f':{port}' in line and 'LISTENING' in line:
+            for line in result.stdout.split("\n"):
+                if f":{port}" in line and "LISTENING" in line:
                     parts = line.split()
                     if len(parts) >= 5:
                         return int(parts[-1])
         else:
             result = subprocess.run(
-                ['lsof', '-ti', f':{port}'],
+                ["lsof", "-ti", f":{port}"],
                 capture_output=True,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
                 for line in result.stdout.strip().split("\n"):
@@ -124,25 +132,25 @@ def _find_process_on_port(port: int) -> Optional[int]:
 def _get_process_name(pid: int) -> Optional[str]:
     """Get process name for a given PID. Cross-platform."""
     try:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             result = subprocess.run(
-                ['tasklist', '/FI', f'PID eq {pid}', '/FO', 'CSV', '/NH'],
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
-                parts = result.stdout.strip().split(',')
+                parts = result.stdout.strip().split(",")
                 if parts:
                     return parts[0].strip('"')
         else:
             result = subprocess.run(
-                ['ps', '-p', str(pid), '-o', 'comm=', '--no-headers'],
+                ["ps", "-p", str(pid), "-o", "comm=", "--no-headers"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
                 return result.stdout.strip()
@@ -168,7 +176,7 @@ def _parse_db_port(db_url: str) -> int:
         parsed = urlparse(db_url)
         if parsed.port is not None:
             return parsed.port
-        if parsed.scheme and 'postgresql' in parsed.scheme.lower():
+        if parsed.scheme and "postgresql" in parsed.scheme.lower():
             return 5432
     except Exception:
         pass
@@ -194,31 +202,31 @@ def _find_postgres_processes() -> List[str]:
     """
     pids: List[str] = []
     try:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             result = subprocess.run(
-                ['tasklist', '/FI', 'IMAGENAME eq postgres.exe', '/FO', 'CSV', '/NH'],
+                ["tasklist", "/FI", "IMAGENAME eq postgres.exe", "/FO", "CSV", "/NH"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
-            for line in result.stdout.strip().split('\n'):
-                if line and 'postgres.exe' in line.lower():
-                    parts = line.split(',')
+            for line in result.stdout.strip().split("\n"):
+                if line and "postgres.exe" in line.lower():
+                    parts = line.split(",")
                     if len(parts) >= 2:
                         pid_str = parts[1].strip('"').strip()
                         if pid_str.isdigit():
                             pids.append(pid_str)
         else:
             result = subprocess.run(
-                ['pgrep', '-f', 'postgres.*-D'],
+                ["pgrep", "-f", "postgres.*-D"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
-                pids = [p.strip() for p in result.stdout.strip().split('\n') if p.strip()]
+                pids = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
     except Exception:
         pass
     return pids
@@ -269,8 +277,11 @@ def _try_start_postgresql() -> bool:
 
     if sys.platform == "win32":
         service_names = [
-            "postgresql-x64-18", "postgresql-x64-16", "postgresql-x64-15",
-            "postgresql-x64-14", "postgresql"
+            "postgresql-x64-18",
+            "postgresql-x64-16",
+            "postgresql-x64-15",
+            "postgresql-x64-14",
+            "postgresql",
         ]
         for name in service_names:
             try:
@@ -279,7 +290,7 @@ def _try_start_postgresql() -> bool:
                     capture_output=True,
                     timeout=10,
                     check=False,
-                    text=True
+                    text=True,
                 )
                 if result.returncode == 0:
                     logger.info("Started PostgreSQL service: %s", name)
@@ -294,7 +305,7 @@ def _try_start_postgresql() -> bool:
             ["systemctl", "start", "postgresql"],
             capture_output=True,
             timeout=10,
-            check=False
+            check=False,
         )
         if result.returncode == 0:
             logger.info("Started PostgreSQL via systemctl")
@@ -364,7 +375,7 @@ def ensure_postgresql_running(db_url: str) -> bool:
     if pid is not None:
         proc_name = _get_process_name(pid)
         proc_info = f" ({proc_name})" if proc_name else ""
-        is_postgres = proc_name and 'postgres' in (proc_name or '').lower()
+        is_postgres = proc_name and "postgres" in (proc_name or "").lower()
         if is_postgres:
             conn_err = _get_connection_error(db_url)
             logger.error(
@@ -372,7 +383,10 @@ def ensure_postgresql_running(db_url: str) -> bool:
                 "  This is authentication/config - do NOT kill PostgreSQL.\n"
                 "  Check: DATABASE_URL credentials, database exists, pg_hba.conf.\n"
                 "  Try: pg_isready -h %s -p %d",
-                pid, proc_info, host, port
+                pid,
+                proc_info,
+                host,
+                port,
             )
             if conn_err:
                 logger.error("  Connection error: %s", conn_err)
@@ -381,15 +395,18 @@ def ensure_postgresql_running(db_url: str) -> bool:
                 "Port %d is in use by process PID %d%s (not PostgreSQL).\n"
                 "  To stop: Linux: kill -9 %d  |  Windows: taskkill /PID %d /F\n"
                 "  Or use a different port in DATABASE_URL",
-                port, pid, proc_info, pid, pid
+                port,
+                pid,
+                proc_info,
+                pid,
+                pid,
             )
     elif port_open:
         postgres_pids = _find_postgres_processes()
         conn_err = _get_connection_error(db_url)
         if postgres_pids:
             create_user_hint = (
-                "sudo -u postgres psql -c \"CREATE USER mindgraph_user "
-                "WITH PASSWORD 'mindgraph_password';\""
+                "sudo -u postgres psql -c \"CREATE USER mindgraph_user WITH PASSWORD 'mindgraph_password';\""
             )
             logger.error(
                 "PostgreSQL is running (port %d, PIDs: %s) but connection failed.\n"
@@ -398,14 +415,20 @@ def ensure_postgresql_running(db_url: str) -> bool:
                 "  Try: pg_isready -h %s -p %d\n"
                 "  Create database: sudo -u postgres createdb mindgraph\n"
                 "  Create user: %s",
-                port, ', '.join(postgres_pids), host, port, create_user_hint
+                port,
+                ", ".join(postgres_pids),
+                host,
+                port,
+                create_user_hint,
             )
         else:
             logger.error(
                 "PostgreSQL appears to be running (port %d has listener) but connection failed.\n"
                 "  Check: DATABASE_URL credentials, database exists, pg_hba.conf.\n"
                 "  Try: pg_isready -h %s -p %d",
-                port, host, port
+                port,
+                host,
+                port,
             )
         if conn_err:
             logger.error("  Connection error: %s", conn_err)
@@ -414,7 +437,7 @@ def ensure_postgresql_running(db_url: str) -> bool:
             "PostgreSQL still unreachable. Port %d is closed - PostgreSQL may not be running.\n"
             "  Linux:   sudo systemctl start postgresql   then: systemctl status postgresql\n"
             "  Windows: net start postgresql-x64-XX",
-            port
+            port,
         )
     return False
 
@@ -504,7 +527,7 @@ class DumpImportProgress:
                 TextColumn("[progress.percentage]{task.percentage:>3.0f}%"),
                 TimeElapsedColumn(),
                 console=self.console,
-                expand=True
+                expand=True,
             )
 
     def __enter__(self) -> "DumpImportProgress":
@@ -512,7 +535,7 @@ class DumpImportProgress:
             self.progress.__enter__()
             self.task_id = self.progress.add_task(
                 f"[cyan]{self.mode}: {self.stage_names.get(0, 'Starting')}",
-                total=self.total_stages
+                total=self.total_stages,
             )
         return self
 
@@ -527,7 +550,7 @@ class DumpImportProgress:
             self.progress.update(
                 self.task_id,
                 completed=stage,
-                description=f"[cyan]{self.mode}: {stage_name} ({stage}/{self.total_stages})"
+                description=f"[cyan]{self.mode}: {stage_name} ({stage}/{self.total_stages})",
             )
         else:
             logger.info("[%s] %s", self.mode, stage_name)
@@ -577,7 +600,7 @@ def verify_dump(backup_path: Path) -> bool:
         [pg_restore, "--list", str(backup_path)],
         capture_output=True,
         timeout=60,
-        check=False
+        check=False,
     )
     return result.returncode == 0
 
@@ -626,10 +649,7 @@ def list_dumps(backup_dir: Optional[Path] = None) -> List[Path]:
     bdir = backup_dir or BACKUP_DIR
     if not bdir.exists():
         return []
-    dumps = [
-        p for p in bdir.glob(f"{DUMP_PREFIX}.*{DUMP_EXT}")
-        if p.is_file()
-    ]
+    dumps = [p for p in bdir.glob(f"{DUMP_PREFIX}.*{DUMP_EXT}") if p.is_file()]
     dumps.sort(key=lambda p: p.stat().st_mtime, reverse=True)
     return dumps
 
@@ -682,7 +702,12 @@ def dump_command(live: bool) -> int:
 
     if not live:
         logger.info("[DRY RUN] Would dump to %s", backup_path)
-        logger.info("[DRY RUN] Would export: %d tables, %d columns, %d records", tables, columns, total_records)
+        logger.info(
+            "[DRY RUN] Would export: %d tables, %d columns, %d records",
+            tables,
+            columns,
+            total_records,
+        )
         return 0
 
     dump_stages = {
@@ -691,7 +716,7 @@ def dump_command(live: bool) -> int:
         2: "Running pg_dump",
         3: "Writing manifest",
         4: "Verifying dump",
-        5: "Complete"
+        5: "Complete",
     }
     with DumpImportProgress("Dump", 5, dump_stages) as prog:
         prog.update(0, "Connected")
@@ -707,7 +732,7 @@ def dump_command(live: bool) -> int:
             "tables": counts,
             "total_tables": tables,
             "total_columns": columns,
-            "total_records": total_records
+            "total_records": total_records,
         }
         manifest_path = backup_path.with_suffix(backup_path.suffix + ".manifest.json")
         with open(manifest_path, "w", encoding="utf-8") as f:
@@ -769,10 +794,7 @@ def _confirm_overwrite(dump_ts: str, last_import_ts: Optional[str]) -> bool:
             dump_dt = datetime.fromisoformat(dump_ts.replace("Z", "+00:00"))
             last_dt = datetime.fromisoformat(last_import_ts.replace("Z", "+00:00"))
             if dump_dt < last_dt:
-                msg = (
-                    f"\nDump is from {dump_fmt}, last import was {last_fmt} (newer). "
-                    "Overwrite anyway? (yes/no): "
-                )
+                msg = f"\nDump is from {dump_fmt}, last import was {last_fmt} (newer). Overwrite anyway? (yes/no): "
             else:
                 msg = (
                     "\nWARNING: This will REPLACE all data in the target database. "
@@ -847,7 +869,9 @@ def import_command(
         logger.info("[DRY RUN] Would restore from %s", dump_path.name)
         logger.info(
             "[DRY RUN] Dump contains: %d tables, %d columns, %d records",
-            manifest_tables, manifest_columns, manifest_records
+            manifest_tables,
+            manifest_columns,
+            manifest_records,
         )
         if dump_ts:
             logger.info("[DRY RUN] Dump timestamp: %s", _format_timestamp(dump_ts))
@@ -867,8 +891,7 @@ def import_command(
         logger.info(
             "Dump has newer schema: %d table(s) not in DB - restore will create: %s",
             len(dump_newer_tables),
-            ", ".join(sorted(dump_newer_tables)[:5])
-            + ("..." if len(dump_newer_tables) > 5 else "")
+            ", ".join(sorted(dump_newer_tables)[:5]) + ("..." if len(dump_newer_tables) > 5 else ""),
         )
 
     if not _confirm_overwrite(dump_ts or "", last_import_ts):
@@ -881,7 +904,7 @@ def import_command(
         2: "Running pg_restore",
         3: "Resetting sequences",
         4: "Verifying counts",
-        5: "Complete"
+        5: "Complete",
     }
     with DumpImportProgress("Import", 5, import_stages) as prog:
         prog.update(0, "Manifest loaded")
@@ -918,7 +941,7 @@ def import_command(
         logger.warning(
             "DB has %d extra table(s) not in manifest: %s",
             len(extra_tables),
-            ", ".join(sorted(extra_tables)[:10]) + ("..." if len(extra_tables) > 10 else "")
+            ", ".join(sorted(extra_tables)[:10]) + ("..." if len(extra_tables) > 10 else ""),
         )
 
     if missing_tables:

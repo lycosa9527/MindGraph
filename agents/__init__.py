@@ -1,4 +1,4 @@
-﻿"""
+"""
 MindGraph Agents Package
 
 Central registry for all diagram generation agents.
@@ -18,27 +18,26 @@ from .thinking_maps import (
     BubbleMapAgent,
     DoubleBubbleMapAgent,
     CircleMapAgent,
-    BridgeMapAgent
+    BridgeMapAgent,
 )
 
 # Agent Registry - Maps diagram types to their agent classes
 AGENT_REGISTRY = {
     # Concept Maps
-    'concept_map': ConceptMapAgent,
-
+    "concept_map": ConceptMapAgent,
     # Mind Maps
-    'mindmap': MindMapAgent,
-
+    "mindmap": MindMapAgent,
     # Thinking Maps
-    'flow_map': FlowMapAgent,
-    'tree_map': TreeMapAgent,
-    'brace_map': BraceMapAgent,
-    'multi_flow_map': MultiFlowMapAgent,
-    'bubble_map': BubbleMapAgent,
-    'double_bubble_map': DoubleBubbleMapAgent,
-    'circle_map': CircleMapAgent,
-    'bridge_map': BridgeMapAgent,
+    "flow_map": FlowMapAgent,
+    "tree_map": TreeMapAgent,
+    "brace_map": BraceMapAgent,
+    "multi_flow_map": MultiFlowMapAgent,
+    "bubble_map": BubbleMapAgent,
+    "double_bubble_map": DoubleBubbleMapAgent,
+    "circle_map": CircleMapAgent,
+    "bridge_map": BridgeMapAgent,
 }
+
 
 def get_agent(diagram_type: str):
     """
@@ -55,6 +54,7 @@ def get_agent(diagram_type: str):
         return agent_class()
     return None
 
+
 def get_available_diagram_types():
     """
     Get list of all available diagram types.
@@ -63,6 +63,7 @@ def get_available_diagram_types():
         List of diagram type strings
     """
     return list(AGENT_REGISTRY.keys())
+
 
 def is_agent_available(diagram_type: str) -> bool:
     """
@@ -76,19 +77,20 @@ def is_agent_available(diagram_type: str) -> bool:
     """
     return diagram_type in AGENT_REGISTRY
 
+
 __all__ = [
-    'ConceptMapAgent',
-    'MindMapAgent',
-    'FlowMapAgent',
-    'TreeMapAgent',
-    'BraceMapAgent',
-    'MultiFlowMapAgent',
-    'BubbleMapAgent',
-    'DoubleBubbleMapAgent',
-    'CircleMapAgent',
-    'BridgeMapAgent',
-    'AGENT_REGISTRY',
-    'get_agent',
-    'get_available_diagram_types',
-    'is_agent_available'
+    "ConceptMapAgent",
+    "MindMapAgent",
+    "FlowMapAgent",
+    "TreeMapAgent",
+    "BraceMapAgent",
+    "MultiFlowMapAgent",
+    "BubbleMapAgent",
+    "DoubleBubbleMapAgent",
+    "CircleMapAgent",
+    "BridgeMapAgent",
+    "AGENT_REGISTRY",
+    "get_agent",
+    "get_available_diagram_types",
+    "is_agent_available",
 ]

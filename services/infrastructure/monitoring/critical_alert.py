@@ -28,6 +28,7 @@ from typing import Optional
 
 try:
     from services.redis.redis_client import get_redis, is_redis_available
+
     _REDIS_AVAILABLE = True
 except ImportError:
     get_redis = None
@@ -37,6 +38,7 @@ except ImportError:
 try:
     from services.auth.sms_middleware import get_sms_middleware
     from utils.auth.config import ADMIN_PHONES
+
     _SMS_AVAILABLE = True
 except ImportError:
     get_sms_middleware = None
@@ -49,7 +51,11 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ============================================================================
 
-CRITICAL_ALERT_ENABLED = os.getenv("CRITICAL_ALERT_ENABLED", "true").lower() in ("true", "1", "yes")
+CRITICAL_ALERT_ENABLED = os.getenv("CRITICAL_ALERT_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 CRITICAL_ALERT_COOLDOWN_SECONDS = int(os.getenv("CRITICAL_ALERT_COOLDOWN_SECONDS", "1800"))  # 30 min default
 CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS = int(
     os.getenv("CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS", "3600")
@@ -62,6 +68,7 @@ ALERT_SENT_KEY_PREFIX = "critical_alert:sent:"
 # ============================================================================
 # Critical Alert Service
 # ============================================================================
+
 
 class CriticalAlertService:
     """
@@ -86,7 +93,7 @@ class CriticalAlertService:
         """
         message_preview = error_message[:50] if error_message else ""
         hash_input = f"{component}:{error_type}:{message_preview}"
-        return hashlib.sha256(hash_input.encode('utf-8')).hexdigest()[:16]
+        return hashlib.sha256(hash_input.encode("utf-8")).hexdigest()[:16]
 
     @staticmethod
     async def _check_alert_sent(component: str, error_hash: str) -> bool:
@@ -138,12 +145,7 @@ class CriticalAlertService:
                 return
 
             key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
-            await asyncio.to_thread(
-                redis_client.setex,
-                key,
-                cooldown_seconds,
-                str(time.time())
-            )
+            await asyncio.to_thread(redis_client.setex, key, cooldown_seconds, str(time.time()))
         except Exception as e:
             logger.warning("[CriticalAlert] Failed to mark alert as sent: %s", e)
 
@@ -154,7 +156,7 @@ class CriticalAlertService:
         error_message: str,
         details: Optional[str] = None,
         bypass_cooldown: bool = False,
-        cooldown_seconds: Optional[int] = None
+        cooldown_seconds: Optional[int] = None,
     ) -> bool:
         """
         Send critical SMS alert to admin phones.
@@ -194,7 +196,7 @@ class CriticalAlertService:
                     "[CriticalAlert] Alert already sent for %s:%s (hash: %s), skipping to prevent spam",
                     component,
                     error_type,
-                    error_hash
+                    error_hash,
                 )
                 return False
 
@@ -208,7 +210,7 @@ class CriticalAlertService:
             component,
             error_type,
             error_message,
-            error_hash
+            error_hash,
         )
         if details:
             logger.critical("[CriticalAlert] Error details: %s", details)
@@ -228,7 +230,7 @@ class CriticalAlertService:
                     "[CriticalAlert] SMS alert sent successfully - Component: %s, Type: %s, Hash: %s",
                     component,
                     error_type,
-                    error_hash
+                    error_hash,
                 )
 
                 if not bypass_cooldown:
@@ -244,11 +246,7 @@ class CriticalAlertService:
             return False
 
     @staticmethod
-    async def send_startup_failure_alert(
-        component: str,
-        error_message: str,
-        details: Optional[str] = None
-    ) -> bool:
+    async def send_startup_failure_alert(component: str, error_message: str, details: Optional[str] = None) -> bool:
         """
         Send alert for startup failure (app cannot start).
 
@@ -267,15 +265,11 @@ class CriticalAlertService:
             error_type="StartupFailure",
             error_message=error_message,
             details=details,
-            bypass_cooldown=True
+            bypass_cooldown=True,
         )
 
     @staticmethod
-    async def send_runtime_error_alert(
-        component: str,
-        error_message: str,
-        details: Optional[str] = None
-    ) -> bool:
+    async def send_runtime_error_alert(component: str, error_message: str, details: Optional[str] = None) -> bool:
         """
         Send alert for runtime critical error.
 
@@ -295,7 +289,7 @@ class CriticalAlertService:
             error_message=error_message,
             details=details,
             bypass_cooldown=False,
-            cooldown_seconds=CRITICAL_ALERT_COOLDOWN_SECONDS
+            cooldown_seconds=CRITICAL_ALERT_COOLDOWN_SECONDS,
         )
 
     @staticmethod
@@ -304,7 +298,7 @@ class CriticalAlertService:
         exception_type: str,
         error_message: str,
         stack_trace: Optional[str] = None,
-        request_path: Optional[str] = None
+        request_path: Optional[str] = None,
     ) -> bool:
         """
         Send alert for unhandled exception.
@@ -334,16 +328,11 @@ class CriticalAlertService:
             error_message=error_message,
             details=details,
             bypass_cooldown=False,
-            cooldown_seconds=CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS
+            cooldown_seconds=CRITICAL_ALERT_EXCEPTION_COOLDOWN_SECONDS,
         )
 
-
     @staticmethod
-    def send_startup_failure_alert_sync(
-        component: str,
-        error_message: str,
-        details: Optional[str] = None
-    ) -> bool:
+    def send_startup_failure_alert_sync(component: str, error_message: str, details: Optional[str] = None) -> bool:
         """
         Send alert for startup failure (synchronous version for use during startup).
 
@@ -362,25 +351,21 @@ class CriticalAlertService:
                 loop = asyncio.get_event_loop()
                 if loop.is_running():
                     asyncio.create_task(
-                        CriticalAlertService.send_startup_failure_alert(
-                            component, error_message, details
-                        )
+                        CriticalAlertService.send_startup_failure_alert(component, error_message, details)
                     )
                     return True
                 else:
                     return loop.run_until_complete(
-                        CriticalAlertService.send_startup_failure_alert(
-                            component, error_message, details
-                        )
+                        CriticalAlertService.send_startup_failure_alert(component, error_message, details)
                     )
             except RuntimeError:
-                return asyncio.run(
-                    CriticalAlertService.send_startup_failure_alert(
-                        component, error_message, details
-                    )
-                )
+                return asyncio.run(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
         except Exception as e:
-            logger.error("[CriticalAlert] Failed to send startup failure alert: %s", e, exc_info=True)
+            logger.error(
+                "[CriticalAlert] Failed to send startup failure alert: %s",
+                e,
+                exc_info=True,
+            )
             return False
 
 

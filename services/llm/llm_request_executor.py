@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Optional, Any, AsyncGenerator
 import asyncio
 import logging
@@ -31,7 +32,7 @@ class LLMRequestExecutor:
         actual_model: str,
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Execute a chat completion request with rate limiting and retry logic.
@@ -59,10 +60,12 @@ class LLMRequestExecutor:
             async with rate_limiter:
                 rate_limit_duration = time.time() - rate_limit_start
                 # Always log rate limiter timing for Kimi to diagnose delays
-                if model == 'kimi' or rate_limit_duration > 0.1:
+                if model == "kimi" or rate_limit_duration > 0.1:
                     logger.info(
                         "[LLMRequestExecutor] Rate limiter acquire: %.3fs for %s (%s)",
-                        rate_limit_duration, model, actual_model
+                        rate_limit_duration,
+                        model,
+                        actual_model,
                     )
 
                 # Execute with retry and timeout
@@ -73,14 +76,16 @@ class LLMRequestExecutor:
                     temperature=temperature,
                     max_tokens=max_tokens,
                     timeout=timeout,
-                    **kwargs
+                    **kwargs,
                 )
                 api_duration = time.time() - api_start
                 # Always log API timing for Kimi to diagnose delays
-                if model == 'kimi' or api_duration > 2.0:
+                if model == "kimi" or api_duration > 2.0:
                     logger.info(
                         "[LLMRequestExecutor] API call duration: %.2fs for %s (%s)",
-                        api_duration, model, actual_model
+                        api_duration,
+                        model,
+                        actual_model,
                     )
         else:
             # No rate limiting
@@ -90,7 +95,7 @@ class LLMRequestExecutor:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 timeout=timeout,
-                **kwargs
+                **kwargs,
             )
 
         # Validate response
@@ -103,7 +108,7 @@ class LLMRequestExecutor:
         temperature: Optional[float],
         max_tokens: int,
         timeout: float,
-        **kwargs
+        **kwargs,
     ) -> Any:
         """
         Execute the actual API call with retry logic.
@@ -119,28 +124,26 @@ class LLMRequestExecutor:
         Returns:
             Raw API response
         """
+
         async def _call():
             # DeepSeek and Kimi use async_chat_completion
-            if hasattr(client, 'async_chat_completion'):
+            if hasattr(client, "async_chat_completion"):
                 return await client.async_chat_completion(
                     messages=messages,
                     temperature=temperature,
                     max_tokens=max_tokens,
-                    **kwargs
+                    **kwargs,
                 )
             # Qwen and Hunyuan use chat_completion
             return await client.chat_completion(
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **kwargs
+                **kwargs,
             )
 
         # Properly await with_retry inside timeout
-        return await asyncio.wait_for(
-            error_handler.with_retry(_call),
-            timeout=timeout
-        )
+        return await asyncio.wait_for(error_handler.with_retry(_call), timeout=timeout)
 
     @staticmethod
     async def execute_stream_request(
@@ -153,7 +156,7 @@ class LLMRequestExecutor:
         max_tokens: int = 2000,
         enable_thinking: bool = False,
         yield_structured: bool = False,
-        **kwargs
+        **kwargs,
     ) -> AsyncGenerator[Any, None]:
         """
         Execute a streaming chat completion request.
@@ -174,15 +177,13 @@ class LLMRequestExecutor:
             Chunks from streaming response (strings or dicts)
         """
         # Check if client supports streaming
-        if hasattr(client, 'async_stream_chat_completion'):
+        if hasattr(client, "async_stream_chat_completion"):
             stream_method = client.async_stream_chat_completion
-        elif hasattr(client, 'stream_chat_completion'):
+        elif hasattr(client, "stream_chat_completion"):
             stream_method = client.stream_chat_completion
         else:
             # Fallback: client doesn't support streaming
-            raise ValueError(
-                f"Client for {model} does not support streaming"
-            )
+            raise ValueError(f"Client for {model} does not support streaming")
 
         # Apply rate limiting if available
         if rate_limiter:
@@ -191,11 +192,12 @@ class LLMRequestExecutor:
             async with rate_limiter:
                 rate_limit_duration = time.time() - rate_limit_start
                 # Log rate limiter timing for debugging
-                if model == 'kimi' or rate_limit_duration > 0.1:
+                if model == "kimi" or rate_limit_duration > 0.1:
                     logger.info(
-                        "[LLMRequestExecutor] Rate limiter acquire: %.3fs "
-                        "for %s (%s) [stream]",
-                        rate_limit_duration, model, actual_model
+                        "[LLMRequestExecutor] Rate limiter acquire: %.3fs for %s (%s) [stream]",
+                        rate_limit_duration,
+                        model,
+                        actual_model,
                     )
 
                 # Stream with rate limiting applied
@@ -204,16 +206,14 @@ class LLMRequestExecutor:
                     temperature=temperature,
                     max_tokens=max_tokens,
                     enable_thinking=enable_thinking,
-                    **kwargs
+                    **kwargs,
                 ):
                     # Handle usage chunks separately (always yield for tracking)
-                    if isinstance(chunk, dict) and chunk.get('type') == 'usage':
+                    if isinstance(chunk, dict) and chunk.get("type") == "usage":
                         yield chunk
                         continue
                     # Process other chunks
-                    processed = LLMRequestExecutor._process_stream_chunk(
-                        chunk, yield_structured
-                    )
+                    processed = LLMRequestExecutor._process_stream_chunk(chunk, yield_structured)
                     if processed is not None:
                         yield processed
         else:
@@ -223,24 +223,19 @@ class LLMRequestExecutor:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 enable_thinking=enable_thinking,
-                **kwargs
+                **kwargs,
             ):
                 # Handle usage chunks separately (always yield for tracking)
-                if isinstance(chunk, dict) and chunk.get('type') == 'usage':
+                if isinstance(chunk, dict) and chunk.get("type") == "usage":
                     yield chunk
                     continue
                 # Process other chunks
-                processed = LLMRequestExecutor._process_stream_chunk(
-                    chunk, yield_structured
-                )
+                processed = LLMRequestExecutor._process_stream_chunk(chunk, yield_structured)
                 if processed is not None:
                     yield processed
 
     @staticmethod
-    def _process_stream_chunk(
-        chunk: Any,
-        yield_structured: bool
-    ) -> Any:
+    def _process_stream_chunk(chunk: Any, yield_structured: bool) -> Any:
         """
         Process a stream chunk and format according to yield_structured flag.
 
@@ -253,23 +248,23 @@ class LLMRequestExecutor:
         """
         # Handle new format: chunk can be dict with 'type' and content/usage
         if isinstance(chunk, dict):
-            chunk_type = chunk.get('type', 'token')
-            if chunk_type == 'usage':
+            chunk_type = chunk.get("type", "token")
+            if chunk_type == "usage":
                 # Usage data from final chunk
                 if yield_structured:
                     return chunk
                 # In non-structured mode, skip usage chunks
                 return None
-            elif chunk_type == 'thinking':
+            elif chunk_type == "thinking":
                 # Yield thinking/reasoning content
                 if yield_structured:
                     return chunk
                 # In non-structured mode, thinking is discarded
                 # (for backward compatibility with existing callers)
                 return None
-            elif chunk_type == 'token':
+            elif chunk_type == "token":
                 # Yield content token
-                content = chunk.get('content', '')
+                content = chunk.get("content", "")
                 if content:
                     if yield_structured:
                         return chunk

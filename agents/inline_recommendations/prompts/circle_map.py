@@ -1,4 +1,5 @@
 """Circle map inline recommendation prompts."""
+
 from typing import Any, Dict, List, Optional
 
 from ._common import append_batch_note, THINKING_APPROACH
@@ -12,13 +13,13 @@ def build_circle_observations_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for circle map observation recommendations."""
-    topic = (context.get('topic') or '').strip()
-    context_texts = context.get('context_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['circle_map'][language]
+    topic = (context.get("topic") or "").strip()
+    context_texts = context.get("context_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["circle_map"][language]
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"主题：{topic}" if topic else "主题未设置"
         prompt = f"""用户正在创建圆圈图。{topic_ctx}
 
@@ -33,7 +34,7 @@ def build_circle_observations_prompt(
         if context_texts:
             prompt += f"""
 
-图中已有观察点：{', '.join(context_texts)}。请生成更聚焦、互补的观察点推荐，与已有观察点形成补充，避免重复。"""
+图中已有观察点：{", ".join(context_texts)}。请生成更聚焦、互补的观察点推荐，与已有观察点形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个观察点："""
@@ -50,7 +51,7 @@ Generate {count} observation/association recommendations. Requirements:
 3. Each observation concise (1-6 words)
 4. Output only observation text, one per line, no numbering"""
         if context_texts:
-            obs = ', '.join(context_texts)
+            obs = ", ".join(context_texts)
             prompt += (
                 f"\n\nThe diagram already has observations: {obs}. "
                 "Generate more focused, complementary recommendations, avoid repetition."

@@ -30,6 +30,7 @@ _user_cache = None
 try:
     from services.redis.session.redis_session_manager import get_session_manager
     from services.redis.cache.redis_user_cache import user_cache
+
     _REDIS_AVAILABLE = True
     _get_session_manager = get_session_manager
     _user_cache = user_cache
@@ -37,10 +38,7 @@ except ImportError:
     pass
 
 
-async def get_current_user_ws(
-    websocket,
-    db: Session = Depends(get_db)
-) -> User:
+async def get_current_user_ws(websocket, db: Session = Depends(get_db)) -> User:
     """
     Get current user from WebSocket connection.
     Extracts JWT from query params or cookies.
@@ -56,11 +54,11 @@ async def get_current_user_ws(
         WebSocketDisconnect: If authentication fails
     """
     # Try query params first
-    token = websocket.query_params.get('token')
+    token = websocket.query_params.get("token")
 
     # Try cookies if no token in query
     if not token:
-        token = websocket.cookies.get('access_token')
+        token = websocket.cookies.get("access_token")
 
     if not token:
         await websocket.close(code=4001, reason="Authentication required")

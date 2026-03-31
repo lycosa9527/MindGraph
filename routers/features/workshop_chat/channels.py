@@ -59,14 +59,11 @@ _ORG_MEMBER_LIMIT_MAX = 200
 
 def _escape_ilike_literal(text: str) -> str:
     """Escape ``%``, ``_``, ``\\`` for use in ILIKE with PostgreSQL ESCAPE '\\'."""
-    return (
-        text.replace("\\", "\\\\")
-        .replace("%", "\\%")
-        .replace("_", "\\_")
-    )
+    return text.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 # ── Organization members ─────────────────────────────────────────
+
 
 @router.get("/org-members", response_model=OrgMembersPage)
 def list_org_members(
@@ -99,14 +96,7 @@ def list_org_members(
         filters.append(User.name.ilike(pattern, escape="\\"))
 
     total = db.query(User).filter(*filters).count()
-    users = (
-        db.query(User)
-        .filter(*filters)
-        .order_by(User.name)
-        .offset(off)
-        .limit(lim)
-        .all()
-    )
+    users = db.query(User).filter(*filters).order_by(User.name).offset(off).limit(lim).all()
     items = [
         OrgMemberRow(
             id=u.id,
@@ -127,6 +117,7 @@ def list_org_members(
 # ── Initialization ────────────────────────────────────────────────
 # This static path must be defined before any /channels/{channel_id} route
 # so that POST /channels/initialize is matched correctly (not as channel_id="initialize").
+
 
 @router.get(
     "/channels/initialize",
@@ -157,7 +148,9 @@ async def initialize_default_channels(
         if not current_user.organization_id:
             return {"ok": True, "created": 0, "channels": []}
         created = seed_default_channels(
-            db, current_user.organization_id, current_user.id,
+            db,
+            current_user.organization_id,
+            current_user.id,
         )
         if not created:
             return {"ok": True, "created": 0, "channels": []}
@@ -175,6 +168,7 @@ async def initialize_default_channels(
 
 # ── Teaching group ordering (must be before /channels/{channel_id}) ─
 
+
 @router.put("/channels/teaching-groups/order")
 async def reorder_teaching_groups(
     body: ReorderTeachingGroupsRequest,
@@ -188,7 +182,9 @@ async def reorder_teaching_groups(
             detail="User does not belong to an organization",
         )
     ok = channel_service.reorder_teaching_groups(
-        db, current_user.organization_id, body.channel_ids,
+        db,
+        current_user.organization_id,
+        body.channel_ids,
     )
     if not ok:
         raise HTTPException(
@@ -199,6 +195,7 @@ async def reorder_teaching_groups(
 
 
 # ── Channel CRUD ─────────────────────────────────────────────────
+
 
 @router.get("/channels")
 async def list_channels(
@@ -213,13 +210,18 @@ async def list_channels(
     """
     effective_org_id = get_effective_org_id(current_user, org_id)
     etag = channels_list_etag(
-        db, effective_org_id, current_user.id, current_user,
+        db,
+        effective_org_id,
+        current_user.id,
+        current_user,
     )
     return workshop_list_json_response(
         request,
         etag,
         lambda: channel_service.list_channels(
-            db, effective_org_id, current_user.id,
+            db,
+            effective_org_id,
+            current_user.id,
             current_user=current_user,
         ),
     )
@@ -266,15 +268,18 @@ async def update_channel(
     channel = access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
     payload = body.model_dump(exclude_unset=True)
-    clear_deadline = (
-        "deadline" in payload and payload["deadline"] is None
-    )
+    clear_deadline = "deadline" in payload and payload["deadline"] is None
     deadline_val = None if clear_deadline else body.deadline
     return channel_service.update_channel(
-        db, channel_id,
-        name=body.name, description=body.description, avatar=body.avatar,
-        color=body.color, channel_status=body.status,
-        deadline=deadline_val, clear_deadline=clear_deadline,
+        db,
+        channel_id,
+        name=body.name,
+        description=body.description,
+        avatar=body.avatar,
+        color=body.color,
+        channel_status=body.status,
+        deadline=deadline_val,
+        clear_deadline=clear_deadline,
         diagram_id=body.diagram_id,
         is_resolved=body.is_resolved,
     )
@@ -289,7 +294,9 @@ async def mark_channel_read(
     """Advance the current user's read waterline to the latest channel message."""
     access_channel(db, channel_id, current_user)
     return channel_service.mark_channel_read(
-        db, channel_id, current_user.id,
+        db,
+        channel_id,
+        current_user.id,
     )
 
 
@@ -310,6 +317,7 @@ async def archive_channel(
 
 
 # ── Membership ───────────────────────────────────────────────────
+
 
 @router.post("/channels/{channel_id}/join")
 async def join_channel(
@@ -364,10 +372,7 @@ async def invite_channel_member(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Cannot invite users to announcement channels",
         )
-    if (
-        channel.organization_id != current_user.organization_id
-        and not is_admin(current_user)
-    ):
+    if channel.organization_id != current_user.organization_id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
@@ -379,19 +384,25 @@ async def invite_channel_member(
             detail="User does not belong to an organization",
         )
     result = channel_service.invite_user_to_channel(
-        db, channel_id, body.user_id, current_user.organization_id,
+        db,
+        channel_id,
+        body.user_id,
+        current_user.organization_id,
     )
     if not result:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="User could not be added to this channel",
         )
-    await chat_ws_manager.send_to_user(body.user_id, {
-        "type": "channel_invite",
-        "channel_id": channel_id,
-        "channel_name": result["channel_name"],
-        "invited_by": current_user.id,
-    })
+    await chat_ws_manager.send_to_user(
+        body.user_id,
+        {
+            "type": "channel_invite",
+            "channel_id": channel_id,
+            "channel_name": result["channel_name"],
+            "invited_by": current_user.id,
+        },
+    )
     return {"ok": True, "user_id": body.user_id}
 
 
@@ -411,10 +422,7 @@ async def duplicate_teaching_group(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Channel not found",
         )
-    if (
-        channel.organization_id != current_user.organization_id
-        and not is_admin(current_user)
-    ):
+    if channel.organization_id != current_user.organization_id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",
@@ -426,7 +434,10 @@ async def duplicate_teaching_group(
             detail="User does not belong to an organization",
         )
     result = channel_service.duplicate_teaching_group(
-        db, channel_id, current_user.id, current_user.organization_id,
+        db,
+        channel_id,
+        current_user.id,
+        current_user.organization_id,
     )
     if not result:
         raise HTTPException(
@@ -437,6 +448,7 @@ async def duplicate_teaching_group(
 
 
 # ── Subscription preferences ─────────────────────────────────────
+
 
 @router.post("/channels/{channel_id}/mute")
 async def toggle_mute(
@@ -450,7 +462,8 @@ async def toggle_mute(
         return channel_service.toggle_mute(db, channel_id, current_user.id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         ) from exc
 
 
@@ -466,7 +479,8 @@ async def toggle_pin(
         return channel_service.toggle_pin(db, channel_id, current_user.id)
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         ) from exc
 
 
@@ -481,18 +495,22 @@ async def update_preferences(
     access_channel(db, channel_id, current_user)
     try:
         return channel_service.update_member_prefs(
-            db, channel_id, current_user.id,
+            db,
+            channel_id,
+            current_user.id,
             color=body.color,
             desktop_notifications=body.desktop_notifications,
             email_notifications=body.email_notifications,
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         ) from exc
 
 
 # ── Channel-level permissions ─────────────────────────────────────
+
 
 @router.patch("/channels/{channel_id}/permissions")
 async def update_permissions(
@@ -508,7 +526,8 @@ async def update_permissions(
     channel = access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
     result = channel_service.update_channel_permissions(
-        db, channel_id,
+        db,
+        channel_id,
         channel_type=body.channel_type,
         posting_policy=body.posting_policy,
         is_default=body.is_default,

@@ -36,13 +36,19 @@ class ChunkValidator:
         """
         if token_count < self.min_tokens:
             logger.warning(
-                f"Chunk {chunk.chunk_index} too small: {token_count} < {self.min_tokens} tokens"
+                "Chunk %s too small: %s < %s tokens",
+                chunk.chunk_index,
+                token_count,
+                self.min_tokens,
             )
             return False
 
         if token_count > self.max_tokens:
             logger.warning(
-                f"Chunk {chunk.chunk_index} too large: {token_count} > {self.max_tokens} tokens"
+                "Chunk %s too large: %s > %s tokens",
+                chunk.chunk_index,
+                token_count,
+                self.max_tokens,
             )
             return False
 

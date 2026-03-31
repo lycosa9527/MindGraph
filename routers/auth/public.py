@@ -39,11 +39,4 @@ def list_organizations(db: Session = Depends(get_db)):
     Returns basic organization info for registration form dropdown.
     """
     orgs = db.query(Organization).all()
-    return [
-        {
-            "code": org.code,
-            "name": org.name
-        }
-        for org in orgs
-    ]
-
+    return [{"code": org.code, "name": org.name} for org in orgs]

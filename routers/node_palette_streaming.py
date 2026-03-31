@@ -4,6 +4,7 @@ Node Palette streaming helpers.
 Extracted streaming logic for node palette SSE endpoints to reduce complexity
 and fix type checker issues (reportGeneralTypeIssues, ContentStream).
 """
+
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -25,69 +26,63 @@ from utils.prompt_output_languages import is_prompt_output_language
 logger = logging.getLogger(__name__)
 
 _LLM_ERROR_MAP: dict[Type[Exception], str] = {
-    LLMContentFilterError: 'content_filter',
-    LLMRateLimitError: 'rate_limit',
-    LLMTimeoutError: 'timeout',
-    LLMInvalidParameterError: 'invalid_parameter',
-    LLMQuotaExhaustedError: 'quota_exhausted',
-    LLMModelNotFoundError: 'model_not_found',
-    LLMAccessDeniedError: 'access_denied',
-    LLMServiceError: 'service_error',
+    LLMContentFilterError: "content_filter",
+    LLMRateLimitError: "rate_limit",
+    LLMTimeoutError: "timeout",
+    LLMInvalidParameterError: "invalid_parameter",
+    LLMQuotaExhaustedError: "quota_exhausted",
+    LLMModelNotFoundError: "model_not_found",
+    LLMAccessDeniedError: "access_denied",
+    LLMServiceError: "service_error",
 }
 
 _ERROR_MESSAGES: dict[str, tuple[str, str]] = {
-    'content_filter': (
+    "content_filter": (
         "无法处理您的请求，请尝试修改主题描述。",
-        "Content could not be processed. Please try a different topic."
+        "Content could not be processed. Please try a different topic.",
     ),
-    'rate_limit': (
+    "rate_limit": (
         "AI服务繁忙，请稍后重试。",
-        "AI service is busy. Please try again in a few seconds."
+        "AI service is busy. Please try again in a few seconds.",
     ),
-    'timeout': (
-        "请求超时，请重试。",
-        "Request timed out. Please try again."
-    ),
-    'invalid_parameter': (
+    "timeout": ("请求超时，请重试。", "Request timed out. Please try again."),
+    "invalid_parameter": (
         "参数错误，请检查输入。",
-        "Invalid parameter. Please check input."
+        "Invalid parameter. Please check input.",
     ),
-    'quota_exhausted': (
+    "quota_exhausted": (
         "配额已用完，请检查账户。",
-        "Quota exhausted. Please check account."
+        "Quota exhausted. Please check account.",
     ),
-    'model_not_found': (
+    "model_not_found": (
         "模型不存在，请检查配置。",
-        "Model not found. Please check configuration."
+        "Model not found. Please check configuration.",
     ),
-    'access_denied': (
+    "access_denied": (
         "访问被拒绝，请检查权限。",
-        "Access denied. Please check permissions."
+        "Access denied. Please check permissions.",
     ),
-    'service_error': (
+    "service_error": (
         "AI服务错误，请稍后重试。",
-        "AI service error. Please try again later."
+        "AI service error. Please try again later.",
     ),
-    'unknown': (
-        "出现问题，请重试。",
-        "Something went wrong. Please try again."
-    ),
-    'no_response': (
+    "unknown": ("出现问题，请重试。", "Something went wrong. Please try again."),
+    "no_response": (
         "请求处理失败，请重试。",
-        "Request processing failed. Please try again."
+        "Request processing failed. Please try again.",
     ),
 }
 
 
 def _get_default_stage(diagram_type: str) -> str:
     """Return default stage for multi-stage diagram types."""
-    if diagram_type == 'mindmap':
-        return 'branches'
-    if diagram_type == 'flow_map':
-        return 'steps'
-    if diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
-        return 'dimensions'
-    return 'categories'
+    if diagram_type == "mindmap":
+        return "branches"
+    if diagram_type == "flow_map":
+        return "steps"
+    if diagram_type in ("tree_map", "brace_map", "bridge_map"):
+        return "dimensions"
+    return "categories"
 
 
 def _resolve_stage_and_data(
@@ -96,46 +91,43 @@ def _resolve_stage_and_data(
     default_stage: str,
 ) -> tuple[str, dict[str, Any]]:
     """Resolve stage and stage_data from request for multi-stage diagrams."""
-    stage = getattr(req, 'stage', default_stage)
-    stage_data = getattr(req, 'stage_data', None) or {}
-    diagram_data = getattr(req, 'diagram_data', None) or {}
-    raw_dim = (diagram_data.get('dimension') or '').strip()
-    diagram_dim = '' if is_placeholder_text(raw_dim) else raw_dim
+    stage = getattr(req, "stage", default_stage)
+    stage_data = getattr(req, "stage_data", None) or {}
+    diagram_data = getattr(req, "diagram_data", None) or {}
+    raw_dim = (diagram_data.get("dimension") or "").strip()
+    diagram_dim = "" if is_placeholder_text(raw_dim) else raw_dim
 
-    if (
-        stage == 'dimensions'
-        and diagram_type in ('tree_map', 'brace_map', 'bridge_map')
-        and diagram_dim
-    ):
-        stage = (
-            'parts' if diagram_type == 'brace_map'
-            else 'categories' if diagram_type == 'tree_map'
-            else 'pairs'
-        )
+    if stage == "dimensions" and diagram_type in ("tree_map", "brace_map", "bridge_map") and diagram_dim:
+        stage = "parts" if diagram_type == "brace_map" else "categories" if diagram_type == "tree_map" else "pairs"
         stage_data = {
             **(stage_data if isinstance(stage_data, dict) else {}),
-            'dimension': diagram_dim
+            "dimension": diagram_dim,
         }
         logger.debug(
             "[NodePalette-API] Dimension already fixed '%s', skipping to stage: %s",
-            diagram_dim[:30], stage
+            diagram_dim[:30],
+            stage,
         )
-    elif isinstance(stage_data, dict) and diagram_type in ('tree_map', 'brace_map', 'bridge_map'):
-        if diagram_dim and not stage_data.get('dimension'):
-            stage_data = {**stage_data, 'dimension': diagram_dim}
-        if diagram_type == 'bridge_map' and stage == 'dimensions':
-            analogies = diagram_data.get('analogies')
-            if analogies and isinstance(analogies, list) and not stage_data.get('analogies'):
-                stage_data = {**stage_data, 'analogies': analogies}
+    elif isinstance(stage_data, dict) and diagram_type in (
+        "tree_map",
+        "brace_map",
+        "bridge_map",
+    ):
+        if diagram_dim and not stage_data.get("dimension"):
+            stage_data = {**stage_data, "dimension": diagram_dim}
+        if diagram_type == "bridge_map" and stage == "dimensions":
+            analogies = diagram_data.get("analogies")
+            if analogies and isinstance(analogies, list) and not stage_data.get("analogies"):
+                stage_data = {**stage_data, "analogies": analogies}
 
     return stage, stage_data if isinstance(stage_data, dict) else {}
 
 
 def _get_error_message(req: Any, error_type: str) -> str:
     """Get localized error message for given error type."""
-    language = getattr(req, 'language', 'en')
-    zh_msg, en_msg = _ERROR_MESSAGES.get(error_type, _ERROR_MESSAGES['unknown'])
-    return zh_msg if language == 'zh' else en_msg
+    language = getattr(req, "language", "en")
+    zh_msg, en_msg = _ERROR_MESSAGES.get(error_type, _ERROR_MESSAGES["unknown"])
+    return zh_msg if language == "zh" else en_msg
 
 
 def _yield_error_event(req: Any, error_type: str, user_message: str | None = None) -> str:
@@ -147,23 +139,23 @@ def _yield_error_event(req: Any, error_type: str, user_message: str | None = Non
 def _merged_educational_context(req: Any) -> Optional[Dict[str, Any]]:
     """Merge educational_context with concept_map fields and request generation language."""
     edu: Dict[str, Any] = {}
-    raw = getattr(req, 'educational_context', None)
+    raw = getattr(req, "educational_context", None)
     if isinstance(raw, dict):
         edu = dict(raw)
-    if getattr(req, 'diagram_type', None) == 'concept_map':
-        dd = getattr(req, 'diagram_data', None) or {}
+    if getattr(req, "diagram_type", None) == "concept_map":
+        dd = getattr(req, "diagram_data", None) or {}
         if isinstance(dd, dict):
-            fq = str(dd.get('focus_question') or '').strip()
-            rc = str(dd.get('root_concept') or '').strip()
+            fq = str(dd.get("focus_question") or "").strip()
+            rc = str(dd.get("root_concept") or "").strip()
             if fq:
-                edu['focus_question'] = fq
+                edu["focus_question"] = fq
             if rc:
-                edu['root_concept'] = rc
-    req_lang = getattr(req, 'language', None)
+                edu["root_concept"] = rc
+    req_lang = getattr(req, "language", None)
     if isinstance(req_lang, str):
         stripped = req_lang.strip().lower()
         if is_prompt_output_language(stripped):
-            edu['language'] = stripped
+            edu["language"] = stripped
     return edu if edu else None
 
 
@@ -180,24 +172,38 @@ def _build_batch_kwargs(
     user_id = current_user.id if current_user else None
     org_id = current_user.organization_id if current_user else None
     base = {
-        'session_id': session_id,
-        'center_topic': center_topic,
-        'educational_context': _merged_educational_context(req),
-        'nodes_per_llm': 15,
-        'user_id': user_id,
-        'organization_id': org_id,
-        'diagram_type': req.diagram_type,
-        'endpoint_path': endpoint_path,
+        "session_id": session_id,
+        "center_topic": center_topic,
+        "educational_context": _merged_educational_context(req),
+        "nodes_per_llm": 15,
+        "user_id": user_id,
+        "organization_id": org_id,
+        "diagram_type": req.diagram_type,
+        "endpoint_path": endpoint_path,
     }
-    if req.diagram_type in ['double_bubble_map', 'multi_flow_map']:
-        mode = getattr(req, 'mode', 'similarities' if req.diagram_type == 'double_bubble_map' else 'causes')
-        return {**base, '_mode': mode}
-    if req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap', 'bridge_map']:
-        return {**base, '_stage': stage, '_stage_data': stage_data}
-    if req.diagram_type == 'concept_map':
-        concept_mode = getattr(req, 'mode', None)
-        concept_stage = getattr(req, 'stage_data', None) or {}
-        return {**base, '_mode': concept_mode, '_stage_data': concept_stage if isinstance(concept_stage, dict) else {}}
+    if req.diagram_type in ["double_bubble_map", "multi_flow_map"]:
+        mode = getattr(
+            req,
+            "mode",
+            "similarities" if req.diagram_type == "double_bubble_map" else "causes",
+        )
+        return {**base, "_mode": mode}
+    if req.diagram_type in [
+        "tree_map",
+        "brace_map",
+        "flow_map",
+        "mindmap",
+        "bridge_map",
+    ]:
+        return {**base, "_stage": stage, "_stage_data": stage_data}
+    if req.diagram_type == "concept_map":
+        concept_mode = getattr(req, "mode", None)
+        concept_stage = getattr(req, "stage_data", None) or {}
+        return {
+            **base,
+            "_mode": concept_mode,
+            "_stage_data": concept_stage if isinstance(concept_stage, dict) else {},
+        }
     return base
 
 
@@ -221,26 +227,41 @@ async def stream_node_palette(
 
     try:
         batch_kwargs = _build_batch_kwargs(req, session_id, center_topic, endpoint_path, current_user)
-        if req.diagram_type in ['tree_map', 'brace_map', 'flow_map', 'mindmap', 'bridge_map']:
-            logger.debug("%s %s stage: %s | Stage data: %s",
-                         log_prefix, req.diagram_type,
-                         batch_kwargs.get('_stage'), batch_kwargs.get('_stage_data'))
+        if req.diagram_type in [
+            "tree_map",
+            "brace_map",
+            "flow_map",
+            "mindmap",
+            "bridge_map",
+        ]:
+            logger.debug(
+                "%s %s stage: %s | Stage data: %s",
+                log_prefix,
+                req.diagram_type,
+                batch_kwargs.get("_stage"),
+                batch_kwargs.get("_stage_data"),
+            )
 
         async for chunk in generator.generate_batch(**batch_kwargs):
             chunk_count += 1
-            if chunk.get('event') == 'node_generated':
+            if chunk.get("event") == "node_generated":
                 node_count += 1
             yield f"data: {json.dumps(chunk)}\n\n"
 
         if chunk_count == 0:
             logger.warning(
                 "%s No chunks yielded, sending completion event | Session: %s",
-                log_prefix, session_id[:8]
+                log_prefix,
+                session_id[:8],
             )
             yield f"data: {json.dumps({'event': 'batch_complete', 'nodes': node_count})}\n\n"
 
-        logger.debug("%s Batch complete | Session: %s | Nodes: %d",
-                     log_prefix, session_id[:8], node_count)
+        logger.debug(
+            "%s Batch complete | Session: %s | Nodes: %d",
+            log_prefix,
+            session_id[:8],
+            node_count,
+        )
 
     except (
         LLMContentFilterError,
@@ -252,23 +273,33 @@ async def stream_node_palette(
         LLMAccessDeniedError,
         LLMServiceError,
     ) as exc:
-        error_type = _LLM_ERROR_MAP.get(type(exc), 'unknown')
+        error_type = _LLM_ERROR_MAP.get(type(exc), "unknown")
         is_service_error = isinstance(exc, LLMServiceError)
         log_fn = logger.error if is_service_error else logger.warning
-        log_fn("%s %s | Session: %s | Error: %s",
-               log_prefix, error_type.replace('_', ' ').title(),
-               session_id[:8], str(exc))
-        yield _yield_error_event(req, error_type, getattr(exc, 'user_message', None))
+        log_fn(
+            "%s %s | Session: %s | Error: %s",
+            log_prefix,
+            error_type.replace("_", " ").title(),
+            session_id[:8],
+            str(exc),
+        )
+        yield _yield_error_event(req, error_type, getattr(exc, "user_message", None))
 
     except Exception as exc:
-        logger.error("%s Stream error | Session: %s | Error: %s",
-                     log_prefix, session_id[:8], str(exc), exc_info=True)
-        yield _yield_error_event(req, 'unknown')
+        logger.error(
+            "%s Stream error | Session: %s | Error: %s",
+            log_prefix,
+            session_id[:8],
+            str(exc),
+            exc_info=True,
+        )
+        yield _yield_error_event(req, "unknown")
 
     finally:
         if chunk_count == 0:
             logger.warning(
                 "%s Generator completed without yielding, sending error event | Session: %s",
-                log_prefix, session_id[:8]
+                log_prefix,
+                session_id[:8],
             )
-            yield _yield_error_event(req, 'no_response')
+            yield _yield_error_event(req, "no_response")

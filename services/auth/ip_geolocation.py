@@ -22,6 +22,7 @@ Copyright 2024-2025 北京思源智教科技有限公司
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 from pathlib import Path
 from typing import Optional, Dict
@@ -39,6 +40,7 @@ try:
     try:
         from ip2region.searcher import new_with_file_only as _new_with_file_only_func
         from ip2region.util import IPv4 as _ipv4_type, IPv6 as _ipv6_type
+
         IP2REGION_AVAILABLE = True
         NEW_WITH_FILE_ONLY = _new_with_file_only_func
         IPV4_TYPE = _ipv4_type
@@ -243,13 +245,16 @@ class IPGeolocationService:
 
                     file_size_mb = DB_FILE_PATH_V4.stat().st_size / 1024 / 1024
                     logger.info(
-                        "[IPGeo] IPv4 database initialized from %s "
-                        "(%.2f MB, file mode)",
+                        "[IPGeo] IPv4 database initialized from %s (%.2f MB, file mode)",
                         DB_FILE_PATH_V4,
-                        file_size_mb
+                        file_size_mb,
                     )
                 except Exception as e:
-                    logger.error("[IPGeo] Failed to initialize IPv4 database: %s", e, exc_info=True)
+                    logger.error(
+                        "[IPGeo] Failed to initialize IPv4 database: %s",
+                        e,
+                        exc_info=True,
+                    )
             else:
                 logger.warning("[IPGeo] IPv4 database file not found at %s", DB_FILE_PATH_V4)
 
@@ -264,10 +269,9 @@ class IPGeolocationService:
 
                     file_size_mb = DB_FILE_PATH_V6.stat().st_size / 1024 / 1024
                     logger.info(
-                        "[IPGeo] IPv6 database initialized from %s "
-                        "(%.2f MB, file mode)",
+                        "[IPGeo] IPv6 database initialized from %s (%.2f MB, file mode)",
                         DB_FILE_PATH_V6,
-                        file_size_mb
+                        file_size_mb,
                     )
                 except Exception as e:
                     logger.warning("[IPGeo] Failed to initialize IPv6 database: %s", e)
@@ -289,12 +293,12 @@ class IPGeolocationService:
 
         try:
             # Try UTF-8 first, with fallback encodings
-            encodings = ['utf-8', 'utf-8-sig', 'gbk', 'gb2312']
+            encodings = ["utf-8", "utf-8-sig", "gbk", "gb2312"]
             cache_data = None
 
             for enc in encodings:
                 try:
-                    with open(PATCHES_CACHE, 'r', encoding=enc) as f:
+                    with open(PATCHES_CACHE, "r", encoding=enc) as f:
                         cache_data = json.load(f)
                         break
                 except UnicodeDecodeError:
@@ -307,7 +311,7 @@ class IPGeolocationService:
 
             self.patch_cache = cache_data
 
-            patch_count = self.patch_cache.get('total_patches', 0)
+            patch_count = self.patch_cache.get("total_patches", 0)
             if patch_count > 0:
                 logger.info("[IPGeo] Loaded %s patches from cache", patch_count)
         except Exception as e:
@@ -334,7 +338,19 @@ class IPGeolocationService:
             return CITY_TO_PROVINCE[province]
 
         # If it already ends with "省" or is a direct province name, return as-is
-        if province.endswith("省") or province in ["北京", "上海", "天津", "重庆", "内蒙古", "新疆", "西藏", "广西", "宁夏", "香港", "澳门"]:
+        if province.endswith("省") or province in [
+            "北京",
+            "上海",
+            "天津",
+            "重庆",
+            "内蒙古",
+            "新疆",
+            "西藏",
+            "广西",
+            "宁夏",
+            "香港",
+            "澳门",
+        ]:
             # Remove "省" suffix if present
             return province.rstrip("省")
 
@@ -355,10 +371,10 @@ class IPGeolocationService:
 
         Returns: {province, city, country} or None
         """
-        if not self.patch_cache or 'patches' not in self.patch_cache:
+        if not self.patch_cache or "patches" not in self.patch_cache:
             return None
 
-        patches = self.patch_cache.get('patches', [])
+        patches = self.patch_cache.get("patches", [])
         if not patches:
             return None
 
@@ -374,11 +390,11 @@ class IPGeolocationService:
                 mid = (left + right) // 2
                 patch = patches[mid]
 
-                if patch['start_int'] <= ip_int <= patch['end_int']:
+                if patch["start_int"] <= ip_int <= patch["end_int"]:
                     # Found matching patch - return location data
-                    province = patch.get('province', '')
-                    city = patch.get('city', '')
-                    country = patch.get('country', '中国')
+                    province = patch.get("province", "")
+                    city = patch.get("city", "")
+                    country = patch.get("country", "中国")
 
                     # Normalize province name for ECharts map
                     province = self._normalize_province_name(province)
@@ -389,11 +405,11 @@ class IPGeolocationService:
                     return {
                         "province": province,
                         "city": city,
-                        "lat": coords.get('lat'),
-                        "lng": coords.get('lng'),
-                        "country": country
+                        "lat": coords.get("lat"),
+                        "lng": coords.get("lng"),
+                        "country": country,
                     }
-                elif ip_int < patch['start_int']:
+                elif ip_int < patch["start_int"]:
                     right = mid - 1
                 else:
                     left = mid + 1
@@ -412,7 +428,7 @@ class IPGeolocationService:
 
             if version_file.exists():
                 try:
-                    with open(version_file, 'r', encoding='utf-8') as f:
+                    with open(version_file, "r", encoding="utf-8") as f:
                         lines = f.readlines()
                         if lines:
                             download_time = datetime.fromisoformat(lines[0].strip())
@@ -428,17 +444,15 @@ class IPGeolocationService:
             # Warn if database is older than 60 days
             if age_days > 60:
                 logger.warning(
-                    "[IPGeo] Database %s is %s days old. "
-                    "Consider updating for better accuracy.",
+                    "[IPGeo] Database %s is %s days old. Consider updating for better accuracy.",
                     db_path.name,
-                    age_days
+                    age_days,
                 )
             elif age_days > 30:
                 logger.info(
-                    "[IPGeo] Database %s is %s days old. "
-                    "Consider updating monthly for best accuracy.",
+                    "[IPGeo] Database %s is %s days old. Consider updating monthly for best accuracy.",
                     db_path.name,
-                    age_days
+                    age_days,
                 )
 
         except Exception as e:
@@ -489,7 +503,7 @@ class IPGeolocationService:
             redis.setex(
                 cache_key,
                 CACHE_TTL_SECONDS,
-                json.dumps(location, ensure_ascii=False)  # Preserve UTF-8 characters
+                json.dumps(location, ensure_ascii=False),  # Preserve UTF-8 characters
             )
             logger.debug("[IPGeo] Cached location for IP %s", ip)
 
@@ -502,7 +516,7 @@ class IPGeolocationService:
 
         Returns: {province, city, lat, lng, country} or None
         """
-        is_ipv6 = ':' in ip
+        is_ipv6 = ":" in ip
 
         # Select appropriate searcher
         searcher = self.searcher_v6 if is_ipv6 else self.searcher_v4
@@ -520,16 +534,16 @@ class IPGeolocationService:
             region = None
 
             # Try new xdb API (py-ip2region)
-            if hasattr(searcher, 'search'):
+            if hasattr(searcher, "search"):
                 # New API: searcher.search(ip)
                 result = searcher.search(ip)
-            elif hasattr(searcher, 'memorySearch'):
+            elif hasattr(searcher, "memorySearch"):
                 # Old API: searcher.memorySearch(ip)
                 result = searcher.memorySearch(ip)  # type: ignore[attr-defined]
-            elif hasattr(searcher, 'binarySearch'):
+            elif hasattr(searcher, "binarySearch"):
                 # Old API: searcher.binarySearch(ip)
                 result = searcher.binarySearch(ip)  # type: ignore[attr-defined]
-            elif hasattr(searcher, 'btreeSearch'):
+            elif hasattr(searcher, "btreeSearch"):
                 # Old API: searcher.btreeSearch(ip)
                 result = searcher.btreeSearch(ip)  # type: ignore[attr-defined]
             else:
@@ -541,14 +555,14 @@ class IPGeolocationService:
 
             # Handle different result formats
             if isinstance(result, dict):
-                region = result.get('region') or result.get('Region') or result.get('area')
+                region = result.get("region") or result.get("Region") or result.get("area")
             elif isinstance(result, str):
                 region = result
-            elif hasattr(result, 'region'):
+            elif hasattr(result, "region"):
                 region = result.region
-            elif hasattr(result, 'Region'):
+            elif hasattr(result, "Region"):
                 region = result.Region
-            elif hasattr(result, 'area'):
+            elif hasattr(result, "area"):
                 region = result.area
             else:
                 # Try to convert to string
@@ -559,14 +573,14 @@ class IPGeolocationService:
 
             # ip2region format: "国家|区域|省份|城市|ISP"
             # Example: "中国|0|北京|北京|0"
-            parts = str(region).split('|')
+            parts = str(region).split("|")
 
             if len(parts) < 4:
                 return None
 
-            country = parts[0] if parts[0] != '0' else '中国'
-            province = parts[2] if parts[2] != '0' else ''
-            city = parts[3] if parts[3] != '0' else ''
+            country = parts[0] if parts[0] != "0" else "中国"
+            province = parts[2] if parts[2] != "0" else ""
+            city = parts[3] if parts[3] != "0" else ""
 
             # Normalize province name for ECharts map (convert city names to provinces)
             province = self._normalize_province_name(province)
@@ -577,9 +591,9 @@ class IPGeolocationService:
             return {
                 "province": province,
                 "city": city,
-                "lat": coords.get('lat'),
-                "lng": coords.get('lng'),
-                "country": country
+                "lat": coords.get("lat"),
+                "lng": coords.get("lng"),
+                "country": country,
             }
 
         except Exception as e:
@@ -627,7 +641,7 @@ class IPGeolocationService:
                         "city": "北京",
                         "lat": 39.9042,
                         "lng": 116.4074,
-                        "country": "中国"
+                        "country": "中国",
                     }
                     logger.debug("[IPGeo] Localhost IP %s mapped to Beijing (DEBUG mode)", ip)
                     return localhost_location
@@ -652,8 +666,8 @@ class IPGeolocationService:
             logger.debug(
                 "[IPGeo] Patch match for IP %s: %s, %s (from patch)",
                 ip,
-                patch_location.get('province'),
-                patch_location.get('city')
+                patch_location.get("province"),
+                patch_location.get("city"),
             )
             return patch_location
 
@@ -664,8 +678,8 @@ class IPGeolocationService:
             logger.debug(
                 "[IPGeo] Local lookup successful for IP %s: %s, %s",
                 ip,
-                location.get('province'),
-                location.get('city')
+                location.get("province"),
+                location.get("city"),
             )
             return location
 
@@ -673,14 +687,17 @@ class IPGeolocationService:
         # Do NOT cache this default to avoid corrupting location data:
         # - Foreign IPs/VPNs won't be permanently marked as Beijing
         # - Transient failures won't persist incorrect data after recovery
-        logger.warning("[IPGeo] Lookup failed for IP %s, returning Beijing as fallback (not cached)", ip)
+        logger.warning(
+            "[IPGeo] Lookup failed for IP %s, returning Beijing as fallback (not cached)",
+            ip,
+        )
         default_location = {
             "province": "北京",
             "city": "北京",
             "lat": 39.9042,
             "lng": 116.4074,
             "country": "中国",
-            "is_fallback": True  # Flag to indicate this is a default location, not a real lookup
+            "is_fallback": True,  # Flag to indicate this is a default location, not a real lookup
         }
         # Intentionally NOT caching the default location to allow retries on next lookup
         return default_location
@@ -689,6 +706,7 @@ class IPGeolocationService:
 # Global singleton instance with thread-safe initialization
 class GeolocationServiceSingleton:
     """Thread-safe singleton wrapper for IPGeolocationService."""
+
     _instance: Optional[IPGeolocationService] = None
     _lock = threading.Lock()
 

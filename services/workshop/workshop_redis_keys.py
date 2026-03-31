@@ -63,9 +63,7 @@ def purge_workshop_redis_keys(redis: Any, code: str) -> None:
     redis.delete(live_spec_key(code))
     redis.delete(live_last_db_flush_key(code))
     try:
-        for key in redis.scan_iter(
-            match=f"workshop:mutation_idle:{code}:*", count=50
-        ):
+        for key in redis.scan_iter(match=f"workshop:mutation_idle:{code}:*", count=50):
             redis.delete(key)
     except (TypeError, AttributeError, RuntimeError):
         pass

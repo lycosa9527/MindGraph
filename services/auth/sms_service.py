@@ -18,6 +18,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 from typing import Optional, Tuple
 import hashlib
@@ -115,7 +116,7 @@ class SMSService:
         if self._client is None or self._client.is_closed:
             self._client = httpx.AsyncClient(
                 timeout=httpx.Timeout(SMS_TIMEOUT_SECONDS),
-                http2=True  # Enable HTTP/2 for better performance
+                http2=True,  # Enable HTTP/2 for better performance
             )
         return self._client
 
@@ -179,18 +180,13 @@ class SMSService:
         Returns:
             6-digit numeric code string
         """
-        return ''.join(random.choices(string.digits, k=SMS_CODE_LENGTH))
+        return "".join(random.choices(string.digits, k=SMS_CODE_LENGTH))
 
     def _sign(self, key: bytes, msg: str) -> bytes:
         """HMAC-SHA256 signing helper"""
         return hmac.new(key, msg.encode("utf-8"), hashlib.sha256).digest()
 
-    def _build_authorization(
-        self,
-        timestamp: int,
-        payload: str,
-        action: str = "SendSms"
-    ) -> str:
+    def _build_authorization(self, timestamp: int, payload: str, action: str = "SendSms") -> str:
         """
         Build TC3-HMAC-SHA256 authorization header
 
@@ -210,11 +206,7 @@ class SMSService:
         canonical_querystring = ""
         ct = "application/json"
         # Headers in canonical format (lowercase values for x-tc-action)
-        canonical_headers = (
-            f"content-type:{ct}\n"
-            f"host:{TENCENT_SMS_HOST}\n"
-            f"x-tc-action:{action.lower()}\n"
-        )
+        canonical_headers = f"content-type:{ct}\nhost:{TENCENT_SMS_HOST}\nx-tc-action:{action.lower()}\n"
         signed_headers = "content-type;host;x-tc-action"
         hashed_payload = hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
@@ -232,22 +224,13 @@ class SMSService:
         credential_scope = f"{date}/{TENCENT_SMS_SERVICE}/tc3_request"
         hashed_canonical = hashlib.sha256(canonical_request.encode("utf-8")).hexdigest()
 
-        string_to_sign = (
-            f"{algorithm}\n"
-            f"{timestamp}\n"
-            f"{credential_scope}\n"
-            f"{hashed_canonical}"
-        )
+        string_to_sign = f"{algorithm}\n{timestamp}\n{credential_scope}\n{hashed_canonical}"
 
         # Step 3: Calculate signature (计算签名)
         secret_date = self._sign(f"TC3{TENCENT_SECRET_KEY}".encode("utf-8"), date)
         secret_service = self._sign(secret_date, TENCENT_SMS_SERVICE)
         secret_signing = self._sign(secret_service, "tc3_request")
-        signature = hmac.new(
-            secret_signing,
-            string_to_sign.encode("utf-8"),
-            hashlib.sha256
-        ).hexdigest()
+        signature = hmac.new(secret_signing, string_to_sign.encode("utf-8"), hashlib.sha256).hexdigest()
 
         # Step 4: Build authorization header (拼接 Authorization)
         authorization = (
@@ -264,7 +247,7 @@ class SMSService:
         phone: str,
         purpose: str,
         code: Optional[str] = None,
-        lang: Language = "en"
+        lang: Language = "en",
     ) -> Tuple[bool, str, Optional[str]]:
         """
         Send SMS verification code (native async)
@@ -305,13 +288,15 @@ class SMSService:
             else:
                 template_params = [code]
 
-            payload = json.dumps({
-                "PhoneNumberSet": [formatted_phone],
-                "SmsSdkAppId": SMS_SDK_APP_ID,
-                "SignName": SMS_SIGN_NAME,
-                "TemplateId": template_id,
-                "TemplateParamSet": template_params
-            })
+            payload = json.dumps(
+                {
+                    "PhoneNumberSet": [formatted_phone],
+                    "SmsSdkAppId": SMS_SDK_APP_ID,
+                    "SignName": SMS_SIGN_NAME,
+                    "TemplateId": template_id,
+                    "TemplateParamSet": template_params,
+                }
+            )
 
             # Build headers with signature
             # NOTE: Content-Type must match exactly what's signed in canonical headers
@@ -330,11 +315,7 @@ class SMSService:
 
             # Send async HTTP request
             client = await self._get_client()
-            response = await client.post(
-                TENCENT_SMS_ENDPOINT,
-                content=payload,
-                headers=headers
-            )
+            response = await client.post(TENCENT_SMS_ENDPOINT, content=payload, headers=headers)
 
             # Check HTTP status code
             if response.status_code != 200:
@@ -342,9 +323,13 @@ class SMSService:
                 logger.error(
                     "SMS API returned non-200 status: %s - %s",
                     response.status_code,
-                    response_preview
+                    response_preview,
                 )
-                return False, "SMS service error. Please try again later or contact support.", None
+                return (
+                    False,
+                    "SMS service error. Please try again later or contact support.",
+                    None,
+                )
 
             # Parse response
             try:
@@ -354,13 +339,21 @@ class SMSService:
                 logger.error(
                     "Failed to parse SMS response as JSON: %s - Response: %s",
                     e,
-                    response_preview
+                    response_preview,
                 )
-                return False, "SMS service error. Please try again later or contact support.", None
+                return (
+                    False,
+                    "SMS service error. Please try again later or contact support.",
+                    None,
+                )
 
             if "Response" not in result:
                 logger.error("Invalid SMS response structure: %s", result)
-                return False, "Invalid SMS response. Please try again later or contact support.", None
+                return (
+                    False,
+                    "Invalid SMS response. Please try again later or contact support.",
+                    None,
+                )
 
             resp_data = result["Response"]
 
@@ -386,7 +379,11 @@ class SMSService:
                     return False, self._translate_error_code(error_code, lang), None
 
             logger.error("Unexpected SMS response structure: %s", resp_data)
-            return False, "Unknown SMS response. Please try again later or contact support.", None
+            return (
+                False,
+                "Unknown SMS response. Please try again later or contact support.",
+                None,
+            )
 
         except httpx.TimeoutException:
             logger.error("SMS request timeout")
@@ -401,11 +398,7 @@ class SMSService:
             logger.error("Unexpected SMS error: %s", e)
             return False, "SMS service error. Please try again later.", None
 
-    async def send_alert(
-        self,
-        phones: list[str],
-        lang: Language = "zh"
-    ) -> Tuple[bool, str]:
+    async def send_alert(self, phones: list[str], lang: Language = "zh") -> Tuple[bool, str]:
         """
         Send SMS alert notification (non-verification code).
 
@@ -435,13 +428,15 @@ class SMSService:
 
             # Alert template typically has no parameters (just the message)
             # Template message: "MindGraph服务器已下线，请尽快核查"
-            payload = json.dumps({
-                "PhoneNumberSet": formatted_phones,
-                "SmsSdkAppId": SMS_SDK_APP_ID,
-                "SignName": SMS_SIGN_NAME,
-                "TemplateId": template_id,
-                "TemplateParamSet": []  # Alert template has no parameters
-            })
+            payload = json.dumps(
+                {
+                    "PhoneNumberSet": formatted_phones,
+                    "SmsSdkAppId": SMS_SDK_APP_ID,
+                    "SignName": SMS_SIGN_NAME,
+                    "TemplateId": template_id,
+                    "TemplateParamSet": [],  # Alert template has no parameters
+                }
+            )
 
             # Build headers with signature
             timestamp = int(time.time())
@@ -459,11 +454,7 @@ class SMSService:
 
             # Send async HTTP request
             client = await self._get_client()
-            response = await client.post(
-                TENCENT_SMS_ENDPOINT,
-                content=payload,
-                headers=headers
-            )
+            response = await client.post(TENCENT_SMS_ENDPOINT, content=payload, headers=headers)
 
             # Check HTTP status code
             if response.status_code != 200:
@@ -471,7 +462,7 @@ class SMSService:
                 logger.error(
                     "SMS alert API returned non-200 status: %s - %s",
                     response.status_code,
-                    response_preview
+                    response_preview,
                 )
                 return False, "SMS alert service error"
 
@@ -483,7 +474,7 @@ class SMSService:
                 logger.error(
                     "Failed to parse SMS alert response as JSON: %s - Response: %s",
                     e,
-                    response_preview
+                    response_preview,
                 )
                 return False, "SMS alert service error"
 
@@ -516,14 +507,14 @@ class SMSService:
                     logger.error(
                         "SMS alert send failed for phone: %s - %s",
                         phone_number,
-                        error_msg
+                        error_msg,
                     )
 
             if success_count > 0:
                 logger.info(
                     "SMS alert sent successfully to %d/%d admin phone(s)",
                     success_count,
-                    len(phones)
+                    len(phones),
                 )
                 return True, f"Alert sent to {success_count} admin phone(s)"
 
@@ -548,7 +539,7 @@ class SMSService:
         phones: list[str],
         template_id: str,
         template_params: Optional[list[str]] = None,
-        lang: Language = "zh"
+        lang: Language = "zh",
     ) -> Tuple[bool, str]:
         """
         Send SMS notification with custom template ID.
@@ -578,7 +569,7 @@ class SMSService:
             "Sending SMS notification to %d phone(s) using template %s (lang: %s)",
             len(phones),
             template_id,
-            lang
+            lang,
         )
         try:
             # Format phone numbers
@@ -588,13 +579,15 @@ class SMSService:
             if template_params is None:
                 template_params = []
 
-            payload = json.dumps({
-                "PhoneNumberSet": formatted_phones,
-                "SmsSdkAppId": SMS_SDK_APP_ID,
-                "SignName": SMS_SIGN_NAME,
-                "TemplateId": template_id,
-                "TemplateParamSet": template_params
-            })
+            payload = json.dumps(
+                {
+                    "PhoneNumberSet": formatted_phones,
+                    "SmsSdkAppId": SMS_SDK_APP_ID,
+                    "SignName": SMS_SIGN_NAME,
+                    "TemplateId": template_id,
+                    "TemplateParamSet": template_params,
+                }
+            )
 
             # Build headers with signature
             timestamp = int(time.time())
@@ -612,11 +605,7 @@ class SMSService:
 
             # Send async HTTP request
             client = await self._get_client()
-            response = await client.post(
-                TENCENT_SMS_ENDPOINT,
-                content=payload,
-                headers=headers
-            )
+            response = await client.post(TENCENT_SMS_ENDPOINT, content=payload, headers=headers)
 
             # Check HTTP status code
             if response.status_code != 200:
@@ -624,7 +613,7 @@ class SMSService:
                 logger.error(
                     "SMS notification API returned non-200 status: %s - %s",
                     response.status_code,
-                    response_preview
+                    response_preview,
                 )
                 return False, "SMS notification service error"
 
@@ -636,7 +625,7 @@ class SMSService:
                 logger.error(
                     "Failed to parse SMS notification response as JSON: %s - Response: %s",
                     e,
-                    response_preview
+                    response_preview,
                 )
                 return False, "SMS notification service error"
 
@@ -669,14 +658,14 @@ class SMSService:
                     logger.error(
                         "SMS notification send failed for phone: %s - %s",
                         phone_number,
-                        error_msg
+                        error_msg,
                     )
 
             if success_count > 0:
                 logger.info(
                     "SMS notification sent successfully to %d/%d phone(s)",
                     success_count,
-                    len(phones)
+                    len(phones),
                 )
                 return True, f"Notification sent to {success_count} phone(s)"
 
@@ -728,7 +717,6 @@ class SMSService:
             "FailedOperation.TemplateIncorrectOrUnapproved": "sms_error_template_config",
             "FailedOperation.TemplateParamSetNotMatchApprovedTemplate": "sms_error_template_params_mismatch",
             "FailedOperation.TemplateUnapprovedOrNotExist": "sms_error_template_unapproved",
-
             # ====================================================================
             # InternalError - Internal Server Errors
             # ====================================================================
@@ -740,7 +728,6 @@ class SMSService:
             "InternalError.SigVerificationFail": "sms_error_auth_failed",
             "InternalError.Timeout": "sms_error_timeout",
             "InternalError.UnknownError": "sms_error_unknown",
-
             # ====================================================================
             # InvalidParameterValue - Invalid Parameter Errors
             # ====================================================================
@@ -750,7 +737,6 @@ class SMSService:
             "InvalidParameterValue.SdkAppIdNotExist": "sms_error_sdk_app_id_not_exist",
             "InvalidParameterValue.TemplateParameterFormatError": "sms_error_template_param_format",
             "InvalidParameterValue.TemplateParameterLengthLimit": "sms_error_template_param_length",
-
             # ====================================================================
             # LimitExceeded - Rate Limit Errors
             # ====================================================================
@@ -766,12 +752,10 @@ class SMSService:
             "LimitExceeded.PhoneNumberOneHourLimit": "sms_error_phone_hourly_limit",
             "LimitExceeded.PhoneNumberSameContentDailyLimit": "sms_error_phone_same_content_daily",
             "LimitExceeded.PhoneNumberThirtySecondLimit": "sms_error_phone_thirty_second_limit",
-
             # ====================================================================
             # MissingParameter - Missing Parameter Errors
             # ====================================================================
             "MissingParameter.EmptyPhoneNumberSet": "sms_error_empty_phone_list",
-
             # ====================================================================
             # UnauthorizedOperation - Authorization Errors
             # ====================================================================
@@ -781,7 +765,6 @@ class SMSService:
             "UnauthorizedOperation.SdkAppIdIsDisabled": "sms_error_service_disabled",
             "UnauthorizedOperation.ServiceSuspendDueToArrears": "sms_error_service_suspended",
             "UnauthorizedOperation.SmsSdkAppIdVerifyFail": "sms_error_auth_verify_failed",
-
             # ====================================================================
             # UnsupportedOperation - Unsupported Operation Errors
             # ====================================================================
@@ -790,7 +773,6 @@ class SMSService:
             "UnsupportedOperation.ContainDomesticAndInternationalPhoneNumber": "sms_error_mixed_phone_types",
             "UnsupportedOperation.GlobalTemplateToChineseMainlandPhone": "sms_error_template_mismatch_international",
             "UnsupportedOperation.UnsupportedRegion": "sms_error_region_not_supported",
-
             # ====================================================================
             # Legacy/Alternative Error Code Formats (for backward compatibility)
             # ====================================================================

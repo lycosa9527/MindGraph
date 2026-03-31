@@ -3,6 +3,7 @@
  * The Play control toggles visibility of the right rail (no browser fullscreen).
  */
 import { computed, nextTick, onUnmounted, ref, watch } from 'vue'
+
 import { storeToRefs } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
@@ -226,9 +227,7 @@ export function useCanvasPagePresentation() {
     }
   }
 
-  function handleModelChange(model: string) {
-    console.log('Selected model:', model)
-  }
+  function handleModelChange(_model: string) {}
 
   onUnmounted(() => {
     window.removeEventListener('mousemove', handleLaserMouseMove)

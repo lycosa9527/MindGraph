@@ -10,6 +10,7 @@ SQLite: ALTER TABLE chunk_test_documents ADD COLUMN meta_data TEXT NULL;
 PostgreSQL: ALTER TABLE chunk_test_documents ADD COLUMN meta_data JSON NULL;
 MySQL: ALTER TABLE chunk_test_documents ADD COLUMN meta_data JSON NULL;
 """
+
 import logging
 import sys
 import os
@@ -20,7 +21,7 @@ project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
 # Set up environment
-os.environ.setdefault('PYTHONPATH', str(project_root))
+os.environ.setdefault("PYTHONPATH", str(project_root))
 
 try:
     from sqlalchemy import text
@@ -56,10 +57,10 @@ def migrate():
             # Try direct SQL as fallback
             with engine.connect() as conn:
                 # Check if column already exists
-                inspector = __import__('sqlalchemy').inspect(engine)
+                inspector = __import__("sqlalchemy").inspect(engine)
                 try:
-                    columns = [col['name'] for col in inspector.get_columns('chunk_test_documents')]
-                    if 'meta_data' in columns:
+                    columns = [col["name"] for col in inspector.get_columns("chunk_test_documents")]
+                    if "meta_data" in columns:
                         logger.info("Column meta_data already exists. Migration not needed.")
                         return
                 except Exception:
@@ -67,11 +68,11 @@ def migrate():
 
                 dialect = engine.dialect.name
                 logger.info(f"Adding meta_data column using {dialect} dialect...")
-                if dialect == 'sqlite':
+                if dialect == "sqlite":
                     conn.execute(text("ALTER TABLE chunk_test_documents ADD COLUMN meta_data TEXT NULL"))
-                elif dialect == 'postgresql':
+                elif dialect == "postgresql":
                     conn.execute(text("ALTER TABLE chunk_test_documents ADD COLUMN meta_data JSON NULL"))
-                elif dialect == 'mysql':
+                elif dialect == "mysql":
                     conn.execute(text("ALTER TABLE chunk_test_documents ADD COLUMN meta_data JSON NULL"))
                 else:
                     conn.execute(text("ALTER TABLE chunk_test_documents ADD COLUMN meta_data TEXT NULL"))

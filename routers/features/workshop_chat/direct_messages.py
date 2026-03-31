@@ -54,7 +54,11 @@ async def search_dm_messages(
     """Search within the 1:1 DM narrow (same partner only)."""
     access_dm_partner(db, current_user, partner_id)
     return dm_service.search_messages(
-        db, current_user.id, partner_id, q, limit=limit,
+        db,
+        current_user.id,
+        partner_id,
+        q,
+        limit=limit,
     )
 
 
@@ -71,8 +75,12 @@ async def get_dm_messages(
     access_dm_partner(db, current_user, partner_id)
     dm_service.mark_read(db, current_user.id, partner_id)
     return dm_service.get_messages(
-        db, current_user.id, partner_id,
-        anchor=anchor, num_before=num_before, num_after=num_after,
+        db,
+        current_user.id,
+        partner_id,
+        anchor=anchor,
+        num_before=num_before,
+        num_after=num_after,
     )
 
 
@@ -99,8 +107,11 @@ async def send_dm(
     access_dm_partner(db, current_user, partner_id)
     try:
         result = dm_service.send(
-            db, current_user.id, partner_id,
-            body.content, message_type=body.message_type,
+            db,
+            current_user.id,
+            partner_id,
+            body.content,
+            message_type=body.message_type,
         )
     except MentionResolutionError as exc:
         raise HTTPException(
@@ -111,7 +122,11 @@ async def send_dm(
                 "ambiguous": exc.ambiguous_names,
             },
         ) from exc
-    await chat_ws_manager.send_to_user(partner_id, {
-        "type": "dm", "message": result,
-    })
+    await chat_ws_manager.send_to_user(
+        partner_id,
+        {
+            "type": "dm",
+            "message": result,
+        },
+    )
     return result

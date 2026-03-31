@@ -225,11 +225,7 @@ function unwrapSingleParagraphHtml(html: string): string {
 export function diagramLabelLikelyNeedsRenderedMeasure(text: string): boolean {
   const t = text || ''
   return (
-    /\$/.test(t) ||
-    /`/.test(t) ||
-    /\\[a-zA-Z]/.test(t) ||
-    /\*\*[^*]/.test(t) ||
-    /__[^_\s]/.test(t)
+    /\$/.test(t) || /`/.test(t) || /\\[a-zA-Z]/.test(t) || /\*\*[^*]/.test(t) || /__[^_\s]/.test(t)
   )
 }
 
@@ -315,7 +311,6 @@ export function measureRenderedDiagramLabelHeight(
     el.innerHTML = html
     void el.offsetHeight
     const measured = Math.max(0, el.getBoundingClientRect().height || el.offsetHeight)
-    console.log(`[NodeLayout:MeasureH] text="${t.slice(0, 40)}" fontSize=${fontSizePx} maxW=${maxTextWidthPx} → contentH=${measured}`)
     return measured
   } finally {
     el.innerHTML = ''

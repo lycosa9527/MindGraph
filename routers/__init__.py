@@ -29,7 +29,11 @@ from . import node_palette
 from . import relationship_labels
 from . import inline_recommendations
 from . import public_dashboard
-from .admin import env_router as admin_env, logs_router as admin_logs, realtime_router as admin_realtime
+from .admin import (
+    env_router as admin_env,
+    logs_router as admin_logs,
+    realtime_router as admin_realtime,
+)
 from .features import voice, school_zone, askonce, debateverse, library, gewe
 from .core import pages, cache, vue_spa, update_notification
 
@@ -52,5 +56,5 @@ __all__ = [
     "debateverse",
     "library",
     "gewe",
-    "vue_spa"
+    "vue_spa",
 ]

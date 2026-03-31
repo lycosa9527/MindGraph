@@ -66,10 +66,7 @@ def acquire_integrity_check_lock() -> bool:
         return True
 
     if not is_redis_available():
-        logger.debug(
-            "[Recovery] Redis unavailable, assuming single worker mode "
-            "for integrity check"
-        )
+        logger.debug("[Recovery] Redis unavailable, assuming single worker mode for integrity check")
         return True
 
     redis = get_redis()
@@ -86,29 +83,26 @@ def acquire_integrity_check_lock() -> bool:
             INTEGRITY_CHECK_LOCK_KEY,
             _integrity_check_lock_id,
             nx=True,  # Only set if not exists
-            ex=INTEGRITY_CHECK_LOCK_TTL  # TTL in seconds
+            ex=INTEGRITY_CHECK_LOCK_TTL,  # TTL in seconds
         )
 
         if acquired:
             logger.debug(
                 "[Recovery] Integrity check lock acquired by this worker (id=%s)",
-                _integrity_check_lock_id
+                _integrity_check_lock_id,
             )
             return True
         else:
             # Lock held by another worker - check who
             holder = redis.get(INTEGRITY_CHECK_LOCK_KEY)
             logger.info(
-                "[Recovery] Another worker holds the integrity check lock "
-                "(holder=%s), skipping integrity check",
-                holder
+                "[Recovery] Another worker holds the integrity check lock (holder=%s), skipping integrity check",
+                holder,
             )
             return False
 
     except (AttributeError, ConnectionError, RuntimeError) as e:
-        logger.warning(
-            "[Recovery] Lock acquisition failed: %s, proceeding anyway", e
-        )
+        logger.warning("[Recovery] Lock acquisition failed: %s, proceeding anyway", e)
         return True  # On error, proceed
 
 
@@ -142,14 +136,12 @@ def release_integrity_check_lock() -> bool:
         end
         """
 
-        result = redis.eval(
-            lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _integrity_check_lock_id
-        )
+        result = redis.eval(lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _integrity_check_lock_id)
 
         if result:
             logger.debug(
                 "[Recovery] Integrity check lock released (id=%s)",
-                _integrity_check_lock_id
+                _integrity_check_lock_id,
             )
             return True
         else:
@@ -163,7 +155,7 @@ def release_integrity_check_lock() -> bool:
 def get_integrity_check_cache() -> Optional[Tuple[bool, float]]:
     """
     Get cached integrity check result (no-op - cache disabled).
-    
+
     Cache is disabled because lock mechanism already ensures only one worker
     checks integrity. Other workers skip via lock acquisition failure.
     """
@@ -173,7 +165,7 @@ def get_integrity_check_cache() -> Optional[Tuple[bool, float]]:
 def set_integrity_check_cache(_value: Tuple[bool, float]) -> None:
     """
     Set cached integrity check result (no-op - cache disabled).
-    
+
     Cache is disabled because lock mechanism already ensures only one worker
     checks integrity. Other workers skip via lock acquisition failure.
     """

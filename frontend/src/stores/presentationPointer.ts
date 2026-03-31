@@ -23,10 +23,7 @@ interface PersistedScales {
 
 function clampScale(n: number): number {
   const rounded = Math.round(n * 10) / 10
-  return Math.min(
-    PRESENTATION_POINTER_SCALE_MAX,
-    Math.max(PRESENTATION_POINTER_SCALE_MIN, rounded)
-  )
+  return Math.min(PRESENTATION_POINTER_SCALE_MAX, Math.max(PRESENTATION_POINTER_SCALE_MIN, rounded))
 }
 
 function readPersisted(): PersistedScales | null {

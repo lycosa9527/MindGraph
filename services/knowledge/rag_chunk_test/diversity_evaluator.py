@@ -11,18 +11,21 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict
 import logging
 import statistics
 
 try:
     import numpy as np
+
     HAS_NUMPY = True
 except ImportError:
     HAS_NUMPY = False
 
 try:
     from clients.dashscope_embedding import get_embedding_client
+
     HAS_EMBEDDING = True
 except ImportError:
     HAS_EMBEDDING = False
@@ -39,10 +42,7 @@ class DiversityEvaluator:
     def __init__(self):
         """Initialize diversity evaluator."""
 
-    def calculate_intra_list_diversity(
-        self,
-        retrieved_chunks: List[Chunk]
-    ) -> float:
+    def calculate_intra_list_diversity(self, retrieved_chunks: List[Chunk]) -> float:
         """
         Calculate intra-list diversity: average pairwise distance between chunks.
 
@@ -58,9 +58,7 @@ class DiversityEvaluator:
             return 1.0
 
         if not HAS_EMBEDDING or not HAS_NUMPY:
-            logger.warning(
-                "[DiversityEvaluator] Embedding client or numpy not available"
-            )
+            logger.warning("[DiversityEvaluator] Embedding client or numpy not available")
             return 0.0
 
         try:
@@ -71,9 +69,7 @@ class DiversityEvaluator:
             embeddings = embedding_client.embed_texts(texts)
 
             if len(embeddings) != len(retrieved_chunks):
-                logger.warning(
-                    "[DiversityEvaluator] Embedding count mismatch"
-                )
+                logger.warning("[DiversityEvaluator] Embedding count mismatch")
                 return 0.0
 
             # Calculate pairwise cosine distances
@@ -101,17 +97,10 @@ class DiversityEvaluator:
             return float(np.mean(distances))
 
         except Exception as e:
-            logger.warning(
-                "[DiversityEvaluator] Failed to calculate diversity: %s",
-                e
-            )
+            logger.warning("[DiversityEvaluator] Failed to calculate diversity: %s", e)
             return 0.0
 
-    def calculate_diversity_at_k(
-        self,
-        retrieved_chunks: List[Chunk],
-        k: int
-    ) -> float:
+    def calculate_diversity_at_k(self, retrieved_chunks: List[Chunk], k: int) -> float:
         """
         Calculate diversity of top K retrieved chunks.
 
@@ -125,10 +114,7 @@ class DiversityEvaluator:
         top_k = retrieved_chunks[:k]
         return self.calculate_intra_list_diversity(top_k)
 
-    def calculate_storage_efficiency(
-        self,
-        chunks: List[Chunk]
-    ) -> Dict[str, float]:
+    def calculate_storage_efficiency(self, chunks: List[Chunk]) -> Dict[str, float]:
         """
         Calculate storage efficiency metrics.
 
@@ -142,7 +128,7 @@ class DiversityEvaluator:
             return {
                 "avg_chars_per_chunk": 0.0,
                 "total_storage_chars": 0.0,
-                "embedding_cost_estimate": 0.0
+                "embedding_cost_estimate": 0.0,
             }
 
         char_lengths = [len(chunk.text) for chunk in chunks]
@@ -157,13 +143,10 @@ class DiversityEvaluator:
         return {
             "avg_chars_per_chunk": round(avg_chars, 2),
             "total_storage_chars": total_chars,
-            "embedding_cost_estimate": round(embedding_cost_estimate, 4)
+            "embedding_cost_estimate": round(embedding_cost_estimate, 4),
         }
 
-    def calculate_latency_metrics(
-        self,
-        timing_data: List[Dict[str, float]]
-    ) -> Dict[str, float]:
+    def calculate_latency_metrics(self, timing_data: List[Dict[str, float]]) -> Dict[str, float]:
         """
         Calculate latency metrics from timing data.
 
@@ -177,19 +160,16 @@ class DiversityEvaluator:
             return {
                 "avg_retrieval_latency_ms": 0.0,
                 "p95_latency_ms": 0.0,
-                "p99_latency_ms": 0.0
+                "p99_latency_ms": 0.0,
             }
 
-        latencies = [
-            t.get("total_ms", 0.0) for t in timing_data
-            if "total_ms" in t
-        ]
+        latencies = [t.get("total_ms", 0.0) for t in timing_data if "total_ms" in t]
 
         if not latencies:
             return {
                 "avg_retrieval_latency_ms": 0.0,
                 "p95_latency_ms": 0.0,
-                "p99_latency_ms": 0.0
+                "p99_latency_ms": 0.0,
             }
 
         avg_latency = statistics.mean(latencies)
@@ -198,19 +178,11 @@ class DiversityEvaluator:
         p95_idx = int(len(sorted_latencies) * 0.95)
         p99_idx = int(len(sorted_latencies) * 0.99)
 
-        p95_latency = (
-            sorted_latencies[p95_idx]
-            if p95_idx < len(sorted_latencies)
-            else sorted_latencies[-1]
-        )
-        p99_latency = (
-            sorted_latencies[p99_idx]
-            if p99_idx < len(sorted_latencies)
-            else sorted_latencies[-1]
-        )
+        p95_latency = sorted_latencies[p95_idx] if p95_idx < len(sorted_latencies) else sorted_latencies[-1]
+        p99_latency = sorted_latencies[p99_idx] if p99_idx < len(sorted_latencies) else sorted_latencies[-1]
 
         return {
             "avg_retrieval_latency_ms": round(avg_latency, 2),
             "p95_latency_ms": round(p95_latency, 2),
-            "p99_latency_ms": round(p99_latency, 2)
+            "p99_latency_ms": round(p99_latency, 2),
         }

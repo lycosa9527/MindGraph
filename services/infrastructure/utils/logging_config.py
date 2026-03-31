@@ -26,7 +26,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
     Example: app.2025-01-15_00-00-00.log
     """
 
-    def __init__(self, base_filename, interval_hours=72, backup_count=10, encoding='utf-8'):
+    def __init__(self, base_filename, interval_hours=72, backup_count=10, encoding="utf-8"):
         """
         Initialize the handler.
 
@@ -53,7 +53,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
             os.makedirs(log_dir, exist_ok=True)
 
         # Initialize base handler with current filename
-        BaseRotatingHandler.__init__(self, current_filename, 'a', encoding=encoding, delay=False)
+        BaseRotatingHandler.__init__(self, current_filename, "a", encoding=encoding, delay=False)
 
         # Schedule next rotation check
         self.next_rotation_time = self.current_period_start + timedelta(hours=interval_hours)
@@ -69,11 +69,11 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 
     def _get_current_filename(self):
         """Generate filename for the current period."""
-        timestamp_str = self.current_period_start.strftime('%Y-%m-%d_%H-%M-%S')
-        base_dir = os.path.dirname(self.base_filename) or '.'
+        timestamp_str = self.current_period_start.strftime("%Y-%m-%d_%H-%M-%S")
+        base_dir = os.path.dirname(self.base_filename) or "."
         base_name = os.path.basename(self.base_filename)
         # Remove .log extension if present, add timestamp, then add .log back
-        if base_name.endswith('.log'):
+        if base_name.endswith(".log"):
             base_name = base_name[:-4]
         return os.path.join(base_dir, f"{base_name}.{timestamp_str}.log")
 
@@ -104,9 +104,9 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 
     def __getattr__(self, name):
         """Handle camelCase method calls from Python logging framework."""
-        if name == 'shouldRollover':
+        if name == "shouldRollover":
             return self.should_rollover
-        if name == 'doRollover':
+        if name == "doRollover":
             return self.do_rollover
         raise AttributeError(f"'{self.__class__.__name__}' object has no attribute '{name}'")
 
@@ -131,10 +131,16 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
         except (ValueError, OSError, AttributeError, RuntimeError) as error:
             # Handle "I/O operation on closed file" errors gracefully
             error_str = str(error).lower()
-            if any(phrase in error_str for phrase in [
-                "closed file", "i/o operation", "bad file descriptor",
-                "operation on closed", "stream is closed"
-            ]):
+            if any(
+                phrase in error_str
+                for phrase in [
+                    "closed file",
+                    "i/o operation",
+                    "bad file descriptor",
+                    "operation on closed",
+                    "stream is closed",
+                ]
+            ):
                 # Stream is closed, try to reopen it
                 try:
                     if self.stream:
@@ -157,16 +163,16 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 
     def _cleanup_old_files(self) -> None:
         """Remove old log files beyond backup_count."""
-        base_dir = os.path.dirname(self.base_filename) or '.'
+        base_dir = os.path.dirname(self.base_filename) or "."
         base_name = os.path.basename(self.base_filename)
-        if base_name.endswith('.log'):
+        if base_name.endswith(".log"):
             base_name = base_name[:-4]
 
         # Find all matching log files
         log_files = []
         try:
             for filename in os.listdir(base_dir):
-                if filename.startswith(base_name + '.') and filename.endswith('.log'):
+                if filename.startswith(base_name + ".") and filename.endswith(".log"):
                     try:
                         filepath = os.path.join(base_dir, filename)
                         mtime = os.path.getmtime(filepath)
@@ -182,7 +188,7 @@ class TimestampedRotatingFileHandler(BaseRotatingHandler):
 
         # Remove files beyond backup_count
         if len(log_files) > self.backup_count:
-            for _, filepath in log_files[:-self.backup_count]:
+            for _, filepath in log_files[: -self.backup_count]:
                 try:
                     os.remove(filepath)
                 except OSError:
@@ -201,12 +207,12 @@ def _is_stream_usable(stream) -> bool:
 
     try:
         # Check if stream has 'closed' attribute
-        if hasattr(stream, 'closed'):
+        if hasattr(stream, "closed"):
             if stream.closed:
                 return False
 
         # Check if stream has 'write' method (required for logging)
-        if not hasattr(stream, 'write'):
+        if not hasattr(stream, "write"):
             return False
 
         # For file-like objects, check if they're in a valid state
@@ -231,10 +237,16 @@ class SafeStreamHandler(logging.StreamHandler):
         except (ValueError, OSError, AttributeError, RuntimeError) as error:
             # Handle "I/O operation on closed file" errors gracefully
             error_str = str(error).lower()
-            if any(phrase in error_str for phrase in [
-                "closed file", "i/o operation", "bad file descriptor",
-                "operation on closed", "stream is closed"
-            ]):
+            if any(
+                phrase in error_str
+                for phrase in [
+                    "closed file",
+                    "i/o operation",
+                    "bad file descriptor",
+                    "operation on closed",
+                    "stream is closed",
+                ]
+            ):
                 # Stream is closed, silently ignore
                 return
             # Re-raise other errors
@@ -249,16 +261,23 @@ class UnifiedFormatter(logging.Formatter):
     """Unified logging formatter with ANSI color support."""
 
     COLORS = {
-        'DEBUG': '\033[36m',    # Cyan
-        'INFO': '\033[32m',     # Green
-        'WARN': '\033[33m',     # Yellow
-        'ERROR': '\033[31m',    # Red
-        'CRIT': '\033[35m',     # Magenta
-        'RESET': '\033[0m',     # Reset
-        'BOLD': '\033[1m',      # Bold
+        "DEBUG": "\033[36m",  # Cyan
+        "INFO": "\033[32m",  # Green
+        "WARN": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
+        "CRIT": "\033[35m",  # Magenta
+        "RESET": "\033[0m",  # Reset
+        "BOLD": "\033[1m",  # Bold
     }
 
-    def __init__(self, fmt=None, datefmt=None, style: Literal['%', '{', '$'] = '%', validate=True, **_kwargs):
+    def __init__(
+        self,
+        fmt=None,
+        datefmt=None,
+        style: Literal["%", "{", "$"] = "%",
+        validate=True,
+        **_kwargs,
+    ):
         """
         Initialize formatter, accepting Uvicorn's use_colors parameter.
         We ignore use_colors since we handle our own color logic.
@@ -268,47 +287,47 @@ class UnifiedFormatter(logging.Formatter):
         # We manage our own colors in the format() method
 
     def format(self, record):
-        timestamp = self.formatTime(record, '%H:%M:%S')
+        timestamp = self.formatTime(record, "%H:%M:%S")
 
         level_map = {
-            'DEBUG': 'DEBUG',
-            'INFO': 'INFO',
-            'WARNING': 'WARN',
-            'ERROR': 'ERROR',
-            'CRITICAL': 'CRIT'
+            "DEBUG": "DEBUG",
+            "INFO": "INFO",
+            "WARNING": "WARN",
+            "ERROR": "ERROR",
+            "CRITICAL": "CRIT",
         }
         level_name = level_map.get(record.levelname, record.levelname)
 
-        color = self.COLORS.get(level_name, '')
-        reset = self.COLORS['RESET']
+        color = self.COLORS.get(level_name, "")
+        reset = self.COLORS["RESET"]
 
-        if level_name == 'CRIT':
+        if level_name == "CRIT":
             colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
         else:
             colored_level = f"{color}{level_name.ljust(5)}{reset}"
 
         # Source abbreviation
         source = record.name
-        if source == '__main__':
-            source = 'MAIN'
-        elif source == 'frontend':
-            source = 'FRNT'
-        elif source.startswith('routers'):
-            source = 'API'
-        elif source == 'settings':
-            source = 'CONF'
-        elif source.startswith('uvicorn'):
-            source = 'SRVR'
-        elif source == 'asyncio':
-            source = 'ASYN'
-        elif source.startswith('clients'):
-            source = 'CLIE'
-        elif source.startswith('services'):
-            source = 'SERV'
-        elif source.startswith('agents'):
-            source = 'AGNT'
-        elif source == 'openai':
-            source = 'OPEN'
+        if source == "__main__":
+            source = "MAIN"
+        elif source == "frontend":
+            source = "FRNT"
+        elif source.startswith("routers"):
+            source = "API"
+        elif source == "settings":
+            source = "CONF"
+        elif source.startswith("uvicorn"):
+            source = "SRVR"
+        elif source == "asyncio":
+            source = "ASYN"
+        elif source.startswith("clients"):
+            source = "CLIE"
+        elif source.startswith("services"):
+            source = "SERV"
+        elif source.startswith("agents"):
+            source = "AGNT"
+        elif source == "openai":
+            source = "OPEN"
         else:
             source = source[:4].upper()
 
@@ -319,20 +338,21 @@ class UnifiedFormatter(logging.Formatter):
 
         # Normalize message spacing: strip leading whitespace and normalize multiple spaces to single space
         message = record.getMessage().lstrip()
-        message = re.sub(r' +', ' ', message)  # Normalize multiple spaces to single space
+        message = re.sub(r" +", " ", message)  # Normalize multiple spaces to single space
 
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
 
 
 class UvicornInvalidRequestFilter(logging.Filter):
     """Filter to downgrade uvicorn 'Invalid HTTP request' warnings to DEBUG level."""
+
     def filter(self, record):
         # If this is a WARNING about invalid HTTP request, downgrade to DEBUG
         if record.levelno == logging.WARNING:
             message = record.getMessage()
-            if 'Invalid HTTP request' in message or 'invalid request' in message.lower():
+            if "Invalid HTTP request" in message or "invalid request" in message.lower():
                 record.levelno = logging.DEBUG
-                record.levelname = 'DEBUG'
+                record.levelname = "DEBUG"
         return True
 
 
@@ -341,6 +361,7 @@ class CancelledErrorFilter(logging.Filter):
 
     DISABLED: For verbose logging, we show everything.
     """
+
     def filter(self, record):
         # For verbose logging, show everything - no filtering
         return True
@@ -356,11 +377,11 @@ class OpenAIHTTPLogFilter(logging.Filter):
 
     # API name mapping: URL substring -> Display name
     API_NAMES = {
-        'hunyuan': 'Hunyuan',
-        'doubao': 'Doubao',
-        'dashscope': 'DashScope',
-        'openai': 'OpenAI',
-        'anthropic': 'Anthropic',
+        "hunyuan": "Hunyuan",
+        "doubao": "Doubao",
+        "dashscope": "DashScope",
+        "openai": "OpenAI",
+        "anthropic": "Anthropic",
     }
 
     def _extract_api_name(self, url: str) -> str:
@@ -369,20 +390,20 @@ class OpenAIHTTPLogFilter(logging.Filter):
         for key, name in self.API_NAMES.items():
             if key in url_lower:
                 return name
-        return 'LLM'
+        return "LLM"
 
     def _extract_endpoint(self, url: str) -> str:
         """Extract endpoint path from URL."""
         try:
             parsed = urlparse(url)
-            return parsed.path or '/'
+            return parsed.path or "/"
         except (ValueError, AttributeError, TypeError):
             # Fallback: extract path manually
-            if '://' in url:
-                path_part = url.split('://', 1)[1]
-                if '/' in path_part:
-                    return '/' + path_part.split('/', 1)[1].split('?')[0]
-            return url.split('/')[-1] if '/' in url else url
+            if "://" in url:
+                path_part = url.split("://", 1)[1]
+                if "/" in path_part:
+                    return "/" + path_part.split("/", 1)[1].split("?")[0]
+            return url.split("/")[-1] if "/" in url else url
 
     def _reformat_response(self, message: str) -> str:
         """Reformat HTTP Response message."""
@@ -400,7 +421,7 @@ class OpenAIHTTPLogFilter(logging.Filter):
     def _reformat_request(self, message: str) -> str:
         """Reformat HTTP Request message."""
         # Pattern: "HTTP Request: METHOD URL ..."
-        pattern = r'HTTP Request:\s+(\w+)\s+(https?://[^\s]+)'
+        pattern = r"HTTP Request:\s+(\w+)\s+(https?://[^\s]+)"
         match = re.match(pattern, message)
         if match:
             method, url = match.groups()
@@ -412,7 +433,7 @@ class OpenAIHTTPLogFilter(logging.Filter):
     def filter(self, record):
         """Reformat HTTP request/response messages from OpenAI SDK."""
         # Only process if message hasn't been reformatted yet
-        if hasattr(record, '_openai_reformatted'):
+        if hasattr(record, "_openai_reformatted"):
             return True
 
         # Get message string (avoid calling getMessage() if possible)
@@ -425,14 +446,14 @@ class OpenAIHTTPLogFilter(logging.Filter):
             message = str(record.msg)
 
         # Reformat HTTP Response messages
-        if message.startswith('HTTP Response:'):
+        if message.startswith("HTTP Response:"):
             reformatted = self._reformat_response(message)  # pylint: disable=protected-access
             record.msg = reformatted
             record.args = ()
             record._openai_reformatted = True  # pylint: disable=protected-access
 
         # Reformat HTTP Request messages
-        elif message.startswith('HTTP Request:'):
+        elif message.startswith("HTTP Request:"):
             reformatted = self._reformat_request(message)  # pylint: disable=protected-access
             record.msg = reformatted
             record.args = ()
@@ -444,7 +465,7 @@ class OpenAIHTTPLogFilter(logging.Filter):
 def setup_logging():
     """
     Configure all logging for the application.
-    
+
     Sets up:
     - Console and file handlers with unified formatter
     - Logger levels and filters
@@ -474,7 +495,7 @@ def setup_logging():
             os.path.join("logs", "app.log"),
             interval_hours=72,  # Every 72 hours (3 days)
             backup_count=10,  # Keep 10 backup files (30 days of logs)
-            encoding="utf-8"
+            encoding="utf-8",
         )
         file_handler.setFormatter(unified_formatter)
         handlers.append(file_handler)
@@ -490,13 +511,13 @@ def setup_logging():
     # File: full detail (DEBUG when LOG_LEVEL=DEBUG). Console: INFO by default when
     # LOG_LEVEL=DEBUG so startup stays readable; full DEBUG still in logs/app.log.
     # Set VERBOSE_CONSOLE=1 to mirror DEBUG to the terminal as well.
-    if hasattr(config, 'verbose_logging') and config.verbose_logging:
+    if hasattr(config, "verbose_logging") and config.verbose_logging:
         log_level = logging.DEBUG
     else:
-        log_level_str = getattr(config, 'log_level', 'DEBUG')
+        log_level_str = getattr(config, "log_level", "DEBUG")
         log_level = getattr(logging, log_level_str.upper(), logging.DEBUG)
 
-    verbose_console = os.getenv('VERBOSE_CONSOLE', '').lower() in ('1', 'true', 'yes')
+    verbose_console = os.getenv("VERBOSE_CONSOLE", "").lower() in ("1", "true", "yes")
     if log_level == logging.DEBUG and not verbose_console:
         console_level = logging.INFO
     else:
@@ -512,11 +533,7 @@ def setup_logging():
 
     # Configure logging with available handlers
     # Use force=True to replace any existing configuration
-    logging.basicConfig(
-        level=logging.DEBUG,
-        handlers=handlers,
-        force=True
-    )
+    logging.basicConfig(level=logging.DEBUG, handlers=handlers, force=True)
 
     # Set all loggers to DEBUG level for full verbose logging
     root_logger = logging.getLogger()
@@ -524,8 +541,16 @@ def setup_logging():
 
     # Set specific loggers to DEBUG
     for logger_name in [
-        'services', 'llm_chunking', 'tasks', 'clients', 'agents',
-        'routers', 'utils', 'config', 'celery', 'uvicorn'
+        "services",
+        "llm_chunking",
+        "tasks",
+        "clients",
+        "agents",
+        "routers",
+        "utils",
+        "config",
+        "celery",
+        "uvicorn",
     ]:
         specific_logger = logging.getLogger(logger_name)
         specific_logger.setLevel(logging.DEBUG)
@@ -533,7 +558,7 @@ def setup_logging():
 
     # Configure Uvicorn's loggers to use our custom formatter
     # Note: uvicorn.access is excluded - access_log=False in run_server.py disables HTTP request logging
-    for uvicorn_logger_name in ['uvicorn', 'uvicorn.error']:
+    for uvicorn_logger_name in ["uvicorn", "uvicorn.error"]:
         uvicorn_logger = logging.getLogger(uvicorn_logger_name)
         uvicorn_logger.handlers = []  # Remove default handlers
         # Only add handlers that were successfully created
@@ -547,7 +572,7 @@ def setup_logging():
 
     # Configure frontend logger to use the same app.log file
     # Frontend logs are tagged with [FRNT] by UnifiedFormatter, so they can be filtered if needed
-    frontend_logger = logging.getLogger('frontend')
+    frontend_logger = logging.getLogger("frontend")
     frontend_logger.setLevel(logging.DEBUG)  # Always accept all frontend logs
     frontend_logger.handlers = []  # Remove default handlers
     # Only add handlers that were successfully created
@@ -555,12 +580,12 @@ def setup_logging():
         frontend_logger.addHandler(handler)
     frontend_logger.propagate = False  # Don't propagate to root logger to avoid double logging
 
-    if os.getenv('UVICORN_WORKER_ID') is None:
+    if os.getenv("UVICORN_WORKER_ID") is None:
         logger.debug("Frontend logger configured to write to unified log file: logs/app.log")
 
     # Suppress asyncio CancelledError and Windows Proactor errors during shutdown
     # DISABLED for verbose logging - show everything
-    asyncio_logger = logging.getLogger('asyncio')
+    asyncio_logger = logging.getLogger("asyncio")
     asyncio_logger.addFilter(CancelledErrorFilter())
 
     # Add filter to main logger
@@ -568,26 +593,26 @@ def setup_logging():
 
     # Set external HTTP libraries to WARNING by default to reduce verbosity
     # Only show DEBUG/INFO logs when explicitly enabled via HTTP_DEBUG env var
-    http_debug_enabled = os.getenv('HTTP_DEBUG', '').lower() in ('1', 'true', 'yes')
+    http_debug_enabled = os.getenv("HTTP_DEBUG", "").lower() in ("1", "true", "yes")
     http_level = logging.DEBUG if http_debug_enabled else logging.WARNING
 
-    logging.getLogger('httpx').setLevel(http_level)
-    logging.getLogger('httpcore').setLevel(http_level)
+    logging.getLogger("httpx").setLevel(http_level)
+    logging.getLogger("httpcore").setLevel(http_level)
     # hpack/h2: HTTP/2 HPACK header compression - very verbose at DEBUG
-    logging.getLogger('hpack').setLevel(http_level)
-    logging.getLogger('h2').setLevel(http_level)
+    logging.getLogger("hpack").setLevel(http_level)
+    logging.getLogger("h2").setLevel(http_level)
 
     # Other external libraries can remain at DEBUG for troubleshooting
-    logging.getLogger('qcloud_cos').setLevel(logging.DEBUG)
-    logging.getLogger('qcloud_cos.cos_client').setLevel(logging.DEBUG)
-    logging.getLogger('qcloud_cos.cos_auth').setLevel(logging.DEBUG)
-    logging.getLogger('urllib3').setLevel(logging.DEBUG)
-    logging.getLogger('urllib3.connectionpool').setLevel(logging.DEBUG)
+    logging.getLogger("qcloud_cos").setLevel(logging.DEBUG)
+    logging.getLogger("qcloud_cos.cos_client").setLevel(logging.DEBUG)
+    logging.getLogger("qcloud_cos.cos_auth").setLevel(logging.DEBUG)
+    logging.getLogger("urllib3").setLevel(logging.DEBUG)
+    logging.getLogger("urllib3.connectionpool").setLevel(logging.DEBUG)
 
     # Enable OpenAI SDK logging for HTTP request/response visibility
     # This provides detailed logs for Hunyuan and Doubao API calls
     # Respect global LOG_LEVEL setting - only show DEBUG logs if LOG_LEVEL=DEBUG
-    openai_logger = logging.getLogger('openai')
+    openai_logger = logging.getLogger("openai")
     openai_logger.setLevel(log_level)  # Use global log level instead of hardcoded DEBUG
     openai_logger.handlers = []  # Remove default handlers
     # Only add handlers that were successfully created
@@ -597,8 +622,8 @@ def setup_logging():
     openai_logger.propagate = False
 
     # Only log from main process, not each worker
-    if os.getenv('UVICORN_WORKER_ID') is None:
-        log_level_str = getattr(config, 'LOG_LEVEL', 'DEBUG')
+    if os.getenv("UVICORN_WORKER_ID") is None:
+        log_level_str = getattr(config, "LOG_LEVEL", "DEBUG")
         logger.debug("Logging initialized: %s", log_level_str)
 
     return logger

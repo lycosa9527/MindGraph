@@ -11,10 +11,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
-from typing import List, Dict, Any
-import logging
+
 import asyncio
 import json
+import logging
+import re
+from typing import Any, Dict, List
 
 from services.knowledge.chunking_service import Chunk
 from services.llm import llm_service as llm_svc
@@ -110,16 +112,10 @@ class ManualEvaluator:
         self.llm_service = llm_svc
         if not self.llm_service:
             raise RuntimeError(
-                "[ManualEvaluator] LLM service not available. "
-                "Manual evaluation requires LLM service to be initialized."
+                "[ManualEvaluator] LLM service not available. Manual evaluation requires LLM service to be initialized."
             )
 
-    def evaluate_chunk_quality(
-        self,
-        chunk: Chunk,
-        query: str,
-        model: str = "qwen-max"
-    ) -> Dict[str, Any]:
+    def evaluate_chunk_quality(self, chunk: Chunk, query: str, model: str = "qwen-max") -> Dict[str, Any]:
         """
         Evaluate chunk quality in the context of a query.
 
@@ -138,18 +134,18 @@ class ManualEvaluator:
                 "clarity": 0.0,
                 "information_density": 0.0,
                 "overall_score": 0.0,
-                "reasoning": "Empty chunk"
+                "reasoning": "Empty chunk",
             }
 
         prompt = CHUNK_QUALITY_PROMPT.format(
             query=query,
-            chunk_text=chunk.text[:2000]  # Limit chunk text length
+            chunk_text=chunk.text[:2000],  # Limit chunk text length
         )
 
         logger.info(
             "[ManualEvaluator] Evaluating chunk quality: query='%s', chunk_length=%s",
             query[:50],
-            len(chunk.text)
+            len(chunk.text),
         )
 
         try:
@@ -169,7 +165,7 @@ class ManualEvaluator:
                     model=model,
                     max_tokens=500,
                     temperature=0.1,
-                    system_message="You are a precise evaluator. Always respond with valid JSON."
+                    system_message="You are a precise evaluator. Always respond with valid JSON.",
                 )
             )
 
@@ -185,16 +181,12 @@ class ManualEvaluator:
             logger.error(
                 "[ManualEvaluator] Failed to evaluate chunk quality: %s",
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return self._default_evaluation()
 
     def evaluate_answer_relevance(
-        self,
-        chunks: List[Chunk],
-        query: str,
-        answer: str,
-        model: str = "qwen-max"
+        self, chunks: List[Chunk], query: str, answer: str, model: str = "qwen-max"
     ) -> Dict[str, Any]:
         """
         Evaluate how well retrieved chunks can answer a query, given ground truth answer.
@@ -215,14 +207,10 @@ class ManualEvaluator:
                 "context_utilization": 0.0,
                 "information_completeness": 0.0,
                 "overall_score": 0.0,
-                "reasoning": "No chunks provided"
+                "reasoning": "No chunks provided",
             }
 
         # Format chunks text (limit total length)
-        chunks_text = "\n\n--- Chunk {} ---\n{}".format(
-            "{}",
-            "{}"
-        )
         chunks_list = []
         total_length = 0
         max_total_length = 3000
@@ -239,13 +227,13 @@ class ManualEvaluator:
         prompt = ANSWER_RELEVANCE_PROMPT.format(
             query=query,
             answer=answer[:1000],  # Limit answer length
-            chunks_text=chunks_text
+            chunks_text=chunks_text,
         )
 
         logger.info(
             "[ManualEvaluator] Evaluating answer relevance: query='%s', chunks=%s",
             query[:50],
-            len(chunks)
+            len(chunks),
         )
 
         try:
@@ -265,7 +253,7 @@ class ManualEvaluator:
                     model=model,
                     max_tokens=500,
                     temperature=0.1,
-                    system_message="You are a precise evaluator. Always respond with valid JSON."
+                    system_message="You are a precise evaluator. Always respond with valid JSON.",
                 )
             )
 
@@ -281,16 +269,11 @@ class ManualEvaluator:
             logger.error(
                 "[ManualEvaluator] Failed to evaluate answer relevance: %s",
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return self._default_answer_evaluation()
 
-    def evaluate_semantic_similarity(
-        self,
-        chunk1: Chunk,
-        chunk2: Chunk,
-        model: str = "qwen-max"
-    ) -> float:
+    def evaluate_semantic_similarity(self, chunk1: Chunk, chunk2: Chunk, model: str = "qwen-max") -> float:
         """
         Evaluate semantic similarity between two chunks.
 
@@ -305,14 +288,9 @@ class ManualEvaluator:
         if not chunk1 or not chunk1.text or not chunk2 or not chunk2.text:
             return 0.0
 
-        prompt = SEMANTIC_SIMILARITY_PROMPT.format(
-            chunk1_text=chunk1.text[:1000],
-            chunk2_text=chunk2.text[:1000]
-        )
+        prompt = SEMANTIC_SIMILARITY_PROMPT.format(chunk1_text=chunk1.text[:1000], chunk2_text=chunk2.text[:1000])
 
-        logger.debug(
-            "[ManualEvaluator] Evaluating semantic similarity between chunks"
-        )
+        logger.debug("[ManualEvaluator] Evaluating semantic similarity between chunks")
 
         try:
             # Handle async LLM call in sync context
@@ -331,7 +309,7 @@ class ManualEvaluator:
                     model=model,
                     max_tokens=200,
                     temperature=0.1,
-                    system_message="You are a precise evaluator. Always respond with valid JSON."
+                    system_message="You are a precise evaluator. Always respond with valid JSON.",
                 )
             )
 
@@ -348,7 +326,7 @@ class ManualEvaluator:
             logger.error(
                 "[ManualEvaluator] Failed to evaluate semantic similarity: %s",
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return 0.0
 
@@ -378,8 +356,7 @@ class ManualEvaluator:
             return json.loads(response_clean)
         except json.JSONDecodeError:
             # Try to find JSON object in response
-            import re
-            json_match = re.search(r'\{[^{}]*\}', response_clean, re.DOTALL)
+            json_match = re.search(r"\{[^{}]*\}", response_clean, re.DOTALL)
             if json_match:
                 try:
                     return json.loads(json_match.group())
@@ -388,7 +365,7 @@ class ManualEvaluator:
 
             logger.warning(
                 "[ManualEvaluator] Failed to parse JSON response: %s",
-                response_clean[:200]
+                response_clean[:200],
             )
             return {}
 
@@ -400,7 +377,7 @@ class ManualEvaluator:
             "clarity": 0.0,
             "information_density": 0.0,
             "overall_score": 0.0,
-            "reasoning": "Evaluation failed"
+            "reasoning": "Evaluation failed",
         }
 
     def _default_answer_evaluation(self) -> Dict[str, Any]:
@@ -411,12 +388,12 @@ class ManualEvaluator:
             "context_utilization": 0.0,
             "information_completeness": 0.0,
             "overall_score": 0.0,
-            "reasoning": "Evaluation failed"
+            "reasoning": "Evaluation failed",
         }
 
 
 def get_manual_evaluator() -> ManualEvaluator:
     """Get global manual evaluator instance."""
-    if not hasattr(get_manual_evaluator, 'instance'):
+    if not hasattr(get_manual_evaluator, "instance"):
         get_manual_evaluator.instance = ManualEvaluator()
     return get_manual_evaluator.instance

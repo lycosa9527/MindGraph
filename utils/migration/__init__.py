@@ -5,11 +5,7 @@ This package contains utilities for database migrations, including SQLite to Pos
 """
 
 # Re-export from subfolders for backward compatibility
-from .postgresql import (
-    run_migrations,
-    check_database_status,
-    verify_migration_results
-)
+from .postgresql import run_migrations, check_database_status, verify_migration_results
 from .sqlite_to_postgresql import migrate_sqlite_to_postgresql
 from .sqlite import (
     backup_sqlite_database,
@@ -22,7 +18,7 @@ from .sqlite import (
     is_postgresql_empty,
     load_migration_progress,
     save_migration_progress,
-    MIGRATION_MARKER_FILE
+    MIGRATION_MARKER_FILE,
 )
 
 __all__ = [

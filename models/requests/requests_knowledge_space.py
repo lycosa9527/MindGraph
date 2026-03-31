@@ -61,10 +61,7 @@ class RelationshipRequest(BaseModel):
     """Request model for creating a document relationship."""
 
     target_document_id: int
-    relationship_type: str = Field(
-        ...,
-        pattern="^(reference|citation|related|parent|child|similar)$"
-    )
+    relationship_type: str = Field(..., pattern="^(reference|citation|related|parent|child|similar)$")
     context: Optional[str] = None
 
 
@@ -96,7 +93,7 @@ class ChunkTestBenchmarkRequest(BaseModel):
     queries: Optional[List[str]] = None  # Optional custom queries
     modes: Optional[List[str]] = Field(
         default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
-        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
+        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'",
     )
 
 
@@ -107,7 +104,7 @@ class ChunkTestUserDocumentsRequest(BaseModel):
     queries: List[str] = Field(..., min_length=1)
     modes: Optional[List[str]] = Field(
         default=["spacy", "semchunk", "chonkie", "langchain", "mindchunk"],
-        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'"
+        description="Chunking modes to compare: 'spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk', 'qa'",
     )
 
 

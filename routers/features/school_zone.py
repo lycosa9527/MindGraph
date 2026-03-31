@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 from typing import Optional
 import logging
@@ -20,10 +21,12 @@ from sqlalchemy.orm import Session
 
 from config.database import get_db
 from models.domain.auth import User
-from models.domain.school_zone import SharedDiagram, SharedDiagramLike, SharedDiagramComment
+from models.domain.school_zone import (
+    SharedDiagram,
+    SharedDiagramLike,
+    SharedDiagramComment,
+)
 from utils.auth import get_current_user
-
-
 
 
 logger = logging.getLogger(__name__)
@@ -35,8 +38,10 @@ router = APIRouter(prefix="/api/school-zone", tags=["School Zone"])
 # Pydantic Models
 # =============================================================================
 
+
 class SharedDiagramCreate(BaseModel):
     """Request model for creating a shared diagram"""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=2000)
     content_type: str = Field(..., pattern="^(mindgraph|mindmate)$")
@@ -47,6 +52,7 @@ class SharedDiagramCreate(BaseModel):
 
 class SharedDiagramResponse(BaseModel):
     """Response model for a shared diagram"""
+
     id: str
     title: str
     description: Optional[str]
@@ -63,16 +69,19 @@ class SharedDiagramResponse(BaseModel):
 
     class Config:
         """Pydantic configuration for SharedDiagramResponse."""
+
         from_attributes = True
 
 
 class CommentCreate(BaseModel):
     """Request model for creating a comment"""
+
     content: str = Field(..., min_length=1, max_length=1000)
 
 
 class CommentResponse(BaseModel):
     """Response model for a comment"""
+
     id: int
     content: str
     author: dict
@@ -80,6 +89,7 @@ class CommentResponse(BaseModel):
 
     class Config:
         """Pydantic configuration for SharedDiagramResponse."""
+
         from_attributes = True
 
 
@@ -87,22 +97,28 @@ class CommentResponse(BaseModel):
 # Helper Functions
 # =============================================================================
 
+
 def require_organization(user: User):
     """Check that user belongs to an organization."""
     if not user.organization_id:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You must belong to an organization to access school zone"
+            detail="You must belong to an organization to access school zone",
         )
 
 
 def format_diagram_response(diagram: SharedDiagram, user_id: int, db: Session) -> dict:
     """Format a SharedDiagram for API response"""
     # Check if current user has liked this diagram
-    is_liked = db.query(SharedDiagramLike).filter(
-        SharedDiagramLike.diagram_id == diagram.id,
-        SharedDiagramLike.user_id == user_id
-    ).first() is not None
+    is_liked = (
+        db.query(SharedDiagramLike)
+        .filter(
+            SharedDiagramLike.diagram_id == diagram.id,
+            SharedDiagramLike.user_id == user_id,
+        )
+        .first()
+        is not None
+    )
 
     return {
         "id": diagram.id,
@@ -114,20 +130,21 @@ def format_diagram_response(diagram: SharedDiagram, user_id: int, db: Session) -
         "author": {
             "id": diagram.author_id,
             "name": diagram.author.name or "Anonymous",
-            "avatar": diagram.author.avatar or "👤"
+            "avatar": diagram.author.avatar or "👤",
         },
         "likes_count": diagram.likes_count,
         "comments_count": diagram.comments_count,
         "shares_count": diagram.shares_count,
         "views_count": diagram.views_count,
         "created_at": diagram.created_at.isoformat() if diagram.created_at else "",
-        "is_liked": is_liked
+        "is_liked": is_liked,
     }
 
 
 # =============================================================================
 # API Endpoints
 # =============================================================================
+
 
 @router.get("/posts")
 def list_shared_diagrams(
@@ -137,7 +154,7 @@ def list_shared_diagrams(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     List shared diagrams within the user's organization.
@@ -149,7 +166,7 @@ def list_shared_diagrams(
     # Build query - filter by organization
     query = db.query(SharedDiagram).filter(
         SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active is True
+        SharedDiagram.is_active is True,
     )
 
     # Apply content type filter
@@ -182,7 +199,7 @@ def list_shared_diagrams(
         "total": total,
         "page": page,
         "page_size": page_size,
-        "total_pages": (total + page_size - 1) // page_size
+        "total_pages": (total + page_size - 1) // page_size,
     }
 
 
@@ -190,7 +207,7 @@ def list_shared_diagrams(
 def create_shared_diagram(
     data: SharedDiagramCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Share a diagram with the organization.
@@ -209,18 +226,23 @@ def create_shared_diagram(
         thumbnail=data.thumbnail,
         organization_id=current_user.organization_id,
         author_id=current_user.id,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
 
     db.add(diagram)
     db.commit()
     db.refresh(diagram)
 
-    logger.info("User %s shared diagram '%s' in org %s", current_user.id, data.title, current_user.organization_id)
+    logger.info(
+        "User %s shared diagram '%s' in org %s",
+        current_user.id,
+        data.title,
+        current_user.organization_id,
+    )
 
     return {
         "message": "Diagram shared successfully",
-        "post": format_diagram_response(diagram, current_user.id, db)
+        "post": format_diagram_response(diagram, current_user.id, db),
     }
 
 
@@ -228,7 +250,7 @@ def create_shared_diagram(
 def get_shared_diagram(
     post_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get a specific shared diagram.
@@ -237,17 +259,18 @@ def get_shared_diagram(
     """
     require_organization(current_user)
 
-    diagram = db.query(SharedDiagram).filter(
-        SharedDiagram.id == post_id,
-        SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active is True
-    ).first()
+    diagram = (
+        db.query(SharedDiagram)
+        .filter(
+            SharedDiagram.id == post_id,
+            SharedDiagram.organization_id == current_user.organization_id,
+            SharedDiagram.is_active is True,
+        )
+        .first()
+    )
 
     if not diagram:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagram not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     # Increment view count
     diagram.views_count += 1
@@ -263,7 +286,7 @@ def get_shared_diagram(
 def delete_shared_diagram(
     post_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a shared diagram.
@@ -272,25 +295,26 @@ def delete_shared_diagram(
     """
     require_organization(current_user)
 
-    diagram = db.query(SharedDiagram).filter(
-        SharedDiagram.id == post_id,
-        SharedDiagram.organization_id == current_user.organization_id
-    ).first()
+    diagram = (
+        db.query(SharedDiagram)
+        .filter(
+            SharedDiagram.id == post_id,
+            SharedDiagram.organization_id == current_user.organization_id,
+        )
+        .first()
+    )
 
     if not diagram:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagram not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     # Check permission: author or manager/admin
     is_author = diagram.author_id == current_user.id
-    is_privileged = current_user.role in ('admin', 'manager')
+    is_privileged = current_user.role in ("admin", "manager")
 
     if not is_author and not is_privileged:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete your own diagrams"
+            detail="You can only delete your own diagrams",
         )
 
     # Soft delete
@@ -306,7 +330,7 @@ def delete_shared_diagram(
 def toggle_like(
     post_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Toggle like on a shared diagram.
@@ -316,23 +340,28 @@ def toggle_like(
     require_organization(current_user)
 
     # Check diagram exists and is in user's org
-    diagram = db.query(SharedDiagram).filter(
-        SharedDiagram.id == post_id,
-        SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active is True
-    ).first()
+    diagram = (
+        db.query(SharedDiagram)
+        .filter(
+            SharedDiagram.id == post_id,
+            SharedDiagram.organization_id == current_user.organization_id,
+            SharedDiagram.is_active is True,
+        )
+        .first()
+    )
 
     if not diagram:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagram not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     # Check if already liked
-    existing_like = db.query(SharedDiagramLike).filter(
-        SharedDiagramLike.diagram_id == post_id,
-        SharedDiagramLike.user_id == current_user.id
-    ).first()
+    existing_like = (
+        db.query(SharedDiagramLike)
+        .filter(
+            SharedDiagramLike.diagram_id == post_id,
+            SharedDiagramLike.user_id == current_user.id,
+        )
+        .first()
+    )
 
     if existing_like:
         # Remove like
@@ -341,21 +370,14 @@ def toggle_like(
         is_liked = False
     else:
         # Add like
-        like = SharedDiagramLike(
-            diagram_id=post_id,
-            user_id=current_user.id,
-            created_at=datetime.utcnow()
-        )
+        like = SharedDiagramLike(diagram_id=post_id, user_id=current_user.id, created_at=datetime.utcnow())
         db.add(like)
         diagram.likes_count += 1
         is_liked = True
 
     db.commit()
 
-    return {
-        "is_liked": is_liked,
-        "likes_count": diagram.likes_count
-    }
+    return {"is_liked": is_liked, "likes_count": diagram.likes_count}
 
 
 @router.get("/posts/{post_id}/comments")
@@ -364,7 +386,7 @@ def list_comments(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     List comments on a shared diagram.
@@ -372,23 +394,28 @@ def list_comments(
     require_organization(current_user)
 
     # Check diagram exists and is in user's org
-    diagram = db.query(SharedDiagram).filter(
-        SharedDiagram.id == post_id,
-        SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active is True
-    ).first()
+    diagram = (
+        db.query(SharedDiagram)
+        .filter(
+            SharedDiagram.id == post_id,
+            SharedDiagram.organization_id == current_user.organization_id,
+            SharedDiagram.is_active is True,
+        )
+        .first()
+    )
 
     if not diagram:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagram not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     # Get comments
-    query = db.query(SharedDiagramComment).filter(
-        SharedDiagramComment.diagram_id == post_id,
-        SharedDiagramComment.is_active is True
-    ).order_by(SharedDiagramComment.created_at.desc())
+    query = (
+        db.query(SharedDiagramComment)
+        .filter(
+            SharedDiagramComment.diagram_id == post_id,
+            SharedDiagramComment.is_active is True,
+        )
+        .order_by(SharedDiagramComment.created_at.desc())
+    )
 
     total = query.count()
     comments = query.offset((page - 1) * page_size).limit(page_size).all()
@@ -401,15 +428,15 @@ def list_comments(
                 "author": {
                     "id": c.user_id,
                     "name": c.user.name or "Anonymous",
-                    "avatar": c.user.avatar or "👤"
+                    "avatar": c.user.avatar or "👤",
                 },
-                "created_at": c.created_at.isoformat() if c.created_at else ""
+                "created_at": c.created_at.isoformat() if c.created_at else "",
             }
             for c in comments
         ],
         "total": total,
         "page": page,
-        "page_size": page_size
+        "page_size": page_size,
     }
 
 
@@ -418,7 +445,7 @@ def create_comment(
     post_id: str,
     data: CommentCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Add a comment to a shared diagram.
@@ -426,24 +453,25 @@ def create_comment(
     require_organization(current_user)
 
     # Check diagram exists and is in user's org
-    diagram = db.query(SharedDiagram).filter(
-        SharedDiagram.id == post_id,
-        SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active is True
-    ).first()
+    diagram = (
+        db.query(SharedDiagram)
+        .filter(
+            SharedDiagram.id == post_id,
+            SharedDiagram.organization_id == current_user.organization_id,
+            SharedDiagram.is_active is True,
+        )
+        .first()
+    )
 
     if not diagram:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagram not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     # Create comment
     comment = SharedDiagramComment(
         diagram_id=post_id,
         user_id=current_user.id,
         content=data.content,
-        created_at=datetime.utcnow()
+        created_at=datetime.utcnow(),
     )
 
     db.add(comment)
@@ -459,10 +487,10 @@ def create_comment(
             "author": {
                 "id": current_user.id,
                 "name": current_user.name or "Anonymous",
-                "avatar": current_user.avatar or "👤"
+                "avatar": current_user.avatar or "👤",
             },
-            "created_at": comment.created_at.isoformat()
-        }
+            "created_at": comment.created_at.isoformat(),
+        },
     }
 
 
@@ -471,7 +499,7 @@ def delete_comment(
     post_id: str,
     comment_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a comment.
@@ -481,38 +509,40 @@ def delete_comment(
     require_organization(current_user)
 
     # SECURITY: First verify the diagram belongs to user's organization
-    diagram = db.query(SharedDiagram).filter(
-        SharedDiagram.id == post_id,
-        SharedDiagram.organization_id == current_user.organization_id
-    ).first()
+    diagram = (
+        db.query(SharedDiagram)
+        .filter(
+            SharedDiagram.id == post_id,
+            SharedDiagram.organization_id == current_user.organization_id,
+        )
+        .first()
+    )
 
     if not diagram:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Diagram not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     # Now get the comment
-    comment = db.query(SharedDiagramComment).filter(
-        SharedDiagramComment.id == comment_id,
-        SharedDiagramComment.diagram_id == post_id
-    ).first()
+    comment = (
+        db.query(SharedDiagramComment)
+        .filter(
+            SharedDiagramComment.id == comment_id,
+            SharedDiagramComment.diagram_id == post_id,
+        )
+        .first()
+    )
 
     if not comment:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Comment not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Comment not found")
 
     # Check permission: comment author, diagram author, or manager/admin
     is_comment_author = comment.user_id == current_user.id
     is_diagram_author = diagram.author_id == current_user.id
-    is_privileged = current_user.role in ('admin', 'manager')
+    is_privileged = current_user.role in ("admin", "manager")
 
     if not is_comment_author and not is_diagram_author and not is_privileged:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="You can only delete your own comments"
+            detail="You can only delete your own comments",
         )
 
     # Soft delete
@@ -527,9 +557,7 @@ def delete_comment(
 
 
 @router.get("/categories")
-async def list_categories(
-    current_user: User = Depends(get_current_user)
-):
+async def list_categories(current_user: User = Depends(get_current_user)):
     """
     Get list of available categories for school zone content.
     """
@@ -542,7 +570,7 @@ async def list_categories(
         "班级管理",
         "教研活动",
         "学生作品",
-        "校本课程"
+        "校本课程",
     ]
 
     return {"categories": categories}

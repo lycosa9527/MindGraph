@@ -77,17 +77,17 @@ def backup_sqlite_database(sqlite_path: Path, progress_tracker: Optional[Any] = 
                     busy, _, checkpointed_pages = (
                         checkpoint_result[0],
                         checkpoint_result[1],
-                        checkpoint_result[2]
+                        checkpoint_result[2],
                     )
                     if busy == 0:
                         logger.debug(
                             "[Migration] WAL checkpoint completed: %d pages checkpointed",
-                            checkpointed_pages
+                            checkpointed_pages,
                         )
                     else:
                         logger.warning(
                             "[Migration] WAL checkpoint busy: %d pages checkpointed (some readers/writers active)",
-                            checkpointed_pages
+                            checkpointed_pages,
                         )
                 checkpoint_cursor.close()
                 checkpoint_conn.close()
@@ -95,7 +95,7 @@ def backup_sqlite_database(sqlite_path: Path, progress_tracker: Optional[Any] = 
             except Exception as checkpoint_error:
                 logger.warning(
                     "[Migration] WAL checkpoint failed (proceeding anyway): %s",
-                    checkpoint_error
+                    checkpoint_error,
                 )
                 # Continue with backup even if checkpoint fails - might be read-only or locked
 
@@ -171,7 +171,9 @@ def move_sqlite_database_to_backup(sqlite_path: Path, sqlite_conn: Optional[sqli
 
             logger.info(
                 "[Migration] Moving SQLite database to backup (attempt %d/%d): %s",
-                attempt + 1, MOVE_RETRY_MAX_ATTEMPTS, moved_path
+                attempt + 1,
+                MOVE_RETRY_MAX_ATTEMPTS,
+                moved_path,
             )
 
             # Move main database file
@@ -209,16 +211,20 @@ def move_sqlite_database_to_backup(sqlite_path: Path, sqlite_conn: Optional[sqli
 
         except (OSError, PermissionError, RuntimeError) as e:
             if attempt < MOVE_RETRY_MAX_ATTEMPTS - 1:
-                wait_time = (2 ** attempt) * MOVE_RETRY_INITIAL_DELAY  # Exponential backoff
+                wait_time = (2**attempt) * MOVE_RETRY_INITIAL_DELAY  # Exponential backoff
                 logger.warning(
                     "[Migration] Move failed (attempt %d/%d), retrying in %.1fs: %s",
-                    attempt + 1, MOVE_RETRY_MAX_ATTEMPTS, wait_time, e
+                    attempt + 1,
+                    MOVE_RETRY_MAX_ATTEMPTS,
+                    wait_time,
+                    e,
                 )
                 time.sleep(wait_time)
             else:
                 logger.error(
                     "[Migration] Failed to move SQLite database after %d attempts: %s",
-                    MOVE_RETRY_MAX_ATTEMPTS, e
+                    MOVE_RETRY_MAX_ATTEMPTS,
+                    e,
                 )
                 return False
         except Exception as e:

@@ -41,7 +41,7 @@ def combine_sentences(sentences: List[dict], buffer_size: int = 1) -> List[dict]
     Returns:
         List of sentence dicts with 'combined_sentence' added
     """
-    for i in range(len(sentences)):
+    for i, sent in enumerate(sentences):
         combined_sentence = ""
 
         # Add sentences before current one
@@ -50,7 +50,7 @@ def combine_sentences(sentences: List[dict], buffer_size: int = 1) -> List[dict]
                 combined_sentence += sentences[j]["sentence"] + " "
 
         # Add current sentence
-        combined_sentence += sentences[i]["sentence"]
+        combined_sentence += sent["sentence"]
 
         # Add sentences after current one
         for j in range(i + 1, i + 1 + buffer_size):
@@ -62,10 +62,7 @@ def combine_sentences(sentences: List[dict], buffer_size: int = 1) -> List[dict]
     return sentences
 
 
-def calculate_cosine_distances(
-    sentences: List[dict],
-    embedding_service: EmbeddingService
-) -> List[float]:
+def calculate_cosine_distances(sentences: List[dict], embedding_service: EmbeddingService) -> List[float]:
     """
     Calculate cosine distances between adjacent sentence groups.
 
@@ -114,9 +111,7 @@ def get_indices_above_threshold(distances: List[float], threshold: float) -> Lis
     breakpoint_distance_threshold = np.percentile(distances, threshold)
 
     # Get indices above threshold
-    indices_above_threshold = [
-        i for i, x in enumerate(distances) if x > breakpoint_distance_threshold
-    ]
+    indices_above_threshold = [i for i, x in enumerate(distances) if x > breakpoint_distance_threshold]
 
     return indices_above_threshold
 
@@ -143,7 +138,7 @@ def make_chunks(sentences: List[dict], indices_above_thresh: List[int]) -> List[
         end_index = index
 
         # Combine sentences from start to end
-        group = sentences[start_index:end_index + 1]
+        group = sentences[start_index : end_index + 1]
         combined_text = " ".join([d["sentence"] for d in group])
         chunks.append(combined_text)
 
@@ -172,7 +167,7 @@ class EmbeddingBoundaryDetector:
         self,
         embedding_service: Optional[EmbeddingService] = None,
         buffer_size: int = 1,
-        breakpoint_percentile_threshold: float = 95.0
+        breakpoint_percentile_threshold: float = 95.0,
     ):
         """
         Initialize embedding boundary detector.
@@ -188,15 +183,10 @@ class EmbeddingBoundaryDetector:
 
         if not self.embedding_service.is_available():
             logger.warning(
-                "[EmbeddingBoundaryDetector] Embedding service not available, "
-                "boundary detection will be disabled"
+                "[EmbeddingBoundaryDetector] Embedding service not available, boundary detection will be disabled"
             )
 
-    def find_boundaries(
-        self,
-        text: str,
-        max_tokens: Optional[int] = None
-    ) -> List[Tuple[int, int]]:
+    def find_boundaries(self, text: str, max_tokens: Optional[int] = None) -> List[Tuple[int, int]]:
         """
         Find semantic boundaries in text using embedding similarity.
 
@@ -207,11 +197,13 @@ class EmbeddingBoundaryDetector:
         Returns:
             List of (start_pos, end_pos) tuples representing chunk boundaries
         """
-        if not self.embedding_service.is_available():
-            logger.warning(
-                "[EmbeddingBoundaryDetector] Embedding service not available, "
-                "returning empty boundaries"
+        if max_tokens is not None:
+            logger.debug(
+                "[EmbeddingBoundaryDetector] max_tokens=%s (informational; not enforced)",
+                max_tokens,
             )
+        if not self.embedding_service.is_available():
+            logger.warning("[EmbeddingBoundaryDetector] Embedding service not available, returning empty boundaries")
             return []
 
         # Step 1: Split text into sentences
@@ -247,21 +239,15 @@ class EmbeddingBoundaryDetector:
             combined_sentences[i]["dist_to_next"] = distance
 
         # Step 5: Get breakpoint indices
-        indices_above_thresh = get_indices_above_threshold(
-            distances,
-            self.breakpoint_percentile_threshold
-        )
+        indices_above_thresh = get_indices_above_threshold(distances, self.breakpoint_percentile_threshold)
 
         # Step 6: Convert breakpoint indices to character positions
-        boundaries = self._indices_to_boundaries(
-            combined_sentences,
-            indices_above_thresh,
-            text
-        )
+        boundaries = self._indices_to_boundaries(combined_sentences, indices_above_thresh, text)
 
         logger.debug(
-            f"[EmbeddingBoundaryDetector] Found {len(boundaries)} boundaries "
-            f"from {len(sentences)} sentences"
+            "[EmbeddingBoundaryDetector] Found %d boundaries from %d sentences",
+            len(boundaries),
+            len(sentences),
         )
 
         return boundaries
@@ -281,7 +267,7 @@ class EmbeddingBoundaryDetector:
             List of sentence dicts with 'sentence' and 'index' keys
         """
         # Pattern for sentence endings (Chinese and English)
-        sentence_pattern = r'(?<=[。！？.!?])\s+'
+        sentence_pattern = r"(?<=[。！？.!?])\s+"
 
         # Split text
         sentence_texts = re.split(sentence_pattern, text)
@@ -299,22 +285,21 @@ class EmbeddingBoundaryDetector:
             if pos == -1:
                 pos = current_pos
 
-            sentences.append({
-                "sentence": sentence_text,
-                "index": i,
-                "start_pos": pos,
-                "end_pos": pos + len(sentence_text)
-            })
+            sentences.append(
+                {
+                    "sentence": sentence_text,
+                    "index": i,
+                    "start_pos": pos,
+                    "end_pos": pos + len(sentence_text),
+                }
+            )
 
             current_pos = pos + len(sentence_text)
 
         return sentences
 
     def _indices_to_boundaries(
-        self,
-        sentences: List[dict],
-        indices_above_thresh: List[int],
-        original_text: str
+        self, sentences: List[dict], indices_above_thresh: List[int], original_text: str
     ) -> List[Tuple[int, int]]:
         """
         Convert sentence indices to character position boundaries.
@@ -345,12 +330,7 @@ class EmbeddingBoundaryDetector:
 
         return boundaries
 
-    def get_boundary_confidence(
-        self,
-        text: str,
-        start_pos: int,
-        end_pos: int
-    ) -> float:
+    def get_boundary_confidence(self, text: str, start_pos: int, end_pos: int) -> float:
         """
         Get confidence score for a boundary using embedding similarity.
 
@@ -370,8 +350,8 @@ class EmbeddingBoundaryDetector:
         chunk_text = text[start_pos:end_pos]
 
         # Get context before and after
-        context_before = text[max(0, start_pos - 200):start_pos]
-        context_after = text[end_pos:min(len(text), end_pos + 200)]
+        context_before = text[max(0, start_pos - 200) : start_pos]
+        context_after = text[end_pos : min(len(text), end_pos + 200)]
 
         try:
             # Embed chunk and contexts
@@ -382,12 +362,8 @@ class EmbeddingBoundaryDetector:
                 return 0.5
 
             # Calculate similarity between chunk and contexts
-            similarity_before = self.embedding_service.cosine_similarity(
-                embeddings[0], embeddings[1]
-            )
-            similarity_after = self.embedding_service.cosine_similarity(
-                embeddings[1], embeddings[2]
-            )
+            similarity_before = self.embedding_service.cosine_similarity(embeddings[0], embeddings[1])
+            similarity_after = self.embedding_service.cosine_similarity(embeddings[1], embeddings[2])
 
             # Lower similarity = higher confidence (chunk is distinct)
             confidence = 1.0 - (similarity_before + similarity_after) / 2.0

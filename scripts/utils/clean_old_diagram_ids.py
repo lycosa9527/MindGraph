@@ -14,13 +14,16 @@ Author: MindSpring Team
 import sys
 import os
 import io
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 # Fix Windows console encoding
-sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding="utf-8", errors="replace")
+
 
 def find_database():
     from pathlib import Path
+
     """Find the SQLite database file."""
     # Check data folder first (recommended location)
     data_db = Path("data/mindgraph.db")
@@ -45,6 +48,7 @@ def find_database():
 
 def clean_old_diagram_ids():
     from sqlalchemy import create_engine, text
+
     """Delete diagram records with non-UUID IDs."""
     db_path = find_database()
 
@@ -76,7 +80,7 @@ def clean_old_diagram_ids():
             user_id = row[2]
 
             # Check if it's a valid UUID (36 chars with 4 dashes)
-            is_uuid = len(diagram_id) == 36 and diagram_id.count('-') == 4
+            is_uuid = len(diagram_id) == 36 and diagram_id.count("-") == 4
 
             if is_uuid:
                 uuid_ids.append(diagram_id)

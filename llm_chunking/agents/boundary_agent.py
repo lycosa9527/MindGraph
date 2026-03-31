@@ -4,6 +4,7 @@ Uses LLM to identify semantic boundaries when pattern matching
 is insufficient. Now includes embedding-based pre-filtering to
 reduce LLM calls by ~50% (from 20% to ~10% of boundaries).
 """
+
 from typing import List, Optional, Tuple
 import json
 import logging
@@ -36,7 +37,7 @@ class BoundaryAgent:
         self,
         llm_service=None,
         use_embedding_filter: bool = True,
-        embedding_confidence_threshold: float = 0.7
+        embedding_confidence_threshold: float = 0.7,
     ):
         """
         Initialize boundary agent.
@@ -50,17 +51,13 @@ class BoundaryAgent:
         if llm_service is None:
             if default_llm_service is None:
                 logger.warning(
-                    "[BoundaryAgent] LLM service not available. "
-                    "Boundary detection will use pattern matching fallback."
+                    "[BoundaryAgent] LLM service not available. Boundary detection will use pattern matching fallback."
                 )
                 self.llm_service = None
             else:
                 # Verify LLM service is initialized
-                has_client_manager = hasattr(default_llm_service, 'client_manager')
-                is_initialized = (
-                    has_client_manager and
-                    default_llm_service.client_manager.is_initialized()
-                )
+                has_client_manager = hasattr(default_llm_service, "client_manager")
+                is_initialized = has_client_manager and default_llm_service.client_manager.is_initialized()
                 if not is_initialized:
                     logger.warning(
                         "[BoundaryAgent] LLM service not initialized. "
@@ -80,22 +77,14 @@ class BoundaryAgent:
             try:
                 self.embedding_detector = EmbeddingBoundaryDetector()
                 if not self.embedding_detector.embedding_service.is_available():
-                    logger.warning(
-                        "[BoundaryAgent] Embedding service not available, "
-                        "disabling embedding filter"
-                    )
+                    logger.warning("[BoundaryAgent] Embedding service not available, disabling embedding filter")
                     self.use_embedding_filter = False
             except Exception as e:
-                logger.warning(
-                    "[BoundaryAgent] Failed to initialize embedding detector: %s",
-                    e
-                )
+                logger.warning("[BoundaryAgent] Failed to initialize embedding detector: %s", e)
                 self.use_embedding_filter = False
 
     async def detect_boundaries_batch(
-        self,
-        segments: List[str],
-        context: Optional[str] = None
+        self, segments: List[str], context: Optional[str] = None
     ) -> List[List[Tuple[int, int]]]:
         """
         Detect boundaries for multiple segments in batch.
@@ -116,32 +105,24 @@ class BoundaryAgent:
             return []
 
         # Step 1: Try pattern matching first (fast)
-        pattern_boundaries = [
-            self.pattern_matcher.find_boundaries(segment)
-            for segment in segments
-        ]
+        pattern_boundaries = [self.pattern_matcher.find_boundaries(segment) for segment in segments]
 
         # Step 2: Embedding pre-filtering (if enabled)
         if self.use_embedding_filter and self.embedding_detector:
-            filtered_segments, filtered_indices = self._filter_with_embeddings(
-                segments,
-                pattern_boundaries
-            )
+            filtered_segments, filtered_indices = self._filter_with_embeddings(segments, pattern_boundaries)
 
             # If all segments filtered out, return pattern boundaries
             if not filtered_segments:
                 logger.debug(
-                    "[BoundaryAgent] All %d segments filtered by embeddings, "
-                    "using pattern boundaries",
-                    len(segments)
+                    "[BoundaryAgent] All %d segments filtered by embeddings, using pattern boundaries",
+                    len(segments),
                 )
                 return pattern_boundaries
 
             logger.debug(
-                "[BoundaryAgent] Filtered %d/%d segments "
-                "for LLM processing",
+                "[BoundaryAgent] Filtered %d/%d segments for LLM processing",
                 len(filtered_segments),
-                len(segments)
+                len(segments),
             )
         else:
             # No filtering, use all segments
@@ -157,12 +138,7 @@ class BoundaryAgent:
         batch_prompt = self._build_batch_prompt(filtered_segments, context)
 
         try:
-            response = await self.llm_service.chat(
-                prompt=batch_prompt,
-                model='qwen',
-                temperature=0.3,
-                max_tokens=2000
-            )
+            response = await self.llm_service.chat(prompt=batch_prompt, model="qwen", temperature=0.3, max_tokens=2000)
 
             # Parse boundaries from response
             llm_boundaries = self._parse_boundaries(response, filtered_segments)
@@ -177,16 +153,11 @@ class BoundaryAgent:
             return final_boundaries
 
         except Exception as e:
-            logger.warning(
-                "LLM boundary detection failed: %s, using patterns",
-                e
-            )
+            logger.warning("LLM boundary detection failed: %s, using patterns", e)
             return pattern_boundaries
 
     def _filter_with_embeddings(
-        self,
-        segments: List[str],
-        pattern_boundaries: List[List[Tuple[int, int]]]
+        self, segments: List[str], pattern_boundaries: List[List[Tuple[int, int]]]
     ) -> tuple[List[str], List[int]]:
         """
         Filter segments using embedding confidence scores.
@@ -218,17 +189,10 @@ class BoundaryAgent:
             confidences = []
             for start_pos, end_pos in boundaries:
                 try:
-                    confidence = self.embedding_detector.get_boundary_confidence(
-                        segment,
-                        start_pos,
-                        end_pos
-                    )
+                    confidence = self.embedding_detector.get_boundary_confidence(segment, start_pos, end_pos)
                     confidences.append(confidence)
                 except Exception as e:
-                    logger.debug(
-                        "[BoundaryAgent] Failed to calculate confidence: %s",
-                        e
-                    )
+                    logger.debug("[BoundaryAgent] Failed to calculate confidence: %s", e)
                     # If confidence calculation fails, assume low confidence (send to LLM)
                     confidences.append(0.0)
 
@@ -242,11 +206,7 @@ class BoundaryAgent:
 
         return filtered_segments, filtered_indices
 
-    def _build_batch_prompt(
-        self,
-        segments: List[str],
-        context: Optional[str] = None
-    ) -> str:
+    def _build_batch_prompt(self, segments: List[str], context: Optional[str] = None) -> str:
         """Build prompt for batch boundary detection."""
         segments_text = ""
         for i, segment in enumerate(segments):
@@ -271,16 +231,12 @@ Return JSON array:
 """
         return prompt
 
-    def _parse_boundaries(
-        self,
-        response: str,
-        segments: List[str]
-    ) -> List[List[Tuple[int, int]]]:
+    def _parse_boundaries(self, response: str, segments: List[str]) -> List[List[Tuple[int, int]]]:
         """Parse boundaries from LLM response."""
         try:
             # Extract JSON
-            json_start = response.find('[')
-            json_end = response.rfind(']') + 1
+            json_start = response.find("[")
+            json_end = response.rfind("]") + 1
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 results = json.loads(json_str)
@@ -312,17 +268,10 @@ Return JSON array:
             logger.warning("Failed to parse boundaries: %s", e)
 
         # Fallback: use pattern matching
-        return [
-            self.pattern_matcher.find_boundaries(segment)
-            for segment in segments
-        ]
+        return [self.pattern_matcher.find_boundaries(segment) for segment in segments]
 
     async def refine_boundary(
-        self,
-        text: str,
-        start_pos: int,
-        end_pos: int,
-        context: Optional[str] = None
+        self, text: str, start_pos: int, end_pos: int, context: Optional[str] = None
     ) -> Tuple[int, int]:
         """
         Refine a single boundary using LLM.
@@ -354,16 +303,11 @@ Return JSON with refined start and end positions:
 """
 
         try:
-            response = await self.llm_service.chat(
-                prompt=prompt,
-                model='qwen',
-                temperature=0.3,
-                max_tokens=200
-            )
+            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=200)
 
             # Parse response
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
+            json_start = response.find("{")
+            json_end = response.rfind("}") + 1
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 result = json.loads(json_str)

@@ -54,7 +54,9 @@ WORKSHOP_VISIBILITY_NETWORK = "network"
 
 
 def _user_may_join_diagram_workshop(
-    db, diagram: Diagram, joiner_id: int,
+    db,
+    diagram: Diagram,
+    joiner_id: int,
 ) -> bool:
     """
     Owner always joins. Admins may join. Same-organization as diagram owner may join.
@@ -69,11 +71,7 @@ def _user_may_join_diagram_workshop(
         return True
     org_joiner = joiner.organization_id
     org_owner = owner.organization_id
-    if (
-        org_joiner is not None
-        and org_owner is not None
-        and org_joiner == org_owner
-    ):
+    if org_joiner is not None and org_owner is not None and org_joiner == org_owner:
         return True
     return False
 
@@ -89,7 +87,9 @@ def _diagram_workshop_visibility(diagram: Diagram) -> str:
 
 
 def _viewer_may_see_workshop_code(
-    db, diagram: Diagram, viewer_id: int,
+    db,
+    diagram: Diagram,
+    viewer_id: int,
 ) -> bool:
     """
     Who may receive the join code via GET workshop/status.
@@ -112,9 +112,7 @@ def _workshop_start_validation_error(
 ) -> Optional[str]:
     """Return an error message if start inputs are invalid, else None."""
     if not diagram:
-        error_msg = (
-            f"Diagram {diagram_id} not found or not owned by user {user_id}"
-        )
+        error_msg = f"Diagram {diagram_id} not found or not owned by user {user_id}"
         logger.warning("[WorkshopService] %s", error_msg)
         return error_msg
     if visibility not in (
@@ -133,11 +131,13 @@ def _workshop_start_session_redis_value(
     started_at: datetime,
 ) -> str:
     """Serialized session metadata for Redis ``workshop:session``."""
-    return str({
-        "diagram_id": diagram_id,
-        "owner_id": str(user_id),
-        "created_at": started_at.isoformat(),
-    })
+    return str(
+        {
+            "diagram_id": diagram_id,
+            "owner_id": str(user_id),
+            "created_at": started_at.isoformat(),
+        }
+    )
 
 
 def _allocate_unique_workshop_code(redis: Any) -> Optional[str]:
@@ -172,9 +172,7 @@ class WorkshopService:
         # No need for fallback logic
         pass
 
-    def _clear_expired_workshop_session(
-        self, diagram: Diagram, db, redis: Any
-    ) -> bool:
+    def _clear_expired_workshop_session(self, diagram: Diagram, db, redis: Any) -> bool:
         """
         If session is expired, clear DB + Redis. Returns True if cleared.
         """
@@ -211,18 +209,13 @@ class WorkshopService:
     ) -> Optional[Dict[str, Any]]:
         """Authorize join, add participant keys, return workshop info or None."""
         backfill_workshop_expiry_if_needed(diagram, db)
-        if (
-            diagram.workshop_expires_at
-            and is_workshop_expired(diagram.workshop_expires_at)
-        ):
+        if diagram.workshop_expires_at and is_workshop_expired(diagram.workshop_expires_at):
             if redis:
                 self._clear_expired_workshop_session(diagram, db, redis)
             return None
 
         vis = _diagram_workshop_visibility(diagram)
-        may_join = vis == WORKSHOP_VISIBILITY_NETWORK or _user_may_join_diagram_workshop(
-            db, diagram, user_id
-        )
+        may_join = vis == WORKSHOP_VISIBILITY_NETWORK or _user_may_join_diagram_workshop(db, diagram, user_id)
         if not may_join:
             logger.warning(
                 "[WorkshopService] Join denied user=%s diagram=%s",
@@ -287,14 +280,22 @@ class WorkshopService:
         # Verify diagram exists and user owns it
         db = SessionLocal()
         try:
-            diagram = db.query(Diagram).filter(
-                Diagram.id == diagram_id,
-                Diagram.user_id == user_id,
-                ~Diagram.is_deleted,
-            ).first()
+            diagram = (
+                db.query(Diagram)
+                .filter(
+                    Diagram.id == diagram_id,
+                    Diagram.user_id == user_id,
+                    ~Diagram.is_deleted,
+                )
+                .first()
+            )
 
             verr = _workshop_start_validation_error(
-                diagram, diagram_id, user_id, visibility, duration,
+                diagram,
+                diagram_id,
+                user_id,
+                visibility,
+                duration,
             )
             if verr:
                 return None, verr, None
@@ -330,7 +331,9 @@ class WorkshopService:
                 session_key(code),
                 ttl_sec,
                 _workshop_start_session_redis_value(
-                    diagram_id, user_id, started_at,
+                    diagram_id,
+                    user_id,
+                    started_at,
                 ),
             )
             redis.setex(
@@ -372,11 +375,15 @@ class WorkshopService:
         """
         db = SessionLocal()
         try:
-            diagram = db.query(Diagram).filter(
-                Diagram.id == diagram_id,
-                Diagram.user_id == user_id,
-                ~Diagram.is_deleted,
-            ).first()
+            diagram = (
+                db.query(Diagram)
+                .filter(
+                    Diagram.id == diagram_id,
+                    Diagram.user_id == user_id,
+                    ~Diagram.is_deleted,
+                )
+                .first()
+            )
 
             if not diagram or not diagram.workshop_code:
                 return False
@@ -411,9 +418,7 @@ class WorkshopService:
         finally:
             db.close()
 
-    async def join_workshop(
-        self, code: str, user_id: int
-    ) -> Optional[Dict[str, Any]]:
+    async def join_workshop(self, code: str, user_id: int) -> Optional[Dict[str, Any]]:
         """
         Join a workshop session.
 
@@ -434,9 +439,7 @@ class WorkshopService:
             diagram_id = None
             if redis:
                 # Use synchronous Redis operations (no await)
-                diagram_id_raw = redis.get(
-                    code_to_diagram_key(code)
-                )
+                diagram_id_raw = redis.get(code_to_diagram_key(code))
                 if diagram_id_raw:
                     # Redis client returns strings (decode_responses=True), no need to decode
                     diagram_id = diagram_id_raw if isinstance(diagram_id_raw, str) else diagram_id_raw.decode("utf-8")
@@ -444,10 +447,14 @@ class WorkshopService:
             # Fallback to database (edge case: Redis TTL expired but code still in DB)
             # This allows joining even if Redis key expired but workshop is still active
             if not diagram_id:
-                diagram = db.query(Diagram).filter(
-                    Diagram.workshop_code == code,
-                    ~Diagram.is_deleted,
-                ).first()
+                diagram = (
+                    db.query(Diagram)
+                    .filter(
+                        Diagram.workshop_code == code,
+                        ~Diagram.is_deleted,
+                    )
+                    .first()
+                )
                 if diagram:
                     diagram_id = diagram.id
                     # Restore Redis keys if found in database
@@ -455,7 +462,11 @@ class WorkshopService:
                         backfill_workshop_expiry_if_needed(diagram, db)
                         ttl = self._redis_ttl_seconds_for_diagram(diagram)
                         restore_workshop_redis_from_db_row(
-                            redis, code, diagram_id, diagram, ttl,
+                            redis,
+                            code,
+                            diagram_id,
+                            diagram,
+                            ttl,
                         )
 
             if not diagram_id:
@@ -466,16 +477,25 @@ class WorkshopService:
                 return None
 
             # Verify diagram exists
-            diagram = db.query(Diagram).filter(
-                Diagram.id == diagram_id,
-                ~Diagram.is_deleted,
-            ).first()
+            diagram = (
+                db.query(Diagram)
+                .filter(
+                    Diagram.id == diagram_id,
+                    ~Diagram.is_deleted,
+                )
+                .first()
+            )
 
             if not diagram:
                 return None
 
             return self._finalize_join_after_diagram_loaded(
-                db, redis, diagram, diagram_id, code, user_id,
+                db,
+                redis,
+                diagram,
+                diagram_id,
+                code,
+                user_id,
             )
 
         except Exception as e:
@@ -498,18 +518,20 @@ class WorkshopService:
         except (TypeError, ValueError, RuntimeError):
             return 0
 
-    async def join_workshop_by_diagram(
-        self, diagram_id: str, user_id: int
-    ) -> Optional[Dict[str, Any]]:
+    async def join_workshop_by_diagram(self, diagram_id: str, user_id: int) -> Optional[Dict[str, Any]]:
         """
         Join an organization-scoped workshop by diagram id (校内 — no typed code in UI).
         """
         db = SessionLocal()
         try:
-            diagram = db.query(Diagram).filter(
-                Diagram.id == diagram_id,
-                ~Diagram.is_deleted,
-            ).first()
+            diagram = (
+                db.query(Diagram)
+                .filter(
+                    Diagram.id == diagram_id,
+                    ~Diagram.is_deleted,
+                )
+                .first()
+            )
             if not diagram or not diagram.workshop_code:
                 return None
             if _diagram_workshop_visibility(diagram) != WORKSHOP_VISIBILITY_ORGANIZATION:
@@ -526,9 +548,7 @@ class WorkshopService:
             db.close()
         return await self.join_workshop(code, user_id)
 
-    async def list_organization_workshop_sessions(
-        self, user_id: int
-    ) -> List[Dict[str, Any]]:
+    async def list_organization_workshop_sessions(self, user_id: int) -> List[Dict[str, Any]]:
         """
         Active workshops visible within the same organization (校内 list).
         """
@@ -562,18 +582,18 @@ class WorkshopService:
                 if not code:
                     continue
                 rem = remaining_seconds(diagram.workshop_expires_at)
-                out.append({
-                    "diagram_id": diagram.id,
-                    "title": diagram.title,
-                    "owner_username": getattr(owner, "username", None) or f"User {owner.id}",
-                    "participant_count": self._participant_count_for_code(code),
-                    "expires_at": (
-                        diagram.workshop_expires_at.isoformat() + "Z"
-                        if diagram.workshop_expires_at
-                        else None
-                    ),
-                    "remaining_seconds": rem,
-                })
+                out.append(
+                    {
+                        "diagram_id": diagram.id,
+                        "title": diagram.title,
+                        "owner_username": getattr(owner, "username", None) or f"User {owner.id}",
+                        "participant_count": self._participant_count_for_code(code),
+                        "expires_at": (
+                            diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None
+                        ),
+                        "remaining_seconds": rem,
+                    }
+                )
             return out
         except Exception as e:
             logger.error(
@@ -594,10 +614,7 @@ class WorkshopService:
         """Compute status payload; error is '' or 'not_found' or 'forbidden'."""
         backfill_workshop_expiry_if_needed(diagram, db)
         redis = get_redis()
-        if (
-            diagram.workshop_expires_at
-            and is_workshop_expired(diagram.workshop_expires_at)
-        ):
+        if diagram.workshop_expires_at and is_workshop_expired(diagram.workshop_expires_at):
             if redis:
                 self._clear_expired_workshop_session(diagram, db, redis)
             db.refresh(diagram)
@@ -621,20 +638,14 @@ class WorkshopService:
                 "code": code,
                 "participant_count": participant_count,
                 "workshop_visibility": vis,
-                "expires_at": (
-                    diagram.workshop_expires_at.isoformat() + "Z"
-                    if diagram.workshop_expires_at
-                    else None
-                ),
+                "expires_at": (diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None),
                 "remaining_seconds": rem,
                 "duration_preset": diagram.workshop_duration_preset,
             }
             return payload, ""
         return None, "forbidden"
 
-    async def get_workshop_status(
-        self, diagram_id: str, viewer_user_id: int
-    ) -> Tuple[Optional[Dict[str, Any]], str]:
+    async def get_workshop_status(self, diagram_id: str, viewer_user_id: int) -> Tuple[Optional[Dict[str, Any]], str]:
         """
         Get workshop status for a diagram for a specific viewer.
 
@@ -643,16 +654,22 @@ class WorkshopService:
         """
         db = SessionLocal()
         try:
-            diagram = db.query(Diagram).filter(
-                Diagram.id == diagram_id,
-                ~Diagram.is_deleted,
-            ).first()
+            diagram = (
+                db.query(Diagram)
+                .filter(
+                    Diagram.id == diagram_id,
+                    ~Diagram.is_deleted,
+                )
+                .first()
+            )
 
             if not diagram:
                 return None, "not_found"
 
             return self._workshop_status_payload_for_viewer(
-                db, diagram, viewer_user_id,
+                db,
+                diagram,
+                viewer_user_id,
             )
 
         except Exception as e:
@@ -682,9 +699,7 @@ class WorkshopService:
 
         try:
             # Use synchronous Redis operations (no await)
-            participants = redis.smembers(
-                participants_key(code)
-            )
+            participants = redis.smembers(participants_key(code))
             if not participants:
                 return []
 

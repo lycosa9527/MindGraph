@@ -63,7 +63,7 @@ class DistributedLock:
         resource: str,
         ttl: int = DEFAULT_LOCK_TTL,
         max_retries: int = DEFAULT_MAX_RETRIES,
-        retry_base_delay: float = DEFAULT_RETRY_BASE_DELAY
+        retry_base_delay: float = DEFAULT_RETRY_BASE_DELAY,
     ):
         """
         Initialize distributed lock.
@@ -92,7 +92,7 @@ class DistributedLock:
         if not is_redis_available():
             logger.warning(
                 "[DistributedLock] Redis unavailable, assuming single worker mode for %s",
-                self.resource
+                self.resource,
             )
             return True  # Fallback: assume single worker if Redis unavailable
 
@@ -100,7 +100,7 @@ class DistributedLock:
         if not redis:
             logger.warning(
                 "[DistributedLock] Redis client unavailable, assuming single worker mode for %s",
-                self.resource
+                self.resource,
             )
             return True
 
@@ -118,7 +118,7 @@ class DistributedLock:
                     self.lock_key,
                     self.lock_id,
                     nx=True,  # Only set if not exists
-                    ex=self.ttl  # TTL in seconds
+                    ex=self.ttl,  # TTL in seconds
                 )
 
                 if acquired:
@@ -126,7 +126,7 @@ class DistributedLock:
                     logger.debug(
                         "[DistributedLock] Lock acquired for %s (id=%s)",
                         self.resource,
-                        self.lock_id
+                        self.lock_id,
                     )
                     return True
                 else:
@@ -134,27 +134,24 @@ class DistributedLock:
                     holder = await asyncio.to_thread(redis.get, self.lock_key)
                     if attempt < self.max_retries - 1:
                         # Retry with exponential backoff
-                        delay = self.retry_base_delay * (2 ** attempt)
+                        delay = self.retry_base_delay * (2**attempt)
                         logger.debug(
-                            "[DistributedLock] Lock held for %s "
-                            "(holder=%s, attempt %s/%s), "
-                            "retrying after %.2fs",
+                            "[DistributedLock] Lock held for %s (holder=%s, attempt %s/%s), retrying after %.2fs",
                             self.resource,
                             holder,
                             attempt + 1,
                             self.max_retries,
-                            delay
+                            delay,
                         )
                         await asyncio.sleep(delay)
                         continue
                     else:
                         # All retries exhausted
                         logger.warning(
-                            "[DistributedLock] Failed to acquire lock for %s "
-                            "after %s attempts (holder=%s)",
+                            "[DistributedLock] Failed to acquire lock for %s after %s attempts (holder=%s)",
                             self.resource,
                             self.max_retries,
-                            holder
+                            holder,
                         )
                         return False
 
@@ -162,7 +159,7 @@ class DistributedLock:
                 logger.warning(
                     "[DistributedLock] Lock acquisition error for %s: %s",
                     self.resource,
-                    e
+                    e,
                 )
                 # On error, assume single worker mode (fail open)
                 return True
@@ -192,34 +189,27 @@ class DistributedLock:
         try:
             # DELEX (Redis >= 8.4): atomically deletes the key only if its value matches
             # lock_id, replacing the Lua compare-and-delete script with a single command.
-            result = await asyncio.to_thread(
-                redis.delex, self.lock_key, self.lock_id
-            )
+            result = await asyncio.to_thread(redis.delex, self.lock_key, self.lock_id)
 
             if result:
                 self._acquired = False
                 logger.debug(
                     "[DistributedLock] Lock released for %s (id=%s)",
                     self.resource,
-                    self.lock_id
+                    self.lock_id,
                 )
                 return True
 
             current_holder = await asyncio.to_thread(redis.get, self.lock_key)
             logger.warning(
-                "[DistributedLock] Lock not released (not held by us or already released): %s. "
-                "Current holder: %s",
+                "[DistributedLock] Lock not released (not held by us or already released): %s. Current holder: %s",
                 self.resource,
-                current_holder
+                current_holder,
             )
             return False
 
         except Exception as exc:
-            logger.warning(
-                "[DistributedLock] Lock release error for %s: %s",
-                self.resource,
-                exc
-            )
+            logger.warning("[DistributedLock] Lock release error for %s: %s", self.resource, exc)
             return False
 
     async def __aenter__(self):
@@ -271,9 +261,7 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
         )
         if acquired:
             return lock_id
-        holder = await asyncio.to_thread(
-            redis.get, STARTUP_SMS_NOTIFICATION_LOCK_KEY
-        )
+        holder = await asyncio.to_thread(redis.get, STARTUP_SMS_NOTIFICATION_LOCK_KEY)
         logger.debug(
             "[LIFESPAN] Startup SMS skipped — lock held by another worker (%s)",
             holder,
@@ -332,7 +320,7 @@ async def phone_registration_lock(phone: str):
         resource=f"register:phone:{phone}",
         ttl=DEFAULT_LOCK_TTL,
         max_retries=DEFAULT_MAX_RETRIES,
-        retry_base_delay=DEFAULT_RETRY_BASE_DELAY
+        retry_base_delay=DEFAULT_RETRY_BASE_DELAY,
     )
 
     async with lock:

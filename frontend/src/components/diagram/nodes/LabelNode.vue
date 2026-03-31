@@ -55,14 +55,6 @@ async function recalculatePosition() {
   const labelX = labelNode.position.x
   const labelRightEdge = labelX + actualWidth
 
-  console.log('[LabelNode-recalculatePosition] Starting recalculation:', {
-    labelX,
-    labelRightEdge,
-    actualWidth,
-    maxWidth,
-    actualHeight,
-  })
-
   // Get all bridge map nodes (excluding the label itself)
   const bridgeNodes = nodes.filter(
     (node) =>
@@ -72,7 +64,6 @@ async function recalculatePosition() {
   )
 
   if (bridgeNodes.length === 0) {
-    console.log('[LabelNode-recalculatePosition] No bridge nodes found, skipping')
     return
   }
 
@@ -85,17 +76,6 @@ async function recalculatePosition() {
   const leftmostX = leftmostNode.position.x
   // Gap from label's right edge to node's left edge (should be 10px)
   const gapFromLabelRight = 10
-
-  console.log('[LabelNode-recalculatePosition] Node positions:', {
-    leftmostX,
-    leftmostNodeId: leftmostNode.id,
-    gapFromLabelRight,
-    labelRightEdge,
-    actualWidth,
-    labelLeftEdge: labelX,
-    currentGapFromLabelRight: leftmostX - labelRightEdge,
-    targetGap: gapFromLabelRight,
-  })
 
   // Calculate center Y of bridge line (average of all node centers)
   // Use Vue Flow's measured dimensions if available
@@ -145,44 +125,13 @@ async function recalculatePosition() {
     const minX = -50 // Allow going slightly negative (up to 50px off-canvas)
     adjustedX = Math.max(adjustedX, minX)
     needsXUpdate = Math.abs(adjustedX - labelX) > 1
-
-    console.log('[LabelNode-recalculatePosition] Adjusting to maintain gap:', {
-      originalX: labelX,
-      originalGap: currentGapFromLabelRight,
-      targetGap: gapFromLabelRight,
-      targetLabelX,
-      adjustedX,
-      needsXUpdate,
-      reason:
-        'Gap from label right edge to horizontal line start (leftmost node left edge) should be 10px',
-    })
-  } else {
-    console.log('[LabelNode-recalculatePosition] Gap is correct, keeping original position:', {
-      labelX,
-      labelRightEdge,
-      leftmostX,
-      currentGapFromLabelRight,
-      targetGap: gapFromLabelRight,
-    })
   }
 
   // Check if Y position needs update (when height changes due to wrapping)
   const needsYUpdate = Math.abs(newLabelY - labelNode.position.y) > 1
 
-  console.log('[LabelNode-recalculatePosition] Final decision:', {
-    adjustedX,
-    newLabelY,
-    needsXUpdate,
-    needsYUpdate,
-    willUpdate: updateNode !== undefined && (needsXUpdate || needsYUpdate),
-  })
-
   // Update node position if needed
   if (updateNode && (needsXUpdate || needsYUpdate)) {
-    console.log('[LabelNode-recalculatePosition] Updating position:', {
-      from: { x: labelNode.position.x, y: labelNode.position.y },
-      to: { x: adjustedX, y: newLabelY },
-    })
     updateNode(props.id, (node) => ({
       ...node,
       position: { x: adjustedX, y: newLabelY },

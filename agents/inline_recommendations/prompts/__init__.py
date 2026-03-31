@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict, List, Optional
 
 from utils.prompt_locale import output_language_instruction
@@ -38,47 +39,56 @@ from .tree_map import (
 )
 
 _BUILDERS: Dict[str, Dict[str, Any]] = {
-    'mindmap': {
-        'branches': build_mindmap_branches_prompt,
-        'children': build_mindmap_children_prompt,
+    "mindmap": {
+        "branches": build_mindmap_branches_prompt,
+        "children": build_mindmap_children_prompt,
     },
-    'flow_map': {
-        'steps': build_flow_steps_prompt,
-        'substeps': build_flow_substeps_prompt,
+    "flow_map": {
+        "steps": build_flow_steps_prompt,
+        "substeps": build_flow_substeps_prompt,
     },
-    'tree_map': {
-        'dimensions': build_tree_dimensions_prompt,
-        'categories': build_tree_categories_prompt,
-        'children': build_tree_items_prompt,
+    "tree_map": {
+        "dimensions": build_tree_dimensions_prompt,
+        "categories": build_tree_categories_prompt,
+        "children": build_tree_items_prompt,
     },
-    'brace_map': {
-        'dimensions': build_brace_dimensions_prompt,
-        'parts': build_brace_parts_prompt,
-        'subparts': build_brace_subparts_prompt,
+    "brace_map": {
+        "dimensions": build_brace_dimensions_prompt,
+        "parts": build_brace_parts_prompt,
+        "subparts": build_brace_subparts_prompt,
     },
-    'circle_map': {
-        'observations': build_circle_observations_prompt,
+    "circle_map": {
+        "observations": build_circle_observations_prompt,
     },
-    'bubble_map': {
-        'attributes': build_bubble_attributes_prompt,
+    "bubble_map": {
+        "attributes": build_bubble_attributes_prompt,
     },
-    'double_bubble_map': {
-        'similarities': build_double_bubble_similarities_prompt,
-        'differences': build_double_bubble_differences_prompt,
+    "double_bubble_map": {
+        "similarities": build_double_bubble_similarities_prompt,
+        "differences": build_double_bubble_differences_prompt,
     },
-    'multi_flow_map': {
-        'causes': build_multi_flow_causes_prompt,
-        'effects': build_multi_flow_effects_prompt,
+    "multi_flow_map": {
+        "causes": build_multi_flow_causes_prompt,
+        "effects": build_multi_flow_effects_prompt,
     },
-    'bridge_map': {
-        'dimensions': build_bridge_dimensions_prompt,
-        'pairs': build_bridge_pairs_prompt,
+    "bridge_map": {
+        "dimensions": build_bridge_dimensions_prompt,
+        "pairs": build_bridge_pairs_prompt,
     },
 }
 
 _FALLBACK_STAGES = (
-    'children', 'substeps', 'subparts', 'observations', 'attributes',
-    'similarities', 'differences', 'causes', 'effects', 'dimensions', 'pairs',
+    "children",
+    "substeps",
+    "subparts",
+    "observations",
+    "attributes",
+    "similarities",
+    "differences",
+    "causes",
+    "effects",
+    "dimensions",
+    "pairs",
 )
 
 
@@ -86,7 +96,7 @@ def build_prompt(
     diagram_type: str,
     stage: str,
     context: Dict[str, Any],
-    language: str = 'en',
+    language: str = "en",
     count: int = 15,
     batch_num: int = 1,
     existing: Optional[List[str]] = None,
@@ -97,10 +107,10 @@ def build_prompt(
     diagram_type: mindmap, flow_map, tree_map, brace_map, circle_map, etc.
     stage: branches, children, steps, substeps, categories, parts, subparts, etc.
     """
-    dt = (diagram_type or '').strip().lower()
-    if dt == 'mind_map':
-        dt = 'mindmap'
-    st = (stage or '').strip().lower()
+    dt = (diagram_type or "").strip().lower()
+    if dt == "mind_map":
+        dt = "mindmap"
+    st = (stage or "").strip().lower()
     existing = existing or []
 
     stage_builders = _BUILDERS.get(dt, {})
@@ -111,8 +121,8 @@ def build_prompt(
             if builder:
                 break
     if not builder:
-        return ''
+        return ""
     text = builder(context, language, count, batch_num, existing)
     if not text:
-        return ''
+        return ""
     return text + output_language_instruction(language)

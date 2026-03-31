@@ -1,6 +1,7 @@
 """
 helpers module.
 """
+
 from datetime import datetime, timezone
 from typing import Optional
 import base64
@@ -53,9 +54,9 @@ def get_rate_limit_identifier(current_user: Optional[User], request: Request) ->
     Returns:
         Rate limit identifier string
     """
-    if current_user and hasattr(current_user, 'id'):
+    if current_user and hasattr(current_user, "id"):
         return f"user:{current_user.id}"
-    client_ip = request.client.host if request.client else 'unknown'
+    client_ip = request.client.host if request.client else "unknown"
     return f"ip:{client_ip}"
 
 
@@ -63,7 +64,7 @@ async def check_endpoint_rate_limit(
     endpoint_name: str,
     identifier: str,
     max_requests: int = 30,
-    window_seconds: int = 60
+    window_seconds: int = 60,
 ) -> None:
     """
     Check rate limit for expensive endpoints.
@@ -81,21 +82,21 @@ async def check_endpoint_rate_limit(
     rate_limiter = RedisRateLimiter()
 
     is_allowed, count, error_msg = rate_limiter.check_and_record(
-        category=f'api_{endpoint_name}',
+        category=f"api_{endpoint_name}",
         identifier=identifier,
         max_attempts=max_requests,
-        window_seconds=window_seconds
+        window_seconds=window_seconds,
     )
 
     if not is_allowed:
         logger.warning(
             "Rate limit exceeded for %s: %s (%s/%s requests)",
-            endpoint_name, identifier, count, max_requests
+            endpoint_name,
+            identifier,
+            count,
+            max_requests,
         )
-        raise HTTPException(
-            status_code=429,
-            detail=f"Too many requests. {error_msg}"
-        )
+        raise HTTPException(status_code=429, detail=f"Too many requests. {error_msg}")
 
 
 def generate_signed_url(filename: str, expiration_seconds: int = 86400) -> str:
@@ -113,14 +114,10 @@ def generate_signed_url(filename: str, expiration_seconds: int = 86400) -> str:
     message = f"{filename}:{expiration}"
 
     # Generate HMAC signature
-    signature = hmac.new(
-        get_jwt_secret().encode('utf-8'),
-        message.encode('utf-8'),
-        hashlib.sha256
-    ).digest()
+    signature = hmac.new(get_jwt_secret().encode("utf-8"), message.encode("utf-8"), hashlib.sha256).digest()
 
     # Base64 encode signature for URL safety
-    signature_b64 = base64.urlsafe_b64encode(signature).decode('utf-8').rstrip('=')
+    signature_b64 = base64.urlsafe_b64encode(signature).decode("utf-8").rstrip("=")
 
     return f"{filename}?sig={signature_b64}&exp={expiration}"
 
@@ -145,14 +142,10 @@ def verify_signed_url(filename: str, signature: str, expiration: int) -> bool:
     message = f"{filename}:{expiration}"
 
     # Generate expected signature
-    expected_signature = hmac.new(
-        get_jwt_secret().encode('utf-8'),
-        message.encode('utf-8'),
-        hashlib.sha256
-    ).digest()
+    expected_signature = hmac.new(get_jwt_secret().encode("utf-8"), message.encode("utf-8"), hashlib.sha256).digest()
 
     # Base64 encode for comparison
-    expected_b64 = base64.urlsafe_b64encode(expected_signature).decode('utf-8').rstrip('=')
+    expected_b64 = base64.urlsafe_b64encode(expected_signature).decode("utf-8").rstrip("=")
 
     # Use constant-time comparison to prevent timing attacks
     return hmac.compare_digest(signature, expected_b64)

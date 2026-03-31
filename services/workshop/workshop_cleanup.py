@@ -26,7 +26,9 @@ CLEANUP_INTERVAL_HOURS = 6
 CLEANUP_INTERVAL_SECONDS = CLEANUP_INTERVAL_HOURS * 3600
 
 
-async def start_workshop_cleanup_scheduler(interval_hours: float = CLEANUP_INTERVAL_HOURS) -> None:
+async def start_workshop_cleanup_scheduler(
+    interval_hours: float = CLEANUP_INTERVAL_HOURS,
+) -> None:
     """
     Start periodic cleanup of expired workshop sessions.
 
@@ -36,8 +38,7 @@ async def start_workshop_cleanup_scheduler(interval_hours: float = CLEANUP_INTER
     interval_seconds = interval_hours * 3600
 
     logger.info(
-        "[WorkshopCleanup] Starting workshop cleanup scheduler "
-        "(interval: %s hours)",
+        "[WorkshopCleanup] Starting workshop cleanup scheduler (interval: %s hours)",
         interval_hours,
     )
 
@@ -54,15 +55,13 @@ async def start_workshop_cleanup_scheduler(interval_hours: float = CLEANUP_INTER
 
             if cleaned_count > 0:
                 logger.info(
-                    "[WorkshopCleanup] Cleanup completed: removed %d expired workshop(s) "
-                    "in %.2f seconds",
+                    "[WorkshopCleanup] Cleanup completed: removed %d expired workshop(s) in %.2f seconds",
                     cleaned_count,
                     duration,
                 )
             else:
                 logger.debug(
-                    "[WorkshopCleanup] Cleanup completed: no expired workshops found "
-                    "(took %.2f seconds)",
+                    "[WorkshopCleanup] Cleanup completed: no expired workshops found (took %.2f seconds)",
                     duration,
                 )
 

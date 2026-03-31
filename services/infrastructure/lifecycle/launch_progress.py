@@ -22,10 +22,18 @@ if TYPE_CHECKING:
     from types import TracebackType
 
 try:
-    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
+    from rich.progress import (
+        Progress,
+        SpinnerColumn,
+        BarColumn,
+        TextColumn,
+        TimeElapsedColumn,
+        TimeRemainingColumn,
+    )
     from rich.console import Console
     from rich.rule import Rule
     from rich.panel import Panel
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -82,7 +90,7 @@ STAGE_NAMES = {
     STAGE_HEALTH_MONITOR: "Starting Health Monitor",
     STAGE_DIAGRAM_CACHE: "Initializing Diagram Cache",
     STAGE_SMS_NOTIFICATION: "Sending Startup Notification",
-    STAGE_COMPLETE: "Complete"
+    STAGE_COMPLETE: "Complete",
 }
 
 # Total number of initialization stages (excluding COMPLETE marker)
@@ -97,17 +105,17 @@ SUMMARY_DISPLAY_DELAY = 0.15
 class ApplicationLaunchProgressTracker:
     """
     Tracks and displays application launch progress using Rich progress bars.
-    
+
     Automatically detects if running in TTY (interactive terminal) and falls back
     to logging if not available (e.g., server startup logs).
-    
+
     Only displays progress for main worker to avoid duplicate output in multi-worker setups.
     """
 
     def __init__(self, is_main_worker: bool = True):
         """
         Initialize progress tracker.
-        
+
         Args:
             is_main_worker: Whether this is the main worker (only main worker shows progress)
         """
@@ -122,11 +130,7 @@ class ApplicationLaunchProgressTracker:
         # Only show progress for main worker
         # Check if we can use Rich (TTY available and Rich installed)
         # Check both stdout and stderr for TTY since we use stderr for progress
-        self.use_rich = (
-            is_main_worker and
-            RICH_AVAILABLE and
-            (sys.stdout.isatty() or sys.stderr.isatty())
-        )
+        self.use_rich = is_main_worker and RICH_AVAILABLE and (sys.stdout.isatty() or sys.stderr.isatty())
 
         if self.use_rich:
             # Use stderr for progress bar to separate from stdout logging
@@ -136,13 +140,18 @@ class ApplicationLaunchProgressTracker:
                 file=sys.stderr,
                 force_terminal=True,
                 width=None,  # Auto-detect width
-                legacy_windows=False
+                legacy_windows=False,
             )
             # Create Progress with only ONE task to ensure single progress bar
             self.progress = Progress(
                 SpinnerColumn(),
                 TextColumn("[bold cyan]{task.description}", justify="left"),
-                BarColumn(bar_width=None, style="cyan", complete_style="bold cyan", finished_style="bold green"),
+                BarColumn(
+                    bar_width=None,
+                    style="cyan",
+                    complete_style="bold cyan",
+                    finished_style="bold green",
+                ),
                 TextColumn("[progress.percentage]{task.percentage:>3.0f}%", style="bold"),
                 TimeElapsedColumn(),
                 TextColumn("•", style="dim"),
@@ -150,7 +159,7 @@ class ApplicationLaunchProgressTracker:
                 console=self.console,
                 expand=True,
                 refresh_per_second=10,
-                transient=True
+                transient=True,
             )
             self.stage_task = None
             self._header_printed = False
@@ -160,10 +169,10 @@ class ApplicationLaunchProgressTracker:
             self.stage_task = None
             self._header_printed = False
 
-    def __enter__(self) -> 'ApplicationLaunchProgressTracker':
+    def __enter__(self) -> "ApplicationLaunchProgressTracker":
         """
         Context manager entry.
-        
+
         Returns:
             Self for use as context manager
         """
@@ -173,13 +182,15 @@ class ApplicationLaunchProgressTracker:
                 self.progress.__enter__()
                 # Create single main stage progress task (only one bar)
                 # This ensures only ONE progress bar is displayed
-                self.stage_task = self.progress.add_task(
-                    f"{STAGE_NAMES[STAGE_SIGNAL_HANDLERS]}",
-                    total=TOTAL_STAGES
-                )
+                self.stage_task = self.progress.add_task(f"{STAGE_NAMES[STAGE_SIGNAL_HANDLERS]}", total=TOTAL_STAGES)
                 # Print header after progress starts (so it appears above the bar)
                 self.console.print()
-                self.console.print(Rule("[bold cyan]Application Startup Progress[/bold cyan]", style="cyan"))
+                self.console.print(
+                    Rule(
+                        "[bold cyan]Application Startup Progress[/bold cyan]",
+                        style="cyan",
+                    )
+                )
                 self.console.print()
                 self._header_printed = True
             except Exception as e:  # pylint: disable=broad-except
@@ -187,7 +198,7 @@ class ApplicationLaunchProgressTracker:
                 logger.warning(
                     "[LaunchProgress] Failed to initialize Rich progress bar: %s",
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
                 # Disable Rich mode on error
                 self.use_rich = False
@@ -203,11 +214,11 @@ class ApplicationLaunchProgressTracker:
     def kill(self) -> None:
         """
         Forcefully kill the progress bar immediately.
-        
+
         This method forcefully terminates the progress bar without waiting
         for proper cleanup. Use this when you need to immediately stop
         the progress bar, e.g., during error handling or forced shutdown.
-        
+
         This method is idempotent - calling it multiple times is safe.
         Ensures all resources are properly cleaned up even if errors occur.
         """
@@ -236,10 +247,7 @@ class ApplicationLaunchProgressTracker:
                         progress_ref.remove_task(task_ref)
                     except (KeyError, ValueError, AttributeError) as e:
                         # Task already removed or doesn't exist, log for debugging
-                        logger.debug(
-                            "[LaunchProgress] Task already removed during kill: %s",
-                            e
-                        )
+                        logger.debug("[LaunchProgress] Task already removed during kill: %s", e)
                 # Forcefully exit the progress context
                 try:
                     progress_ref.__exit__(None, None, None)
@@ -248,14 +256,14 @@ class ApplicationLaunchProgressTracker:
                     logger.debug(
                         "[LaunchProgress] Error during progress context exit: %s",
                         e,
-                        exc_info=True
+                        exc_info=True,
                     )
             except Exception as e:  # pylint: disable=broad-except
                 # Log errors during kill for debugging (non-critical but should be visible)
                 logger.warning(
                     "[LaunchProgress] Error during progress bar kill: %s",
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
             finally:
                 # Ensure all references are cleared (redundant but safe)
@@ -263,8 +271,8 @@ class ApplicationLaunchProgressTracker:
                 if console_ref:
                     try:
                         # Try to flush console output if possible
-                        console_file = getattr(console_ref, '_file', None)
-                        if console_file is not None and hasattr(console_file, 'flush'):
+                        console_file = getattr(console_ref, "_file", None)
+                        if console_file is not None and hasattr(console_file, "flush"):
                             console_file.flush()
                     except Exception as exc:  # pylint: disable=broad-except
                         logger.debug("Console flush during cleanup failed: %s", exc)
@@ -273,11 +281,11 @@ class ApplicationLaunchProgressTracker:
         self,
         exc_type: Optional[type[BaseException]],
         exc_val: Optional[BaseException],
-        exc_tb: Optional['TracebackType']
+        exc_tb: Optional["TracebackType"],
     ) -> None:
         """
         Context manager exit.
-        
+
         Args:
             exc_type: Exception type if exception occurred
             exc_val: Exception value if exception occurred
@@ -291,11 +299,11 @@ class ApplicationLaunchProgressTracker:
         stage: int,
         description: Optional[str] = None,
         module: Optional[str] = None,
-        sub_process: Optional[str] = None
+        sub_process: Optional[str] = None,
     ) -> None:
         """
         Update current launch stage.
-        
+
         Args:
             stage: Stage number (use STAGE_* constants, must be 0-23)
             description: Optional custom description
@@ -305,14 +313,19 @@ class ApplicationLaunchProgressTracker:
         # Don't update if progress tracker has been closed
         # This prevents updates after startup completes (e.g., if tracker is reused incorrectly)
         if self._closed:
-            logger.debug("[LaunchProgress] Skipping update_stage(%s) - tracker closed (startup completed)", stage)
+            logger.debug(
+                "[LaunchProgress] Skipping update_stage(%s) - tracker closed (startup completed)",
+                stage,
+            )
             return
 
         # Validate stage number is within valid range (0-23)
         if stage < STAGE_SIGNAL_HANDLERS or stage > STAGE_COMPLETE:
             logger.warning(
                 "[LaunchProgress] Invalid stage number %s (valid range: %s-%s), ignoring update",
-                stage, STAGE_SIGNAL_HANDLERS, STAGE_COMPLETE
+                stage,
+                STAGE_SIGNAL_HANDLERS,
+                STAGE_COMPLETE,
             )
             return
 
@@ -349,14 +362,21 @@ class ApplicationLaunchProgressTracker:
                 self.progress.update(
                     self.stage_task,
                     completed=completed,
-                    description=f"[bold]{display_description}[/bold]"
+                    description=f"[bold]{display_description}[/bold]",
                 )
             except (KeyError, ValueError) as e:
                 # Task was removed or progress context closed, ignore
-                logger.debug("[LaunchProgress] Progress update failed (task removed/closed): %s", e)
+                logger.debug(
+                    "[LaunchProgress] Progress update failed (task removed/closed): %s",
+                    e,
+                )
             except Exception as e:  # pylint: disable=broad-except
                 # Log other exceptions but don't fail - progress bar is non-critical
-                logger.warning("[LaunchProgress] Progress update failed (non-critical): %s", e, exc_info=True)
+                logger.warning(
+                    "[LaunchProgress] Progress update failed (non-critical): %s",
+                    e,
+                    exc_info=True,
+                )
         elif self.is_main_worker:
             log_msg = stage_name
             if module:
@@ -368,10 +388,10 @@ class ApplicationLaunchProgressTracker:
     def add_error(self, error_message: str) -> None:
         """
         Add an error message to be displayed in the final summary.
-        
+
         Errors are collected during startup and displayed in the completion summary.
         In non-Rich mode, errors are also logged immediately.
-        
+
         Args:
             error_message: Error message to add (will be displayed in summary)
         """
@@ -385,7 +405,7 @@ class ApplicationLaunchProgressTracker:
     def print_summary(self) -> None:
         """
         Print final launch summary.
-        
+
         Note: Progress bar should be completed before calling this method.
         This method is idempotent - calling it multiple times will only print once.
         """
@@ -401,7 +421,7 @@ class ApplicationLaunchProgressTracker:
                 self.progress.update(
                     self.stage_task,
                     completed=TOTAL_STAGES,
-                    description="[bold green]Complete[/bold green]"
+                    description="[bold green]Complete[/bold green]",
                 )
                 # Brief delay to ensure completion is visible before summary
                 # Note: This is a blocking sleep, but it's acceptable here because:
@@ -423,12 +443,14 @@ class ApplicationLaunchProgressTracker:
                     summary_text += f"\n  ... and {len(self.errors) - 10} more"
 
             self.console.print()
-            self.console.print(Panel(
-                summary_text,
-                title="[bold green]✓ APPLICATION LAUNCH COMPLETE[/bold green]",
-                border_style="green",
-                padding=(1, 2)
-            ))
+            self.console.print(
+                Panel(
+                    summary_text,
+                    title="[bold green]✓ APPLICATION LAUNCH COMPLETE[/bold green]",
+                    border_style="green",
+                    padding=(1, 2),
+                )
+            )
             self.console.print()
         elif self.is_main_worker:
             logger.info("=" * 80)
@@ -452,14 +474,17 @@ class ApplicationLaunchProgressTracker:
 class GlobalTrackerManager:
     """
     Thread-safe manager for global tracker instance.
-    
+
     Uses class variables to avoid global statement warnings.
     """
-    _instance: Optional['ApplicationLaunchProgressTracker'] = None
+
+    _instance: Optional["ApplicationLaunchProgressTracker"] = None
     _lock = threading.Lock()
 
 
-def set_global_tracker_instance(tracker: Optional['ApplicationLaunchProgressTracker']) -> None:
+def set_global_tracker_instance(
+    tracker: Optional["ApplicationLaunchProgressTracker"],
+) -> None:
     """
     Set the global tracker instance for easy access and killing.
 
@@ -495,7 +520,7 @@ def kill_global_progress_bar() -> bool:
                 logger.warning(
                     "[LaunchProgress] Failed to kill global progress bar: %s",
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
                 GlobalTrackerManager._instance = None
                 return False

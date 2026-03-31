@@ -16,6 +16,7 @@ Environment Variables:
 Copyright 2024-2025 Beijing Siyuan Zhijiao Technology Co., Ltd.
 All Rights Reserved
 """
+
 from pathlib import Path
 import logging
 import os
@@ -103,7 +104,10 @@ def setup_static_files(app: FastAPI) -> None:
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")
         logger.debug("Mounted /static for runtime uploads (community, announcements, etc.)")
     else:
-        logger.warning("Static directory not found at %s - community thumbnails will 404", static_dir)
+        logger.warning(
+            "Static directory not found at %s - community thumbnails will 404",
+            static_dir,
+        )
 
 
 def setup_vue_spa(app: FastAPI) -> bool:
@@ -154,13 +158,10 @@ async def serve_vue_spa() -> FileResponse:
         logger.error("Vue SPA index.html not found at %s", index_path)
         return HTMLResponse(
             content="<h1>Frontend not built</h1><p>Run 'npm run build' in the frontend directory.</p>",
-            status_code=503
+            status_code=503,
         )
 
-    return FileResponse(
-        path=str(index_path),
-        media_type="text/html"
-    )
+    return FileResponse(path=str(index_path), media_type="text/html")
 
 
 # SPA routes that should be handled by Vue Router (not API endpoints)

@@ -4,6 +4,7 @@ Config API Router
 
 Provides configuration and feature flags to the frontend.
 """
+
 import os
 from typing import Optional
 
@@ -21,6 +22,7 @@ router = APIRouter(prefix="/config", tags=["config"])
 
 class FeatureFlagsResponse(BaseModel):
     """Feature flags response model."""
+
     external_base_url: str
     feature_rag_chunk_test: bool
     feature_course: bool
@@ -49,7 +51,7 @@ async def get_feature_flags(
     so allowlists are not exposed publicly; authenticated clients receive the full map
     for UI gating.
     """
-    external_base = os.getenv('EXTERNAL_BASE_URL', '').strip().rstrip('/')
+    external_base = os.getenv("EXTERNAL_BASE_URL", "").strip().rstrip("/")
     access_map = load_feature_org_access_map() if current_user is not None else {}
     return FeatureFlagsResponse(
         external_base_url=external_base,

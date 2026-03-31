@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from typing import Optional
 
@@ -20,7 +21,10 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.domain.auth import User
 from models.domain.knowledge_space import EvaluationDataset, EvaluationResult
-from models.requests.requests_knowledge_space import EvaluationDatasetRequest, EvaluationRunRequest
+from models.requests.requests_knowledge_space import (
+    EvaluationDatasetRequest,
+    EvaluationRunRequest,
+)
 from models.responses import EvaluationDatasetResponse, EvaluationRunResponse
 from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from services.knowledge.retrieval_test_service import get_retrieval_test_service
@@ -36,7 +40,7 @@ router = APIRouter()
 def create_evaluation_dataset(
     request: EvaluationDatasetRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Create an evaluation dataset.
@@ -52,7 +56,7 @@ def create_evaluation_dataset(
             space_id=space.id,
             name=request.name,
             description=request.description,
-            queries=request.queries
+            queries=request.queries,
         )
         db.add(dataset)
         db.commit()
@@ -64,33 +68,27 @@ def create_evaluation_dataset(
             description=dataset.description,
             queries=dataset.queries,
             created_at=dataset.created_at.isoformat(),
-            updated_at=dataset.updated_at.isoformat()
+            updated_at=dataset.updated_at.isoformat(),
         )
     except Exception as e:
-        logger.error(
-            "[KnowledgeSpaceAPI] Failed to create evaluation dataset: %s",
-            e
-        )
+        logger.error("[KnowledgeSpaceAPI] Failed to create evaluation dataset: %s", e)
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to create evaluation dataset"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to create evaluation dataset") from e
 
 
 @router.get("/evaluation/datasets")
-def list_evaluation_datasets(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+def list_evaluation_datasets(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     List evaluation datasets for user.
 
     Requires authentication.
     """
-    datasets = db.query(EvaluationDataset).filter(
-        EvaluationDataset.user_id == current_user.id
-    ).order_by(EvaluationDataset.created_at.desc()).all()
+    datasets = (
+        db.query(EvaluationDataset)
+        .filter(EvaluationDataset.user_id == current_user.id)
+        .order_by(EvaluationDataset.created_at.desc())
+        .all()
+    )
 
     return {
         "datasets": [
@@ -100,11 +98,11 @@ def list_evaluation_datasets(
                 description=d.description,
                 queries=d.queries,
                 created_at=d.created_at.isoformat(),
-                updated_at=d.updated_at.isoformat()
+                updated_at=d.updated_at.isoformat(),
             )
             for d in datasets
         ],
-        "total": len(datasets)
+        "total": len(datasets),
     }
 
 
@@ -112,7 +110,7 @@ def list_evaluation_datasets(
 def run_evaluation(
     request: EvaluationRunRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Run evaluation on a dataset.
@@ -125,20 +123,14 @@ def run_evaluation(
             db=db,
             user_id=current_user.id,
             dataset_id=request.dataset_id,
-            method=request.method
+            method=request.method,
         )
         return EvaluationRunResponse(**result)
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
     except Exception as e:
-        logger.error(
-            "[KnowledgeSpaceAPI] Failed to run evaluation: %s",
-            e
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to run evaluation"
-        ) from e
+        logger.error("[KnowledgeSpaceAPI] Failed to run evaluation: %s", e)
+        raise HTTPException(status_code=500, detail="Failed to run evaluation") from e
 
 
 @router.get("/evaluation/results")
@@ -146,16 +138,14 @@ def get_evaluation_results(
     dataset_id: Optional[int] = None,
     method: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get evaluation results.
 
     Requires authentication.
     """
-    query = db.query(EvaluationResult).join(EvaluationDataset).filter(
-        EvaluationDataset.user_id == current_user.id
-    )
+    query = db.query(EvaluationResult).join(EvaluationDataset).filter(EvaluationDataset.user_id == current_user.id)
 
     if dataset_id:
         query = query.filter(EvaluationResult.dataset_id == dataset_id)
@@ -171,9 +161,9 @@ def get_evaluation_results(
                 "dataset_id": r.dataset_id,
                 "method": r.method,
                 "metrics": r.metrics,
-                "created_at": r.created_at.isoformat()
+                "created_at": r.created_at.isoformat(),
             }
             for r in results
         ],
-        "total": len(results)
+        "total": len(results),
     }

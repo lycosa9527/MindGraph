@@ -19,6 +19,7 @@ from pydantic import BaseModel, Field
 
 class ErrorResponse(BaseModel):
     """Standard error response"""
+
     error: str = Field(..., description="Error message")
     error_type: Optional[str] = Field(None, description="Type of error")
     context: Optional[Dict[str, Any]] = Field(None, description="Additional error context")
@@ -26,17 +27,19 @@ class ErrorResponse(BaseModel):
 
     class Config:
         """Configuration for ErrorResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "error": "Invalid diagram type",
                 "error_type": "validation",
-                "timestamp": 1696800000.0
+                "timestamp": 1696800000.0,
             }
         }
 
 
 class GenerateResponse(BaseModel):
     """Response model for /api/generate endpoint"""
+
     success: bool = Field(..., description="Whether generation succeeded")
     spec: Optional[Dict[str, Any]] = Field(None, description="Generated diagram specification")
     diagram_type: Optional[str] = Field(None, description="Detected/used diagram type")
@@ -47,48 +50,51 @@ class GenerateResponse(BaseModel):
     warning: Optional[str] = Field(None, description="Warning message if partial recovery occurred")
     recovery_warnings: Optional[List[str]] = Field(None, description="Detailed recovery warnings")
     use_default_template: Optional[bool] = Field(
-        False,
-        description="Whether to use default template (prompt-based generation)"
+        False, description="Whether to use default template (prompt-based generation)"
     )
     extracted_topic: Optional[str] = Field(None, description="Extracted topic from prompt")
     relationship_label: Optional[str] = Field(
         None,
-        description="Generated relationship label (concept_map relationship-only mode)"
+        description="Generated relationship label (concept_map relationship-only mode)",
     )
     relationship_labels: Optional[List[str]] = Field(
         None,
-        description="Multiple relationship label options (3–5) for concept map picker"
+        description="Multiple relationship label options (3–5) for concept map picker",
     )
 
     class Config:
         """Configuration for GenerateResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "success": True,
                 "spec": {"topic": "Photosynthesis", "concepts": []},
                 "diagram_type": "concept_map",
-                "language": "zh"
+                "language": "zh",
             }
         }
 
 
 class HealthResponse(BaseModel):
     """Response model for /health endpoint"""
+
     status: str = Field(..., description="Health status")
     version: str = Field(..., description="Application version")
 
     class Config:
         """Configuration for HealthResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "status": "ok",
-                "version": "4.9.0"  # Example only - actual version from config.VERSION
+                "version": "4.9.0",  # Example only - actual version from config.VERSION
             }
         }
 
 
 class StatusResponse(BaseModel):
     """Response model for status endpoint"""
+
     status: str = Field(..., description="Status message")
     timestamp: Optional[float] = Field(None, description="Response timestamp")
 
@@ -97,8 +103,10 @@ class StatusResponse(BaseModel):
 # HEALTH CHECK RESPONSE MODELS
 # ============================================================================
 
+
 class ModelHealthStatus(BaseModel):
     """Health status for a single LLM model"""
+
     status: str = Field(..., description="Health status: healthy or unhealthy")
     latency: Optional[float] = Field(None, description="Response latency in seconds")
     error: Optional[str] = Field(None, description="Error message if unhealthy")
@@ -108,6 +116,7 @@ class ModelHealthStatus(BaseModel):
 
 class LLMHealthResponse(BaseModel):
     """Response model for LLM health check endpoint"""
+
     status: str = Field(..., description="Overall status: success or error")
     health: Dict[str, Any] = Field(..., description="Health data for all models")
     circuit_states: Dict[str, str] = Field(..., description="Circuit breaker states for each model")
@@ -119,29 +128,28 @@ class LLMHealthResponse(BaseModel):
 
     class Config:
         """Configuration for LLMHealthResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "status": "success",
                 "health": {
                     "available_models": ["qwen", "qwen-turbo"],
                     "qwen": {"status": "healthy", "latency": 0.8},
-                    "qwen-turbo": {"status": "healthy", "latency": 0.34}
+                    "qwen-turbo": {"status": "healthy", "latency": 0.34},
                 },
-                "circuit_states": {
-                    "qwen": "closed",
-                    "qwen-turbo": "closed"
-                },
+                "circuit_states": {"qwen": "closed", "qwen-turbo": "closed"},
                 "timestamp": 1642012345,
                 "degraded": False,
                 "unhealthy_count": 0,
                 "healthy_count": 2,
-                "total_models": 2
+                "total_models": 2,
             }
         }
 
 
 class DatabaseHealthResponse(BaseModel):
     """Response model for database health check endpoint"""
+
     status: str = Field(..., description="Health status: healthy or unhealthy")
     database_healthy: bool = Field(..., description="Whether database integrity check passed")
     database_message: str = Field(..., description="Health check message")
@@ -150,6 +158,7 @@ class DatabaseHealthResponse(BaseModel):
 
     class Config:
         """Configuration for DatabaseHealthResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "status": "healthy",
@@ -158,9 +167,9 @@ class DatabaseHealthResponse(BaseModel):
                 "database_stats": {
                     "path": "data/mindgraph.db",
                     "size_mb": 2.5,
-                    "total_rows": 650
+                    "total_rows": 650,
                 },
-                "timestamp": 1642012345
+                "timestamp": 1642012345,
             }
         }
 
@@ -169,8 +178,10 @@ class DatabaseHealthResponse(BaseModel):
 # DIAGRAM STORAGE RESPONSE MODELS
 # ============================================================================
 
+
 class DiagramResponse(BaseModel):
     """Response model for a single diagram"""
+
     id: str = Field(..., description="Diagram UUID")
     title: str = Field(..., description="Diagram title")
     diagram_type: str = Field(..., description="Type of diagram")
@@ -182,6 +193,7 @@ class DiagramResponse(BaseModel):
 
     class Config:
         """Configuration for DiagramResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -191,13 +203,14 @@ class DiagramResponse(BaseModel):
                 "language": "zh",
                 "thumbnail": None,
                 "created_at": "2026-01-07T12:00:00",
-                "updated_at": "2026-01-07T12:00:00"
+                "updated_at": "2026-01-07T12:00:00",
             }
         }
 
 
 class DiagramListItem(BaseModel):
     """List item for diagram gallery view"""
+
     id: str = Field(..., description="Diagram UUID")
     title: str = Field(..., description="Diagram title")
     diagram_type: str = Field(..., description="Type of diagram")
@@ -207,6 +220,7 @@ class DiagramListItem(BaseModel):
 
     class Config:
         """Configuration for DiagramListItem JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
@@ -214,13 +228,14 @@ class DiagramListItem(BaseModel):
                 "diagram_type": "mind_map",
                 "thumbnail": None,
                 "updated_at": "2026-01-07T12:00:00",
-                "is_pinned": False
+                "is_pinned": False,
             }
         }
 
 
 class DiagramListResponse(BaseModel):
     """Response model for diagram list with pagination"""
+
     diagrams: List[DiagramListItem] = Field(default_factory=list, description="List of diagrams")
     total: int = Field(..., description="Total number of diagrams")
     page: int = Field(..., description="Current page number")
@@ -230,6 +245,7 @@ class DiagramListResponse(BaseModel):
 
     class Config:
         """Configuration for DiagramListResponse JSON schema"""
+
         json_schema_extra = {
             "example": {
                 "diagrams": [
@@ -238,14 +254,14 @@ class DiagramListResponse(BaseModel):
                         "title": "My Mind Map",
                         "diagram_type": "mind_map",
                         "thumbnail": None,
-                        "updated_at": "2026-01-07T12:00:00"
+                        "updated_at": "2026-01-07T12:00:00",
                     }
                 ],
                 "total": 1,
                 "page": 1,
                 "page_size": 10,
                 "has_more": False,
-                "max_diagrams": 20
+                "max_diagrams": 20,
             }
         }
 
@@ -253,6 +269,7 @@ class DiagramListResponse(BaseModel):
 # ============================================================================
 # KNOWLEDGE SPACE RESPONSE MODELS
 # ============================================================================
+
 
 class DocumentResponse(BaseModel):
     """Response model for a single document."""
@@ -452,6 +469,7 @@ class ChunkTestResultResponse(BaseModel):
 # DIAGRAM SNAPSHOT RESPONSE MODELS
 # ============================================================================
 
+
 class SnapshotMetadata(BaseModel):
     """Lightweight metadata for a single diagram snapshot (no spec)."""
 
@@ -466,7 +484,7 @@ class SnapshotMetadata(BaseModel):
             "example": {
                 "id": 1,
                 "version_number": 1,
-                "created_at": "2026-03-24T10:00:00"
+                "created_at": "2026-03-24T10:00:00",
             }
         }
 
@@ -475,7 +493,8 @@ class SnapshotListResponse(BaseModel):
     """List of snapshot metadata for a diagram."""
 
     snapshots: List[SnapshotMetadata] = Field(
-        default_factory=list, description="Snapshots ordered by version_number ascending"
+        default_factory=list,
+        description="Snapshots ordered by version_number ascending",
     )
 
     class Config:
@@ -485,7 +504,7 @@ class SnapshotListResponse(BaseModel):
             "example": {
                 "snapshots": [
                     {"id": 1, "version_number": 1, "created_at": "2026-03-24T10:00:00"},
-                    {"id": 2, "version_number": 2, "created_at": "2026-03-24T10:05:00"}
+                    {"id": 2, "version_number": 2, "created_at": "2026-03-24T10:05:00"},
                 ]
             }
         }
@@ -503,6 +522,6 @@ class SnapshotRecallResponse(BaseModel):
         json_schema_extra = {
             "example": {
                 "version_number": 1,
-                "spec": {"topic": "Central Topic", "children": []}
+                "spec": {"topic": "Central Topic", "children": []},
             }
         }

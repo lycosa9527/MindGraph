@@ -813,8 +813,7 @@ export function useMindMate(options: MindMateOptions = {}) {
       }
 
       hasGreeted.value = true
-    } catch (error) {
-      console.debug('[MindMate] Failed to load conversation:', error)
+    } catch {
       onError?.('Failed to load conversation')
     } finally {
       state.value = 'idle'

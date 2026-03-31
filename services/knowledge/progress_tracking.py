@@ -3,6 +3,7 @@ Progress tracking utilities for chunk test components.
 
 Standardizes progress tracking format across ChunkTestDocument and ChunkTestResult.
 """
+
 import re
 from typing import Optional, Tuple
 
@@ -10,11 +11,11 @@ from typing import Optional, Tuple
 def format_progress_string(stage: str, method: Optional[str] = None) -> str:
     """
     Format progress string in standardized format: "stage (method)" or "stage".
-    
+
     Args:
         stage: Current processing stage (e.g., 'chunking', 'embedding', 'indexing')
         method: Optional chunking method name (e.g., 'semchunk', 'spacy')
-    
+
     Returns:
         Formatted progress string, e.g., "chunking (semchunk)" or "chunking"
     """
@@ -26,10 +27,10 @@ def format_progress_string(stage: str, method: Optional[str] = None) -> str:
 def parse_progress_string(progress: Optional[str]) -> Tuple[str, Optional[str]]:
     """
     Parse progress string to extract stage and method.
-    
+
     Args:
         progress: Progress string in format "stage (method)" or "stage"
-    
+
     Returns:
         Tuple of (stage, method) where method may be None
     """
@@ -50,18 +51,18 @@ def get_progress_percent(
     method_index: Optional[int] = None,
     total_methods: Optional[int] = None,
     stage_base: int = 0,
-    sub_stage_progress: Optional[int] = None
+    sub_stage_progress: Optional[int] = None,
 ) -> int:
     """
     Calculate progress percentage based on stage and method.
-    
+
     Args:
         stage: Current stage name
         method_index: Current method index (0-based)
         total_methods: Total number of methods
         stage_base: Base percentage for this stage (default: 0)
         sub_stage_progress: Optional sub-stage progress (0-100) for stages like retrieval
-    
+
     Returns:
         Progress percentage (0-100)
     """
@@ -148,11 +149,11 @@ def get_progress_percent(
 def get_stage_display_name(stage: str, is_zh: bool = False) -> str:
     """
     Get localized display name for a stage.
-    
+
     Args:
         stage: Stage name
         is_zh: Whether to return Chinese translation
-    
+
     Returns:
         Display name for the stage
     """
@@ -179,10 +180,10 @@ def get_stage_display_name(stage: str, is_zh: bool = False) -> str:
 def get_method_display_name(method: str) -> str:
     """
     Get display name for a chunking method.
-    
+
     Args:
         method: Method name (e.g., 'semchunk', 'spacy')
-    
+
     Returns:
         Display name (e.g., 'SemChunk', 'spaCy')
     """
@@ -199,50 +200,49 @@ def get_method_display_name(method: str) -> str:
 def validate_progress(
     current_progress: int,
     previous_progress: Optional[int] = None,
-    stage: Optional[str] = None
+    stage: Optional[str] = None,
 ) -> Tuple[int, bool]:
     """
     Validate progress to ensure it never decreases and is within valid range.
-    
+
     Args:
         current_progress: Current progress percentage (0-100)
         previous_progress: Previous progress percentage (optional)
         stage: Current stage name (optional, for logging)
-    
+
     Returns:
         Tuple of (validated_progress, is_valid)
     """
     # Ensure progress is within valid range
     validated_progress = max(0, min(100, current_progress))
-    
+
     # Check if progress decreased (invalid)
     is_valid = True
     if previous_progress is not None and validated_progress < previous_progress:
         is_valid = False
         # Log warning but don't fail - use previous progress
         import logging
+
         logger = logging.getLogger(__name__)
         logger.warning(
-            "[ProgressTracking] Progress decreased from %s%% to %s%% (stage=%s). "
-            "Using previous progress value.",
-            previous_progress, validated_progress, stage
+            "[ProgressTracking] Progress decreased from %s%% to %s%% (stage=%s). Using previous progress value.",
+            previous_progress,
+            validated_progress,
+            stage,
         )
         validated_progress = previous_progress
-    
+
     return validated_progress, is_valid
 
 
-def ensure_completion_progress(
-    current_progress: int,
-    expected_completion: int = 100
-) -> int:
+def ensure_completion_progress(current_progress: int, expected_completion: int = 100) -> int:
     """
     Ensure progress reaches completion value.
-    
+
     Args:
         current_progress: Current progress percentage
         expected_completion: Expected completion percentage (default: 100)
-    
+
     Returns:
         Progress percentage, ensuring it reaches expected_completion
     """

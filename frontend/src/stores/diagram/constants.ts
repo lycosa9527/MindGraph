@@ -29,9 +29,7 @@ function placeholderStringsForLocales(fn: (lang: LocaleCode) => string): string[
 }
 
 function i18nPlaceholdersForAllLocales(key: string): string[] {
-  return UI_LOCALE_CODES.map((lang) =>
-    String(i18n.global.t(key, {}, { locale: lang }))
-  )
+  return UI_LOCALE_CODES.map((lang) => String(i18n.global.t(key, {}, { locale: lang })))
 }
 
 export const PLACEHOLDER_TEXTS = [

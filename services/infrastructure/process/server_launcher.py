@@ -26,7 +26,9 @@ except ImportError:
     LOGGING_CONFIG = None
 
 try:
-    from utils.migration.sqlite_to_postgresql.data_migration import migrate_sqlite_to_postgresql
+    from utils.migration.sqlite_to_postgresql.data_migration import (
+        migrate_sqlite_to_postgresql,
+    )
 except ImportError:
     migrate_sqlite_to_postgresql = None
 
@@ -82,9 +84,7 @@ def _exit_port_in_use(port: int, pid: int | None = None) -> None:
 
 def _ensure_http_port_free(host: str, port: int) -> None:
     """Exit if the configured HTTP listen port is already bound."""
-    connect_host = (
-        "127.0.0.1" if host in ("0.0.0.0", "::", "::0") else host
-    )
+    connect_host = "127.0.0.1" if host in ("0.0.0.0", "::", "::0") else host
     in_use, occupant_pid = _port_utils.check_port_in_use(connect_host, port)
     if in_use:
         _exit_port_in_use(port, occupant_pid)
@@ -101,9 +101,7 @@ def run_server() -> None:
     4. Handle graceful shutdown
     """
     if uvicorn is None:
-        print(
-            "[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0"
-        )
+        print("[ERROR] Uvicorn not installed. Install with: pip install uvicorn[standard]>=0.24.0")
         sys.exit(1)
 
     # Workers spawned by Uvicorn inherit this and skip duplicate banner / early prints
@@ -116,9 +114,7 @@ def run_server() -> None:
     setup_signal_handlers()
 
     try:
-        script_dir = os.path.dirname(
-            os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-        )
+        script_dir = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
         os.chdir(script_dir)
 
         os.makedirs("logs", exist_ok=True)
@@ -131,9 +127,7 @@ def run_server() -> None:
         environment = "development" if debug else "production"
         reload = debug
 
-        default_workers = (
-            1 if sys.platform == "win32" else min(multiprocessing.cpu_count(), 4)
-        )
+        default_workers = 1 if sys.platform == "win32" else min(multiprocessing.cpu_count(), 4)
         workers_str = os.getenv("UVICORN_WORKERS")
         workers = int(workers_str) if workers_str else default_workers
 
@@ -152,9 +146,7 @@ def run_server() -> None:
         print()
         print("Frontend (Vue SPA):")
         print("  Development: Run 'npm run dev' in frontend/ → http://localhost:3000")
-        print(
-            f"  Production:  Run 'npm run build' in frontend/ → http://localhost:{port}"
-        )
+        print(f"  Production:  Run 'npm run build' in frontend/ → http://localhost:{port}")
         print("=" * 80)
         print("Press Ctrl+C to stop the server")
         print()
@@ -196,55 +188,38 @@ def run_server() -> None:
                 sys.exit(1)
             logger.debug("[POSTGRESQL] %s", message)
             logger.debug("[POSTGRESQL] Starting PostgreSQL server...")
-            postgresql_server = (
-                start_postgresql_server()
-            )  # Verifies PostgreSQL is running (exits if not ready)
+            postgresql_server = start_postgresql_server()  # Verifies PostgreSQL is running (exits if not ready)
             if postgresql_server:
                 logger.debug("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
             else:
-                logger.debug(
-                    "[POSTGRESQL] ✓ PostgreSQL server is running "
-                    "(external or systemd service)"
-                )
+                logger.debug("[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)")
 
             # Run data migration from SQLite to PostgreSQL if needed
             logger.debug("[Migration] Checking for SQLite to PostgreSQL migration...")
             try:
                 if migrate_sqlite_to_postgresql is None:
                     print("[ERROR] Migration module not available")
-                    print(
-                        "        Application cannot start without successful migration check."
-                    )
+                    print("        Application cannot start without successful migration check.")
                     sys.exit(1)
                 success, error, stats = migrate_sqlite_to_postgresql()
                 if not success:
                     if error:
                         print(f"[ERROR] Migration failed: {error}")
-                        print(
-                            "        Application cannot start without successful migration."
-                        )
+                        print("        Application cannot start without successful migration.")
                         sys.exit(1)
                 elif stats:
                     logger.debug("[Migration] Migration completed successfully")
                     logger.debug(
                         "[Migration] Tables migrated: %s",
-                        stats.get('tables_migrated', 0)
+                        stats.get("tables_migrated", 0),
                     )
-                    logger.debug(
-                        "[Migration] Total records: %s",
-                        stats.get('total_records', 0)
-                    )
+                    logger.debug("[Migration] Total records: %s", stats.get("total_records", 0))
                 else:
-                    logger.debug(
-                        "[Migration] No migration needed "
-                        "(already migrated or no SQLite database)"
-                    )
+                    logger.debug("[Migration] No migration needed (already migrated or no SQLite database)")
             except Exception as e:
                 print(f"[ERROR] Migration check failed: {e}")
                 traceback.print_exc()
-                print(
-                    "        Application cannot start without successful migration check."
-                )
+                print("        Application cannot start without successful migration check.")
                 sys.exit(1)
 
         # 3. Qdrant (REQUIRED only if Knowledge Space feature is enabled)
@@ -253,26 +228,17 @@ def run_server() -> None:
             logger.debug("[QDRANT] Checking Qdrant installation...")
             is_installed, message = check_qdrant_installed()
             if not is_installed:
-                print(
-                    "[ERROR] Qdrant is REQUIRED for Knowledge Space feature but not installed."
-                )
+                print("[ERROR] Qdrant is REQUIRED for Knowledge Space feature but not installed.")
                 print(f"        {message}")
-                print(
-                    "        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled."
-                )
+                print("        Application cannot start without Qdrant when FEATURE_KNOWLEDGE_SPACE is enabled.")
                 sys.exit(1)
             logger.debug("[QDRANT] %s", message)
             logger.debug("[QDRANT] Starting Qdrant server...")
-            qdrant_server = (
-                start_qdrant_server()
-            )  # Verifies Qdrant is running (exits if not ready)
+            qdrant_server = start_qdrant_server()  # Verifies Qdrant is running (exits if not ready)
             if qdrant_server:
                 logger.debug("[QDRANT] ✓ Qdrant server started as subprocess")
             else:
-                logger.debug(
-                    "[QDRANT] ✓ Qdrant server is running "
-                    "(external or systemd service)"
-                )
+                logger.debug("[QDRANT] ✓ Qdrant server is running (external or systemd service)")
         else:
             logger.debug("[QDRANT] Skipping Qdrant (Knowledge Space feature is disabled)")
 
@@ -287,15 +253,11 @@ def run_server() -> None:
                     "or dependencies are missing."
                 )
                 print(f"        {message}")
-                print(
-                    "        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled."
-                )
+                print("        Application cannot start without Celery when FEATURE_KNOWLEDGE_SPACE is enabled.")
                 sys.exit(1)
             logger.debug("[CELERY] %s", message)
             logger.debug("[CELERY] Starting Celery worker...")
-            celery_worker = (
-                start_celery_worker()
-            )  # Verifies Celery is running (exits if not ready)
+            celery_worker = start_celery_worker()  # Verifies Celery is running (exits if not ready)
             if celery_worker:
                 logger.debug("[CELERY] ✓ Celery worker started successfully")
             else:
@@ -331,10 +293,7 @@ def run_server() -> None:
                 except (ValueError, OSError):
                     pass
             else:
-                logger.debug(
-                    "main module not available at import time "
-                    "(will be imported by uvicorn)"
-                )
+                logger.debug("main module not available at import time (will be imported by uvicorn)")
 
             # Setup stderr filtering AFTER logging is configured
             # This ensures logging handlers are created before we wrap sys.stderr
@@ -353,12 +312,13 @@ def run_server() -> None:
             logger.debug("Starting Uvicorn server...")
 
             worker_count = 1 if reload else workers
-            worker_healthcheck = int(
-                os.getenv("UVICORN_TIMEOUT_WORKER_HEALTHCHECK", "120")
-            )
+            worker_healthcheck = int(os.getenv("UVICORN_TIMEOUT_WORKER_HEALTHCHECK", "120"))
             logger.debug(
                 "Uvicorn configuration: host=%s, port=%s, workers=%s, reload=%s",
-                host, port, worker_count, reload
+                host,
+                port,
+                worker_count,
+                reload,
             )
             if worker_count > 1:
                 logger.info(

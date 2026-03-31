@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Combine all prompts and extract agent responses to malfunctioned prompts.
 """
@@ -9,26 +9,28 @@ from pathlib import Path
 from collections import defaultdict
 from datetime import datetime
 
+
 def parse_log_line(line):
     """Parse a log line and extract timestamp, level, component, and message."""
-    pattern = r'\[(\d{2}:\d{2}:\d{2})\]\s+.*?(\w+)\s+\|\s+(\w+)\s+\|\s+(?:\[(\d+)\]\s+)?(.+)'
+    pattern = r"\[(\d{2}:\d{2}:\d{2})\]\s+.*?(\w+)\s+\|\s+(\w+)\s+\|\s+(?:\[(\d+)\]\s+)?(.+)"
     match = re.match(pattern, line)
     if match:
         time_str, level, comp, req_id, message = match.groups()
         return {
-            'time': time_str,
-            'level': level,
-            'component': comp,
-            'request_id': req_id,
-            'message': message
+            "time": time_str,
+            "level": level,
+            "component": comp,
+            "request_id": req_id,
+            "message": message,
         }
     return None
+
 
 def extract_all_prompts_with_responses(log_file):
     """Extract all prompts and their agent responses."""
     all_entries = []
 
-    with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+    with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
         lines = f.readlines()
 
     for i, line in enumerate(lines):
@@ -62,15 +64,15 @@ def extract_all_prompts_with_responses(log_file):
                             response = error_match.group(1)
 
                 entry = {
-                    'type': 'unclear_prompt',
-                    'prompt': prompt,
-                    'timestamp': parsed['time'] if parsed else None,
-                    'request_id': parsed['request_id'] if parsed else None,
-                    'clarity': clarity,
-                    'error_type': error_type,
-                    'agent_response': response or "Unable to understand the request",
-                    'line': i + 1,
-                    'file': log_file.name
+                    "type": "unclear_prompt",
+                    "prompt": prompt,
+                    "timestamp": parsed["time"] if parsed else None,
+                    "request_id": parsed["request_id"] if parsed else None,
+                    "clarity": clarity,
+                    "error_type": error_type,
+                    "agent_response": response or "Unable to understand the request",
+                    "line": i + 1,
+                    "file": log_file.name,
                 }
 
         # Extract GenerateDingTalk prompts (successful)
@@ -88,15 +90,15 @@ def extract_all_prompts_with_responses(log_file):
                         break
 
                 entry = {
-                    'type': 'teacher_prompt',
-                    'prompt': prompt,
-                    'timestamp': parsed['time'] if parsed else None,
-                    'request_id': parsed['request_id'] if parsed else None,
-                    'status': 'success' if success else 'unknown',
-                    'agent_response': 'Successfully generated diagram' if success else 'Unknown',
-                    'line': i + 1,
-                    'file': log_file.name,
-                    'source': 'GenerateDingTalk'
+                    "type": "teacher_prompt",
+                    "prompt": prompt,
+                    "timestamp": parsed["time"] if parsed else None,
+                    "request_id": parsed["request_id"] if parsed else None,
+                    "status": "success" if success else "unknown",
+                    "agent_response": "Successfully generated diagram" if success else "Unknown",
+                    "line": i + 1,
+                    "file": log_file.name,
+                    "source": "GenerateDingTalk",
                 }
 
         # Extract topic extraction (successful prompts)
@@ -125,22 +127,24 @@ def extract_all_prompts_with_responses(log_file):
                             break
 
                 entry = {
-                    'type': 'teacher_prompt',
-                    'prompt': original_prompt or topic,
-                    'extracted_topic': topic,
-                    'timestamp': parsed['time'] if parsed else None,
-                    'request_id': parsed['request_id'] if parsed else None,
-                    'diagram_type': diagram_type,
-                    'status': 'success',
-                    'agent_response': f'Successfully extracted topic: {topic}' + (f', diagram type: {diagram_type}' if diagram_type else ''),
-                    'line': i + 1,
-                    'file': log_file.name
+                    "type": "teacher_prompt",
+                    "prompt": original_prompt or topic,
+                    "extracted_topic": topic,
+                    "timestamp": parsed["time"] if parsed else None,
+                    "request_id": parsed["request_id"] if parsed else None,
+                    "diagram_type": diagram_type,
+                    "status": "success",
+                    "agent_response": f"Successfully extracted topic: {topic}"
+                    + (f", diagram type: {diagram_type}" if diagram_type else ""),
+                    "line": i + 1,
+                    "file": log_file.name,
                 }
 
         if entry:
             all_entries.append(entry)
 
     return all_entries
+
 
 def main():
     log_dir = Path(r"C:\Users\roywa\Desktop\logs")
@@ -159,23 +163,23 @@ def main():
         all_entries.extend(entries)
 
     # Separate by type
-    teacher_prompts = [e for e in all_entries if e['type'] == 'teacher_prompt']
-    unclear_prompts = [e for e in all_entries if e['type'] == 'unclear_prompt']
+    teacher_prompts = [e for e in all_entries if e["type"] == "teacher_prompt"]
+    unclear_prompts = [e for e in all_entries if e["type"] == "unclear_prompt"]
 
     # Remove duplicates (same prompt, same file, similar timestamp)
     seen = set()
     unique_entries = []
     for entry in all_entries:
-        key = (entry['prompt'], entry['file'], entry.get('timestamp', ''))
+        key = (entry["prompt"], entry["file"], entry.get("timestamp", ""))
         if key not in seen:
             seen.add(key)
             unique_entries.append(entry)
 
     # Sort by timestamp
-    unique_entries.sort(key=lambda x: (x.get('file', ''), x.get('timestamp', '')))
+    unique_entries.sort(key=lambda x: (x.get("file", ""), x.get("timestamp", "")))
 
     # Save combined file
-    with open(output_dir / "all_prompts_with_responses.txt", 'w', encoding='utf-8') as f:
+    with open(output_dir / "all_prompts_with_responses.txt", "w", encoding="utf-8") as f:
         f.write("=" * 100 + "\n")
         f.write("ALL PROMPTS WITH AGENT RESPONSES\n")
         f.write("=" * 100 + "\n\n")
@@ -190,13 +194,13 @@ def main():
             f.write(f"TYPE: {entry['type'].upper()}\n")
             f.write(f"PROMPT: {entry['prompt']}\n")
 
-            if 'extracted_topic' in entry:
+            if "extracted_topic" in entry:
                 f.write(f"EXTRACTED TOPIC: {entry['extracted_topic']}\n")
-            if 'diagram_type' in entry and entry['diagram_type']:
+            if "diagram_type" in entry and entry["diagram_type"]:
                 f.write(f"DIAGRAM TYPE: {entry['diagram_type']}\n")
-            if 'clarity' in entry and entry['clarity']:
+            if "clarity" in entry and entry["clarity"]:
                 f.write(f"CLARITY LEVEL: {entry['clarity']}\n")
-            if 'error_type' in entry and entry['error_type']:
+            if "error_type" in entry and entry["error_type"]:
                 f.write(f"ERROR TYPE: {entry['error_type']}\n")
 
             f.write(f"AGENT RESPONSE: {entry['agent_response']}\n")
@@ -204,31 +208,31 @@ def main():
             f.write(f"TIMESTAMP: {entry['timestamp']}\n")
             f.write(f"REQUEST ID: {entry['request_id']}\n")
             f.write(f"FILE: {entry['file']}, LINE: {entry['line']}\n")
-            if 'source' in entry:
+            if "source" in entry:
                 f.write(f"SOURCE: {entry['source']}\n")
             f.write("-" * 100 + "\n\n")
 
     # Save JSON
     results = {
-        'summary': {
-            'total_entries': len(unique_entries),
-            'teacher_prompts': len(teacher_prompts),
-            'unclear_prompts': len(unclear_prompts),
-            'extraction_date': datetime.now().isoformat()
+        "summary": {
+            "total_entries": len(unique_entries),
+            "teacher_prompts": len(teacher_prompts),
+            "unclear_prompts": len(unclear_prompts),
+            "extraction_date": datetime.now().isoformat(),
         },
-        'all_prompts': unique_entries
+        "all_prompts": unique_entries,
     }
 
     json_file = output_dir / "all_prompts_with_responses.json"
-    with open(json_file, 'w', encoding='utf-8') as f:
+    with open(json_file, "w", encoding="utf-8") as f:
         json.dump(results, f, ensure_ascii=False, indent=2)
 
     # Create summary of agent responses
     response_summary = defaultdict(int)
     for entry in unclear_prompts:
-        response_summary[entry['agent_response']] += 1
+        response_summary[entry["agent_response"]] += 1
 
-    with open(output_dir / "agent_responses_summary.txt", 'w', encoding='utf-8') as f:
+    with open(output_dir / "agent_responses_summary.txt", "w", encoding="utf-8") as f:
         f.write("=" * 100 + "\n")
         f.write("AGENT RESPONSES TO MALFUNCTIONED PROMPTS\n")
         f.write("=" * 100 + "\n\n")
@@ -246,9 +250,9 @@ def main():
         for entry in unclear_prompts:
             f.write(f"PROMPT: {entry['prompt']}\n")
             f.write(f"AGENT RESPONSE: {entry['agent_response']}\n")
-            if entry.get('clarity'):
+            if entry.get("clarity"):
                 f.write(f"CLARITY: {entry['clarity']}\n")
-            if entry.get('error_type'):
+            if entry.get("error_type"):
                 f.write(f"ERROR TYPE: {entry['error_type']}\n")
             f.write(f"TIMESTAMP: {entry['timestamp']}\n")
             f.write(f"FILE: {entry['file']}\n")
@@ -265,11 +269,6 @@ def main():
     print("  - all_prompts_with_responses.json (JSON format)")
     print("  - agent_responses_summary.txt (agent response analysis)")
 
+
 if __name__ == "__main__":
     main()
-
-
-
-
-
-

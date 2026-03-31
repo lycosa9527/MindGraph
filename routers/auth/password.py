@@ -19,7 +19,10 @@ from sqlalchemy.orm import Session
 from config.database import get_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
-from models.requests.requests_auth import ChangePasswordRequest, ResetPasswordWithSMSRequest
+from models.requests.requests_auth import (
+    ChangePasswordRequest,
+    ResetPasswordWithSMSRequest,
+)
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
@@ -41,26 +44,26 @@ def _raise_for_captcha_failure(captcha_error: Optional[str], lang: Language) -> 
     if captcha_error == "expired":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error("captcha_expired", lang)
+            detail=Messages.error("captcha_expired", lang),
         )
     if captcha_error == "not_found":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error("captcha_not_found", lang)
+            detail=Messages.error("captcha_not_found", lang),
         )
     if captcha_error == "incorrect":
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail=Messages.error("captcha_incorrect", lang)
+            detail=Messages.error("captcha_incorrect", lang),
         )
     if captcha_error == "database_locked":
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=Messages.error("captcha_database_unavailable", lang)
+            detail=Messages.error("captcha_database_unavailable", lang),
         )
     raise HTTPException(
         status_code=status.HTTP_400_BAD_REQUEST,
-        detail=Messages.error("captcha_verify_failed", lang)
+        detail=Messages.error("captcha_verify_failed", lang),
     )
 
 
@@ -69,7 +72,7 @@ def reset_password_with_sms(
     request: ResetPasswordWithSMSRequest,
     http_request: Request,
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ):
     """
     Reset password with SMS verification
@@ -82,28 +85,16 @@ def reset_password_with_sms(
 
     if not cached_user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Verify SMS code
-    _verify_and_consume_sms_code(
-        request.phone,
-        request.sms_code,
-        "reset_password",
-        db,
-        lang
-    )
+    _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
 
     # Reload user from database for modification (cached users are detached)
     user = db.query(User).filter(User.id == cached_user.id).first()
     if not user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Update password and unlock account
     # Note: We manually unlock instead of using reset_failed_attempts() because
@@ -120,7 +111,7 @@ def reset_password_with_sms(
         logger.error("[Auth] Failed to update password in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reset password"
+            detail="Failed to reset password",
         ) from e
 
     invalidate_user_cache_after_password_write(user, "Password reset")
@@ -129,11 +120,16 @@ def reset_password_with_sms(
     # Get client IP address
     client_ip = get_client_ip(http_request) if http_request else "unknown"
 
-    logger.info("[TokenAudit] Password reset: user=%s, phone=%s, method=sms, ip=%s", user.id, user.phone, client_ip)
+    logger.info(
+        "[TokenAudit] Password reset: user=%s, phone=%s, method=sms, ip=%s",
+        user.id,
+        user.phone,
+        client_ip,
+    )
 
     return {
         "message": Messages.success("password_reset_success", lang),
-        "phone": user.phone[:3] + "****" + user.phone[-4:]
+        "phone": user.phone[:3] + "****" + user.phone[-4:],
     }
 
 
@@ -143,7 +139,7 @@ async def change_password(
     http_request: Request,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ):
     """
     Change password (for authenticated users)
@@ -151,35 +147,24 @@ async def change_password(
     Allows authenticated users to change their password.
     Requires captcha and current password verification.
     """
-    captcha_valid, captcha_error = await verify_captcha_with_retry(
-        request.captcha_id, request.captcha
-    )
+    captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
     if not captcha_valid:
         _raise_for_captcha_failure(captcha_error, lang)
 
     # Verify current password
     if not verify_password(request.current_password, current_user.password_hash):
         error_msg = Messages.error("invalid_password_change", lang)
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
 
     # Check if new password is different
     if verify_password(request.new_password, current_user.password_hash):
         error_msg = Messages.error("password_same_as_current", lang)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Reload user from database for modification
     user = db.query(User).filter(User.id == current_user.id).first()
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     # Update password
     user.password_hash = hash_password(request.new_password)
@@ -193,7 +178,7 @@ async def change_password(
         logger.error("Failed to change password for user %s: %s", user.id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to change password"
+            detail="Failed to change password",
         ) from e
 
     invalidate_user_cache_after_password_write(user, "Password changed")
@@ -207,6 +192,4 @@ async def change_password(
         client_ip,
     )
 
-    return {
-        "message": Messages.success("password_change_success", lang)
-    }
+    return {"message": Messages.success("password_change_success", lang)}

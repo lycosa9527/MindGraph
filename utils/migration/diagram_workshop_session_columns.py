@@ -52,35 +52,17 @@ def ensure_diagram_workshop_session_columns(engine: Engine) -> None:
                 if col_name in columns:
                     continue
                 if dialect == "sqlite":
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {_TABLE} ADD COLUMN {col_name} {sqlite_type}"
-                        )
-                    )
+                    conn.execute(text(f"ALTER TABLE {_TABLE} ADD COLUMN {col_name} {sqlite_type}"))
                 else:
                     qcol = f'"{col_name}"'
-                    conn.execute(
-                        text(
-                            f"ALTER TABLE {quoted_table} ADD COLUMN {qcol} {pg_type}"
-                        )
-                    )
+                    conn.execute(text(f"ALTER TABLE {quoted_table} ADD COLUMN {qcol} {pg_type}"))
                 added_any = True
                 logger.info("[DBMigration] Added %s.%s", _TABLE, col_name)
 
             if dialect == "sqlite":
-                conn.execute(
-                    text(
-                        f"CREATE INDEX IF NOT EXISTS {_INDEX} ON {_TABLE} "
-                        f"(workshop_expires_at)"
-                    )
-                )
+                conn.execute(text(f"CREATE INDEX IF NOT EXISTS {_INDEX} ON {_TABLE} (workshop_expires_at)"))
             else:
-                conn.execute(
-                    text(
-                        f"CREATE INDEX IF NOT EXISTS {_INDEX} ON {quoted_table} "
-                        f"(\"workshop_expires_at\")"
-                    )
-                )
+                conn.execute(text(f'CREATE INDEX IF NOT EXISTS {_INDEX} ON {quoted_table} ("workshop_expires_at")'))
 
         if added_any:
             logger.info("[DBMigration] Workshop session columns ensured on %s", _TABLE)

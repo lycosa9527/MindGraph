@@ -12,6 +12,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Any, Tuple, Optional
 import logging
 
@@ -27,7 +28,7 @@ logger = logging.getLogger(__name__)
 class MultiFlowMapAgent(BaseAgent):
     """Utility agent to improve multi-flow map specs before rendering."""
 
-    def __init__(self, model='qwen'):
+    def __init__(self, model="qwen"):
         super().__init__(model=model)
         self.diagram_type = "multi_flow_map"
 
@@ -38,28 +39,28 @@ class MultiFlowMapAgent(BaseAgent):
         dimension_preference: str | None = None,
         fixed_dimension: str | None = None,
         dimension_only_mode: bool | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """Generate a multi-flow map from a prompt."""
         token_kwargs = {
-            'user_id': kwargs.get('user_id'),
-            'organization_id': kwargs.get('organization_id'),
-            'request_type': kwargs.get('request_type', 'diagram_generation'),
-            'endpoint_path': kwargs.get('endpoint_path'),
+            "user_id": kwargs.get("user_id"),
+            "organization_id": kwargs.get("organization_id"),
+            "request_type": kwargs.get("request_type", "diagram_generation"),
+            "endpoint_path": kwargs.get("endpoint_path"),
         }
         try:
             spec = await self._generate_multi_flow_map_spec(
                 user_prompt,
                 language,
-                user_id=token_kwargs['user_id'],
-                organization_id=token_kwargs['organization_id'],
-                request_type=token_kwargs['request_type'],
-                endpoint_path=token_kwargs['endpoint_path']
+                user_id=token_kwargs["user_id"],
+                organization_id=token_kwargs["organization_id"],
+                request_type=token_kwargs["request_type"],
+                endpoint_path=token_kwargs["endpoint_path"],
             )
             if not spec:
                 return {
-                    'success': False,
-                    'error': 'Failed to generate multi-flow map specification'
+                    "success": False,
+                    "error": "Failed to generate multi-flow map specification",
                 }
 
             # Validate the generated spec
@@ -67,32 +68,29 @@ class MultiFlowMapAgent(BaseAgent):
             if not is_valid:
                 logger.warning("MultiFlowMapAgent: Validation failed: %s", validation_msg)
                 return {
-                    'success': False,
-                    'error': f'Generated invalid specification: {validation_msg}'
+                    "success": False,
+                    "error": f"Generated invalid specification: {validation_msg}",
                 }
 
             # Enhance the spec with layout and dimensions
             enhanced_result = await self.enhance_spec(spec)
-            if not enhanced_result.get('success'):
+            if not enhanced_result.get("success"):
                 return {
-                    'success': False,
-                    'error': enhanced_result.get('error', 'Enhancement failed')
+                    "success": False,
+                    "error": enhanced_result.get("error", "Enhancement failed"),
                 }
-            enhanced_spec = enhanced_result['spec']
+            enhanced_spec = enhanced_result["spec"]
 
             logger.info("MultiFlowMapAgent: Multi-flow map generation completed successfully")
             return {
-                'success': True,
-                'spec': enhanced_spec,
-                'diagram_type': self.diagram_type
+                "success": True,
+                "spec": enhanced_spec,
+                "diagram_type": self.diagram_type,
             }
 
         except Exception as e:
             logger.error("MultiFlowMapAgent: Multi-flow map generation failed: %s", e)
-            return {
-                'success': False,
-                'error': f'Generation failed: {str(e)}'
-            }
+            return {"success": False, "error": f"Generation failed: {str(e)}"}
 
     async def _generate_multi_flow_map_spec(
         self,
@@ -101,8 +99,8 @@ class MultiFlowMapAgent(BaseAgent):
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
-        endpoint_path: Optional[str] = None
+        request_type: str = "diagram_generation",
+        endpoint_path: Optional[str] = None,
     ) -> Optional[Dict]:
         """Generate the multi-flow map specification using LLM."""
         try:
@@ -132,7 +130,7 @@ class MultiFlowMapAgent(BaseAgent):
                 organization_id=organization_id,
                 request_type=request_type,
                 endpoint_path=endpoint_path,
-                diagram_type='multi_flow_map'
+                diagram_type="multi_flow_map",
             )
 
             if not response:
@@ -169,14 +167,14 @@ class MultiFlowMapAgent(BaseAgent):
             effects = output.get("effects")
 
             # If we have 'flows' instead of 'causes'/'effects', try to extract them
-            if not causes and not effects and 'flows' in output:
-                flows = output.get('flows', [])
+            if not causes and not effects and "flows" in output:
+                flows = output.get("flows", [])
                 if isinstance(flows, list) and len(flows) >= 2:
                     # Assume first flow is causes, second flow is effects
-                    if len(flows) >= 1 and 'steps' in flows[0]:
-                        causes = [step.get('label', '') for step in flows[0].get('steps', []) if step.get('label')]
-                    if len(flows) >= 2 and 'steps' in flows[1]:
-                        effects = [step.get('label', '') for step in flows[1].get('steps', []) if step.get('label')]
+                    if len(flows) >= 1 and "steps" in flows[0]:
+                        causes = [step.get("label", "") for step in flows[0].get("steps", []) if step.get("label")]
+                    if len(flows) >= 2 and "steps" in flows[1]:
+                        effects = [step.get("label", "") for step in flows[1].get("steps", []) if step.get("label")]
 
             if not event or not isinstance(event, str):
                 return False, "Missing or invalid event/topic"
@@ -213,14 +211,14 @@ class MultiFlowMapAgent(BaseAgent):
             effects_raw = spec.get("effects", [])
 
             # If we have 'flows' instead of 'causes'/'effects', extract them
-            if not causes_raw and not effects_raw and 'flows' in spec:
-                flows = spec.get('flows', [])
+            if not causes_raw and not effects_raw and "flows" in spec:
+                flows = spec.get("flows", [])
                 if isinstance(flows, list) and len(flows) >= 2:
                     # Assume first flow is causes, second flow is effects
-                    if len(flows) >= 1 and 'steps' in flows[0]:
-                        causes_raw = [step.get('label', '') for step in flows[0].get('steps', []) if step.get('label')]
-                    if len(flows) >= 2 and 'steps' in flows[1]:
-                        effects_raw = [step.get('label', '') for step in flows[1].get('steps', []) if step.get('label')]
+                    if len(flows) >= 1 and "steps" in flows[0]:
+                        causes_raw = [step.get("label", "") for step in flows[0].get("steps", []) if step.get("label")]
+                    if len(flows) >= 2 and "steps" in flows[1]:
+                        effects_raw = [step.get("label", "") for step in flows[1].get("steps", []) if step.get("label")]
 
             if not isinstance(event_raw, str) or not isinstance(causes_raw, list) or not isinstance(effects_raw, list):
                 return {"success": False, "error": "Invalid field types in spec"}
@@ -230,7 +228,11 @@ class MultiFlowMapAgent(BaseAgent):
                 return (value or "").strip()
 
             event: str = clean_text(event_raw)
-            logger.debug("MultiFlowMapAgent: Raw causes: %s, Raw effects: %s", len(causes_raw), len(effects_raw))
+            logger.debug(
+                "MultiFlowMapAgent: Raw causes: %s, Raw effects: %s",
+                len(causes_raw),
+                len(effects_raw),
+            )
 
             def normalize_list(items: List[str]) -> List[str]:
                 seen = set()
@@ -241,7 +243,10 @@ class MultiFlowMapAgent(BaseAgent):
                         continue
                     cleaned = clean_text(item)
                     if not cleaned or cleaned in seen:
-                        logger.warning("MultiFlowMapAgent: Skipping empty or duplicate item: '%s'", item)
+                        logger.warning(
+                            "MultiFlowMapAgent: Skipping empty or duplicate item: '%s'",
+                            item,
+                        )
                         continue
                     seen.add(cleaned)
                     normalized.append(cleaned)
@@ -251,7 +256,11 @@ class MultiFlowMapAgent(BaseAgent):
 
             causes: List[str] = normalize_list(causes_raw)
             effects: List[str] = normalize_list(effects_raw)
-            logger.debug("MultiFlowMapAgent: Final normalized - causes: %s, effects: %s", len(causes), len(effects))
+            logger.debug(
+                "MultiFlowMapAgent: Final normalized - causes: %s, effects: %s",
+                len(causes),
+                len(effects),
+            )
 
             if not event:
                 return {"success": False, "error": "Missing or empty event"}

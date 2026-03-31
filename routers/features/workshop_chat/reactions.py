@@ -30,6 +30,7 @@ router = APIRouter()
 
 class AddReactionRequest(BaseModel):
     """Body for adding an emoji reaction."""
+
     emoji_name: str = Field(..., min_length=1, max_length=50)
     emoji_code: str = Field(..., min_length=1, max_length=10)
 
@@ -42,27 +43,31 @@ async def toggle_reaction(
     current_user: User = Depends(get_current_user),
 ):
     """Toggle an emoji reaction on a message (add or remove)."""
-    msg = await asyncio.to_thread(
-        lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
-    )
+    msg = await asyncio.to_thread(lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first())
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
     result = await asyncio.to_thread(
         lambda: reaction_service.toggle_reaction(
-            db, message_id, current_user.id,
-            body.emoji_name, body.emoji_code,
+            db,
+            message_id,
+            current_user.id,
+            body.emoji_name,
+            body.emoji_code,
         )
     )
 
-    await chat_ws_manager.broadcast_to_channel(msg.channel_id, {
-        "type": "reaction_update",
-        "message_id": message_id,
-        "emoji_name": body.emoji_name,
-        "emoji_code": body.emoji_code,
-        "user_id": current_user.id,
-        "action": result["action"],
-    })
+    await chat_ws_manager.broadcast_to_channel(
+        msg.channel_id,
+        {
+            "type": "reaction_update",
+            "message_id": message_id,
+            "emoji_name": body.emoji_name,
+            "emoji_code": body.emoji_code,
+            "user_id": current_user.id,
+            "action": result["action"],
+        },
+    )
 
     return result
 
@@ -78,9 +83,7 @@ async def remove_reaction(
     current_user: User = Depends(get_current_user),
 ):
     """Explicitly remove a specific emoji reaction."""
-    msg = await asyncio.to_thread(
-        lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
-    )
+    msg = await asyncio.to_thread(lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first())
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
@@ -106,17 +109,19 @@ async def remove_reaction(
 
     await asyncio.to_thread(_sync_delete_reaction)
 
-    await chat_ws_manager.broadcast_to_channel(msg.channel_id, {
-        "type": "reaction_update",
-        "message_id": message_id,
-        "emoji_name": emoji_name,
-        "emoji_code": emoji_code,
-        "user_id": current_user.id,
-        "action": "removed",
-    })
+    await chat_ws_manager.broadcast_to_channel(
+        msg.channel_id,
+        {
+            "type": "reaction_update",
+            "message_id": message_id,
+            "emoji_name": emoji_name,
+            "emoji_code": emoji_code,
+            "user_id": current_user.id,
+            "action": "removed",
+        },
+    )
 
-    return {"action": "removed", "message_id": message_id,
-            "emoji_name": emoji_name}
+    return {"action": "removed", "message_id": message_id, "emoji_name": emoji_name}
 
 
 @router.get("/messages/{message_id}/reactions")

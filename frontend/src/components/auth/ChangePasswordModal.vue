@@ -209,7 +209,9 @@ function handleBackdropClick(event: MouseEvent) {
             >
               <!-- Hidden username field for accessibility and password managers -->
               <input
+                id="change-password-username"
                 type="text"
+                name="username"
                 :value="authStore.user?.phone || authStore.user?.username || ''"
                 autocomplete="username"
                 class="sr-only"
@@ -222,13 +224,16 @@ function handleBackdropClick(event: MouseEvent) {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="change-password-current"
                 >
                   当前密码
                 </label>
                 <div class="relative">
                   <input
+                    id="change-password-current"
                     v-model="formData.currentPassword"
                     :type="showCurrentPassword ? 'text' : 'password'"
+                    name="change-password-current"
                     placeholder="请输入当前密码"
                     autocomplete="current-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -254,13 +259,16 @@ function handleBackdropClick(event: MouseEvent) {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="change-password-new"
                 >
                   新密码
                 </label>
                 <div class="relative">
                   <input
+                    id="change-password-new"
                     v-model="formData.newPassword"
                     :type="showNewPassword ? 'text' : 'password'"
+                    name="change-password-new"
                     placeholder="至少8位字符"
                     autocomplete="new-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -286,13 +294,16 @@ function handleBackdropClick(event: MouseEvent) {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="change-password-confirm"
                 >
                   确认新密码
                 </label>
                 <div class="relative">
                   <input
+                    id="change-password-confirm"
                     v-model="formData.confirmPassword"
                     :type="showConfirmPassword ? 'text' : 'password'"
+                    name="change-password-confirm"
                     placeholder="再次输入新密码"
                     autocomplete="new-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -318,13 +329,16 @@ function handleBackdropClick(event: MouseEvent) {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="change-password-captcha"
                 >
                   {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
+                    id="change-password-captcha"
                     v-model="formData.captcha"
                     type="text"
+                    name="change-password-captcha"
                     :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     autocomplete="off"

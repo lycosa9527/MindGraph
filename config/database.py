@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 from pathlib import Path
 import logging
@@ -45,8 +46,12 @@ try:
 except ImportError:
     CriticalAlertService = None
 from models.domain.auth import (
-    Base, Organization, User, APIKey,
-    UpdateNotification, UpdateNotificationDismissed
+    Base,
+    Organization,
+    User,
+    APIKey,
+    UpdateNotification,
+    UpdateNotificationDismissed,
 )
 from models.domain.token_usage import TokenUsage
 
@@ -56,9 +61,14 @@ logger = logging.getLogger(__name__)
 # This MUST happen before run_migrations() is called
 try:
     from models.domain.knowledge_space import (
-        ChunkTestDocument, ChunkTestDocumentChunk, ChunkTestResult,
-        KnowledgeSpace, KnowledgeDocument, DocumentChunk
+        ChunkTestDocument,
+        ChunkTestDocumentChunk,
+        ChunkTestResult,
+        KnowledgeSpace,
+        KnowledgeDocument,
+        DocumentChunk,
     )
+
     # Verify models are registered by accessing their tables
     _ = ChunkTestDocument.__tablename__
     _ = ChunkTestDocumentChunk.__tablename__
@@ -76,6 +86,7 @@ except Exception as e:
 # Import other models to ensure they're registered with Base.metadata for migrations
 try:
     from models.domain.diagrams import Diagram
+
     _ = Diagram.__tablename__
     logger.debug("[Database] Diagram models imported and registered for migrations")
 except ImportError as e:
@@ -85,6 +96,7 @@ except Exception as e:
 
 try:
     from models.domain.diagram_snapshots import DiagramSnapshot
+
     _ = DiagramSnapshot.__tablename__
     logger.debug("[Database] DiagramSnapshot model imported and registered for migrations")
 except ImportError as e:
@@ -94,8 +106,12 @@ except Exception as e:
 
 try:
     from models.domain.debateverse import (
-        DebateSession, DebateParticipant, DebateMessage, DebateJudgment
+        DebateSession,
+        DebateParticipant,
+        DebateMessage,
+        DebateJudgment,
     )
+
     _ = DebateSession.__tablename__
     _ = DebateParticipant.__tablename__
     _ = DebateMessage.__tablename__
@@ -112,6 +128,7 @@ try:
         CommunityPostComment,
         CommunityPostLike,
     )
+
     _ = CommunityPost.__tablename__
     _ = CommunityPostLike.__tablename__
     _ = CommunityPostComment.__tablename__
@@ -123,8 +140,11 @@ except Exception as e:
 
 try:
     from models.domain.school_zone import (
-        SharedDiagram, SharedDiagramLike, SharedDiagramComment
+        SharedDiagram,
+        SharedDiagramLike,
+        SharedDiagramComment,
     )
+
     _ = SharedDiagram.__tablename__
     _ = SharedDiagramLike.__tablename__
     _ = SharedDiagramComment.__tablename__
@@ -136,6 +156,7 @@ except Exception as e:
 
 try:
     from models.domain.pinned_conversations import PinnedConversation
+
     _ = PinnedConversation.__tablename__
     logger.debug("[Database] Pinned conversation models imported and registered for migrations")
 except ImportError as e:
@@ -145,6 +166,7 @@ except Exception as e:
 
 try:
     from models.domain.dashboard_activity import DashboardActivity
+
     _ = DashboardActivity.__tablename__
     logger.debug("[Database] Dashboard activity models imported and registered for migrations")
 except ImportError as e:
@@ -156,6 +178,7 @@ try:
     from models.domain.user_activity_log import UserActivityLog
     from models.domain.user_usage_stats import UserUsageStats
     from models.domain.teacher_usage_config import TeacherUsageConfig
+
     _ = UserActivityLog.__tablename__
     _ = UserUsageStats.__tablename__
     _ = TeacherUsageConfig.__tablename__
@@ -167,9 +190,13 @@ except Exception as e:
 
 try:
     from models.domain.library import (
-        LibraryDocument, LibraryDanmaku, LibraryDanmakuLike, LibraryDanmakuReply,
-        LibraryBookmark
+        LibraryDocument,
+        LibraryDanmaku,
+        LibraryDanmakuLike,
+        LibraryDanmakuReply,
+        LibraryBookmark,
     )
+
     _ = LibraryDocument.__tablename__
     _ = LibraryDanmaku.__tablename__
     _ = LibraryDanmakuLike.__tablename__
@@ -179,7 +206,7 @@ try:
     logger.debug(
         "[Database] LibraryBookmark table name: %s, registered: %s",
         LibraryBookmark.__tablename__,
-        LibraryBookmark.__tablename__ in Base.metadata.tables
+        LibraryBookmark.__tablename__ in Base.metadata.tables,
     )
 except ImportError as e:
     logger.warning("[Database] Could not import library models: %s", e)
@@ -188,6 +215,7 @@ except Exception as e:
 
 try:
     from models.domain.gewe_message import GeweMessage
+
     _ = GeweMessage.__tablename__
     logger.debug("[Database] Gewe message models imported and registered for migrations")
 except ImportError as e:
@@ -197,6 +225,7 @@ except Exception as e:
 
 try:
     from models.domain.gewe_contact import GeweContact
+
     _ = GeweContact.__tablename__
     logger.debug("[Database] Gewe contact models imported and registered for migrations")
 except ImportError as e:
@@ -206,6 +235,7 @@ except Exception as e:
 
 try:
     from models.domain.gewe_group_member import GeweGroupMember
+
     _ = GeweGroupMember.__tablename__
     logger.debug("[Database] Gewe group member models imported and registered for migrations")
 except ImportError as e:
@@ -215,9 +245,17 @@ except Exception as e:
 
 try:
     from models.domain.workshop_chat import (
-        ChatChannel, ChannelMember, ChatTopic, ChatMessage, DirectMessage,
-        MessageReaction, StarredMessage, FileAttachment, UserTopicPreference,
+        ChatChannel,
+        ChannelMember,
+        ChatTopic,
+        ChatMessage,
+        DirectMessage,
+        MessageReaction,
+        StarredMessage,
+        FileAttachment,
+        UserTopicPreference,
     )
+
     _ = ChatChannel.__tablename__
     _ = ChannelMember.__tablename__
     _ = ChatTopic.__tablename__
@@ -239,6 +277,7 @@ try:
         FeatureAccessRule,
         FeatureAccessUserGrant,
     )
+
     _ = FeatureAccessRule.__tablename__
     _ = FeatureAccessOrgGrant.__tablename__
     _ = FeatureAccessUserGrant.__tablename__
@@ -261,7 +300,7 @@ def _normalise_db_url(url: str) -> str:
     """Rewrite legacy psycopg2 URL schemes to the psycopg3 scheme."""
     for legacy in ("postgresql+psycopg2://", "postgresql://", "postgres://"):
         if url.startswith(legacy):
-            return "postgresql+psycopg://" + url[len(legacy):]
+            return "postgresql+psycopg://" + url[len(legacy) :]
     return url
 
 
@@ -296,26 +335,26 @@ DATABASE_URL = _normalise_db_url(_raw_db_url)
 
 # Default pool configuration for 6 workers (configurable via environment variables)
 # Calculation: 6 workers × 5 base = 30, 6 workers × 10 overflow = 60
-DEFAULT_POOL_SIZE = 30        # Base connections (5 per worker for 6 workers)
-DEFAULT_MAX_OVERFLOW = 60      # Overflow connections (10 per worker for 6 workers)
-DEFAULT_POOL_TIMEOUT = 60     # Wait time for connection (seconds)
+DEFAULT_POOL_SIZE = 30  # Base connections (5 per worker for 6 workers)
+DEFAULT_MAX_OVERFLOW = 60  # Overflow connections (10 per worker for 6 workers)
+DEFAULT_POOL_TIMEOUT = 60  # Wait time for connection (seconds)
 
 # Allow environment variable overrides
-pool_size_str = os.getenv('DATABASE_POOL_SIZE', str(DEFAULT_POOL_SIZE))
-max_overflow_str = os.getenv('DATABASE_MAX_OVERFLOW', str(DEFAULT_MAX_OVERFLOW))
-pool_timeout_str = os.getenv('DATABASE_POOL_TIMEOUT', str(DEFAULT_POOL_TIMEOUT))
+pool_size_str = os.getenv("DATABASE_POOL_SIZE", str(DEFAULT_POOL_SIZE))
+max_overflow_str = os.getenv("DATABASE_MAX_OVERFLOW", str(DEFAULT_MAX_OVERFLOW))
+pool_timeout_str = os.getenv("DATABASE_POOL_TIMEOUT", str(DEFAULT_POOL_TIMEOUT))
 pool_size = int(pool_size_str)
 max_overflow = int(max_overflow_str)
 pool_timeout = int(pool_timeout_str)
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=pool_size,        # Default: 30 (for 6 workers), override via DATABASE_POOL_SIZE
-    max_overflow=max_overflow,   # Default: 60 (for 6 workers), override via DATABASE_MAX_OVERFLOW
+    pool_size=pool_size,  # Default: 30 (for 6 workers), override via DATABASE_POOL_SIZE
+    max_overflow=max_overflow,  # Default: 60 (for 6 workers), override via DATABASE_MAX_OVERFLOW
     pool_timeout=pool_timeout,  # Default: 60 seconds, override via DATABASE_POOL_TIMEOUT
-    pool_pre_ping=True,          # Test connection before using
-    pool_recycle=1800,           # Recycle connections every 30 minutes
-    echo=False
+    pool_pre_ping=True,  # Test connection before using
+    pool_recycle=1800,  # Recycle connections every 30 minutes
+    echo=False,
 )
 
 # Create session factory
@@ -334,24 +373,15 @@ def _fix_workshop_chat_nullability(db_engine):
         inspector = inspect(db_engine)
         if "chat_channels" not in inspector.get_table_names():
             return
-        columns = {
-            col["name"]: col for col in inspector.get_columns("chat_channels")
-        }
+        columns = {col["name"]: col for col in inspector.get_columns("chat_channels")}
         org_col = columns.get("organization_id")
         if org_col and not org_col.get("nullable", True):
             with db_engine.connect() as conn:
-                conn.execute(text(
-                    "ALTER TABLE chat_channels "
-                    "ALTER COLUMN organization_id DROP NOT NULL"
-                ))
+                conn.execute(text("ALTER TABLE chat_channels ALTER COLUMN organization_id DROP NOT NULL"))
                 conn.commit()
-            logger.info(
-                "[Database] Fixed chat_channels.organization_id → nullable"
-            )
+            logger.info("[Database] Fixed chat_channels.organization_id → nullable")
     except (OperationalError, ProgrammingError) as exc:
-        logger.warning(
-            "[Database] Could not fix chat_channels nullability: %s", exc
-        )
+        logger.warning("[Database] Could not fix chat_channels nullability: %s", exc)
 
 
 def _ensure_chat_channels_display_order(db_engine):
@@ -362,22 +392,15 @@ def _ensure_chat_channels_display_order(db_engine):
         inspector = inspect(db_engine)
         if "chat_channels" not in inspector.get_table_names():
             return
-        column_names = {
-            col["name"] for col in inspector.get_columns("chat_channels")
-        }
+        column_names = {col["name"] for col in inspector.get_columns("chat_channels")}
         if "display_order" in column_names:
             return
         with db_engine.connect() as conn:
-            conn.execute(text(
-                "ALTER TABLE chat_channels ADD COLUMN display_order "
-                "INTEGER NOT NULL DEFAULT 0"
-            ))
+            conn.execute(text("ALTER TABLE chat_channels ADD COLUMN display_order INTEGER NOT NULL DEFAULT 0"))
             conn.commit()
         logger.info("[Database] Added chat_channels.display_order (SQLite)")
     except (OperationalError, ProgrammingError) as exc:
-        logger.warning(
-            "[Database] Could not add chat_channels.display_order: %s", exc
-        )
+        logger.warning("[Database] Could not add chat_channels.display_order: %s", exc)
 
 
 def _seed_organizations_if_empty() -> None:
@@ -399,7 +422,7 @@ def _seed_organizations_if_empty() -> None:
                         code=org_code,
                         name=org_code,
                         invitation_code=invite,
-                        created_at=datetime.utcnow()
+                        created_at=datetime.utcnow(),
                     )
                 )
             logger.info("Seeding organizations from .env: %d entries", len(seeded_orgs))
@@ -409,30 +432,28 @@ def _seed_organizations_if_empty() -> None:
                     code="DEMO-001",
                     name="Demo School for Testing",
                     invitation_code="DEMO-A1B2C",
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
                 ),
                 Organization(
                     code="SPRING-EDU",
                     name="Springfield Elementary School",
                     invitation_code="SPRN-9K2L1",
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
                 ),
                 Organization(
                     code="BJ-001",
                     name="Beijing First High School",
                     invitation_code="BJXX-M3N4P",
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
                 ),
                 Organization(
                     code="SH-042",
                     name="Shanghai International School",
                     invitation_code="SHXX-Q5R6S",
-                    created_at=datetime.utcnow()
-                )
+                    created_at=datetime.utcnow(),
+                ),
             ]
-            logger.info(
-                "Seeding default demo organizations (no INVITATION_CODES in .env)"
-            )
+            logger.info("Seeding default demo organizations (no INVITATION_CODES in .env)")
 
         if seeded_orgs:
             db.add_all(seeded_orgs)
@@ -470,15 +491,12 @@ def init_db(seed_organizations: bool = True):
             User.__tablename__,
             APIKey.__tablename__,
             UpdateNotification.__tablename__,
-            UpdateNotificationDismissed.__tablename__
+            UpdateNotificationDismissed.__tablename__,
         ]
         registered_tables = set(Base.metadata.tables.keys())
         missing_tables = set(auth_model_tables) - registered_tables
         if missing_tables:
-            logger.warning(
-                "Some auth models not registered: %s",
-                missing_tables
-            )
+            logger.warning("Some auth models not registered: %s", missing_tables)
     except (ImportError, AttributeError):
         pass  # Some models may not exist yet or may not have __tablename__
 
@@ -488,7 +506,7 @@ def init_db(seed_organizations: bool = True):
         if token_usage_table not in Base.metadata.tables:
             logger.warning(
                 "TokenUsage model not registered with Base.metadata: %s",
-                token_usage_table
+                token_usage_table,
             )
     except (ImportError, AttributeError):
         pass  # TokenUsage may not exist yet or may not have __tablename__
@@ -518,42 +536,39 @@ def init_db(seed_organizations: bool = True):
         if bookmark_table_name not in expected_tables:
             logger.warning(
                 "[Database] LibraryBookmark table '%s' is NOT registered in Base.metadata!",
-                bookmark_table_name
+                bookmark_table_name,
             )
         else:
             logger.debug(
                 "[Database] LibraryBookmark table '%s' is registered in Base.metadata",
-                bookmark_table_name
+                bookmark_table_name,
             )
     except NameError:
         logger.debug("[Database] LibraryBookmark not available, skipping verification")
     except Exception as e:
-        logger.warning(
-            "[Database] Could not verify LibraryBookmark registration: %s",
-            e
-        )
+        logger.warning("[Database] Could not verify LibraryBookmark registration: %s", e)
 
     # Log registered tables for debugging
     logger.debug(
         "[Database] Expected tables in Base.metadata (%d): %s",
         len(expected_tables),
-        ', '.join(sorted(expected_tables))
+        ", ".join(sorted(expected_tables)),
     )
     logger.debug(
         "[Database] Existing tables in database (%d): %s",
         len(existing_tables),
-        ', '.join(sorted(existing_tables))
+        ", ".join(sorted(existing_tables)),
     )
 
     # Determine which tables need to be created
     missing_tables = expected_tables - existing_tables
 
     if missing_tables:
-        missing_tables_sorted = ', '.join(sorted(missing_tables))
+        missing_tables_sorted = ", ".join(sorted(missing_tables))
         logger.debug(
             "Creating %d missing table(s): %s",
             len(missing_tables),
-            missing_tables_sorted
+            missing_tables_sorted,
         )
         try:
             # Create missing tables
@@ -569,13 +584,12 @@ def init_db(seed_organizations: bool = True):
             # SAFETY: We only catch "already exists" errors - genuine errors are re-raised
             error_msg = str(e).lower()
             duplicate_conditions = (
-                "already exists" in error_msg or
-                ("table" in error_msg and "exists" in error_msg) or
-                ("duplicate" in error_msg and (
-                    "table" in error_msg or
-                    "index" in error_msg or
-                    "relation" in error_msg
-                ))
+                "already exists" in error_msg
+                or ("table" in error_msg and "exists" in error_msg)
+                or (
+                    "duplicate" in error_msg
+                    and ("table" in error_msg or "index" in error_msg or "relation" in error_msg)
+                )
             )
             if duplicate_conditions:
                 logger.debug("Table/index creation conflict resolved (already exists): %s", e)
@@ -596,7 +610,7 @@ def init_db(seed_organizations: bool = True):
                             CriticalAlertService.send_startup_failure_alert_sync(
                                 component="Database",
                                 error_message=f"Database error during initialization: {str(e)}",
-                                details=details
+                                details=details,
                             )
                     except Exception as alert_error:
                         logger.error("Failed to send database error alert: %s", alert_error)
@@ -665,7 +679,7 @@ def check_disk_space(required_mb: int = 100) -> bool:
                 logger.warning(
                     "[Database] Low disk space: %.1f MB available, %d MB required",
                     free_mb,
-                    required_mb
+                    required_mb,
                 )
                 return False
             return True
@@ -698,13 +712,13 @@ def check_integrity() -> bool:
 def recover_from_kill_9():
     """
     Recover from kill -9 scenarios by cleaning up stale connections.
-    
+
     This function should be called on startup to handle cases where the process
     was killed with kill -9 (SIGKILL), which bypasses graceful shutdown.
-    
+
     Handles:
     - Stale database connections in connection pool
-    
+
     Returns:
         bool: True if recovery succeeded, False otherwise
     """
@@ -727,10 +741,7 @@ def recover_from_kill_9():
                 result.fetchone()
                 logger.debug("[Database] Database connection verified after recovery")
         except Exception as e:
-            logger.error(
-                "[Database] Database connection failed after recovery attempt: %s",
-                e
-            )
+            logger.error("[Database] Database connection failed after recovery attempt: %s", e)
             # Try one more time with a short delay
             time.sleep(0.1)
             try:
@@ -739,21 +750,14 @@ def recover_from_kill_9():
                     result.fetchone()
                     logger.debug("[Database] Database connection verified after retry")
             except Exception as retry_error:
-                logger.error(
-                    "[Database] Database recovery failed: %s",
-                    retry_error
-                )
+                logger.error("[Database] Database recovery failed: %s", retry_error)
                 return False
 
         logger.debug("[Database] Recovery from kill -9 scenario completed successfully")
         return True
 
     except Exception as e:
-        logger.error(
-            "[Database] Error during kill -9 recovery: %s",
-            e,
-            exc_info=True
-        )
+        logger.error("[Database] Error during kill -9 recovery: %s", e, exc_info=True)
         return False
 
 

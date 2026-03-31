@@ -153,7 +153,9 @@ const overlayStyle = {
               v-else
               class="mr-1 h-5 w-5"
             />
-            {{ running ? t('canvas.presentationTimer.pause') : t('canvas.presentationTimer.start') }}
+            {{
+              running ? t('canvas.presentationTimer.pause') : t('canvas.presentationTimer.start')
+            }}
           </ElButton>
           <ElButton
             native-type="button"

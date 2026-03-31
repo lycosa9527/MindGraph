@@ -26,10 +26,7 @@ def _validate_grant_fks(db: Session, data: Dict[str, FeatureOrgAccessEntry]) -> 
         org_ids.update(entry.organization_ids)
         user_ids.update(entry.user_ids)
     if org_ids:
-        found = {
-            row[0]
-            for row in db.query(Organization.id).filter(Organization.id.in_(org_ids)).all()
-        }
+        found = {row[0] for row in db.query(Organization.id).filter(Organization.id.in_(org_ids)).all()}
         missing = sorted(org_ids - found)
         if missing:
             raise ValueError(f"Unknown organization id(s): {missing}")

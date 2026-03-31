@@ -562,7 +562,9 @@ class EnhancedEventBus {
     try {
       this.emitter.emit(event, data)
     } catch (error) {
-      console.error(`[EventBus] Listener error for ${event}:`, error)
+      if (import.meta.env.DEV) {
+        console.error(`[EventBus] Listener error for ${event}:`, error)
+      }
     }
 
     // Emit to wildcard listeners
@@ -570,13 +572,15 @@ class EnhancedEventBus {
       try {
         handler(event, data)
       } catch (error) {
-        console.error(`[EventBus] Wildcard handler error for ${event}:`, error)
+        if (import.meta.env.DEV) {
+          console.error(`[EventBus] Wildcard handler error for ${event}:`, error)
+        }
       }
     })
 
     // Performance warning
     const duration = performance.now() - startTime
-    if (duration > this.performanceThreshold) {
+    if (import.meta.env.DEV && duration > this.performanceThreshold) {
       console.warn(
         `[EventBus] Slow event: ${event} took ${duration.toFixed(2)}ms (threshold: ${this.performanceThreshold}ms)`
       )
@@ -592,7 +596,9 @@ class EnhancedEventBus {
    */
   onWithOwner<K extends EventKey>(event: K, handler: EventHandler<K>, owner: string): () => void {
     if (!owner) {
-      console.warn('[EventBus] onWithOwner called without owner - falling back to on()')
+      if (import.meta.env.DEV) {
+        console.warn('[EventBus] onWithOwner called without owner - falling back to on()')
+      }
       return this.on(event, handler)
     }
 
@@ -762,7 +768,9 @@ class EnhancedEventBus {
    */
   setDebugMode(enabled: boolean): void {
     this.debugMode = enabled
-    console.log(`[EventBus] Debug mode ${enabled ? 'enabled' : 'disabled'}`)
+    if (import.meta.env.DEV) {
+      console.log(`[EventBus] Debug mode ${enabled ? 'enabled' : 'disabled'}`)
+    }
   }
 
   /**
@@ -816,15 +824,6 @@ if (typeof window !== 'undefined' && import.meta.env.DEV) {
     debug: (enabled: boolean) => eventBus.setDebugMode(enabled),
     clear: (event?: EventKey) => eventBus.clear(event),
   }
-
-  console.log('%c[EventBus] Debug tools available:', 'color: #4caf50; font-weight: bold;')
-  console.log('  window.debugEventBus.stats()  - View event statistics')
-  console.log('  window.debugEventBus.events() - List all event names')
-  console.log('  window.debugEventBus.listeners() - List all listeners by owner')
-  console.log('  window.debugEventBus.listeners("Owner") - List listeners for specific owner')
-  console.log('  window.debugEventBus.counts() - Get listener counts by owner')
-  console.log('  window.debugEventBus.removeOwner("Owner") - Remove all listeners for owner')
-  console.log('  window.debugEventBus.debug(true/false) - Toggle debug mode')
 }
 
 // ============================================================================

@@ -2,6 +2,7 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
+
 import logging
 import shutil
 from pathlib import Path
@@ -20,7 +21,7 @@ def batch_upload_documents(
     files: List[Dict[str, Any]],
     storage_dir: Path,
     max_file_size: int,
-    processor
+    processor,
 ) -> DocumentBatch:
     """
     Upload multiple documents in a batch.
@@ -42,8 +43,8 @@ def batch_upload_documents(
 
     # Validate all files before processing
     for file_info in files:
-        file_size = file_info.get('file_size', 0)
-        file_type = file_info.get('file_type', '')
+        file_size = file_info.get("file_size", 0)
+        file_type = file_info.get("file_type", "")
 
         if file_size > max_file_size:
             raise ValueError(
@@ -52,28 +53,26 @@ def batch_upload_documents(
             )
 
         if not processor.is_supported(file_type):
-            file_name = file_info.get('file_name', 'unknown')
+            file_name = file_info.get("file_name", "unknown")
             raise ValueError(f"Unsupported file type: {file_type} for file '{file_name}'")
 
     # Check for duplicate filenames
     existing_filenames = {
-        doc.file_name for doc in db.query(KnowledgeDocument).filter(
-            KnowledgeDocument.space_id == space_id
-        ).all()
+        doc.file_name for doc in db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space_id).all()
     }
 
     for file_info in files:
-        file_name = file_info.get('file_name', '')
+        file_name = file_info.get("file_name", "")
         if file_name in existing_filenames:
             raise ValueError(f"Document with name '{file_name}' already exists")
 
     # Create batch record
     batch = DocumentBatch(
         user_id=user_id,
-        status='pending',
+        status="pending",
         total_count=len(files),
         completed_count=0,
-        failed_count=0
+        failed_count=0,
     )
     db.add(batch)
     db.commit()
@@ -85,10 +84,10 @@ def batch_upload_documents(
 
     documents = []
     for file_info in files:
-        file_name = file_info['file_name']
-        file_path = file_info['file_path']
-        file_type = file_info['file_type']
-        file_size = file_info['file_size']
+        file_name = file_info["file_name"]
+        file_path = file_info["file_path"]
+        file_type = file_info["file_type"]
+        file_size = file_info["file_size"]
 
         # Create document record
         document = KnowledgeDocument(
@@ -97,8 +96,8 @@ def batch_upload_documents(
             file_path=str(user_dir / file_name),
             file_type=file_type,
             file_size=file_size,
-            status='pending',
-            batch_id=batch.id
+            status="pending",
+            batch_id=batch.id,
         )
         db.add(document)
         db.flush()
@@ -113,18 +112,14 @@ def batch_upload_documents(
 
     logger.info(
         "[KnowledgeSpace] Created batch %s with %s documents for user %s",
-        batch.id, len(documents), user_id
+        batch.id,
+        len(documents),
+        user_id,
     )
     return batch
 
 
-def update_batch_progress(
-    db,
-    user_id: int,
-    batch_id: int,
-    completed: int = 0,
-    failed: int = 0
-) -> None:
+def update_batch_progress(db, user_id: int, batch_id: int, completed: int = 0, failed: int = 0) -> None:
     """
     Update batch processing progress.
 
@@ -135,10 +130,7 @@ def update_batch_progress(
         completed: Number of completed documents (increment)
         failed: Number of failed documents (increment)
     """
-    batch = db.query(DocumentBatch).filter(
-        DocumentBatch.id == batch_id,
-        DocumentBatch.user_id == user_id
-    ).first()
+    batch = db.query(DocumentBatch).filter(DocumentBatch.id == batch_id, DocumentBatch.user_id == user_id).first()
 
     if not batch:
         logger.warning("[KnowledgeSpace] Batch %s not found for user %s", batch_id, user_id)
@@ -150,12 +142,12 @@ def update_batch_progress(
     # Update status
     if batch.completed_count + batch.failed_count >= batch.total_count:
         if batch.failed_count == 0:
-            batch.status = 'completed'
+            batch.status = "completed"
         elif batch.completed_count == 0:
-            batch.status = 'failed'
+            batch.status = "failed"
         else:
-            batch.status = 'completed'  # Partial success is still considered completed
+            batch.status = "completed"  # Partial success is still considered completed
     else:
-        batch.status = 'processing'
+        batch.status = "processing"
 
     db.commit()

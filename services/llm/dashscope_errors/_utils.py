@@ -1,10 +1,9 @@
-﻿import re
+import re
 
 
 """
 Utility functions for DashScope error parsing.
 """
-
 
 
 def has_chinese_characters(text: str) -> bool:
@@ -18,4 +17,4 @@ def has_chinese_characters(text: str) -> bool:
     Returns:
         True if text contains Chinese characters
     """
-    return bool(re.search(r'[\u4e00-\u9fff]', text))
+    return bool(re.search(r"[\u4e00-\u9fff]", text))

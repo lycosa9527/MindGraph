@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from functools import lru_cache
 from typing import Optional, Dict, Any
 
@@ -26,7 +27,7 @@ class BubbleMapPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build Bubble Map prompt using existing generation logic.
@@ -45,13 +46,13 @@ class BubbleMapPaletteGenerator(BasePaletteGenerator):
 
         # Use same context extraction as auto-complete
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
+            educational_context.get("raw_message", "General K12 teaching")
             if educational_context
-            else 'General K12 teaching'
+            else "General K12 teaching"
         )
 
         # Build prompt based on language
-        if language == 'zh':
+        if language == "zh":
             prompt = f"""为以下主题生成{count}个气泡图属性词：{center_topic}
 
 教学背景：{context_desc}
@@ -88,8 +89,10 @@ Generate {count} attributes:"""
 
         # Add diversity note for later batches (node palette specific)
         if batch_num > 1:
-            if language == 'zh':
-                prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度描述，避免与之前批次重复。"
+            if language == "zh":
+                prompt += (
+                    f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度描述，避免与之前批次重复。"
+                )
             else:
                 prompt += (
                     f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "

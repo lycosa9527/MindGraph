@@ -8,13 +8,16 @@ import { nextTick, onUnmounted, ref, watch } from 'vue'
 import { ElButton, ElDialog } from 'element-plus'
 
 import {
+  MATHLIVE_BASE_LAYOUTS_BEFORE_CUSTOM,
   buildChemistryVirtualKeyboardLayout,
   buildK12ChemFormulasVirtualKeyboardLayout,
   buildK12EquationsVirtualKeyboardLayout,
   buildK12MathVirtualKeyboardLayout,
-  MATHLIVE_BASE_LAYOUTS_BEFORE_CUSTOM,
 } from '@/composables/canvas/mathLiveCustomKeyboardLayouts'
-import { buildK12ChemFormulasKeyLabels, buildK12EquationsKeyLabels } from '@/composables/canvas/mathLiveKeyboardI18n'
+import {
+  buildK12ChemFormulasKeyLabels,
+  buildK12EquationsKeyLabels,
+} from '@/composables/canvas/mathLiveKeyboardI18n'
 import { mapUiLocaleToMathLiveLocale } from '@/composables/canvas/mathLiveLocale'
 import { useLanguage } from '@/composables/core/useLanguage'
 
@@ -93,9 +96,7 @@ function mindgraphKeyboardLayouts() {
   }
 }
 
-function snapshotLayoutsBeforeMindGraph(
-  vk: NonNullable<typeof window.mathVirtualKeyboard>
-): void {
+function snapshotLayoutsBeforeMindGraph(vk: NonNullable<typeof window.mathVirtualKeyboard>): void {
   const raw = vk.layouts as unknown
   savedVirtualKeyboardLayouts = Array.isArray(raw) ? [...raw] : null
 }

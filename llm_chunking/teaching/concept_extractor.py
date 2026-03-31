@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Concept:
     """Represents a concept with relationships."""
+
     name: str
     level: int  # Hierarchy level (1 = top level)
     parent: Optional[str] = None
@@ -49,11 +50,7 @@ class ConceptExtractor:
             except Exception as e:
                 logger.warning("LLM service not available: %s", e)
 
-    async def extract_concepts(
-        self,
-        text: str,
-        max_concepts: int = 50
-    ) -> List[Concept]:
+    async def extract_concepts(self, text: str, max_concepts: int = 50) -> List[Concept]:
         """
         Extract key concepts and their relationships.
 
@@ -93,16 +90,11 @@ Extract up to {max_concepts} concepts.
 """
 
         try:
-            response = await self.llm_service.chat(
-                prompt=prompt,
-                model='qwen',
-                temperature=0.3,
-                max_tokens=2000
-            )
+            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=2000)
 
             # Parse JSON
-            json_start = response.find('[')
-            json_end = response.rfind(']') + 1
+            json_start = response.find("[")
+            json_end = response.rfind("]") + 1
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 concepts_data = json.loads(json_str)
@@ -113,7 +105,7 @@ Extract up to {max_concepts} concepts.
                         name=data.get("name", ""),
                         level=data.get("level", 1),
                         parent=data.get("parent"),
-                        description=data.get("description")
+                        description=data.get("description"),
                     )
                     concepts.append(concept)
 

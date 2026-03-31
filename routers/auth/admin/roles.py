@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -40,29 +41,22 @@ def list_admins(
     Returns users where role='admin', plus env-configured ADMIN_PHONES
     as read-only reference.
     """
-    admin_users = (
-        db.query(User)
-        .filter(User.role.in_(["admin", "superadmin"]))
-        .order_by(User.created_at.asc())
-        .all()
-    )
+    admin_users = db.query(User).filter(User.role.in_(["admin", "superadmin"])).order_by(User.created_at.asc()).all()
 
     env_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
 
     env_admins = []
     if env_phones:
-        env_users = (
-            db.query(User)
-            .filter(User.phone.in_(env_phones))
-            .all()
-        )
+        env_users = db.query(User).filter(User.phone.in_(env_phones)).all()
         user_by_phone = {u.phone: u for u in env_users}
         for phone in env_phones:
             user = user_by_phone.get(phone)
-            env_admins.append({
-                "phone": phone,
-                "name": user.name if user else None,
-            })
+            env_admins.append(
+                {
+                    "phone": phone,
+                    "name": user.name if user else None,
+                }
+            )
 
     result = []
     for user in admin_users:
@@ -70,15 +64,17 @@ def list_admins(
         if len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
 
-        result.append({
-            "id": user.id,
-            "phone": masked_phone,
-            "phone_real": user.phone,
-            "name": user.name,
-            "role": user.role,
-            "source": "database",
-            "created_at": utc_to_beijing_iso(user.created_at),
-        })
+        result.append(
+            {
+                "id": user.id,
+                "phone": masked_phone,
+                "phone_real": user.phone,
+                "name": user.name,
+                "role": user.role,
+                "source": "database",
+                "created_at": utc_to_beijing_iso(user.created_at),
+            }
+        )
 
     return {
         "admins": result,
@@ -120,7 +116,12 @@ def update_user_role(
     if old_role == role:
         return {
             "message": Messages.success("user_updated", lang=lang),
-            "user": {"id": user.id, "phone": user.phone, "name": user.name, "role": role},
+            "user": {
+                "id": user.id,
+                "phone": user.phone,
+                "name": user.name,
+                "role": role,
+            },
         }
 
     if old_role in ("admin", "superadmin") and role not in ("admin", "superadmin"):

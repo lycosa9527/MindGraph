@@ -1,4 +1,5 @@
 """Dispatch diagram update actions from voice commands."""
+
 from typing import Any, Dict
 
 from fastapi import WebSocket
@@ -29,9 +30,7 @@ async def execute_diagram_update(
 
     try:
         if action == "update_center":
-            return await _handle_update_center_action(
-                websocket, voice_session_id, command, session_context, target
-            )
+            return await _handle_update_center_action(websocket, voice_session_id, command, session_context, target)
 
         if action == "update_node" and target:
             return await _handle_update_node_action(
@@ -45,9 +44,7 @@ async def execute_diagram_update(
             )
 
         if action == "add_node":
-            return await voice_apply_add_node_action(
-                websocket, voice_session_id, command, session_context
-            )
+            return await voice_apply_add_node_action(websocket, voice_session_id, command, session_context)
 
         if action == "delete_node":
             return await voice_apply_delete_node_action(

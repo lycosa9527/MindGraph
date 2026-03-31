@@ -23,10 +23,14 @@ from typing import Any, Dict, List, Optional
 from sqlalchemy.orm import Session
 
 from models.domain.workshop_chat import (
-    ChatChannel, ChannelMember, ChatMessage, ChatTopic,
+    ChatChannel,
+    ChannelMember,
+    ChatMessage,
+    ChatTopic,
 )
 from services.features.workshop_chat.seed_channel_data import (
-    ANNOUNCE_CHANNEL, DEFAULT_CHANNEL_GROUPS,
+    ANNOUNCE_CHANNEL,
+    DEFAULT_CHANNEL_GROUPS,
 )
 
 logger = logging.getLogger(__name__)
@@ -35,6 +39,7 @@ SEED_MSG_INTERVAL_MINUTES = 3
 
 
 # ── Seeding helpers ───────────────────────────────────────────────
+
 
 def _normalize_message_content(raw: Any) -> str:
     """Ensure message content is a single string (seed data uses tuples of parts)."""
@@ -59,14 +64,16 @@ def _seed_topic_messages(
         created_at = base_time + timedelta(
             minutes=idx * SEED_MSG_INTERVAL_MINUTES,
         )
-        db.add(ChatMessage(
-            channel_id=channel_id,
-            topic_id=topic_id,
-            sender_id=sender_id,
-            content=content,
-            message_type="text",
-            created_at=created_at,
-        ))
+        db.add(
+            ChatMessage(
+                channel_id=channel_id,
+                topic_id=topic_id,
+                sender_id=sender_id,
+                content=content,
+                message_type="text",
+                created_at=created_at,
+            )
+        )
 
 
 def _seed_lesson_study_channel(
@@ -90,11 +97,13 @@ def _seed_lesson_study_channel(
     db.add(child)
     db.flush()
 
-    db.add(ChannelMember(
-        channel_id=child.id,
-        user_id=created_by,
-        role="owner",
-    ))
+    db.add(
+        ChannelMember(
+            channel_id=child.id,
+            user_id=created_by,
+            role="owner",
+        )
+    )
 
     for topic_idx, topic_data in enumerate(child_data.get("topics", [])):
         topic = ChatTopic(
@@ -110,8 +119,12 @@ def _seed_lesson_study_channel(
         if topic_messages:
             topic_base = base_time + timedelta(minutes=topic_idx * 15)
             _seed_topic_messages(
-                db, child.id, topic.id, created_by,
-                topic_messages, topic_base,
+                db,
+                child.id,
+                topic.id,
+                created_by,
+                topic_messages,
+                topic_base,
             )
 
     return {
@@ -123,6 +136,7 @@ def _seed_lesson_study_channel(
 
 # ── Seeding logic ─────────────────────────────────────────────────
 
+
 def _ensure_announce_topics_and_messages(
     db: Session,
     channel: ChatChannel,
@@ -130,10 +144,7 @@ def _ensure_announce_topics_and_messages(
     base_time: datetime,
 ) -> None:
     """Add missing topics and messages to an existing announce channel."""
-    existing_titles = {
-        t.title
-        for t in db.query(ChatTopic).filter(ChatTopic.channel_id == channel.id).all()
-    }
+    existing_titles = {t.title for t in db.query(ChatTopic).filter(ChatTopic.channel_id == channel.id).all()}
     for topic_idx, topic_data in enumerate(ANNOUNCE_CHANNEL.get("topics", [])):
         title = topic_data["title"]
         if title in existing_titles:
@@ -150,8 +161,12 @@ def _ensure_announce_topics_and_messages(
         if topic_messages:
             topic_base = base_time + timedelta(minutes=topic_idx * 20)
             _seed_topic_messages(
-                db, channel.id, topic.id, created_by,
-                topic_messages, topic_base,
+                db,
+                channel.id,
+                topic.id,
+                created_by,
+                topic_messages,
+                topic_base,
             )
         existing_titles.add(title)
 
@@ -173,11 +188,7 @@ def _backfill_empty_announce_topic_messages(
     if not title_to_data:
         return False
     ordered_titles = [t["title"] for t in topic_specs]
-    topics = (
-        db.query(ChatTopic)
-        .filter(ChatTopic.channel_id == channel.id)
-        .all()
-    )
+    topics = db.query(ChatTopic).filter(ChatTopic.channel_id == channel.id).all()
     added = False
     for topic in topics:
         data = title_to_data.get(topic.title)
@@ -203,8 +214,12 @@ def _backfill_empty_announce_topic_messages(
             topic_idx = 0
         topic_base = base_time + timedelta(minutes=topic_idx * 20)
         _seed_topic_messages(
-            db, channel.id, topic.id, created_by,
-            topic_messages, topic_base,
+            db,
+            channel.id,
+            topic.id,
+            created_by,
+            topic_messages,
+            topic_base,
         )
         added = True
     return added
@@ -220,35 +235,35 @@ def seed_announce_channel(
     all users.  If it already exists but has no (or incomplete) topics/messages,
     we add the missing seed content so it is never left empty.
     """
-    existing = (
-        db.query(ChatChannel)
-        .filter(ChatChannel.channel_type == "announce")
-        .first()
-    )
+    existing = db.query(ChatChannel).filter(ChatChannel.channel_type == "announce").first()
     base_time = datetime.utcnow() - timedelta(hours=2)
 
     if existing:
-        topic_count = (
-            db.query(ChatTopic)
-            .filter(ChatTopic.channel_id == existing.id)
-            .count()
-        )
+        topic_count = db.query(ChatTopic).filter(ChatTopic.channel_id == existing.id).count()
         if topic_count < len(ANNOUNCE_CHANNEL.get("topics", [])):
             _ensure_announce_topics_and_messages(
-                db, existing, created_by, base_time,
+                db,
+                existing,
+                created_by,
+                base_time,
             )
             db.commit()
             logger.info(
                 "[WorkshopChat] Topped up announce channel '%s' with missing topics (user %d)",
-                existing.name, created_by,
+                existing.name,
+                created_by,
             )
         if _backfill_empty_announce_topic_messages(
-            db, existing, created_by, base_time,
+            db,
+            existing,
+            created_by,
+            base_time,
         ):
             db.commit()
             logger.info(
                 "[WorkshopChat] Backfilled seed messages on announce channel '%s' (user %d)",
-                existing.name, created_by,
+                existing.name,
+                created_by,
             )
         membership = (
             db.query(ChannelMember)
@@ -259,11 +274,13 @@ def seed_announce_channel(
             .first()
         )
         if not membership:
-            db.add(ChannelMember(
-                channel_id=existing.id,
-                user_id=created_by,
-                role="owner",
-            ))
+            db.add(
+                ChannelMember(
+                    channel_id=existing.id,
+                    user_id=created_by,
+                    role="owner",
+                )
+            )
             db.commit()
         return {"id": existing.id, "name": existing.name, "channel_type": "announce"}
 
@@ -279,11 +296,13 @@ def seed_announce_channel(
     db.add(channel)
     db.flush()
 
-    db.add(ChannelMember(
-        channel_id=channel.id,
-        user_id=created_by,
-        role="owner",
-    ))
+    db.add(
+        ChannelMember(
+            channel_id=channel.id,
+            user_id=created_by,
+            role="owner",
+        )
+    )
 
     for topic_idx, topic_data in enumerate(ANNOUNCE_CHANNEL.get("topics", [])):
         topic = ChatTopic(
@@ -299,14 +318,19 @@ def seed_announce_channel(
         if topic_messages:
             topic_base = base_time + timedelta(minutes=topic_idx * 20)
             _seed_topic_messages(
-                db, channel.id, topic.id, created_by,
-                topic_messages, topic_base,
+                db,
+                channel.id,
+                topic.id,
+                created_by,
+                topic_messages,
+                topic_base,
             )
 
     db.commit()
     logger.info(
         "[WorkshopChat] Global announce channel '%s' seeded by user %d",
-        channel.name, created_by,
+        channel.name,
+        created_by,
     )
     return {"id": channel.id, "name": channel.name, "channel_type": "announce"}
 
@@ -352,7 +376,10 @@ def _seed_one_default_group(
 ) -> Dict[str, Any]:
     """Create or reuse one top-level group and its lesson-study children."""
     group = _find_or_create_group(
-        db, group_data, organization_id, created_by,
+        db,
+        group_data,
+        organization_id,
+        created_by,
     )
     if not (
         db.query(ChannelMember)
@@ -362,11 +389,13 @@ def _seed_one_default_group(
         )
         .first()
     ):
-        db.add(ChannelMember(
-            channel_id=group.id,
-            user_id=created_by,
-            role="owner",
-        ))
+        db.add(
+            ChannelMember(
+                channel_id=group.id,
+                user_id=created_by,
+                role="owner",
+            )
+        )
 
     group_base_time = base_time + timedelta(hours=group_idx * 6)
     children_summaries: List[Dict[str, Any]] = []
@@ -383,17 +412,23 @@ def _seed_one_default_group(
             .first()
         )
         if existing_child:
-            children_summaries.append({
-                "id": existing_child.id,
-                "name": existing_child.name,
-                "topic_count": 0,
-                "skipped": True,
-            })
+            children_summaries.append(
+                {
+                    "id": existing_child.id,
+                    "name": existing_child.name,
+                    "topic_count": 0,
+                    "skipped": True,
+                }
+            )
             continue
         child_base = group_base_time + timedelta(hours=child_idx * 2)
         summary = _seed_lesson_study_channel(
-            db, group.id, organization_id, created_by,
-            child_data, child_base,
+            db,
+            group.id,
+            organization_id,
+            created_by,
+            child_data,
+            child_base,
         )
         children_summaries.append(summary)
 
@@ -428,14 +463,20 @@ def seed_default_channels(
     if existing_children_count > 0:
         logger.info(
             "[WorkshopChat] Org %d already has %d lesson-study channels — skipping seed",
-            organization_id, existing_children_count,
+            organization_id,
+            existing_children_count,
         )
         return []
 
     base_time = datetime.utcnow() - timedelta(days=1)
     created_groups = [
         _seed_one_default_group(
-            db, group_data, organization_id, created_by, group_idx, base_time,
+            db,
+            group_data,
+            organization_id,
+            created_by,
+            group_idx,
+            base_time,
         )
         for group_idx, group_data in enumerate(DEFAULT_CHANNEL_GROUPS)
     ]
@@ -444,6 +485,8 @@ def seed_default_channels(
 
     logger.info(
         "[WorkshopChat] Seeded %d channel groups for org %d by user %d",
-        len(created_groups), organization_id, created_by,
+        len(created_groups),
+        organization_id,
+        created_by,
     )
     return created_groups

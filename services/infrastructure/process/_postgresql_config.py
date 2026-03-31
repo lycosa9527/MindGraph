@@ -11,7 +11,7 @@ from pathlib import Path
 
 def _is_running_as_root() -> bool:
     """Check if running as root user."""
-    if os.name == 'nt':
+    if os.name == "nt":
         return False
     try:
         return os.geteuid() == 0
@@ -29,24 +29,24 @@ def setup_socket_directory(data_path: Path) -> Path:
     Returns:
         Path to socket directory
     """
-    socket_dir = data_path / 'sockets'
+    socket_dir = data_path / "sockets"
     socket_dir.mkdir(exist_ok=True)
 
     # If running as root and using Ubuntu path, ensure socket directory is owned by postgres
     is_root = _is_running_as_root()
-    if is_root and str(data_path) == '/var/lib/postgresql/mindgraph':
+    if is_root and str(data_path) == "/var/lib/postgresql/mindgraph":
         try:
             subprocess.run(
-                ['chown', 'postgres:postgres', str(socket_dir)],
+                ["chown", "postgres:postgres", str(socket_dir)],
                 check=False,
                 timeout=5,
-                capture_output=True
+                capture_output=True,
             )
             subprocess.run(
-                ['chmod', '700', str(socket_dir)],
+                ["chmod", "700", str(socket_dir)],
                 check=False,
                 timeout=5,
-                capture_output=True
+                capture_output=True,
             )
         except (subprocess.SubprocessError, FileNotFoundError, OSError):
             pass
@@ -68,20 +68,20 @@ def update_postgresql_conf(data_path: Path, port: str, socket_dir: Path) -> None
         port: PostgreSQL port
         socket_dir: Socket directory path
     """
-    postgresql_conf = data_path / 'postgresql.conf'
+    postgresql_conf = data_path / "postgresql.conf"
 
     try:
         config_needs_update = True
         if postgresql_conf.exists():
-            with open(postgresql_conf, 'r', encoding='utf-8') as f:
+            with open(postgresql_conf, "r", encoding="utf-8") as f:
                 content = f.read()
-                has_correct_socket = f'unix_socket_directories = \'{socket_dir}\'' in content
-                has_c_locale = 'lc_messages = \'C\'' in content
+                has_correct_socket = f"unix_socket_directories = '{socket_dir}'" in content
+                has_c_locale = "lc_messages = 'C'" in content
                 if has_correct_socket and has_c_locale:
                     config_needs_update = False
 
         if config_needs_update:
-            with open(postgresql_conf, 'w', encoding='utf-8') as f:
+            with open(postgresql_conf, "w", encoding="utf-8") as f:
                 f.write(f"""# PostgreSQL configuration for MindGraph subprocess mode
 port = {port}
 listen_addresses = '127.0.0.1'
@@ -121,10 +121,10 @@ def create_pg_hba_conf(data_path: Path) -> None:
     Args:
         data_path: PostgreSQL data directory
     """
-    pg_hba_conf = data_path / 'pg_hba.conf'
+    pg_hba_conf = data_path / "pg_hba.conf"
     if not pg_hba_conf.exists():
         try:
-            with open(pg_hba_conf, 'w', encoding='utf-8') as f:
+            with open(pg_hba_conf, "w", encoding="utf-8") as f:
                 f.write("""# PostgreSQL host-based authentication configuration
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 local   all             all                                     trust

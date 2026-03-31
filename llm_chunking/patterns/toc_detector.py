@@ -26,15 +26,9 @@ class TOCDetector:
 
     def __init__(self):
         """Initialize TOC detector."""
-        self.heading_pattern = re.compile(
-            r'^(#{1,6}|\d+(?:\.\d+)*)\s+(.+)$',
-            re.MULTILINE
-        )
+        self.heading_pattern = re.compile(r"^(#{1,6}|\d+(?:\.\d+)*)\s+(.+)$", re.MULTILINE)
 
-    def detect_from_pdf_outline(
-        self,
-        pdf_outline: Optional[List[Dict[str, Any]]]
-    ) -> List[Dict[str, Any]]:
+    def detect_from_pdf_outline(self, pdf_outline: Optional[List[Dict[str, Any]]]) -> List[Dict[str, Any]]:
         """
         Extract TOC from PDF outline.
 
@@ -49,23 +43,21 @@ class TOCDetector:
 
         toc = []
         for entry in pdf_outline:
-            toc.append({
-                "title": entry.get("title", ""),
-                "level": entry.get("level", 1),
-                "start_page": entry.get("page", 0),
-                "end_page": entry.get("end_page"),
-                "start_char": entry.get("start_char"),
-                "end_char": entry.get("end_char"),
-                "source": "pdf_outline"
-            })
+            toc.append(
+                {
+                    "title": entry.get("title", ""),
+                    "level": entry.get("level", 1),
+                    "start_page": entry.get("page", 0),
+                    "end_page": entry.get("end_page"),
+                    "start_char": entry.get("start_char"),
+                    "end_char": entry.get("end_char"),
+                    "source": "pdf_outline",
+                }
+            )
 
         return toc
 
-    def detect_from_headings(
-        self,
-        text: str,
-        max_pages: Optional[int] = None
-    ) -> List[Dict[str, Any]]:
+    def detect_from_headings(self, text: str, max_pages: Optional[int] = None) -> List[Dict[str, Any]]:
         """
         Detect TOC from heading patterns.
 
@@ -92,18 +84,20 @@ class TOCDetector:
             title = match.group(2).strip()
 
             # Determine level
-            if marker.startswith('#'):
+            if marker.startswith("#"):
                 level = len(marker)
             else:
-                level = marker.count('.') + 1
+                level = marker.count(".") + 1
 
-            headings.append({
-                "title": title,
-                "level": level,
-                "position": match.start(),
-                "number": marker if not marker.startswith('#') else None,
-                "source": "heading_pattern"
-            })
+            headings.append(
+                {
+                    "title": title,
+                    "level": level,
+                    "position": match.start(),
+                    "number": marker if not marker.startswith("#") else None,
+                    "source": "heading_pattern",
+                }
+            )
 
         # Estimate page numbers (rough approximation)
         chars_per_page = 2000
@@ -116,7 +110,7 @@ class TOCDetector:
         self,
         text: str,
         pdf_outline: Optional[List[Dict[str, Any]]] = None,
-        max_pages: Optional[int] = 30
+        max_pages: Optional[int] = 30,
     ) -> List[Dict[str, Any]]:
         """
         Hybrid TOC detection combining multiple methods.
@@ -152,11 +146,7 @@ class TOCDetector:
         logger.warning("No TOC detected using pattern matching")
         return []
 
-    def apply_toc_boundaries(
-        self,
-        document: str,
-        toc: List[Dict[str, Any]]
-    ) -> List[Dict[str, Any]]:
+    def apply_toc_boundaries(self, document: str, toc: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
         """
         Apply TOC boundaries to extract sections.
 
@@ -180,14 +170,16 @@ class TOCDetector:
 
             section_text = document[start_pos:end_pos]
 
-            sections.append({
-                "title": toc_entry["title"],
-                "level": toc_entry["level"],
-                "text": section_text,
-                "start_pos": start_pos,
-                "end_pos": end_pos,
-                "start_page": toc_entry.get("start_page"),
-                "end_page": toc_entry.get("end_page"),
-            })
+            sections.append(
+                {
+                    "title": toc_entry["title"],
+                    "level": toc_entry["level"],
+                    "text": section_text,
+                    "start_pos": start_pos,
+                    "end_pos": end_pos,
+                    "start_page": toc_entry.get("start_page"),
+                    "end_page": toc_entry.get("end_page"),
+                }
+            )
 
         return sections

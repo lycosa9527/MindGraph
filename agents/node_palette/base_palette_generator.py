@@ -15,6 +15,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from abc import ABC, abstractmethod
 from difflib import SequenceMatcher
 from typing import Optional, Dict, Any, Tuple, AsyncGenerator
@@ -47,7 +48,7 @@ class BasePaletteGenerator(ABC):
         self.llm_service = llm_service
         # NOTE: Hunyuan disabled due to 5 concurrent connection limit
         # NOTE: Kimi removed from node palette - Volcengine server cannot handle load
-        self.llm_models = ['qwen', 'deepseek', 'doubao']
+        self.llm_models = ["qwen", "deepseek", "doubao"]
 
         # Session storage
         self.generated_nodes = {}  # session_id -> List[Dict]
@@ -55,10 +56,15 @@ class BasePaletteGenerator(ABC):
         self.session_start_times = {}  # session_id -> timestamp
         self.batch_counts = {}  # session_id -> int (total batches)
 
-        logger.debug("[NodePalette-%s] Initialized with concurrent multi-LLM architecture",
-                   self.__class__.__name__)
-        logger.debug("[NodePalette-%s] LLMs: %s",
-                   self.__class__.__name__, ', '.join(self.llm_models))
+        logger.debug(
+            "[NodePalette-%s] Initialized with concurrent multi-LLM architecture",
+            self.__class__.__name__,
+        )
+        logger.debug(
+            "[NodePalette-%s] LLMs: %s",
+            self.__class__.__name__,
+            ", ".join(self.llm_models),
+        )
 
     async def generate_batch(
         self,
@@ -73,7 +79,7 @@ class BasePaletteGenerator(ABC):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch of nodes using 3 LLMs (qwen, deepseek, doubao) with concurrent token streaming.
@@ -98,27 +104,33 @@ class BasePaletteGenerator(ABC):
         if session_id not in self.session_start_times:
             self.session_start_times[session_id] = time.time()
             self.batch_counts[session_id] = 0
-            logger.debug("[NodePalette] New session: %s | Topic: '%s'", session_id[:8], center_topic)
+            logger.debug(
+                "[NodePalette] New session: %s | Topic: '%s'",
+                session_id[:8],
+                center_topic,
+            )
 
         batch_num = self.batch_counts[session_id] + 1
         self.batch_counts[session_id] = batch_num
 
         total_before = len(self.generated_nodes.get(session_id, []))
-        logger.debug("[NodePalette] Batch %d starting | Session: %s | Topic: '%s'",
-                   batch_num, session_id[:8], center_topic)
+        logger.debug(
+            "[NodePalette] Batch %d starting | Session: %s | Topic: '%s'",
+            batch_num,
+            session_id[:8],
+            center_topic,
+        )
 
         # Yield batch start
         yield {
-            'event': 'batch_start',
-            'batch_number': batch_num,
-            'llm_count': len(self.llm_models),
-            'nodes_per_llm': nodes_per_llm
+            "event": "batch_start",
+            "batch_number": batch_num,
+            "llm_count": len(self.llm_models),
+            "nodes_per_llm": nodes_per_llm,
         }
 
         # Build prompt using diagram-specific logic (subclass implements this)
-        prompt = self._build_prompt(
-            center_topic, educational_context, nodes_per_llm, batch_num
-        )
+        prompt = self._build_prompt(center_topic, educational_context, nodes_per_llm, batch_num)
         palette_lang = self._detect_language(center_topic, educational_context)
         prompt = prompt + output_language_instruction(palette_lang)
         system_message = self._get_system_message(educational_context, center_topic)
@@ -144,7 +156,7 @@ class BasePaletteGenerator(ABC):
         # 🚀 CONCURRENT TOKEN STREAMING - 3 LLMs fire simultaneously (qwen, deepseek, doubao)!
         logger.debug(
             "[NodePalette] Streaming from %d LLMs with progressive rendering (round-robin interleaving)...",
-            len(self.llm_models)
+            len(self.llm_models),
         )
 
         async for chunk in self.llm_service.stream_progressive(
@@ -157,22 +169,22 @@ class BasePaletteGenerator(ABC):
             # Token tracking parameters
             user_id=user_id,
             organization_id=organization_id,
-            request_type='node_palette',
+            request_type="node_palette",
             diagram_type=diagram_type,
-            endpoint_path=endpoint_path or '/thinking_mode/node_palette/start',
-            session_id=session_id
+            endpoint_path=endpoint_path or "/thinking_mode/node_palette/start",
+            session_id=session_id,
         ):
-            event = chunk['event']
-            llm_name = chunk['llm']
+            event = chunk["event"]
+            llm_name = chunk["llm"]
 
-            if event == 'token':
+            if event == "token":
                 # Accumulate tokens into lines
-                token = chunk['token']
+                token = chunk["token"]
                 current_lines[llm_name] += token
 
                 # Check if we have complete line(s)
-                if '\n' in current_lines[llm_name]:
-                    lines = current_lines[llm_name].split('\n')
+                if "\n" in current_lines[llm_name]:
+                    lines = current_lines[llm_name].split("\n")
                     current_lines[llm_name] = lines[-1]  # Keep incomplete part
 
                     # Process each complete line
@@ -182,31 +194,32 @@ class BasePaletteGenerator(ABC):
                             continue
 
                         # Clean node text
-                        node_text = line.lstrip('0123456789.-、）) ').strip()
+                        node_text = line.lstrip("0123456789.-、）) ").strip()
 
                         if not node_text or len(node_text) < 2:
                             continue
 
                         # Deduplicate
-                        is_unique, _, _ = self._deduplicate_node(
-                            node_text, session_id
-                        )
+                        is_unique, _, _ = self._deduplicate_node(node_text, session_id)
 
                         if is_unique:
                             # UNIQUE NODE - add to round-robin buffer for interleaved yielding
                             node = {
-                                'id': f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
-                                'text': node_text,
-                                'source_llm': llm_name,
-                                'batch_number': batch_num,
-                                'relevance_score': 0.8,
-                                'selected': False
+                                "id": f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
+                                "text": node_text,
+                                "source_llm": llm_name,
+                                "batch_number": batch_num,
+                                "relevance_score": 0.8,
+                                "selected": False,
                             }
 
                             # Verbose logging for streaming nodes (DEBUG level - very frequent)
                             logger.debug(
                                 "[NodePalette-Stream] Node generated | LLM: %s | Batch: %d | ID: %s | Text: '%s'",
-                                llm_name, batch_num, node['id'], node_text[:50] + ('...' if len(node_text) > 50 else '')
+                                llm_name,
+                                batch_num,
+                                node["id"],
+                                node_text[:50] + ("..." if len(node_text) > 50 else ""),
                             )
 
                             # Store
@@ -215,10 +228,7 @@ class BasePaletteGenerator(ABC):
                             self.generated_nodes[session_id].append(node)
 
                             # Add to round-robin buffer instead of yielding immediately
-                            pending_nodes[llm_name].append({
-                                'event': 'node_generated',
-                                'node': node
-                            })
+                            pending_nodes[llm_name].append({"event": "node_generated", "node": node})
 
                             # Yield nodes in round-robin order (ensures interleaving)
                             # Yield up to 4 nodes (one from each LLM if available)
@@ -237,31 +247,32 @@ class BasePaletteGenerator(ABC):
                         else:
                             llm_duplicate_counts[llm_name] += 1
 
-            elif event == 'complete':
+            elif event == "complete":
                 # LLM stream complete - mark as inactive and yield any remaining pending nodes
                 llm_active[llm_name] = False
 
                 # LLM stream complete - process any remaining text
                 if current_lines[llm_name].strip():
-                    node_text = current_lines[llm_name].lstrip('0123456789.-、）) ').strip()
+                    node_text = current_lines[llm_name].lstrip("0123456789.-、）) ").strip()
                     if node_text and len(node_text) >= 2:
-                        is_unique, _, _ = self._deduplicate_node(
-                            node_text, session_id
-                        )
+                        is_unique, _, _ = self._deduplicate_node(node_text, session_id)
                         if is_unique:
                             node = {
-                                'id': f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
-                                'text': node_text,
-                                'source_llm': llm_name,
-                                'batch_number': batch_num,
-                                'relevance_score': 0.8,
-                                'selected': False
+                                "id": f"{session_id}_{llm_name}_{batch_num}_{llm_unique_counts[llm_name]}",
+                                "text": node_text,
+                                "source_llm": llm_name,
+                                "batch_number": batch_num,
+                                "relevance_score": 0.8,
+                                "selected": False,
                             }
 
                             # Verbose logging for final node in stream (DEBUG level - per-LLM)
                             logger.debug(
                                 "[NodePalette-Complete] Final node | LLM: %s | Batch: %d | ID: %s | Text: '%s'",
-                                llm_name, batch_num, node['id'], node_text[:50] + ('...' if len(node_text) > 50 else '')
+                                llm_name,
+                                batch_num,
+                                node["id"],
+                                node_text[:50] + ("..." if len(node_text) > 50 else ""),
                             )
 
                             if session_id not in self.generated_nodes:
@@ -269,10 +280,7 @@ class BasePaletteGenerator(ABC):
                             self.generated_nodes[session_id].append(node)
 
                             # Add to round-robin buffer (final node from this LLM)
-                            pending_nodes[llm_name].append({
-                                'event': 'node_generated',
-                                'node': node
-                            })
+                            pending_nodes[llm_name].append({"event": "node_generated", "node": node})
 
                             # Yield any pending nodes in round-robin order
                             for _ in range(len(self.llm_models)):
@@ -287,11 +295,11 @@ class BasePaletteGenerator(ABC):
 
                 # Record stats for this LLM
                 llm_stats[llm_name] = {
-                    'unique': llm_unique_counts[llm_name],
-                    'duplicates': llm_duplicate_counts[llm_name],
-                    'duration': chunk.get('duration', 0),
-                    'token_count': chunk.get('token_count', 0),
-                    'success': True
+                    "unique": llm_unique_counts[llm_name],
+                    "duplicates": llm_duplicate_counts[llm_name],
+                    "duration": chunk.get("duration", 0),
+                    "token_count": chunk.get("token_count", 0),
+                    "success": True,
                 }
 
                 # Yield any remaining pending nodes from this LLM before completing
@@ -301,18 +309,21 @@ class BasePaletteGenerator(ABC):
 
                 # Yield llm_complete event
                 yield {
-                    'event': 'llm_complete',
-                    'llm': llm_name,
-                    'unique_nodes': llm_unique_counts[llm_name],
-                    'duplicates': llm_duplicate_counts[llm_name],
-                    'duration': chunk.get('duration', 0),
-                    'success': True
+                    "event": "llm_complete",
+                    "llm": llm_name,
+                    "unique_nodes": llm_unique_counts[llm_name],
+                    "duplicates": llm_duplicate_counts[llm_name],
+                    "duration": chunk.get("duration", 0),
+                    "success": True,
                 }
 
                 logger.debug(
                     "[NodePalette] %s batch %d complete | Unique: %d | Duplicates: %d | Time: %.2fs",
-                    llm_name, batch_num, llm_unique_counts[llm_name],
-                    llm_duplicate_counts[llm_name], chunk.get('duration', 0)
+                    llm_name,
+                    batch_num,
+                    llm_unique_counts[llm_name],
+                    llm_duplicate_counts[llm_name],
+                    chunk.get("duration", 0),
                 )
 
                 # After LLM completes, yield any remaining nodes from other LLMs in round-robin
@@ -324,38 +335,43 @@ class BasePaletteGenerator(ABC):
                         yield pending_nodes[llm].pop(0)
                         await asyncio.sleep(0)
 
-            elif event == 'error':
+            elif event == "error":
                 # LLM failed - categorize the error type
-                error_msg = chunk.get('error', 'Unknown error')
-                error_type = 'unknown'
+                error_msg = chunk.get("error", "Unknown error")
+                error_type = "unknown"
 
                 # Detect error type from message
                 error_lower = error_msg.lower()
-                if 'rate' in error_lower or '429' in error_lower or '2003' in error_lower or 'limit' in error_lower:
-                    error_type = 'rate_limit'
-                elif 'content' in error_lower or 'filter' in error_lower or 'inspection' in error_lower:
-                    error_type = 'content_filter'
-                elif 'timeout' in error_lower:
-                    error_type = 'timeout'
+                if "rate" in error_lower or "429" in error_lower or "2003" in error_lower or "limit" in error_lower:
+                    error_type = "rate_limit"
+                elif "content" in error_lower or "filter" in error_lower or "inspection" in error_lower:
+                    error_type = "content_filter"
+                elif "timeout" in error_lower:
+                    error_type = "timeout"
 
-                logger.error("[NodePalette] %s stream error (%s): %s", llm_name, error_type, error_msg)
+                logger.error(
+                    "[NodePalette] %s stream error (%s): %s",
+                    llm_name,
+                    error_type,
+                    error_msg,
+                )
 
                 llm_stats[llm_name] = {
-                    'unique': llm_unique_counts[llm_name],
-                    'duplicates': llm_duplicate_counts[llm_name],
-                    'duration': chunk.get('duration', 0),
-                    'error': error_msg,
-                    'error_type': error_type,
-                    'success': False
+                    "unique": llm_unique_counts[llm_name],
+                    "duplicates": llm_duplicate_counts[llm_name],
+                    "duration": chunk.get("duration", 0),
+                    "error": error_msg,
+                    "error_type": error_type,
+                    "success": False,
                 }
 
                 # Yield llm_error event for frontend tracking
                 yield {
-                    'event': 'llm_error',
-                    'llm': llm_name,
-                    'error': error_msg,
-                    'error_type': error_type,
-                    'nodes_before_error': llm_unique_counts[llm_name]
+                    "event": "llm_error",
+                    "llm": llm_name,
+                    "error": error_msg,
+                    "error_type": error_type,
+                    "nodes_before_error": llm_unique_counts[llm_name],
                 }
 
         # Batch complete
@@ -365,16 +381,19 @@ class BasePaletteGenerator(ABC):
 
         logger.debug(
             "[NodePalette] Batch %d complete (%.2fs) | New unique: %d | Total: %d",
-            batch_num, batch_duration, batch_unique, total_after
+            batch_num,
+            batch_duration,
+            batch_unique,
+            total_after,
         )
 
         yield {
-            'event': 'batch_complete',
-            'batch_number': batch_num,
-            'batch_duration': round(batch_duration, 2),
-            'new_unique_nodes': batch_unique,
-            'total_nodes': total_after,
-            'llm_stats': llm_stats
+            "event": "batch_complete",
+            "batch_number": batch_num,
+            "batch_duration": round(batch_duration, 2),
+            "new_unique_nodes": batch_unique,
+            "total_nodes": total_after,
+            "llm_stats": llm_stats,
         }
 
     @abstractmethod
@@ -383,7 +402,7 @@ class BasePaletteGenerator(ABC):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build diagram-specific prompt for node generation.
@@ -416,7 +435,7 @@ class BasePaletteGenerator(ABC):
             System message string
         """
         language = self._detect_language(center_topic, educational_context)
-        return '你是一个有帮助的K12教育助手。' if language == 'zh' else 'You are a helpful K12 education assistant.'
+        return "你是一个有帮助的K12教育助手。" if language == "zh" else "You are a helpful K12 education assistant."
 
     def _get_temperature_for_batch(self, batch_num: int) -> float:
         """
@@ -446,17 +465,17 @@ class BasePaletteGenerator(ABC):
 
         # Exact match
         if normalized in seen:
-            return (False, 'exact', 1.0)
+            return (False, "exact", 1.0)
 
         # Fuzzy match
         for seen_text in seen:
             similarity = SequenceMatcher(None, normalized, seen_text).ratio()
             if similarity > 0.85:
-                return (False, 'fuzzy', similarity)
+                return (False, "fuzzy", similarity)
 
         # Unique!
         seen.add(normalized)
-        return (True, 'unique', 0.0)
+        return (True, "unique", 0.0)
 
     def _normalize_text(self, text: str) -> str:
         """
@@ -465,8 +484,8 @@ class BasePaletteGenerator(ABC):
         Same for all diagrams.
         """
         text = text.lower()
-        text = re.sub(r'[^\w\s]', '', text)
-        text = re.sub(r'\s+', ' ', text).strip()
+        text = re.sub(r"[^\w\s]", "", text)
+        text = re.sub(r"\s+", " ", text).strip()
         return text
 
     def _detect_language(self, center_topic: str, educational_context: Optional[Dict[str, Any]] = None) -> str:
@@ -487,21 +506,21 @@ class BasePaletteGenerator(ABC):
             Language code in the prompt-output registry (e.g. 'fr', 'zh', 'en').
         """
         if educational_context:
-            raw_lang = educational_context.get('language')
+            raw_lang = educational_context.get("language")
             if isinstance(raw_lang, str):
                 normalized = raw_lang.strip().lower()
                 if is_prompt_output_language(normalized):
                     return normalized
 
-        if center_topic and re.search(r'[\u4e00-\u9fff]', center_topic):
-            return 'zh'
+        if center_topic and re.search(r"[\u4e00-\u9fff]", center_topic):
+            return "zh"
 
-        if educational_context and 'raw_message' in educational_context:
-            raw_msg = educational_context['raw_message']
-            if isinstance(raw_msg, str) and re.search(r'[\u4e00-\u9fff]', raw_msg):
-                return 'zh'
+        if educational_context and "raw_message" in educational_context:
+            raw_msg = educational_context["raw_message"]
+            if isinstance(raw_msg, str) and re.search(r"[\u4e00-\u9fff]", raw_msg):
+                return "zh"
 
-        return 'en'
+        return "en"
 
     def end_session(self, session_id: str, reason: str = "complete") -> None:
         """
@@ -517,8 +536,12 @@ class BasePaletteGenerator(ABC):
         batches = self.batch_counts.get(session_id, 0)
 
         logger.debug("[NodePalette] Session ended: %s | Reason: %s", session_id[:8], reason)
-        logger.debug("[NodePalette]   Duration: %.2fs | Batches: %d | Total nodes: %d",
-                   elapsed, batches, total_nodes)
+        logger.debug(
+            "[NodePalette]   Duration: %.2fs | Batches: %d | Total nodes: %d",
+            elapsed,
+            batches,
+            total_nodes,
+        )
 
         # Cleanup
         self.session_start_times.pop(session_id, None)

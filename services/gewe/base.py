@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Set
 import logging
 import os
@@ -50,7 +51,7 @@ class GeweService(
     TagServiceMixin,
     CollectionServiceMixin,
     SNSServiceMixin,
-    VideoChannelServiceMixin
+    VideoChannelServiceMixin,
 ):
     """Service for managing Gewe WeChat integration"""
 
@@ -74,9 +75,9 @@ class GeweService(
     def _get_gewe_client(self) -> AsyncGeweClient:
         """Get or create Gewe client"""
         if self._gewe_client is None:
-            token = os.getenv('GEWE_TOKEN', '').strip()
-            base_url = os.getenv('GEWE_BASE_URL', 'http://api.geweapi.com').strip()
-            timeout = int(os.getenv('GEWE_TIMEOUT', '30'))
+            token = os.getenv("GEWE_TOKEN", "").strip()
+            base_url = os.getenv("GEWE_BASE_URL", "http://api.geweapi.com").strip()
+            timeout = int(os.getenv("GEWE_TIMEOUT", "30"))
 
             if not token:
                 logger.error(
@@ -105,9 +106,9 @@ class GeweService(
     def _get_dify_client(self) -> AsyncDifyClient:
         """Get or create Dify client"""
         if self._dify_client is None:
-            api_key = os.getenv('DIFY_API_KEY')
-            api_url = os.getenv('DIFY_API_URL', 'https://api.dify.ai/v1')
-            timeout = int(os.getenv('DIFY_TIMEOUT', '30'))
+            api_key = os.getenv("DIFY_API_KEY")
+            api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
+            timeout = int(os.getenv("DIFY_TIMEOUT", "30"))
 
             if not api_key:
                 raise ValueError("DIFY_API_KEY not configured in environment")
@@ -118,11 +119,8 @@ class GeweService(
     def _save_login_info(self, app_id: str, wxid: str) -> None:
         """Save login info (app_id and wxid) to JSON file."""
         try:
-            login_info = {
-                "app_id": app_id,
-                "wxid": wxid
-            }
-            with open(GEWE_LOGIN_INFO_PATH, 'w', encoding='utf-8') as f:
+            login_info = {"app_id": app_id, "wxid": wxid}
+            with open(GEWE_LOGIN_INFO_PATH, "w", encoding="utf-8") as f:
                 json.dump(login_info, f, indent=2, ensure_ascii=False)
             logger.info("Saved gewe login info: app_id=%s, wxid=%s", app_id, wxid)
         except Exception as e:
@@ -133,7 +131,7 @@ class GeweService(
         try:
             if not GEWE_LOGIN_INFO_PATH.exists():
                 return None
-            with open(GEWE_LOGIN_INFO_PATH, 'r', encoding='utf-8') as f:
+            with open(GEWE_LOGIN_INFO_PATH, "r", encoding="utf-8") as f:
                 return json.load(f)
         except Exception as e:
             logger.error("Error loading gewe login info: %s", e, exc_info=True)
@@ -142,7 +140,7 @@ class GeweService(
     def reset_device_id(self) -> None:
         """
         Reset device ID by deleting the login info file.
-        
+
         This clears the saved app_id and wxid. On next login (QR code scan),
         the Gewe API will generate new app_id and wxid automatically.
         """
@@ -156,25 +154,19 @@ class GeweService(
             logger.error("Error resetting device ID: %s", e, exc_info=True)
             raise
 
-    def save_preferences(
-        self,
-        region_id: str,
-        device_type: str,
-        auto_sliding: Optional[bool] = None
-    ) -> None:
+    def save_preferences(self, region_id: str, device_type: str, auto_sliding: Optional[bool] = None) -> None:
         """Save user preferences (region_id, device_type, auto_sliding) to JSON file."""
         try:
-            preferences = {
-                "region_id": region_id,
-                "device_type": device_type
-            }
+            preferences = {"region_id": region_id, "device_type": device_type}
             if auto_sliding is not None:
                 preferences["auto_sliding"] = auto_sliding
-            with open(GEWE_PREFERENCES_PATH, 'w', encoding='utf-8') as f:
+            with open(GEWE_PREFERENCES_PATH, "w", encoding="utf-8") as f:
                 json.dump(preferences, f, indent=2, ensure_ascii=False)
             logger.info(
                 "Saved gewe preferences: region_id=%s, device_type=%s, auto_sliding=%s",
-                region_id, device_type, auto_sliding
+                region_id,
+                device_type,
+                auto_sliding,
             )
         except Exception as e:
             logger.error("Error saving gewe preferences: %s", e, exc_info=True)
@@ -186,24 +178,20 @@ class GeweService(
                 return {
                     "region_id": "110000",
                     "device_type": "ipad",
-                    "auto_sliding": False
+                    "auto_sliding": False,
                 }
-            with open(GEWE_PREFERENCES_PATH, 'r', encoding='utf-8') as f:
+            with open(GEWE_PREFERENCES_PATH, "r", encoding="utf-8") as f:
                 preferences = json.load(f)
             result = {
                 "region_id": preferences.get("region_id", "110000"),
-                "device_type": preferences.get("device_type", "ipad")
+                "device_type": preferences.get("device_type", "ipad"),
             }
             if "auto_sliding" in preferences:
                 result["auto_sliding"] = preferences["auto_sliding"]
             return result
         except Exception as e:
             logger.error("Error loading gewe preferences: %s", e, exc_info=True)
-            return {
-                "region_id": "110000",
-                "device_type": "ipad",
-                "auto_sliding": False
-            }
+            return {"region_id": "110000", "device_type": "ipad", "auto_sliding": False}
 
     async def close(self):
         """Close client connections"""

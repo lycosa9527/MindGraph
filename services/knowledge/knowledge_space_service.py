@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import List, Optional, Dict, Any
 import hashlib
@@ -20,7 +21,13 @@ from sqlalchemy import and_
 from sqlalchemy.orm import Session
 
 from clients.dashscope_embedding import get_embedding_client
-from models.domain.knowledge_space import KnowledgeSpace, KnowledgeDocument, DocumentChunk, DocumentBatch, DocumentVersion
+from models.domain.knowledge_space import (
+    KnowledgeSpace,
+    KnowledgeDocument,
+    DocumentChunk,
+    DocumentBatch,
+    DocumentVersion,
+)
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
 from services.knowledge.chunking_service import get_chunking_service
 from services.knowledge.document_cleaner import get_document_cleaner
@@ -29,21 +36,21 @@ from services.knowledge.document_processing import (
     extract_and_clean_text,
     chunk_text_with_mode,
     generate_embeddings_with_cache,
-    prepare_qdrant_metadata
+    prepare_qdrant_metadata,
 )
 from services.knowledge.document_reindexing import (
     chunk_text_for_reindexing,
     compare_chunks,
     process_updated_chunks,
-    process_new_chunks
+    process_new_chunks,
 )
 from services.knowledge.document_versioning import (
     rollback_document as rollback_document_helper,
-    get_document_versions as get_document_versions_helper
+    get_document_versions as get_document_versions_helper,
 )
 from services.knowledge.document_batch_service import (
     batch_upload_documents as batch_upload_documents_helper,
-    update_batch_progress as update_batch_progress_helper
+    update_batch_progress as update_batch_progress_helper,
 )
 from services.llm.qdrant_service import get_qdrant_service
 
@@ -88,9 +95,7 @@ class KnowledgeSpaceService:
         Returns:
             KnowledgeSpace instance
         """
-        space = self.db.query(KnowledgeSpace).filter(
-            KnowledgeSpace.user_id == self.user_id
-        ).first()
+        space = self.db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == self.user_id).first()
 
         if not space:
             space = KnowledgeSpace(user_id=self.user_id)
@@ -118,7 +123,7 @@ class KnowledgeSpaceService:
             document_id,
             version_number,
             self.storage_dir,
-            self._reindex_chunks
+            self._reindex_chunks,
         )
 
     def get_document_versions(self, document_id: int) -> List[DocumentVersion]:
@@ -136,17 +141,9 @@ class KnowledgeSpaceService:
     def get_document_count(self) -> int:
         """Get current document count for user."""
         space = self.create_knowledge_space()
-        return self.db.query(KnowledgeDocument).filter(
-            KnowledgeDocument.space_id == space.id
-        ).count()
+        return self.db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
 
-    def upload_document(
-        self,
-        file_name: str,
-        file_path: str,
-        file_type: str,
-        file_size: int
-    ) -> KnowledgeDocument:
+    def upload_document(self, file_name: str, file_path: str, file_type: str, file_size: int) -> KnowledgeDocument:
         """
         Upload document (creates record, actual processing happens in background).
 
@@ -176,12 +173,16 @@ class KnowledgeSpaceService:
         space = self.create_knowledge_space()
 
         # Check for duplicate filename
-        existing = self.db.query(KnowledgeDocument).filter(
-            and_(
-                KnowledgeDocument.space_id == space.id,
-                KnowledgeDocument.file_name == file_name
+        existing = (
+            self.db.query(KnowledgeDocument)
+            .filter(
+                and_(
+                    KnowledgeDocument.space_id == space.id,
+                    KnowledgeDocument.file_name == file_name,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if existing:
             raise ValueError(f"Document with name '{file_name}' already exists")
@@ -197,7 +198,7 @@ class KnowledgeSpaceService:
             file_path=str(user_dir / file_name),
             file_type=file_type,
             file_size=file_size,
-            status='pending'
+            status="pending",
         )
         self.db.add(document)
         self.db.commit()
@@ -211,7 +212,11 @@ class KnowledgeSpaceService:
 
         logger.info(
             "[RAG] ✓ Upload: doc_id=%s, file='%s', type=%s, size=%s bytes, user=%s",
-            document.id, file_name, file_type, file_size, self.user_id
+            document.id,
+            file_name,
+            file_type,
+            file_size,
+            self.user_id,
         )
         return document
 
@@ -223,12 +228,17 @@ class KnowledgeSpaceService:
             document_id: Document ID
         """
         # Verify ownership
-        document = self.db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-            and_(
-                KnowledgeDocument.id == document_id,
-                KnowledgeSpace.user_id == self.user_id
+        document = (
+            self.db.query(KnowledgeDocument)
+            .join(KnowledgeSpace)
+            .filter(
+                and_(
+                    KnowledgeDocument.id == document_id,
+                    KnowledgeSpace.user_id == self.user_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not document:
             raise ValueError(f"Document {document_id} not found or access denied")
@@ -239,17 +249,21 @@ class KnowledgeSpaceService:
             chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
             logger.info(
                 "[RAG] → Processing: doc_id=%s, file='%s', type=%s, chunking_engine=%s, chunking_method=%s",
-                document_id, document.file_name, document.file_type, chunking_engine, chunking_method
+                document_id,
+                document.file_name,
+                document.file_type,
+                chunking_engine,
+                chunking_method,
             )
             if chunking_method == "mindchunk":
                 logger.info(
                     "[RAG] 🧠 MindChunk ACTIVE: LLM-based semantic chunking will be used for doc_id=%s",
-                    document_id
+                    document_id,
                 )
 
             # Update status
-            document.status = 'processing'
-            document.processing_progress = 'extracting'
+            document.status = "processing"
+            document.processing_progress = "extracting"
             document.processing_progress_percent = 10
             self.db.commit()
 
@@ -260,11 +274,7 @@ class KnowledgeSpaceService:
             # Extract and clean text
             try:
                 cleaned_text, page_info = extract_and_clean_text(
-                    self.processor,
-                    self.cleaner,
-                    document,
-                    self.db,
-                    processing_rules
+                    self.processor, self.cleaner, document, self.db, processing_rules
                 )
             except ValueError:
                 raise
@@ -272,11 +282,12 @@ class KnowledgeSpaceService:
                 error_msg = f"文本提取失败: {str(extract_error)}"
                 logger.error(
                     "[KnowledgeSpace] Text extraction failed for document %s: %s",
-                    document_id, extract_error
+                    document_id,
+                    extract_error,
                 )
                 raise ValueError(error_msg) from extract_error
 
-            document.processing_progress = 'cleaning'
+            document.processing_progress = "cleaning"
             document.processing_progress_percent = 20
             self.db.commit()
 
@@ -292,7 +303,7 @@ class KnowledgeSpaceService:
                 document,
                 processing_rules,
                 page_info,
-                document_id
+                document_id,
             )
 
             # Validate chunk count
@@ -308,25 +319,29 @@ class KnowledgeSpaceService:
             # Log chunking results
             logger.info(
                 "[RAG] ✓ Chunking: doc_id=%s, created %s chunks, method=%s, mode=%s",
-                document_id, len(chunks), chunking_method, mode
+                document_id,
+                len(chunks),
+                chunking_method,
+                mode,
             )
             # Debug log for mindchunk metadata compatibility
             if chunking_method == "mindchunk" and chunks:
                 sample_chunk = chunks[0]
                 logger.debug(
                     "[RAG] MindChunk sample metadata for doc_id=%s: keys=%s, structure_type=%s, has_token_count=%s",
-                    document_id, list(sample_chunk.metadata.keys()),
-                    sample_chunk.metadata.get('structure_type'),
-                    'token_count' in sample_chunk.metadata
+                    document_id,
+                    list(sample_chunk.metadata.keys()),
+                    sample_chunk.metadata.get("structure_type"),
+                    "token_count" in sample_chunk.metadata,
                 )
 
             # Update progress: chunking complete
-            document.processing_progress = 'chunking'
+            document.processing_progress = "chunking"
             document.processing_progress_percent = 40
             self.db.commit()
 
             # Generate embeddings with caching
-            document.processing_progress = 'embedding'
+            document.processing_progress = "embedding"
             document.processing_progress_percent = 50
             self.db.commit()
 
@@ -336,19 +351,23 @@ class KnowledgeSpaceService:
                 self.kb_rate_limiter,
                 texts,
                 self.user_id,
-                self.db
+                self.db,
             )
 
             # Update progress: embedding complete
             document.processing_progress_percent = 80
             self.db.commit()
-            logger.info("[RAG] ✓ Embedding: doc=%s, %s vectors generated", document_id, len(embeddings))
+            logger.info(
+                "[RAG] ✓ Embedding: doc=%s, %s vectors generated",
+                document_id,
+                len(embeddings),
+            )
 
             if len(embeddings) != len(chunks):
                 raise ValueError(f"Embedding count ({len(embeddings)}) != chunk count ({len(chunks)})")
 
             # Store chunks in database and get IDs BEFORE Qdrant insertion
-            document.processing_progress = 'indexing'
+            document.processing_progress = "indexing"
             document.processing_progress_percent = 85
             self.db.commit()
 
@@ -360,15 +379,23 @@ class KnowledgeSpaceService:
                         chunk_index=chunk.chunk_index,
                         text=chunk.text,
                         start_char=chunk.start_char,
-                        end_char=chunk.end_char
+                        end_char=chunk.end_char,
                     )
                     self.db.add(db_chunk)
                     self.db.flush()  # Flush to get ID before Qdrant insertion
                     chunk_ids.append(db_chunk.id)
-                logger.info("[RAG] ✓ Chunking: doc=%s, %s chunks saved to database", document_id, len(chunk_ids))
+                logger.info(
+                    "[RAG] ✓ Chunking: doc=%s, %s chunks saved to database",
+                    document_id,
+                    len(chunk_ids),
+                )
             except Exception as chunk_db_error:
                 error_msg = f"保存分块数据失败: {str(chunk_db_error)}"
-                logger.error("[RAG] ✗ Chunking FAILED: doc=%s, error=%s", document_id, chunk_db_error)
+                logger.error(
+                    "[RAG] ✗ Chunking FAILED: doc=%s, error=%s",
+                    document_id,
+                    chunk_db_error,
+                )
                 raise ValueError(error_msg) from chunk_db_error
 
             # Now all chunk IDs are generated - safe to insert into Qdrant
@@ -382,19 +409,24 @@ class KnowledgeSpaceService:
                         chunk_ids=chunk_ids,
                         embeddings=embeddings,
                         document_ids=[document.id] * len(chunk_ids),
-                        metadata=qdrant_metadata
+                        metadata=qdrant_metadata,
                     )
                     logger.info(
                         "[RAG] ✓ Vector Store: doc=%s, %s vectors stored in Qdrant",
-                        document_id, len(chunk_ids)
+                        document_id,
+                        len(chunk_ids),
                     )
                 except Exception as qdrant_insert_error:
                     error_msg = f"向量存储失败: {str(qdrant_insert_error)}"
-                    logger.error("[RAG] ✗ Vector Store FAILED: doc=%s, error=%s", document_id, qdrant_insert_error)
+                    logger.error(
+                        "[RAG] ✗ Vector Store FAILED: doc=%s, error=%s",
+                        document_id,
+                        qdrant_insert_error,
+                    )
                     raise ValueError(error_msg) from qdrant_insert_error
 
                 # Update document status
-                document.status = 'completed'
+                document.status = "completed"
                 document.chunk_count = len(chunks)
                 document.processing_progress = None
                 document.processing_progress_percent = 100
@@ -406,15 +438,24 @@ class KnowledgeSpaceService:
             except Exception as qdrant_error:
                 # If Qdrant succeeded but database commit fails, we need to clean up Qdrant
                 error_msg = f"数据保存失败: {str(qdrant_error)}"
-                logger.error("[KnowledgeSpace] Qdrant write succeeded but database commit failed: %s", qdrant_error)
+                logger.error(
+                    "[KnowledgeSpace] Qdrant write succeeded but database commit failed: %s",
+                    qdrant_error,
+                )
                 try:
                     # Rollback database transaction
                     self.db.rollback()
                     # Clean up Qdrant vectors (they were added but database failed)
                     self.qdrant.delete_document(self.user_id, document.id)
-                    logger.info("[KnowledgeSpace] Cleaned up orphaned Qdrant vectors for document %s", document_id)
+                    logger.info(
+                        "[KnowledgeSpace] Cleaned up orphaned Qdrant vectors for document %s",
+                        document_id,
+                    )
                 except Exception as cleanup_error:
-                    logger.error("[KnowledgeSpace] Failed to cleanup Qdrant after database failure: %s", cleanup_error)
+                    logger.error(
+                        "[KnowledgeSpace] Failed to cleanup Qdrant after database failure: %s",
+                        cleanup_error,
+                    )
                 raise ValueError(error_msg) from qdrant_error
 
             # Log processing completion
@@ -422,13 +463,17 @@ class KnowledgeSpaceService:
             chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
             logger.info(
                 "[RAG] ✓ Processing complete: doc_id=%s, file='%s', chunks=%s, method=%s, user=%s",
-                document_id, document.file_name, len(chunks), chunking_method, self.user_id
+                document_id,
+                document.file_name,
+                len(chunks),
+                chunking_method,
+                self.user_id,
             )
 
             # Extract references and create relationships
             try:
                 # Extract text again for reference extraction (processor needs original text)
-                if document.file_type == 'application/pdf':
+                if document.file_type == "application/pdf":
                     text, _ = self.processor.extract_text_with_pages(document.file_path, document.file_type)
                 else:
                     text = self.processor.extract_text(document.file_path, document.file_type)
@@ -440,26 +485,28 @@ class KnowledgeSpaceService:
                 for ref in references:
                     # Try to find target document by filename or title
                     # For now, just log - full relationship creation requires document matching logic
-                    logger.debug("[KnowledgeSpace] Found reference in document %s: %s", document.id, ref['text'])
+                    logger.debug(
+                        "[KnowledgeSpace] Found reference in document %s: %s",
+                        document.id,
+                        ref["text"],
+                    )
             except Exception as ref_error:
                 logger.warning(
                     "[KnowledgeSpace] Failed to extract references for document %s: %s",
-                    document_id, ref_error
+                    document_id,
+                    ref_error,
                 )
 
         except Exception as e:
             logger.error("[KnowledgeSpace] Failed to process document %s: %s", document_id, e)
-            document.status = 'failed'
+            document.status = "failed"
             document.error_message = str(e)
             document.processing_progress = None
             document.processing_progress_percent = 0
             self.db.commit()
             raise
 
-    def batch_upload_documents(
-        self,
-        files: List[Dict[str, Any]]
-    ) -> DocumentBatch:
+    def batch_upload_documents(self, files: List[Dict[str, Any]]) -> DocumentBatch:
         """
         Upload multiple documents in a batch.
 
@@ -473,8 +520,7 @@ class KnowledgeSpaceService:
         current_count = self.get_document_count()
         if current_count + len(files) > self.max_documents:
             raise ValueError(
-                f"Cannot upload {len(files)} documents. "
-                f"Current count: {current_count}, Max: {self.max_documents}"
+                f"Cannot upload {len(files)} documents. Current count: {current_count}, Max: {self.max_documents}"
             )
 
         # Get or create knowledge space
@@ -487,7 +533,7 @@ class KnowledgeSpaceService:
             files,
             self.storage_dir,
             self.max_file_size,
-            self.processor
+            self.processor,
         )
 
     def update_batch_progress(self, batch_id: int, completed: int = 0, failed: int = 0) -> None:
@@ -509,12 +555,17 @@ class KnowledgeSpaceService:
             document_id: Document ID
         """
         # Verify ownership
-        document = self.db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-            and_(
-                KnowledgeDocument.id == document_id,
-                KnowledgeSpace.user_id == self.user_id
+        document = (
+            self.db.query(KnowledgeDocument)
+            .join(KnowledgeSpace)
+            .filter(
+                and_(
+                    KnowledgeDocument.id == document_id,
+                    KnowledgeSpace.user_id == self.user_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not document:
             raise ValueError(f"Document {document_id} not found or access denied")
@@ -531,7 +582,11 @@ class KnowledgeSpaceService:
             self.db.delete(document)
             self.db.commit()
 
-            logger.info("[KnowledgeSpace] Deleted document %s for user %s", document_id, self.user_id)
+            logger.info(
+                "[KnowledgeSpace] Deleted document %s for user %s",
+                document_id,
+                self.user_id,
+            )
 
         except Exception as e:
             logger.error("[KnowledgeSpace] Failed to delete document %s: %s", document_id, e)
@@ -541,9 +596,12 @@ class KnowledgeSpaceService:
     def get_user_documents(self) -> List[KnowledgeDocument]:
         """Get all documents for user."""
         space = self.create_knowledge_space()
-        return self.db.query(KnowledgeDocument).filter(
-            KnowledgeDocument.space_id == space.id
-        ).order_by(KnowledgeDocument.created_at.desc()).all()
+        return (
+            self.db.query(KnowledgeDocument)
+            .filter(KnowledgeDocument.space_id == space.id)
+            .order_by(KnowledgeDocument.created_at.desc())
+            .all()
+        )
 
     def get_document(self, document_id: int) -> Optional[KnowledgeDocument]:
         """
@@ -555,12 +613,17 @@ class KnowledgeSpaceService:
         Returns:
             KnowledgeDocument or None
         """
-        return self.db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-            and_(
-                KnowledgeDocument.id == document_id,
-                KnowledgeSpace.user_id == self.user_id
+        return (
+            self.db.query(KnowledgeDocument)
+            .join(KnowledgeSpace)
+            .filter(
+                and_(
+                    KnowledgeDocument.id == document_id,
+                    KnowledgeSpace.user_id == self.user_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
     def _calculate_content_hash(self, file_path: str) -> str:
         """
@@ -572,7 +635,7 @@ class KnowledgeSpaceService:
         Returns:
             MD5 hash string
         """
-        with open(file_path, 'rb') as f:
+        with open(file_path, "rb") as f:
             content = f.read()
         return hashlib.md5(content).hexdigest()
 
@@ -586,14 +649,9 @@ class KnowledgeSpaceService:
         Returns:
             MD5 hash string
         """
-        return hashlib.md5(text.encode('utf-8')).hexdigest()
+        return hashlib.md5(text.encode("utf-8")).hexdigest()
 
-    def update_document(
-        self,
-        document_id: int,
-        file_path: str,
-        file_name: Optional[str] = None
-    ) -> KnowledgeDocument:
+    def update_document(self, document_id: int, file_path: str, file_name: Optional[str] = None) -> KnowledgeDocument:
         """
         Update document with new file content.
 
@@ -608,12 +666,17 @@ class KnowledgeSpaceService:
             Updated KnowledgeDocument instance
         """
         # Verify ownership
-        document = self.db.query(KnowledgeDocument).join(KnowledgeSpace).filter(
-            and_(
-                KnowledgeDocument.id == document_id,
-                KnowledgeSpace.user_id == self.user_id
+        document = (
+            self.db.query(KnowledgeDocument)
+            .join(KnowledgeSpace)
+            .filter(
+                and_(
+                    KnowledgeDocument.id == document_id,
+                    KnowledgeSpace.user_id == self.user_id,
+                )
             )
-        ).first()
+            .first()
+        )
 
         if not document:
             raise ValueError(f"Document {document_id} not found or access denied")
@@ -621,7 +684,11 @@ class KnowledgeSpaceService:
         # Log update start
         logger.info(
             "[RAG] → Update: doc_id=%s, file='%s', new_file='%s', type=%s, user=%s",
-            document_id, document.file_name, file_name or document.file_name, document.file_type, self.user_id
+            document_id,
+            document.file_name,
+            file_name or document.file_name,
+            document.file_type,
+            self.user_id,
         )
 
         # Check file size
@@ -636,7 +703,9 @@ class KnowledgeSpaceService:
         if file_type != document.file_type:
             logger.warning(
                 "[KnowledgeSpace] File type changed from %s to %s for document %s. Full reindexing will be performed.",
-                document.file_type, file_type, document_id
+                document.file_type,
+                file_type,
+                document_id,
             )
 
         # Calculate content hash
@@ -644,13 +713,16 @@ class KnowledgeSpaceService:
 
         # Check if content actually changed
         if document.last_updated_hash == new_content_hash:
-            logger.info("[KnowledgeSpace] Document %s content unchanged, skipping update", document_id)
+            logger.info(
+                "[KnowledgeSpace] Document %s content unchanged, skipping update",
+                document_id,
+            )
             return document
 
         try:
             # Update document metadata
-            document.status = 'processing'
-            document.processing_progress = 'updating'
+            document.status = "processing"
+            document.processing_progress = "updating"
             document.processing_progress_percent = 0
             if file_name:
                 document.file_name = file_name
@@ -693,15 +765,20 @@ class KnowledgeSpaceService:
                         file_path=str(version_file_path),
                         file_hash=old_file_hash,
                         chunk_count=document.chunk_count or 0,
-                        created_by=self.user_id
+                        created_by=self.user_id,
                     )
                     self.db.add(version)
                     self.db.commit()
-                    logger.info("[KnowledgeSpace] Created version %s for document %s", document.version, document.id)
+                    logger.info(
+                        "[KnowledgeSpace] Created version %s for document %s",
+                        document.version,
+                        document.id,
+                    )
             except Exception as version_error:
                 logger.warning(
                     "[KnowledgeSpace] Failed to create version for document %s: %s",
-                    document.id, version_error
+                    document.id,
+                    version_error,
                 )
                 # Continue with update even if version creation fails
 
@@ -710,37 +787,40 @@ class KnowledgeSpaceService:
                 try:
                     Path(old_file_path).unlink()
                 except Exception as e:
-                    logger.warning("[KnowledgeSpace] Failed to delete old file %s: %s", old_file_path, e)
+                    logger.warning(
+                        "[KnowledgeSpace] Failed to delete old file %s: %s",
+                        old_file_path,
+                        e,
+                    )
 
             # Perform reindexing and track changes
             change_summary = self._reindex_chunks(document, new_content_hash)
 
             # Update version change summary if version was created
-            if 'version' in locals() and change_summary:
+            if "version" in locals() and change_summary:
                 version.change_summary = change_summary
                 self.db.commit()
 
             # Log update completion
             logger.info(
                 "[RAG] ✓ Update complete: doc_id=%s, version=%s, chunks=%s, user=%s",
-                document_id, document.version, document.chunk_count, self.user_id
+                document_id,
+                document.version,
+                document.chunk_count,
+                self.user_id,
             )
             return document
 
         except Exception as e:
             logger.error("[KnowledgeSpace] Failed to update document %s: %s", document_id, e)
-            document.status = 'failed'
+            document.status = "failed"
             document.error_message = str(e)
             document.processing_progress = None
             document.processing_progress_percent = 0
             self.db.commit()
             raise
 
-    def _reindex_chunks(
-        self,
-        document: KnowledgeDocument,
-        content_hash: str
-    ) -> Dict[str, int]:
+    def _reindex_chunks(self, document: KnowledgeDocument, content_hash: str) -> Dict[str, int]:
         """
         Reindex document chunks with partial reindexing support.
 
@@ -755,7 +835,7 @@ class KnowledgeSpaceService:
         """
         try:
             # Update status
-            document.processing_progress = 'extracting'
+            document.processing_progress = "extracting"
             document.processing_progress_percent = 10
             self.db.commit()
 
@@ -766,11 +846,7 @@ class KnowledgeSpaceService:
             # Extract and clean text
             try:
                 cleaned_text, page_info = extract_and_clean_text(
-                    self.processor,
-                    self.cleaner,
-                    document,
-                    self.db,
-                    processing_rules
+                    self.processor, self.cleaner, document, self.db, processing_rules
                 )
             except ValueError:
                 raise
@@ -778,26 +854,22 @@ class KnowledgeSpaceService:
                 error_msg = f"文本提取失败: {str(extract_error)}"
                 logger.error(
                     "[KnowledgeSpace] Text extraction failed for document %s: %s",
-                    document.id, extract_error, exc_info=True
+                    document.id,
+                    extract_error,
+                    exc_info=True,
                 )
                 raise ValueError(error_msg) from extract_error
 
-            document.processing_progress = 'cleaning'
+            document.processing_progress = "cleaning"
             document.processing_progress_percent = 20
             self.db.commit()
 
             # Chunk text
-            document.processing_progress = 'chunking'
+            document.processing_progress = "chunking"
             document.processing_progress_percent = 30
             self.db.commit()
 
-            new_chunks = chunk_text_for_reindexing(
-                self.chunking,
-                cleaned_text,
-                document,
-                processing_rules,
-                page_info
-            )
+            new_chunks = chunk_text_for_reindexing(self.chunking, cleaned_text, document, processing_rules, page_info)
 
             # Validate chunk count
             if not self.chunking.validate_chunk_count(len(new_chunks), self.user_id):
@@ -809,13 +881,19 @@ class KnowledgeSpaceService:
             mode = processing_rules.get("mode", "automatic") if processing_rules else "automatic"
             logger.info(
                 "[RAG] ✓ Chunking (update): doc_id=%s, created %s chunks, method=%s, mode=%s",
-                document.id, len(new_chunks), chunking_method, mode
+                document.id,
+                len(new_chunks),
+                chunking_method,
+                mode,
             )
 
             # Get existing chunks
-            existing_chunks = self.db.query(DocumentChunk).filter(
-                DocumentChunk.document_id == document.id
-            ).order_by(DocumentChunk.chunk_index).all()
+            existing_chunks = (
+                self.db.query(DocumentChunk)
+                .filter(DocumentChunk.document_id == document.id)
+                .order_by(DocumentChunk.chunk_index)
+                .all()
+            )
 
             # Build hash map of existing chunks
             existing_chunk_map: Dict[int, DocumentChunk] = {}
@@ -823,19 +901,20 @@ class KnowledgeSpaceService:
                 existing_chunk_map[chunk.chunk_index] = chunk
 
             # Compare new chunks with existing chunks
-            document.processing_progress = 'comparing'
+            document.processing_progress = "comparing"
             document.processing_progress_percent = 40
             self.db.commit()
 
             chunks_to_add, chunks_to_update, chunks_to_delete = compare_chunks(
-                new_chunks,
-                existing_chunks,
-                self._calculate_chunk_hash
+                new_chunks, existing_chunks, self._calculate_chunk_hash
             )
 
             logger.info(
                 "[RAG] ✓ Chunk comparison: doc_id=%s, added=%s, updated=%s, deleted=%s",
-                document.id, len(chunks_to_add), len(chunks_to_update), len(chunks_to_delete)
+                document.id,
+                len(chunks_to_add),
+                len(chunks_to_update),
+                len(chunks_to_delete),
             )
 
             # Delete removed chunks
@@ -844,14 +923,14 @@ class KnowledgeSpaceService:
                 # Delete from Qdrant
                 self.qdrant.delete_chunks(self.user_id, chunk_ids_to_delete)
                 # Delete from database
-                self.db.query(DocumentChunk).filter(
-                    DocumentChunk.id.in_(chunk_ids_to_delete)
-                ).delete(synchronize_session=False)
+                self.db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids_to_delete)).delete(
+                    synchronize_session=False
+                )
                 self.db.commit()
 
             # Update changed chunks
             if chunks_to_update:
-                document.processing_progress = 'updating_chunks'
+                document.processing_progress = "updating_chunks"
                 document.processing_progress_percent = 50
                 self.db.commit()
 
@@ -862,7 +941,7 @@ class KnowledgeSpaceService:
                     self.embedding_client,
                     self.kb_rate_limiter,
                     self.user_id,
-                    self.db
+                    self.db,
                 )
 
                 # Update Qdrant vectors with metadata
@@ -873,13 +952,13 @@ class KnowledgeSpaceService:
                         chunk_ids=updated_chunk_ids,
                         embeddings=updated_embeddings,
                         document_ids=[document.id] * len(updated_chunk_ids),
-                        metadata=updated_metadata
+                        metadata=updated_metadata,
                     )
                     self.db.commit()
 
             # Add new chunks
             if chunks_to_add:
-                document.processing_progress = 'adding_chunks'
+                document.processing_progress = "adding_chunks"
                 document.processing_progress_percent = 70
                 self.db.commit()
 
@@ -889,7 +968,7 @@ class KnowledgeSpaceService:
                     self.embedding_client,
                     self.kb_rate_limiter,
                     self.user_id,
-                    self.db
+                    self.db,
                 )
 
                 # Add to Qdrant with metadata
@@ -900,12 +979,12 @@ class KnowledgeSpaceService:
                         chunk_ids=new_chunk_ids,
                         embeddings=new_embeddings,
                         document_ids=[document.id] * len(new_chunk_ids),
-                        metadata=new_metadata
+                        metadata=new_metadata,
                     )
                     self.db.commit()
 
             # Update document status
-            document.status = 'completed'
+            document.status = "completed"
             document.chunk_count = len(new_chunks)
             document.last_updated_hash = content_hash
             document.processing_progress = None
@@ -915,21 +994,28 @@ class KnowledgeSpaceService:
             change_summary = {
                 "added": len(chunks_to_add),
                 "updated": len(chunks_to_update),
-                "deleted": len(chunks_to_delete)
+                "deleted": len(chunks_to_delete),
             }
 
             # Log reindexing completion
             logger.info(
                 "[RAG] ✓ Reindexing complete: doc_id=%s, added=%s, updated=%s, deleted=%s, total_chunks=%s",
-                document.id, change_summary['added'], change_summary['updated'],
-                change_summary['deleted'], document.chunk_count
+                document.id,
+                change_summary["added"],
+                change_summary["updated"],
+                change_summary["deleted"],
+                document.chunk_count,
             )
 
             return change_summary
 
         except Exception as e:
-            logger.error("[KnowledgeSpace] Failed to reindex chunks for document %s: %s", document.id, e)
-            document.status = 'failed'
+            logger.error(
+                "[KnowledgeSpace] Failed to reindex chunks for document %s: %s",
+                document.id,
+                e,
+            )
+            document.status = "failed"
             document.error_message = str(e)
             document.processing_progress = None
             document.processing_progress_percent = 0

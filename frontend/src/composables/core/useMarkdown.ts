@@ -8,11 +8,11 @@
  * Uses highlight.js/lib/common for a curated set of popular languages
  * (bash, css, js, json, python, sql, ts, xml, etc.) to keep bundle size small.
  */
-import katex from 'katex'
-import 'katex/contrib/mhchem'
 import markdownItKatexImport from '@vscode/markdown-it-katex'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
+import katex from 'katex'
+import 'katex/contrib/mhchem'
 import MarkdownIt from 'markdown-it'
 
 import {
@@ -30,11 +30,17 @@ function resolveMarkdownItKatexPlugin(): (
 ) => MarkdownItInstance {
   const mod = markdownItKatexImport as unknown
   if (typeof mod === 'function') {
-    return mod as (md: MarkdownItInstance, options?: { throwOnError?: boolean }) => MarkdownItInstance
+    return mod as (
+      md: MarkdownItInstance,
+      options?: { throwOnError?: boolean }
+    ) => MarkdownItInstance
   }
   const inner = (mod as { default?: unknown }).default
   if (typeof inner === 'function') {
-    return inner as (md: MarkdownItInstance, options?: { throwOnError?: boolean }) => MarkdownItInstance
+    return inner as (
+      md: MarkdownItInstance,
+      options?: { throwOnError?: boolean }
+    ) => MarkdownItInstance
   }
   throw new Error('@vscode/markdown-it-katex: expected a markdown-it plugin function')
 }

@@ -14,6 +14,7 @@ Usage:
     python scripts/library/rename_library_pages.py              # Preview only (default)
     python scripts/library/rename_library_pages.py --live       # Actually rename files
 """
+
 import argparse
 import importlib.util
 import logging
@@ -25,12 +26,12 @@ _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
 # Dynamic import to avoid Ruff E402 warning
-_image_path_resolver = importlib.import_module('services.library.image_path_resolver')
+_image_path_resolver = importlib.import_module("services.library.image_path_resolver")
 detect_image_pattern = _image_path_resolver.detect_image_pattern
 list_page_images = _image_path_resolver.list_page_images
 IMAGE_EXTENSIONS = _image_path_resolver.IMAGE_EXTENSIONS
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -61,11 +62,15 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
     pattern_info = detect_image_pattern(folder_path)
     if not pattern_info:
         logger.error("Could not detect image pattern in folder: %s", folder_path)
-        logger.info("Sample files: %s", ', '.join([f.name for f in image_files[:5]]))
+        logger.info("Sample files: %s", ", ".join([f.name for f in image_files[:5]]))
         return (0, 0)
 
-    logger.info("Detected pattern: %s", pattern_info.get('pattern', 'unknown'))
-    logger.info("Current prefix: %s, Extension: %s", pattern_info.get('prefix', ''), pattern_info.get('extension', ''))
+    logger.info("Detected pattern: %s", pattern_info.get("pattern", "unknown"))
+    logger.info(
+        "Current prefix: %s, Extension: %s",
+        pattern_info.get("prefix", ""),
+        pattern_info.get("extension", ""),
+    )
 
     # List all pages with their current page numbers
     pages = list_page_images(folder_path)
@@ -80,7 +85,7 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
 
     # Determine target naming pattern: {bookname}_001.jpg
     target_prefix = f"{book_name}_"
-    target_extension = pattern_info.get('extension', '.jpg')
+    target_extension = pattern_info.get("extension", ".jpg")
 
     # Determine padding based on total number of pages (for sequential numbering)
     total_pages = len(pages)
@@ -111,14 +116,28 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
             skipped_count += 1
             continue
 
-        rename_plan.append((original_page_num, sequential_num, image_path, target_filename, target_path))
+        rename_plan.append(
+            (
+                original_page_num,
+                sequential_num,
+                image_path,
+                target_filename,
+                target_path,
+            )
+        )
 
     if not dry_run:
         # For live mode, use two-phase rename to avoid conflicts:
         # Phase 1: Rename all files to temporary names
         # Phase 2: Rename from temporary names to final names
         temp_files = []
-        for original_page_num, sequential_num, image_path, target_filename, target_path in rename_plan:
+        for (
+            original_page_num,
+            sequential_num,
+            image_path,
+            target_filename,
+            target_path,
+        ) in rename_plan:
             # Create temporary filename
             temp_filename = f"{image_path.stem}.tmp{image_path.suffix}"
             temp_path = folder_path / temp_filename
@@ -130,31 +149,62 @@ def rename_library_pages(folder_path: Path, book_name: str, dry_run: bool = True
 
             try:
                 image_path.rename(temp_path)
-                temp_files.append((temp_path, target_path, original_page_num, sequential_num, image_path.name))
+                temp_files.append(
+                    (
+                        temp_path,
+                        target_path,
+                        original_page_num,
+                        sequential_num,
+                        image_path.name,
+                    )
+                )
             except Exception as e:
                 logger.error("  ERROR renaming %s to temp: %s", image_path.name, e)
                 skipped_count += 1
                 continue
 
         # Phase 2: Rename from temp to final
-        for temp_path, target_path, original_page_num, sequential_num, original_name in temp_files:
+        for (
+            temp_path,
+            target_path,
+            original_page_num,
+            sequential_num,
+            original_name,
+        ) in temp_files:
             try:
                 temp_path.rename(target_path)
                 logger.info(
                     "  RENAMED: %s -> %s (was page %d, now page %d)",
-                    original_name, target_path.name, original_page_num, sequential_num
+                    original_name,
+                    target_path.name,
+                    original_page_num,
+                    sequential_num,
                 )
                 renamed_count += 1
             except Exception as e:
-                logger.error("  ERROR renaming temp %s to %s: %s", temp_path.name, target_path.name, e)
+                logger.error(
+                    "  ERROR renaming temp %s to %s: %s",
+                    temp_path.name,
+                    target_path.name,
+                    e,
+                )
                 skipped_count += 1
                 continue
     else:
         # Dry-run mode: just show what would happen
-        for original_page_num, sequential_num, image_path, target_filename, target_path in rename_plan:
+        for (
+            original_page_num,
+            sequential_num,
+            image_path,
+            target_filename,
+            target_path,
+        ) in rename_plan:
             logger.info(
                 "  RENAME: %s -> %s (was page %d, now page %d)",
-                image_path.name, target_filename, original_page_num, sequential_num
+                image_path.name,
+                target_filename,
+                original_page_num,
+                sequential_num,
             )
             renamed_count += 1
 
@@ -172,7 +222,7 @@ def main():
     parser.add_argument(
         "--live",
         action="store_true",
-        help="Actually rename files (default is dry-run/preview mode)"
+        help="Actually rename files (default is dry-run/preview mode)",
     )
 
     args = parser.parse_args()
@@ -180,7 +230,7 @@ def main():
     # Define the two specific books to process
     target_books = [
         "思维发展型课堂的理论与实践第一辑",
-        "思维发展型课堂的理论与实践第二辑"
+        "思维发展型课堂的理论与实践第二辑",
     ]
 
     # Resolve storage directory relative to project root

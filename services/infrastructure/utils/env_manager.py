@@ -22,6 +22,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Tuple
@@ -32,10 +33,10 @@ import shutil
 from dotenv import dotenv_values
 
 
-
 # File locking for Unix-like systems (not available on Windows)
 try:
     import fcntl
+
     HAS_FCNTL = True
 except ImportError:
     HAS_FCNTL = False
@@ -115,7 +116,7 @@ class EnvManager:
             if not self.env_path.exists():
                 return []
 
-            with open(self.env_path, 'r', encoding='utf-8') as f:
+            with open(self.env_path, "r", encoding="utf-8") as f:
                 lines = f.readlines()
 
             return lines
@@ -156,13 +157,13 @@ class EnvManager:
                 stripped = line.strip()
 
                 # Preserve comments and blank lines
-                if not stripped or stripped.startswith('#'):
+                if not stripped or stripped.startswith("#"):
                     new_lines.append(line)
                     continue
 
                 # Parse key=value line
-                if '=' in stripped:
-                    key = stripped.split('=', 1)[0].strip()
+                if "=" in stripped:
+                    key = stripped.split("=", 1)[0].strip()
 
                     if key in settings_dict:
                         # Update this setting
@@ -182,9 +183,9 @@ class EnvManager:
                     new_lines.append(f"{key}={value}\n")
 
             # Write atomically: write to temp file, then rename
-            temp_path = self.env_path.with_suffix('.tmp')
+            temp_path = self.env_path.with_suffix(".tmp")
 
-            with open(temp_path, 'w', encoding='utf-8') as f:
+            with open(temp_path, "w", encoding="utf-8") as f:
                 # Use file locking if available (Unix-like systems)
                 if HAS_FCNTL:
                     try:
@@ -264,11 +265,11 @@ class EnvManager:
             backups = sorted(
                 self.backup_dir.glob(".env.backup.*"),
                 key=lambda p: p.stat().st_mtime,
-                reverse=True  # Newest first
+                reverse=True,  # Newest first
             )
 
             # Delete old backups
-            for old_backup in backups[self.max_backups:]:
+            for old_backup in backups[self.max_backups :]:
                 old_backup.unlink()
                 logger.info("Deleted old backup: %s", old_backup.name)
 
@@ -298,19 +299,20 @@ class EnvManager:
     def _run_known_validation_rules(self, settings_dict: Dict[str, str], errors: List[str]) -> None:
         """Apply fixed validation rules for well-known keys."""
         validation_rules = {
-            'PORT': lambda v: self._validate_port(v, errors),
-            'DEBUG': lambda v: self._validate_boolean(v, 'DEBUG', errors),
-            'VERBOSE_LOGGING': lambda v: self._validate_boolean(v, 'VERBOSE_LOGGING', errors),
-            'DASHSCOPE_RATE_LIMITING_ENABLED': lambda v: self._validate_boolean(
-                v, 'DASHSCOPE_RATE_LIMITING_ENABLED', errors),
-            'QWEN_TEMPERATURE': lambda v: self._validate_float_range(v, 'QWEN_TEMPERATURE', 0.0, 2.0, errors),
-            'LLM_TEMPERATURE': lambda v: self._validate_float_range(v, 'LLM_TEMPERATURE', 0.0, 2.0, errors),
-            'HUNYUAN_TEMPERATURE': lambda v: self._validate_float_range(v, 'HUNYUAN_TEMPERATURE', 0.0, 2.0, errors),
-            'QWEN_TIMEOUT': lambda v: self._validate_int_range(v, 'QWEN_TIMEOUT', 5, 120, errors),
-            'DIFY_TIMEOUT': lambda v: self._validate_int_range(v, 'DIFY_TIMEOUT', 5, 120, errors),
-            'JWT_EXPIRY_HOURS': lambda v: self._validate_int_range(v, 'JWT_EXPIRY_HOURS', 1, 168, errors),
-            'LOG_LEVEL': lambda v: self._validate_log_level(v, errors),
-            'AUTH_MODE': lambda v: self._validate_auth_mode(v, errors),
+            "PORT": lambda v: self._validate_port(v, errors),
+            "DEBUG": lambda v: self._validate_boolean(v, "DEBUG", errors),
+            "VERBOSE_LOGGING": lambda v: self._validate_boolean(v, "VERBOSE_LOGGING", errors),
+            "DASHSCOPE_RATE_LIMITING_ENABLED": lambda v: self._validate_boolean(
+                v, "DASHSCOPE_RATE_LIMITING_ENABLED", errors
+            ),
+            "QWEN_TEMPERATURE": lambda v: self._validate_float_range(v, "QWEN_TEMPERATURE", 0.0, 2.0, errors),
+            "LLM_TEMPERATURE": lambda v: self._validate_float_range(v, "LLM_TEMPERATURE", 0.0, 2.0, errors),
+            "HUNYUAN_TEMPERATURE": lambda v: self._validate_float_range(v, "HUNYUAN_TEMPERATURE", 0.0, 2.0, errors),
+            "QWEN_TIMEOUT": lambda v: self._validate_int_range(v, "QWEN_TIMEOUT", 5, 120, errors),
+            "DIFY_TIMEOUT": lambda v: self._validate_int_range(v, "DIFY_TIMEOUT", 5, 120, errors),
+            "JWT_EXPIRY_HOURS": lambda v: self._validate_int_range(v, "JWT_EXPIRY_HOURS", 1, 168, errors),
+            "LOG_LEVEL": lambda v: self._validate_log_level(v, errors),
+            "AUTH_MODE": lambda v: self._validate_auth_mode(v, errors),
         }
         for key, validator in validation_rules.items():
             if key in settings_dict and settings_dict[key]:
@@ -319,7 +321,7 @@ class EnvManager:
     def _validate_feature_flag_keys(self, settings_dict: Dict[str, str], errors: List[str]) -> None:
         """Validate all ``FEATURE_*`` keys in the update payload."""
         for key, value in settings_dict.items():
-            if key.startswith('FEATURE_') and value not in (None, ''):
+            if key.startswith("FEATURE_") and value not in (None, ""):
                 self._validate_boolean(str(value), key, errors)
 
     def _validate_port(self, value: str, errors: List[str]):
@@ -333,7 +335,7 @@ class EnvManager:
 
     def _validate_boolean(self, value: str, key: str, errors: List[str]):
         """Validate boolean is True/False"""
-        if value.lower() not in ['true', 'false']:
+        if value.lower() not in ["true", "false"]:
             errors.append(f"{key} must be 'True' or 'False', got '{value}'")
 
     def _validate_float_range(self, value: str, key: str, min_val: float, max_val: float, errors: List[str]):
@@ -356,13 +358,13 @@ class EnvManager:
 
     def _validate_log_level(self, value: str, errors: List[str]):
         """Validate LOG_LEVEL is valid"""
-        valid_levels = ['DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL']
+        valid_levels = ["DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]
         if value.upper() not in valid_levels:
             errors.append(f"LOG_LEVEL must be one of {valid_levels}, got {value}")
 
     def _validate_auth_mode(self, value: str, errors: List[str]):
         """Validate AUTH_MODE is valid"""
-        valid_modes = ['standard', 'enterprise', 'demo', 'bayi']
+        valid_modes = ["standard", "enterprise", "demo", "bayi"]
         if value.lower() not in valid_modes:
             errors.append(f"AUTH_MODE must be one of {valid_modes}, got {value}")
 
@@ -430,16 +432,18 @@ class EnvManager:
             for backup_path in sorted(
                 self.backup_dir.glob(".env.backup.*"),
                 key=lambda p: p.stat().st_mtime,
-                reverse=True  # Newest first
+                reverse=True,  # Newest first
             ):
                 stat = backup_path.stat()
 
-                backups.append({
-                    'filename': backup_path.name,
-                    'size_bytes': stat.st_size,
-                    'created_at': datetime.fromtimestamp(stat.st_mtime).isoformat(),
-                    'timestamp': datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S")
-                })
+                backups.append(
+                    {
+                        "filename": backup_path.name,
+                        "size_bytes": stat.st_size,
+                        "created_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                        "timestamp": datetime.fromtimestamp(stat.st_mtime).strftime("%Y-%m-%d %H:%M:%S"),
+                    }
+                )
 
             return backups
 
@@ -467,106 +471,103 @@ class EnvManager:
 
         schema = {
             # Application Server
-            'HOST': {
-                'type': 'string',
-                'category': 'Application Server',
-                'description': 'Server host address',
-                'default': '0.0.0.0',
-                'required': False
+            "HOST": {
+                "type": "string",
+                "category": "Application Server",
+                "description": "Server host address",
+                "default": "0.0.0.0",
+                "required": False,
             },
-            'PORT': {
-                'type': 'integer',
-                'category': 'Application Server',
-                'description': 'Server port (1-65535)',
-                'default': '9527',
-                'required': False,
-                'min': 1,
-                'max': 65535
+            "PORT": {
+                "type": "integer",
+                "category": "Application Server",
+                "description": "Server port (1-65535)",
+                "default": "9527",
+                "required": False,
+                "min": 1,
+                "max": 65535,
             },
-            'DEBUG': {
-                'type': 'boolean',
-                'category': 'Application Server',
-                'description': 'Debug mode',
-                'default': 'False',
-                'required': False
+            "DEBUG": {
+                "type": "boolean",
+                "category": "Application Server",
+                "description": "Debug mode",
+                "default": "False",
+                "required": False,
             },
-            'EXTERNAL_HOST': {
-                'type': 'string',
-                'category': 'Application Server',
-                'description': 'Public IP address for external access (optional)',
-                'default': '',
-                'required': False
+            "EXTERNAL_HOST": {
+                "type": "string",
+                "category": "Application Server",
+                "description": "Public IP address for external access (optional)",
+                "default": "",
+                "required": False,
             },
-
             # Qwen API
-            'QWEN_API_KEY': {
-                'type': 'password',
-                'category': 'Qwen API',
-                'description': 'Qwen API key (required)',
-                'default': '',
-                'required': True,
-                'sensitive': True
+            "QWEN_API_KEY": {
+                "type": "password",
+                "category": "Qwen API",
+                "description": "Qwen API key (required)",
+                "default": "",
+                "required": True,
+                "sensitive": True,
             },
-            'QWEN_API_URL': {
-                'type': 'url',
-                'category': 'Qwen API',
-                'description': 'Qwen API endpoint URL',
-                'default': 'https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions',
-                'required': True
+            "QWEN_API_URL": {
+                "type": "url",
+                "category": "Qwen API",
+                "description": "Qwen API endpoint URL",
+                "default": "https://dashscope.aliyuncs.com/compatible-mode/v1/chat/completions",
+                "required": True,
             },
-            'QWEN_MODEL_CLASSIFICATION': {
-                'type': 'string',
-                'category': 'Qwen API',
-                'description': 'Model for classification tasks',
-                'default': 'qwen-plus-latest',
-                'required': False
+            "QWEN_MODEL_CLASSIFICATION": {
+                "type": "string",
+                "category": "Qwen API",
+                "description": "Model for classification tasks",
+                "default": "qwen-plus-latest",
+                "required": False,
             },
-            'QWEN_MODEL_GENERATION': {
-                'type': 'string',
-                'category': 'Qwen API',
-                'description': 'Model for generation tasks (higher quality)',
-                'default': 'qwen-plus',
-                'required': False
+            "QWEN_MODEL_GENERATION": {
+                "type": "string",
+                "category": "Qwen API",
+                "description": "Model for generation tasks (higher quality)",
+                "default": "qwen-plus",
+                "required": False,
             },
-            'QWEN_TEMPERATURE': {
-                'type': 'float',
-                'category': 'Qwen API',
-                'description': 'Temperature (0.0-2.0)',
-                'default': '0.7',
-                'required': False,
-                'min': 0.0,
-                'max': 2.0
+            "QWEN_TEMPERATURE": {
+                "type": "float",
+                "category": "Qwen API",
+                "description": "Temperature (0.0-2.0)",
+                "default": "0.7",
+                "required": False,
+                "min": 0.0,
+                "max": 2.0,
             },
-            'QWEN_MAX_TOKENS': {
-                'type': 'integer',
-                'category': 'Qwen API',
-                'description': 'Maximum tokens per request',
-                'default': '1000',
-                'required': False,
-                'min': 1
+            "QWEN_MAX_TOKENS": {
+                "type": "integer",
+                "category": "Qwen API",
+                "description": "Maximum tokens per request",
+                "default": "1000",
+                "required": False,
+                "min": 1,
             },
-            'QWEN_TIMEOUT': {
-                'type': 'integer',
-                'category': 'Qwen API',
-                'description': 'Request timeout in seconds (5-120)',
-                'default': '40',
-                'required': False,
-                'min': 5,
-                'max': 120
+            "QWEN_TIMEOUT": {
+                "type": "integer",
+                "category": "Qwen API",
+                "description": "Request timeout in seconds (5-120)",
+                "default": "40",
+                "required": False,
+                "min": 5,
+                "max": 120,
             },
-            'LLM_TEMPERATURE': {
-                'type': 'float',
-                'category': 'Qwen API',
-                'description': 'Unified temperature for diagram generation (0.0-2.0)',
-                'default': '0.3',
-                'required': False,
-                'min': 0.0,
-                'max': 2.0
+            "LLM_TEMPERATURE": {
+                "type": "float",
+                "category": "Qwen API",
+                "description": "Unified temperature for diagram generation (0.0-2.0)",
+                "default": "0.3",
+                "required": False,
+                "min": 0.0,
+                "max": 2.0,
             },
-
             # Add remaining schema entries here (truncated for brevity)
             # Full schema continues for all settings in env.example...
-
         }
 
         return schema

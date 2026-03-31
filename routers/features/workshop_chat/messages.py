@@ -32,7 +32,10 @@ from routers.features.workshop_chat.schemas import (
     EditMessageRequest,
 )
 from services.features.workshop_chat import (
-    message_service, star_service, reaction_service, file_service,
+    message_service,
+    star_service,
+    reaction_service,
+    file_service,
 )
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
@@ -47,6 +50,7 @@ router = APIRouter()
 
 # ── Channel Messages ─────────────────────────────────────────────
 
+
 @router.get("/channels/{channel_id}/messages")
 async def get_channel_messages(
     channel_id: int,
@@ -60,8 +64,11 @@ async def get_channel_messages(
     channel = access_channel(db, channel_id, current_user)
     require_membership_unless_announce(db, channel, current_user.id)
     return message_service.get_channel_messages(
-        db, channel_id, anchor=anchor,
-        num_before=num_before, num_after=num_after,
+        db,
+        channel_id,
+        anchor=anchor,
+        num_before=num_before,
+        num_after=num_after,
     )
 
 
@@ -92,7 +99,11 @@ def search_channel_messages(
                 detail="Topic not found in this channel",
             )
     return message_service.search_messages(
-        db, channel_id, q, topic_id=topic_id, limit=limit,
+        db,
+        channel_id,
+        q,
+        topic_id=topic_id,
+        limit=limit,
     )
 
 
@@ -109,8 +120,12 @@ async def send_channel_message(
     require_post_permission(channel, current_user)
     try:
         result = message_service.send_message(
-            db, channel_id, current_user.id, body.content,
-            message_type=body.message_type, parent_id=body.parent_id,
+            db,
+            channel_id,
+            current_user.id,
+            body.content,
+            message_type=body.message_type,
+            parent_id=body.parent_id,
         )
     except MentionResolutionError as exc:
         raise HTTPException(
@@ -121,13 +136,20 @@ async def send_channel_message(
                 "ambiguous": exc.ambiguous_names,
             },
         ) from exc
-    await chat_ws_manager.broadcast_to_channel(channel_id, {
-        "type": "channel_message", "channel_id": channel_id, "message": result,
-    }, exclude_user=current_user.id)
+    await chat_ws_manager.broadcast_to_channel(
+        channel_id,
+        {
+            "type": "channel_message",
+            "channel_id": channel_id,
+            "message": result,
+        },
+        exclude_user=current_user.id,
+    )
     return result
 
 
 # ── Topic Messages ────────────────────────────────────────────────
+
 
 @router.get("/channels/{channel_id}/topics/{topic_id}/messages")
 async def get_topic_messages(
@@ -143,8 +165,12 @@ async def get_topic_messages(
     channel = access_channel(db, channel_id, current_user)
     require_membership_unless_announce(db, channel, current_user.id)
     return message_service.get_topic_messages(
-        db, topic_id, channel_id,
-        anchor=anchor, num_before=num_before, num_after=num_after,
+        db,
+        topic_id,
+        channel_id,
+        anchor=anchor,
+        num_before=num_before,
+        num_after=num_after,
     )
 
 
@@ -165,9 +191,13 @@ async def send_topic_message(
     require_post_permission(channel, current_user)
     try:
         result = message_service.send_message(
-            db, channel_id, current_user.id, body.content,
+            db,
+            channel_id,
+            current_user.id,
+            body.content,
             topic_id=topic_id,
-            message_type=body.message_type, parent_id=body.parent_id,
+            message_type=body.message_type,
+            parent_id=body.parent_id,
         )
     except MentionResolutionError as exc:
         raise HTTPException(
@@ -178,14 +208,21 @@ async def send_topic_message(
                 "ambiguous": exc.ambiguous_names,
             },
         ) from exc
-    await chat_ws_manager.broadcast_to_channel(channel_id, {
-        "type": "topic_message", "channel_id": channel_id,
-        "topic_id": topic_id, "message": result,
-    }, exclude_user=current_user.id)
+    await chat_ws_manager.broadcast_to_channel(
+        channel_id,
+        {
+            "type": "topic_message",
+            "channel_id": channel_id,
+            "topic_id": topic_id,
+            "message": result,
+        },
+        exclude_user=current_user.id,
+    )
     return result
 
 
 # ── Edit / Delete ─────────────────────────────────────────────────
+
 
 @router.put("/messages/{message_id}")
 async def edit_message(
@@ -197,7 +234,10 @@ async def edit_message(
     """Edit a message (sender only)."""
     try:
         result = message_service.edit_message(
-            db, message_id, current_user.id, body.content,
+            db,
+            message_id,
+            current_user.id,
+            body.content,
         )
     except MentionResolutionError as exc:
         raise HTTPException(
@@ -220,11 +260,7 @@ def delete_message(
     current_user: User = Depends(get_current_user),
 ):
     """Soft-delete a message (sender or org/realm moderator)."""
-    stub = (
-        db.query(ChatMessage)
-        .filter(ChatMessage.id == message_id)
-        .first()
-    )
+    stub = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
     if not stub:
         raise HTTPException(status_code=404, detail="Message not found")
     access_channel(db, stub.channel_id, current_user)
@@ -238,6 +274,7 @@ def delete_message(
 
 
 # ── Star / Bookmark ───────────────────────────────────────────────
+
 
 @router.post("/messages/{message_id}/star")
 async def toggle_star(
@@ -258,11 +295,15 @@ async def get_starred_messages(
 ):
     """List the current user's starred messages."""
     return star_service.get_starred_messages(
-        db, current_user.id, limit=limit, offset=offset,
+        db,
+        current_user.id,
+        limit=limit,
+        offset=offset,
     )
 
 
 # ── Batch Endpoints (for feed rendering) ─────────────────────────
+
 
 @router.get("/messages/reactions/batch")
 async def get_reactions_batch(

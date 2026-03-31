@@ -51,9 +51,6 @@ onMounted(async () => {
   // Resume polling for any documents that are processing
   // This ensures progress continues even if user navigated away
   resumePolling()
-
-  // Debug: Log documents count
-  console.log('[KnowledgeSpacePage] Loaded documents:', documentCount)
 })
 
 onUnmounted(() => {

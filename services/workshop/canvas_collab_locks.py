@@ -53,9 +53,7 @@ def filter_granular_nodes_for_locks(
         if not raw_id or not isinstance(raw_id, str):
             out.append(node)
             continue
-        if node_locked_by_other_user(
-            code, sender_id, raw_id, active_editors_local, editors_from_redis
-        ):
+        if node_locked_by_other_user(code, sender_id, raw_id, active_editors_local, editors_from_redis):
             continue
         out.append(node)
     return out
@@ -78,13 +76,9 @@ def filter_granular_connections_for_locks(
         if not isinstance(src, str) or not isinstance(tgt, str):
             out.append(conn)
             continue
-        if node_locked_by_other_user(
-            code, sender_id, src, active_editors_local, editors_from_redis
-        ):
+        if node_locked_by_other_user(code, sender_id, src, active_editors_local, editors_from_redis):
             continue
-        if node_locked_by_other_user(
-            code, sender_id, tgt, active_editors_local, editors_from_redis
-        ):
+        if node_locked_by_other_user(code, sender_id, tgt, active_editors_local, editors_from_redis):
             continue
         out.append(conn)
     return out

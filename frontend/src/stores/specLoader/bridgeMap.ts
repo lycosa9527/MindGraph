@@ -29,13 +29,10 @@ export function recalculateBridgeMapLayout(
 
   const getH = (id: string): number => {
     const pinia = nodeDimensions[id]?.height
-    const h = pinia ?? BRANCH_NODE_HEIGHT
-    console.log(`[NodeLayout:getH] id="${id}" h=${h} src=${pinia != null ? 'pinia' : 'DEFAULT'}`)
-    return h
+    return pinia ?? BRANCH_NODE_HEIGHT
   }
 
-  const getW = (id: string): number =>
-    nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH
+  const getW = (id: string): number => nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH
 
   const pairNodes = nodes.filter((n) => n.id?.startsWith('pair-'))
   const otherNodes = nodes.filter((n) => !n.id?.startsWith('pair-'))
@@ -59,12 +56,10 @@ export function recalculateBridgeMapLayout(
     if (!leftNode || !rightNode) continue
 
     const leftH = getH(leftId)
-    const rightH = getH(rightId)
     const pairWidth = Math.max(getW(leftId), getW(rightId))
 
     const leftY = centerY - BRIDGE_VERTICAL_GAP - leftH
     const rightY = centerY + BRIDGE_VERTICAL_GAP
-    console.log(`[NodeLayout:BridgeMap] pair-${i}: leftH=${leftH} rightH=${rightH} leftY=${leftY} rightY=${rightY} centerY=${centerY}`)
     result.push({
       ...leftNode,
       position: { x: currentX, y: leftY },
@@ -129,15 +124,6 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   // This positions nodes so there's a 10px gap between label's right edge and horizontal line start
   const startX = DEFAULT_PADDING + estimatedLabelWidth + gapFromLabelRight
 
-  console.log('[BridgeMap-Loader] Initial positioning:', {
-    DEFAULT_PADDING,
-    gapFromLabelRight,
-    estimatedLabelWidth,
-    startX,
-    labelX: DEFAULT_PADDING,
-    expectedLabelRightEdge: DEFAULT_PADDING + estimatedLabelWidth,
-  })
-
   const nodes: DiagramNode[] = []
   const connections: Connection[] = []
 
@@ -200,17 +186,6 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
   const labelY = centerY - labelHeight / 2
   const labelX = DEFAULT_PADDING
 
-  console.log('[BridgeMap-Loader] Dimension label position:', {
-    labelX,
-    labelY,
-    firstNodeX: nodes.length > 0 && nodes[0].position ? nodes[0].position.x : 'no nodes yet',
-    gapFromLabelRight,
-    expectedGap:
-      nodes.length > 0 && nodes[0].position
-        ? nodes[0].position.x - (labelX + estimatedLabelWidth)
-        : 'N/A',
-  })
-
   nodes.push({
     id: 'dimension-label',
     text: dimension,
@@ -220,18 +195,6 @@ export function loadBridgeMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       diagramType: 'bridge_map',
       isDimensionLabel: true,
     },
-  })
-
-  const firstPairNode = nodes.find((n) => n.data?.pairIndex === 0 && n.data?.position === 'left')
-  console.log('[BridgeMap-Loader] Final positions:', {
-    labelX,
-    labelY,
-    firstNodeX: firstPairNode?.position?.x,
-    firstNodeY: firstPairNode?.position?.y,
-    expectedLabelRightEdge: labelX + estimatedLabelWidth,
-    expectedGapFromLabelRight: firstPairNode?.position
-      ? firstPairNode.position.x - (labelX + estimatedLabelWidth)
-      : 'N/A',
   })
 
   // Store dimension, relating_factor, and alternative_dimensions in metadata for BridgeOverlay

@@ -3,6 +3,7 @@ Chunk test execution endpoints.
 
 Handles test creation, progress tracking, and results retrieval.
 """
+
 import logging
 import threading
 from typing import Optional
@@ -15,17 +16,14 @@ from models.domain.auth import User
 from models.domain.knowledge_space import ChunkTestResult
 from models.requests.requests_knowledge_space import (
     ChunkTestBenchmarkRequest,
-    ChunkTestUserDocumentsRequest
+    ChunkTestUserDocumentsRequest,
 )
-from models.responses import (
-    ChunkTestResultResponse,
-    ChunkTestProgressResponse
-)
+from models.responses import ChunkTestResultResponse, ChunkTestProgressResponse
 from routers.api.knowledge_space.chunk_test_background import (
     run_test_in_background,
     run_benchmark_in_background,
     cancel_test,
-    detect_and_mark_stuck_tests
+    detect_and_mark_stuck_tests,
 )
 from routers.api.knowledge_space.chunk_test_utils import check_feature_enabled
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
@@ -40,7 +38,7 @@ router = APIRouter()
 def test_benchmark_dataset(
     request: ChunkTestBenchmarkRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Test chunking methods with benchmark dataset.
@@ -56,7 +54,7 @@ def test_benchmark_dataset(
             user_id=current_user.id,
             dataset_name=request.dataset_name,
             custom_queries=request.queries,
-            modes=request.modes
+            modes=request.modes,
         )
 
         test_result = ChunkTestResult(
@@ -66,7 +64,7 @@ def test_benchmark_dataset(
             mindchunk_chunk_count=results["chunking_comparison"].get("mindchunk", {}).get("count", 0),
             chunk_stats=results["chunking_comparison"],
             retrieval_metrics=results.get("retrieval_comparison", {}),
-            comparison_summary=results.get("summary", {})
+            comparison_summary=results.get("summary", {}),
         )
         db.add(test_result)
         db.commit()
@@ -79,7 +77,7 @@ def test_benchmark_dataset(
             chunking_comparison=test_result.chunk_stats or {},
             retrieval_comparison=test_result.retrieval_metrics or {},
             summary=test_result.comparison_summary or {},
-            created_at=test_result.created_at.isoformat()
+            created_at=test_result.created_at.isoformat(),
         )
 
     except ValueError as e:
@@ -89,20 +87,17 @@ def test_benchmark_dataset(
             "[ChunkTestExecution] Benchmark test failed for user %s: %s",
             current_user.id,
             e,
-            exc_info=True
+            exc_info=True,
         )
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Chunk test failed"
-        ) from e
+        raise HTTPException(status_code=500, detail="Chunk test failed") from e
 
 
 @router.post("/chunk-test/benchmark-async", response_model=ChunkTestResultResponse)
 def test_benchmark_dataset_async(
     request: ChunkTestBenchmarkRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Test chunking methods with benchmark dataset (async background execution).
@@ -111,7 +106,13 @@ def test_benchmark_dataset_async(
     """
     check_feature_enabled()
     try:
-        modes = request.modes or ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+        modes = request.modes or [
+            "spacy",
+            "semchunk",
+            "chonkie",
+            "langchain",
+            "mindchunk",
+        ]
 
         test_result = ChunkTestResult(
             user_id=current_user.id,
@@ -119,7 +120,7 @@ def test_benchmark_dataset_async(
             status="pending",
             current_stage="pending",
             progress_percent=0,
-            completed_methods=[]
+            completed_methods=[],
         )
         db.add(test_result)
         db.commit()
@@ -132,7 +133,7 @@ def test_benchmark_dataset_async(
             current_user.id,
             request.dataset_name,
             len(request.queries) if request.queries else 0,
-            modes
+            modes,
         )
 
         thread = threading.Thread(
@@ -142,10 +143,10 @@ def test_benchmark_dataset_async(
                 current_user.id,
                 request.dataset_name,
                 request.queries,
-                modes
+                modes,
             ),
             daemon=False,
-            name=f"ChunkTestBenchmark-{test_result.id}"
+            name=f"ChunkTestBenchmark-{test_result.id}",
         )
         thread.start()
 
@@ -153,7 +154,7 @@ def test_benchmark_dataset_async(
             "[ChunkTestExecution] Background thread started for benchmark test %s: thread_name=%s, thread_id=%s",
             test_result.id,
             thread.name,
-            thread.ident
+            thread.ident,
         )
 
         return ChunkTestResultResponse(
@@ -168,7 +169,7 @@ def test_benchmark_dataset_async(
             current_stage=test_result.current_stage,
             progress_percent=test_result.progress_percent,
             completed_methods=test_result.completed_methods,
-            created_at=test_result.created_at.isoformat()
+            created_at=test_result.created_at.isoformat(),
         )
 
     except ValueError as e:
@@ -178,20 +179,17 @@ def test_benchmark_dataset_async(
             "[ChunkTestExecution] Benchmark test initiation failed for user %s: %s",
             current_user.id,
             e,
-            exc_info=True
+            exc_info=True,
         )
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to initiate benchmark test"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to initiate benchmark test") from e
 
 
 @router.post("/chunk-test/user-documents", response_model=ChunkTestResultResponse)
 def test_user_documents(
     request: ChunkTestUserDocumentsRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Test chunking methods with user's uploaded documents.
@@ -201,7 +199,13 @@ def test_user_documents(
     """
     check_feature_enabled()
     try:
-        modes = request.modes or ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
+        modes = request.modes or [
+            "spacy",
+            "semchunk",
+            "chonkie",
+            "langchain",
+            "mindchunk",
+        ]
 
         test_result = ChunkTestResult(
             user_id=current_user.id,
@@ -210,7 +214,7 @@ def test_user_documents(
             status="pending",
             current_stage="pending",
             progress_percent=0,
-            completed_methods=[]
+            completed_methods=[],
         )
         db.add(test_result)
         db.commit()
@@ -223,7 +227,7 @@ def test_user_documents(
             current_user.id,
             request.document_ids,
             len(request.queries),
-            modes
+            modes,
         )
 
         thread = threading.Thread(
@@ -233,10 +237,10 @@ def test_user_documents(
                 current_user.id,
                 request.document_ids,
                 request.queries,
-                modes
+                modes,
             ),
             daemon=False,
-            name=f"ChunkTest-{test_result.id}"
+            name=f"ChunkTest-{test_result.id}",
         )
         thread.start()
 
@@ -244,7 +248,7 @@ def test_user_documents(
             "[ChunkTestExecution] Background thread started for test %s: thread_name=%s, thread_id=%s",
             test_result.id,
             thread.name,
-            thread.ident
+            thread.ident,
         )
 
         return ChunkTestResultResponse(
@@ -260,7 +264,7 @@ def test_user_documents(
             current_stage=test_result.current_stage,
             progress_percent=test_result.progress_percent,
             completed_methods=test_result.completed_methods,
-            created_at=test_result.created_at.isoformat()
+            created_at=test_result.created_at.isoformat(),
         )
 
     except ValueError as e:
@@ -270,20 +274,17 @@ def test_user_documents(
             "[ChunkTestExecution] User documents test initiation failed for user %s: %s",
             current_user.id,
             e,
-            exc_info=True
+            exc_info=True,
         )
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to initiate chunk test"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to initiate chunk test") from e
 
 
 @router.get("/chunk-test/progress/{test_id}", response_model=ChunkTestProgressResponse)
 def get_chunk_test_progress(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get current progress of a chunk test.
@@ -297,13 +298,14 @@ def get_chunk_test_progress(
     if stuck_count > 0:
         logger.info(
             "[ChunkTestExecution] Detected and marked %d stuck test(s) while checking progress",
-            stuck_count
+            stuck_count,
         )
 
-    test_result = db.query(ChunkTestResult).filter(
-        ChunkTestResult.id == test_id,
-        ChunkTestResult.user_id == current_user.id
-    ).first()
+    test_result = (
+        db.query(ChunkTestResult)
+        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
+        .first()
+    )
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -315,7 +317,7 @@ def get_chunk_test_progress(
         current_method=test_result.current_method,
         current_stage=test_result.current_stage,
         progress_percent=test_result.progress_percent,
-        completed_methods=test_result.completed_methods or []
+        completed_methods=test_result.completed_methods or [],
     )
 
 
@@ -323,7 +325,7 @@ def get_chunk_test_progress(
 def get_chunk_test_result(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get complete chunk test result by ID.
@@ -332,10 +334,11 @@ def get_chunk_test_result(
     Returns full results only when status='completed'.
     """
     check_feature_enabled()
-    test_result = db.query(ChunkTestResult).filter(
-        ChunkTestResult.id == test_id,
-        ChunkTestResult.user_id == current_user.id
-    ).first()
+    test_result = (
+        db.query(ChunkTestResult)
+        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
+        .first()
+    )
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -354,7 +357,7 @@ def get_chunk_test_result(
         current_stage=test_result.current_stage,
         progress_percent=test_result.progress_percent,
         completed_methods=test_result.completed_methods or [],
-        created_at=test_result.created_at.isoformat()
+        created_at=test_result.created_at.isoformat(),
     )
 
 
@@ -363,7 +366,7 @@ def get_chunk_test_results(
     dataset_name: Optional[str] = None,
     limit: int = 10,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get chunk test results list for user.
@@ -371,9 +374,7 @@ def get_chunk_test_results(
     Requires authentication.
     """
     check_feature_enabled()
-    query = db.query(ChunkTestResult).filter(
-        ChunkTestResult.user_id == current_user.id
-    )
+    query = db.query(ChunkTestResult).filter(ChunkTestResult.user_id == current_user.id)
 
     if dataset_name:
         query = query.filter(ChunkTestResult.dataset_name == dataset_name)
@@ -391,11 +392,11 @@ def get_chunk_test_results(
                 "mindchunk_chunk_count": r.mindchunk_chunk_count,
                 "status": r.status,
                 "summary": r.comparison_summary or {},
-                "created_at": r.created_at.isoformat()
+                "created_at": r.created_at.isoformat(),
             }
             for r in results
         ],
-        "total": len(results)
+        "total": len(results),
     }
 
 
@@ -403,7 +404,7 @@ def get_chunk_test_results(
 def delete_chunk_test_result(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a chunk test result.
@@ -412,10 +413,11 @@ def delete_chunk_test_result(
     Cannot delete tests that are currently processing.
     """
     check_feature_enabled()
-    test_result = db.query(ChunkTestResult).filter(
-        ChunkTestResult.id == test_id,
-        ChunkTestResult.user_id == current_user.id
-    ).first()
+    test_result = (
+        db.query(ChunkTestResult)
+        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
+        .first()
+    )
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -423,7 +425,7 @@ def delete_chunk_test_result(
     if test_result.status in ("pending", "processing"):
         raise HTTPException(
             status_code=400,
-            detail="Cannot delete a test that is currently processing. Please cancel it first."
+            detail="Cannot delete a test that is currently processing. Please cancel it first.",
         )
 
     try:
@@ -432,29 +434,23 @@ def delete_chunk_test_result(
 
         logger.info("[ChunkTestExecution] Test %s deleted by user %s", test_id, current_user.id)
 
-        return {
-            "success": True,
-            "message": "Test result deleted successfully"
-        }
+        return {"success": True, "message": "Test result deleted successfully"}
     except Exception as e:
         logger.error(
             "[ChunkTestExecution] Failed to delete test %s: %s",
             test_id,
             e,
-            exc_info=True
+            exc_info=True,
         )
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to delete test result"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to delete test result") from e
 
 
 @router.post("/chunk-test/{test_id}/cancel")
 def cancel_chunk_test(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Cancel a running chunk test.
@@ -463,18 +459,18 @@ def cancel_chunk_test(
     Only tests with status 'pending' or 'processing' can be cancelled.
     """
     check_feature_enabled()
-    test_result = db.query(ChunkTestResult).filter(
-        ChunkTestResult.id == test_id,
-        ChunkTestResult.user_id == current_user.id
-    ).first()
+    test_result = (
+        db.query(ChunkTestResult)
+        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
+        .first()
+    )
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
 
     if test_result.status not in ("pending", "processing"):
         status_msg = (
-            f"Cannot cancel test with status '{test_result.status}'. "
-            "Only pending or processing tests can be cancelled."
+            f"Cannot cancel test with status '{test_result.status}'. Only pending or processing tests can be cancelled."
         )
         raise HTTPException(status_code=400, detail=status_msg)
 
@@ -485,35 +481,33 @@ def cancel_chunk_test(
         test_result.current_stage = "cancelled"
         db.commit()
 
-        logger.info("[ChunkTestExecution] Test %s cancelled by user %s", test_id, current_user.id)
+        logger.info(
+            "[ChunkTestExecution] Test %s cancelled by user %s",
+            test_id,
+            current_user.id,
+        )
 
         return {
             "success": True,
-            "message": "Test cancellation requested. The test will stop at the next checkpoint."
+            "message": "Test cancellation requested. The test will stop at the next checkpoint.",
         }
     except Exception as e:
         logger.error(
             "[ChunkTestExecution] Failed to cancel test %s: %s",
             test_id,
             e,
-            exc_info=True
+            exc_info=True,
         )
         db.rollback()
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to cancel test"
-        ) from e
+        raise HTTPException(status_code=500, detail="Failed to cancel test") from e
 
 
 @router.post("/chunk-test/detect-stuck")
-def detect_stuck_tests(
-    _current_user: User = Depends(get_current_user),
-    _db: Session = Depends(get_db)
-):
+def detect_stuck_tests(_current_user: User = Depends(get_current_user), _db: Session = Depends(get_db)):
     """
     Detect and mark stuck chunk tests as failed.
 
-    Requires authentication. Checks for tests that have been in 'pending' 
+    Requires authentication. Checks for tests that have been in 'pending'
     or 'processing' status for more than 30 minutes.
     """
     check_feature_enabled()
@@ -522,15 +516,8 @@ def detect_stuck_tests(
         return {
             "success": True,
             "stuck_tests_detected": stuck_count,
-            "message": f"Detected and marked {stuck_count} stuck test(s) as failed"
+            "message": f"Detected and marked {stuck_count} stuck test(s) as failed",
         }
     except Exception as e:
-        logger.error(
-            "[ChunkTestExecution] Failed to detect stuck tests: %s",
-            e,
-            exc_info=True
-        )
-        raise HTTPException(
-            status_code=500,
-            detail="Failed to detect stuck tests"
-        ) from e
+        logger.error("[ChunkTestExecution] Failed to detect stuck tests: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to detect stuck tests") from e

@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import json
 import logging
 import threading
@@ -18,12 +19,16 @@ from config.settings import config
 from prompts import get_prompt
 
 from agents.core.llm_clients import llm_generation, llm_classification
-from agents.core.utils import create_error_response, extract_yaml_from_code_block, _salvage_json_string
+from agents.core.utils import (
+    create_error_response,
+    extract_yaml_from_code_block,
+    _salvage_json_string,
+)
 
 logger = logging.getLogger(__name__)
 
 
-def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh') -> dict:
+def generate_graph_spec(user_prompt: str, graph_type: str, language: str = "zh") -> dict:
     """
     Use the LLM to generate a JSON spec for the given graph type.
 
@@ -38,14 +43,14 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
     # Use centralized prompt registry
     try:
         # Get the appropriate prompt template
-        prompt_text = get_prompt(graph_type, language, 'generation')
+        prompt_text = get_prompt(graph_type, language, "generation")
 
         if not prompt_text:
             logger.error("No prompt found for graph type: %s", graph_type)
             return create_error_response(
                 f"No prompt template found for {graph_type}",
                 "template",
-                {"graph_type": graph_type}
+                {"graph_type": graph_type},
             )
 
         # Sanitize template to ensure only {user_prompt} is a variable; all other braces become literal
@@ -56,10 +61,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             return temp.replace(placeholder, "{user_prompt}")
 
         safe_template = _sanitize_prompt_template_for_langchain(prompt_text)
-        prompt = PromptTemplate(
-            input_variables=["user_prompt"],
-            template=safe_template
-        )
+        prompt = PromptTemplate(input_variables=["user_prompt"], template=safe_template)
         # Use generation model for graph specification generation (high quality)
         formatted_prompt = prompt.format(user_prompt=user_prompt)
         yaml_text = llm_generation.invoke(formatted_prompt)
@@ -82,7 +84,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
                 spec = json.loads(yaml_text_clean)
             except json.JSONDecodeError:
                 # Try to remove accidental trailing fences in the cleaned text
-                cleaned = yaml_text_clean.strip().rstrip('`').strip()
+                cleaned = yaml_text_clean.strip().rstrip("`").strip()
                 try:
                     spec = json.loads(cleaned)
                 except Exception:  # pylint: disable=broad-except
@@ -106,7 +108,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
                 return create_error_response(
                     f"Invalid spec type: {type(spec)}",
                     "generation",
-                    {"graph_type": graph_type}
+                    {"graph_type": graph_type},
                 )
             return spec
 
@@ -115,20 +117,18 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = 'zh')
             return create_error_response(
                 f"Failed to generate valid {graph_type} JSON",
                 "generation",
-                {"graph_type": graph_type}
+                {"graph_type": graph_type},
             )
 
     except ImportError:
         logger.error("Failed to import centralized prompt registry")
-        return create_error_response(
-            "Prompt registry not available", "import", {"graph_type": graph_type}
-        )
+        return create_error_response("Prompt registry not available", "import", {"graph_type": graph_type})
     except Exception as e:  # pylint: disable=broad-except
         logger.error("Unexpected error in generate_graph_spec: %s", e)
         return create_error_response(
             f"Unexpected error generating {graph_type}",
             "unexpected",
-            {"graph_type": graph_type}
+            {"graph_type": graph_type},
         )
 
 
@@ -144,7 +144,7 @@ def get_agent_config() -> dict:
         "llm_url": config.QWEN_API_URL,
         "temperature": config.QWEN_TEMPERATURE,
         "max_tokens": config.QWEN_MAX_TOKENS,
-        "default_language": config.GRAPH_LANGUAGE
+        "default_language": config.GRAPH_LANGUAGE,
     }
 
 
@@ -155,6 +155,7 @@ def validate_agent_setup() -> bool:
     Returns:
         bool: True if agent is ready, False otherwise
     """
+
     def timeout_handler():
         raise TimeoutError("LLM validation timed out")
 

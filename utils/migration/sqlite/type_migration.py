@@ -13,6 +13,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Any, Optional, Dict
 import logging
 import re
@@ -24,7 +25,7 @@ from models.domain.auth import Base
 logger = logging.getLogger(__name__)
 
 # Valid identifier pattern for table/column names (prevent SQL injection)
-VALID_IDENTIFIER_PATTERN = re.compile(r'^[a-zA-Z_][a-zA-Z0-9_]*$')
+VALID_IDENTIFIER_PATTERN = re.compile(r"^[a-zA-Z_][a-zA-Z0-9_]*$")
 
 
 def validate_identifier(name: str) -> bool:
@@ -49,43 +50,58 @@ def normalize_sqlite_type(type_str: str) -> str:
         Normalized type category for comparison
     """
     if not type_str:
-        return 'TEXT'
+        return "TEXT"
 
     type_upper = type_str.upper().strip()
 
     # Extract base type (remove length specifiers)
     # VARCHAR(36) -> VARCHAR, INTEGER -> INTEGER
-    base_type = type_upper.split('(')[0].strip()
+    base_type = type_upper.split("(")[0].strip()
 
     # Map to SQLite type affinities
     integer_types = {
-        'INT', 'INTEGER', 'TINYINT', 'SMALLINT', 'MEDIUMINT',
-        'BIGINT', 'UNSIGNED BIG INT', 'INT2', 'INT8'
+        "INT",
+        "INTEGER",
+        "TINYINT",
+        "SMALLINT",
+        "MEDIUMINT",
+        "BIGINT",
+        "UNSIGNED BIG INT",
+        "INT2",
+        "INT8",
     }
     text_types = {
-        'TEXT', 'VARCHAR', 'CHAR', 'CHARACTER', 'VARYING CHARACTER',
-        'NCHAR', 'NATIVE CHARACTER', 'NVARCHAR', 'CLOB', 'STRING'
+        "TEXT",
+        "VARCHAR",
+        "CHAR",
+        "CHARACTER",
+        "VARYING CHARACTER",
+        "NCHAR",
+        "NATIVE CHARACTER",
+        "NVARCHAR",
+        "CLOB",
+        "STRING",
     }
-    real_types = {'REAL', 'DOUBLE', 'DOUBLE PRECISION', 'FLOAT'}
-    blob_types = {'BLOB'}
+    real_types = {"REAL", "DOUBLE", "DOUBLE PRECISION", "FLOAT"}
+    blob_types = {"BLOB"}
 
     if base_type in integer_types:
-        return 'INTEGER'
+        return "INTEGER"
     elif base_type in text_types:
-        return 'TEXT'
+        return "TEXT"
     elif base_type in real_types:
-        return 'REAL'
+        return "REAL"
     elif base_type in blob_types:
-        return 'BLOB'
-    elif base_type == 'BOOLEAN':
+        return "BLOB"
+    elif base_type == "BOOLEAN":
         # SQLite stores BOOLEAN as INTEGER, but we track it separately
-        return 'BOOLEAN'
-    elif base_type in ('DATE', 'DATETIME', 'TIMESTAMP'):
+        return "BOOLEAN"
+    elif base_type in ("DATE", "DATETIME", "TIMESTAMP"):
         # SQLite stores these as TEXT or INTEGER
-        return 'DATETIME'
+        return "DATETIME"
     else:
         # Default to NUMERIC affinity
-        return 'NUMERIC'
+        return "NUMERIC"
 
 
 def types_are_compatible(expected_type: str, actual_type: str) -> bool:
@@ -108,10 +124,10 @@ def types_are_compatible(expected_type: str, actual_type: str) -> bool:
 
     # Special cases: BOOLEAN and DATETIME are stored as different types in SQLite
     # BOOLEAN can be stored as INTEGER (0/1)
-    if expected_norm == 'BOOLEAN' and actual_norm == 'INTEGER':
+    if expected_norm == "BOOLEAN" and actual_norm == "INTEGER":
         return True
     # DATETIME can be stored as TEXT or INTEGER (unix timestamp)
-    if expected_norm == 'DATETIME' and actual_norm in ('TEXT', 'INTEGER'):
+    if expected_norm == "DATETIME" and actual_norm in ("TEXT", "INTEGER"):
         return True
 
     return False
@@ -122,21 +138,21 @@ def get_sqlite_type(column_def: Any) -> str:
     type_str = str(column_def.type)
 
     # SQLite type mapping
-    if 'INTEGER' in type_str.upper():
-        return 'INTEGER'
-    elif 'VARCHAR' in type_str.upper() or 'STRING' in type_str.upper():
+    if "INTEGER" in type_str.upper():
+        return "INTEGER"
+    elif "VARCHAR" in type_str.upper() or "STRING" in type_str.upper():
         # Extract length if available
-        if hasattr(column_def.type, 'length') and column_def.type.length:
+        if hasattr(column_def.type, "length") and column_def.type.length:
             return f"VARCHAR({column_def.type.length})"
-        return 'TEXT'
-    elif 'TEXT' in type_str.upper():
-        return 'TEXT'
-    elif 'FLOAT' in type_str.upper() or 'REAL' in type_str.upper():
-        return 'REAL'
-    elif 'BOOLEAN' in type_str.upper():
-        return 'BOOLEAN'
-    elif 'DATETIME' in type_str.upper() or 'TIMESTAMP' in type_str.upper():
-        return 'DATETIME'
+        return "TEXT"
+    elif "TEXT" in type_str.upper():
+        return "TEXT"
+    elif "FLOAT" in type_str.upper() or "REAL" in type_str.upper():
+        return "REAL"
+    elif "BOOLEAN" in type_str.upper():
+        return "BOOLEAN"
+    elif "DATETIME" in type_str.upper() or "TIMESTAMP" in type_str.upper():
+        return "DATETIME"
     else:
         return type_str
 
@@ -151,14 +167,14 @@ def get_sql_default_value(default: Any) -> Optional[str]:
         return None
 
     # Handle ColumnDefault
-    if hasattr(default, 'arg'):
+    if hasattr(default, "arg"):
         default = default.arg
         if callable(default):
             return None
 
     # Convert Python values to SQL
     if isinstance(default, bool):
-        return '1' if default else '0'
+        return "1" if default else "0"
     elif isinstance(default, (int, float)):
         return str(default)
     elif isinstance(default, str):
@@ -167,11 +183,7 @@ def get_sql_default_value(default: Any) -> Optional[str]:
         return str(default)
 
 
-def detect_type_mismatches(
-    engine: Any,
-    table_name: str,
-    table_class: Any
-) -> List[Dict]:
+def detect_type_mismatches(engine: Any, table_name: str, table_class: Any) -> List[Dict]:
     """
     Detect columns with type mismatches (column exists but wrong type).
 
@@ -192,10 +204,7 @@ def detect_type_mismatches(
             return []
 
         # Get existing columns with their types
-        existing_columns = {
-            col['name'].lower(): col
-            for col in fresh_inspector.get_columns(table_name)
-        }
+        existing_columns = {col["name"].lower(): col for col in fresh_inspector.get_columns(table_name)}
 
         # Get expected columns from model
         if table_class is None:
@@ -205,10 +214,7 @@ def detect_type_mismatches(
             expected_columns = {col.name: col for col in table_metadata.columns}
         else:
             try:
-                expected_columns = {
-                    col.name: col
-                    for col in table_class.__table__.columns
-                }
+                expected_columns = {col.name: col for col in table_class.__table__.columns}
             except AttributeError:
                 table_metadata = Base.metadata.tables.get(table_name)
                 if table_metadata is None:
@@ -221,16 +227,18 @@ def detect_type_mismatches(
             if col_name_lower in existing_columns:
                 existing_col = existing_columns[col_name_lower]
                 expected_type = get_sqlite_type(col_def)
-                actual_type = str(existing_col.get('type', ''))
+                actual_type = str(existing_col.get("type", ""))
 
                 if not types_are_compatible(expected_type, actual_type):
-                    mismatches.append({
-                        'table': table_name,
-                        'column': col_name,
-                        'expected_type': expected_type,
-                        'actual_type': actual_type,
-                        'is_primary_key': col_def.primary_key
-                    })
+                    mismatches.append(
+                        {
+                            "table": table_name,
+                            "column": col_name,
+                            "expected_type": expected_type,
+                            "actual_type": actual_type,
+                            "is_primary_key": col_def.primary_key,
+                        }
+                    )
 
         return mismatches
 
@@ -239,12 +247,7 @@ def detect_type_mismatches(
         return []
 
 
-def recreate_table_with_correct_schema(
-    db_path: str,
-    table_name: str,
-    table_class: Any,
-    mismatches: List[Dict]
-) -> bool:
+def recreate_table_with_correct_schema(db_path: str, table_name: str, table_class: Any, mismatches: List[Dict]) -> bool:
     """
     Recreate a table with the correct schema (SQLite table recreation pattern).
 
@@ -272,7 +275,7 @@ def recreate_table_with_correct_schema(
 
     try:
         # Get table metadata
-        if table_class is not None and hasattr(table_class, '__table__'):
+        if table_class is not None and hasattr(table_class, "__table__"):
             table_metadata = table_class.__table__
         else:
             table_metadata = Base.metadata.tables.get(table_name)
@@ -297,15 +300,15 @@ def recreate_table_with_correct_schema(
             parts = [f'"{col_name}"', col_type]
 
             if col.primary_key:
-                parts.append('PRIMARY KEY')
+                parts.append("PRIMARY KEY")
             if not col.nullable and not col.primary_key:
-                parts.append('NOT NULL')
+                parts.append("NOT NULL")
             if col.default is not None:
                 default_val = get_sql_default_value(col.default)
                 if default_val:
-                    parts.append(f'DEFAULT {default_val}')
+                    parts.append(f"DEFAULT {default_val}")
 
-            column_defs.append(' '.join(parts))
+            column_defs.append(" ".join(parts))
 
         # Foreign key constraints (if any)
         fk_constraints = []
@@ -314,9 +317,7 @@ def recreate_table_with_correct_schema(
             parent_col = fk.column.name
             child_col = fk.parent.name
             if all(validate_identifier(n) for n in [parent_table, parent_col, child_col]):
-                fk_constraints.append(
-                    f'FOREIGN KEY ("{child_col}") REFERENCES "{parent_table}" ("{parent_col}")'
-                )
+                fk_constraints.append(f'FOREIGN KEY ("{child_col}") REFERENCES "{parent_table}" ("{parent_col}")')
 
         # Combine all constraints
         all_defs = column_defs + fk_constraints
@@ -338,17 +339,17 @@ def recreate_table_with_correct_schema(
             for col_name in column_names:
                 # Check if this column has a type mismatch
                 mismatch = next(
-                    (m for m in mismatches if m['column'].lower() == col_name.lower()),
-                    None
+                    (m for m in mismatches if m["column"].lower() == col_name.lower()),
+                    None,
                 )
                 if mismatch:
-                    expected_norm = normalize_sqlite_type(mismatch['expected_type'])
-                    actual_norm = normalize_sqlite_type(mismatch['actual_type'])
+                    expected_norm = normalize_sqlite_type(mismatch["expected_type"])
+                    actual_norm = normalize_sqlite_type(mismatch["actual_type"])
 
                     # Cast value if converting between types
-                    if actual_norm == 'INTEGER' and expected_norm == 'TEXT':
+                    if actual_norm == "INTEGER" and expected_norm == "TEXT":
                         select_cols.append(f'CAST("{col_name}" AS TEXT)')
-                    elif actual_norm == 'TEXT' and expected_norm == 'INTEGER':
+                    elif actual_norm == "TEXT" and expected_norm == "INTEGER":
                         select_cols.append(f'CAST("{col_name}" AS INTEGER)')
                     else:
                         select_cols.append(f'"{col_name}"')
@@ -375,7 +376,11 @@ def recreate_table_with_correct_schema(
                 logger.debug("[DBTypeMigration] Copying data: %d columns", len(copy_insert))
                 cursor.execute(copy_sql)
                 copied_rows = cursor.rowcount
-                logger.info("[DBTypeMigration] Copied %d row(s) from '%s'", copied_rows, table_name)
+                logger.info(
+                    "[DBTypeMigration] Copied %d row(s) from '%s'",
+                    copied_rows,
+                    table_name,
+                )
 
             # Step 3: Drop old table
             cursor.execute(f'DROP TABLE "{table_name}"')
@@ -390,10 +395,7 @@ def recreate_table_with_correct_schema(
                 idx_name = idx.name
                 idx_cols = [f'"{col.name}"' for col in idx.columns]
                 if validate_identifier(idx_name):
-                    idx_sql = (
-                        f'CREATE INDEX IF NOT EXISTS "{idx_name}" '
-                        f'ON "{table_name}" ({", ".join(idx_cols)})'
-                    )
+                    idx_sql = f'CREATE INDEX IF NOT EXISTS "{idx_name}" ON "{table_name}" ({", ".join(idx_cols)})'
                     try:
                         cursor.execute(idx_sql)
                         logger.debug("[DBTypeMigration] Recreated index: %s", idx_name)
@@ -406,7 +408,7 @@ def recreate_table_with_correct_schema(
             conn.commit()
             logger.info(
                 "[DBTypeMigration] Successfully recreated table '%s' with correct schema",
-                table_name
+                table_name,
             )
             return True
 

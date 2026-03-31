@@ -27,6 +27,7 @@ class DashboardActivity(Base):
     Stores user activities displayed in the public dashboard activity panel.
     Activities persist across page refreshes and are kept for historical analysis.
     """
+
     __tablename__ = "dashboard_activities"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -42,7 +43,4 @@ class DashboardActivity(Base):
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
 
     # Index for efficient queries (most recent first)
-    __table_args__ = (
-        Index('idx_dashboard_activities_created_at', 'created_at'),
-    )
-
+    __table_args__ = (Index("idx_dashboard_activities_created_at", "created_at"),)

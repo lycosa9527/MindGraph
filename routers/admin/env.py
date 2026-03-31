@@ -19,6 +19,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict
 import logging
 
@@ -29,7 +30,6 @@ from config.settings import config
 from models.domain.auth import User
 from services.infrastructure.utils.env_manager import EnvManager
 from utils.auth import get_current_user, is_admin
-
 
 
 logger = logging.getLogger(__name__)
@@ -47,9 +47,7 @@ def reload_runtime_config_from_dotenv() -> None:
 
 
 @router.get("/settings", dependencies=[Depends(get_current_user)])
-async def get_env_settings(
-    current_user: User = Depends(get_current_user)
-):
+async def get_env_settings(current_user: User = Depends(get_current_user)):
     """
     Get all environment settings with metadata (ADMIN ONLY)
 
@@ -63,10 +61,7 @@ async def get_env_settings(
         - JWT_SECRET_KEY is auto-managed via Redis (not in .env)
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         env_manager = EnvManager()
@@ -86,12 +81,12 @@ async def get_env_settings(
 
             # Completely hide these critical settings
             # Note: JWT_SECRET_KEY is now auto-managed via Redis (not in .env)
-            if key in ['DATABASE_URL']:
+            if key in ["DATABASE_URL"]:
                 masked_settings[key] = "***HIDDEN***"
                 continue
 
             # Mask API keys, secrets, passwords, passkeys
-            if any(sensitive in key for sensitive in ['API_KEY', 'SECRET', 'PASSWORD', 'PASSKEY']):
+            if any(sensitive in key for sensitive in ["API_KEY", "SECRET", "PASSWORD", "PASSKEY"]):
                 if len(value) > 4:
                     masked_settings[key] = f"***...{value[-4:]}"
                 else:
@@ -103,24 +98,18 @@ async def get_env_settings(
 
         logger.info("Admin %s accessed environment settings", current_user.phone)
 
-        return {
-            "settings": masked_settings,
-            "schema": schema
-        }
+        return {"settings": masked_settings, "schema": schema}
 
     except Exception as e:
         logger.error("Failed to get environment settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get settings: {str(e)}"
+            detail=f"Failed to get settings: {str(e)}",
         ) from e
 
 
 @router.put("/settings", dependencies=[Depends(get_current_user)])
-async def update_env_settings(
-    request: Dict[str, str],
-    current_user: User = Depends(get_current_user)
-):
+async def update_env_settings(request: Dict[str, str], current_user: User = Depends(get_current_user)):
     """
     Update environment settings in .env file (ADMIN ONLY)
 
@@ -150,19 +139,16 @@ async def update_env_settings(
         }
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     # Security: Prevent modification of critical settings via web UI
     # Note: JWT_SECRET_KEY is now auto-managed via Redis (not in .env)
-    forbidden_keys = ['DATABASE_URL']
+    forbidden_keys = ["DATABASE_URL"]
     for key in request:
         if key in forbidden_keys:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Cannot modify {key} via web interface. Edit .env file directly for security."
+                detail=f"Cannot modify {key} via web interface. Edit .env file directly for security.",
             )
 
     try:
@@ -192,7 +178,11 @@ async def update_env_settings(
                 filtered_request[key] = value
 
         if skipped_masked:
-            logger.info("Preserved %d masked values: %s", len(skipped_masked), ', '.join(skipped_masked))
+            logger.info(
+                "Preserved %d masked values: %s",
+                len(skipped_masked),
+                ", ".join(skipped_masked),
+            )
 
         # Validate settings before writing
         is_valid, errors = env_manager.validate_env(filtered_request)
@@ -200,7 +190,7 @@ async def update_env_settings(
             logger.warning("Settings validation failed: %s", errors)
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail=f"Validation errors: {', '.join(errors)}"
+                detail=f"Validation errors: {', '.join(errors)}",
             )
 
         # Create backup before making changes
@@ -213,7 +203,7 @@ async def update_env_settings(
         # Log the change (mask sensitive values in log)
         masked_keys = []
         for key, value in filtered_request.items():
-            if any(sensitive in key for sensitive in ['API_KEY', 'SECRET', 'PASSWORD', 'PASSKEY']):
+            if any(sensitive in key for sensitive in ["API_KEY", "SECRET", "PASSWORD", "PASSKEY"]):
                 masked_keys.append(f"{key}=***")
             else:
                 masked_keys.append(f"{key}={value}")
@@ -221,35 +211,29 @@ async def update_env_settings(
         logger.warning(
             "Admin %s updated .env settings: %s",
             current_user.phone,
-            ', '.join(masked_keys)
+            ", ".join(masked_keys),
         )
 
         return {
             "message": "Settings updated successfully",
             "backup_file": backup_file,
             "updated_keys": list(filtered_request.keys()),
-            "warning": "⚠️ Server restart required for changes to take effect!"
+            "warning": "⚠️ Server restart required for changes to take effect!",
         }
 
     except ValueError as e:
         logger.error("Settings update failed: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as e:
         logger.error("Unexpected error updating settings: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to update settings: {str(e)}"
+            detail=f"Failed to update settings: {str(e)}",
         ) from e
 
 
 @router.post("/validate", dependencies=[Depends(get_current_user)])
-async def validate_env_settings(
-    request: Dict[str, str],
-    current_user: User = Depends(get_current_user)
-):
+async def validate_env_settings(request: Dict[str, str], current_user: User = Depends(get_current_user)):
     """
     Validate settings without writing to file (ADMIN ONLY)
 
@@ -268,32 +252,24 @@ async def validate_env_settings(
         }
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         env_manager = EnvManager()
         is_valid, errors = env_manager.validate_env(request)
 
-        return {
-            "is_valid": is_valid,
-            "errors": errors
-        }
+        return {"is_valid": is_valid, "errors": errors}
 
     except Exception as e:
         logger.error("Validation failed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Validation failed: {str(e)}"
+            detail=f"Validation failed: {str(e)}",
         ) from e
 
 
 @router.get("/backups", dependencies=[Depends(get_current_user)])
-async def list_env_backups(
-    current_user: User = Depends(get_current_user)
-):
+async def list_env_backups(current_user: User = Depends(get_current_user)):
     """
     List all available .env backup files (ADMIN ONLY)
 
@@ -312,10 +288,7 @@ async def list_env_backups(
     Sorted by timestamp (newest first)
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         env_manager = EnvManager()
@@ -329,15 +302,12 @@ async def list_env_backups(
         logger.error("Failed to list backups: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to list backups: {str(e)}"
+            detail=f"Failed to list backups: {str(e)}",
         ) from e
 
 
 @router.post("/restore", dependencies=[Depends(get_current_user)])
-async def restore_env_from_backup(
-    backup_filename: str,
-    current_user: User = Depends(get_current_user)
-):
+async def restore_env_from_backup(backup_filename: str, current_user: User = Depends(get_current_user)):
     """
     Restore .env from a backup file (ADMIN ONLY)
 
@@ -362,21 +332,18 @@ async def restore_env_from_backup(
     - Audit logging
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     # Security: Validate filename to prevent path traversal
     if not backup_filename or ".." in backup_filename or "/" in backup_filename or "\\" in backup_filename:
         logger.warning(
             "Admin %s attempted invalid backup filename: %s",
             current_user.phone,
-            backup_filename
+            backup_filename,
         )
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid backup filename. Path traversal not allowed."
+            detail="Invalid backup filename. Path traversal not allowed.",
         )
 
     try:
@@ -390,7 +357,7 @@ async def restore_env_from_backup(
             logger.warning(
                 "Admin %s restored .env from backup: %s",
                 current_user.phone,
-                backup_filename
+                backup_filename,
             )
 
             return {
@@ -405,32 +372,27 @@ async def restore_env_from_backup(
             }
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Restore operation failed"
+            detail="Restore operation failed",
         )
 
     except FileNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Backup file not found: {backup_filename}"
+            detail=f"Backup file not found: {backup_filename}",
         ) from exc
     except ValueError as e:
         logger.error("Restore failed: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
     except Exception as e:
         logger.error("Unexpected error during restore: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to restore from backup: {str(e)}"
+            detail=f"Failed to restore from backup: {str(e)}",
         ) from e
 
 
 @router.get("/schema", dependencies=[Depends(get_current_user)])
-async def get_env_schema(
-    current_user: User = Depends(get_current_user)
-):
+async def get_env_schema(current_user: User = Depends(get_current_user)):
     """
     Get environment settings schema metadata (ADMIN ONLY)
 
@@ -445,10 +407,7 @@ async def get_env_schema(
     Used by frontend to dynamically generate settings form.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         env_manager = EnvManager()
@@ -460,7 +419,7 @@ async def get_env_schema(
         logger.error("Failed to get schema: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail=f"Failed to get schema: {str(e)}"
+            detail=f"Failed to get schema: {str(e)}",
         ) from e
 
 
@@ -476,10 +435,7 @@ async def reload_runtime_env(
     were not imported at startup still require a restart to appear.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         env_manager = EnvManager()

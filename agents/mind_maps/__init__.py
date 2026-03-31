@@ -11,4 +11,4 @@ Proprietary License
 
 from .mind_map_agent import MindMapAgent
 
-__all__ = ['MindMapAgent']
+__all__ = ["MindMapAgent"]

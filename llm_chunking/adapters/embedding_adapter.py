@@ -5,6 +5,7 @@ Adapts embedding generation to different chunk types:
 - Parent-Child: Embed only child chunks, store parent in payload
 - Q&A: Embed questions (or Q&A pairs)
 """
+
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Union
 import logging
@@ -43,7 +44,7 @@ class EmbeddingAdapter(ABC):
     def embed_chunks(
         self,
         chunks: Union[List[Chunk], List[ParentChunk], List[QAChunk]],
-        structure_type: str
+        structure_type: str,
     ) -> List[Dict[str, Any]]:
         """
         Embed chunks based on structure type.
@@ -60,11 +61,7 @@ class EmbeddingAdapter(ABC):
 class GeneralEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for General (flat) chunks."""
 
-    def embed_chunks(
-        self,
-        chunks: List[Chunk],
-        structure_type: str = "general"
-    ) -> List[Dict[str, Any]]:
+    def embed_chunks(self, chunks: List[Chunk], structure_type: str = "general") -> List[Dict[str, Any]]:
         """
         Embed each chunk independently.
 
@@ -82,27 +79,26 @@ class GeneralEmbeddingAdapter(EmbeddingAdapter):
         texts = [chunk.text for chunk in chunks]
 
         # Generate embeddings
-        embeddings = self.embedding_client.embed_texts(
-            texts=texts,
-            text_type="document"
-        )
+        embeddings = self.embedding_client.embed_texts(texts=texts, text_type="document")
 
         # Build result list
         results = []
         for chunk, embedding in zip(chunks, embeddings):
-            results.append({
-                "id": f"chunk_{chunk.chunk_index}",
-                "vector": embedding,
-                "payload": {
-                    "text": chunk.text,
-                    "metadata": chunk.metadata,
-                    "chunk_index": chunk.chunk_index,
-                    "chunk_type": "general",
-                    "start_char": chunk.start_char,
-                    "end_char": chunk.end_char,
-                    "token_count": chunk.token_count,
+            results.append(
+                {
+                    "id": f"chunk_{chunk.chunk_index}",
+                    "vector": embedding,
+                    "payload": {
+                        "text": chunk.text,
+                        "metadata": chunk.metadata,
+                        "chunk_index": chunk.chunk_index,
+                        "chunk_type": "general",
+                        "start_char": chunk.start_char,
+                        "end_char": chunk.end_char,
+                        "token_count": chunk.token_count,
+                    },
                 }
-            })
+            )
 
         return results
 
@@ -110,11 +106,7 @@ class GeneralEmbeddingAdapter(EmbeddingAdapter):
 class ParentChildEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for Parent-Child chunks."""
 
-    def embed_chunks(
-        self,
-        chunks: List[ParentChunk],
-        structure_type: str = "parent_child"
-    ) -> List[Dict[str, Any]]:
+    def embed_chunks(self, chunks: List[ParentChunk], structure_type: str = "parent_child") -> List[Dict[str, Any]]:
         """
         Embed only child chunks, store parent in payload.
 
@@ -132,44 +124,45 @@ class ParentChildEmbeddingAdapter(EmbeddingAdapter):
         all_child_chunks = []
         for parent in chunks:
             for child in parent.children:
-                all_child_chunks.append({
-                    "id": f"parent_{parent.chunk_index}_child_{child.chunk_index}",
-                    "text": child.text,
-                    "parent_text": parent.text,
-                    "parent_id": f"parent_{parent.chunk_index}",
-                    "parent_index": parent.chunk_index,
-                    "child_index": child.chunk_index,
-                    "metadata": child.metadata or {},
-                    "parent_metadata": parent.metadata or {},
-                })
+                all_child_chunks.append(
+                    {
+                        "id": f"parent_{parent.chunk_index}_child_{child.chunk_index}",
+                        "text": child.text,
+                        "parent_text": parent.text,
+                        "parent_id": f"parent_{parent.chunk_index}",
+                        "parent_index": parent.chunk_index,
+                        "child_index": child.chunk_index,
+                        "metadata": child.metadata or {},
+                        "parent_metadata": parent.metadata or {},
+                    }
+                )
 
         if not all_child_chunks:
             return []
 
         # Embed child chunks only
         child_texts = [child["text"] for child in all_child_chunks]
-        embeddings = self.embedding_client.embed_texts(
-            texts=child_texts,
-            text_type="document"
-        )
+        embeddings = self.embedding_client.embed_texts(texts=child_texts, text_type="document")
 
         # Build result list
         results = []
         for child_data, embedding in zip(all_child_chunks, embeddings):
-            results.append({
-                "id": child_data["id"],
-                "vector": embedding,
-                "payload": {
-                    "text": child_data["text"],
-                    "parent_text": child_data["parent_text"],  # Include parent for context
-                    "parent_id": child_data["parent_id"],
-                    "parent_index": child_data["parent_index"],
-                    "child_index": child_data["child_index"],
-                    "metadata": child_data["metadata"],
-                    "parent_metadata": child_data["parent_metadata"],
-                    "chunk_type": "child",
+            results.append(
+                {
+                    "id": child_data["id"],
+                    "vector": embedding,
+                    "payload": {
+                        "text": child_data["text"],
+                        "parent_text": child_data["parent_text"],  # Include parent for context
+                        "parent_id": child_data["parent_id"],
+                        "parent_index": child_data["parent_index"],
+                        "child_index": child_data["child_index"],
+                        "metadata": child_data["metadata"],
+                        "parent_metadata": child_data["parent_metadata"],
+                        "chunk_type": "child",
+                    },
                 }
-            })
+            )
 
         return results
 
@@ -181,7 +174,7 @@ class QAEmbeddingAdapter(EmbeddingAdapter):
         self,
         chunks: List[QAChunk],
         structure_type: str = "qa",
-        embed_mode: str = "questions_only"
+        embed_mode: str = "questions_only",
     ) -> List[Dict[str, Any]]:
         """
         Embed Q&A chunks.
@@ -203,34 +196,30 @@ class QAEmbeddingAdapter(EmbeddingAdapter):
             text_type = "query"  # Questions are queries
         else:
             # Embed Q&A pairs together
-            texts = [
-                f"Q: {qa.question}\nA: {qa.answer}"
-                for qa in chunks
-            ]
+            texts = [f"Q: {qa.question}\nA: {qa.answer}" for qa in chunks]
             text_type = "document"
 
         # Generate embeddings
-        embeddings = self.embedding_client.embed_texts(
-            texts=texts,
-            text_type=text_type
-        )
+        embeddings = self.embedding_client.embed_texts(texts=texts, text_type=text_type)
 
         # Build result list
         results = []
         for qa, embedding in zip(chunks, embeddings):
-            results.append({
-                "id": f"qa_{qa.chunk_index}",
-                "vector": embedding,
-                "payload": {
-                    "question": qa.question,
-                    "answer": qa.answer,
-                    "qa_text": f"Q: {qa.question}\nA: {qa.answer}",
-                    "metadata": qa.metadata,
-                    "chunk_index": qa.chunk_index,
-                    "qa_index": qa.qa_index,
-                    "chunk_type": "qa",
+            results.append(
+                {
+                    "id": f"qa_{qa.chunk_index}",
+                    "vector": embedding,
+                    "payload": {
+                        "question": qa.question,
+                        "answer": qa.answer,
+                        "qa_text": f"Q: {qa.question}\nA: {qa.answer}",
+                        "metadata": qa.metadata,
+                        "chunk_index": qa.chunk_index,
+                        "qa_index": qa.qa_index,
+                        "chunk_type": "qa",
+                    },
                 }
-            })
+            )
 
         return results
 
@@ -253,10 +242,7 @@ def get_embedding_adapter(structure_type: str, **kwargs) -> EmbeddingAdapter:
     }
 
     if structure_type not in adapters:
-        raise ValueError(
-            f"Unknown structure type: {structure_type}. "
-            f"Must be one of: {list(adapters.keys())}"
-        )
+        raise ValueError(f"Unknown structure type: {structure_type}. Must be one of: {list(adapters.keys())}")
 
     adapter_class = adapters[structure_type]
     return adapter_class(**kwargs)

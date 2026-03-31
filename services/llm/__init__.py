@@ -12,6 +12,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Optional, Any, AsyncGenerator, Tuple
 import logging
 import time
@@ -73,16 +74,15 @@ class LLMService:
 
         # Initialize components using initializer
         init_result = self.initializer.initialize(
-            client_manager=self.client_manager,
-            prompt_manager=self.prompt_manager
+            client_manager=self.client_manager, prompt_manager=self.prompt_manager
         )
 
         # Set rate limiters and load balancer from initializer
-        self.rate_limiter = init_result['rate_limiter']
-        self.load_balancer = init_result['load_balancer']
-        self.load_balancer_rate_limiter = init_result['load_balancer_rate_limiter']
-        self.kimi_rate_limiter = init_result['kimi_rate_limiter']
-        self.doubao_rate_limiter = init_result['doubao_rate_limiter']
+        self.rate_limiter = init_result["rate_limiter"]
+        self.load_balancer = init_result["load_balancer"]
+        self.load_balancer_rate_limiter = init_result["load_balancer_rate_limiter"]
+        self.kimi_rate_limiter = init_result["kimi_rate_limiter"]
+        self.doubao_rate_limiter = init_result["doubao_rate_limiter"]
 
         # Initialize multi-service and health checker (need self reference)
         self.multi_service = LLMMultiService(self)
@@ -102,8 +102,8 @@ class LLMService:
 
     async def chat(
         self,
-        prompt: str = '',
-        model: str = 'qwen',
+        prompt: str = "",
+        model: str = "qwen",
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         system_message: Optional[str] = None,
@@ -113,14 +113,14 @@ class LLMService:
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         api_key_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
+        request_type: str = "diagram_generation",
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
         skip_load_balancing: bool = False,  # Skip load balancing if already applied
         use_knowledge_base: bool = True,  # Enable RAG context injection
-        **kwargs
+        **kwargs,
     ) -> str:
         """
         Simple chat completion (single response).
@@ -205,20 +205,21 @@ class LLMService:
             system_message=system_message,
             messages=messages,
             user_id=user_id,
-            use_knowledge_base=use_knowledge_base
+            use_knowledge_base=use_knowledge_base,
         )
 
         try:
             logger.debug(
                 "[LLMService] chat() - model=%s, messages_count=%s",
-                model, len(chat_messages)
+                model,
+                len(chat_messages),
             )
 
             # Apply load balancing
             actual_model, provider = self.load_balancer_helper.apply_load_balancing(
                 model=model,
                 skip_load_balancing=skip_load_balancing,
-                load_balancer=self.load_balancer
+                load_balancer=self.load_balancer,
             )
 
             # Get client for actual model
@@ -236,7 +237,7 @@ class LLMService:
                 rate_limiter=self.rate_limiter,
                 load_balancer_rate_limiter=self.load_balancer_rate_limiter,
                 kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter
+                doubao_rate_limiter=self.doubao_rate_limiter,
             )
 
             # Execute request
@@ -249,15 +250,15 @@ class LLMService:
                 actual_model=actual_model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **kwargs
+                **kwargs,
             )
 
             duration = time.time() - start_time
 
             # Extract content and usage from response
             if isinstance(response, dict):
-                content = response.get('content', '')
-                usage_data = response.get('usage', {})
+                content = response.get("content", "")
+                usage_data = response.get("usage", {})
             else:
                 content = str(response)
                 usage_data = {}
@@ -266,14 +267,14 @@ class LLMService:
 
             # Track all metrics
             metadata = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'api_key_id': api_key_id,
-                'request_type': request_type,
-                'diagram_type': diagram_type,
-                'endpoint_path': endpoint_path,
-                'session_id': session_id,
-                'conversation_id': conversation_id
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "api_key_id": api_key_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
             }
             await self.metrics_tracker.track_all(
                 model=model,
@@ -282,7 +283,7 @@ class LLMService:
                 provider=provider,
                 load_balancer=self.load_balancer,
                 success=True,
-                duration=duration
+                duration=duration,
             )
 
             return content
@@ -291,21 +292,18 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(
-                "[LLMService] %s failed after %.2fs: %s",
-                model, duration, e
-            )
+            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, e)
 
             # Track failed request
             metadata = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'api_key_id': api_key_id,
-                'request_type': request_type,
-                'diagram_type': diagram_type,
-                'endpoint_path': endpoint_path,
-                'session_id': session_id,
-                'conversation_id': conversation_id
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "api_key_id": api_key_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
             }
             await self.metrics_tracker.track_all(
                 model=model,
@@ -315,21 +313,21 @@ class LLMService:
                 load_balancer=self.load_balancer,
                 success=False,
                 duration=duration,
-                error=str(e)
+                error=str(e),
             )
 
             raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
 
     async def chat_with_usage(
         self,
-        prompt: str = '',
-        model: str = 'qwen',
+        prompt: str = "",
+        model: str = "qwen",
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         system_message: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,  # Multi-turn conversation history
         timeout: Optional[float] = None,
-        **kwargs
+        **kwargs,
     ) -> Tuple[str, dict]:
         """
         Chat completion that returns both content and usage data.
@@ -359,22 +357,19 @@ class LLMService:
 
         # Build messages (no RAG for chat_with_usage - caller handles tracking)
         chat_messages = self.message_builder.build_chat_messages(
-            prompt=prompt,
-            system_message=system_message,
-            messages=messages
+            prompt=prompt, system_message=system_message, messages=messages
         )
 
         try:
             logger.debug(
                 "[LLMService] chat_with_usage() - model=%s, messages_count=%s",
-                model, len(chat_messages)
+                model,
+                len(chat_messages),
             )
 
             # Apply load balancing
             actual_model, provider = self.load_balancer_helper.apply_load_balancing(
-                model=model,
-                skip_load_balancing=False,
-                load_balancer=self.load_balancer
+                model=model, skip_load_balancing=False, load_balancer=self.load_balancer
             )
 
             # Get client for actual model
@@ -392,7 +387,7 @@ class LLMService:
                 rate_limiter=self.rate_limiter,
                 load_balancer_rate_limiter=self.load_balancer_rate_limiter,
                 kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter
+                doubao_rate_limiter=self.doubao_rate_limiter,
             )
 
             # Execute request
@@ -405,15 +400,15 @@ class LLMService:
                 actual_model=actual_model,
                 temperature=temperature,
                 max_tokens=max_tokens,
-                **kwargs
+                **kwargs,
             )
 
             duration = time.time() - start_time
 
             # Extract content and usage from response
             if isinstance(response, dict):
-                content = response.get('content', '')
-                usage_data = response.get('usage', {})
+                content = response.get("content", "")
+                usage_data = response.get("usage", {})
             else:
                 content = str(response)
                 usage_data = {}
@@ -421,11 +416,7 @@ class LLMService:
             logger.info("[LLMService] %s responded in %.2fs", model, duration)
 
             # Record performance metrics only (caller tracks tokens)
-            self.metrics_tracker.record_performance_metrics(
-                model=model,
-                duration=duration,
-                success=True
-            )
+            self.metrics_tracker.record_performance_metrics(model=model, duration=duration, success=True)
 
             # Record provider metrics for load balancing
             if provider and self.load_balancer:
@@ -433,7 +424,7 @@ class LLMService:
                     provider=provider,
                     load_balancer=self.load_balancer,
                     success=True,
-                    duration=duration
+                    duration=duration,
                 )
 
             return content, usage_data
@@ -442,17 +433,9 @@ class LLMService:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(
-                "[LLMService] %s failed after %.2fs: %s",
-                model, duration, e
-            )
+            logger.error("[LLMService] %s failed after %.2fs: %s", model, duration, e)
 
-            self.metrics_tracker.record_performance_metrics(
-                model=model,
-                duration=duration,
-                success=False,
-                error=str(e)
-            )
+            self.metrics_tracker.record_performance_metrics(model=model, duration=duration, success=False, error=str(e))
 
             if provider and self.load_balancer:
                 self.metrics_tracker.record_provider_metrics(
@@ -460,15 +443,15 @@ class LLMService:
                     load_balancer=self.load_balancer,
                     success=False,
                     duration=duration,
-                    error=str(e)
+                    error=str(e),
                 )
 
             raise LLMServiceError(f"Chat failed for model {model}: {e}") from e
 
     async def chat_stream(
         self,
-        prompt: str = '',
-        model: str = 'qwen',
+        prompt: str = "",
+        model: str = "qwen",
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
@@ -477,7 +460,7 @@ class LLMService:
         # Token tracking parameters
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        request_type: str = 'diagram_generation',
+        request_type: str = "diagram_generation",
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
@@ -486,7 +469,7 @@ class LLMService:
         enable_thinking: bool = False,  # Enable thinking mode for reasoning models (DeepSeek R1, Qwen3, Kimi K2)
         yield_structured: bool = False,  # If True, yield dicts with 'type' key; if False, yield plain strings
         use_knowledge_base: bool = True,  # Enable RAG context injection
-        **kwargs
+        **kwargs,
     ):
         """
         Stream chat completion from a specific LLM.
@@ -537,22 +520,21 @@ class LLMService:
         # Enhance prompt with RAG for streaming (if enabled)
         if use_knowledge_base and user_id and messages is None:
             prompt = self.message_builder.enhance_prompt_for_streaming(
-                prompt=prompt,
-                user_id=user_id,
-                use_knowledge_base=use_knowledge_base
+                prompt=prompt, user_id=user_id, use_knowledge_base=use_knowledge_base
             )
 
         try:
             logger.debug(
                 "[LLMService] chat_stream() - model=%s, prompt_len=%s",
-                model, len(prompt) if isinstance(prompt, str) else 0
+                model,
+                len(prompt) if isinstance(prompt, str) else 0,
             )
 
             # Apply load balancing
             actual_model, provider = self.load_balancer_helper.apply_load_balancing(
                 model=model,
                 skip_load_balancing=skip_load_balancing,
-                load_balancer=self.load_balancer
+                load_balancer=self.load_balancer,
             )
 
             # Get client for actual model
@@ -560,9 +542,7 @@ class LLMService:
 
             # Build messages
             chat_messages = self.message_builder.build_chat_messages(
-                prompt=prompt,
-                system_message=system_message,
-                messages=messages
+                prompt=prompt, system_message=system_message, messages=messages
             )
 
             # Set timeout
@@ -577,12 +557,11 @@ class LLMService:
                 rate_limiter=self.rate_limiter,
                 load_balancer_rate_limiter=self.load_balancer_rate_limiter,
                 kimi_rate_limiter=self.kimi_rate_limiter,
-                doubao_rate_limiter=self.doubao_rate_limiter
+                doubao_rate_limiter=self.doubao_rate_limiter,
             )
 
             # Check if client supports streaming
-            if not (hasattr(client, 'async_stream_chat_completion') or
-                    hasattr(client, 'stream_chat_completion')):
+            if not (hasattr(client, "async_stream_chat_completion") or hasattr(client, "stream_chat_completion")):
                 # Fallback: get full response and yield it as one chunk
                 response = await self.chat(
                     prompt=prompt,
@@ -593,7 +572,7 @@ class LLMService:
                     system_message=system_message,
                     skip_load_balancing=True,
                     use_knowledge_base=False,  # Already enhanced
-                    **kwargs
+                    **kwargs,
                 )
                 yield response
                 return
@@ -610,12 +589,12 @@ class LLMService:
                 max_tokens=max_tokens,
                 enable_thinking=enable_thinking,
                 yield_structured=yield_structured,
-                **kwargs
+                **kwargs,
             ):
                 # Capture usage data from final chunk (for tracking)
                 if isinstance(chunk, dict):
-                    if chunk.get('type') == 'usage':
-                        usage_data = chunk.get('usage', {})
+                    if chunk.get("type") == "usage":
+                        usage_data = chunk.get("usage", {})
                         # Only yield usage chunk if structured mode
                         if yield_structured:
                             yield chunk
@@ -623,20 +602,17 @@ class LLMService:
                 yield chunk
 
             duration = time.time() - start_time
-            logger.debug(
-                "[LLMService] %s stream completed in %.2fs",
-                model, duration
-            )
+            logger.debug("[LLMService] %s stream completed in %.2fs", model, duration)
 
             # Track all metrics
             metadata = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'request_type': request_type,
-                'diagram_type': diagram_type,
-                'endpoint_path': endpoint_path,
-                'session_id': session_id,
-                'conversation_id': conversation_id
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
             }
             await self.metrics_tracker.track_all(
                 model=model,
@@ -645,27 +621,24 @@ class LLMService:
                 provider=provider,
                 load_balancer=self.load_balancer,
                 success=True,
-                duration=duration
+                duration=duration,
             )
 
         except ValueError:
             raise
         except Exception as e:
             duration = time.time() - start_time
-            logger.error(
-                "[LLMService] %s stream failed after %.2fs: %s",
-                model, duration, e
-            )
+            logger.error("[LLMService] %s stream failed after %.2fs: %s", model, duration, e)
 
             # Track failure metrics
             metadata = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'request_type': request_type,
-                'diagram_type': diagram_type,
-                'endpoint_path': endpoint_path,
-                'session_id': session_id,
-                'conversation_id': conversation_id
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "session_id": session_id,
+                "conversation_id": conversation_id,
             }
             await self.metrics_tracker.track_all(
                 model=model,
@@ -675,7 +648,7 @@ class LLMService:
                 load_balancer=self.load_balancer,
                 success=False,
                 duration=duration,
-                error=str(e)
+                error=str(e),
             )
 
             raise LLMServiceError(f"Chat stream failed for model {model}: {e}") from e
@@ -702,7 +675,7 @@ class LLMService:
         """
         if self.health_checker:
             return await self.health_checker.health_check()
-        return {'available_models': []}
+        return {"available_models": []}
 
     def get_rate_limiter_stats(self) -> Optional[Dict[str, Any]]:
         """Get rate limiter statistics if available."""
@@ -714,9 +687,9 @@ class LLMService:
         self,
         category: str,
         function: str,
-        name: str = 'default',
-        language: str = 'en',
-        **kwargs
+        name: str = "default",
+        language: str = "en",
+        **kwargs,
     ) -> str:
         """
         Get a formatted prompt from the prompt manager.
@@ -724,11 +697,7 @@ class LLMService:
         Convenience method that wraps prompt_manager.get_prompt().
         """
         return self.prompt_manager.get_prompt(
-            category=category,
-            function=function,
-            name=name,
-            language=language,
-            **kwargs
+            category=category, function=function, name=name, language=language, **kwargs
         )
 
     # ============================================================================
@@ -743,7 +712,7 @@ class LLMService:
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
         system_message: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Call multiple LLMs in parallel, wait for all to complete.
@@ -758,7 +727,7 @@ class LLMService:
                 max_tokens=max_tokens,
                 timeout=timeout,
                 system_message=system_message,
-                **kwargs
+                **kwargs,
             )
         raise LLMServiceError("Multi-service not initialized")
 
@@ -770,7 +739,7 @@ class LLMService:
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
         system_message: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Call multiple LLMs in parallel, yield results as each completes.
@@ -785,7 +754,7 @@ class LLMService:
                 max_tokens=max_tokens,
                 timeout=timeout,
                 system_message=system_message,
-                **kwargs
+                **kwargs,
             ):
                 yield result
         else:
@@ -801,12 +770,12 @@ class LLMService:
         system_message: Optional[str] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        request_type: str = 'node_palette',
+        request_type: str = "node_palette",
         diagram_type: Optional[str] = None,
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream from multiple LLMs concurrently, yield tokens as they arrive.
@@ -828,7 +797,7 @@ class LLMService:
                 endpoint_path=endpoint_path,
                 session_id=session_id,
                 conversation_id=conversation_id,
-                **kwargs
+                **kwargs,
             ):
                 yield chunk
         else:
@@ -842,7 +811,7 @@ class LLMService:
         max_tokens: int = 2000,
         timeout: Optional[float] = None,
         system_message: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Call multiple LLMs in parallel, return first successful result.
@@ -857,7 +826,7 @@ class LLMService:
                 max_tokens=max_tokens,
                 timeout=timeout,
                 system_message=system_message,
-                **kwargs
+                **kwargs,
             )
         raise LLMServiceError("Multi-service not initialized")
 
@@ -868,7 +837,7 @@ class LLMService:
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
         system_message: Optional[str] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Generate responses from multiple LLMs and return for comparison.
@@ -882,7 +851,7 @@ class LLMService:
                 temperature=temperature,
                 max_tokens=max_tokens,
                 system_message=system_message,
-                **kwargs
+                **kwargs,
             )
         raise LLMServiceError("Multi-service not initialized")
 

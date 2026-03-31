@@ -26,12 +26,7 @@ from services.library.library_page_mixin import LibraryPageMixin
 logger = logging.getLogger(__name__)
 
 
-class LibraryService(
-    LibraryDocumentMixin,
-    LibraryDanmakuMixin,
-    LibraryBookmarkMixin,
-    LibraryPageMixin
-):
+class LibraryService(LibraryDocumentMixin, LibraryDanmakuMixin, LibraryBookmarkMixin, LibraryPageMixin):
     """
     Library management service.
 

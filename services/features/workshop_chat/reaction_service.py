@@ -48,51 +48,52 @@ class ReactionService:
         if existing:
             db.delete(existing)
             db.commit()
-            return {"action": "removed", "message_id": message_id,
-                    "emoji_name": emoji_name, "emoji_code": emoji_code,
-                    "user_id": user_id}
+            return {
+                "action": "removed",
+                "message_id": message_id,
+                "emoji_name": emoji_name,
+                "emoji_code": emoji_code,
+                "user_id": user_id,
+            }
 
         reaction = MessageReaction(
-            message_id=message_id, user_id=user_id,
-            emoji_name=emoji_name, emoji_code=emoji_code,
+            message_id=message_id,
+            user_id=user_id,
+            emoji_name=emoji_name,
+            emoji_code=emoji_code,
         )
         db.add(reaction)
         db.commit()
-        return {"action": "added", "message_id": message_id,
-                "emoji_name": emoji_name, "emoji_code": emoji_code,
-                "user_id": user_id}
+        return {
+            "action": "added",
+            "message_id": message_id,
+            "emoji_name": emoji_name,
+            "emoji_code": emoji_code,
+            "user_id": user_id,
+        }
 
     @staticmethod
     def get_message_reactions(
-        db: Session, message_id: int,
+        db: Session,
+        message_id: int,
     ) -> List[Dict[str, Any]]:
         """Get grouped reactions for a single message."""
-        rows = (
-            db.query(MessageReaction)
-            .filter(MessageReaction.message_id == message_id)
-            .all()
-        )
+        rows = db.query(MessageReaction).filter(MessageReaction.message_id == message_id).all()
         return ReactionService._group_reactions(rows)
 
     @staticmethod
     def get_reactions_batch(
-        db: Session, message_ids: List[int],
+        db: Session,
+        message_ids: List[int],
     ) -> Dict[int, List[Dict[str, Any]]]:
         """Batch-fetch grouped reactions keyed by message_id."""
         if not message_ids:
             return {}
-        rows = (
-            db.query(MessageReaction)
-            .filter(MessageReaction.message_id.in_(message_ids))
-            .all()
-        )
+        rows = db.query(MessageReaction).filter(MessageReaction.message_id.in_(message_ids)).all()
         by_msg: Dict[int, list] = {}
         for row in rows:
             by_msg.setdefault(row.message_id, []).append(row)
-        return {
-            mid: ReactionService._group_reactions(rlist)
-            for mid, rlist in by_msg.items()
-        }
+        return {mid: ReactionService._group_reactions(rlist) for mid, rlist in by_msg.items()}
 
     @staticmethod
     def _group_reactions(

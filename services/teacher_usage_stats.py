@@ -39,11 +39,7 @@ def _get_window_cutoff_utc():
     beijing_tz = timezone(BEIJING_UTC_OFFSET)
     beijing_now = datetime.now(beijing_tz)
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
-    window_start = (
-        (beijing_today - timedelta(days=OBSERVATION_DAYS))
-        .astimezone(timezone.utc)
-        .replace(tzinfo=None)
-    )
+    window_start = (beijing_today - timedelta(days=OBSERVATION_DAYS)).astimezone(timezone.utc).replace(tzinfo=None)
     return window_start
 
 
@@ -125,8 +121,7 @@ def _compute_metrics(active_dates: Set[Any], window_start) -> dict[str, int]:
     active_days_first25 = sum(1 for d in sorted_dates if day_1 <= d <= day_25)
     active_days_last14 = sum(1 for d in sorted_dates if day_43 <= d <= day_56)
 
-    week_days = [(day_1 + timedelta(days=i * 7), day_1 + timedelta(days=i * 7 + 6))
-                 for i in range(8)]
+    week_days = [(day_1 + timedelta(days=i * 7), day_1 + timedelta(days=i * 7 + 6)) for i in range(8)]
     active_weeks = 0
     active_weeks_first4 = 0
     active_weeks_last4 = 0
@@ -143,12 +138,10 @@ def _compute_metrics(active_dates: Set[Any], window_start) -> dict[str, int]:
     prev = day_1
     for d in sorted_dates:
         gap = max(0, (d - prev).days - 1)
-        if gap > max_zero_gap:
-            max_zero_gap = gap
+        max_zero_gap = max(max_zero_gap, gap)
         prev = d
     end_gap = max(0, (day_56 - prev).days)
-    if end_gap > max_zero_gap:
-        max_zero_gap = end_gap
+    max_zero_gap = max(max_zero_gap, end_gap)
 
     n_bursts = 1
     for i in range(1, len(sorted_dates)):
@@ -159,8 +152,7 @@ def _compute_metrics(active_dates: Set[Any], window_start) -> dict[str, int]:
     if len(sorted_dates) >= 2:
         for i in range(1, len(sorted_dates)):
             g = (sorted_dates[i] - sorted_dates[i - 1]).days - 1
-            if g > internal_max_gap:
-                internal_max_gap = g
+            internal_max_gap = max(internal_max_gap, g)
 
     return {
         "active_days": len(sorted_dates),
@@ -179,16 +171,12 @@ def _compute_metrics(active_dates: Set[Any], window_start) -> dict[str, int]:
 
 def get_classification_config(db: Session) -> dict:
     """Get classification thresholds from DB, or defaults if not set."""
-    row = (
-        db.query(TeacherUsageConfig)
-        .filter(TeacherUsageConfig.config_key == CONFIG_KEY)
-        .first()
-    )
+    row = db.query(TeacherUsageConfig).filter(TeacherUsageConfig.config_key == CONFIG_KEY).first()
     if row and row.config_value:
         defaults = _default_thresholds()
         merged = {}
-        for group in defaults:
-            merged[group] = {**defaults[group], **(row.config_value.get(group) or {})}
+        for group, default_group in defaults.items():
+            merged[group] = {**default_group, **(row.config_value.get(group) or {})}
         return merged
     return _default_thresholds()
 
@@ -196,11 +184,7 @@ def get_classification_config(db: Session) -> dict:
 def save_classification_config(db: Session, thresholds: dict) -> bool:
     """Save classification thresholds to DB. Returns True on success."""
     try:
-        row = (
-            db.query(TeacherUsageConfig)
-            .filter(TeacherUsageConfig.config_key == CONFIG_KEY)
-            .first()
-        )
+        row = db.query(TeacherUsageConfig).filter(TeacherUsageConfig.config_key == CONFIG_KEY).first()
         if row:
             row.config_value = thresholds
             row.updated_at = datetime.utcnow()
@@ -262,10 +246,7 @@ def _classify(metrics: dict[str, int], config: dict) -> tuple[str, Optional[str]
         return ("non_continuous", "stopped")
 
     inter = config.get("intermittent", {})
-    if (
-        n_bursts >= inter.get("n_bursts_min", 2)
-        and internal_gap >= inter.get("internal_max_zero_gap_days_min", 7)
-    ):
+    if n_bursts >= inter.get("n_bursts_min", 2) and internal_gap >= inter.get("internal_max_zero_gap_days_min", 7):
         return ("non_continuous", "intermittent")
 
     return ("non_continuous", "intermittent")

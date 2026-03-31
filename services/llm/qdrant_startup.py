@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import os
 
@@ -28,8 +29,8 @@ def parse_qdrant_host_port(qdrant_host: str) -> tuple[str, int]:
     Returns:
         Host string and port number.
     """
-    if ':' in qdrant_host:
-        host, port_str = qdrant_host.rsplit(':', 1)
+    if ":" in qdrant_host:
+        host, port_str = qdrant_host.rsplit(":", 1)
         return host, int(port_str)
     return qdrant_host, 6333
 
@@ -102,7 +103,7 @@ def init_qdrant_sync() -> bool:
                 "  (see docs/QDRANT_SETUP.md)",
                 "",
                 "Or download from: https://github.com/qdrant/qdrant/releases",
-            ]
+            ],
         )
         raise QdrantStartupError("Qdrant not configured") from None
 
@@ -138,6 +139,6 @@ def init_qdrant_sync() -> bool:
                 "  Or run:   qdrant",
                 "",
                 "Then set QDRANT_HOST=localhost:6333 in your .env file",
-            ]
+            ],
         )
         raise QdrantStartupError(f"Failed to connect to Qdrant: {exc}") from exc

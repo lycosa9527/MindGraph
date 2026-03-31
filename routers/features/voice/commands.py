@@ -1,4 +1,5 @@
 """Voice command parsing and UI actions (non-Omni)."""
+
 from typing import Any, Dict
 
 from fastapi import WebSocket
@@ -11,7 +12,10 @@ except ImportError:
     redis_user_cache = None
 
 from routers.features.voice.diagram_execute import execute_diagram_update
-from routers.features.voice.diagram_utils import get_diagram_prefix_map, is_paragraph_text
+from routers.features.voice.diagram_utils import (
+    get_diagram_prefix_map,
+    is_paragraph_text,
+)
 from routers.features.voice.messaging import safe_websocket_send
 from routers.features.voice.paragraph import process_paragraph_with_qwen_plus
 from routers.features.voice.session_ops import (
@@ -27,7 +31,7 @@ async def process_voice_command(
     voice_session_id: str,
     command_text: str,
     session_context: Dict[str, Any],
-    is_text_message: bool = False
+    is_text_message: bool = False,
 ) -> bool:
     """
     Process a voice command (from transcription or text message).
@@ -54,10 +58,11 @@ async def process_voice_command(
         # CRITICAL: Check if input is a paragraph (long text for processing)
         # Common case: Teachers paste whole paragraphs expecting diagram generation
         if is_paragraph_text(command_text):
-            logger.info("Detected paragraph input (length: %d), processing with Qwen Plus", len(command_text))
-            return await process_paragraph_with_qwen_plus(
-                websocket, voice_session_id, command_text, session_context
+            logger.info(
+                "Detected paragraph input (length: %d), processing with Qwen Plus",
+                len(command_text),
             )
+            return await process_paragraph_with_qwen_plus(websocket, voice_session_id, command_text, session_context)
 
         # Otherwise, process as a command
         # Get the persistent agent for this session
@@ -71,7 +76,7 @@ async def process_voice_command(
         user_id = None
         organization_id = None
         if session:
-            user_id_str = session.get('user_id')
+            user_id_str = session.get("user_id")
             # Convert user_id to int if it's a string (voice_sessions stores as string)
             if user_id_str:
                 try:
@@ -83,7 +88,10 @@ async def process_voice_command(
                             if user:
                                 organization_id = user.organization_id
                         except (AttributeError, KeyError) as e:
-                            logger.debug("Error getting organization_id for token tracking: %s", e)
+                            logger.debug(
+                                "Error getting organization_id for token tracking: %s",
+                                e,
+                            )
                 except (ValueError, TypeError) as e:
                     logger.debug("Error converting user_id for token tracking: %s", e)
 
@@ -92,15 +100,15 @@ async def process_voice_command(
         # Always check voice_sessions first, then fallback to session_context
         diagram_type = None
         if voice_session_id in voice_sessions:
-            diagram_type = voice_sessions[voice_session_id].get('diagram_type')
+            diagram_type = voice_sessions[voice_session_id].get("diagram_type")
         if not diagram_type and session:
-            diagram_type = session.get('diagram_type')
+            diagram_type = session.get("diagram_type")
         if not diagram_type:
-            diagram_type = session_context.get('diagram_type')
+            diagram_type = session_context.get("diagram_type")
 
         if not diagram_type:
             logger.warning("VOIC | Could not determine diagram_type for voice command, defaulting to circle_map")
-            diagram_type = 'circle_map'
+            diagram_type = "circle_map"
 
         logger.debug("VOIC | Using diagram_type=%s for voice command processing", diagram_type)
 
@@ -112,27 +120,38 @@ async def process_voice_command(
             user_id=user_id,
             organization_id=organization_id,
             voice_session_id=voice_session_id,
-            diagram_type=diagram_type
+            diagram_type=diagram_type,
         )
 
-        action = command['action']
-        target = command.get('target')
-        node_index = command.get('node_index')
-        confidence = command.get('confidence', 0.0)
+        action = command["action"]
+        target = command.get("target")
+        node_index = command.get("node_index")
+        confidence = command.get("confidence", 0.0)
 
         logger.debug(
-            "Command processed: action=%s, target=%s, node_index=%s, "
-            "confidence=%s, is_text=%s",
-            action, target, node_index, confidence, is_text_message
+            "Command processed: action=%s, target=%s, node_index=%s, confidence=%s, is_text=%s",
+            action,
+            target,
+            node_index,
+            confidence,
+            is_text_message,
         )
 
         # Only proceed if confidence is high enough (except for UI actions)
         ui_actions = [
-            'open_thinkguide', 'close_thinkguide',
-            'open_node_palette', 'close_node_palette',
-            'open_mindmate', 'close_mindmate', 'close_all_panels',
-            'select_node', 'explain_node',
-            'ask_thinkguide', 'ask_mindmate', 'auto_complete', 'help'
+            "open_thinkguide",
+            "close_thinkguide",
+            "open_node_palette",
+            "close_node_palette",
+            "open_mindmate",
+            "close_mindmate",
+            "close_all_panels",
+            "select_node",
+            "explain_node",
+            "ask_thinkguide",
+            "ask_mindmate",
+            "auto_complete",
+            "help",
         ]
 
         # For text messages, use lower confidence threshold (0.5) since they're more explicit
@@ -140,99 +159,84 @@ async def process_voice_command(
         confidence_threshold = 0.5 if is_text_message else 0.7
 
         # Check if this is a diagram update action
-        diagram_update_actions = ['update_center', 'update_node', 'add_node', 'delete_node']
+        diagram_update_actions = [
+            "update_center",
+            "update_node",
+            "add_node",
+            "delete_node",
+        ]
         if action in diagram_update_actions:
             # For diagram updates, execute if confidence meets threshold
             if confidence >= confidence_threshold:
-                return await execute_diagram_update(
-                    websocket, voice_session_id, action, command, session_context
-                )
+                return await execute_diagram_update(websocket, voice_session_id, action, command, session_context)
             else:
                 logger.debug(
                     "Low confidence (%s) for diagram update '%s', threshold=%s",
-                    confidence, action, confidence_threshold
+                    confidence,
+                    action,
+                    confidence_threshold,
                 )
                 return False
 
         # For non-diagram-update actions, check confidence
         if action not in ui_actions and confidence < confidence_threshold:
-            logger.debug("Low confidence (%s), should send to Omni for conversational response", confidence)
+            logger.debug(
+                "Low confidence (%s), should send to Omni for conversational response",
+                confidence,
+            )
             return False
 
         # Handle UI actions first
-        if action == 'open_thinkguide':
+        if action == "open_thinkguide":
             # Redirect to MindMate
             logger.debug("Opening MindMate panel")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'open_mindmate',
-                'params': {}
-            })
+            await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return True
 
-        elif action == 'close_thinkguide':
+        elif action == "close_thinkguide":
             # Redirect to MindMate
             logger.debug("Closing MindMate panel")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'close_mindmate',
-                'params': {}
-            })
+            await safe_websocket_send(websocket, {"type": "action", "action": "close_mindmate", "params": {}})
             return True
 
-        elif action == 'open_node_palette':
+        elif action == "open_node_palette":
             logger.debug("Opening Node Palette")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'open_node_palette',
-                'params': {}
-            })
+            await safe_websocket_send(
+                websocket,
+                {"type": "action", "action": "open_node_palette", "params": {}},
+            )
             return True
 
-        elif action == 'close_node_palette':
+        elif action == "close_node_palette":
             logger.debug("Closing Node Palette")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'close_node_palette',
-                'params': {}
-            })
+            await safe_websocket_send(
+                websocket,
+                {"type": "action", "action": "close_node_palette", "params": {}},
+            )
             return True
 
-        elif action == 'open_mindmate':
+        elif action == "open_mindmate":
             logger.debug("Opening MindMate AI panel")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'open_mindmate',
-                'params': {}
-            })
+            await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return True
 
-        elif action == 'close_mindmate':
+        elif action == "close_mindmate":
             logger.debug("Closing MindMate AI panel")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'close_mindmate',
-                'params': {}
-            })
+            await safe_websocket_send(websocket, {"type": "action", "action": "close_mindmate", "params": {}})
             return True
 
-        elif action == 'close_all_panels':
+        elif action == "close_all_panels":
             logger.debug("Closing all panels")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'close_all_panels',
-                'params': {}
-            })
+            await safe_websocket_send(
+                websocket,
+                {"type": "action", "action": "close_all_panels", "params": {}},
+            )
             return True
 
         # Interaction control
-        elif action == 'auto_complete':
+        elif action == "auto_complete":
             logger.info("Triggering AI auto-complete from text/voice command")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'auto_complete',
-                'params': {}
-            })
+            await safe_websocket_send(websocket, {"type": "action", "action": "auto_complete", "params": {}})
             # Send acknowledgment message to user via Omni
             try:
                 # Create a response acknowledging the action
@@ -243,81 +247,92 @@ async def process_voice_command(
                 logger.debug("Could not send acknowledgment to Omni: %s", e)
             return True
 
-        elif action == 'ask_thinkguide' and target:
+        elif action == "ask_thinkguide" and target:
             # Redirect to MindMate
             logger.debug("Sending question to MindMate: %s", target)
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'ask_mindmate',
-                'params': {'message': target}
-            })
+            await safe_websocket_send(
+                websocket,
+                {
+                    "type": "action",
+                    "action": "ask_mindmate",
+                    "params": {"message": target},
+                },
+            )
             return True
 
-        elif action == 'ask_mindmate' and target:
+        elif action == "ask_mindmate" and target:
             logger.debug("Sending question to MindMate: %s", target)
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'ask_mindmate',
-                'params': {'message': target}
-            })
+            await safe_websocket_send(
+                websocket,
+                {
+                    "type": "action",
+                    "action": "ask_mindmate",
+                    "params": {"message": target},
+                },
+            )
             return True
 
-        elif action == 'select_node':
-            node_id = command.get('node_id')
+        elif action == "select_node":
+            node_id = command.get("node_id")
             resolved_node_id = node_id
 
             # Resolve node_id from index if needed
             if node_index is not None and not resolved_node_id:
-                diagram_type = voice_sessions[voice_session_id].get('diagram_type', 'circle_map')
+                diagram_type = voice_sessions[voice_session_id].get("diagram_type", "circle_map")
                 prefix_map = get_diagram_prefix_map()
-                prefix = prefix_map.get(diagram_type, 'node')
+                prefix = prefix_map.get(diagram_type, "node")
                 resolved_node_id = f"{prefix}_{node_index}"
 
             if resolved_node_id:
                 logger.debug("Selecting node: %s", resolved_node_id)
-                await safe_websocket_send(websocket, {
-                    'type': 'action',
-                    'action': 'select_node',
-                    'params': {'node_id': resolved_node_id, 'node_index': node_index}
-                })
+                await safe_websocket_send(
+                    websocket,
+                    {
+                        "type": "action",
+                        "action": "select_node",
+                        "params": {
+                            "node_id": resolved_node_id,
+                            "node_index": node_index,
+                        },
+                    },
+                )
             return True
 
-        elif action == 'explain_node':
-            node_id = command.get('node_id')
+        elif action == "explain_node":
+            node_id = command.get("node_id")
             node_label = target
             if (node_id or node_index is not None) and node_label:
                 resolved_node_id = node_id
                 if node_index is not None and not resolved_node_id:
-                    nodes = session_context.get('diagram_data', {}).get('children', [])
+                    nodes = session_context.get("diagram_data", {}).get("children", [])
                     if 0 <= node_index < len(nodes):
                         node = nodes[node_index]
-                        resolved_node_id = node.get('id') if isinstance(node, dict) else f"context_{node_index}"
+                        resolved_node_id = node.get("id") if isinstance(node, dict) else f"context_{node_index}"
                         if not node_label:
-                            node_label = node.get('text', node.get('label', ''))
+                            node_label = node.get("text", node.get("label", ""))
 
                 if resolved_node_id and node_label:
                     logger.debug("Explaining node: %s (%s)", resolved_node_id, node_label)
-                    await safe_websocket_send(websocket, {
-                        'type': 'action',
-                        'action': 'explain_node',
-                        'params': {
-                            'node_id': resolved_node_id,
-                            'node_label': node_label,
-                            'prompt': f'请解释一下"{node_label}"这个概念，用简单的语言，适合K12学生理解。'
-                        }
-                    })
+                    await safe_websocket_send(
+                        websocket,
+                        {
+                            "type": "action",
+                            "action": "explain_node",
+                            "params": {
+                                "node_id": resolved_node_id,
+                                "node_label": node_label,
+                                "prompt": f'请解释一下"{node_label}"这个概念，用简单的语言，适合K12学生理解。',
+                            },
+                        },
+                    )
             return True
 
-        elif action == 'help':
+        elif action == "help":
             logger.debug("User requested help - opening MindMate")
-            await safe_websocket_send(websocket, {
-                'type': 'action',
-                'action': 'open_mindmate',
-                'params': {}
-            })
+            await safe_websocket_send(websocket, {"type": "action", "action": "open_mindmate", "params": {}})
             return True
 
-        elif action == 'none':
+        elif action == "none":
             logger.debug("No command detected - should send to Omni for conversational response")
             return False
 

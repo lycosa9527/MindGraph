@@ -3,6 +3,7 @@
 Caches detected document structures in Redis + in-memory fallback
 for instant reuse without re-analysis.
 """
+
 from datetime import datetime
 from typing import Optional, Dict, Any
 import json
@@ -71,7 +72,7 @@ class CacheManager:
                     cached_data = RedisOperations.get(cache_key)
                     if cached_data:
                         if isinstance(cached_data, bytes):
-                            cached_data = cached_data.decode('utf-8')
+                            cached_data = cached_data.decode("utf-8")
                         structure = json.loads(cached_data)
                         logger.info("Retrieved structure from Redis cache: %s", document_id)
                         return structure
@@ -85,12 +86,7 @@ class CacheManager:
 
         return None
 
-    def set_structure(
-        self,
-        document_id: str,
-        structure: Dict[str, Any],
-        ttl: Optional[int] = None
-    ):
+    def set_structure(self, document_id: str, structure: Dict[str, Any], ttl: Optional[int] = None):
         """
         Cache structure.
 

@@ -8,6 +8,7 @@ Verifies which users have admin access based on:
 
 Run from project root: python scripts/db/check_admin_status.py
 """
+
 import os
 import sys
 from pathlib import Path
@@ -72,7 +73,8 @@ def main():
 
         print()
         admin_users = [
-            u for u in users
+            u
+            for u in users
             if (u.role or "").lower() == "admin"
             or (admin_phones and u.phone in admin_phones)
             or (AUTH_MODE == "demo" and u.phone == "demo-admin@system.com")

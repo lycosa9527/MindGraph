@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
 
@@ -55,7 +56,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with multi-stage workflow and step sequencing.
@@ -68,24 +69,28 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             _stage: Generation stage ('dimensions', 'steps', 'substeps')
             _stage_data: Stage-specific data (dimension, step_name, etc.)
         """
-        stage = _stage or 'steps'
+        stage = _stage or "steps"
         stage_data = _stage_data
         if session_id not in self.session_stages:
             self.session_stages[session_id] = {}
             self.step_sequences[session_id] = 1
-        self.session_stages[session_id]['stage'] = stage
+        self.session_stages[session_id]["stage"] = stage
         if stage_data:
             self.session_stages[session_id].update(stage_data)
 
-        logger.info("[FlowMapPalette] Stage: %s | Session: %s | Topic: '%s'",
-                   stage, session_id[:8], center_topic)
+        logger.info(
+            "[FlowMapPalette] Stage: %s | Session: %s | Topic: '%s'",
+            stage,
+            session_id[:8],
+            center_topic,
+        )
         if stage_data:
             logger.info("[FlowMapPalette] Stage data: %s", stage_data)
 
         # Pass session_id through educational_context so _build_prompt can access it
         if educational_context is None:
             educational_context = {}
-        educational_context = {**educational_context, '_session_id': session_id}
+        educational_context = {**educational_context, "_session_id": session_id}
 
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
@@ -96,35 +101,33 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
             user_id=user_id,
             organization_id=organization_id,
             diagram_type=diagram_type,
-            endpoint_path=endpoint_path
+            endpoint_path=endpoint_path,
         ):
-            if event.get('event') == 'node_generated':
+            if event.get("event") == "node_generated":
                 self._tag_node_with_mode(event, stage, stage_data)
             yield event
 
-    def _tag_node_with_mode(
-        self,
-        event: Dict[str, Any],
-        stage: str,
-        stage_data: Optional[Dict[str, Any]]
-    ) -> None:
+    def _tag_node_with_mode(self, event: Dict[str, Any], stage: str, stage_data: Optional[Dict[str, Any]]) -> None:
         """Set node mode and parent_id from stage. parent_id is stable; mode is display fallback."""
-        node = event.get('node', {})
+        node = event.get("node", {})
         if not node:
             return
-        if stage == 'substeps' and stage_data and stage_data.get('step_name'):
-            node['mode'] = stage_data['step_name']
-            if stage_data.get('step_id'):
-                node['parent_id'] = stage_data['step_id']
+        if stage == "substeps" and stage_data and stage_data.get("step_name"):
+            node["mode"] = stage_data["step_name"]
+            if stage_data.get("step_id"):
+                node["parent_id"] = stage_data["step_id"]
         else:
-            node['mode'] = stage
-        mode_val = node['mode']
-        parent_id_val = node.get('parent_id') or ''
-        id_val = node.get('id') or 'unknown'
-        text_val = node.get('text') or ''
+            node["mode"] = stage
+        mode_val = node["mode"]
+        parent_id_val = node.get("parent_id") or ""
+        id_val = node.get("id") or "unknown"
+        text_val = node.get("text") or ""
         logger.debug(
             "[FlowMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",
-            mode_val, parent_id_val, id_val, text_val
+            mode_val,
+            parent_id_val,
+            id_val,
+            text_val,
         )
 
     def _build_prompt(
@@ -132,7 +135,7 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build Flow Map prompt (routes to stage-specific prompts).
@@ -148,36 +151,29 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         """
         language = self._detect_language(center_topic, educational_context)
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
-            if educational_context else 'General K12 teaching'
+            educational_context.get("raw_message", "General K12 teaching")
+            if educational_context
+            else "General K12 teaching"
         )
 
         # Get session_id from educational_context (passed through from generate_batch)
-        session_id = educational_context.get('_session_id', '') if educational_context else ''
+        session_id = educational_context.get("_session_id", "") if educational_context else ""
 
         # Get current stage and stage_data
         stage_info = self.session_stages.get(session_id, {})
-        stage = stage_info.get('stage', 'steps')  # Default to 'steps' (dimensions stage removed)
+        stage = stage_info.get("stage", "steps")  # Default to 'steps' (dimensions stage removed)
 
         logger.debug("[FlowMapPalette-Prompt] Building prompt for stage: %s", stage)
 
         # Build stage-specific prompt
-        if stage == 'steps':
-            return self._build_steps_prompt(
-                center_topic, context_desc, language, count, batch_num
-            )
-        if stage == 'substeps':
-            step_name = stage_info.get('step_name', '')
-            return self._build_substeps_prompt(
-                center_topic, step_name, context_desc, language, count, batch_num
-            )
+        if stage == "steps":
+            return self._build_steps_prompt(center_topic, context_desc, language, count, batch_num)
+        if stage == "substeps":
+            step_name = stage_info.get("step_name", "")
+            return self._build_substeps_prompt(center_topic, step_name, context_desc, language, count, batch_num)
         # Fallback to steps (default stage for flow maps)
-        logger.warning(
-            "[FlowMapPalette] Unknown stage '%s', defaulting to 'steps'", stage
-        )
-        return self._build_steps_prompt(
-            center_topic, context_desc, language, count, batch_num
-        )
+        logger.warning("[FlowMapPalette] Unknown stage '%s', defaulting to 'steps'", stage)
+        return self._build_steps_prompt(center_topic, context_desc, language, count, batch_num)
 
     def _build_dimensions_prompt(
         self,
@@ -185,12 +181,10 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """Build prompt for Stage 1: Dimensions. Uses centralized prompts."""
-        return get_flow_dimensions_prompt(
-            center_topic, context_desc, language, count, batch_num
-        )
+        return get_flow_dimensions_prompt(center_topic, context_desc, language, count, batch_num)
 
     def _build_steps_prompt(
         self,
@@ -198,12 +192,10 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """Build prompt for Stage 1: Steps. Uses centralized prompts."""
-        return get_flow_steps_prompt(
-            center_topic, context_desc, language, count, batch_num
-        )
+        return get_flow_steps_prompt(center_topic, context_desc, language, count, batch_num)
 
     def _build_substeps_prompt(
         self,
@@ -212,12 +204,10 @@ class FlowMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """Build prompt for Stage 2: Substeps (for a specific step). Uses centralized prompts."""
-        return get_flow_substeps_prompt(
-            center_topic, step_name, context_desc, language, count, batch_num
-        )
+        return get_flow_substeps_prompt(center_topic, step_name, context_desc, language, count, batch_num)
 
     def end_session(self, session_id: str, reason: str = "complete") -> None:
         """

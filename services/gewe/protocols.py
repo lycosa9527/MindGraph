@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from abc import ABC, abstractmethod
 from typing import Optional, Set, TYPE_CHECKING
 from clients.gewe import AsyncGeweClient

@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Optional, Dict, Any
 import logging
 import os
@@ -64,9 +65,7 @@ def _append_metadata_filter_conditions(
             pass
         elif key == "created_at" and isinstance(value, dict):
             pass
-        elif isinstance(value, dict) and (
-            "gte" in value or "lte" in value or "gt" in value or "lt" in value
-        ):
+        elif isinstance(value, dict) and ("gte" in value or "lte" in value or "gt" in value or "lt" in value):
             pass
         elif isinstance(value, (list, tuple)):
             filter_conditions.append(
@@ -96,18 +95,19 @@ def _chunk_results_from_query_points(results: Any) -> List[Dict[str, Any]]:
         except (ValueError, TypeError):
             payload_keys = list(result.payload.keys()) if result.payload else []
             logger.debug(
-                "[Qdrant] Skipping result with invalid chunk_id: "
-                "%s, payload keys: %s",
+                "[Qdrant] Skipping result with invalid chunk_id: %s, payload keys: %s",
                 chunk_id_str,
-                payload_keys
+                payload_keys,
             )
             continue
 
-        chunk_results.append({
-            "id": chunk_id,
-            "score": float(result.score),
-            "metadata": result.payload,
-        })
+        chunk_results.append(
+            {
+                "id": chunk_id,
+                "score": float(result.score),
+                "metadata": result.payload,
+            }
+        )
     return chunk_results
 
 
@@ -162,23 +162,23 @@ class QdrantService(QdrantDiagnosticsMixin):
                 "[Qdrant] Compression is DISABLED (QDRANT_COMPRESSION=%s). "
                 "This will result in ~4x larger storage usage. "
                 "Recommendation: Set QDRANT_COMPRESSION=SQ8 for maximum efficiency.",
-                self.compression_type
+                self.compression_type,
             )
         else:
             logger.info(
                 "[Qdrant] Initialized with compression=%s (~4x storage savings enabled)",
-                self.compression_type
+                self.compression_type,
             )
 
     def _get_collection_name(self, user_id: int, chunking_method: Optional[str] = None) -> str:
         """
         Get collection name for user.
-        
+
         Args:
             user_id: User ID
             chunking_method: Optional chunking method name for chunk test isolation
                            (e.g., 'semchunk', 'spacy'). If provided, creates separate collection.
-        
+
         Returns:
             Collection name
         """
@@ -191,7 +191,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         self,
         user_id: int,
         vector_size: Optional[int] = None,
-        chunking_method: Optional[str] = None
+        chunking_method: Optional[str] = None,
     ) -> None:
         """
         Create or get collection for user with compression support.
@@ -307,7 +307,11 @@ class QdrantService(QdrantDiagnosticsMixin):
                 # Indexes might already exist, ignore
                 logger.debug("[Qdrant] Payload index creation (may already exist): %s", e)
 
-            logger.info("[Qdrant] Created collection for user %s with compression=%s", user_id, self.compression_type)
+            logger.info(
+                "[Qdrant] Created collection for user %s with compression=%s",
+                user_id,
+                self.compression_type,
+            )
 
         except Exception as e:
             logger.error("[Qdrant] Failed to create collection for user %s: %s", user_id, e)
@@ -342,7 +346,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         embeddings: List[List[float]],
         document_ids: List[int],
         metadata: Optional[List[Dict[str, Any]]] = None,
-        chunking_method: Optional[str] = None
+        chunking_method: Optional[str] = None,
     ) -> None:
         """
         Add document embeddings to user's collection.
@@ -409,7 +413,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         top_k: int = 5,
         score_threshold: float = 0.0,
         document_id: Optional[int] = None,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Search for similar vectors in user's collection.
@@ -454,7 +458,10 @@ class QdrantService(QdrantDiagnosticsMixin):
 
         logger.debug(
             "[Qdrant] search: collection=%s, top_k=%s, score_threshold=%s, filter_conditions=%s",
-            collection_name, top_k, score_threshold, len(filter_conditions)
+            collection_name,
+            top_k,
+            score_threshold,
+            len(filter_conditions),
         )
 
         try:
@@ -472,7 +479,11 @@ class QdrantService(QdrantDiagnosticsMixin):
 
             chunk_results = _chunk_results_from_query_points(results)
 
-            logger.debug("[Qdrant] Found %s valid results for user %s", len(chunk_results), user_id)
+            logger.debug(
+                "[Qdrant] Found %s valid results for user %s",
+                len(chunk_results),
+                user_id,
+            )
             return chunk_results
 
         except Exception as e:
@@ -493,16 +504,18 @@ class QdrantService(QdrantDiagnosticsMixin):
 
         collection_name = self.get_user_collection(user_id, chunking_method)
         if not collection_name:
-            logger.warning("[Qdrant] No collection found for user %s (method: %s)", user_id, chunking_method)
+            logger.warning(
+                "[Qdrant] No collection found for user %s (method: %s)",
+                user_id,
+                chunking_method,
+            )
             return
 
         try:
             # Delete by point IDs (chunk_ids must be int)
             self.client.delete(
                 collection_name=collection_name,
-                points_selector=rest.PointIdsList(
-                    points=chunk_ids
-                ),
+                points_selector=rest.PointIdsList(points=chunk_ids),
             )
             logger.info("[Qdrant] Deleted %s chunks for user %s", len(chunk_ids), user_id)
         except Exception as e:
@@ -515,7 +528,7 @@ class QdrantService(QdrantDiagnosticsMixin):
         chunk_ids: List[int],
         embeddings: List[List[float]],
         document_ids: List[int],
-        metadata: Optional[List[Dict[str, Any]]] = None
+        metadata: Optional[List[Dict[str, Any]]] = None,
     ) -> None:
         """
         Update document embeddings in Qdrant (upsert operation).
@@ -609,7 +622,12 @@ class QdrantService(QdrantDiagnosticsMixin):
             )
             logger.info("[Qdrant] Deleted document %s for user %s", document_id, user_id)
         except Exception as e:
-            logger.error("[Qdrant] Failed to delete document %s for user %s: %s", document_id, user_id, e)
+            logger.error(
+                "[Qdrant] Failed to delete document %s for user %s: %s",
+                document_id,
+                user_id,
+                e,
+            )
             raise
 
     def delete_user_collection(self, user_id: int) -> None:
@@ -652,6 +670,6 @@ class QdrantService(QdrantDiagnosticsMixin):
 
 def get_qdrant_service() -> QdrantService:
     """Get global Qdrant service instance."""
-    if not hasattr(get_qdrant_service, 'instance'):
+    if not hasattr(get_qdrant_service, "instance"):
         get_qdrant_service.instance = QdrantService()
     return get_qdrant_service.instance

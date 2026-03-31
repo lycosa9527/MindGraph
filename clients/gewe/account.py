@@ -9,19 +9,16 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Any, Optional, Protocol
 
 
 class _GeweClientProtocol(Protocol):
     """Protocol defining the interface expected by AccountMixin"""
+
     token: str
 
-    async def _request(
-        self,
-        method: str,
-        endpoint: str,
-        json_data: Optional[Dict[str, Any]] = None
-    ) -> Dict[str, Any]:
+    async def _request(self, method: str, endpoint: str, json_data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
         """Make HTTP request to Gewe API"""
         raise NotImplementedError
 
@@ -36,7 +33,7 @@ class AccountMixin:
         device_type: str = "mac",
         proxy_ip: Optional[str] = None,
         ttuid: Optional[str] = None,
-        aid: Optional[str] = None
+        aid: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Get login QR code (Step 1).
@@ -52,11 +49,7 @@ class AccountMixin:
         Returns:
             Response containing qrImgBase64 and uuid
         """
-        payload = {
-            "appId": app_id,
-            "regionId": region_id,
-            "type": device_type
-        }
+        payload = {"appId": app_id, "regionId": region_id, "type": device_type}
         if proxy_ip:
             payload["proxyIp"] = proxy_ip
         if ttuid:
@@ -72,7 +65,7 @@ class AccountMixin:
         uuid: str,
         auto_sliding: bool = False,
         proxy_ip: Optional[str] = None,
-        captch_code: Optional[str] = None
+        captch_code: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Check login status (Step 2).
@@ -87,11 +80,7 @@ class AccountMixin:
         Returns:
             Login info including appId and wxid if successful
         """
-        payload = {
-            "appId": app_id,
-            "uuid": uuid,
-            "autoSliding": auto_sliding
-        }
+        payload = {"appId": app_id, "uuid": uuid, "autoSliding": auto_sliding}
         if proxy_ip:
             payload["proxyIp"] = proxy_ip
         if captch_code:
@@ -104,7 +93,7 @@ class AccountMixin:
         app_id: str,
         region_id: str = "320000",
         proxy_ip: Optional[str] = None,
-        aid: Optional[str] = None
+        aid: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Dialog login (popup confirmation on phone).
@@ -118,10 +107,7 @@ class AccountMixin:
         Returns:
             Response with login status
         """
-        payload = {
-            "appId": app_id,
-            "regionId": region_id
-        }
+        payload = {"appId": app_id, "regionId": region_id}
         if proxy_ip:
             payload["proxyIp"] = proxy_ip
         if aid:
@@ -129,10 +115,7 @@ class AccountMixin:
 
         return await self._request("POST", "/gewe/v2/api/login/dialogLogin", json_data=payload)
 
-    async def set_callback(
-        self: "_GeweClientProtocol",
-        callback_url: str
-    ) -> Dict[str, Any]:
+    async def set_callback(self: "_GeweClientProtocol", callback_url: str) -> Dict[str, Any]:
         """
         Set callback URL for receiving messages.
 
@@ -142,16 +125,10 @@ class AccountMixin:
         Returns:
             Response confirming callback setup
         """
-        payload = {
-            "token": self.token,
-            "callbackUrl": callback_url
-        }
+        payload = {"token": self.token, "callbackUrl": callback_url}
         return await self._request("POST", "/gewe/v2/api/login/setCallback", json_data=payload)
 
-    async def reconnection(
-        self: "_GeweClientProtocol",
-        app_id: str
-    ) -> Dict[str, Any]:
+    async def reconnection(self: "_GeweClientProtocol", app_id: str) -> Dict[str, Any]:
         """
         Reconnect when account is offline.
 
@@ -171,7 +148,7 @@ class AccountMixin:
         password: str,
         region_id: str,
         step: int,
-        proxy_ip: Optional[str] = None
+        proxy_ip: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Login by account and password (2-step process).
@@ -195,17 +172,14 @@ class AccountMixin:
             "account": account,
             "password": password,
             "regionId": region_id,
-            "step": step
+            "step": step,
         }
         if proxy_ip:
             payload["proxyIp"] = proxy_ip
 
         return await self._request("POST", "/gewe/v2/api/login/loginByAccount", json_data=payload)
 
-    async def check_online(
-        self: "_GeweClientProtocol",
-        app_id: str
-    ) -> Dict[str, Any]:
+    async def check_online(self: "_GeweClientProtocol", app_id: str) -> Dict[str, Any]:
         """
         Check if account is online.
 
@@ -218,10 +192,7 @@ class AccountMixin:
         payload = {"appId": app_id}
         return await self._request("POST", "/gewe/v2/api/login/checkOnline", json_data=payload)
 
-    async def logout(
-        self: "_GeweClientProtocol",
-        app_id: str
-    ) -> Dict[str, Any]:
+    async def logout(self: "_GeweClientProtocol", app_id: str) -> Dict[str, Any]:
         """
         Logout.
 

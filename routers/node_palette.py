@@ -12,6 +12,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from datetime import datetime
@@ -25,7 +26,9 @@ from agents.node_palette.bridge_map_palette import get_bridge_map_palette_genera
 from agents.node_palette.bubble_map_palette import get_bubble_map_palette_generator
 from agents.node_palette.circle_map_palette import get_circle_map_palette_generator
 from agents.node_palette.concept_map_palette import get_concept_map_palette_generator
-from agents.node_palette.double_bubble_palette import get_double_bubble_palette_generator
+from agents.node_palette.double_bubble_palette import (
+    get_double_bubble_palette_generator,
+)
 from agents.node_palette.flow_map_palette import get_flow_map_palette_generator
 from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
@@ -39,7 +42,7 @@ from models.requests.requests_thinking import (
     NodePaletteNextRequest,
     NodeSelectionRequest,
     NodePaletteFinishRequest,
-    NodePaletteCleanupRequest
+    NodePaletteCleanupRequest,
 )
 from services.redis.redis_activity_tracker import get_activity_tracker
 from utils.auth import get_current_user
@@ -49,16 +52,16 @@ router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
 
 _GENERATOR_MAP = {
-    'circle_map': get_circle_map_palette_generator,
-    'bubble_map': get_bubble_map_palette_generator,
-    'double_bubble_map': get_double_bubble_palette_generator,
-    'multi_flow_map': get_multi_flow_palette_generator,
-    'tree_map': get_tree_map_palette_generator,
-    'flow_map': get_flow_map_palette_generator,
-    'brace_map': get_brace_map_palette_generator,
-    'bridge_map': get_bridge_map_palette_generator,
-    'mindmap': get_mindmap_palette_generator,
-    'concept_map': get_concept_map_palette_generator,
+    "circle_map": get_circle_map_palette_generator,
+    "bubble_map": get_bubble_map_palette_generator,
+    "double_bubble_map": get_double_bubble_palette_generator,
+    "multi_flow_map": get_multi_flow_palette_generator,
+    "tree_map": get_tree_map_palette_generator,
+    "flow_map": get_flow_map_palette_generator,
+    "brace_map": get_brace_map_palette_generator,
+    "bridge_map": get_bridge_map_palette_generator,
+    "mindmap": get_mindmap_palette_generator,
+    "concept_map": get_concept_map_palette_generator,
 }
 
 
@@ -66,38 +69,29 @@ def _extract_center_topic(req: NodePaletteStartRequest) -> str:
     """Extract center topic from request based on diagram type."""
     data = req.diagram_data
     diagram_type = req.diagram_type
-    topic = ''
+    topic = ""
 
-    if diagram_type == 'double_bubble_map':
+    if diagram_type == "double_bubble_map":
         topic = f"{data.get('left', '')} vs {data.get('right', '')}"
-    elif diagram_type == 'multi_flow_map':
-        topic = data.get('event', '')
-    elif diagram_type == 'flow_map':
-        topic = data.get('title', '')
-    elif diagram_type == 'brace_map':
-        topic = data.get('whole', '')
-    elif diagram_type == 'bridge_map':
-        raw_dim = data.get('dimension', '')
-        raw_dim = '' if raw_dim is None else str(raw_dim)
-        topic = '' if is_placeholder_text(raw_dim) else raw_dim
-    elif diagram_type in ('tree_map', 'mindmap', 'concept_map'):
-        stage_data = getattr(req, 'stage_data', None) or {}
-        if (
-            diagram_type == 'concept_map'
-            and isinstance(stage_data, dict)
-            and stage_data.get('center_topic')
-        ):
-            topic = str(stage_data.get('center_topic', ''))
+    elif diagram_type == "multi_flow_map":
+        topic = data.get("event", "")
+    elif diagram_type == "flow_map":
+        topic = data.get("title", "")
+    elif diagram_type == "brace_map":
+        topic = data.get("whole", "")
+    elif diagram_type == "bridge_map":
+        raw_dim = data.get("dimension", "")
+        raw_dim = "" if raw_dim is None else str(raw_dim)
+        topic = "" if is_placeholder_text(raw_dim) else raw_dim
+    elif diagram_type in ("tree_map", "mindmap", "concept_map"):
+        stage_data = getattr(req, "stage_data", None) or {}
+        if diagram_type == "concept_map" and isinstance(stage_data, dict) and stage_data.get("center_topic"):
+            topic = str(stage_data.get("center_topic", ""))
         else:
-            topic = data.get('topic', '')
+            topic = data.get("topic", "")
     else:
-        center = data.get('center', {}) or {}
-        topic = (
-            center.get('text', '') or
-            data.get('topic', '') or
-            data.get('title', '') or
-            data.get('main_topic', '')
-        )
+        center = data.get("center", {}) or {}
+        topic = center.get("text", "") or data.get("topic", "") or data.get("title", "") or data.get("main_topic", "")
     return topic
 
 
@@ -107,7 +101,7 @@ def _get_palette_generator(diagram_type: str):
     if getter is None:
         logger.warning(
             "[NodePalette-API] No specialized generator for %s, using circle_map fallback",
-            diagram_type
+            diagram_type,
         )
         return get_circle_map_palette_generator()
     return getter()
@@ -115,22 +109,30 @@ def _get_palette_generator(diagram_type: str):
 
 def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, session_id: str) -> None:
     """Log topic info and LLM firing debug message."""
-    if req.diagram_type == 'bridge_map':
+    if req.diagram_type == "bridge_map":
         if center_topic and center_topic.strip():
-            logger.info("[NodePalette] Topic: '%s' (Bridge map dimension) | Session: %s",
-                        center_topic[:50], session_id[:8])
+            logger.info(
+                "[NodePalette] Topic: '%s' (Bridge map dimension) | Session: %s",
+                center_topic[:50],
+                session_id[:8],
+            )
         else:
-            logger.info("[NodePalette] Topic: (Diverse relationships mode) | Session: %s",
-                        session_id[:8])
+            logger.info(
+                "[NodePalette] Topic: (Diverse relationships mode) | Session: %s",
+                session_id[:8],
+            )
     else:
-        logger.info("[NodePalette] Topic: '%s' | Session: %s",
-                    center_topic[:50] if center_topic else '(empty)', session_id[:8])
-    if req.diagram_type == 'bridge_map':
+        logger.info(
+            "[NodePalette] Topic: '%s' | Session: %s",
+            center_topic[:50] if center_topic else "(empty)",
+            session_id[:8],
+        )
+    if req.diagram_type == "bridge_map":
         if center_topic and center_topic.strip():
             logger.debug(
                 "[NodePalette-API] Type: bridge_map | Dimension: '%s' (SPECIFIC) | "
                 "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
-                center_topic
+                center_topic,
             )
         else:
             logger.debug(
@@ -139,9 +141,9 @@ def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, sessi
             )
     else:
         logger.debug(
-            "[NodePalette-API] Type: %s | Topic: '%s' | "
-            "Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
-            req.diagram_type, center_topic
+            "[NodePalette-API] Type: %s | Topic: '%s' | Firing 3 LLMs concurrently (qwen, deepseek, doubao)",
+            req.diagram_type,
+            center_topic,
         )
 
 
@@ -149,7 +151,8 @@ def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, sessi
 # NODE PALETTE API ENDPOINTS
 # ============================================================================
 
-@router.post('/thinking_mode/node_palette/start')
+
+@router.post("/thinking_mode/node_palette/start")
 def start_node_palette(
     req: NodePaletteStartRequest,
     current_user: User = Depends(get_current_user),
@@ -172,23 +175,19 @@ def start_node_palette(
             tracker.record_activity(
                 user_id=current_user.id,
                 user_phone=current_user.phone,
-                activity_type='node_palette',
-                details={'diagram_type': req.diagram_type, 'session_id': session_id},
-                user_name=getattr(current_user, 'name', None)
+                activity_type="node_palette",
+                details={"diagram_type": req.diagram_type, "session_id": session_id},
+                user_name=getattr(current_user, "name", None),
             )
         except Exception as e:
             logger.debug("Failed to track user activity: %s", e)
 
     # Log concept_generation for concept map (teacher usage tracking)
-    if (
-        current_user
-        and getattr(current_user, 'role', None) == 'user'
-        and req.diagram_type == 'concept_map'
-    ):
+    if current_user and getattr(current_user, "role", None) == "user" and req.diagram_type == "concept_map":
         try:
             log_entry = UserActivityLog(
                 user_id=current_user.id,
-                activity_type='concept_generation',
+                activity_type="concept_generation",
                 created_at=datetime.utcnow(),
             )
             db.add(log_entry)
@@ -201,8 +200,12 @@ def start_node_palette(
                 logger.debug("Rollback after concept_generation log failure: %s", exc)
 
     # Log at INFO level for user activity tracking
-    logger.info("[NodePalette] Started: Session %s (User: %s, Diagram: %s)",
-               session_id[:8], user_id, req.diagram_type)
+    logger.info(
+        "[NodePalette] Started: Session %s (User: %s, Diagram: %s)",
+        session_id[:8],
+        user_id,
+        req.diagram_type,
+    )
 
     # Debug: Log received diagram data structure
     logger.debug("[NodePalette-API] Diagram type: %s", req.diagram_type)
@@ -211,7 +214,7 @@ def start_node_palette(
 
     try:
         center_topic = _extract_center_topic(req)
-        if req.diagram_type != 'bridge_map' and (not center_topic or not center_topic.strip()):
+        if req.diagram_type != "bridge_map" and (not center_topic or not center_topic.strip()):
             logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
             raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
 
@@ -225,14 +228,14 @@ def start_node_palette(
                 center_topic=center_topic,
                 generator=generator,
                 current_user=current_user,
-                endpoint_path='/thinking_mode/node_palette/start',
+                endpoint_path="/thinking_mode/node_palette/start",
             ),
-            media_type='text/event-stream',
+            media_type="text/event-stream",
             headers={
-                'Cache-Control': 'no-cache',
-                'X-Accel-Buffering': 'no',
-                'Connection': 'keep-alive'
-            }
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
         )
 
     except HTTPException:
@@ -242,11 +245,8 @@ def start_node_palette(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post('/thinking_mode/node_palette/next_batch')
-async def get_next_batch(
-    req: NodePaletteNextRequest,
-    current_user: User = Depends(get_current_user)
-):
+@router.post("/thinking_mode/node_palette/next_batch")
+async def get_next_batch(req: NodePaletteNextRequest, current_user: User = Depends(get_current_user)):
     """
     Generate next batch - fires 3 LLMs concurrently again (qwen, deepseek, doubao)!
 
@@ -255,14 +255,16 @@ async def get_next_batch(
     NOTE: Kimi removed due to Volcengine server load issues
     """
     session_id = req.session_id
-    logger.debug("[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s", session_id[:8])
+    logger.debug(
+        "[NodePalette-API] POST /next_batch (V2 Concurrent) | Session: %s",
+        session_id[:8],
+    )
 
     try:
         generator = _get_palette_generator(req.diagram_type)
         logger.debug(
-            "[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch "
-            "(qwen, deepseek, doubao)...",
-            req.diagram_type
+            "[NodePalette-API] Type: %s | Firing 3 LLMs concurrently for next batch (qwen, deepseek, doubao)...",
+            req.diagram_type,
         )
 
         return StreamingResponse(
@@ -272,15 +274,15 @@ async def get_next_batch(
                 center_topic=req.center_topic,
                 generator=generator,
                 current_user=current_user,
-                endpoint_path='/thinking_mode/node_palette/next_batch',
+                endpoint_path="/thinking_mode/node_palette/next_batch",
                 log_prefix="[NodePalette-API] Next batch",
             ),
-            media_type='text/event-stream',
+            media_type="text/event-stream",
             headers={
-                'Cache-Control': 'no-cache',
-                'X-Accel-Buffering': 'no',
-                'Connection': 'keep-alive'
-            }
+                "Cache-Control": "no-cache",
+                "X-Accel-Buffering": "no",
+                "Connection": "keep-alive",
+            },
         )
 
     except Exception as e:
@@ -288,11 +290,8 @@ async def get_next_batch(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.post('/thinking_mode/node_palette/select_node')
-async def log_node_selection(
-    req: NodeSelectionRequest,
-    _current_user: User = Depends(get_current_user)
-):
+@router.post("/thinking_mode/node_palette/select_node")
+async def log_node_selection(req: NodeSelectionRequest, _current_user: User = Depends(get_current_user)):
     """
     Log node selection/deselection event for analytics.
 
@@ -305,17 +304,19 @@ async def log_node_selection(
     node_text = req.node_text
 
     action = "selected" if selected else "deselected"
-    logger.debug("[NodePalette-Selection] User %s node | Session: %s | Node: '%s' | ID: %s",
-               action, session_id[:8], node_text[:50], node_id)
+    logger.debug(
+        "[NodePalette-Selection] User %s node | Session: %s | Node: '%s' | ID: %s",
+        action,
+        session_id[:8],
+        node_text[:50],
+        node_id,
+    )
 
     return {"status": "logged"}
 
 
-@router.post('/thinking_mode/node_palette/finish')
-async def log_finish_selection(
-    req: NodePaletteFinishRequest,
-    current_user: User = Depends(get_current_user)
-):
+@router.post("/thinking_mode/node_palette/finish")
+async def log_finish_selection(req: NodePaletteFinishRequest, current_user: User = Depends(get_current_user)):
     """
     Log when user finishes Node Palette and return to diagram.
 
@@ -327,14 +328,18 @@ async def log_finish_selection(
     total_generated = req.total_nodes_generated
     batches_loaded = req.batches_loaded
     user_id = current_user.id if current_user else None
-    selection_rate = (selected_count/max(total_generated,1))*100
+    selection_rate = (selected_count / max(total_generated, 1)) * 100
 
     # Log at INFO level for user activity tracking
     logger.info(
         "[NodePalette] Completed: Session %s (User: %s, Generated: %d nodes, "
         "Selected: %d nodes, Selection rate: %.1f%%, Batches: %d)",
-        session_id[:8], user_id, total_generated, selected_count,
-        selection_rate, batches_loaded
+        session_id[:8],
+        user_id,
+        total_generated,
+        selected_count,
+        selection_rate,
+        batches_loaded,
     )
 
     # NOTE: Do NOT end the session here!
@@ -346,10 +351,7 @@ async def log_finish_selection(
 
 
 @router.post("/thinking_mode/node_palette/cancel")
-async def node_palette_cancel(
-    request: NodePaletteFinishRequest,
-    current_user: User = Depends(get_current_user)
-):
+async def node_palette_cancel(request: NodePaletteFinishRequest, current_user: User = Depends(get_current_user)):
     """
     Handle Node Palette cancellation.
 
@@ -365,7 +367,11 @@ async def node_palette_cancel(
     logger.info(
         "[NodePalette] Cancelled: Session %s (User: %s, Generated: %d nodes, "
         "Selected: %d nodes, NOT added, Batches: %d)",
-        session_id[:8], user_id, total_generated, selected_count, batches_loaded
+        session_id[:8],
+        user_id,
+        total_generated,
+        selected_count,
+        batches_loaded,
     )
 
     # NOTE: Do NOT end the session here!
@@ -376,10 +382,7 @@ async def node_palette_cancel(
 
 
 @router.post("/thinking_mode/node_palette/cleanup")
-async def node_palette_cleanup(
-    request: NodePaletteCleanupRequest,
-    _current_user: User = Depends(get_current_user)
-):
+async def node_palette_cleanup(request: NodePaletteCleanupRequest, _current_user: User = Depends(get_current_user)):
     """
     Clean up Node Palette session when user leaves canvas.
 
@@ -387,30 +390,33 @@ async def node_palette_cleanup(
     and free memory when user exits to gallery.
     """
     session_id = request.session_id
-    diagram_type = request.diagram_type or 'circle_map'
+    diagram_type = request.diagram_type or "circle_map"
 
-    logger.debug("[NodePalette-Cleanup] Ending session (user left canvas) | Session: %s", session_id[:8])
+    logger.debug(
+        "[NodePalette-Cleanup] Ending session (user left canvas) | Session: %s",
+        session_id[:8],
+    )
 
     # Get appropriate generator and end session
-    if diagram_type == 'circle_map':
+    if diagram_type == "circle_map":
         generator = get_circle_map_palette_generator()
-    elif diagram_type == 'bubble_map':
+    elif diagram_type == "bubble_map":
         generator = get_bubble_map_palette_generator()
-    elif diagram_type == 'double_bubble_map':
+    elif diagram_type == "double_bubble_map":
         generator = get_double_bubble_palette_generator()
-    elif diagram_type == 'multi_flow_map':
+    elif diagram_type == "multi_flow_map":
         generator = get_multi_flow_palette_generator()
-    elif diagram_type == 'tree_map':
+    elif diagram_type == "tree_map":
         generator = get_tree_map_palette_generator()
-    elif diagram_type == 'flow_map':
+    elif diagram_type == "flow_map":
         generator = get_flow_map_palette_generator()
-    elif diagram_type == 'brace_map':
+    elif diagram_type == "brace_map":
         generator = get_brace_map_palette_generator()
-    elif diagram_type == 'bridge_map':
+    elif diagram_type == "bridge_map":
         generator = get_bridge_map_palette_generator()
-    elif diagram_type == 'mindmap':
+    elif diagram_type == "mindmap":
         generator = get_mindmap_palette_generator()
-    elif diagram_type == 'concept_map':
+    elif diagram_type == "concept_map":
         generator = get_concept_map_palette_generator()
     else:
         generator = get_circle_map_palette_generator()

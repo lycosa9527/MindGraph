@@ -22,24 +22,24 @@ logger = logging.getLogger(__name__)
 def _get_process_name(pid: int) -> Optional[str]:
     """
     Get the process name for a given PID.
-    
+
     Args:
         pid: Process ID
-        
+
     Returns:
         Process name or None if not found
     """
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         try:
             result = subprocess.run(
-                ['tasklist', '/FI', f'PID eq {pid}', '/FO', 'CSV', '/NH'],
+                ["tasklist", "/FI", f"PID eq {pid}", "/FO", "CSV", "/NH"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
-                parts = result.stdout.strip().split(',')
+                parts = result.stdout.strip().split(",")
                 if len(parts) > 0:
                     return parts[0].strip('"').lower()
         except Exception as exc:
@@ -47,11 +47,11 @@ def _get_process_name(pid: int) -> Optional[str]:
     else:
         try:
             result = subprocess.run(
-                ['ps', '-p', str(pid), '-o', 'comm=', '--no-headers'],
+                ["ps", "-p", str(pid), "-o", "comm=", "--no-headers"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
                 return result.stdout.strip().lower()
@@ -72,7 +72,7 @@ def _verify_qdrant_on_port(host: str, port: int) -> bool:
         bool: True if Qdrant is responding, False otherwise
     """
     try:
-        url = f'http://{host}:{port}/collections'
+        url = f"http://{host}:{port}/collections"
         urllib.request.urlopen(url, timeout=2)
         return True
     except Exception:
@@ -92,8 +92,8 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     Returns:
         Optional[subprocess.Popen[bytes]]: Qdrant process or None if using existing
     """
-    qdrant_host = os.getenv('QDRANT_HOST', 'localhost')
-    qdrant_port_str = os.getenv('QDRANT_PORT', '6333')
+    qdrant_host = os.getenv("QDRANT_HOST", "localhost")
+    qdrant_port_str = os.getenv("QDRANT_PORT", "6333")
     qdrant_port = int(qdrant_port_str)
 
     port_in_use, pid = check_port_in_use(qdrant_host, qdrant_port)
@@ -107,12 +107,12 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             print("[QDRANT] Attempting to start Qdrant anyway (port may be in TIME_WAIT state)")
         else:
             process_name = _get_process_name(pid)
-            if process_name and 'qdrant' in process_name:
+            if process_name and "qdrant" in process_name:
                 print(f"[QDRANT] Port {qdrant_port} is in use by process '{process_name}' (PID: {pid})")
                 print("[QDRANT] Process appears to be Qdrant, waiting for readiness...")
                 for i in range(10):
                     try:
-                        urllib.request.urlopen(f'http://{qdrant_host}:{qdrant_port}/collections', timeout=2)
+                        urllib.request.urlopen(f"http://{qdrant_host}:{qdrant_port}/collections", timeout=2)
                         print(f"[QDRANT] ✓ Using existing Qdrant server (PID: {pid})")
                         return None
                     except Exception:
@@ -126,30 +126,32 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
                 print(f"[ERROR] Port {qdrant_port} is in use but not by Qdrant")
                 print(f"        Process using port: PID {pid} ({process_name or 'unknown'})")
                 print("        Stop the process using this port or use a different port")
-                print(f"        Check: lsof -i :{qdrant_port} (Linux/Mac) or "
-                      f"netstat -ano | findstr :{qdrant_port} (Windows)")
+                print(
+                    f"        Check: lsof -i :{qdrant_port} (Linux/Mac) or "
+                    f"netstat -ano | findstr :{qdrant_port} (Windows)"
+                )
                 sys.exit(1)
 
     try:
-        urllib.request.urlopen(f'http://{qdrant_host}:{qdrant_port}/collections', timeout=2)
+        urllib.request.urlopen(f"http://{qdrant_host}:{qdrant_port}/collections", timeout=2)
         print(f"[QDRANT] Qdrant server is already running on {qdrant_host}:{qdrant_port}")
         return None
     except Exception as exc:
         logger.debug("Qdrant pre-start connectivity check failed: %s", exc)
 
-    if sys.platform != 'win32':
+    if sys.platform != "win32":
         try:
             result = subprocess.run(
-                ['systemctl', 'is-active', '--quiet', 'qdrant'],
+                ["systemctl", "is-active", "--quiet", "qdrant"],
                 capture_output=True,
                 timeout=1,
-                check=False
+                check=False,
             )
             if result.returncode == 0:
                 print("[QDRANT] Qdrant systemd service is active (waiting for readiness...)")
                 for i in range(10):
                     try:
-                        urllib.request.urlopen('http://localhost:6333/collections', timeout=1)
+                        urllib.request.urlopen("http://localhost:6333/collections", timeout=1)
                         print("[QDRANT] Qdrant systemd service is ready")
                         return None
                     except Exception:
@@ -165,9 +167,9 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             pass
 
     qdrant_paths = [
-        os.path.expanduser('~/qdrant/qdrant'),
-        '/usr/local/bin/qdrant',
-        '/usr/bin/qdrant',
+        os.path.expanduser("~/qdrant/qdrant"),
+        "/usr/local/bin/qdrant",
+        "/usr/bin/qdrant",
     ]
 
     qdrant_binary = None
@@ -183,7 +185,7 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
         sys.exit(1)
 
     qdrant_dir = os.path.dirname(qdrant_binary)
-    qdrant_storage = os.path.join(qdrant_dir, 'storage')
+    qdrant_storage = os.path.join(qdrant_dir, "storage")
     os.makedirs(qdrant_storage, exist_ok=True)
 
     print("[QDRANT] Starting Qdrant server as subprocess...")
@@ -198,20 +200,21 @@ def start_qdrant_server(server_state) -> Optional[subprocess.Popen[bytes]]:
             cwd=qdrant_dir,
             env={
                 **os.environ,
-                'QDRANT__STORAGE__STORAGE_PATH': qdrant_storage,
-                'QDRANT__SERVICE__HTTP_PORT': '6333',
+                "QDRANT__STORAGE__STORAGE_PATH": qdrant_storage,
+                "QDRANT__SERVICE__HTTP_PORT": "6333",
             },
             bufsize=1,
         )
 
         def stop_wrapper():
             stop_qdrant_server(server_state)
+
         atexit.register(stop_wrapper)
 
         time.sleep(2)
 
         try:
-            urllib.request.urlopen('http://localhost:6333/collections', timeout=2)
+            urllib.request.urlopen("http://localhost:6333/collections", timeout=2)
             print(f"[QDRANT] Server started successfully (PID: {server_state.qdrant_process.pid})")
             return server_state.qdrant_process
         except Exception:
@@ -234,10 +237,10 @@ def stop_qdrant_server(server_state) -> None:
         except (ValueError, OSError):
             pass
         try:
-            if sys.platform == 'win32':
+            if sys.platform == "win32":
                 server_state.qdrant_process.terminate()
             else:
-                if hasattr(os, 'getpgid') and hasattr(os, 'killpg'):
+                if hasattr(os, "getpgid") and hasattr(os, "killpg"):
                     pgid = os.getpgid(server_state.qdrant_process.pid)
                     os.killpg(pgid, signal.SIGTERM)
                 else:

@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import json
 import logging
 
@@ -36,24 +37,22 @@ logger = logging.getLogger(__name__)
 async def _stream_recommendations(req, user: User | None, is_next: bool):
     """Async generator yielding SSE chunks from inline recommendations generator."""
     generator = get_inline_recommendations_generator()
-    user_id = user.id if user and hasattr(user, 'id') else None
-    org_id = getattr(user, 'organization_id', None) if user else None
+    user_id = user.id if user and hasattr(user, "id") else None
+    org_id = getattr(user, "organization_id", None) if user else None
     endpoint = (
-        '/thinking_mode/inline_recommendations/next_batch'
-        if is_next
-        else '/thinking_mode/inline_recommendations/start'
+        "/thinking_mode/inline_recommendations/next_batch" if is_next else "/thinking_mode/inline_recommendations/start"
     )
     chunk_count = 0
     rec_count = 0
     error_yielded = False
     try:
         options = {
-            'user_id': user_id,
-            'organization_id': org_id,
-            'endpoint_path': endpoint,
-            'educational_context': getattr(req, 'educational_context', None),
+            "user_id": user_id,
+            "organization_id": org_id,
+            "endpoint_path": endpoint,
+            "educational_context": getattr(req, "educational_context", None),
         }
-        models = getattr(req, 'models', None)
+        models = getattr(req, "models", None)
         rec_count = 0
         async for chunk in generator.generate_batch(
             session_id=req.session_id,
@@ -62,66 +61,60 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
             nodes=req.nodes or [],
             connections=req.connections,
             current_node_id=req.node_id,
-            language=req.language or 'en',
-            count=getattr(req, 'count', 15),
+            language=req.language or "en",
+            count=getattr(req, "count", 15),
             models=models,
             options=options,
         ):
             chunk_count += 1
-            if chunk.get('event') == 'recommendation_generated':
+            if chunk.get("event") == "recommendation_generated":
                 rec_count += 1
                 logger.debug(
                     "[InlineRec] SSE yield #%d: %r",
-                    rec_count, chunk.get('text', '')[:60],
+                    rec_count,
+                    chunk.get("text", "")[:60],
                 )
             yield f"data: {json.dumps(chunk)}\n\n"
     except LLMContentFilterError as e:
         error_yielded = True
-        msg = getattr(e, 'user_message', None) or (
-            "无法处理您的请求。" if req.language == 'zh'
-            else "Content could not be processed."
+        msg = getattr(e, "user_message", None) or (
+            "无法处理您的请求。" if req.language == "zh" else "Content could not be processed."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMRateLimitError as e:
         error_yielded = True
-        msg = getattr(e, 'user_message', None) or (
-            "AI服务繁忙，请稍后重试。" if req.language == 'zh'
-            else "AI service busy. Please retry."
+        msg = getattr(e, "user_message", None) or (
+            "AI服务繁忙，请稍后重试。" if req.language == "zh" else "AI service busy. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMTimeoutError as e:
         error_yielded = True
-        msg = getattr(e, 'user_message', None) or (
-            "请求超时，请重试。" if req.language == 'zh'
-            else "Request timed out. Please retry."
+        msg = getattr(e, "user_message", None) or (
+            "请求超时，请重试。" if req.language == "zh" else "Request timed out. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMServiceError as e:
         error_yielded = True
-        msg = getattr(e, 'user_message', None) or (
-            "AI服务错误，请稍后重试。" if req.language == 'zh'
-            else "AI service error. Please retry."
+        msg = getattr(e, "user_message", None) or (
+            "AI服务错误，请稍后重试。" if req.language == "zh" else "AI service error. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except Exception as e:
         error_yielded = True
         logger.error("[InlineRec] Stream error: %s", str(e), exc_info=True)
-        msg = (
-            "请求失败，请重试。"
-            if getattr(req, 'language', 'en') == 'zh'
-            else "Request failed. Please retry."
-        )
+        msg = "请求失败，请重试。" if getattr(req, "language", "en") == "zh" else "Request failed. Please retry."
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     finally:
         logger.debug(
             "[InlineRec] Stream done: %d chunks, %d recommendations",
-            chunk_count, rec_count,
+            chunk_count,
+            rec_count,
         )
         if chunk_count == 0 and not error_yielded:
             yield f"data: {json.dumps({'event': 'error', 'message': 'No response'})}\n\n"
 
 
-@router.post('/thinking_mode/inline_recommendations/start')
+@router.post("/thinking_mode/inline_recommendations/start")
 async def start_inline_recommendations(
     req: InlineRecommendationsStartRequest,
     current_user: User = Depends(get_current_user),
@@ -136,21 +129,21 @@ async def start_inline_recommendations(
         req.session_id[:8],
         req.diagram_type,
         req.stage,
-        req.node_id[:20] if req.node_id else '',
+        req.node_id[:20] if req.node_id else "",
     )
 
     return StreamingResponse(
         _stream_recommendations(req, current_user, is_next=False),
-        media_type='text/event-stream',
+        media_type="text/event-stream",
         headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive',
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
         },
     )
 
 
-@router.post('/thinking_mode/inline_recommendations/next_batch')
+@router.post("/thinking_mode/inline_recommendations/next_batch")
 async def next_inline_recommendations_batch(
     req: InlineRecommendationsNextRequest,
     current_user: User = Depends(get_current_user),
@@ -167,16 +160,16 @@ async def next_inline_recommendations_batch(
 
     return StreamingResponse(
         _stream_recommendations(req, current_user, is_next=True),
-        media_type='text/event-stream',
+        media_type="text/event-stream",
         headers={
-            'Cache-Control': 'no-cache',
-            'X-Accel-Buffering': 'no',
-            'Connection': 'keep-alive',
+            "Cache-Control": "no-cache",
+            "X-Accel-Buffering": "no",
+            "Connection": "keep-alive",
         },
     )
 
 
-@router.post('/thinking_mode/inline_recommendations/cleanup')
+@router.post("/thinking_mode/inline_recommendations/cleanup")
 async def cleanup_inline_recommendations(
     req: InlineRecommendationsCleanupRequest,
     _current_user: User = Depends(get_current_user),

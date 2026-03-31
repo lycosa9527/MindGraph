@@ -20,12 +20,15 @@ from sqlalchemy import or_
 from sqlalchemy.orm import Session
 
 from models.domain.library import LibraryDocument
-from services.library.library_path_utils import normalize_library_path, resolve_library_path
+from services.library.library_path_utils import (
+    normalize_library_path,
+    resolve_library_path,
+)
 from services.library.redis_cache import LibraryRedisCache
 from services.library.image_path_resolver import (
     count_pages,
     detect_image_pattern,
-    list_page_images
+    list_page_images,
 )
 
 
@@ -50,13 +53,7 @@ class LibraryDocumentMixin:
     covers_dir: Path
     storage_dir: Path
 
-
-    def get_documents(
-        self,
-        page: int = 1,
-        page_size: int = 20,
-        search: Optional[str] = None
-    ) -> Dict[str, Any]:
+    def get_documents(self, page: int = 1, page_size: int = 20, search: Optional[str] = None) -> Dict[str, Any]:
         """
         Get list of library documents.
 
@@ -68,23 +65,21 @@ class LibraryDocumentMixin:
         Returns:
             Dict with documents list and pagination info
         """
-        query = self.db.query(LibraryDocument).filter(
-            LibraryDocument.is_active
-        )
+        query = self.db.query(LibraryDocument).filter(LibraryDocument.is_active)
 
         if search:
             search_term = f"%{search}%"
             query = query.filter(
                 or_(
                     LibraryDocument.title.ilike(search_term),
-                    LibraryDocument.description.ilike(search_term)
+                    LibraryDocument.description.ilike(search_term),
                 )
             )
 
         total = query.count()
-        documents = query.order_by(
-            LibraryDocument.created_at.desc()
-        ).offset((page - 1) * page_size).limit(page_size).all()
+        documents = (
+            query.order_by(LibraryDocument.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        )
 
         return {
             "documents": [
@@ -103,13 +98,13 @@ class LibraryDocumentMixin:
                     "uploader": {
                         "id": doc.uploader_id,
                         "name": doc.uploader.name if doc.uploader else None,
-                    }
+                    },
                 }
                 for doc in documents
             ],
             "total": total,
             "page": page,
-            "page_size": page_size
+            "page_size": page_size,
         }
 
     def get_document(self, document_id: int, use_cache: bool = True) -> Optional[LibraryDocument]:
@@ -130,10 +125,11 @@ class LibraryDocumentMixin:
         """
         if not use_cache:
             # Skip cache, query database directly
-            return self.db.query(LibraryDocument).filter(
-                LibraryDocument.id == document_id,
-                LibraryDocument.is_active
-            ).first()
+            return (
+                self.db.query(LibraryDocument)
+                .filter(LibraryDocument.id == document_id, LibraryDocument.is_active)
+                .first()
+            )
 
         # Try Redis cache first (shared across servers)
         try:
@@ -162,10 +158,9 @@ class LibraryDocumentMixin:
                         _document_metadata_cache.pop(document_id, None)
 
         # Query database (always needed for full object, or if cache miss)
-        document = self.db.query(LibraryDocument).filter(
-            LibraryDocument.id == document_id,
-            LibraryDocument.is_active
-        ).first()
+        document = (
+            self.db.query(LibraryDocument).filter(LibraryDocument.id == document_id, LibraryDocument.is_active).first()
+        )
 
         # Cache metadata if document found and caching enabled
         if document and use_cache:
@@ -203,7 +198,7 @@ class LibraryDocumentMixin:
                 # Remove oldest entries (by cached_at timestamp)
                 sorted_items = sorted(
                     _document_metadata_cache.items(),
-                    key=lambda x: x[1].get("cached_at", 0)
+                    key=lambda x: x[1].get("cached_at", 0),
                 )
                 # Remove oldest 10% of entries
                 evict_count = max(1, CACHE_MAX_SIZE // 10)
@@ -211,7 +206,9 @@ class LibraryDocumentMixin:
                     _document_metadata_cache.pop(doc_id, None)
                 logger.debug(
                     "[Library] Cache evicted %s entries (size: %s, max: %s)",
-                    evict_count, len(_document_metadata_cache), CACHE_MAX_SIZE
+                    evict_count,
+                    len(_document_metadata_cache),
+                    CACHE_MAX_SIZE,
                 )
 
             _document_metadata_cache[document_id] = {
@@ -223,7 +220,7 @@ class LibraryDocumentMixin:
                     "is_active": document.is_active,
                     "title": document.title,
                 },
-                "cached_at": time.time()
+                "cached_at": time.time(),
             }
 
     def get_cached_document_metadata(self, document_id: int) -> Optional[Dict[str, Any]]:
@@ -299,8 +296,8 @@ class LibraryDocumentMixin:
                     "[Library] Document view incremented",
                     extra={
                         "document_id": document_id,
-                        "views_count": document.views_count
-                    }
+                        "views_count": document.views_count,
+                    },
                 )
         except Exception:
             self.db.rollback()
@@ -308,20 +305,18 @@ class LibraryDocumentMixin:
 
     def _convert_image_to_rgb(self, img: Image.Image) -> Image.Image:
         """Convert image to RGB, handling transparency."""
-        if img.mode in ('RGBA', 'LA', 'P'):
-            background = Image.new('RGB', img.size, (255, 255, 255))
-            if img.mode == 'P':
-                img = img.convert('RGBA')
-            mask = img.split()[-1] if img.mode == 'RGBA' else None
+        if img.mode in ("RGBA", "LA", "P"):
+            background = Image.new("RGB", img.size, (255, 255, 255))
+            if img.mode == "P":
+                img = img.convert("RGBA")
+            mask = img.split()[-1] if img.mode == "RGBA" else None
             background.paste(img, mask=mask)
             return background
-        if img.mode != 'RGB':
-            return img.convert('RGB')
+        if img.mode != "RGB":
+            return img.convert("RGB")
         return img
 
-    def _compute_cover_resize(
-        self, width: int, height: int
-    ) -> Tuple[int, int]:
+    def _compute_cover_resize(self, width: int, height: int) -> Tuple[int, int]:
         """Compute new dimensions for cover image maintaining aspect ratio."""
         aspect_ratio = width / height
         if width <= self.cover_max_width and height <= self.cover_max_height:
@@ -340,15 +335,13 @@ class LibraryDocumentMixin:
                 new_height = int(new_width / aspect_ratio)
         return (new_width, new_height)
 
-    def _get_cover_output_format(
-        self, source_ext: str
-    ) -> Tuple[str, str, Dict[str, Any]]:
+    def _get_cover_output_format(self, source_ext: str) -> Tuple[str, str, Dict[str, Any]]:
         """Get output format, extension, and save kwargs from source extension."""
-        if source_ext in ('.jpg', '.jpeg'):
-            return ('.jpg', 'JPEG', {'quality': 85, 'optimize': True})
-        if source_ext == '.png':
-            return ('.png', 'PNG', {'optimize': True})
-        return ('.jpg', 'JPEG', {'quality': 85, 'optimize': True})
+        if source_ext in (".jpg", ".jpeg"):
+            return (".jpg", "JPEG", {"quality": 85, "optimize": True})
+        if source_ext == ".png":
+            return (".png", "PNG", {"optimize": True})
+        return (".jpg", "JPEG", {"quality": 85, "optimize": True})
 
     def _process_cover_image(self, source_image_path: Path, document_id: int) -> Optional[str]:
         """
@@ -367,13 +360,9 @@ class LibraryDocumentMixin:
                 width, height = img.size
                 new_width, new_height = self._compute_cover_resize(width, height)
                 if (new_width, new_height) != (width, height):
-                    img = img.resize(
-                        (new_width, new_height), Image.Resampling.LANCZOS
-                    )
+                    img = img.resize((new_width, new_height), Image.Resampling.LANCZOS)
 
-                ext, fmt, save_kwargs = self._get_cover_output_format(
-                    source_image_path.suffix.lower()
-                )
+                ext, fmt, save_kwargs = self._get_cover_output_format(source_image_path.suffix.lower())
                 cover_filename = f"{document_id}_cover{ext}"
                 cover_path = self.covers_dir / cover_filename
                 img.save(cover_path, fmt, **save_kwargs)
@@ -381,14 +370,20 @@ class LibraryDocumentMixin:
 
                 logger.info(
                     "[Library] Processed cover image: %s -> %s (%dx%d -> %dx%d)",
-                    source_image_path.name, cover_filename,
-                    width, height, img.size[0], img.size[1]
+                    source_image_path.name,
+                    cover_filename,
+                    width,
+                    height,
+                    img.size[0],
+                    img.size[1],
                 )
                 return result_path
         except Exception as e:
             logger.error(
                 "[Library] Failed to process cover image %s: %s",
-                source_image_path, e, exc_info=True
+                source_image_path,
+                e,
+                exc_info=True,
             )
             return None
 
@@ -433,15 +428,11 @@ class LibraryDocumentMixin:
         Raises:
             ValueError: If the document or its folder cannot be found.
         """
-        document = self.db.query(LibraryDocument).filter(
-            LibraryDocument.id == document_id
-        ).first()
+        document = self.db.query(LibraryDocument).filter(LibraryDocument.id == document_id).first()
         if not document:
             raise ValueError(f"Document not found: {document_id}")
 
-        folder_path = resolve_library_path(
-            document.pages_dir_path, self.storage_dir, Path.cwd()
-        )
+        folder_path = resolve_library_path(document.pages_dir_path, self.storage_dir, Path.cwd())
         if not folder_path or not folder_path.exists():
             raise ValueError(f"Book folder not found for document {document_id}")
 
@@ -473,26 +464,22 @@ class LibraryDocumentMixin:
         *,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        first_page_image_path: Optional[Path] = None
+        first_page_image_path: Optional[Path] = None,
     ) -> LibraryDocument:
         """Update an existing document with new folder data."""
         existing_doc.use_images = True
         existing_doc.total_pages = page_count
-        existing_doc.pages_dir_path = normalize_library_path(
-            folder_path, self.storage_dir, Path.cwd()
-        )
+        existing_doc.pages_dir_path = normalize_library_path(folder_path, self.storage_dir, Path.cwd())
         doc_title = existing_doc.title
         if title:
             existing_doc.title = title
-        elif not doc_title or doc_title == 'Untitled':
+        elif not doc_title or doc_title == "Untitled":
             existing_doc.title = folder_path.name
         if description is not None:
             existing_doc.description = description
 
         if first_page_image_path and not self._cover_image_exists(existing_doc):
-            cover_image_path = self._process_cover_image(
-                first_page_image_path, cast(int, existing_doc.id)
-            )
+            cover_image_path = self._process_cover_image(first_page_image_path, cast(int, existing_doc.id))
             if cover_image_path:
                 existing_doc.cover_image_path = cover_image_path
 
@@ -510,8 +497,8 @@ class LibraryDocumentMixin:
                 "document_id": existing_doc.id,
                 "folder_name": folder_path.name,
                 "page_count": page_count,
-                "has_cover": bool(existing_doc.cover_image_path)
-            }
+                "has_cover": bool(existing_doc.cover_image_path),
+            },
         )
         return existing_doc
 
@@ -523,16 +510,12 @@ class LibraryDocumentMixin:
         *,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        first_page_image_path: Optional[Path] = None
+        first_page_image_path: Optional[Path] = None,
     ) -> LibraryDocument:
         """Create a new document from folder. Requires user_id to be set."""
         if not self.user_id:
             raise ValueError("User ID required to register book folder")
-        placeholder_path = normalize_library_path(
-            folder_path / 'placeholder.pdf',
-            self.storage_dir,
-            Path.cwd()
-        )
+        placeholder_path = normalize_library_path(folder_path / "placeholder.pdf", self.storage_dir, Path.cwd())
         new_doc = LibraryDocument(
             title=title or folder_path.name,
             description=description,
@@ -546,7 +529,7 @@ class LibraryDocumentMixin:
             is_active=True,
             use_images=True,
             pages_dir_path=pages_dir_path,
-            total_pages=page_count
+            total_pages=page_count,
         )
         self.db.add(new_doc)
         try:
@@ -558,9 +541,7 @@ class LibraryDocumentMixin:
 
         cover_image_path = None
         if first_page_image_path:
-            cover_image_path = self._process_cover_image(
-                first_page_image_path, cast(int, new_doc.id)
-            )
+            cover_image_path = self._process_cover_image(first_page_image_path, cast(int, new_doc.id))
             if cover_image_path:
                 new_doc.cover_image_path = cover_image_path
                 try:
@@ -577,8 +558,8 @@ class LibraryDocumentMixin:
                 "folder_name": folder_path.name,
                 "page_count": page_count,
                 "has_cover": bool(cover_image_path),
-                "title": new_doc.title
-            }
+                "title": new_doc.title,
+            },
         )
         return new_doc
 
@@ -586,7 +567,7 @@ class LibraryDocumentMixin:
         self,
         folder_path: Path,
         title: Optional[str] = None,
-        description: Optional[str] = None
+        description: Optional[str] = None,
     ) -> LibraryDocument:
         """
         Register a folder containing page images as a library document.
@@ -607,9 +588,7 @@ class LibraryDocumentMixin:
         first_page_image_path = self._get_first_page_image_path(folder_path)
 
         # Primary lookup: exact normalised path (fast, unambiguous)
-        existing_doc = self.db.query(LibraryDocument).filter(
-            LibraryDocument.pages_dir_path == pages_dir_path
-        ).first()
+        existing_doc = self.db.query(LibraryDocument).filter(LibraryDocument.pages_dir_path == pages_dir_path).first()
 
         # Fallback lookup: match by folder name alone.
         # Handles path-format drift (absolute ↔ relative, separator differences,
@@ -617,24 +596,34 @@ class LibraryDocumentMixin:
         # the existing record instead of silently creating a duplicate.
         if not existing_doc:
             folder_name = folder_path.name
-            existing_doc = self.db.query(LibraryDocument).filter(
-                or_(
-                    LibraryDocument.pages_dir_path.like(f"%/{folder_name}"),
-                    LibraryDocument.pages_dir_path.like(f"%\\{folder_name}"),
-                    LibraryDocument.pages_dir_path == folder_name,
+            existing_doc = (
+                self.db.query(LibraryDocument)
+                .filter(
+                    or_(
+                        LibraryDocument.pages_dir_path.like(f"%/{folder_name}"),
+                        LibraryDocument.pages_dir_path.like(f"%\\{folder_name}"),
+                        LibraryDocument.pages_dir_path == folder_name,
+                    )
                 )
-            ).first()
+                .first()
+            )
 
         if existing_doc:
             return self._update_existing_book_document(
-                existing_doc, folder_path, page_count,
-                title=title, description=description,
-                first_page_image_path=first_page_image_path
+                existing_doc,
+                folder_path,
+                page_count,
+                title=title,
+                description=description,
+                first_page_image_path=first_page_image_path,
             )
         return self._create_new_book_document(
-            folder_path, page_count, pages_dir_path,
-            title=title, description=description,
-            first_page_image_path=first_page_image_path
+            folder_path,
+            page_count,
+            pages_dir_path,
+            title=title,
+            description=description,
+            first_page_image_path=first_page_image_path,
         )
 
     def update_document(
@@ -642,7 +631,7 @@ class LibraryDocumentMixin:
         document_id: int,
         title: Optional[str] = None,
         description: Optional[str] = None,
-        cover_image_path: Optional[str] = None
+        cover_image_path: Optional[str] = None,
     ) -> Optional[LibraryDocument]:
         """
         Update document metadata (for future admin panel).
@@ -707,9 +696,6 @@ class LibraryDocumentMixin:
 
         logger.info(
             "[Library] Document deleted",
-            extra={
-                "document_id": document_id,
-                "title": document.title
-            }
+            extra={"document_id": document_id, "title": document.title},
         )
         return True

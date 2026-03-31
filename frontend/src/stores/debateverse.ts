@@ -224,12 +224,11 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
 
       recentDebates.value = validDebates.slice(0, MAX_RECENT_DEBATES)
 
-      console.debug(
-        `[DebateVerseStore] Loaded ${recentDebates.value.length} recent debates from localStorage`
-      )
       return true
     } catch (error) {
-      console.warn('[DebateVerseStore] Failed to load from localStorage:', error)
+      if (import.meta.env.DEV) {
+        console.warn('[DebateVerseStore] Failed to load from localStorage:', error)
+      }
       localStorage.removeItem(STORAGE_KEY)
       return false
     }
@@ -693,23 +692,16 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
 
       // Immediately trigger the next action based on response
       if (data.action === 'trigger_speaker' && data.has_next_speaker) {
-        // Immediately trigger stream for next speaker
-        console.log(
-          `[DebateVerse] Triggering next speaker: ${data.participant_name} (${data.participant_role})`
-        )
         await streamDebaterResponse(data.participant_id, data.stage, data.language || 'zh')
       } else if (data.action === 'advance_stage' && data.next_stage) {
-        // Advance to next stage
-        console.log(`[DebateVerse] Advancing to next stage: ${data.next_stage}`)
         await advanceStage(data.next_stage)
-      } else if (data.action === 'complete' || data.debate_complete) {
-        // Debate is complete
-        console.log('[DebateVerse] Debate completed')
-      } else {
+      } else if (data.action !== 'complete' && !data.debate_complete && import.meta.env.DEV) {
         console.warn('[DebateVerse] Unknown next action:', data)
       }
     } catch (error) {
-      console.error('[DebateVerse] Error triggering next:', error)
+      if (import.meta.env.DEV) {
+        console.error('[DebateVerse] Error triggering next:', error)
+      }
       throw error
     }
   }
@@ -730,10 +722,6 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
     currentSpeaker.value = participantId
 
     try {
-      console.log(
-        `[DebateVerse] Starting stream for participant ${participantId} in stage ${stage}`
-      )
-
       const response = await fetch(
         `/api/debateverse/sessions/${currentSessionId.value}/stream/${participantId}?stage=${stage}&language=${language}`,
         {
@@ -807,8 +795,6 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
                 // Handle audio chunk for TTS playback
                 playAudioChunk(data.data)
               } else if (data.type === 'done') {
-                // Stream complete, reload session to get new messages
-                console.log(`[DebateVerse] Stream complete for participant ${participantId}`)
                 streamingMessage.value = null
                 if (currentSessionId.value) {
                   await loadSession(currentSessionId.value)
@@ -819,16 +805,18 @@ export const useDebateVerseStore = defineStore('debateverse', () => {
                 throw new Error(data.error || 'Stream error')
               }
             } catch (e) {
-              console.warn('[DebateVerse] Failed to parse SSE:', jsonStr, e)
+              if (import.meta.env.DEV) {
+                console.warn('[DebateVerse] Failed to parse SSE:', jsonStr, e)
+              }
             }
           }
         }
       }
     } catch (error: unknown) {
-      if (error instanceof Error && error.name === 'AbortError') {
-        console.log(`[DebateVerse] Stream aborted for participant ${participantId}`)
-      } else {
-        console.error(`[DebateVerse] Stream error:`, error)
+      if (!(error instanceof Error && error.name === 'AbortError')) {
+        if (import.meta.env.DEV) {
+          console.error(`[DebateVerse] Stream error:`, error)
+        }
         throw error
       }
     } finally {

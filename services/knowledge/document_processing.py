@@ -2,6 +2,7 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
+
 import logging
 import os
 import traceback
@@ -22,7 +23,7 @@ def extract_and_clean_text(
     cleaner,
     document: KnowledgeDocument,
     db,
-    processing_rules: Optional[dict]
+    processing_rules: Optional[dict],
 ) -> Tuple[str, Optional[List[Dict[str, Any]]]]:
     """
     Extract and clean text from document.
@@ -38,7 +39,7 @@ def extract_and_clean_text(
         Tuple of (cleaned_text, page_info)
     """
     # Extract text with page information for PDFs
-    if document.file_type == 'application/pdf':
+    if document.file_type == "application/pdf":
         text, page_info = processor.extract_text_with_pages(document.file_path, document.file_type)
     else:
         text = processor.extract_text(document.file_path, document.file_type)
@@ -48,7 +49,7 @@ def extract_and_clean_text(
     if isinstance(text, list):
         logger.warning(
             "[KnowledgeSpace] Text is list, converting to string for doc_id=%s",
-            document.id
+            document.id,
         )
         text = "\n".join(str(item) for item in text)
     if not isinstance(text, str):
@@ -75,13 +76,14 @@ def extract_and_clean_text(
             cleaned_text = cleaner.clean(
                 text,
                 remove_extra_spaces=True,
-                remove_urls_emails=False  # Keep URLs/emails by default
+                remove_urls_emails=False,  # Keep URLs/emails by default
             )
     except Exception as clean_error:
         error_msg = f"文本清理失败: {str(clean_error)}"
         logger.error(
             "[KnowledgeSpace] Text cleaning failed for document %s: %s",
-            document.id, clean_error
+            document.id,
+            clean_error,
         )
         raise ValueError(error_msg) from clean_error
 
@@ -94,7 +96,7 @@ def chunk_text_with_mode(
     document: KnowledgeDocument,
     processing_rules: Optional[dict],
     page_info: Optional[List[Dict[str, Any]]],
-    document_id: int
+    document_id: int,
 ) -> List[Any]:
     """
     Chunk text based on processing mode and rules.
@@ -132,16 +134,19 @@ def chunk_text_with_mode(
     chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
     chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
     logger.info(
-        "[RAG] → Chunking: doc_id=%s, method=%s (CHUNKING_ENGINE=%s), mode=%s, strategy=%s, "
-        "chunk_size=%s, overlap=%s",
-        document_id, chunking_method, chunking_engine, mode, chunking_strategy,
-        chunk_size or 500, chunk_overlap or 50
+        "[RAG] → Chunking: doc_id=%s, method=%s (CHUNKING_ENGINE=%s), mode=%s, strategy=%s, chunk_size=%s, overlap=%s",
+        document_id,
+        chunking_method,
+        chunking_engine,
+        mode,
+        chunking_strategy,
+        chunk_size or 500,
+        chunk_overlap or 50,
     )
     if chunking_method == "mindchunk":
         logger.info(
-            "[RAG] 🧠 MindChunk enabled: Using LLM-based semantic chunking with "
-            "qwen-plus-latest for doc_id=%s",
-            document_id
+            "[RAG] 🧠 MindChunk enabled: Using LLM-based semantic chunking with qwen-plus-latest for doc_id=%s",
+            document_id,
         )
 
     # Use appropriate chunking service based on mode
@@ -151,7 +156,7 @@ def chunk_text_with_mode(
                 hierarchical_chunking = ChunkingService(
                     chunk_size=chunk_size or 500,
                     overlap=chunk_overlap or 50,
-                    mode="automatic"
+                    mode="automatic",
                 )
                 chunks = hierarchical_chunking.chunk_text(
                     cleaned_text,
@@ -159,13 +164,13 @@ def chunk_text_with_mode(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
             else:
                 logger.warning(
                     "[RAG] Hierarchical mode not supported with mindchunk, "
                     "falling back to default automatic chunking for doc_id=%s",
-                    document_id
+                    document_id,
                 )
                 chunks = chunking_service.chunk_text(
                     cleaned_text,
@@ -173,14 +178,14 @@ def chunk_text_with_mode(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
         elif mode == "custom" and (chunk_size or chunk_overlap or separator):
             if chunking_engine == "semchunk":
                 custom_chunking = ChunkingService(
                     chunk_size=chunk_size or 500,
                     overlap=chunk_overlap or 50,
-                    mode="custom"
+                    mode="custom",
                 )
                 chunks = custom_chunking.chunk_text(
                     cleaned_text,
@@ -188,13 +193,13 @@ def chunk_text_with_mode(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
             else:
                 logger.warning(
                     "[RAG] Custom mode not supported with mindchunk, "
                     "falling back to default automatic chunking for doc_id=%s",
-                    document_id
+                    document_id,
                 )
                 chunks = chunking_service.chunk_text(
                     cleaned_text,
@@ -202,7 +207,7 @@ def chunk_text_with_mode(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
         else:
             # Automatic mode (default) - respects CHUNKING_ENGINE via chunking_service
@@ -210,7 +215,7 @@ def chunk_text_with_mode(
                 strategy_chunking = ChunkingService(
                     chunk_size=chunk_size or 500,
                     overlap=chunk_overlap or 50,
-                    mode="automatic"
+                    mode="automatic",
                 )
                 chunks = strategy_chunking.chunk_text(
                     cleaned_text,
@@ -218,16 +223,17 @@ def chunk_text_with_mode(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
             else:
                 # Default chunking (respects CHUNKING_ENGINE)
                 chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
                 logger.info(
-                    "[RAG] Calling chunk_text: doc_id=%s, text_length=%s, chunking_engine=%s, "
-                    "chunking_type=%s",
-                    document_id, len(cleaned_text), chunking_engine,
-                    type(chunking_service).__name__
+                    "[RAG] Calling chunk_text: doc_id=%s, text_length=%s, chunking_engine=%s, chunking_type=%s",
+                    document_id,
+                    len(cleaned_text),
+                    chunking_engine,
+                    type(chunking_service).__name__,
                 )
                 chunks = chunking_service.chunk_text(
                     cleaned_text,
@@ -235,18 +241,20 @@ def chunk_text_with_mode(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
                 logger.info(
                     "[RAG] chunk_text returned: doc_id=%s, chunks_count=%s, chunks_type=%s",
-                    document_id, len(chunks) if chunks else 0,
-                    type(chunks).__name__ if chunks else 'None'
+                    document_id,
+                    len(chunks) if chunks else 0,
+                    type(chunks).__name__ if chunks else "None",
                 )
     except Exception as chunk_error:
         error_msg = f"文本分块失败: {str(chunk_error)}"
         logger.error(
             "[KnowledgeSpace] ✗ Chunking failed for document %s: %s",
-            document_id, chunk_error
+            document_id,
+            chunk_error,
         )
         logger.error("[KnowledgeSpace] Full traceback:")
         logger.error(traceback.format_exc())
@@ -258,11 +266,7 @@ def chunk_text_with_mode(
 
 
 def generate_embeddings_with_cache(
-    embedding_client,
-    kb_rate_limiter,
-    texts: List[str],
-    user_id: int,
-    db
+    embedding_client, kb_rate_limiter, texts: List[str], user_id: int, db
 ) -> List[List[float]]:
     """
     Generate embeddings with caching and rate limiting.
@@ -299,7 +303,7 @@ def generate_embeddings_with_cache(
 
         # Check rate limit for the entire batch upfront
         embedding_rpm = int(os.getenv("KB_EMBEDDING_RPM", "100"))
-        client_batch_size = getattr(embedding_client, 'batch_size', 10)
+        client_batch_size = getattr(embedding_client, "batch_size", 10)
         estimated_api_calls = (len(texts_to_embed) + client_batch_size - 1) // client_batch_size
 
         remaining, _ = kb_rate_limiter.get_embedding_remaining(user_id)
@@ -312,25 +316,24 @@ def generate_embeddings_with_cache(
             logger.error(
                 "[KnowledgeSpace] Cannot process %s uncached texts: "
                 "rate limit insufficient (need ~%s API calls, have %s remaining)",
-                len(texts_to_embed), estimated_api_calls, remaining
+                len(texts_to_embed),
+                estimated_api_calls,
+                remaining,
             )
             raise ValueError(error_msg)
 
         try:
-            new_embeddings = embedding_client.embed_texts(
-                texts_to_embed,
-                dimensions=dimensions
-            )
+            new_embeddings = embedding_client.embed_texts(texts_to_embed, dimensions=dimensions)
 
             # Verify we got embeddings for all texts
             if len(new_embeddings) != len(texts_to_embed):
                 error_msg = (
-                    f"嵌入向量生成不完整: 期望 {len(texts_to_embed)} 个向量，"
-                    f"实际生成 {len(new_embeddings)} 个。"
+                    f"嵌入向量生成不完整: 期望 {len(texts_to_embed)} 个向量，实际生成 {len(new_embeddings)} 个。"
                 )
                 logger.error(
                     "[KnowledgeSpace] Embedding count mismatch: expected %s, got %s",
-                    len(texts_to_embed), len(new_embeddings)
+                    len(texts_to_embed),
+                    len(new_embeddings),
                 )
                 raise ValueError(error_msg)
 
@@ -339,10 +342,7 @@ def generate_embeddings_with_cache(
                 embedding_cache.cache_document_embedding(db, text, embedding)
                 embeddings[idx] = embedding
 
-            logger.debug(
-                "[KnowledgeSpace] Successfully embedded %s texts",
-                len(new_embeddings)
-            )
+            logger.debug("[KnowledgeSpace] Successfully embedded %s texts", len(new_embeddings))
         except DashScopeError as e:
             # Provide user-friendly error message
             error_msg = f"生成向量失败: {e.message}"
@@ -357,10 +357,7 @@ def generate_embeddings_with_cache(
     return embeddings
 
 
-def prepare_qdrant_metadata(
-    chunks: List[Any],
-    document: KnowledgeDocument
-) -> List[dict]:
+def prepare_qdrant_metadata(chunks: List[Any], document: KnowledgeDocument) -> List[dict]:
     """
     Prepare metadata for Qdrant payload.
 
@@ -377,25 +374,25 @@ def prepare_qdrant_metadata(
 
         # Document-level metadata
         if document.category:
-            chunk_meta['category'] = document.category
+            chunk_meta["category"] = document.category
         if document.tags:
-            chunk_meta['tags'] = document.tags
+            chunk_meta["tags"] = document.tags
         if document.file_type:
-            chunk_meta['document_type'] = document.file_type
+            chunk_meta["document_type"] = document.file_type
 
         # Chunk-level structure metadata
         if chunk and chunk.metadata:
             chunk_data = chunk.metadata
-            if 'page_number' in chunk_data:
-                chunk_meta['page_number'] = chunk_data['page_number']
-            if 'section_title' in chunk_data:
-                chunk_meta['section_title'] = chunk_data['section_title']
-            if 'section_level' in chunk_data:
-                chunk_meta['section_level'] = chunk_data['section_level']
-            if 'has_table' in chunk_data:
-                chunk_meta['has_table'] = chunk_data['has_table']
-            if 'has_code' in chunk_data:
-                chunk_meta['has_code'] = chunk_data['has_code']
+            if "page_number" in chunk_data:
+                chunk_meta["page_number"] = chunk_data["page_number"]
+            if "section_title" in chunk_data:
+                chunk_meta["section_title"] = chunk_data["section_title"]
+            if "section_level" in chunk_data:
+                chunk_meta["section_level"] = chunk_data["section_level"]
+            if "has_table" in chunk_data:
+                chunk_meta["has_table"] = chunk_data["has_table"]
+            if "has_code" in chunk_data:
+                chunk_meta["has_code"] = chunk_data["has_code"]
 
         qdrant_metadata.append(chunk_meta)
 

@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Any, Optional, List, TYPE_CHECKING
 import logging
 
@@ -25,10 +26,7 @@ class ContactServiceMixin(GeweServiceBase):
 
     _contact_db: "GeweContactDB"
 
-    async def get_contacts_list(
-        self,
-        app_id: str
-    ) -> Dict[str, Any]:
+    async def get_contacts_list(self, app_id: str) -> Dict[str, Any]:
         """
         Get contacts list from API and cache in database.
 
@@ -46,21 +44,14 @@ class ContactServiceMixin(GeweServiceBase):
             contacts = response.get("data", {}).get("contacts", [])
             if contacts:
                 try:
-                    saved_count = self._contact_db.save_contacts_batch(
-                        app_id=app_id,
-                        contacts=contacts
-                    )
+                    saved_count = self._contact_db.save_contacts_batch(app_id=app_id, contacts=contacts)
                     logger.info("Cached %d contacts for app %s", saved_count, app_id)
                 except Exception as e:
                     logger.warning("Failed to cache contacts: %s", e)
 
         return response
 
-    def get_cached_contact(
-        self,
-        app_id: str,
-        wxid: str
-    ) -> Optional[Dict[str, Any]]:
+    def get_cached_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:
         """
         Get contact from cache.
 
@@ -78,7 +69,7 @@ class ContactServiceMixin(GeweServiceBase):
         app_id: str,
         contact_type: Optional[str] = None,
         offset: Optional[int] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         """
         Get contacts from cache.
@@ -92,74 +83,31 @@ class ContactServiceMixin(GeweServiceBase):
         Returns:
             List of contact dictionaries
         """
-        return self._contact_db.get_contacts(
-            app_id=app_id,
-            contact_type=contact_type,
-            offset=offset,
-            limit=limit
-        )
+        return self._contact_db.get_contacts(app_id=app_id, contact_type=contact_type, offset=offset, limit=limit)
 
-    async def get_contacts_info(
-        self,
-        app_id: str,
-        wxids: list
-    ) -> Dict[str, Any]:
+    async def get_contacts_info(self, app_id: str, wxids: list) -> Dict[str, Any]:
         """Get brief info for contacts."""
         client = self._get_gewe_client()
         return await client.get_brief_info(app_id=app_id, wxids=wxids)
 
-    async def search_contacts(
-        self,
-        app_id: str,
-        contacts_info: str
-    ) -> Dict[str, Any]:
+    async def search_contacts(self, app_id: str, contacts_info: str) -> Dict[str, Any]:
         """Search contacts."""
         client = self._get_gewe_client()
-        return await client.search_contacts(
-            app_id=app_id,
-            contacts_info=contacts_info
-        )
+        return await client.search_contacts(app_id=app_id, contacts_info=contacts_info)
 
     async def add_contacts(
-        self,
-        app_id: str,
-        scene: int,
-        option: int,
-        v3: str,
-        v4: str,
-        content: str
+        self, app_id: str, scene: int, option: int, v3: str, v4: str, content: str
     ) -> Dict[str, Any]:
         """Add contact or agree to friend request."""
         client = self._get_gewe_client()
-        return await client.add_contacts(
-            app_id=app_id,
-            scene=scene,
-            option=option,
-            v3=v3,
-            v4=v4,
-            content=content
-        )
+        return await client.add_contacts(app_id=app_id, scene=scene, option=option, v3=v3, v4=v4, content=content)
 
-    async def delete_friend(
-        self,
-        app_id: str,
-        wxid: str
-    ) -> Dict[str, Any]:
+    async def delete_friend(self, app_id: str, wxid: str) -> Dict[str, Any]:
         """Delete friend."""
         client = self._get_gewe_client()
-        return await client.delete_friend(
-            app_id=app_id,
-            wxid=wxid
-        )
+        return await client.delete_friend(app_id=app_id, wxid=wxid)
 
-    async def check_friend_relationship(
-        self,
-        app_id: str,
-        wxids: list
-    ) -> Dict[str, Any]:
+    async def check_friend_relationship(self, app_id: str, wxids: list) -> Dict[str, Any]:
         """Check friend relationship."""
         client = self._get_gewe_client()
-        return await client.check_friend_relationship(
-            app_id=app_id,
-            wxids=wxids
-        )
+        return await client.check_friend_relationship(app_id=app_id, wxids=wxids)

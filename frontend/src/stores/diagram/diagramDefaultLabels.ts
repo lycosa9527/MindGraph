@@ -178,8 +178,7 @@ export function isTreeMapDefaultNodeLabel(nodeId: string, text: string): boolean
       const leafIdx = parseInt(m[2], 10)
       if (Number.isFinite(catIdx) && Number.isFinite(leafIdx) && catIdx >= 0 && leafIdx >= 0) {
         if (
-          trimmed ===
-          defaultsT('diagram.defaults.itemNM', loc, { n: catIdx + 1, m: leafIdx + 1 })
+          trimmed === defaultsT('diagram.defaults.itemNM', loc, { n: catIdx + 1, m: leafIdx + 1 })
         ) {
           return true
         }
@@ -213,9 +212,7 @@ export function isBraceMapDefaultNodeLabel(nodeId: string, text: string): boolea
       const pi = parseInt(m[1], 10)
       const si = parseInt(m[2], 10)
       if (Number.isFinite(pi) && Number.isFinite(si) && pi >= 0 && si >= 0) {
-        if (
-          trimmed === defaultsT('diagram.defaults.subpartNM', loc, { n: pi + 1, m: si + 1 })
-        ) {
+        if (trimmed === defaultsT('diagram.defaults.subpartNM', loc, { n: pi + 1, m: si + 1 })) {
           return true
         }
       }
@@ -273,9 +270,7 @@ export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean
       const bi = parseInt(m[1], 10)
       const ci = parseInt(m[2], 10)
       if (Number.isFinite(bi) && Number.isFinite(ci) && bi >= 0 && ci >= 0) {
-        if (
-          trimmed === defaultsT('diagram.defaults.childNM', loc, { n: bi + 1, m: ci + 1 })
-        ) {
+        if (trimmed === defaultsT('diagram.defaults.childNM', loc, { n: bi + 1, m: ci + 1 })) {
           return true
         }
       }

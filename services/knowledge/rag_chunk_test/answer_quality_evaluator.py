@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List
 import logging
 import re
@@ -27,11 +28,7 @@ class AnswerQualityEvaluator:
     def __init__(self):
         """Initialize answer quality evaluator."""
 
-    def calculate_answer_coverage(
-        self,
-        retrieved_chunks: List[Chunk],
-        ground_truth_answer: str
-    ) -> float:
+    def calculate_answer_coverage(self, retrieved_chunks: List[Chunk], ground_truth_answer: str) -> float:
         """
         Calculate answer coverage: percentage of answer tokens found in retrieved chunks.
 
@@ -65,11 +62,7 @@ class AnswerQualityEvaluator:
 
         return coverage
 
-    def calculate_answer_completeness(
-        self,
-        retrieved_chunks: List[Chunk],
-        ground_truth_answer: str
-    ) -> float:
+    def calculate_answer_completeness(self, retrieved_chunks: List[Chunk], ground_truth_answer: str) -> float:
         """
         Calculate answer completeness: binary score if full answer is present.
 
@@ -107,7 +100,7 @@ class AnswerQualityEvaluator:
         self,
         retrieved_chunks: List[Chunk],
         ground_truth_answer: str,
-        document_text: str
+        document_text: str,
     ) -> float:
         """
         Calculate context recall: token-level recall of answer-relevant tokens.
@@ -137,9 +130,7 @@ class AnswerQualityEvaluator:
 
         # Find answer-relevant tokens in document
         doc_tokens = self._tokenize(document_text.lower())
-        relevant_doc_tokens = set(
-            token for token in doc_tokens if token in answer_tokens
-        )
+        relevant_doc_tokens = set(token for token in doc_tokens if token in answer_tokens)
 
         if not relevant_doc_tokens:
             return 1.0
@@ -149,10 +140,7 @@ class AnswerQualityEvaluator:
         retrieved_tokens = set(self._tokenize(retrieved_text))
         retrieved_relevant = relevant_doc_tokens & retrieved_tokens
 
-        recall = (
-            len(retrieved_relevant) / len(relevant_doc_tokens)
-            if relevant_doc_tokens else 0.0
-        )
+        recall = len(retrieved_relevant) / len(relevant_doc_tokens) if relevant_doc_tokens else 0.0
 
         return recall
 
@@ -167,7 +155,7 @@ class AnswerQualityEvaluator:
             List of tokens
         """
         # Remove punctuation and split by whitespace
-        text_clean = re.sub(r'[^\w\s]', ' ', text)
+        text_clean = re.sub(r"[^\w\s]", " ", text)
         tokens = text_clean.split()
         # Filter out empty tokens
         return [t for t in tokens if t.strip()]
@@ -192,12 +180,12 @@ class AnswerQualityEvaluator:
 
         # Add bigrams
         for i in range(len(tokens) - 1):
-            bigram = f"{tokens[i]} {tokens[i+1]}"
+            bigram = f"{tokens[i]} {tokens[i + 1]}"
             phrases.append(bigram)
 
         # Add trigrams
         for i in range(len(tokens) - 2):
-            trigram = f"{tokens[i]} {tokens[i+1]} {tokens[i+2]}"
+            trigram = f"{tokens[i]} {tokens[i + 1]} {tokens[i + 2]}"
             phrases.append(trigram)
 
         return phrases

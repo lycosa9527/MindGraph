@@ -392,7 +392,9 @@ export function recalculateTreeMapLayout(
     const leafNodes = nodes
       .filter((n) => {
         const id = n.id ?? ''
-        const m = id.match(new RegExp(`^tree-leaf-${parseInt(catId.replace('tree-cat-', ''), 10)}-(\\d+)$`))
+        const m = id.match(
+          new RegExp(`^tree-leaf-${parseInt(catId.replace('tree-cat-', ''), 10)}-(\\d+)$`)
+        )
         return Boolean(m)
       })
       .sort((a, b) => {

@@ -25,8 +25,9 @@ logger = logging.getLogger(__name__)
 
 class CircuitState:
     """Circuit breaker states."""
-    CLOSED = "closed"      # Normal operation
-    OPEN = "open"          # Failing, block requests
+
+    CLOSED = "closed"  # Normal operation
+    OPEN = "open"  # Failing, block requests
     HALF_OPEN = "half_open"  # Testing if recovered
 
 
@@ -46,7 +47,7 @@ class PerformanceTracker:
         failure_threshold: int = 5,
         success_threshold: int = 2,
         timeout_window: int = 60,
-        circuit_open_duration: int = 30
+        circuit_open_duration: int = 30,
     ):
         """
         Initialize performance tracker.
@@ -73,13 +74,7 @@ class PerformanceTracker:
 
         logger.info("[PerformanceTracker] Initialized")
 
-    def record_request(
-        self,
-        model: str,
-        duration: float,
-        success: bool,
-        error: Optional[str] = None
-    ):
+    def record_request(self, model: str, duration: float, success: bool, error: Optional[str] = None):
         """
         Record a request's performance.
 
@@ -93,16 +88,16 @@ class PerformanceTracker:
             # Initialize model metrics if needed
             if model not in self._metrics:
                 self._metrics[model] = {
-                    'total_requests': 0,
-                    'successful_requests': 0,
-                    'failed_requests': 0,
-                    'total_duration': 0.0,
-                    'min_duration': float('inf'),
-                    'max_duration': 0.0,
-                    'response_times': deque(maxlen=100),  # Last 100 requests
-                    'last_success': None,
-                    'last_failure': None,
-                    'errors': deque(maxlen=10)  # Last 10 errors
+                    "total_requests": 0,
+                    "successful_requests": 0,
+                    "failed_requests": 0,
+                    "total_duration": 0.0,
+                    "min_duration": float("inf"),
+                    "max_duration": 0.0,
+                    "response_times": deque(maxlen=100),  # Last 100 requests
+                    "last_success": None,
+                    "last_failure": None,
+                    "errors": deque(maxlen=10),  # Last 10 errors
                 }
                 self._circuit_states[model] = CircuitState.CLOSED
                 self._recent_failures[model] = deque(maxlen=self.failure_threshold)
@@ -111,11 +106,11 @@ class PerformanceTracker:
             metrics = self._metrics[model]
 
             # Update counters
-            metrics['total_requests'] += 1
+            metrics["total_requests"] += 1
 
             if success:
-                metrics['successful_requests'] += 1
-                metrics['last_success'] = datetime.now()
+                metrics["successful_requests"] += 1
+                metrics["last_success"] = datetime.now()
 
                 # Track recent successes for circuit breaker
                 self._recent_successes[model].append(datetime.now())
@@ -125,14 +120,11 @@ class PerformanceTracker:
                     if len(self._recent_successes[model]) >= self.success_threshold:
                         self._close_circuit(model)
             else:
-                metrics['failed_requests'] += 1
-                metrics['last_failure'] = datetime.now()
+                metrics["failed_requests"] += 1
+                metrics["last_failure"] = datetime.now()
 
                 if error:
-                    metrics['errors'].append({
-                        'timestamp': datetime.now(),
-                        'error': error
-                    })
+                    metrics["errors"].append({"timestamp": datetime.now(), "error": error})
 
                 # Track recent failures for circuit breaker
                 self._recent_failures[model].append(datetime.now())
@@ -142,14 +134,17 @@ class PerformanceTracker:
                     self._open_circuit(model)
 
             # Update duration stats
-            metrics['total_duration'] += duration
-            metrics['min_duration'] = min(metrics['min_duration'], duration)
-            metrics['max_duration'] = max(metrics['max_duration'], duration)
-            metrics['response_times'].append(duration)
+            metrics["total_duration"] += duration
+            metrics["min_duration"] = min(metrics["min_duration"], duration)
+            metrics["max_duration"] = max(metrics["max_duration"], duration)
+            metrics["response_times"].append(duration)
 
             logger.debug(
                 "[PerformanceTracker] %s: success=%s, duration=%.2fs, circuit=%s",
-                model, success, duration, self._circuit_states[model]
+                model,
+                success,
+                duration,
+                self._circuit_states[model],
             )
 
     def _should_open_circuit(self, model: str) -> bool:
@@ -232,28 +227,25 @@ class PerformanceTracker:
             if model:
                 return self._get_model_metrics(model)
             else:
-                return {
-                    model_name: self._get_model_metrics(model_name)
-                    for model_name in self._metrics.keys()
-                }
+                return {model_name: self._get_model_metrics(model_name) for model_name in self._metrics.keys()}
 
     def _get_model_metrics(self, model: str) -> Dict[str, Any]:
         """Get metrics for a specific model."""
         if model not in self._metrics:
             return {
-                'total_requests': 0,
-                'success_rate': 0.0,
-                'circuit_state': CircuitState.CLOSED
+                "total_requests": 0,
+                "success_rate": 0.0,
+                "circuit_state": CircuitState.CLOSED,
             }
 
         metrics = self._metrics[model]
-        total = metrics['total_requests']
-        successful = metrics['successful_requests']
+        total = metrics["total_requests"]
+        successful = metrics["successful_requests"]
 
         # Calculate average response time
         avg_duration = 0.0
         if total > 0:
-            avg_duration = metrics['total_duration'] / total
+            avg_duration = metrics["total_duration"] / total
 
         # Calculate success rate
         success_rate = 0.0
@@ -262,25 +254,24 @@ class PerformanceTracker:
 
         # Get recent average (last 100 requests)
         recent_avg = 0.0
-        if metrics['response_times']:
-            recent_avg = sum(metrics['response_times']) / len(metrics['response_times'])
+        if metrics["response_times"]:
+            recent_avg = sum(metrics["response_times"]) / len(metrics["response_times"])
 
         return {
-            'total_requests': total,
-            'successful_requests': successful,
-            'failed_requests': metrics['failed_requests'],
-            'success_rate': round(success_rate, 2),
-            'avg_response_time': round(avg_duration, 2),
-            'min_response_time': round(metrics['min_duration'], 2) if metrics['min_duration'] != float('inf') else 0.0,
-            'max_response_time': round(metrics['max_duration'], 2),
-            'recent_avg_response_time': round(recent_avg, 2),
-            'circuit_state': self._circuit_states.get(model, CircuitState.CLOSED),
-            'last_success': metrics['last_success'].isoformat() if metrics['last_success'] else None,
-            'last_failure': metrics['last_failure'].isoformat() if metrics['last_failure'] else None,
-            'recent_errors': [
-                {'timestamp': e['timestamp'].isoformat(), 'error': e['error']}
-                for e in list(metrics['errors'])
-            ]
+            "total_requests": total,
+            "successful_requests": successful,
+            "failed_requests": metrics["failed_requests"],
+            "success_rate": round(success_rate, 2),
+            "avg_response_time": round(avg_duration, 2),
+            "min_response_time": round(metrics["min_duration"], 2) if metrics["min_duration"] != float("inf") else 0.0,
+            "max_response_time": round(metrics["max_duration"], 2),
+            "recent_avg_response_time": round(recent_avg, 2),
+            "circuit_state": self._circuit_states.get(model, CircuitState.CLOSED),
+            "last_success": metrics["last_success"].isoformat() if metrics["last_success"] else None,
+            "last_failure": metrics["last_failure"].isoformat() if metrics["last_failure"] else None,
+            "recent_errors": [
+                {"timestamp": e["timestamp"].isoformat(), "error": e["error"]} for e in list(metrics["errors"])
+            ],
         }
 
     def get_fastest_model(self, models: List[str]) -> Optional[str]:
@@ -299,8 +290,8 @@ class PerformanceTracker:
             for model in models:
                 if model in self._metrics:
                     metrics = self._metrics[model]
-                    if metrics['response_times']:
-                        recent_avg = sum(metrics['response_times']) / len(metrics['response_times'])
+                    if metrics["response_times"]:
+                        recent_avg = sum(metrics["response_times"]) / len(metrics["response_times"])
                         valid_models.append((model, recent_avg))
 
             if not valid_models:
@@ -338,4 +329,3 @@ class PerformanceTracker:
 
 # Singleton instance
 performance_tracker = PerformanceTracker()
-

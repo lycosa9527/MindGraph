@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Any, List, Optional
 import logging
 import math
@@ -22,7 +23,7 @@ from models.domain.knowledge_space import (
     KnowledgeSpace,
     KnowledgeQuery,
     EvaluationDataset,
-    EvaluationResult
+    EvaluationResult,
 )
 from services.llm.rag_service import get_rag_service, RerankMode
 
@@ -48,7 +49,7 @@ class RetrievalTestService:
         query: str,
         method: str = "hybrid",
         top_k: int = 5,
-        score_threshold: float = 0.0
+        score_threshold: float = 0.0,
     ) -> Dict[str, Any]:
         """
         Test retrieval for user's knowledge base.
@@ -84,7 +85,7 @@ class RetrievalTestService:
                     "[RAG] ✓ Embedding: query='%s...', dims=%d, time=%.0fms",
                     query[:30],
                     len(query_embedding),
-                    timing['embedding_ms']
+                    timing["embedding_ms"],
                 )
             except Exception as emb_error:
                 timing["embedding_ms"] = (time.time() - embedding_start) * 1000
@@ -105,7 +106,7 @@ class RetrievalTestService:
                     "[RAG] ✓ Search (%s): found %d chunks, time=%.0fms",
                     method,
                     len(chunk_ids),
-                    timing['search_ms']
+                    timing["search_ms"],
                 )
             except Exception as search_error:
                 timing["search_ms"] = (time.time() - search_start) * 1000
@@ -113,21 +114,19 @@ class RetrievalTestService:
                 raise
 
             # Lookup chunks
-            chunks = db.query(DocumentChunk).filter(
-                DocumentChunk.id.in_(chunk_ids)
-            ).all()
+            chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).all()
 
             logger.debug(
                 "[RAG] database lookup: %d chunks from %d IDs",
                 len(chunks),
-                len(chunk_ids)
+                len(chunk_ids),
             )
 
             # Get document info
             document_ids = list(set(chunk.document_id for chunk in chunks))
-            documents = {doc.id: doc for doc in db.query(KnowledgeDocument).filter(
-                KnowledgeDocument.id.in_(document_ids)
-            ).all()}
+            documents = {
+                doc.id: doc for doc in db.query(KnowledgeDocument).filter(KnowledgeDocument.id.in_(document_ids)).all()
+            }
 
             # Prepare results
             results = []
@@ -143,14 +142,14 @@ class RetrievalTestService:
                         query=query,
                         documents=texts,
                         top_n=top_k,
-                        score_threshold=score_threshold
+                        score_threshold=score_threshold,
                     )
                     timing["rerank_ms"] = (time.time() - rerank_start) * 1000
                     logger.info(
                         "[RAG] ✓ Rerank: %d docs → %d results, time=%.0fms",
                         len(texts),
                         len(reranked),
-                        timing['rerank_ms']
+                        timing["rerank_ms"],
                     )
                 except Exception as rerank_error:
                     timing["rerank_ms"] = (time.time() - rerank_start) * 1000
@@ -163,17 +162,19 @@ class RetrievalTestService:
                     if idx < len(chunks):
                         chunk = chunks[idx]
                         doc = documents.get(chunk.document_id)
-                        results.append({
-                            "chunk_id": chunk.id,
-                            "text": chunk.text,
-                            "score": item["score"],
-                            "document_id": chunk.document_id,
-                            "document_name": doc.file_name if doc else "Unknown",
-                            "chunk_index": chunk.chunk_index,
-                            "start_char": chunk.start_char,
-                            "end_char": chunk.end_char,
-                            "metadata": {},
-                        })
+                        results.append(
+                            {
+                                "chunk_id": chunk.id,
+                                "text": chunk.text,
+                                "score": item["score"],
+                                "document_id": chunk.document_id,
+                                "document_name": doc.file_name if doc else "Unknown",
+                                "chunk_index": chunk.chunk_index,
+                                "start_char": chunk.start_char,
+                                "end_char": chunk.end_char,
+                                "metadata": {},
+                            }
+                        )
             else:
                 timing["rerank_ms"] = 0
                 # Use original order (weighted_score or none mode)
@@ -181,18 +182,20 @@ class RetrievalTestService:
                 for chunk in chunks[:top_k]:
                     doc = documents.get(chunk.document_id)
                     # Try to get score from chunk metadata if available
-                    score = getattr(chunk, 'score', 0.5) if hasattr(chunk, 'score') else 0.5
-                    results.append({
-                        "chunk_id": chunk.id,
-                        "text": chunk.text,
-                        "score": score,
-                        "document_id": chunk.document_id,
-                        "document_name": doc.file_name if doc else "Unknown",
-                        "chunk_index": chunk.chunk_index,
-                        "start_char": chunk.start_char,
-                        "end_char": chunk.end_char,
-                        "metadata": chunk.metadata or {},
-                    })
+                    score = getattr(chunk, "score", 0.5) if hasattr(chunk, "score") else 0.5
+                    results.append(
+                        {
+                            "chunk_id": chunk.id,
+                            "text": chunk.text,
+                            "score": score,
+                            "document_id": chunk.document_id,
+                            "document_name": doc.file_name if doc else "Unknown",
+                            "chunk_index": chunk.chunk_index,
+                            "start_char": chunk.start_char,
+                            "end_char": chunk.end_char,
+                            "metadata": chunk.metadata or {},
+                        }
+                    )
 
             timing["total_ms"] = (time.time() - start_time) * 1000
 
@@ -202,10 +205,10 @@ class RetrievalTestService:
                 "total=%.0fms (embed=%.0fms, search=%.0fms, rerank=%.0fms)",
                 query[:30],
                 len(results),
-                timing['total_ms'],
-                timing.get('embedding_ms', 0),
-                timing.get('search_ms', 0),
-                timing.get('rerank_ms', 0)
+                timing["total_ms"],
+                timing.get("embedding_ms", 0),
+                timing.get("search_ms", 0),
+                timing.get("rerank_ms", 0),
             )
 
             # Stats
@@ -233,8 +236,8 @@ class RetrievalTestService:
                         search_ms=timing.get("search_ms"),
                         rerank_ms=timing.get("rerank_ms"),
                         total_ms=timing.get("total_ms"),
-                        source='retrieval_test',
-                        source_context={'test': True}
+                        source="retrieval_test",
+                        source_context={"test": True},
                     )
                     db.add(query_record)
                     db.flush()  # Flush to get the ID
@@ -242,11 +245,16 @@ class RetrievalTestService:
                     # Keep only the most recent 10 retrieval test queries
                     # Delete older ones to save server resources
                     # Get all retrieval test queries except the one we just added, ordered by newest first
-                    all_old_queries = db.query(KnowledgeQuery).filter(
-                        KnowledgeQuery.space_id == space.id,
-                        KnowledgeQuery.source == 'retrieval_test',
-                        KnowledgeQuery.id != query_record.id  # Exclude the one we just added
-                    ).order_by(KnowledgeQuery.created_at.desc()).all()
+                    all_old_queries = (
+                        db.query(KnowledgeQuery)
+                        .filter(
+                            KnowledgeQuery.space_id == space.id,
+                            KnowledgeQuery.source == "retrieval_test",
+                            KnowledgeQuery.id != query_record.id,  # Exclude the one we just added
+                        )
+                        .order_by(KnowledgeQuery.created_at.desc())
+                        .all()
+                    )
 
                     # Keep the first 9 (most recent), delete the rest
                     if len(all_old_queries) > 9:
@@ -256,9 +264,8 @@ class RetrievalTestService:
 
                     db.commit()
                     logger.debug(
-                        "[RetrievalTest] Recorded query and cleaned up old queries. "
-                        "Total retrieval test queries: %d",
-                        10
+                        "[RetrievalTest] Recorded query and cleaned up old queries. Total retrieval test queries: %d",
+                        10,
                     )
             except Exception as e:
                 db.rollback()
@@ -337,7 +344,7 @@ class RetrievalTestService:
         self,
         retrieved_chunk_ids: List[int],
         relevance_scores: Dict[int, float],
-        k: Optional[int] = None
+        k: Optional[int] = None,
     ) -> float:
         """
         Calculate Normalized Discounted Cumulative Gain (NDCG).
@@ -386,12 +393,7 @@ class RetrievalTestService:
             return 0.0
         return 2 * (precision * recall) / (precision + recall)
 
-    def calculate_precision_at_k(
-        self,
-        retrieved_chunk_ids: List[int],
-        relevant_chunk_ids: List[int],
-        k: int
-    ) -> float:
+    def calculate_precision_at_k(self, retrieved_chunk_ids: List[int], relevant_chunk_ids: List[int], k: int) -> float:
         """
         Calculate precision at K: relevant retrieved in top K / K.
 
@@ -412,12 +414,7 @@ class RetrievalTestService:
 
         return relevant_retrieved / k
 
-    def calculate_recall_at_k(
-        self,
-        retrieved_chunk_ids: List[int],
-        relevant_chunk_ids: List[int],
-        k: int
-    ) -> float:
+    def calculate_recall_at_k(self, retrieved_chunk_ids: List[int], relevant_chunk_ids: List[int], k: int) -> float:
         """
         Calculate recall at K: relevant retrieved in top K / total relevant.
 
@@ -441,12 +438,7 @@ class RetrievalTestService:
 
         return relevant_retrieved / len(relevant_chunk_ids)
 
-    def calculate_hit_rate_at_k(
-        self,
-        retrieved_chunk_ids: List[int],
-        relevant_chunk_ids: List[int],
-        k: int
-    ) -> float:
+    def calculate_hit_rate_at_k(self, retrieved_chunk_ids: List[int], relevant_chunk_ids: List[int], k: int) -> float:
         """
         Calculate hit rate at K: 1.0 if at least one relevant in top K, else 0.0.
 
@@ -469,11 +461,7 @@ class RetrievalTestService:
 
         return 1.0 if any(cid in relevant_set for cid in top_k) else 0.0
 
-    def calculate_map(
-        self,
-        retrieved_lists: List[List[int]],
-        relevant_lists: List[List[int]]
-    ) -> float:
+    def calculate_map(self, retrieved_lists: List[List[int]], relevant_lists: List[List[int]]) -> float:
         """
         Calculate Mean Average Precision (MAP) across multiple queries.
 
@@ -488,9 +476,7 @@ class RetrievalTestService:
             return 0.0
 
         if len(retrieved_lists) != len(relevant_lists):
-            raise ValueError(
-                "retrieved_lists and relevant_lists must have same length"
-            )
+            raise ValueError("retrieved_lists and relevant_lists must have same length")
 
         average_precisions = []
 
@@ -521,7 +507,7 @@ class RetrievalTestService:
         self,
         retrieved_chunk_ids: List[int],
         expected_chunk_ids: List[int],
-        relevance_scores: Optional[Dict[int, float]] = None
+        relevance_scores: Optional[Dict[int, float]] = None,
     ) -> Dict[str, Any]:
         """
         Calculate all quality metrics for retrieval results.
@@ -550,17 +536,9 @@ class RetrievalTestService:
         # Calculate Precision@K and Recall@K for different K values
         k_values = [1, 3, 5, 10]
         precision_at_k = {
-            k: self.calculate_precision_at_k(
-                retrieved_chunk_ids, expected_chunk_ids, k
-            )
-            for k in k_values
+            k: self.calculate_precision_at_k(retrieved_chunk_ids, expected_chunk_ids, k) for k in k_values
         }
-        recall_at_k = {
-            k: self.calculate_recall_at_k(
-                retrieved_chunk_ids, expected_chunk_ids, k
-            )
-            for k in k_values
-        }
+        recall_at_k = {k: self.calculate_recall_at_k(retrieved_chunk_ids, expected_chunk_ids, k) for k in k_values}
 
         return {
             "precision": precision,
@@ -569,16 +547,10 @@ class RetrievalTestService:
             "ndcg": ndcg,
             "f1": f1,
             "precision_at_k": precision_at_k,
-            "recall_at_k": recall_at_k
+            "recall_at_k": recall_at_k,
         }
 
-    def run_evaluation(
-        self,
-        db: Session,
-        user_id: int,
-        dataset_id: int,
-        method: str = "hybrid"
-    ) -> Dict[str, Any]:
+    def run_evaluation(self, db: Session, user_id: int, dataset_id: int, method: str = "hybrid") -> Dict[str, Any]:
         """
         Run evaluation on a dataset.
 
@@ -591,10 +563,11 @@ class RetrievalTestService:
         Returns:
             Dict with evaluation results
         """
-        dataset = db.query(EvaluationDataset).filter(
-            EvaluationDataset.id == dataset_id,
-            EvaluationDataset.user_id == user_id
-        ).first()
+        dataset = (
+            db.query(EvaluationDataset)
+            .filter(EvaluationDataset.id == dataset_id, EvaluationDataset.user_id == user_id)
+            .first()
+        )
 
         if not dataset:
             raise ValueError(f"Dataset {dataset_id} not found")
@@ -627,29 +600,18 @@ class RetrievalTestService:
                 metrics = self.calculate_quality_metrics(
                     retrieved_chunk_ids=chunk_ids,
                     expected_chunk_ids=expected_chunk_ids,
-                    relevance_scores=relevance_scores if relevance_scores else None
+                    relevance_scores=relevance_scores if relevance_scores else None,
                 )
 
                 all_metrics.append(metrics)
-                results.append({
-                    "query": query,
-                    "metrics": metrics
-                })
+                results.append({"query": query, "metrics": metrics})
 
                 # Record evaluation result
-                eval_result = EvaluationResult(
-                    dataset_id=dataset_id,
-                    method=method,
-                    metrics=metrics
-                )
+                eval_result = EvaluationResult(dataset_id=dataset_id, method=method, metrics=metrics)
                 db.add(eval_result)
 
             except Exception as e:
-                logger.error(
-                    "[RetrievalTest] Failed to evaluate query '%s': %s",
-                    query,
-                    e
-                )
+                logger.error("[RetrievalTest] Failed to evaluate query '%s': %s", query, e)
                 continue
 
         db.commit()
@@ -671,12 +633,12 @@ class RetrievalTestService:
             "total_queries": len(dataset.queries),
             "evaluated_queries": len(results),
             "average_metrics": avg_metrics,
-            "query_results": results
+            "query_results": results,
         }
 
 
 def get_retrieval_test_service() -> RetrievalTestService:
     """Get global retrieval test service instance."""
-    if not hasattr(get_retrieval_test_service, 'instance'):
+    if not hasattr(get_retrieval_test_service, "instance"):
         get_retrieval_test_service.instance = RetrievalTestService()
     return get_retrieval_test_service.instance

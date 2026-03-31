@@ -44,7 +44,7 @@ class TeachingChunker:
         document_id: str,
         extract_concepts: bool = True,
         detect_content_types: bool = True,
-        **kwargs
+        **kwargs,
     ) -> List[TeachingChunk]:
         """
         Chunk teaching materials with enhancements.
@@ -64,7 +64,7 @@ class TeachingChunker:
             text,
             document_id,
             structure_type="parent_child",  # Teaching materials usually hierarchical
-            **kwargs
+            **kwargs,
         )
 
         # Step 2: Convert to TeachingChunks and enhance
@@ -109,10 +109,9 @@ class TeachingChunker:
             concepts = await self.concept_extractor.extract_concepts(text)
             # Associate concepts with chunks (simplified)
             for chunk in teaching_chunks:
-                chunk.key_concepts = [
-                    c.name for c in concepts
-                    if c.name.lower() in chunk.text.lower()
-                ][:5]  # Limit to 5 concepts per chunk
+                chunk.key_concepts = [c.name for c in concepts if c.name.lower() in chunk.text.lower()][
+                    :5
+                ]  # Limit to 5 concepts per chunk
 
         chunks_count = len(teaching_chunks)
         logger.info("Created %s teaching chunks", chunks_count)
@@ -121,7 +120,7 @@ class TeachingChunker:
     def _extract_code_block(self, text: str) -> Optional[CodeBlock]:
         """Extract code block from text."""
         # Markdown code blocks
-        pattern = r'```(\w+)?\n(.*?)```'
+        pattern = r"```(\w+)?\n(.*?)```"
         match = re.search(pattern, text, re.DOTALL)
 
         if match:
@@ -131,7 +130,7 @@ class TeachingChunker:
                 code=code,
                 language=language,
                 start_pos=match.start(),
-                end_pos=match.end()
+                end_pos=match.end(),
             )
 
         return None
@@ -139,7 +138,7 @@ class TeachingChunker:
     def _extract_formula(self, text: str) -> Optional[Formula]:
         """Extract formula from text."""
         # LaTeX inline: $...$
-        latex_inline = r'\$([^$]+)\$'
+        latex_inline = r"\$([^$]+)\$"
         match = re.search(latex_inline, text)
 
         if match:
@@ -147,11 +146,11 @@ class TeachingChunker:
                 formula=match.group(1),
                 format="latex",
                 start_pos=match.start(),
-                end_pos=match.end()
+                end_pos=match.end(),
             )
 
         # LaTeX block: $$...$$
-        latex_block = r'\$\$([^$]+)\$\$'
+        latex_block = r"\$\$([^$]+)\$\$"
         match = re.search(latex_block, text)
 
         if match:
@@ -159,7 +158,7 @@ class TeachingChunker:
                 formula=match.group(1),
                 format="latex",
                 start_pos=match.start(),
-                end_pos=match.end()
+                end_pos=match.end(),
             )
 
         return None

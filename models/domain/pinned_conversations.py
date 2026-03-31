@@ -1,10 +1,3 @@
-from datetime import datetime
-
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
-from sqlalchemy.orm import relationship
-
-from models.domain.auth import Base
-
 """
 Pinned Conversations Model for MindGraph
 Author: lycosa9527
@@ -19,7 +12,12 @@ All Rights Reserved
 Proprietary License
 """
 
+from datetime import datetime
 
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
+from sqlalchemy.orm import relationship
+
+from models.domain.auth import Base
 
 
 class PinnedConversation(Base):
@@ -29,6 +27,7 @@ class PinnedConversation(Base):
     Each record represents a pinned conversation for a specific user.
     The conversation_id references the Dify conversation ID (UUID string).
     """
+
     __tablename__ = "pinned_conversations"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -40,6 +39,4 @@ class PinnedConversation(Base):
     user = relationship("User", backref="pinned_conversations")
 
     # Composite unique constraint: one pin per user per conversation
-    __table_args__ = (
-        Index('ix_pinned_conv_user_conv', 'user_id', 'conversation_id', unique=True),
-    )
+    __table_args__ = (Index("ix_pinned_conv_user_conv", "user_id", "conversation_id", unique=True),)

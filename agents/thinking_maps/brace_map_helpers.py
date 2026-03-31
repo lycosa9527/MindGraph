@@ -4,6 +4,7 @@ Brace map helper classes.
 Contains ContextManager, CollisionDetector, LLMHybridProcessor,
 and ContextAwareAlgorithmSelector used by the brace map agent.
 """
+
 from datetime import datetime
 from typing import Dict, List, Optional, Tuple
 
@@ -27,11 +28,13 @@ class ContextManager:
         if user_id not in self.user_contexts:
             self.user_contexts[user_id] = []
 
-        self.user_contexts[user_id].append({
-            'prompt': prompt,
-            'diagram_type': diagram_type,
-            'timestamp': datetime.now().isoformat()
-        })
+        self.user_contexts[user_id].append(
+            {
+                "prompt": prompt,
+                "diagram_type": diagram_type,
+                "timestamp": datetime.now().isoformat(),
+            }
+        )
 
         if len(self.user_contexts[user_id]) > 10:
             self.user_contexts[user_id] = self.user_contexts[user_id][-10:]
@@ -39,15 +42,15 @@ class ContextManager:
     def get_user_context(self, user_id: str) -> Dict:
         """Get user context for personalization"""
         if user_id not in self.user_contexts:
-            return {'recent_prompts': [], 'preferences': {}}
+            return {"recent_prompts": [], "preferences": {}}
 
         recent_prompts = self.user_contexts[user_id]
         preferences = self.user_preferences.get(user_id, {})
 
         return {
-            'recent_prompts': recent_prompts,
-            'preferences': preferences,
-            'session_id': self._get_current_session(user_id)
+            "recent_prompts": recent_prompts,
+            "preferences": preferences,
+            "session_id": self._get_current_session(user_id),
         }
 
     def update_preferences(self, user_id: str, preferences: Dict) -> None:
@@ -59,7 +62,7 @@ class ContextManager:
     def alter_diagram_based_on_context(self, spec: Dict, context: Dict) -> Dict:
         """Alter diagram specification based on user context"""
         altered_spec = spec.copy()
-        recent_prompts = context.get('recent_prompts', [])
+        recent_prompts = context.get("recent_prompts", [])
         if recent_prompts:
             common_themes = self._extract_common_themes(recent_prompts)
             if common_themes:
@@ -74,13 +77,13 @@ class ContextManager:
         """Extract common themes from recent prompts"""
         themes = []
         for prompt_data in recent_prompts:
-            prompt = prompt_data['prompt'].lower()
-            if 'science' in prompt:
-                themes.append('science')
-            if 'business' in prompt:
-                themes.append('business')
-            if 'education' in prompt:
-                themes.append('education')
+            prompt = prompt_data["prompt"].lower()
+            if "science" in prompt:
+                themes.append("science")
+            if "business" in prompt:
+                themes.append("business")
+            if "education" in prompt:
+                themes.append("education")
         return list(set(themes))
 
 
@@ -89,13 +92,12 @@ class CollisionDetector:
 
     @staticmethod
     def detect_node_collisions(
-        nodes: List[NodePosition],
-        padding: float = 10.0
+        nodes: List[NodePosition], padding: float = 10.0
     ) -> List[Tuple[NodePosition, NodePosition]]:
         """Detect overlapping nodes"""
         collisions = []
         for i, node1 in enumerate(nodes):
-            for node2 in nodes[i+1:]:
+            for node2 in nodes[i + 1 :]:
                 if CollisionDetector._nodes_overlap(node1, node2, padding):
                     collisions.append((node1, node2))
         return collisions
@@ -121,8 +123,10 @@ class CollisionDetector:
     @staticmethod
     def _nodes_overlap(node1: NodePosition, node2: NodePosition, padding: float) -> bool:
         """Check if two nodes overlap"""
-        return (abs(node1.x - node2.x) < (node1.width + node2.width) / 2 + padding and
-                abs(node1.y - node2.y) < (node1.height + node2.height) / 2 + padding)
+        return (
+            abs(node1.x - node2.x) < (node1.width + node2.width) / 2 + padding
+            and abs(node1.y - node2.y) < (node1.height + node2.height) / 2 + padding
+        )
 
     @staticmethod
     def _resolve_collision(node1: NodePosition, node2: NodePosition, padding: float) -> None:
@@ -130,7 +134,7 @@ class CollisionDetector:
         dx = node2.x - node1.x
         dy = node2.y - node1.y
 
-        if node2.node_type == 'subpart' or node1.node_type == 'subpart':
+        if node2.node_type == "subpart" or node1.node_type == "subpart":
             if dy >= 0:
                 node2.y = node1.y + (node1.height + node2.height) / 2 + padding
             else:
@@ -153,10 +157,8 @@ class LLMHybridProcessor:
 
     def analyze_complexity(self, spec: Dict) -> LayoutComplexity:
         """Analyze content complexity for layout strategy"""
-        total_parts = len(spec.get('parts', []))
-        total_subparts = sum(
-            len(part.get('subparts', [])) for part in spec.get('parts', [])
-        )
+        total_parts = len(spec.get("parts", []))
+        total_subparts = sum(len(part.get("subparts", [])) for part in spec.get("parts", []))
         total_elements = total_parts + total_subparts
 
         if total_elements <= 5:
@@ -165,9 +167,7 @@ class LLMHybridProcessor:
             return LayoutComplexity.MODERATE
         return LayoutComplexity.COMPLEX
 
-    def determine_strategy(
-        self, complexity: LayoutComplexity, _user_preferences: Optional[Dict] = None
-    ) -> LLMStrategy:
+    def determine_strategy(self, complexity: LayoutComplexity, _user_preferences: Optional[Dict] = None) -> LLMStrategy:
         """Determine LLM processing strategy"""
         if complexity == LayoutComplexity.SIMPLE:
             return LLMStrategy.PYTHON_ONLY

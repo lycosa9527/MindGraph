@@ -33,8 +33,6 @@ Proprietary License
 """
 
 
-
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["Update Notification"])
@@ -48,8 +46,10 @@ ANNOUNCEMENT_IMAGES_DIR.mkdir(parents=True, exist_ok=True)
 # PYDANTIC MODELS
 # ============================================================================
 
+
 class NotificationResponse(BaseModel):
     """Response model for notification content."""
+
     version: str
     title: str
     title_en: str
@@ -62,6 +62,7 @@ class NotificationResponse(BaseModel):
 
 class NotificationConfigResponse(BaseModel):
     """Response model for full notification configuration (admin)."""
+
     enabled: bool
     version: str
     title: str
@@ -77,6 +78,7 @@ class NotificationConfigResponse(BaseModel):
 
 class NotificationSetRequest(BaseModel):
     """Request model for setting notification (admin)."""
+
     enabled: bool
     version: str = ""
     title: str = ""
@@ -92,10 +94,9 @@ class NotificationSetRequest(BaseModel):
 # USER ENDPOINTS
 # ============================================================================
 
+
 @router.get("/api/update-notification")
-async def get_update_notification(
-    current_user: User = Depends(get_current_user)
-):
+async def get_update_notification(current_user: User = Depends(get_current_user)):
     """
     Get update notification for current user.
 
@@ -114,14 +115,12 @@ async def get_update_notification(
         logger.error("Failed to get notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get notification"
-        )
+            detail="Failed to get notification",
+        ) from e
 
 
 @router.post("/api/update-notification/dismiss")
-async def dismiss_update_notification(
-    current_user: User = Depends(get_current_user)
-):
+async def dismiss_update_notification(current_user: User = Depends(get_current_user)):
     """
     Dismiss the update notification for current user.
 
@@ -135,7 +134,7 @@ async def dismiss_update_notification(
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to dismiss notification"
+                detail="Failed to dismiss notification",
             )
 
     except HTTPException:
@@ -144,28 +143,24 @@ async def dismiss_update_notification(
         logger.error("Failed to dismiss notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to dismiss notification"
-        )
+            detail="Failed to dismiss notification",
+        ) from e
 
 
 # ============================================================================
 # ADMIN ENDPOINTS
 # ============================================================================
 
+
 @router.get("/api/admin/update-notification")
-async def get_notification_config(
-    current_user: User = Depends(get_current_user)
-):
+async def get_notification_config(current_user: User = Depends(get_current_user)):
     """
     Get full notification configuration (ADMIN ONLY).
 
     Returns current notification settings including dismissed count.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         notification = update_notifier.get_notification()
@@ -182,32 +177,26 @@ async def get_notification_config(
             "changelog_items": notification.get("changelog_items", []),
             "changelog_items_en": notification.get("changelog_items_en", []),
             "updated_at": notification.get("updated_at"),
-            "dismissed_count": dismissed_count
+            "dismissed_count": dismissed_count,
         }
 
     except Exception as e:
         logger.error("Failed to get notification config: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to get notification config"
-        )
+            detail="Failed to get notification config",
+        ) from e
 
 
 @router.put("/api/admin/update-notification")
-async def set_notification_config(
-    request: NotificationSetRequest,
-    current_user: User = Depends(get_current_user)
-):
+async def set_notification_config(request: NotificationSetRequest, current_user: User = Depends(get_current_user)):
     """
     Set or update notification configuration (ADMIN ONLY).
 
     When version changes, all users will see the notification again.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         notification = update_notifier.set_notification(
@@ -219,71 +208,62 @@ async def set_notification_config(
             message_en=request.message_en,
             show_changelog=request.show_changelog,
             changelog_items=request.changelog_items,
-            changelog_items_en=request.changelog_items_en
+            changelog_items_en=request.changelog_items_en,
         )
 
-        logger.info("Admin %s updated notification: enabled=%s", current_user.phone, request.enabled)
+        logger.info(
+            "Admin %s updated notification: enabled=%s",
+            current_user.phone,
+            request.enabled,
+        )
 
         return {
             "message": "Notification updated successfully",
-            "notification": notification
+            "notification": notification,
         }
 
     except Exception as e:
         logger.error("Failed to set notification config: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to set notification config"
-        )
+            detail="Failed to set notification config",
+        ) from e
 
 
 @router.delete("/api/admin/update-notification")
-async def disable_notification(
-    current_user: User = Depends(get_current_user)
-):
+async def disable_notification(current_user: User = Depends(get_current_user)):
     """
     Disable the update notification (ADMIN ONLY).
 
     Quick way to turn off notification without changing content.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         notification = update_notifier.disable_notification()
 
         logger.info("Admin %s disabled update notification", current_user.phone)
 
-        return {
-            "message": "Notification disabled",
-            "notification": notification
-        }
+        return {"message": "Notification disabled", "notification": notification}
 
     except Exception as e:
         logger.error("Failed to disable notification: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to disable notification"
-        )
+            detail="Failed to disable notification",
+        ) from e
 
 
 @router.post("/api/admin/update-notification/reset-dismissed")
-async def reset_dismissed(
-    current_user: User = Depends(get_current_user)
-):
+async def reset_dismissed(current_user: User = Depends(get_current_user)):
     """
     Reset all dismissed states (ADMIN ONLY).
 
     All users will see the notification again, even if they dismissed it.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
         success = update_notifier.clear_dismissed()
@@ -294,7 +274,7 @@ async def reset_dismissed(
         else:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to reset dismissed states"
+                detail="Failed to reset dismissed states",
             )
 
     except HTTPException:
@@ -303,15 +283,12 @@ async def reset_dismissed(
         logger.error("Failed to reset dismissed: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reset dismissed states"
-        )
+            detail="Failed to reset dismissed states",
+        ) from e
 
 
 @router.post("/api/admin/update-notification/upload-image")
-async def upload_announcement_image(
-    file: UploadFile = File(...),
-    current_user: User = Depends(get_current_user)
-):
+async def upload_announcement_image(file: UploadFile = File(...), current_user: User = Depends(get_current_user)):
     """
     Upload an image for the announcement (ADMIN ONLY).
 
@@ -319,26 +296,20 @@ async def upload_announcement_image(
     Returns the URL to embed in the announcement.
     """
     if not is_admin(current_user):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Admin access required"
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     # Validate file type
     allowed_types = ["image/png", "image/jpeg", "image/jpg", "image/gif", "image/webp"]
     if file.content_type not in allowed_types:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="只支持 PNG, JPG, GIF, WebP 图片格式"
+            detail="只支持 PNG, JPG, GIF, WebP 图片格式",
         )
 
     # Validate file size (5MB max)
     contents = await file.read()
     if len(contents) > 5 * 1024 * 1024:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="图片大小不能超过 5MB"
-        )
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="图片大小不能超过 5MB")
 
     try:
         # Generate unique filename
@@ -355,15 +326,8 @@ async def upload_announcement_image(
 
         logger.info("Admin %s uploaded announcement image: %s", current_user.phone, filename)
 
-        return {
-            "url": image_url,
-            "filename": filename
-        }
+        return {"url": image_url, "filename": filename}
 
     except Exception as e:
         logger.error("Failed to upload image: %s", e)
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="图片上传失败"
-        )
-
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="图片上传失败") from e

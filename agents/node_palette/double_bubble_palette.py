@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from asyncio import Queue, create_task, gather
 from dataclasses import dataclass
 from typing import Optional, Dict, Any, AsyncGenerator
@@ -23,6 +24,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class _PromptParams:
     """Parameters for building Double Bubble Map prompts."""
+
     left_topic: str
     right_topic: str
     context_desc: str
@@ -69,10 +71,10 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
         Args:
             _mode: 'similarities' | 'differences' | 'both' (both = concurrent generation)
         """
-        mode = _mode if _mode is not None else 'similarities'
+        mode = _mode if _mode is not None else "similarities"
         self.current_mode[session_id] = mode
 
-        if mode == 'both':
+        if mode == "both":
             async for chunk in self._generate_both(
                 session_id=session_id,
                 center_topic=center_topic,
@@ -89,7 +91,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
         if educational_context is None:
             educational_context = {}
         educational_context = dict(educational_context)
-        educational_context['_mode'] = mode
+        educational_context["_mode"] = mode
 
         # Call parent's generate_batch (handles LLM streaming)
         async for chunk in super().generate_batch(
@@ -103,32 +105,33 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
             user_id=user_id,
             organization_id=organization_id,
             diagram_type=diagram_type,
-            endpoint_path=endpoint_path
+            endpoint_path=endpoint_path,
         ):
             # Add mode field to every node for explicit tracking
-            if chunk.get('event') == 'node_generated':
-                node = chunk.get('node', {})
-                node['mode'] = mode  # Tag node with its generation mode
+            if chunk.get("event") == "node_generated":
+                node = chunk.get("node", {})
+                node["mode"] = mode  # Tag node with its generation mode
                 logger.debug(
                     "[DoubleBubble] Node tagged with mode='%s' | ID: %s",
-                    mode, node.get('id', 'unknown')
+                    mode,
+                    node.get("id", "unknown"),
                 )
 
             # For similarities mode, filter out any pipe-separated format (wrong format)
-            if mode == 'similarities' and chunk.get('event') == 'node_generated':
-                node = chunk.get('node', {})
-                text = node.get('text', '')
+            if mode == "similarities" and chunk.get("event") == "node_generated":
+                node = chunk.get("node", {})
+                text = node.get("text", "")
 
                 # Similarities should be simple text - skip if it has pipe separator
-                if '|' in text:
+                if "|" in text:
                     logger.warning(
                         "[DoubleBubble] SIMILARITIES mode - skipping node with pipe separator: '%s'",
-                        text
+                        text,
                     )
                     continue  # Skip this node
 
             # For differences mode, parse pipe-separated pairs and add left/right fields
-            if mode == 'differences' and chunk.get('event') == 'node_generated':
+            if mode == "differences" and chunk.get("event") == "node_generated":
                 if self._process_differences_node(chunk, center_topic):
                     continue
 
@@ -155,7 +158,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                 async for chunk in self.generate_batch(
                     session_id=sub_id,
                     center_topic=center_topic,
-                    educational_context={**ctx, '_mode': mode_val},
+                    educational_context={**ctx, "_mode": mode_val},
                     nodes_per_llm=nodes_per_llm,
                     _mode=mode_val,
                     user_id=user_id,
@@ -163,17 +166,17 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
                     diagram_type=diagram_type,
                     endpoint_path=endpoint_path,
                 ):
-                    await queue.put(('chunk', chunk))
+                    await queue.put(("chunk", chunk))
             finally:
-                await queue.put(('done', mode_val))
+                await queue.put(("done", mode_val))
 
-        t1 = create_task(run_mode('similarities'))
-        t2 = create_task(run_mode('differences'))
+        t1 = create_task(run_mode("similarities"))
+        t2 = create_task(run_mode("differences"))
 
         done_count = 0
         while done_count < 2:
             kind, data = await queue.get()
-            if kind == 'done':
+            if kind == "done":
                 done_count += 1
             else:
                 yield data
@@ -188,19 +191,19 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
         Process a differences-mode node: parse pipe-separated format, validate, add fields.
         Returns True if the node should be skipped, False to yield it.
         """
-        node = chunk.get('node', {})
-        text = node.get('text', '')
+        node = chunk.get("node", {})
+        text = node.get("text", "")
 
         logger.debug("[DoubleBubble] DIFFERENCES mode - processing node with text: '%s'", text)
 
-        if '|' not in text:
+        if "|" not in text:
             logger.warning(
                 "[DoubleBubble] DIFFERENCES mode - skipping node without pipe separator: '%s'",
-                text
+                text,
             )
             return True
 
-        parts = text.split('|')
+        parts = text.split("|")
         if len(parts) < 2:
             logger.warning("[DoubleBubble] DIFFERENCES mode - skipping malformed node: '%s'", text)
             return True
@@ -215,24 +218,28 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
         should_skip = (
             (left_text.lower() == left_topic_lower and right_text.lower() == right_topic_lower)
-            or len(left_text) < 2 or len(right_text) < 2
-            or left_text.startswith('-') or right_text.startswith('-')
-            or ('vs' in left_text.lower() and 'vs' in right_text.lower())
+            or len(left_text) < 2
+            or len(right_text) < 2
+            or left_text.startswith("-")
+            or right_text.startswith("-")
+            or ("vs" in left_text.lower() and "vs" in right_text.lower())
         )
         if should_skip:
             logger.debug("[DoubleBubble] Skipping node: '%s | %s'", left_text, right_text)
             return True
 
-        node['left'] = left_text
-        node['right'] = right_text
+        node["left"] = left_text
+        node["right"] = right_text
         if dimension and len(dimension) > 0:
-            node['dimension'] = dimension
-        node['text'] = text
+            node["dimension"] = dimension
+        node["text"] = text
 
         dim_info = f" | dimension='{dimension}'" if dimension else ""
         logger.debug(
             "[DoubleBubble] Parsed pair successfully: left='%s' | right='%s'%s",
-            left_text, right_text, dim_info
+            left_text,
+            right_text,
+            dim_info,
         )
         logger.debug("[DoubleBubble] Node now has: %s", list(node.keys()))
         return False
@@ -242,7 +249,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build Double Bubble Map prompt based on current mode.
@@ -259,15 +266,13 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
         # Get educational context
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
-            if educational_context else 'General K12 teaching'
+            educational_context.get("raw_message", "General K12 teaching")
+            if educational_context
+            else "General K12 teaching"
         )
 
         # Extract mode from educational_context (thread-safe, no race conditions!)
-        mode = (
-            educational_context.get('_mode', 'similarities')
-            if educational_context else 'similarities'
-        )
+        mode = educational_context.get("_mode", "similarities") if educational_context else "similarities"
         logger.debug("[DoubleBubble] Building prompt for mode: %s", mode)
 
         params = _PromptParams(
@@ -276,16 +281,16 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
             context_desc=context_desc,
             count=count,
             batch_num=batch_num,
-            language=language
+            language=language,
         )
-        if mode == 'similarities':
+        if mode == "similarities":
             return self._build_similarities_prompt(params)
         return self._build_differences_prompt(params)
 
     def _parse_topics(self, center_topic: str) -> tuple:
         """Parse 'Left vs Right' into (left, right)"""
         # Handle both "vs" and "VS" and Chinese "对比"
-        separators = [' vs ', ' VS ', ' 对比 ', '对比']
+        separators = [" vs ", " VS ", " 对比 ", "对比"]
 
         for sep in separators:
             if sep in center_topic:
@@ -301,7 +306,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
     def _build_similarities_prompt(self, params: _PromptParams) -> str:
         """Build prompt for similarities (shared attributes)"""
-        if params.language == 'zh':
+        if params.language == "zh":
             prompt = f"""为以下两个主题生成{params.count}个共同属性（相似点）：{params.left_topic} 和 {params.right_topic}
 
 教学背景：{params.context_desc}
@@ -338,10 +343,9 @@ Generate {params.count} similarities:"""
 
         # Add diversity note for later batches
         if params.batch_num > 1:
-            if params.language == 'zh':
+            if params.language == "zh":
                 prompt += (
-                    f"\n\n注意：这是第{params.batch_num}批。"
-                    "确保最大程度的多样性，从新的维度思考，避免与之前批次重复。"
+                    f"\n\n注意：这是第{params.batch_num}批。确保最大程度的多样性，从新的维度思考，避免与之前批次重复。"
                 )
             else:
                 prompt += (
@@ -354,10 +358,10 @@ Generate {params.count} similarities:"""
 
     def _build_differences_prompt(self, params: _PromptParams) -> str:
         """Build prompt for differences (paired contrasting attributes)"""
-        if params.language == 'zh':
+        if params.language == "zh":
             dim_example_zh = (
-                f"例如对比苹果和香蕉，如果{params.left_topic}的属性是\"红色\"，那么"
-                f"{params.right_topic}的对比属性必须是\"黄色\"，都属于颜色维度"
+                f'例如对比苹果和香蕉，如果{params.left_topic}的属性是"红色"，那么'
+                f'{params.right_topic}的对比属性必须是"黄色"，都属于颜色维度'
             )
             prompt = f"""为以下两个主题生成{params.count}组对比属性（差异对）：{params.left_topic} vs {params.right_topic}
 
@@ -384,8 +388,8 @@ Generate {params.count} similarities:"""
         else:
             dim_example_en = (
                 f"For example, when comparing apples and bananas, if {params.left_topic}'s "
-                f"attribute is \"red\", then {params.right_topic}'s contrasting "
-                "attribute must be \"yellow\", both belonging to the color dimension"
+                f'attribute is "red", then {params.right_topic}\'s contrasting '
+                'attribute must be "yellow", both belonging to the color dimension'
             )
             intro = (
                 f"Generate {params.count} contrasting attribute pairs (difference pairs) "
@@ -420,7 +424,7 @@ Generate {params.count} difference pairs:"""
 
         # Add diversity note for later batches
         if params.batch_num > 1:
-            if params.language == 'zh':
+            if params.language == "zh":
                 prompt += (
                     f"\n\n注意：这是第{params.batch_num}批。"
                     "确保最大程度的多样性，从新的维度和角度对比，避免与之前批次重复。"

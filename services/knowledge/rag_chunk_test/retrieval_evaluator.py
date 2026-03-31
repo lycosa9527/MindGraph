@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional, Callable
 import logging
 import time
@@ -50,7 +51,7 @@ class RetrievalEvaluator:
         progress_callback: Optional[Callable[[str, Optional[str], str, int], None]] = None,
         method_name: Optional[str] = None,
         db: Optional[Session] = None,
-        user_id: Optional[int] = None
+        user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
         Test retrieval on chunked documents.
@@ -78,9 +79,9 @@ class RetrievalEvaluator:
                     "recall": 0.0,
                     "mrr": 0.0,
                     "ndcg": 0.0,
-                    "hit_rate": 0.0
+                    "hit_rate": 0.0,
                 },
-                "timing": {}
+                "timing": {},
             }
 
         # Generate collection name if not provided
@@ -101,11 +102,7 @@ class RetrievalEvaluator:
             if db is not None:
                 cache_user_id = user_id if user_id is not None else test_user_id
                 embeddings = generate_embeddings_with_cache(
-                    self.embedding_client,
-                    self.rate_limiter,
-                    texts,
-                    cache_user_id,
-                    db
+                    self.embedding_client, self.rate_limiter, texts, cache_user_id, db
                 )
             else:
                 # Fallback to direct embedding for backward compatibility
@@ -142,7 +139,7 @@ class RetrievalEvaluator:
                     "chunk_id": chunk.chunk_index,
                     "start_char": chunk.start_char,
                     "end_char": chunk.end_char,
-                    **(chunk.metadata or {})
+                    **(chunk.metadata or {}),
                 }
                 qdrant_metadata.append(meta)
 
@@ -153,7 +150,7 @@ class RetrievalEvaluator:
                 chunk_ids=chunk_ids,
                 embeddings=embeddings,
                 document_ids=document_ids,
-                metadata=qdrant_metadata
+                metadata=qdrant_metadata,
             )
             timing["store_ms"] = (time.time() - store_start) * 1000
             if progress_callback:
@@ -166,11 +163,7 @@ class RetrievalEvaluator:
             query_embedding = self.embedding_client.embed_query(query)
 
             # Use Qdrant to search
-            search_results = self.qdrant.search(
-                user_id=test_user_id,
-                query_embedding=query_embedding,
-                top_k=top_k
-            )
+            search_results = self.qdrant.search(user_id=test_user_id, query_embedding=query_embedding, top_k=top_k)
             timing["retrieval_ms"] = (time.time() - retrieval_start) * 1000
             if progress_callback:
                 progress_callback("processing", method_name, "retrieval", 100)
@@ -185,15 +178,17 @@ class RetrievalEvaluator:
                 chunk_idx = chunk_id_to_index.get(chunk_id)
                 if chunk_idx is not None and chunk_idx < len(chunks):
                     chunk = chunks[chunk_idx]
-                    results.append({
-                        "chunk_id": chunk_id,
-                        "chunk_index": chunk_idx,
-                        "text": chunk.text,
-                        "score": result.get("score", 0.0),
-                        "start_char": chunk.start_char,
-                        "end_char": chunk.end_char,
-                        "metadata": chunk.metadata or {}
-                    })
+                    results.append(
+                        {
+                            "chunk_id": chunk_id,
+                            "chunk_index": chunk_idx,
+                            "text": chunk.text,
+                            "score": result.get("score", 0.0),
+                            "start_char": chunk.start_char,
+                            "end_char": chunk.end_char,
+                            "metadata": chunk.metadata or {},
+                        }
+                    )
 
             timing["total_ms"] = (time.time() - start_time) * 1000
 
@@ -201,18 +196,14 @@ class RetrievalEvaluator:
                 "results": results,
                 "metrics": {
                     "retrieved_count": len(results),
-                    "total_chunks": len(chunks)
+                    "total_chunks": len(chunks),
                 },
                 "timing": timing,
-                "collection_name": collection_name
+                "collection_name": collection_name,
             }
 
         except Exception as e:
-            logger.error(
-                "[RetrievalEvaluator] Retrieval test failed: %s",
-                e,
-                exc_info=True
-            )
+            logger.error("[RetrievalEvaluator] Retrieval test failed: %s", e, exc_info=True)
             raise
 
     def compare_retrieval_results(
@@ -222,7 +213,7 @@ class RetrievalEvaluator:
         expected_chunk_ids: Optional[List[int]] = None,
         relevance_scores: Optional[Dict[int, float]] = None,
         mode_a: str = "semchunk",
-        mode_b: str = "mindchunk"
+        mode_b: str = "mindchunk",
     ) -> Dict[str, Any]:
         """
         Compare retrieval results between two chunking methods.
@@ -244,13 +235,13 @@ class RetrievalEvaluator:
         comparison = {
             mode_a: {
                 "retrieved_count": len(chunk_ids_a),
-                "timing": results_a.get("timing", {})
+                "timing": results_a.get("timing", {}),
             },
             mode_b: {
                 "retrieved_count": len(chunk_ids_b),
-                "timing": results_b.get("timing", {})
+                "timing": results_b.get("timing", {}),
             },
-            "comparison": {}
+            "comparison": {},
         }
 
         # Calculate metrics if expected chunks provided
@@ -258,12 +249,12 @@ class RetrievalEvaluator:
             metrics_a = self.retrieval_test_service.calculate_quality_metrics(
                 retrieved_chunk_ids=chunk_ids_a,
                 expected_chunk_ids=expected_chunk_ids,
-                relevance_scores=relevance_scores
+                relevance_scores=relevance_scores,
             )
             metrics_b = self.retrieval_test_service.calculate_quality_metrics(
                 retrieved_chunk_ids=chunk_ids_b,
                 expected_chunk_ids=expected_chunk_ids,
-                relevance_scores=relevance_scores
+                relevance_scores=relevance_scores,
             )
 
             comparison[mode_a]["metrics"] = metrics_a
@@ -284,7 +275,7 @@ class RetrievalEvaluator:
                     k: metrics_b.get("recall_at_k", {}).get(k, 0) - metrics_a.get("recall_at_k", {}).get(k, 0)
                     for k in [1, 3, 5, 10]
                 },
-                "winner": self._determine_winner(metrics_a, metrics_b, mode_a, mode_b)
+                "winner": self._determine_winner(metrics_a, metrics_b, mode_a, mode_b),
             }
 
         # Compare timing
@@ -299,7 +290,7 @@ class RetrievalEvaluator:
         metrics_a: Dict[str, float],
         metrics_b: Dict[str, float],
         mode_a: str = "semchunk",
-        mode_b: str = "mindchunk"
+        mode_b: str = "mindchunk",
     ) -> str:
         """
         Determine which method performed better.
@@ -315,16 +306,10 @@ class RetrievalEvaluator:
         """
         # Weighted score: precision (0.3) + recall (0.3) + MRR (0.2) + NDCG (0.2)
         score_a = (
-            metrics_a["precision"] * 0.3 +
-            metrics_a["recall"] * 0.3 +
-            metrics_a["mrr"] * 0.2 +
-            metrics_a["ndcg"] * 0.2
+            metrics_a["precision"] * 0.3 + metrics_a["recall"] * 0.3 + metrics_a["mrr"] * 0.2 + metrics_a["ndcg"] * 0.2
         )
         score_b = (
-            metrics_b["precision"] * 0.3 +
-            metrics_b["recall"] * 0.3 +
-            metrics_b["mrr"] * 0.2 +
-            metrics_b["ndcg"] * 0.2
+            metrics_b["precision"] * 0.3 + metrics_b["recall"] * 0.3 + metrics_b["mrr"] * 0.2 + metrics_b["ndcg"] * 0.2
         )
 
         if score_b > score_a:
@@ -351,26 +336,26 @@ class RetrievalEvaluator:
                     logger.debug(
                         "[RetrievalEvaluator] Cleaned up test collection: %s (user_id=%s)",
                         collection_name,
-                        test_user_id
+                        test_user_id,
                     )
                 except Exception as e:
                     # Collection might not exist, log but don't fail
                     logger.debug(
                         "[RetrievalEvaluator] Collection %s not found or already deleted: %s",
                         collection_name,
-                        e
+                        e,
                     )
             else:
                 # Delete all collections for test user (fallback)
                 self.qdrant.delete_user_collection(test_user_id)
                 logger.debug(
                     "[RetrievalEvaluator] Cleaned up all test collections for user %s",
-                    test_user_id
+                    test_user_id,
                 )
         except Exception as e:
             logger.warning(
                 "[RetrievalEvaluator] Failed to cleanup test collection (user_id=%s, collection=%s): %s",
                 test_user_id,
                 collection_name,
-                e
+                e,
             )

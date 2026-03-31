@@ -65,32 +65,52 @@ class MessageService:
 
     @staticmethod
     def get_channel_messages(
-        db: Session, channel_id: int,
-        anchor: int = 0, num_before: int = DEFAULT_PAGE_SIZE, num_after: int = 0,
+        db: Session,
+        channel_id: int,
+        anchor: int = 0,
+        num_before: int = DEFAULT_PAGE_SIZE,
+        num_after: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get general channel messages (topic_id is NULL), anchor-based."""
         return MessageService._fetch(
-            db, channel_id=channel_id, topic_id=None,
-            general_only=True, anchor=anchor,
-            num_before=num_before, num_after=num_after,
+            db,
+            channel_id=channel_id,
+            topic_id=None,
+            general_only=True,
+            anchor=anchor,
+            num_before=num_before,
+            num_after=num_after,
         )
 
     @staticmethod
     def get_topic_messages(
-        db: Session, topic_id: int, channel_id: int,
-        anchor: int = 0, num_before: int = DEFAULT_PAGE_SIZE, num_after: int = 0,
+        db: Session,
+        topic_id: int,
+        channel_id: int,
+        anchor: int = 0,
+        num_before: int = DEFAULT_PAGE_SIZE,
+        num_after: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get messages for a specific topic, anchor-based."""
         return MessageService._fetch(
-            db, channel_id=channel_id, topic_id=topic_id,
-            general_only=False, anchor=anchor,
-            num_before=num_before, num_after=num_after,
+            db,
+            channel_id=channel_id,
+            topic_id=topic_id,
+            general_only=False,
+            anchor=anchor,
+            num_before=num_before,
+            num_after=num_after,
         )
 
     @staticmethod
     def _fetch(
-        db: Session, channel_id: int, topic_id: Optional[int],
-        general_only: bool, anchor: int, num_before: int, num_after: int,
+        db: Session,
+        channel_id: int,
+        topic_id: Optional[int],
+        general_only: bool,
+        anchor: int,
+        num_before: int,
+        num_after: int,
     ) -> List[Dict[str, Any]]:
         """Internal: fetch messages with anchor-based pagination."""
         num_before = min(num_before, MAX_PAGE_SIZE)
@@ -108,11 +128,7 @@ class MessageService:
         messages: List[ChatMessage] = []
 
         if num_before > 0:
-            before_q = (
-                db.query(ChatMessage)
-                .options(joinedload(ChatMessage.sender))
-                .filter(*base_filter)
-            )
+            before_q = db.query(ChatMessage).options(joinedload(ChatMessage.sender)).filter(*base_filter)
             if anchor > 0:
                 before_q = before_q.filter(ChatMessage.id < anchor)
             before_q = before_q.order_by(ChatMessage.id.desc()).limit(num_before)
@@ -145,7 +161,10 @@ class MessageService:
         GIN index; otherwise falls back to ``ILIKE`` substring.
         """
         match = message_fts.channel_content_match(
-            db, ChatMessage.content, text, limit,
+            db,
+            ChatMessage.content,
+            text,
+            limit,
         )
         if match is None:
             return []
@@ -158,29 +177,21 @@ class MessageService:
         if topic_id is not None:
             filters.append(ChatMessage.topic_id == topic_id)
 
-        query = (
-            db.query(ChatMessage)
-            .options(joinedload(ChatMessage.sender))
-            .filter(*filters)
-        )
+        query = db.query(ChatMessage).options(joinedload(ChatMessage.sender)).filter(*filters)
         if rank_expr is not None:
-            rows = (
-                query.order_by(rank_expr.desc(), ChatMessage.id.desc())
-                .limit(lim)
-                .all()
-            )
+            rows = query.order_by(rank_expr.desc(), ChatMessage.id.desc()).limit(lim).all()
         else:
-            rows = (
-                query.order_by(ChatMessage.id.desc())
-                .limit(lim)
-                .all()
-            )
+            rows = query.order_by(ChatMessage.id.desc()).limit(lim).all()
         return [_format_message(m) for m in reversed(rows)]
 
     @staticmethod
     def send_message(
-        db: Session, channel_id: int, sender_id: int, content: str,
-        topic_id: Optional[int] = None, message_type: str = "text",
+        db: Session,
+        channel_id: int,
+        sender_id: int,
+        content: str,
+        topic_id: Optional[int] = None,
+        message_type: str = "text",
         parent_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Send a message to a channel or topic."""
@@ -190,12 +201,18 @@ class MessageService:
         channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
         org_id = channel.organization_id if channel else None
         mention_ids = resolve_mentioned_user_ids(
-            db, sender, org_id, content[:MAX_CONTENT_LENGTH],
+            db,
+            sender,
+            org_id,
+            content[:MAX_CONTENT_LENGTH],
         )
         msg = ChatMessage(
-            channel_id=channel_id, topic_id=topic_id,
-            sender_id=sender_id, content=content[:MAX_CONTENT_LENGTH],
-            message_type=message_type, parent_id=parent_id,
+            channel_id=channel_id,
+            topic_id=topic_id,
+            sender_id=sender_id,
+            content=content[:MAX_CONTENT_LENGTH],
+            message_type=message_type,
+            parent_id=parent_id,
             mentioned_user_ids=mention_ids or None,
         )
         db.add(msg)
@@ -210,11 +227,14 @@ class MessageService:
         db.refresh(msg)
 
         return {
-            "id": msg.id, "channel_id": msg.channel_id,
-            "topic_id": msg.topic_id, "sender_id": msg.sender_id,
+            "id": msg.id,
+            "channel_id": msg.channel_id,
+            "topic_id": msg.topic_id,
+            "sender_id": msg.sender_id,
             "sender_name": sender.name if sender else f"User {sender_id}",
             "sender_avatar": sender.avatar if sender else None,
-            "content": msg.content, "message_type": msg.message_type,
+            "content": msg.content,
+            "message_type": msg.message_type,
             "parent_id": msg.parent_id,
             "mentioned_user_ids": list(msg.mentioned_user_ids or []),
             "created_at": msg.created_at.isoformat(),
@@ -222,7 +242,10 @@ class MessageService:
 
     @staticmethod
     def edit_message(
-        db: Session, message_id: int, sender_id: int, new_content: str,
+        db: Session,
+        message_id: int,
+        sender_id: int,
+        new_content: str,
     ) -> Optional[Dict[str, Any]]:
         """Edit a message (sender only)."""
         msg = (
@@ -238,7 +261,10 @@ class MessageService:
             return None
         org_id = msg.channel.organization_id if msg.channel else None
         mention_ids = resolve_mentioned_user_ids(
-            db, sender, org_id, new_content[:MAX_CONTENT_LENGTH],
+            db,
+            sender,
+            org_id,
+            new_content[:MAX_CONTENT_LENGTH],
         )
         msg.content = new_content[:MAX_CONTENT_LENGTH]
         msg.mentioned_user_ids = mention_ids or None
@@ -271,7 +297,10 @@ class MessageService:
 
     @staticmethod
     def update_last_read(
-        db: Session, channel_id: int, user_id: int, message_id: int,
+        db: Session,
+        channel_id: int,
+        user_id: int,
+        message_id: int,
     ) -> None:
         """Update last_read_message_id for a channel member."""
         member = (
@@ -282,10 +311,7 @@ class MessageService:
             )
             .first()
         )
-        if member and (
-            member.last_read_message_id is None
-            or message_id > member.last_read_message_id
-        ):
+        if member and (member.last_read_message_id is None or message_id > member.last_read_message_id):
             member.last_read_message_id = message_id
             db.commit()
 

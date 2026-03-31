@@ -93,10 +93,10 @@ class ChannelService:
 
         member_map = ChannelService._build_member_map(db, user_id, channels)
         user_is_admin = is_admin(current_user) if current_user else False
-        member_counts, topic_counts, unread_counts = (
-            ChannelService._batch_channel_list_metrics(
-                db, [c.id for c in channels], member_map,
-            )
+        member_counts, topic_counts, unread_counts = ChannelService._batch_channel_list_metrics(
+            db,
+            [c.id for c in channels],
+            member_map,
         )
 
         groups: Dict[int, Dict[str, Any]] = {}
@@ -155,7 +155,8 @@ class ChannelService:
         member_counts = {
             int(a): int(b)
             for a, b in db.query(
-                ChannelMember.channel_id, sql_count(ChannelMember.user_id),
+                ChannelMember.channel_id,
+                sql_count(ChannelMember.user_id),
             )
             .filter(ChannelMember.channel_id.in_(channel_ids))
             .group_by(ChannelMember.channel_id)
@@ -164,7 +165,8 @@ class ChannelService:
         topic_counts = {
             int(a): int(b)
             for a, b in db.query(
-                ChatTopic.channel_id, sql_count(ChatTopic.id),
+                ChatTopic.channel_id,
+                sql_count(ChatTopic.id),
             )
             .filter(ChatTopic.channel_id.in_(channel_ids))
             .group_by(ChatTopic.channel_id)
@@ -194,13 +196,10 @@ class ChannelService:
                 .all()
             )
         if or_clauses:
-            q_unread = (
-                db.query(ChatMessage.channel_id, sql_count(ChatMessage.id))
-                .filter(
-                    ChatMessage.channel_id.in_(mids),
-                    ChatMessage.is_deleted.is_(False),
-                    or_(*or_clauses),
-                )
+            q_unread = db.query(ChatMessage.channel_id, sql_count(ChatMessage.id)).filter(
+                ChatMessage.channel_id.in_(mids),
+                ChatMessage.is_deleted.is_(False),
+                or_(*or_clauses),
             )
             if muted_topic_ids:
                 q_unread = q_unread.filter(
@@ -247,12 +246,8 @@ class ChannelService:
             "is_muted": membership.is_muted if membership else False,
             "pin_to_top": membership.pin_to_top if membership else False,
             "color": membership.color if membership else (channel.color or "#c2c2c2"),
-            "desktop_notifications": (
-                membership.desktop_notifications if membership else True
-            ),
-            "email_notifications": (
-                membership.email_notifications if membership else False
-            ),
+            "desktop_notifications": (membership.desktop_notifications if membership else True),
+            "email_notifications": (membership.email_notifications if membership else False),
             "unread_count": unread_count,
             "created_at": channel.created_at.isoformat(),
             "parent_id": channel.parent_id,
@@ -260,20 +255,22 @@ class ChannelService:
         }
 
         if channel.parent_id is not None:
-            data.update({
-                "status": channel.status,
-                "deadline": (
-                    channel.deadline.isoformat() if channel.deadline else None
-                ),
-                "diagram_id": channel.diagram_id,
-                "is_resolved": channel.is_resolved,
-            })
+            data.update(
+                {
+                    "status": channel.status,
+                    "deadline": (channel.deadline.isoformat() if channel.deadline else None),
+                    "diagram_id": channel.diagram_id,
+                    "is_resolved": channel.is_resolved,
+                }
+            )
 
         return data
 
     @staticmethod
     def mark_channel_read(
-        db: Session, channel_id: int, user_id: int,
+        db: Session,
+        channel_id: int,
+        user_id: int,
     ) -> Dict[str, Any]:
         """Advance the member waterline to the latest non-deleted message."""
         member = (
@@ -349,14 +346,19 @@ class ChannelService:
         db.flush()
 
         owner_member = ChannelMember(
-            channel_id=channel.id, user_id=created_by, role="owner",
+            channel_id=channel.id,
+            user_id=created_by,
+            role="owner",
         )
         db.add(owner_member)
         db.commit()
 
         logger.info(
             "[WorkshopChat] Channel '%s' (parent=%s) created by user %d in org %d",
-            name, parent_id, created_by, organization_id,
+            name,
+            parent_id,
+            created_by,
+            organization_id,
         )
         return {
             "id": channel.id,
@@ -409,13 +411,15 @@ class ChannelService:
         channel.updated_at = datetime.utcnow()
         db.commit()
         return {
-            "id": channel.id, "name": channel.name,
-            "description": channel.description, "avatar": channel.avatar,
-            "color": channel.color, "status": channel.status,
-            "diagram_id": channel.diagram_id, "is_resolved": channel.is_resolved,
-            "deadline": (
-                channel.deadline.isoformat() if channel.deadline else None
-            ),
+            "id": channel.id,
+            "name": channel.name,
+            "description": channel.description,
+            "avatar": channel.avatar,
+            "color": channel.color,
+            "status": channel.status,
+            "diagram_id": channel.diagram_id,
+            "is_resolved": channel.is_resolved,
+            "deadline": (channel.deadline.isoformat() if channel.deadline else None),
         }
 
     @staticmethod
@@ -505,17 +509,15 @@ class ChannelService:
     @staticmethod
     def get_channel(db: Session, channel_id: int) -> Optional[ChatChannel]:
         """Get a non-archived channel by ID."""
-        return (
-            db.query(ChatChannel)
-            .filter(ChatChannel.id == channel_id, ChatChannel.is_archived.is_(False))
-            .first()
-        )
+        return db.query(ChatChannel).filter(ChatChannel.id == channel_id, ChatChannel.is_archived.is_(False)).first()
 
     # ── Subscription preference helpers ──────────────────────────
 
     @staticmethod
     def _get_membership(
-        db: Session, channel_id: int, user_id: int,
+        db: Session,
+        channel_id: int,
+        user_id: int,
     ) -> ChannelMember:
         member = (
             db.query(ChannelMember)
@@ -531,7 +533,9 @@ class ChannelService:
 
     @staticmethod
     def toggle_mute(
-        db: Session, channel_id: int, user_id: int,
+        db: Session,
+        channel_id: int,
+        user_id: int,
     ) -> Dict[str, Any]:
         """Toggle mute state for a user's channel subscription."""
         member = ChannelService._get_membership(db, channel_id, user_id)
@@ -541,7 +545,9 @@ class ChannelService:
 
     @staticmethod
     def toggle_pin(
-        db: Session, channel_id: int, user_id: int,
+        db: Session,
+        channel_id: int,
+        user_id: int,
     ) -> Dict[str, Any]:
         """Toggle pin-to-top state for a user's channel subscription."""
         member = ChannelService._get_membership(db, channel_id, user_id)
@@ -583,11 +589,7 @@ class ChannelService:
         is_default: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """Update channel-level permission settings (manager/admin only)."""
-        channel = (
-            db.query(ChatChannel)
-            .filter(ChatChannel.id == channel_id)
-            .first()
-        )
+        channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
         if not channel:
             return None
 
@@ -634,11 +636,7 @@ class ChannelService:
         if set(got) != expected or len(got) != len(expected):
             return False
         for idx, cid in enumerate(got):
-            channel = (
-                db.query(ChatChannel)
-                .filter(ChatChannel.id == cid)
-                .first()
-            )
+            channel = db.query(ChatChannel).filter(ChatChannel.id == cid).first()
             if not channel:
                 return False
             channel.display_order = idx
@@ -729,13 +727,17 @@ class ChannelService:
         db.flush()
 
         owner_member = ChannelMember(
-            channel_id=channel.id, user_id=created_by, role="owner",
+            channel_id=channel.id,
+            user_id=created_by,
+            role="owner",
         )
         db.add(owner_member)
         db.commit()
         logger.info(
             "[WorkshopChat] Channel %d duplicated as %d by user %d",
-            source_channel_id, channel.id, created_by,
+            source_channel_id,
+            channel.id,
+            created_by,
         )
         return {
             "id": channel.id,

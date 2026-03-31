@@ -13,6 +13,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
 
@@ -54,7 +55,7 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage-specific logic.
@@ -67,23 +68,27 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
             _stage: Generation stage ('dimensions', 'categories', 'children')
             _stage_data: Stage-specific data (dimension, category_name, etc.)
         """
-        stage = _stage or 'dimensions'
+        stage = _stage or "dimensions"
         stage_data = _stage_data or {}
         if session_id not in self.session_stages:
             self.session_stages[session_id] = {}
-        self.session_stages[session_id]['stage'] = stage
+        self.session_stages[session_id]["stage"] = stage
         if stage_data:
             self.session_stages[session_id].update(stage_data)
 
-        logger.debug("[TreeMapPalette] Stage: %s | Session: %s | Topic: '%s'",
-                     stage, session_id[:8], center_topic)
+        logger.debug(
+            "[TreeMapPalette] Stage: %s | Session: %s | Topic: '%s'",
+            stage,
+            session_id[:8],
+            center_topic,
+        )
         if stage_data:
             logger.debug("[TreeMapPalette] Stage data: %s", stage_data)
 
         # Pass session_id through educational_context so _build_prompt can access it
         if educational_context is None:
             educational_context = {}
-        educational_context = {**educational_context, '_session_id': session_id}
+        educational_context = {**educational_context, "_session_id": session_id}
 
         # Call base class generate_batch which will use our _build_prompt
         async for event in super().generate_batch(
@@ -94,24 +99,24 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
             user_id=user_id,
             organization_id=organization_id,
             diagram_type=diagram_type,
-            endpoint_path=endpoint_path
+            endpoint_path=endpoint_path,
         ):
-            if event.get('event') == 'node_generated':
-                node = event.get('node', {})
+            if event.get("event") == "node_generated":
+                node = event.get("node", {})
                 node_mode = (
-                    stage_data.get('category_name')
-                    if stage == 'children' and stage_data and stage_data.get('category_name')
+                    stage_data.get("category_name")
+                    if stage == "children" and stage_data and stage_data.get("category_name")
                     else stage
                 )
-                node['mode'] = node_mode
-                if stage == 'children' and stage_data and stage_data.get('category_id'):
-                    node['parent_id'] = stage_data['category_id']
+                node["mode"] = node_mode
+                if stage == "children" and stage_data and stage_data.get("category_id"):
+                    node["parent_id"] = stage_data["category_id"]
                 logger.debug(
                     "[TreeMapPalette] Node tagged with mode='%s' parent_id=%s | ID: %s | Text: %s",
                     node_mode,
-                    node.get('parent_id', ''),
-                    node.get('id', 'unknown'),
-                    node.get('text', ''),
+                    node.get("parent_id", ""),
+                    node.get("id", "unknown"),
+                    node.get("text", ""),
                 )
 
             yield event
@@ -121,7 +126,7 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build stage-specific prompt for Tree Map node generation.
@@ -139,34 +144,36 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         """
         language = self._detect_language(center_topic, educational_context)
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
-            if educational_context else 'General K12 teaching'
+            educational_context.get("raw_message", "General K12 teaching")
+            if educational_context
+            else "General K12 teaching"
         )
-        session_id = educational_context.get('_session_id') if educational_context else None
-        stage = 'dimensions'
+        session_id = educational_context.get("_session_id") if educational_context else None
+        stage = "dimensions"
         stage_data = {}
 
         if session_id and session_id in self.session_stages:
-            stage = self.session_stages[session_id].get('stage', 'dimensions')
+            stage = self.session_stages[session_id].get("stage", "dimensions")
             stage_data = self.session_stages[session_id]
 
         logger.debug("[TreeMapPalette-Prompt] Building prompt for stage: %s", stage)
 
-        dimension = stage_data.get('dimension', '')
-        category_name = stage_data.get('category_name', '')
+        dimension = stage_data.get("dimension", "")
+        category_name = stage_data.get("category_name", "")
 
-        if stage == 'dimensions':
-            return self._build_dimension_prompt(
-                center_topic, context_desc, language, count, batch_num
-            )
-        if stage == 'children':
+        if stage == "dimensions":
+            return self._build_dimension_prompt(center_topic, context_desc, language, count, batch_num)
+        if stage == "children":
             return self._build_children_prompt(
-                center_topic, dimension, category_name, context_desc,
-                language, count, batch_num
+                center_topic,
+                dimension,
+                category_name,
+                context_desc,
+                language,
+                count,
+                batch_num,
             )
-        return self._build_category_prompt(
-            center_topic, dimension, context_desc, language, count, batch_num
-        )
+        return self._build_category_prompt(center_topic, dimension, context_desc, language, count, batch_num)
 
     def _build_dimension_prompt(
         self,
@@ -174,12 +181,10 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """Build prompt for generating dimension options. Uses centralized prompts."""
-        return get_tree_dimensions_prompt(
-            center_topic, context_desc, language, count, batch_num
-        )
+        return get_tree_dimensions_prompt(center_topic, context_desc, language, count, batch_num)
 
     def _build_category_prompt(
         self,
@@ -188,12 +193,10 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """Build prompt for generating categories (no children). Uses centralized prompts."""
-        return get_tree_categories_prompt(
-            center_topic, dimension, context_desc, language, count, batch_num
-        )
+        return get_tree_categories_prompt(center_topic, dimension, context_desc, language, count, batch_num)
 
     def _build_children_prompt(
         self,
@@ -203,12 +206,17 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
         context_desc: str,
         language: str,
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """Build prompt for generating children for a specific category. Uses centralized prompts."""
         return get_tree_items_prompt(
-            center_topic, category_name, dimension, context_desc,
-            language, count, batch_num
+            center_topic,
+            category_name,
+            dimension,
+            context_desc,
+            language,
+            count,
+            batch_num,
         )
 
     def end_session(self, session_id: str, reason: str = "complete") -> None:
@@ -226,6 +234,7 @@ class TreeMapPaletteGenerator(BasePaletteGenerator):
 
 class _TreeMapPaletteHolder:
     """Holder for Tree Map palette generator singleton."""
+
     instance: Optional[TreeMapPaletteGenerator] = None
 
 

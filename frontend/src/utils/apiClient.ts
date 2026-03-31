@@ -42,16 +42,14 @@ async function refreshAccessToken(): Promise<boolean> {
       })
 
       if (response.ok) {
-        // Token refreshed successfully - cookies are automatically updated
-        console.debug('[ApiClient] Token refreshed successfully')
         return true
       }
 
-      // Refresh failed - token expired or invalid
-      console.debug('[ApiClient] Token refresh failed:', response.status)
       return false
     } catch (error) {
-      console.error('[ApiClient] Token refresh error:', error)
+      if (import.meta.env.DEV) {
+        console.error('[ApiClient] Token refresh error:', error)
+      }
       return false
     } finally {
       isRefreshing = false
@@ -96,12 +94,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
     // Check if user was previously authenticated (before refresh attempt)
     const hadUserBeforeRefresh = !!authStore.user || !!sessionStorage.getItem('auth_user')
 
-    console.debug('[ApiClient] Got 401, attempting token refresh')
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
-      // Retry the original request with the new token
-      console.debug('[ApiClient] Retrying request after token refresh')
       response = await fetch(url, {
         ...options,
         headers,
@@ -111,11 +106,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
       // Refresh failed - only show session expired modal if user was previously authenticated
       // If user was never authenticated, just return the 401 response (for public endpoints)
       if (hadUserBeforeRefresh) {
-        console.debug('[ApiClient] Refresh failed, showing login modal (session expired)')
         // Pass null to stay on current page (no redirect)
         authStore.handleTokenExpired('Your session has expired. Please log in again.', undefined)
       } else {
-        console.debug('[ApiClient] Refresh failed, user was never authenticated - returning 401')
         // User was never authenticated - return 401 without showing modal
         // This allows public endpoints to handle 401 gracefully
       }
@@ -211,7 +204,6 @@ export async function apiUpload(
 
   // If unauthorized, attempt token refresh and retry
   if (response.status === 401) {
-    console.debug('[ApiClient] Got 401 on upload, attempting token refresh')
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
@@ -256,7 +248,6 @@ export async function apiPutFormData(
   })
 
   if (response.status === 401) {
-    console.debug('[ApiClient] Got 401 on PUT form, attempting token refresh')
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
@@ -872,22 +863,16 @@ export async function createBookmark(
   documentId: number,
   data: CreateBookmarkData
 ): Promise<{ id: number; message: string; bookmark: LibraryBookmark }> {
-  console.log('[apiClient] createBookmark called:', { documentId, data })
   const url = `/api/library/documents/${documentId}/bookmarks`
-  console.log('[apiClient] POST to:', url)
   const response = await apiPost(url, data)
-  console.log('[apiClient] createBookmark response:', {
-    ok: response.ok,
-    status: response.status,
-    statusText: response.statusText,
-  })
   if (!response.ok) {
     const error = await response.json().catch(() => ({ detail: 'Failed to create bookmark' }))
-    console.error('[apiClient] createBookmark error:', error)
+    if (import.meta.env.DEV) {
+      console.error('[apiClient] createBookmark error:', error)
+    }
     throw new Error(error.detail || 'Failed to create bookmark')
   }
   const result = await response.json()
-  console.log('[apiClient] createBookmark result:', result)
   return result
 }
 

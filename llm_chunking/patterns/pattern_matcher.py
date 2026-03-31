@@ -27,30 +27,57 @@ class PatternMatcher:
 
     # Sentence ending patterns
     SENTENCE_ENDINGS = [
-        r'[。！？]\s+',  # Chinese punctuation
-        r'[.!?]\s+',     # English punctuation
+        r"[。！？]\s+",  # Chinese punctuation
+        r"[.!?]\s+",  # English punctuation
     ]
 
     # Paragraph break pattern
-    PARAGRAPH_BREAK = r'\n\n+'
+    PARAGRAPH_BREAK = r"\n\n+"
 
     # Heading patterns
-    MARKDOWN_HEADING = r'^(#{1,6})\s+(.+)$'
-    NUMBERED_HEADING = r'^(\d+(?:\.\d+)*)\s+(.+)$'
+    MARKDOWN_HEADING = r"^(#{1,6})\s+(.+)$"
+    NUMBERED_HEADING = r"^(\d+(?:\.\d+)*)\s+(.+)$"
 
     # Phase 2: Separator priority list (from Dify and semchunk)
     # Priority: newlines > tabs > whitespace > punctuation
     SEPARATORS = ["\n\n", "\n", "。", ". ", "！", "？", "! ", "? ", "; ", "；", " ", ""]
 
     # Non-whitespace semantic splitters (from semchunk)
-    NON_WHITESPACE_SPLITTERS = [".", "?", "!", "*", ";", ",", "(", ")", "[", "]",
-                                """, """, "'", "'", "'", '"', "`", ":", "—", "…",
-                                "/", "\\", "–", "&", "-", "。", "！", "？", "；"]
+    NON_WHITESPACE_SPLITTERS = [
+        ".",
+        "?",
+        "!",
+        "*",
+        ";",
+        ",",
+        "(",
+        ")",
+        "[",
+        "]",
+        """, """,
+        "'",
+        "'",
+        "'",
+        '"',
+        "`",
+        ":",
+        "—",
+        "…",
+        "/",
+        "\\",
+        "–",
+        "&",
+        "-",
+        "。",
+        "！",
+        "？",
+        "；",
+    ]
 
     def __init__(
         self,
         token_counter: Optional[Callable[[str], int]] = None,
-        fixed_separator: Optional[str] = "\n\n"
+        fixed_separator: Optional[str] = "\n\n",
     ):
         """
         Initialize pattern matcher.
@@ -58,7 +85,7 @@ class PatternMatcher:
         Args:
             token_counter: Optional token counter function for length caching
         """
-        self.sentence_pattern = re.compile('|'.join(self.SENTENCE_ENDINGS))
+        self.sentence_pattern = re.compile("|".join(self.SENTENCE_ENDINGS))
         self.paragraph_pattern = re.compile(self.PARAGRAPH_BREAK)
         self.markdown_heading_pattern = re.compile(self.MARKDOWN_HEADING, re.MULTILINE)
         self.numbered_heading_pattern = re.compile(self.NUMBERED_HEADING, re.MULTILINE)
@@ -114,7 +141,7 @@ class PatternMatcher:
                 if len(splitter) == 1:
                     for punct in self.NON_WHITESPACE_SPLITTERS:
                         escaped = re.escape(punct)
-                        match = re.search(rf'{escaped}(\s)', text)
+                        match = re.search(rf"{escaped}(\s)", text)
                         if match:
                             return match.group(1), True
                 return splitter, True
@@ -131,7 +158,7 @@ class PatternMatcher:
         self,
         text: str,
         include_delim: Optional[Literal["prev", "next"]] = "prev",
-        min_characters_per_sentence: int = 12
+        min_characters_per_sentence: int = 12,
     ) -> List[str]:
         """
         Split text by sentence endings (Phase 2: Enhanced with delimiter inclusion).
@@ -147,7 +174,7 @@ class PatternMatcher:
             List of sentences
         """
         # Phase 2: Use hierarchical splitter selection
-        splitter, is_whitespace = self._select_best_splitter(text)
+        splitter, _ = self._select_best_splitter(text)
 
         # Phase 2: Enhanced delimiter handling (from chonkie)
         sep = "✄"  # Temporary separator
@@ -206,25 +233,29 @@ class PatternMatcher:
         for match in self.markdown_heading_pattern.finditer(text):
             level = len(match.group(1))  # # = 1, ## = 2, ### = 3
             title = match.group(2).strip()
-            headings.append({
-                "level": level,
-                "title": title,
-                "position": match.start(),
-                "type": "markdown"
-            })
+            headings.append(
+                {
+                    "level": level,
+                    "title": title,
+                    "position": match.start(),
+                    "type": "markdown",
+                }
+            )
 
         # Detect numbered headings
         for match in self.numbered_heading_pattern.finditer(text):
             number = match.group(1)  # "1", "1.1", "1.1.1"
-            level = number.count('.') + 1
+            level = number.count(".") + 1
             title = match.group(2).strip()
-            headings.append({
-                "level": level,
-                "title": title,
-                "position": match.start(),
-                "type": "numbered",
-                "number": number
-            })
+            headings.append(
+                {
+                    "level": level,
+                    "title": title,
+                    "position": match.start(),
+                    "type": "numbered",
+                    "number": number,
+                }
+            )
 
         # Sort by position
         headings.sort(key=lambda x: x["position"])
@@ -239,7 +270,7 @@ class PatternMatcher:
         splitter: str,
         token_counter: Callable[[str], int],
         start: int,
-        high: int
+        high: int,
     ) -> Tuple[int, str]:
         """
         Phase 2: Merge splits using binary search (from semchunk).
@@ -279,7 +310,7 @@ class PatternMatcher:
         token_counter: Callable[[str], int],
         separators: Optional[List[str]] = None,
         _recursion_depth: int = 0,
-        _start: int = 0
+        _start: int = 0,
     ) -> Tuple[List[str], List[Tuple[int, int]]]:
         """
         Phase 2: Recursively chunk text (from semchunk).
@@ -290,7 +321,7 @@ class PatternMatcher:
             separators = self.SEPARATORS
 
         # Select best separator
-        splitter, splitter_is_whitespace = self._select_best_splitter(text)
+        splitter, _ = self._select_best_splitter(text)
 
         # Split text
         if splitter:
@@ -321,21 +352,29 @@ class PatternMatcher:
             # If split exceeds chunk size, recursively chunk it
             if split_tokens > chunk_size:
                 # Find next separator for recursion
-                remaining_separators = separators[separators.index(splitter) + 1:] if splitter in separators else separators[1:]
+                remaining_separators = (
+                    separators[separators.index(splitter) + 1 :] if splitter in separators else separators[1:]
+                )
                 sub_chunks, sub_offsets = self._chunk_recursive(
                     split,
                     chunk_size,
                     token_counter,
                     remaining_separators,
                     _recursion_depth + 1,
-                    split_start
+                    split_start,
                 )
                 chunks.extend(sub_chunks)
                 offsets.extend(sub_offsets)
             else:
                 # Merge with subsequent splits using binary search
                 end_idx, merged_chunk = self._merge_splits_with_binary_search(
-                    splits, cum_lens, chunk_size, splitter, token_counter, i, len(splits) + 1
+                    splits,
+                    cum_lens,
+                    chunk_size,
+                    splitter,
+                    token_counter,
+                    i,
+                    len(splits) + 1,
                 )
 
                 skips.update(range(i + 1, end_idx))
@@ -352,10 +391,10 @@ class PatternMatcher:
         max_tokens: int = 500,
         prefer_paragraphs: bool = True,
         token_counter: Optional[Callable[[str], int]] = None,
-        fixed_separator: Optional[str] = None
+        fixed_separator: Optional[str] = None,
     ) -> List[Tuple[int, int]]:
         """
-        Find chunk boundaries using patterns (Phase 2: Enhanced with fixed separator, binary search, recursive chunking).
+        Find chunk boundaries using patterns (Phase 2: fixed separator, binary search, recursive chunking).
 
         Args:
             text: Text to analyze
@@ -390,9 +429,7 @@ class PatternMatcher:
 
                 if length > max_tokens:
                     # Phase 2: Recursively chunk oversized chunks
-                    sub_chunks, sub_offsets = self._chunk_recursive(
-                        chunk, max_tokens, counter, _start=chunk_start
-                    )
+                    _sub_chunks, sub_offsets = self._chunk_recursive(chunk, max_tokens, counter, _start=chunk_start)
                     boundaries.extend(sub_offsets)
                 else:
                     boundaries.append((chunk_start, chunk_end))
@@ -425,12 +462,10 @@ class PatternMatcher:
             list(accumulate([len(p) for p in paragraphs], initial=0))
 
             # Use cached lengths to determine boundaries
-            for i, (paragraph, length, start_pos) in enumerate(zip(paragraphs, paragraph_lengths, paragraph_positions)):
+            for paragraph, length, start_pos in zip(paragraphs, paragraph_lengths, paragraph_positions):
                 if length > max_tokens:
                     # Recursively chunk oversized paragraph
-                    sub_chunks, sub_offsets = self._chunk_recursive(
-                        paragraph, max_tokens, counter, _start=start_pos
-                    )
+                    _sub_chunks, sub_offsets = self._chunk_recursive(paragraph, max_tokens, counter, _start=start_pos)
                     boundaries.extend(sub_offsets)
                 else:
                     end_pos = start_pos + len(paragraph)
@@ -456,9 +491,7 @@ class PatternMatcher:
             for sentence, length, start_pos in zip(sentences, sentence_lengths, sentence_positions):
                 if length > max_tokens:
                     # Recursively chunk oversized sentence
-                    sub_chunks, sub_offsets = self._chunk_recursive(
-                        sentence, max_tokens, counter, _start=start_pos
-                    )
+                    _sub_chunks, sub_offsets = self._chunk_recursive(sentence, max_tokens, counter, _start=start_pos)
                     boundaries.extend(sub_offsets)
                 else:
                     end_pos = start_pos + len(sentence)
@@ -466,12 +499,7 @@ class PatternMatcher:
 
         return boundaries
 
-    def is_boundary_clear(
-        self,
-        text: str,
-        start_pos: int,
-        end_pos: int
-    ) -> bool:
+    def is_boundary_clear(self, text: str, start_pos: int, end_pos: int) -> bool:
         """
         Check if boundary is clear (doesn't split mid-sentence/concept).
 
@@ -488,13 +516,13 @@ class PatternMatcher:
         # Check if starts/ends at sentence boundary
         if start_pos > 0:
             prev_char = text[start_pos - 1]
-            if prev_char not in ['\n', '。', '！', '？', '.', '!', '?']:
+            if prev_char not in ["\n", "。", "！", "？", ".", "!", "?"]:
                 # Doesn't start at sentence boundary
                 return False
 
         if end_pos < len(text):
-            next_char = text[end_pos] if end_pos < len(text) else ''
-            if next_char not in ['\n', '。', '！', '？', '.', '!', '?', ' ']:
+            next_char = text[end_pos] if end_pos < len(text) else ""
+            if next_char not in ["\n", "。", "！", "？", ".", "!", "?", " "]:
                 # Doesn't end at sentence boundary
                 return False
 

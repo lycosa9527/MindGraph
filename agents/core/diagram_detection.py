@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from prompts import get_prompt
@@ -20,12 +21,12 @@ logger = logging.getLogger(__name__)
 async def _detect_diagram_type_from_prompt(
     user_prompt: str,
     language: str,
-    model: str = 'qwen',
+    model: str = "qwen",
     # Token tracking parameters
     user_id=None,
     organization_id=None,
-    request_type='diagram_generation',
-    endpoint_path=None
+    request_type="diagram_generation",
+    endpoint_path=None,
 ) -> dict:
     """
     LLM-based diagram type detection using semantic understanding.
@@ -62,7 +63,7 @@ async def _detect_diagram_type_from_prompt(
             user_id=user_id,
             organization_id=organization_id,
             request_type=request_type,
-            endpoint_path=endpoint_path
+            endpoint_path=endpoint_path,
         )
 
         # Extract diagram type from response
@@ -71,53 +72,67 @@ async def _detect_diagram_type_from_prompt(
         # Validate the detected type - only include working diagram types
         # 8 thinking maps + 1 mindmap (concept_map is work in progress)
         valid_types = {
-            'circle_map', 'bubble_map', 'double_bubble_map',
-            'brace_map', 'bridge_map', 'tree_map',
-            'flow_map', 'multi_flow_map',
-            'mind_map'
+            "circle_map",
+            "bubble_map",
+            "double_bubble_map",
+            "brace_map",
+            "bridge_map",
+            "tree_map",
+            "flow_map",
+            "multi_flow_map",
+            "mind_map",
         }
 
         # Determine clarity based on LLM response and heuristics
-        clarity = 'clear'
+        clarity = "clear"
         has_topic = True
 
         # Check if LLM explicitly returned "unclear"
-        if detected_type == 'unclear':
-            clarity = 'very_unclear'
+        if detected_type == "unclear":
+            clarity = "very_unclear"
             has_topic = False
-            detected_type = 'mind_map'  # Default fallback
-            logger.warning(
-                "LLM explicitly returned 'unclear' for prompt: '%s'", user_prompt
-            )
+            detected_type = "mind_map"  # Default fallback
+            logger.warning("LLM explicitly returned 'unclear' for prompt: '%s'", user_prompt)
         elif detected_type not in valid_types:
             # LLM returned something invalid
-            clarity = 'very_unclear'
+            clarity = "very_unclear"
             has_topic = False
-            detected_type = 'mind_map'  # Default fallback
+            detected_type = "mind_map"  # Default fallback
             logger.warning(
                 "LLM returned invalid type '%s', prompt may be too complex: '%s'",
-                detected_type, user_prompt
+                detected_type,
+                user_prompt,
             )
         elif is_too_short or is_too_long:
             # Prompt length is suspicious
-            clarity = 'unclear'
+            clarity = "unclear"
             logger.debug("Prompt length is suspicious (words: %d)", len(prompt_words))
 
         result = {
-            'diagram_type': detected_type,
-            'clarity': clarity,
-            'has_topic': has_topic
+            "diagram_type": detected_type,
+            "clarity": clarity,
+            "has_topic": has_topic,
         }
 
         logger.debug(
             "LLM classification: '%s' -> %s (clarity: %s)",
-            user_prompt, detected_type, clarity
+            user_prompt,
+            detected_type,
+            clarity,
         )
         return result
 
     except ValueError as e:
         logger.error("Input validation failed: %s", e)
-        return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
+        return {
+            "diagram_type": "mind_map",
+            "clarity": "very_unclear",
+            "has_topic": False,
+        }
     except Exception as e:  # pylint: disable=broad-except
         logger.error("LLM classification failed: %s", e)
-        return {'diagram_type': 'mind_map', 'clarity': 'very_unclear', 'has_topic': False}
+        return {
+            "diagram_type": "mind_map",
+            "clarity": "very_unclear",
+            "has_topic": False,
+        }

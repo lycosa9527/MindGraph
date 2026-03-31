@@ -1,11 +1,12 @@
-﻿"""
+"""
 Token counting utilities for chunking.
 """
 
-import tiktoken
 import logging
-from typing import Callable
 from functools import lru_cache
+from typing import Callable
+
+import tiktoken
 
 logger = logging.getLogger(__name__)
 

@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Any
 import asyncio
 import logging
@@ -18,7 +19,7 @@ from clients.omni_client import OmniRealtimeClient, TurnDetectionMode
 from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMRateLimitError,
-    LLMQuotaExhaustedError
+    LLMQuotaExhaustedError,
 )
 
 logger = logging.getLogger(__name__)
@@ -50,12 +51,8 @@ class LLMHealthChecker:
 
         # Filter out physical models when load balancing is enabled
         # This prevents health_check() from checking both 'deepseek' and 'ark-deepseek'
-        if (self.llm_service.load_balancer and
-                self.llm_service.load_balancer.enabled):
-            logical_models = [
-                m for m in all_models
-                if not m.startswith('ark-')
-            ]
+        if self.llm_service.load_balancer and self.llm_service.load_balancer.enabled:
+            logical_models = [m for m in all_models if not m.startswith("ark-")]
             return logical_models
 
         return all_models
@@ -76,47 +73,47 @@ class LLMHealthChecker:
         # Check for DNS resolution errors (gaierror)
         if isinstance(e, socket.gaierror):
             return {
-                'status': 'unhealthy',
-                'error': 'DNS resolution failed',
-                'error_type': 'dns_error'
+                "status": "unhealthy",
+                "error": "DNS resolution failed",
+                "error_type": "dns_error",
             }
         if isinstance(e, (ConnectionError, TimeoutError)):
             return {
-                'status': 'unhealthy',
-                'error': 'Connection failed',
-                'error_type': 'connection_error'
+                "status": "unhealthy",
+                "error": "Connection failed",
+                "error_type": "connection_error",
             }
         if isinstance(e, asyncio.TimeoutError):
             return {
-                'status': 'unhealthy',
-                'error': 'Request timeout',
-                'error_type': 'timeout'
+                "status": "unhealthy",
+                "error": "Request timeout",
+                "error_type": "timeout",
             }
         if isinstance(e, LLMServiceError):
             # Use error handler's categorization
             if isinstance(e, LLMRateLimitError):
                 return {
-                    'status': 'unhealthy',
-                    'error': 'Rate limit exceeded',
-                    'error_type': 'rate_limit'
+                    "status": "unhealthy",
+                    "error": "Rate limit exceeded",
+                    "error_type": "rate_limit",
                 }
             if isinstance(e, LLMQuotaExhaustedError):
                 return {
-                    'status': 'unhealthy',
-                    'error': 'Quota exhausted',
-                    'error_type': 'quota_exhausted'
+                    "status": "unhealthy",
+                    "error": "Quota exhausted",
+                    "error_type": "quota_exhausted",
                 }
             return {
-                'status': 'unhealthy',
-                'error': 'Service unavailable',
-                'error_type': 'service_error'
+                "status": "unhealthy",
+                "error": "Service unavailable",
+                "error_type": "service_error",
             }
 
         # Generic error - don't expose details
         return {
-            'status': 'unhealthy',
-            'error': 'Service unavailable',
-            'error_type': 'unknown'
+            "status": "unhealthy",
+            "error": "Service unavailable",
+            "error_type": "unknown",
         }
 
     async def _check_omni_health(self, model: str) -> Dict[str, Any]:
@@ -131,7 +128,7 @@ class LLMHealthChecker:
         """
         try:
             start = time.time()
-            omni_client = self.llm_service.client_manager.get_client('omni')
+            omni_client = self.llm_service.client_manager.get_client("omni")
 
             # Test WebSocket connection by attempting to create and close a session
             async def test_omni_connection():
@@ -140,7 +137,7 @@ class LLMHealthChecker:
                     native_client = OmniRealtimeClient(
                         api_key=omni_client.api_key,
                         model=omni_client.model,
-                        turn_detection_mode=TurnDetectionMode.SERVER_VAD
+                        turn_detection_mode=TurnDetectionMode.SERVER_VAD,
                     )
                     await native_client.connect()
                     # Connection successful, close it
@@ -158,14 +155,14 @@ class LLMHealthChecker:
             await asyncio.wait_for(test_omni_connection(), timeout=5.0)
             latency = time.time() - start
             return {
-                'status': 'healthy',
-                'latency': round(latency, 2),
-                'note': 'WebSocket-based real-time voice service'
+                "status": "healthy",
+                "latency": round(latency, 2),
+                "note": "WebSocket-based real-time voice service",
             }
         except Exception as e:
             logger.warning("Health check failed for %s: %s", model, e)
             result = self._categorize_error(e)
-            result['note'] = 'WebSocket-based real-time voice service'
+            result["note"] = "WebSocket-based real-time voice service"
             return result
 
     async def _check_model_health(self, model: str) -> Dict[str, Any]:
@@ -180,17 +177,9 @@ class LLMHealthChecker:
         """
         try:
             start = time.time()
-            await self.llm_service.chat(
-                prompt="Test",
-                model=model,
-                max_tokens=10,
-                timeout=5.0
-            )
+            await self.llm_service.chat(prompt="Test", model=model, max_tokens=10, timeout=5.0)
             latency = time.time() - start
-            return {
-                'status': 'healthy',
-                'latency': round(latency, 2)
-            }
+            return {"status": "healthy", "latency": round(latency, 2)}
         except Exception as e:
             logger.warning("Health check failed for %s: %s", model, e)
             return self._categorize_error(e)
@@ -205,12 +194,12 @@ class LLMHealthChecker:
             Status dict for each model with available_models list
         """
         available_models = self.get_available_models()
-        results: Dict[str, Any] = {'available_models': available_models}
+        results: Dict[str, Any] = {"available_models": available_models}
 
         # Create health check tasks for all models (parallel execution)
         tasks = []
         for model in available_models:
-            if model == 'omni':
+            if model == "omni":
                 tasks.append(self._check_omni_health(model))
             else:
                 tasks.append(self._check_model_health(model))
@@ -221,10 +210,7 @@ class LLMHealthChecker:
         # Process results
         for model, result in zip(available_models, health_results):
             if isinstance(result, Exception):
-                logger.error(
-                    "Health check exception for %s: %s",
-                    model, result, exc_info=True
-                )
+                logger.error("Health check exception for %s: %s", model, result, exc_info=True)
                 results[model] = self._categorize_error(result)
             else:
                 results[model] = result

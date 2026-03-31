@@ -9,14 +9,25 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from datetime import datetime
 from typing import Optional
 import pickle
 import uuid
 
 from sqlalchemy import (
-    Column, Integer, String, DateTime, ForeignKey, Text, Enum, Index,
-    CheckConstraint, UniqueConstraint, LargeBinary, Float
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+    Text,
+    Enum,
+    Index,
+    CheckConstraint,
+    UniqueConstraint,
+    LargeBinary,
+    Float,
 )
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
@@ -29,17 +40,23 @@ def generate_uuid():
     return str(uuid.uuid4())
 
 
-
 class KnowledgeSpace(Base):
     """
     User's knowledge space (one per user)
 
     Each user has exactly one knowledge space that contains their uploaded documents.
     """
+
     __tablename__ = "knowledge_spaces"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
-    user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), unique=True, nullable=False, index=True)
+    user_id = Column(
+        Integer,
+        ForeignKey("users.id", ondelete="CASCADE"),
+        unique=True,
+        nullable=False,
+        index=True,
+    )
 
     # Processing rules configuration (JSON)
     # Format: {
@@ -75,10 +92,16 @@ class KnowledgeDocument(Base):
 
     Max 5 documents per user. Documents are processed asynchronously.
     """
+
     __tablename__ = "knowledge_documents"
 
     id = Column(Integer, primary_key=True, index=True)
-    space_id = Column(Integer, ForeignKey("knowledge_spaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    space_id = Column(
+        Integer,
+        ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     file_name = Column(String(255), nullable=False)
     file_path = Column(String(500), nullable=False)  # Storage path
     file_type = Column(String(100), nullable=False)  # MIME type
@@ -86,10 +109,10 @@ class KnowledgeDocument(Base):
 
     # Processing status
     status = Column(
-        Enum('pending', 'processing', 'completed', 'failed', name='document_status'),
-        default='pending',
+        Enum("pending", "processing", "completed", "failed", name="document_status"),
+        default="pending",
         nullable=False,
-        index=True
+        index=True,
     )
     error_message = Column(Text, nullable=True)  # Error details if failed
     processing_task_id = Column(String(255), nullable=True)  # Celery task ID
@@ -105,7 +128,12 @@ class KnowledgeDocument(Base):
     last_updated_hash = Column(String(64), nullable=True)  # Hash of last updated content for change detection
 
     # Batch processing
-    batch_id = Column(Integer, ForeignKey("document_batches.id", ondelete="SET NULL"), nullable=True, index=True)
+    batch_id = Column(
+        Integer,
+        ForeignKey("document_batches.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Advanced metadata
     # Custom metadata dict (renamed from 'metadata' - reserved in SQLAlchemy)
@@ -127,8 +155,11 @@ class KnowledgeDocument(Base):
 
     # Constraints and indexes for metadata filtering
     __table_args__ = (
-        UniqueConstraint('space_id', 'file_name', name='uq_space_filename'),
-        CheckConstraint("status IN ('pending', 'processing', 'completed', 'failed')", name='chk_document_status'),
+        UniqueConstraint("space_id", "file_name", name="uq_space_filename"),
+        CheckConstraint(
+            "status IN ('pending', 'processing', 'completed', 'failed')",
+            name="chk_document_status",
+        ),
     )
 
     def __repr__(self):
@@ -144,10 +175,16 @@ class DocumentChunk(Base):
     - Primary key in database for text lookup
     - Point ID in Qdrant for vector lookup
     """
+
     __tablename__ = "document_chunks"
 
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     chunk_index = Column(Integer, nullable=False)  # Order within document
     text = Column(Text, nullable=False)  # Chunk content - stored in main database only
 
@@ -162,9 +199,7 @@ class DocumentChunk(Base):
     document = relationship("KnowledgeDocument", back_populates="chunks")
 
     # Indexes for efficient queries (id index from index=True; used for Qdrant lookup)
-    __table_args__ = (
-        Index('ix_document_chunks_document_id_chunk_index', 'document_id', 'chunk_index'),
-    )
+    __table_args__ = (Index("ix_document_chunks_document_id_chunk_index", "document_id", "chunk_index"),)
 
     def __repr__(self):
         return f"<DocumentChunk id={self.id} document_id={self.document_id} chunk_index={self.chunk_index}>"
@@ -177,11 +212,12 @@ class Embedding(Base):
     Stores embeddings by text hash to avoid re-computing embeddings for identical text.
     Used for document embeddings (not query embeddings - those use Redis).
     """
+
     __tablename__ = "embeddings"
 
     id = Column(Integer, primary_key=True, index=True)
-    model_name = Column(String(255), nullable=False, default='text-embedding-v4', index=True)
-    provider_name = Column(String(255), nullable=False, default='dashscope', index=True)
+    model_name = Column(String(255), nullable=False, default="text-embedding-v4", index=True)
+    provider_name = Column(String(255), nullable=False, default="dashscope", index=True)
     hash = Column(String(64), nullable=False, index=True)  # MD5 hash of text
     embedding = Column(LargeBinary, nullable=False)  # Pickled embedding vector
 
@@ -190,7 +226,12 @@ class Embedding(Base):
 
     # Unique constraint: same model + provider + hash = same embedding
     __table_args__ = (
-        UniqueConstraint('model_name', 'provider_name', 'hash', name='uq_embedding_model_provider_hash'),
+        UniqueConstraint(
+            "model_name",
+            "provider_name",
+            "hash",
+            name="uq_embedding_model_provider_hash",
+        ),
     )
 
     def set_embedding(self, embedding_data: list[float]) -> None:
@@ -211,11 +252,17 @@ class KnowledgeQuery(Base):
 
     Records all retrieval queries for analytics, optimization, and insights.
     """
+
     __tablename__ = "knowledge_queries"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(Integer, ForeignKey("knowledge_spaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    space_id = Column(
+        Integer,
+        ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Query details
     query = Column(Text, nullable=False)  # User's query text
@@ -233,7 +280,7 @@ class KnowledgeQuery(Base):
     total_ms = Column(Float, nullable=True)  # Total query time
 
     # Source tracking
-    source = Column(String(100), nullable=False, default='api')  # api, diagram_generation, etc.
+    source = Column(String(100), nullable=False, default="api")  # api, diagram_generation, etc.
     source_context = Column(JSONB, nullable=True)  # Additional context (e.g., diagram_type)
 
     # Timestamp
@@ -244,9 +291,9 @@ class KnowledgeQuery(Base):
 
     # Indexes for analytics queries
     __table_args__ = (
-        Index('ix_knowledge_queries_user_id_created_at', 'user_id', 'created_at'),
-        Index('ix_knowledge_queries_method', 'method'),
-        Index('ix_knowledge_queries_source', 'source'),
+        Index("ix_knowledge_queries_user_id_created_at", "user_id", "created_at"),
+        Index("ix_knowledge_queries_method", "method"),
+        Index("ix_knowledge_queries_source", "source"),
     )
 
     def __repr__(self):
@@ -260,10 +307,16 @@ class ChunkAttachment(Base):
     Allows chunks to have associated files (images, PDFs, etc.) that are
     displayed with the chunk content in retrieval results.
     """
+
     __tablename__ = "chunk_attachments"
 
     id = Column(Integer, primary_key=True, index=True)
-    chunk_id = Column(Integer, ForeignKey("document_chunks.id", ondelete="CASCADE"), nullable=False, index=True)
+    chunk_id = Column(
+        Integer,
+        ForeignKey("document_chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # File information (stored directly, not as foreign key to keep it simple)
     file_name = Column(String(255), nullable=False)
@@ -272,7 +325,7 @@ class ChunkAttachment(Base):
     file_size = Column(Integer, nullable=False)  # Bytes
 
     # Attachment metadata
-    attachment_type = Column(String(50), nullable=False, default='file')  # 'image', 'file', 'document'
+    attachment_type = Column(String(50), nullable=False, default="file")  # 'image', 'file', 'document'
     position = Column(Integer, nullable=False, default=0)  # Order within chunk
 
     # Timestamp
@@ -282,9 +335,7 @@ class ChunkAttachment(Base):
     chunk = relationship("DocumentChunk", backref="attachments")
 
     # Indexes
-    __table_args__ = (
-        Index('ix_chunk_attachments_chunk_id_position', 'chunk_id', 'position'),
-    )
+    __table_args__ = (Index("ix_chunk_attachments_chunk_id_position", "chunk_id", "position"),)
 
     def __repr__(self):
         return (
@@ -300,10 +351,16 @@ class ChildChunk(Base):
     Used for hierarchical segmentation where parent chunks contain
     multiple child chunks for finer-grained retrieval.
     """
+
     __tablename__ = "child_chunks"
 
     id = Column(Integer, primary_key=True, index=True)
-    parent_chunk_id = Column(Integer, ForeignKey("document_chunks.id", ondelete="CASCADE"), nullable=False, index=True)
+    parent_chunk_id = Column(
+        Integer,
+        ForeignKey("document_chunks.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Content
     content = Column(Text, nullable=False)
@@ -325,9 +382,7 @@ class ChildChunk(Base):
     parent_chunk = relationship("DocumentChunk", backref="child_chunks")
 
     # Indexes
-    __table_args__ = (
-        Index('ix_child_chunks_parent_position', 'parent_chunk_id', 'position'),
-    )
+    __table_args__ = (Index("ix_child_chunks_parent_position", "parent_chunk_id", "position"),)
 
     def __repr__(self):
         return f"<ChildChunk id={self.id} parent_chunk_id={self.parent_chunk_id} position={self.position}>"
@@ -339,6 +394,7 @@ class DocumentBatch(Base):
 
     Tracks batch uploads and processing progress for multiple documents.
     """
+
     __tablename__ = "document_batches"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -346,10 +402,10 @@ class DocumentBatch(Base):
 
     # Batch status
     status = Column(
-        Enum('pending', 'processing', 'completed', 'failed', name='batch_status'),
-        default='pending',
+        Enum("pending", "processing", "completed", "failed", name="batch_status"),
+        default="pending",
         nullable=False,
-        index=True
+        index=True,
     )
 
     # Progress tracking
@@ -380,10 +436,16 @@ class DocumentVersion(Base):
 
     Tracks document versions for rollback capability.
     """
+
     __tablename__ = "document_versions"
 
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("knowledge_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     version_number = Column(Integer, nullable=False, index=True)
 
     # Version file information
@@ -405,8 +467,8 @@ class DocumentVersion(Base):
 
     # Constraints
     __table_args__ = (
-        UniqueConstraint('document_id', 'version_number', name='uq_document_version'),
-        Index('ix_document_versions_document_id_version', 'document_id', 'version_number'),
+        UniqueConstraint("document_id", "version_number", name="uq_document_version"),
+        Index("ix_document_versions_document_id_version", "document_id", "version_number"),
     )
 
     def __repr__(self):
@@ -419,18 +481,29 @@ class QueryFeedback(Base):
 
     Records user feedback on retrieval results to improve query quality.
     """
+
     __tablename__ = "query_feedback"
 
     id = Column(Integer, primary_key=True, index=True)
-    query_id = Column(Integer, ForeignKey("knowledge_queries.id", ondelete="CASCADE"), nullable=False, index=True)
+    query_id = Column(
+        Integer,
+        ForeignKey("knowledge_queries.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(Integer, ForeignKey("knowledge_spaces.id", ondelete="CASCADE"), nullable=False, index=True)
+    space_id = Column(
+        Integer,
+        ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
 
     # Feedback details
     feedback_type = Column(
-        Enum('positive', 'negative', 'neutral', name='feedback_type'),
+        Enum("positive", "negative", "neutral", name="feedback_type"),
         nullable=False,
-        index=True
+        index=True,
     )
     feedback_score = Column(Integer, nullable=True)  # 1-5 rating
 
@@ -454,11 +527,17 @@ class QueryTemplate(Base):
 
     Allows users to save and reuse common queries.
     """
+
     __tablename__ = "query_templates"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(Integer, ForeignKey("knowledge_spaces.id", ondelete="CASCADE"), nullable=True, index=True)
+    space_id = Column(
+        Integer,
+        ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     # Template details
     name = Column(String(255), nullable=False)
@@ -486,6 +565,7 @@ class DocumentRelationship(Base):
 
     Supports document linking, references, citations, and cross-document retrieval.
     """
+
     __tablename__ = "document_relationships"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -493,20 +573,18 @@ class DocumentRelationship(Base):
         Integer,
         ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
     target_document_id = Column(
         Integer,
         ForeignKey("knowledge_documents.id", ondelete="CASCADE"),
         nullable=False,
-        index=True
+        index=True,
     )
 
     # Relationship type
     relationship_type = Column(
-        String(50),
-        nullable=False,
-        index=True
+        String(50), nullable=False, index=True
     )  # 'reference', 'citation', 'related', 'parent', 'child', 'similar'
 
     # Relationship metadata
@@ -523,26 +601,26 @@ class DocumentRelationship(Base):
     source_document = relationship(
         "KnowledgeDocument",
         foreign_keys=[source_document_id],
-        backref="outgoing_relationships"
+        backref="outgoing_relationships",
     )
     target_document = relationship(
         "KnowledgeDocument",
         foreign_keys=[target_document_id],
-        backref="incoming_relationships"
+        backref="incoming_relationships",
     )
 
     # Constraints
     __table_args__ = (
         UniqueConstraint(
-            'source_document_id',
-            'target_document_id',
-            'relationship_type',
-            name='uq_document_relationship'
+            "source_document_id",
+            "target_document_id",
+            "relationship_type",
+            name="uq_document_relationship",
         ),
         Index(
-            'ix_document_relationships_source_target',
-            'source_document_id',
-            'target_document_id'
+            "ix_document_relationships_source_target",
+            "source_document_id",
+            "target_document_id",
         ),
     )
 
@@ -560,11 +638,17 @@ class EvaluationDataset(Base):
 
     Contains queries with expected results for quality metrics calculation.
     """
+
     __tablename__ = "evaluation_datasets"
 
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True)
-    space_id = Column(Integer, ForeignKey("knowledge_spaces.id", ondelete="CASCADE"), nullable=True, index=True)
+    space_id = Column(
+        Integer,
+        ForeignKey("knowledge_spaces.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
+    )
 
     # Dataset details
     name = Column(String(255), nullable=False)
@@ -592,11 +676,22 @@ class EvaluationResult(Base):
 
     Stores quality metrics for retrieval evaluation.
     """
+
     __tablename__ = "evaluation_results"
 
     id = Column(Integer, primary_key=True, index=True)
-    dataset_id = Column(Integer, ForeignKey("evaluation_datasets.id", ondelete="CASCADE"), nullable=False, index=True)
-    query_id = Column(Integer, ForeignKey("knowledge_queries.id", ondelete="SET NULL"), nullable=True, index=True)
+    dataset_id = Column(
+        Integer,
+        ForeignKey("evaluation_datasets.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
+    query_id = Column(
+        Integer,
+        ForeignKey("knowledge_queries.id", ondelete="SET NULL"),
+        nullable=True,
+        index=True,
+    )
 
     # Quality metrics (JSON)
     # Format: {"precision": 0.8, "recall": 0.6, "mrr": 0.75, "ndcg": 0.82}
@@ -623,6 +718,7 @@ class ChunkTestResult(Base):
     Stores results from RAG chunk testing comparing semchunk vs mindchunk.
     Uses UUID for session_id to enable secure, non-guessable session tracking.
     """
+
     __tablename__ = "chunk_test_results"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -645,10 +741,10 @@ class ChunkTestResult(Base):
 
     # Progress tracking
     status = Column(
-        Enum('pending', 'processing', 'completed', 'failed', name='chunk_test_status'),
-        default='pending',
+        Enum("pending", "processing", "completed", "failed", name="chunk_test_status"),
+        default="pending",
         nullable=False,
-        index=True
+        index=True,
     )
     current_method = Column(String(50), nullable=True)  # Currently processing chunking method
     # Current stage: 'chunking', 'retrieval', 'evaluation', 'completed'
@@ -666,7 +762,7 @@ class ChunkTestResult(Base):
     def processing_progress(self) -> Optional[str]:
         """
         Get standardized progress string format compatible with ChunkTestDocument.
-        
+
         Returns:
             Progress string in format "stage (method)" or "stage"
         """
@@ -681,7 +777,7 @@ class ChunkTestResult(Base):
     def processing_progress_percent(self) -> int:
         """
         Get progress percentage (alias for progress_percent for consistency).
-        
+
         Returns:
             Progress percentage (0-100)
         """
@@ -699,6 +795,7 @@ class ChunkTestDocument(Base):
     that don't interfere with the user's knowledge space.
     Max 5 documents per user for testing purposes.
     """
+
     __tablename__ = "chunk_test_documents"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -710,10 +807,16 @@ class ChunkTestDocument(Base):
 
     # Processing status
     status = Column(
-        Enum('pending', 'processing', 'completed', 'failed', name='chunk_test_document_status'),
-        default='pending',
+        Enum(
+            "pending",
+            "processing",
+            "completed",
+            "failed",
+            name="chunk_test_document_status",
+        ),
+        default="pending",
         nullable=False,
-        index=True
+        index=True,
     )
     error_message = Column(Text, nullable=True)  # Error details if failed
     processing_task_id = Column(String(255), nullable=True)  # Celery task ID
@@ -731,22 +834,26 @@ class ChunkTestDocument(Base):
 
     # Relationships
     user = relationship("User", backref="chunk_test_documents")
-    chunks = relationship("ChunkTestDocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    chunks = relationship(
+        "ChunkTestDocumentChunk",
+        back_populates="document",
+        cascade="all, delete-orphan",
+    )
 
     # Constraints
     __table_args__ = (
         CheckConstraint(
             "status IN ('pending', 'processing', 'completed', 'failed')",
-            name='chk_chunk_test_document_status'
+            name="chk_chunk_test_document_status",
         ),
-        Index('ix_chunk_test_documents_user_id_status', 'user_id', 'status'),
+        Index("ix_chunk_test_documents_user_id_status", "user_id", "status"),
     )
 
     @property
     def progress_percent(self) -> int:
         """
         Get progress percentage (alias for processing_progress_percent for consistency).
-        
+
         Returns:
             Progress percentage (0-100)
         """
@@ -762,10 +869,16 @@ class ChunkTestDocumentChunk(Base):
 
     Separate from DocumentChunk - these chunks are only used for testing.
     """
+
     __tablename__ = "chunk_test_document_chunks"
 
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("chunk_test_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("chunk_test_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     chunk_index = Column(Integer, nullable=False)  # Order within document
     text = Column(Text, nullable=False)  # Chunk content
 
@@ -787,8 +900,16 @@ class ChunkTestDocumentChunk(Base):
 
     # Indexes for efficient queries (chunking_method single-column index from index=True)
     __table_args__ = (
-        Index('ix_chunk_test_document_chunks_document_id_chunk_index', 'document_id', 'chunk_index'),
-        Index('ix_chunk_test_document_chunks_document_method', 'document_id', 'chunking_method'),
+        Index(
+            "ix_chunk_test_document_chunks_document_id_chunk_index",
+            "document_id",
+            "chunk_index",
+        ),
+        Index(
+            "ix_chunk_test_document_chunks_document_method",
+            "document_id",
+            "chunking_method",
+        ),
     )
 
     def __repr__(self):

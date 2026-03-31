@@ -31,6 +31,7 @@ DUMP_EXT = ".dump"
 
 # ── pg binary lookup ─────────────────────────────────────────────────
 
+
 def _find_pg_binary(name: str) -> Optional[str]:
     """Locate pg_dump or pg_restore on the system PATH."""
     pg_bin = os.environ.get("PG_BIN_DIR", "")
@@ -48,9 +49,7 @@ def _find_pg_binary(name: str) -> Optional[str]:
 
     try:
         cmd = ["where", name] if sys.platform == "win32" else ["which", name]
-        result = subprocess.run(
-            cmd, capture_output=True, timeout=2, check=False
-        )
+        result = subprocess.run(cmd, capture_output=True, timeout=2, check=False)
         if result.returncode == 0 and result.stdout:
             first_line = result.stdout.decode("utf-8").strip().split("\n")[0]
             return first_line.strip() if first_line.strip() else None
@@ -60,6 +59,7 @@ def _find_pg_binary(name: str) -> Optional[str]:
 
 
 # ── backup folder scanning ───────────────────────────────────────────
+
 
 def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
     """
@@ -81,9 +81,7 @@ def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
         info: Dict[str, Any] = {
             "name": entry.name,
             "size_bytes": stat.st_size,
-            "modified_at": datetime.fromtimestamp(
-                stat.st_mtime
-            ).isoformat(),
+            "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
         }
 
         if ".db" in entry.name and not entry.name.endswith(DUMP_EXT):
@@ -105,6 +103,7 @@ def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
 
 # ── DB stats ─────────────────────────────────────────────────────────
 
+
 def get_pg_stats(pg_engine: Engine) -> Dict[str, Any]:
     """Return table row counts and summary from the live PostgreSQL db."""
     pg_inspector = inspect(pg_engine)
@@ -114,9 +113,7 @@ def get_pg_stats(pg_engine: Engine) -> Dict[str, Any]:
     with pg_engine.connect() as conn:
         for table in table_names:
             try:
-                result = conn.execute(
-                    text(f'SELECT COUNT(*) FROM "{table}"')
-                )
+                result = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
                 counts[table] = result.scalar() or 0
             except Exception:
                 counts[table] = -1
@@ -137,6 +134,7 @@ def get_pg_stats(pg_engine: Engine) -> Dict[str, Any]:
 
 
 # ── manifest ──────────────────────────────────────────────────────────
+
 
 def _build_manifest(
     filename: str,
@@ -167,9 +165,7 @@ def _build_manifest(
 
         manifest["total_tables"] = len(all_tables)
         manifest["total_columns"] = total_cols
-        manifest["total_records"] = sum(
-            v for v in counts.values() if v >= 0
-        )
+        manifest["total_records"] = sum(v for v in counts.values() if v >= 0)
     except Exception:
         pass
 
@@ -177,6 +173,7 @@ def _build_manifest(
 
 
 # ── export (pg_dump) ─────────────────────────────────────────────────
+
 
 def export_postgres_dump(
     db_url: str,
@@ -207,7 +204,11 @@ def export_postgres_dump(
         libpq_database_url(db_url),
     ]
     result = subprocess.run(
-        cmd, capture_output=True, timeout=3600, check=False, text=True,
+        cmd,
+        capture_output=True,
+        timeout=3600,
+        check=False,
+        text=True,
     )
 
     if result.returncode != 0:
@@ -228,7 +229,8 @@ def export_postgres_dump(
 
     logger.info(
         "[DBExport] Dump saved: %s (%d bytes)",
-        filename, dump_path.stat().st_size,
+        filename,
+        dump_path.stat().st_size,
     )
     return {
         "success": True,
@@ -239,6 +241,7 @@ def export_postgres_dump(
 
 
 # ── import (pg_restore) ──────────────────────────────────────────────
+
 
 def import_postgres_dump(
     db_url: str,
@@ -274,13 +277,19 @@ def import_postgres_dump(
         str(dump_path),
     ]
     result = subprocess.run(
-        cmd, capture_output=True, timeout=3600, check=False, text=True,
+        cmd,
+        capture_output=True,
+        timeout=3600,
+        check=False,
+        text=True,
     )
 
     if result.returncode != 0:
         stderr = (result.stderr or "")[:500]
         logger.error(
-            "pg_restore failed (exit %d): %s", result.returncode, stderr,
+            "pg_restore failed (exit %d): %s",
+            result.returncode,
+            stderr,
         )
         return {"success": False, "error": stderr}
 
@@ -296,6 +305,7 @@ def import_postgres_dump(
 
 # ── list dumps ────────────────────────────────────────────────────────
 
+
 def list_pg_dumps(backup_dir: Path) -> List[Dict[str, Any]]:
     """Return metadata for every ``.dump`` file in the backup folder."""
     if not backup_dir.exists():
@@ -309,9 +319,7 @@ def list_pg_dumps(backup_dir: Path) -> List[Dict[str, Any]]:
         info: Dict[str, Any] = {
             "name": entry.name,
             "size_bytes": stat.st_size,
-            "modified_at": datetime.fromtimestamp(
-                stat.st_mtime
-            ).isoformat(),
+            "modified_at": datetime.fromtimestamp(stat.st_mtime).isoformat(),
         }
         manifest_path = backup_dir / f"{entry.name}.manifest.json"
         if manifest_path.exists():
@@ -327,18 +335,14 @@ def list_pg_dumps(backup_dir: Path) -> List[Dict[str, Any]]:
 
 # ── internal helpers ──────────────────────────────────────────────────
 
+
 def _get_row_counts(pg_engine: Engine) -> Dict[str, int]:
     pg_inspector = inspect(pg_engine)
     counts: Dict[str, int] = {}
     with pg_engine.connect() as conn:
         for table in pg_inspector.get_table_names():
             try:
-                counts[table] = (
-                    conn.execute(
-                        text(f'SELECT COUNT(*) FROM "{table}"')
-                    ).scalar()
-                    or 0
-                )
+                counts[table] = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"')).scalar() or 0
             except Exception:
                 pass
     return counts
@@ -351,9 +355,6 @@ def _reset_all_sequences(pg_engine: Engine) -> None:
         for table in pg_inspector.get_table_names():
             seq_name = f"{table}_id_seq"
             try:
-                conn.execute(text(
-                    f"SELECT setval('{seq_name}', "
-                    f"COALESCE((SELECT MAX(id) FROM \"{table}\"), 1))"
-                ))
+                conn.execute(text(f"SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM \"{table}\"), 1))"))
             except Exception:
                 pass

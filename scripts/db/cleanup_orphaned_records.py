@@ -6,7 +6,7 @@ This should be run BEFORE migration to clean up the database.
 
 Usage:
     python scripts/db/cleanup_orphaned_records.py
-    
+
     # With options:
     python scripts/db/cleanup_orphaned_records.py --live
     python scripts/db/cleanup_orphaned_records.py --live --yes
@@ -18,10 +18,10 @@ Options:
 Examples:
     # Dry run (default - shows what would be deleted without actually deleting)
     python scripts/db/cleanup_orphaned_records.py
-    
+
     # Actually delete orphaned records (with confirmation)
     python scripts/db/cleanup_orphaned_records.py --live
-    
+
     # Delete without confirmation prompt
     python scripts/db/cleanup_orphaned_records.py --live --yes
 
@@ -47,8 +47,8 @@ _project_root = Path(__file__).parent.parent.parent
 def get_sqlite_db_path() -> Optional[Path]:
     """Find SQLite database file."""
     # Check environment variable
-    db_url = os.getenv('DATABASE_URL', '')
-    if 'sqlite' in db_url.lower():
+    db_url = os.getenv("DATABASE_URL", "")
+    if "sqlite" in db_url.lower():
         if db_url.startswith("sqlite:////"):
             db_path = Path(db_url.replace("sqlite:////", "/"))
         elif db_url.startswith("sqlite:///"):
@@ -84,19 +84,15 @@ def get_sqlite_db_path() -> Optional[Path]:
 def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
     """
     Clean up orphaned records from SQLite database.
-    
+
     Args:
         db_path: Path to SQLite database
         dry_run: If True, only report what would be deleted without actually deleting
-        
+
     Returns:
         Dictionary with cleanup statistics
     """
-    stats = {
-        'tables_cleaned': [],
-        'records_deleted': {},
-        'total_deleted': 0
-    }
+    stats = {"tables_cleaned": [], "records_deleted": {}, "total_deleted": 0}
 
     conn = sqlite3.connect(str(db_path))
     conn.row_factory = sqlite3.Row
@@ -116,7 +112,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
         LEFT JOIN users u ON t.user_id = u.id
         WHERE t.user_id IS NOT NULL AND u.id IS NULL
     """)
-    orphaned_count = cursor.fetchone()['count']
+    orphaned_count = cursor.fetchone()["count"]
 
     if orphaned_count > 0:
         print(f"  Found {orphaned_count:,} orphaned records (user_id references deleted users)")
@@ -130,12 +126,12 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
             deleted = cursor.rowcount
             conn.commit()
             print(f"  [DELETED] {deleted:,} orphaned token_usage records")
-            stats['records_deleted']['token_usage'] = deleted
-            stats['total_deleted'] += deleted
+            stats["records_deleted"]["token_usage"] = deleted
+            stats["total_deleted"] += deleted
         else:
             print(f"  [WOULD DELETE] {orphaned_count:,} orphaned token_usage records")
-            stats['records_deleted']['token_usage'] = orphaned_count
-            stats['total_deleted'] += orphaned_count
+            stats["records_deleted"]["token_usage"] = orphaned_count
+            stats["total_deleted"] += orphaned_count
 
         # Show sample orphaned user_ids
         cursor.execute("""
@@ -156,18 +152,21 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
     print("\nChecking other tables:")
 
     tables_to_check = [
-        ('diagrams', 'user_id', 'users', 'id'),
-        ('knowledge_spaces', 'user_id', 'users', 'id'),
-        ('debate_sessions', 'user_id', 'users', 'id'),
-        ('debate_participants', 'user_id', 'users', 'id'),
-        ('pinned_conversations', 'user_id', 'users', 'id'),
-        ('api_keys', 'organization_id', 'organizations', 'id'),
+        ("diagrams", "user_id", "users", "id"),
+        ("knowledge_spaces", "user_id", "users", "id"),
+        ("debate_sessions", "user_id", "users", "id"),
+        ("debate_participants", "user_id", "users", "id"),
+        ("pinned_conversations", "user_id", "users", "id"),
+        ("api_keys", "organization_id", "organizations", "id"),
     ]
 
     for table_name, fk_col, parent_table, parent_col in tables_to_check:
         try:
             # Check if table exists
-            cursor.execute("SELECT name FROM sqlite_master WHERE type='table' AND name=?", (table_name,))
+            cursor.execute(
+                "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
+                (table_name,),
+            )
             if not cursor.fetchone():
                 continue
 
@@ -184,7 +183,7 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
                 LEFT JOIN {parent_table} p ON t.{fk_col} = p.{parent_col}
                 WHERE t.{fk_col} IS NOT NULL AND p.{parent_col} IS NULL
             """)
-            orphaned_count = cursor.fetchone()['count']
+            orphaned_count = cursor.fetchone()["count"]
 
             if orphaned_count > 0:
                 print(f"\n  {table_name}.{fk_col}:")
@@ -199,12 +198,12 @@ def cleanup_orphaned_records(db_path: Path, dry_run: bool = True) -> dict:
                     deleted = cursor.rowcount
                     conn.commit()
                     print(f"    [DELETED] {deleted:,} records")
-                    stats['records_deleted'][table_name] = deleted
-                    stats['total_deleted'] += deleted
+                    stats["records_deleted"][table_name] = deleted
+                    stats["total_deleted"] += deleted
                 else:
                     print(f"    [WOULD DELETE] {orphaned_count:,} records")
-                    stats['records_deleted'][table_name] = orphaned_count
-                    stats['total_deleted'] += orphaned_count
+                    stats["records_deleted"][table_name] = orphaned_count
+                    stats["total_deleted"] += orphaned_count
         except Exception as e:
             print(f"    [ERROR] Could not check {table_name}: {e}")
 
@@ -225,17 +224,17 @@ def main():
     print(f"   Size: {db_path.stat().st_size / 1024 / 1024:.2f} MB\n")
 
     # Check for --live flag
-    dry_run = '--live' not in sys.argv
+    dry_run = "--live" not in sys.argv
 
     if dry_run:
         print("[INFO] Running in DRY RUN mode. Use --live to actually delete records.\n")
     else:
         print("[WARNING] Running in LIVE mode. Records will be permanently deleted!\n")
         # Skip confirmation if --yes flag is provided or running non-interactively
-        if '--yes' not in sys.argv:
+        if "--yes" not in sys.argv:
             try:
                 response = input("Are you sure you want to delete orphaned records? (yes/no): ")
-                if response.lower() != 'yes':
+                if response.lower() != "yes":
                     print("Aborted.")
                     return
             except EOFError:
@@ -259,10 +258,10 @@ def main():
     print("Summary")
     print("=" * 80)
 
-    if stats['total_deleted'] > 0:
+    if stats["total_deleted"] > 0:
         print(f"\nTotal orphaned records: {stats['total_deleted']:,}")
         print("\nBreakdown by table:")
-        for table, count in stats['records_deleted'].items():
+        for table, count in stats["records_deleted"].items():
             print(f"  {table}: {count:,} records")
 
         if dry_run:

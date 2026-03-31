@@ -33,7 +33,6 @@ Proprietary License
 """
 
 
-
 logger = logging.getLogger(__name__)
 
 # Key prefixes
@@ -97,7 +96,7 @@ class ActivityStreamService:
         name = name.strip()
 
         # Check if name contains Chinese characters
-        has_chinese = bool(re.search(r'[\u4e00-\u9fff]', name))
+        has_chinese = bool(re.search(r"[\u4e00-\u9fff]", name))
 
         if has_chinese:
             # Chinese name: keep first character, mask the rest
@@ -149,7 +148,7 @@ class ActivityStreamService:
                 logger.error("[ActivityStream] Error getting anonymized username: %s", e)
 
         # Fallback: in-memory mapping
-        if not hasattr(self, '_anon_map'):
+        if not hasattr(self, "_anon_map"):
             self._anon_map = {}
 
         if user_id not in self._anon_map:
@@ -170,7 +169,11 @@ class ActivityStreamService:
         """
         queue = asyncio.Queue()
         self._connections[connection_id] = queue
-        logger.debug("[ActivityStream] Added connection: %s (total: %s)", connection_id, len(self._connections))
+        logger.debug(
+            "[ActivityStream] Added connection: %s (total: %s)",
+            connection_id,
+            len(self._connections),
+        )
         return queue
 
     def remove_connection(self, connection_id: str):
@@ -185,7 +188,7 @@ class ActivityStreamService:
             logger.debug(
                 "[ActivityStream] Removed connection: %s (remaining: %s)",
                 connection_id,
-                len(self._connections)
+                len(self._connections),
             )
 
     def _check_and_set_dedup(self, user_id: int, action: str, diagram_type: str) -> bool:
@@ -217,7 +220,7 @@ class ActivityStreamService:
                 dedup_key,
                 "1",
                 ex=DEDUP_WINDOW_SECONDS,  # TTL: 60 seconds
-                nx=True  # Only set if not exists
+                nx=True,  # Only set if not exists
             )
             # If was_set is True, this is the first request (not duplicate)
             # If was_set is False, key already exists (duplicate)
@@ -260,7 +263,7 @@ class ActivityStreamService:
         action: str,
         diagram_type: str,
         topic: str = "",
-        user_name: Optional[str] = None
+        user_name: Optional[str] = None,
     ):
         """
         Broadcast an activity event to all connected clients.
@@ -281,7 +284,12 @@ class ActivityStreamService:
         # This prevents multiple broadcasts when auto-complete makes concurrent requests
         is_duplicate = self._check_and_set_dedup(user_id, action, diagram_type)
         if is_duplicate:
-            logger.debug("[ActivityStream] Skipping duplicate activity: user %s, %s %s", user_id, action, diagram_type)
+            logger.debug(
+                "[ActivityStream] Skipping duplicate activity: user %s, %s %s",
+                user_id,
+                action,
+                diagram_type,
+            )
             return
 
         # Mask user name for privacy
@@ -295,7 +303,7 @@ class ActivityStreamService:
             "user_id": user_id,  # Include user_id for database storage
             "action": action,
             "diagram_type": diagram_type,
-            "topic": topic  # Include topic for database storage
+            "topic": topic,  # Include topic for database storage
         }
 
         # Store activity (Redis and memory - synchronous, fast)
@@ -317,7 +325,12 @@ class ActivityStreamService:
         for conn_id in disconnected:
             self.remove_connection(conn_id)
 
-        logger.debug("[ActivityStream] Broadcasted activity: %s %s %s", masked_username, action, diagram_type)
+        logger.debug(
+            "[ActivityStream] Broadcasted activity: %s %s %s",
+            masked_username,
+            action,
+            diagram_type,
+        )
 
     def get_recent_activities(self, limit: int = 50) -> list:
         """
@@ -358,4 +371,3 @@ def get_activity_stream_service() -> ActivityStreamService:
     if _activity_stream_service is None:
         _activity_stream_service = ActivityStreamService()
     return _activity_stream_service
-

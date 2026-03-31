@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import re
 from pathlib import Path
@@ -19,7 +20,7 @@ from typing import List, Optional, Tuple
 logger = logging.getLogger(__name__)
 
 # Supported image extensions
-IMAGE_EXTENSIONS = {'.jpg', '.jpeg', '.png', '.JPG', '.JPEG', '.PNG'}
+IMAGE_EXTENSIONS = {".jpg", ".jpeg", ".png", ".JPG", ".JPEG", ".PNG"}
 
 
 def is_image_file(file_path: Path) -> bool:
@@ -61,77 +62,87 @@ def detect_image_pattern(folder_path: Path) -> Optional[dict]:
         ext = img_file.suffix
 
         # Pattern 1: page_001, page_002, etc.
-        match = re.match(r'^page_(\d+)$', stem, re.IGNORECASE)
+        match = re.match(r"^page_(\d+)$", stem, re.IGNORECASE)
         if match:
             num = match.group(1)
-            patterns_tried.append({
-                'pattern': 'page_NNN',
-                'has_prefix': True,
-                'prefix': 'page_',
-                'has_leading_zeros': len(num) > 1 and num[0] == '0',
-                'extension': ext.lower(),
-                'example': img_file.name
-            })
+            patterns_tried.append(
+                {
+                    "pattern": "page_NNN",
+                    "has_prefix": True,
+                    "prefix": "page_",
+                    "has_leading_zeros": len(num) > 1 and num[0] == "0",
+                    "extension": ext.lower(),
+                    "example": img_file.name,
+                }
+            )
             continue
 
         # Pattern 2: bookname_01, bookname_02, etc. (any prefix followed by underscore and number)
         # This must come before Pattern 3 (just numbers) to avoid false matches
-        match = re.match(r'^(.+)_(\d+)$', stem)
+        match = re.match(r"^(.+)_(\d+)$", stem)
         if match:
             prefix_part = match.group(1)
             num = match.group(2)
             # Only match if prefix_part is not empty and not just a number
             if prefix_part and not prefix_part.isdigit():
-                patterns_tried.append({
-                    'pattern': 'prefix_NN',
-                    'has_prefix': True,
-                    'prefix': prefix_part + '_',  # Include underscore in prefix
-                    'has_leading_zeros': len(num) > 1 and num[0] == '0',
-                    'extension': ext.lower(),
-                    'example': img_file.name
-                })
+                patterns_tried.append(
+                    {
+                        "pattern": "prefix_NN",
+                        "has_prefix": True,
+                        "prefix": prefix_part + "_",  # Include underscore in prefix
+                        "has_leading_zeros": len(num) > 1 and num[0] == "0",
+                        "extension": ext.lower(),
+                        "example": img_file.name,
+                    }
+                )
                 continue
 
         # Pattern 3: 001, 002, etc. (just numbers)
-        match = re.match(r'^(\d+)$', stem)
+        match = re.match(r"^(\d+)$", stem)
         if match:
             num = match.group(1)
-            patterns_tried.append({
-                'pattern': 'NNN',
-                'has_prefix': False,
-                'prefix': None,
-                'has_leading_zeros': len(num) > 1 and num[0] == '0',
-                'extension': ext.lower(),
-                'example': img_file.name
-            })
+            patterns_tried.append(
+                {
+                    "pattern": "NNN",
+                    "has_prefix": False,
+                    "prefix": None,
+                    "has_leading_zeros": len(num) > 1 and num[0] == "0",
+                    "extension": ext.lower(),
+                    "example": img_file.name,
+                }
+            )
             continue
 
         # Pattern 4: page1, page2, etc. (no leading zeros)
-        match = re.match(r'^page(\d+)$', stem, re.IGNORECASE)
+        match = re.match(r"^page(\d+)$", stem, re.IGNORECASE)
         if match:
             num = match.group(1)
-            patterns_tried.append({
-                'pattern': 'pageN',
-                'has_prefix': True,
-                'prefix': 'page',
-                'has_leading_zeros': False,
-                'extension': ext.lower(),
-                'example': img_file.name
-            })
+            patterns_tried.append(
+                {
+                    "pattern": "pageN",
+                    "has_prefix": True,
+                    "prefix": "page",
+                    "has_leading_zeros": False,
+                    "extension": ext.lower(),
+                    "example": img_file.name,
+                }
+            )
             continue
 
         # Pattern 5: 1, 2, etc. (no leading zeros, no prefix)
-        match = re.match(r'^(\d+)$', stem)
+        match = re.match(r"^(\d+)$", stem)
         if match:
             num = match.group(1)
-            patterns_tried.append({
-                'pattern': 'N',
-                'has_prefix': False,
-                'prefix': None,
-                'has_leading_zeros': False,
-                'extension': ext.lower(),
-                'example': img_file.name
-            })
+            patterns_tried.append(
+                {
+                    "pattern": "N",
+                    "has_prefix": False,
+                    "prefix": None,
+                    "has_leading_zeros": False,
+                    "extension": ext.lower(),
+                    "example": img_file.name,
+                }
+            )
             continue
 
     if not patterns_tried:
@@ -140,7 +151,7 @@ def detect_image_pattern(folder_path: Path) -> Optional[dict]:
     # Use most common pattern
     pattern_counts = {}
     for p in patterns_tried:
-        key = (p['pattern'], p['has_leading_zeros'], p['extension'])
+        key = (p["pattern"], p["has_leading_zeros"], p["extension"])
         pattern_counts[key] = pattern_counts.get(key, 0) + 1
 
     most_common = max(pattern_counts.items(), key=lambda x: x[1])
@@ -148,7 +159,11 @@ def detect_image_pattern(folder_path: Path) -> Optional[dict]:
 
     # Find matching pattern dict
     for p in patterns_tried:
-        if (p['pattern'], p['has_leading_zeros'], p['extension']) == most_common_pattern:
+        if (
+            p["pattern"],
+            p["has_leading_zeros"],
+            p["extension"],
+        ) == most_common_pattern:
             return p
 
     return None
@@ -203,24 +218,24 @@ def extract_page_number(image_path: Path, pattern_info: Optional[dict] = None) -
             return None
 
     stem = image_path.stem
-    prefix = pattern_info.get('prefix', '')
+    prefix = pattern_info.get("prefix", "")
 
     # Remove prefix if present
     if prefix and stem.lower().startswith(prefix.lower()):
         # Handle both 'page_' and 'page' prefixes
-        if prefix.endswith('_'):
-            num_str = stem[len(prefix):]
+        if prefix.endswith("_"):
+            num_str = stem[len(prefix) :]
         else:
             # Try with underscore separator
-            if stem.lower().startswith(prefix.lower() + '_'):
-                num_str = stem[len(prefix) + 1:]
+            if stem.lower().startswith(prefix.lower() + "_"):
+                num_str = stem[len(prefix) + 1 :]
             else:
-                num_str = stem[len(prefix):]
+                num_str = stem[len(prefix) :]
     else:
         num_str = stem
 
     # Extract number
-    match = re.match(r'^(\d+)$', num_str)
+    match = re.match(r"^(\d+)$", num_str)
     if match:
         try:
             return int(match.group(1))
@@ -250,9 +265,9 @@ def resolve_page_image(folder_path: Path, page_number: int, pattern_info: Option
         if not pattern_info:
             return None
 
-    prefix = pattern_info.get('prefix', '')
-    has_leading_zeros = pattern_info.get('has_leading_zeros', False)
-    extension = pattern_info.get('extension', '.jpg')
+    prefix = pattern_info.get("prefix", "")
+    has_leading_zeros = pattern_info.get("has_leading_zeros", False)
+    extension = pattern_info.get("extension", ".jpg")
 
     # Construct filename based on pattern
     if has_leading_zeros:
@@ -269,7 +284,7 @@ def resolve_page_image(folder_path: Path, page_number: int, pattern_info: Option
 
     # Construct filename
     if prefix:
-        if prefix.endswith('_'):
+        if prefix.endswith("_"):
             filename = f"{prefix}{page_str}{extension}"
         else:
             # Try with underscore separator first

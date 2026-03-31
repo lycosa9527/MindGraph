@@ -4,6 +4,7 @@ Script to organize RAG test datasets into rag-test folder structure.
 Author: lycosa9527
 Made by: MindSpring Team
 """
+
 import json
 import shutil
 from pathlib import Path
@@ -43,13 +44,13 @@ def organize_datasets():
         logger.info("Found financebench_merged.jsonl")
 
         # Check file size and line count
-        line_count = sum(1 for _ in open(financebench_file, 'r', encoding='utf-8'))
+        line_count = sum(1 for _ in open(financebench_file, "r", encoding="utf-8"))
         file_size = financebench_file.stat().st_size / (1024 * 1024)  # MB
 
         logger.info("FinanceBench: %s lines, %.2f MB", line_count, file_size)
 
         # Read first line to check format
-        with open(financebench_file, 'r', encoding='utf-8') as f:
+        with open(financebench_file, "r", encoding="utf-8") as f:
             first_line = json.loads(f.readline())
             sample_keys = list(first_line.keys())[:10]
             logger.info("FinanceBench format check - keys: %s", sample_keys)
@@ -61,20 +62,20 @@ def organize_datasets():
 
         # Extract queries from FinanceBench format
         queries = []
-        with open(dest_file, 'r', encoding='utf-8') as f:
+        with open(dest_file, "r", encoding="utf-8") as f:
             for line in f:
                 item = json.loads(line)
                 query_data = {
                     "query": item.get("question", ""),
                     "expected_chunk_ids": [],  # Will need to be determined from evidence
-                    "relevance_scores": {}
+                    "relevance_scores": {},
                 }
                 if query_data["query"]:
                     queries.append(query_data)
 
         # Save queries
         queries_file = financebench_dir / "queries.json"
-        with open(queries_file, 'w', encoding='utf-8') as f:
+        with open(queries_file, "w", encoding="utf-8") as f:
             json.dump(queries, f, indent=2, ensure_ascii=False)
         logger.info("Extracted %s queries from FinanceBench", len(queries))
 

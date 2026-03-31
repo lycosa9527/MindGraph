@@ -87,7 +87,9 @@ def _max_message_id_for_channels(db: Session, visible_ids: List[int]) -> int:
 
 
 def _membership_digest_for_channels(
-    db: Session, user_id: int, visible_ids: List[int],
+    db: Session,
+    user_id: int,
+    visible_ids: List[int],
 ) -> str:
     mem_rows = (
         db.query(
@@ -159,12 +161,17 @@ def channels_list_etag(
         payload = f"ch_empty|{user_id}|{organization_id}|{admin_bit}"
         return _weak_etag_from_payload(payload)
     return _channels_fingerprint_non_empty(
-        db, visible_ids, user_id, organization_id, admin_bit,
+        db,
+        visible_ids,
+        user_id,
+        organization_id,
+        admin_bit,
     )
 
 
 def _topics_aggregate_row(
-    db: Session, channel_id: int,
+    db: Session,
+    channel_id: int,
 ) -> Tuple[Any, int]:
     top_stats = (
         db.query(
@@ -218,8 +225,5 @@ def topics_list_etag(db: Session, channel_id: int, user_id: int) -> str:
         .scalar()
     )
 
-    payload = (
-        f"{channel_id}|{user_id}|{max_topic_updated!s}|{topic_count}|"
-        f"{max_msg_id}|{pref_max!s}|{pref_count}"
-    )
+    payload = f"{channel_id}|{user_id}|{max_topic_updated!s}|{topic_count}|{max_msg_id}|{pref_max!s}|{pref_count}"
     return _weak_etag_from_payload(payload)

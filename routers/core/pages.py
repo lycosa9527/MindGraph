@@ -40,7 +40,7 @@ from utils.auth import (
     is_ip_whitelisted,
     create_access_token,
     hash_password,
-    compute_device_hash
+    compute_device_hash,
 )
 
 logger = logging.getLogger(__name__)
@@ -53,11 +53,9 @@ router = APIRouter(tags=["Authentication"])
 # BAYI MODE AUTHENTICATION
 # ============================================================================
 
+
 @router.get("/loginByXz")
-def login_by_xz(
-    request: Request,
-    token: Optional[str] = None
-):
+def login_by_xz(request: Request, token: Optional[str] = None):
     """
     Bayi mode authentication endpoint
 
@@ -85,7 +83,10 @@ def login_by_xz(
     try:
         # Verify AUTH_MODE is set to bayi
         if AUTH_MODE != "bayi":
-            logger.warning("/loginByXz accessed but AUTH_MODE is '%s', not 'bayi' - redirecting to /demo", AUTH_MODE)
+            logger.warning(
+                "/loginByXz accessed but AUTH_MODE is '%s', not 'bayi' - redirecting to /demo",
+                AUTH_MODE,
+            )
             return RedirectResponse(url="/demo", status_code=303)
 
         # Extract client IP
@@ -95,15 +96,16 @@ def login_by_xz(
         # Priority 1: Check IP whitelist (skip token if whitelisted)
         if is_ip_whitelisted(client_ip):
             # IP is whitelisted - grant immediate access, no token needed
-            logger.info("IP %s is whitelisted, granting immediate access (skipping token verification)", client_ip)
+            logger.info(
+                "IP %s is whitelisted, granting immediate access (skipping token verification)",
+                client_ip,
+            )
 
             # Use manual session management - close immediately after DB operations
             db = SessionLocal()
             try:
                 # Get or create organization (same as token flow)
-                org = db.query(Organization).filter(
-                    Organization.code == BAYI_DEFAULT_ORG_CODE
-                ).first()
+                org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
 
                 if not org:
                     try:
@@ -111,7 +113,7 @@ def login_by_xz(
                             code=BAYI_DEFAULT_ORG_CODE,
                             name="Bayi School",
                             invitation_code="BAYI2024",
-                            created_at=datetime.utcnow()
+                            created_at=datetime.utcnow(),
                         )
                         db.add(org)
                         db.commit()
@@ -125,10 +127,11 @@ def login_by_xz(
                     except IntegrityError as integrity_err:
                         # Organization created by another request (race condition)
                         db.rollback()
-                        logger.debug("Organization creation race condition (expected): %s", integrity_err)
-                        org = db.query(Organization).filter(
-                            Organization.code == BAYI_DEFAULT_ORG_CODE
-                        ).first()
+                        logger.debug(
+                            "Organization creation race condition (expected): %s",
+                            integrity_err,
+                        )
+                        org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
                         if not org:
                             logger.error("Failed to create or retrieve bayi organization")
                             return RedirectResponse(url="/demo", status_code=303)
@@ -136,7 +139,10 @@ def login_by_xz(
                         try:
                             org_cache.cache_org(org)
                         except Exception as cache_err:
-                            logger.debug("Failed to cache org after race condition: %s", cache_err)
+                            logger.debug(
+                                "Failed to cache org after race condition: %s",
+                                cache_err,
+                            )
                     except Exception as org_err:
                         db.rollback()
                         logger.error("Failed to create bayi organization: %s", org_err)
@@ -145,19 +151,18 @@ def login_by_xz(
                 # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
                 if org:
                     # Check if organization is locked
-                    is_active = org.is_active if hasattr(org, 'is_active') else True
+                    is_active = org.is_active if hasattr(org, "is_active") else True
                     if not is_active:
                         logger.warning("IP whitelist blocked: Organization %s is locked", org.code)
                         return RedirectResponse(url="/demo", status_code=303)
 
                     # Check if organization subscription has expired
-                    if hasattr(org, 'expires_at') and org.expires_at:
+                    if hasattr(org, "expires_at") and org.expires_at:
                         if org.expires_at < datetime.utcnow():
                             logger.warning(
-                                "IP whitelist blocked: Organization %s "
-                                "expired on %s",
+                                "IP whitelist blocked: Organization %s expired on %s",
                                 org.code,
-                                org.expires_at
+                                org.expires_at,
                             )
                             return RedirectResponse(url="/demo", status_code=303)
 
@@ -174,7 +179,7 @@ def login_by_xz(
                             password_hash=hash_password("bayi-no-pwd"),
                             name=user_name,
                             organization_id=org.id,
-                            created_at=datetime.utcnow()
+                            created_at=datetime.utcnow(),
                         )
                         db.add(bayi_user)
                         db.commit()
@@ -197,7 +202,10 @@ def login_by_xz(
                         try:
                             user_cache.cache_user(bayi_user)
                         except Exception as cache_err:
-                            logger.debug("Failed to cache user after race condition: %s", cache_err)
+                            logger.debug(
+                                "Failed to cache user after race condition: %s",
+                                cache_err,
+                            )
                     except Exception as user_err:
                         db.rollback()
                         logger.error("Failed to create bayi IP user: %s", user_err)
@@ -209,7 +217,10 @@ def login_by_xz(
                             try:
                                 user_cache.cache_user(bayi_user)
                             except Exception as cache_err:
-                                logger.debug("Failed to cache user after error recovery: %s", cache_err)
+                                logger.debug(
+                                    "Failed to cache user after error recovery: %s",
+                                    cache_err,
+                                )
 
                 # Session management: For IP whitelist users, allow multiple concurrent sessions
                 # (50 teachers can all be logged in simultaneously from whitelisted IP)
@@ -224,7 +235,12 @@ def login_by_xz(
 
                 # Store new session in Redis (allow_multiple=True for shared account)
                 # This allows multiple teachers to use the system simultaneously
-                session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash, allow_multiple=True)
+                session_manager.store_session(
+                    bayi_user.id,
+                    jwt_token,
+                    device_hash=device_hash,
+                    allow_multiple=True,
+                )
 
                 logger.info("Bayi IP whitelist authentication successful: %s", client_ip)
             finally:
@@ -238,7 +254,7 @@ def login_by_xz(
                 httponly=True,
                 secure=is_https(request),  # SECURITY: Auto-detect HTTPS
                 samesite="lax",
-                max_age=7 * 24 * 60 * 60  # 7 days
+                max_age=7 * 24 * 60 * 60,  # 7 days
             )
             # Set flag cookie to indicate new login session (for AI disclaimer notification)
             redirect_response.set_cookie(
@@ -247,23 +263,25 @@ def login_by_xz(
                 httponly=False,  # Allow JavaScript to read it
                 secure=is_https(request),
                 samesite="lax",
-                max_age=60 * 60  # 1 hour (should be cleared after showing notification)
+                max_age=60 * 60,  # 1 hour (should be cleared after showing notification)
             )
             return redirect_response
 
         # Priority 2: Token authentication (existing flow)
         if not token:
-            logger.warning("IP %s not whitelisted and no token provided - redirecting to /demo", client_ip)
+            logger.warning(
+                "IP %s not whitelisted and no token provided - redirecting to /demo",
+                client_ip,
+            )
             return RedirectResponse(url="/demo", status_code=303)
 
         # Log token receipt (without exposing full token in logs)
         token_preview = token[:20] + "..." if len(token) > 20 else token
         logger.info(
-            "Bayi token authentication attempt - IP: %s, token length: %s, "
-            "preview: %s",
+            "Bayi token authentication attempt - IP: %s, token length: %s, preview: %s",
             client_ip,
             len(token),
-            token_preview
+            token_preview,
         )
 
         # Rate limiting: Prevent brute force attacks (10 attempts per 5 minutes per IP)
@@ -271,7 +289,11 @@ def login_by_xz(
             token_tracker = get_bayi_token_tracker()
             is_allowed, attempt_count, _ = token_tracker.check_rate_limit(client_ip)
             if not is_allowed:
-                logger.warning("Bayi token rate limit exceeded for IP %s: %s attempts", client_ip, attempt_count)
+                logger.warning(
+                    "Bayi token rate limit exceeded for IP %s: %s attempts",
+                    client_ip,
+                    attempt_count,
+                )
                 return RedirectResponse(url="/demo", status_code=303)
         except Exception as e:
             logger.warning("Rate limit check failed (allowing request): %s", e)
@@ -281,7 +303,10 @@ def login_by_xz(
         try:
             token_tracker = get_bayi_token_tracker()
             if token_tracker.is_token_used(token):
-                logger.warning("Bayi token replay attack detected for IP %s - token already used", client_ip)
+                logger.warning(
+                    "Bayi token replay attack detected for IP %s - token already used",
+                    client_ip,
+                )
                 return RedirectResponse(url="/demo", status_code=303)
         except Exception as e:
             logger.debug("Token usage check failed (allowing request): %s", e)
@@ -289,27 +314,45 @@ def login_by_xz(
 
         # Decrypt token (no DB needed for this)
         try:
-            logger.info("Attempting to decrypt token with key length: %s", len(BAYI_DECRYPTION_KEY))
+            logger.info(
+                "Attempting to decrypt token with key length: %s",
+                len(BAYI_DECRYPTION_KEY),
+            )
             body = decrypt_bayi_token(token, BAYI_DECRYPTION_KEY)
-            logger.info("Bayi token decrypted successfully - body keys: %s, body content: %s", list(body.keys()), body)
+            logger.info(
+                "Bayi token decrypted successfully - body keys: %s, body content: %s",
+                list(body.keys()),
+                body,
+            )
         except ValueError as e:
-            logger.error("Bayi token decryption failed: %s - redirecting to /demo", e, exc_info=True)
+            logger.error(
+                "Bayi token decryption failed: %s - redirecting to /demo",
+                e,
+                exc_info=True,
+            )
             # Invalid token: redirect to demo passkey page
             return RedirectResponse(url="/demo", status_code=303)
         except Exception as e:
-            logger.error("Unexpected error during token decryption: %s - redirecting to /demo", e, exc_info=True)
+            logger.error(
+                "Unexpected error during token decryption: %s - redirecting to /demo",
+                e,
+                exc_info=True,
+            )
             return RedirectResponse(url="/demo", status_code=303)
 
         # Validate token body (no DB needed for this)
-        logger.info("Validating token body - from: %s, timestamp: %s", body.get('from'), body.get('timestamp'))
+        logger.info(
+            "Validating token body - from: %s, timestamp: %s",
+            body.get("from"),
+            body.get("timestamp"),
+        )
         validation_result = validate_bayi_token_body(body)
         if not validation_result:
             logger.error(
-                "Bayi token validation failed - body: %s, from field: '%s', "
-                "timestamp: %s - redirecting to /demo",
+                "Bayi token validation failed - body: %s, from field: '%s', timestamp: %s - redirecting to /demo",
                 body,
-                body.get('from'),
-                body.get('timestamp')
+                body.get("from"),
+                body.get("timestamp"),
             )
             # Cache invalid result (performance optimization)
             try:
@@ -336,9 +379,7 @@ def login_by_xz(
         db = SessionLocal()
         try:
             # Get or create organization
-            org = db.query(Organization).filter(
-                Organization.code == BAYI_DEFAULT_ORG_CODE
-            ).first()
+            org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
 
             if not org:
                 # Create bayi organization if it doesn't exist
@@ -346,7 +387,7 @@ def login_by_xz(
                     code=BAYI_DEFAULT_ORG_CODE,
                     name="Bayi School",
                     invitation_code="BAYI2024",
-                    created_at=datetime.utcnow()
+                    created_at=datetime.utcnow(),
                 )
                 db.add(org)
                 db.commit()
@@ -360,8 +401,8 @@ def login_by_xz(
 
             # Extract user info from token body (if available)
             # Default to a generic bayi user if not specified
-            user_phone = body.get('phone') or body.get('user') or "bayi@system.com"
-            user_name = body.get('name') or "Bayi User"
+            user_phone = body.get("phone") or body.get("user") or "bayi@system.com"
+            user_name = body.get("name") or "Bayi User"
 
             # Get or create user
             bayi_user = db.query(User).filter(User.phone == user_phone).first()
@@ -373,7 +414,7 @@ def login_by_xz(
                         password_hash=hash_password("bayi-no-pwd"),
                         name=user_name,
                         organization_id=org.id,
-                        created_at=datetime.utcnow()
+                        created_at=datetime.utcnow(),
                     )
                     db.add(bayi_user)
                     db.commit()
@@ -397,7 +438,10 @@ def login_by_xz(
                         try:
                             user_cache.cache_user(bayi_user)
                         except Exception as cache_err:
-                            logger.debug("Failed to cache user after error recovery: %s", cache_err)
+                            logger.debug(
+                                "Failed to cache user after error recovery: %s",
+                                cache_err,
+                            )
 
             # Session management: Invalidate old sessions before creating new one
             session_manager = get_session_manager()
@@ -425,7 +469,7 @@ def login_by_xz(
             httponly=True,
             secure=is_https(request),  # SECURITY: Auto-detect HTTPS
             samesite="lax",
-            max_age=7 * 24 * 60 * 60  # 7 days
+            max_age=7 * 24 * 60 * 60,  # 7 days
         )
         # Set flag cookie to indicate new login session (for AI disclaimer notification)
         redirect_response.set_cookie(
@@ -434,7 +478,7 @@ def login_by_xz(
             httponly=False,  # Allow JavaScript to read it
             secure=is_https(request),
             samesite="lax",
-            max_age=60 * 60  # 1 hour (should be cleared after showing notification)
+            max_age=60 * 60,  # 1 hour (should be cleared after showing notification)
         )
         return redirect_response
 
@@ -447,6 +491,7 @@ def login_by_xz(
 # ============================================================================
 # STATIC ASSETS
 # ============================================================================
+
 
 @router.get("/favicon.ico")
 def favicon():
@@ -474,5 +519,5 @@ def favicon():
 
 
 # Only log from main worker to avoid duplicate messages
-if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+if os.getenv("UVICORN_WORKER_ID") is None or os.getenv("UVICORN_WORKER_ID") == "0":
     logger.debug("Authentication routes initialized: 2 routes registered (/loginByXz, /favicon.ico)")

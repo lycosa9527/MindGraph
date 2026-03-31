@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional
 import asyncio
 import logging
@@ -34,10 +35,14 @@ def _query_diagram_ownership(diagram_id):
     """Query diagram ownership info using a short-lived session."""
     db = SessionLocal()
     try:
-        diagram = db.query(Diagram).filter(
-            Diagram.id == diagram_id,
-            ~Diagram.is_deleted,
-        ).first()
+        diagram = (
+            db.query(Diagram)
+            .filter(
+                Diagram.id == diagram_id,
+                ~Diagram.is_deleted,
+            )
+            .first()
+        )
         if diagram:
             return diagram.workshop_code, diagram.user_id
         return None, None
@@ -45,12 +50,12 @@ def _query_diagram_ownership(diagram_id):
         db.close()
 
 
-@router.post('/generate_graph', response_model=GenerateResponse)
+@router.post("/generate_graph", response_model=GenerateResponse)
 async def generate_graph(
     req: GenerateRequest,
     request: Request,
     x_language: Optional[str] = None,
-    current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    current_user: Optional[User] = Depends(get_current_user_or_api_key),
 ):
     """
     Generate graph specification from user prompt using selected LLM model (async).
@@ -62,45 +67,41 @@ async def generate_graph(
     """
     # Rate limiting: 100 requests per minute per user/IP
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit('generate_graph', identifier, max_requests=100, window_seconds=60)
+    await check_endpoint_rate_limit("generate_graph", identifier, max_requests=100, window_seconds=60)
 
     if req.diagram_id and current_user:
-        workshop_code, diagram_user_id = await asyncio.to_thread(
-            _query_diagram_ownership, req.diagram_id
-        )
+        workshop_code, diagram_user_id = await asyncio.to_thread(_query_diagram_ownership, req.diagram_id)
         if workshop_code:
-            role = getattr(current_user, 'role', 'user') or 'user'
-            if role != 'admin' and diagram_user_id != current_user.id:
+            role = getattr(current_user, "role", "user") or "user"
+            if role != "admin" and diagram_user_id != current_user.id:
                 raise HTTPException(
                     status_code=403,
-                    detail=(
-                        'Only the diagram owner can use AI generation during collaboration'
-                    ),
+                    detail=("Only the diagram owner can use AI generation during collaboration"),
                 )
 
     # Get language for error messages
     accept_language = request.headers.get("Accept-Language", "")
     lang = get_request_language(x_language, accept_language)
 
-    prompt = (req.prompt or '').strip()
+    prompt = (req.prompt or "").strip()
     # Empty prompt allowed only for dimension-only mode (validated by GenerateRequest)
     # - Bridge map: fixed_dimension only (relationship-only, e.g. "国家吉祥物到国家")
     # - Tree/brace map: dimension_only_mode (dimension but no topic)
 
-    request_id = f"gen_{int(time.time()*1000)}"
-    llm_model = req.llm.value if hasattr(req.llm, 'value') else str(req.llm)
+    request_id = f"gen_{int(time.time() * 1000)}"
+    llm_model = req.llm.value if hasattr(req.llm, "value") else str(req.llm)
     language = req.language
 
     logger.debug(
         "[%s] Request: llm=%r, language=%r, diagram_type=%s",
-        request_id, llm_model, language, req.diagram_type
+        request_id,
+        llm_model,
+        language,
+        req.diagram_type,
     )
 
     if req.dimension_preference:
-        logger.debug(
-            "[%s] Dimension preference: %r",
-            request_id, req.dimension_preference
-        )
+        logger.debug("[%s] Dimension preference: %r", request_id, req.dimension_preference)
 
     logger.debug("[%s] Using LLM model: %r", request_id, llm_model)
 
@@ -108,39 +109,30 @@ async def generate_graph(
         # Generate diagram specification - fully async
         # Pass model directly through call chain (no global state)
         # Pass user context for token tracking
-        user_id = current_user.id if current_user and hasattr(current_user, 'id') else None
+        user_id = current_user.id if current_user and hasattr(current_user, "id") else None
         organization_id = (
-            getattr(current_user, 'organization_id', None)
-            if current_user and hasattr(current_user, 'id') else None
+            getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
         )
 
         # Determine request type for token tracking (default to 'diagram_generation')
-        request_type = req.request_type if req.request_type else 'diagram_generation'
+        request_type = req.request_type if req.request_type else "diagram_generation"
 
         # Set request state for middleware slow warning detection
         # This allows middleware to distinguish autocomplete from initial generation
-        request.state.is_autocomplete = request_type == 'autocomplete'
+        request.state.is_autocomplete = request_type == "autocomplete"
 
         # Track user activity
-        if current_user and hasattr(current_user, 'id'):
+        if current_user and hasattr(current_user, "id"):
             try:
                 tracker = get_activity_tracker()
-                activity_type = (
-                    'autocomplete' if request_type == 'autocomplete'
-                    else 'diagram_generation'
-                )
-                diagram_type_str = (
-                    req.diagram_type.value if req.diagram_type else 'unknown'
-                )
+                activity_type = "autocomplete" if request_type == "autocomplete" else "diagram_generation"
+                diagram_type_str = req.diagram_type.value if req.diagram_type else "unknown"
                 tracker.record_activity(
                     user_id=current_user.id,
-                    user_phone=getattr(current_user, 'phone', None) or "",
+                    user_phone=getattr(current_user, "phone", None) or "",
                     activity_type=activity_type,
-                    details={
-                        'diagram_type': diagram_type_str,
-                        'llm_model': llm_model
-                    },
-                    user_name=getattr(current_user, 'name', None)
+                    details={"diagram_type": diagram_type_str, "llm_model": llm_model},
+                    user_name=getattr(current_user, "name", None),
                 )
             except Exception as e:
                 logger.debug("Failed to track user activity: %s", e)
@@ -148,30 +140,29 @@ async def generate_graph(
         # Log auto-complete start at INFO level for user activity tracking
         # Note: AutoComplete fires 3 concurrent requests (one per LLM model)
         # Log once per request with model info to reduce noise
-        if request_type == 'autocomplete':
-            diagram_type_str = req.diagram_type.value if req.diagram_type else 'auto'
+        if request_type == "autocomplete":
+            diagram_type_str = req.diagram_type.value if req.diagram_type else "auto"
             logger.info(
-                "[AutoComplete] Started: User %s, Diagram: %s, Model: %s, "
-                "Request: %s",
-                user_id, diagram_type_str, llm_model, request_id[:8]
+                "[AutoComplete] Started: User %s, Diagram: %s, Model: %s, Request: %s",
+                user_id,
+                diagram_type_str,
+                llm_model,
+                request_id[:8],
             )
 
         # Bridge map specific: pass existing analogies and fixed dimension for auto-complete mode
-        existing_analogies = req.existing_analogies if hasattr(req, 'existing_analogies') else None
-        fixed_dimension = req.fixed_dimension if hasattr(req, 'fixed_dimension') else None
+        existing_analogies = req.existing_analogies if hasattr(req, "existing_analogies") else None
+        fixed_dimension = req.fixed_dimension if hasattr(req, "fixed_dimension") else None
         # Tree map and brace map: dimension-only mode flag
-        dimension_only_mode = req.dimension_only_mode if hasattr(req, 'dimension_only_mode') else None
+        dimension_only_mode = req.dimension_only_mode if hasattr(req, "dimension_only_mode") else None
         # Concept map: relationship-only mode
         concept_map_relationship_only = (
-            req.concept_map_relationship_only if hasattr(req, 'concept_map_relationship_only')
-            else None
+            req.concept_map_relationship_only if hasattr(req, "concept_map_relationship_only") else None
         )
-        concept_a = req.concept_a if hasattr(req, 'concept_a') else None
-        concept_b = req.concept_b if hasattr(req, 'concept_b') else None
-        concept_map_topic = (
-            req.concept_map_topic if hasattr(req, 'concept_map_topic') else None
-        )
-        link_direction = req.link_direction if hasattr(req, 'link_direction') else None
+        concept_a = req.concept_a if hasattr(req, "concept_a") else None
+        concept_b = req.concept_b if hasattr(req, "concept_b") else None
+        concept_map_topic = req.concept_map_topic if hasattr(req, "concept_map_topic") else None
+        link_direction = req.link_direction if hasattr(req, "link_direction") else None
 
         result = await agent_graph_workflow_with_styles(
             prompt,
@@ -183,7 +174,7 @@ async def generate_graph(
             user_id=user_id,
             organization_id=organization_id,
             request_type=request_type,
-            endpoint_path='/api/generate_graph',
+            endpoint_path="/api/generate_graph",
             # Bridge map specific
             existing_analogies=existing_analogies,
             fixed_dimension=fixed_dimension,
@@ -197,49 +188,41 @@ async def generate_graph(
             link_direction=link_direction,
             # RAG integration
             use_rag=req.use_rag if req.use_rag else False,
-            rag_top_k=req.rag_top_k if req.rag_top_k else 5
+            rag_top_k=req.rag_top_k if req.rag_top_k else 5,
         )
 
-        diagram_type = result.get('diagram_type', 'unknown')
-        logger.debug(
-            "[%s] Generated %s diagram with %s",
-            request_id, diagram_type, llm_model
-        )
+        diagram_type = result.get("diagram_type", "unknown")
+        logger.debug("[%s] Generated %s diagram with %s", request_id, diagram_type, llm_model)
 
         # Log auto-complete operations at INFO level for user activity tracking
-        if request_type == 'autocomplete':
-            node_count = (
-                len(result.get('nodes', []))
-                if isinstance(result.get('nodes'), list) else 0
-            )
+        if request_type == "autocomplete":
+            node_count = len(result.get("nodes", [])) if isinstance(result.get("nodes"), list) else 0
             logger.info(
-                "[AutoComplete] Completed: User %s, Diagram %s, Nodes added: %d, "
-                "Model: %s, Request: %s",
-                user_id, diagram_type, node_count, llm_model, request_id[:8]
+                "[AutoComplete] Completed: User %s, Diagram %s, Nodes added: %d, Model: %s, Request: %s",
+                user_id,
+                diagram_type,
+                node_count,
+                llm_model,
+                request_id[:8],
             )
 
         # Broadcast activity to dashboard stream (if user is authenticated)
         if user_id:
             try:
                 activity_service = get_activity_stream_service()
-                user_name = (
-                    getattr(current_user, 'name', None) if current_user else None
-                )
+                user_name = getattr(current_user, "name", None) if current_user else None
 
                 # Format topic based on diagram type
                 topic_display = prompt[:50]  # Default: truncate prompt
-                if diagram_type == 'double_bubble_map':
+                if diagram_type == "double_bubble_map":
                     # Extract left and right topics from spec
-                    spec = result.get('spec', {})
+                    spec = result.get("spec", {})
                     if isinstance(spec, dict):
-                        left = spec.get('left', '')
-                        right = spec.get('right', '')
+                        left = spec.get("left", "")
+                        right = spec.get("right", "")
                         if left and right:
                             # Format as "Left vs Right" or "左 vs 右"
-                            topic_display = (
-                                f"{left} vs {right}" if language == 'en'
-                                else f"{left} vs {right}"
-                            )
+                            topic_display = f"{left} vs {right}" if language == "en" else f"{left} vs {right}"
                         elif left or right:
                             topic_display = left or right
 
@@ -248,23 +231,17 @@ async def generate_graph(
                     action="generated",
                     diagram_type=diagram_type,
                     topic=topic_display[:50],  # Truncate to 50 chars
-                    user_name=user_name
+                    user_name=user_name,
                 )
             except Exception as e:
                 logger.debug("Failed to broadcast activity: %s", e)
 
         # Add metadata
-        result['llm_model'] = llm_model
-        result['request_id'] = request_id
+        result["llm_model"] = llm_model
+        result["request_id"] = request_id
 
         return result
 
     except Exception as e:
-        logger.error(
-            "[%s] Error generating graph: %s",
-            request_id, e, exc_info=True
-        )
-        raise HTTPException(
-            status_code=500,
-            detail=Messages.error("internal_error", lang)
-        ) from e
+        logger.error("[%s] Error generating graph: %s", request_id, e, exc_info=True)
+        raise HTTPException(status_code=500, detail=Messages.error("internal_error", lang)) from e

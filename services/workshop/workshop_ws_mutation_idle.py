@@ -32,10 +32,12 @@ async def run_mutation_idle_monitor(
             continue
         if not exists:
             try:
-                await websocket.send_json({
-                    "type": "kicked",
-                    "reason": "mutation_idle",
-                })
+                await websocket.send_json(
+                    {
+                        "type": "kicked",
+                        "reason": "mutation_idle",
+                    }
+                )
             except Exception as exc:
                 logger.debug("Mutation idle kick notification send failed: %s", exc)
             try:

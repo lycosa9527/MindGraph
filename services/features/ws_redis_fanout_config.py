@@ -20,7 +20,9 @@ ENVELOPE_VERSION = 1
 def is_ws_fanout_enabled() -> bool:
     """Return True when Redis pub/sub fan-out is enabled."""
     if os.getenv("WS_REDIS_FANOUT_ENABLED", "true").lower() not in (
-        "1", "true", "yes",
+        "1",
+        "true",
+        "yes",
     ):
         return False
     try:

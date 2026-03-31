@@ -47,14 +47,12 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
       })
 
       if (!response.ok) {
-        console.debug('Version check failed:', response.status)
         return false
       }
 
       // Check content type before parsing
       const contentType = response.headers.get('content-type')
       if (!contentType || !contentType.includes('application/json')) {
-        console.debug('Version check: non-JSON response, skipping')
         return false
       }
 
@@ -70,9 +68,7 @@ export function useVersionCheck(options: VersionCheckOptions = {}) {
       }
 
       return false
-    } catch (error) {
-      // Silently ignore version check errors - non-critical functionality
-      console.debug('Version check error:', error)
+    } catch {
       return false
     } finally {
       isChecking.value = false

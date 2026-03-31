@@ -56,13 +56,7 @@ class UpdateNotifier:
         notification = db.query(UpdateNotification).filter(UpdateNotification.id == 1).first()
         if not notification:
             try:
-                notification = UpdateNotification(
-                    id=1,
-                    enabled=False,
-                    version="",
-                    title="",
-                    message=""
-                )
+                notification = UpdateNotification(id=1, enabled=False, version="", title="", message="")
                 db.add(notification)
                 db.commit()
                 db.refresh(notification)
@@ -87,7 +81,7 @@ class UpdateNotifier:
                 "version": notification.version or "",
                 "title": notification.title or "",
                 "message": notification.message or "",
-                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None
+                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
             }
         finally:
             db.close()
@@ -103,7 +97,7 @@ class UpdateNotifier:
         show_changelog: bool = False,
         changelog_items: Optional[list] = None,
         changelog_items_en: Optional[list] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict:
         """
         Set or update the notification configuration.
@@ -117,7 +111,14 @@ class UpdateNotifier:
         Returns:
             Updated notification configuration
         """
-        _ = (title_en, message_en, show_changelog, changelog_items, changelog_items_en, kwargs)
+        _ = (
+            title_en,
+            message_en,
+            show_changelog,
+            changelog_items,
+            changelog_items_en,
+            kwargs,
+        )
         db = self._get_db()
         try:
             notification = self._ensure_notification_exists(db)
@@ -136,13 +137,17 @@ class UpdateNotifier:
             # This prevents table clutter while keeping current version dismissals if any
             if version and version != old_version:
                 # Delete dismissed records for OLD versions only
-                deleted = db.query(UpdateNotificationDismissed).filter(
-                    UpdateNotificationDismissed.version != version
-                ).delete(synchronize_session=False)
+                deleted = (
+                    db.query(UpdateNotificationDismissed)
+                    .filter(UpdateNotificationDismissed.version != version)
+                    .delete(synchronize_session=False)
+                )
                 db.commit()
                 logger.info(
                     "Version changed from %s to %s, cleaned up %s old dismissed records",
-                    old_version, version, deleted
+                    old_version,
+                    version,
+                    deleted,
                 )
 
             logger.info("Update notification set: enabled=%s, version=%s", enabled, version)
@@ -152,7 +157,7 @@ class UpdateNotifier:
                 "version": notification.version or "",
                 "title": notification.title or "",
                 "message": notification.message or "",
-                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None
+                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
             }
         except Exception as e:
             db.rollback()
@@ -184,10 +189,14 @@ class UpdateNotifier:
                 return False
 
             # Check if user has dismissed this version
-            dismissed = db.query(UpdateNotificationDismissed).filter(
-                UpdateNotificationDismissed.user_id == int(user_id),
-                UpdateNotificationDismissed.version == version
-            ).first()
+            dismissed = (
+                db.query(UpdateNotificationDismissed)
+                .filter(
+                    UpdateNotificationDismissed.user_id == int(user_id),
+                    UpdateNotificationDismissed.version == version,
+                )
+                .first()
+            )
 
             return dismissed is None
         finally:
@@ -218,7 +227,7 @@ class UpdateNotifier:
                 "message_en": "",  # For API compatibility
                 "show_changelog": False,
                 "changelog_items": [],
-                "changelog_items_en": []
+                "changelog_items_en": [],
             }
         finally:
             db.close()
@@ -245,21 +254,29 @@ class UpdateNotifier:
                 return True
 
             # Check if already dismissed (avoid duplicate insert attempt)
-            existing = db.query(UpdateNotificationDismissed).filter(
-                UpdateNotificationDismissed.user_id == int(user_id),
-                UpdateNotificationDismissed.version == version
-            ).first()
+            existing = (
+                db.query(UpdateNotificationDismissed)
+                .filter(
+                    UpdateNotificationDismissed.user_id == int(user_id),
+                    UpdateNotificationDismissed.version == version,
+                )
+                .first()
+            )
 
             if not existing:
                 try:
                     dismissed = UpdateNotificationDismissed(
                         user_id=int(user_id),
                         version=version,
-                        dismissed_at=datetime.utcnow()
+                        dismissed_at=datetime.utcnow(),
                     )
                     db.add(dismissed)
                     db.commit()
-                    logger.debug("User %s dismissed notification for version %s", user_id, version)
+                    logger.debug(
+                        "User %s dismissed notification for version %s",
+                        user_id,
+                        version,
+                    )
                 except Exception:
                     # Race condition or duplicate - that's fine
                     db.rollback()
@@ -294,7 +311,7 @@ class UpdateNotifier:
                 "version": notification.version or "",
                 "title": notification.title or "",
                 "message": notification.message or "",
-                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None
+                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
             }
         except Exception as e:
             db.rollback()
@@ -339,9 +356,7 @@ class UpdateNotifier:
             if not version:
                 return 0
 
-            return db.query(UpdateNotificationDismissed).filter(
-                UpdateNotificationDismissed.version == version
-            ).count()
+            return db.query(UpdateNotificationDismissed).filter(UpdateNotificationDismissed.version == version).count()
         finally:
             db.close()
 

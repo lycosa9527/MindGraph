@@ -6,6 +6,7 @@ Generates nodes for Multi Flow Map with TWO fixed tabs:
 
 When mode='both', generates causes and effects concurrently (like double bubble).
 """
+
 import asyncio
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
@@ -41,7 +42,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with mode support.
@@ -49,10 +50,10 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         Args:
             _mode: 'causes', 'effects', or 'both' (both = concurrent generation)
         """
-        mode = _mode or 'causes'
+        mode = _mode or "causes"
         self.current_mode[session_id] = mode
 
-        if mode == 'both':
+        if mode == "both":
             async for chunk in self._generate_both(
                 session_id=session_id,
                 center_topic=center_topic,
@@ -67,11 +68,19 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             return
 
         ctx = dict(educational_context or {})
-        ctx['_mode'] = mode
+        ctx["_mode"] = mode
         async for chunk in self._stream_single_mode(
-            session_id, center_topic, ctx, nodes_per_llm, mode,
-            _stage, _stage_data, user_id, organization_id,
-            diagram_type, endpoint_path
+            session_id,
+            center_topic,
+            ctx,
+            nodes_per_llm,
+            mode,
+            _stage,
+            _stage_data,
+            user_id,
+            organization_id,
+            diagram_type,
+            endpoint_path,
         ):
             yield chunk
 
@@ -101,14 +110,16 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             user_id=user_id,
             organization_id=organization_id,
             diagram_type=diagram_type,
-            endpoint_path=endpoint_path
+            endpoint_path=endpoint_path,
         ):
-            if chunk.get('event') == 'node_generated':
-                node = chunk.get('node', {})
-                node['mode'] = mode
+            if chunk.get("event") == "node_generated":
+                node = chunk.get("node", {})
+                node["mode"] = mode
                 logger.debug(
                     "[MultiFlow] Node tagged with mode='%s' | ID: %s | Text: %s",
-                    mode, node.get('id', 'unknown'), node.get('text', '')
+                    mode,
+                    node.get("id", "unknown"),
+                    node.get("text", ""),
                 )
             yield chunk
 
@@ -126,14 +137,14 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         """Run causes and effects generation concurrently, merge streams."""
         queue: asyncio.Queue = asyncio.Queue()
         opts = {
-            'ctx': dict(educational_context or {}),
-            'session_id': session_id,
-            'center_topic': center_topic,
-            'nodes_per_llm': nodes_per_llm,
-            'user_id': user_id,
-            'organization_id': organization_id,
-            'diagram_type': diagram_type,
-            'endpoint_path': endpoint_path,
+            "ctx": dict(educational_context or {}),
+            "session_id": session_id,
+            "center_topic": center_topic,
+            "nodes_per_llm": nodes_per_llm,
+            "user_id": user_id,
+            "organization_id": organization_id,
+            "diagram_type": diagram_type,
+            "endpoint_path": endpoint_path,
         }
 
         async def run_mode(mode_val: str) -> None:
@@ -141,27 +152,27 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
             try:
                 async for chunk in self.generate_batch(
                     session_id=sub_id,
-                    center_topic=opts['center_topic'],
-                    educational_context={**opts['ctx'], '_mode': mode_val},
-                    nodes_per_llm=opts['nodes_per_llm'],
+                    center_topic=opts["center_topic"],
+                    educational_context={**opts["ctx"], "_mode": mode_val},
+                    nodes_per_llm=opts["nodes_per_llm"],
                     _mode=mode_val,
-                    user_id=opts['user_id'],
-                    organization_id=opts['organization_id'],
-                    diagram_type=opts['diagram_type'],
-                    endpoint_path=opts['endpoint_path'],
+                    user_id=opts["user_id"],
+                    organization_id=opts["organization_id"],
+                    diagram_type=opts["diagram_type"],
+                    endpoint_path=opts["endpoint_path"],
                 ):
-                    await queue.put(('chunk', chunk))
+                    await queue.put(("chunk", chunk))
             finally:
-                await queue.put(('done', mode_val))
+                await queue.put(("done", mode_val))
 
         tasks = [
-            asyncio.create_task(run_mode('causes')),
-            asyncio.create_task(run_mode('effects')),
+            asyncio.create_task(run_mode("causes")),
+            asyncio.create_task(run_mode("effects")),
         ]
         done_count = 0
         while done_count < 2:
             msg = await queue.get()
-            if msg[0] == 'done':
+            if msg[0] == "done":
                 done_count += 1
             else:
                 yield msg[1]
@@ -174,7 +185,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build Multi Flow Map prompt based on current mode.
@@ -187,33 +198,23 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
 
         # Get educational context
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
-            if educational_context else 'General K12 teaching'
+            educational_context.get("raw_message", "General K12 teaching")
+            if educational_context
+            else "General K12 teaching"
         )
 
         # Extract mode from educational_context (thread-safe, no race conditions!)
-        mode = educational_context.get('_mode', 'causes') if educational_context else 'causes'
+        mode = educational_context.get("_mode", "causes") if educational_context else "causes"
         logger.debug("[MultiFlow] Building prompt for mode: %s", mode)
 
         # Build prompt based on mode
-        if mode == 'causes':
-            return self._build_causes_prompt(
-                center_topic, context_desc, count, batch_num, language
-            )
-        return self._build_effects_prompt(
-            center_topic, context_desc, count, batch_num, language
-        )
+        if mode == "causes":
+            return self._build_causes_prompt(center_topic, context_desc, count, batch_num, language)
+        return self._build_effects_prompt(center_topic, context_desc, count, batch_num, language)
 
-    def _build_causes_prompt(
-        self,
-        event: str,
-        context_desc: str,
-        count: int,
-        batch_num: int,
-        language: str
-    ) -> str:
+    def _build_causes_prompt(self, event: str, context_desc: str, count: int, batch_num: int, language: str) -> str:
         """Build prompt for causes (factors leading to the event)"""
-        if language == 'zh':
+        if language == "zh":
             prompt = f"""为以下事件生成{count}个原因（导致事件发生的因素）：{event}
 
 教学背景：{context_desc}
@@ -248,8 +249,10 @@ Generate {count} causes:"""
 
         # Add diversity note for later batches
         if batch_num > 1:
-            if language == 'zh':
-                prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
+            if language == "zh":
+                prompt += (
+                    f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
+                )
             else:
                 prompt += (
                     f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
@@ -258,16 +261,9 @@ Generate {count} causes:"""
 
         return prompt
 
-    def _build_effects_prompt(
-        self,
-        event: str,
-        context_desc: str,
-        count: int,
-        batch_num: int,
-        language: str
-    ) -> str:
+    def _build_effects_prompt(self, event: str, context_desc: str, count: int, batch_num: int, language: str) -> str:
         """Build prompt for effects (results and consequences of the event)"""
-        if language == 'zh':
+        if language == "zh":
             prompt = f"""为以下事件生成{count}个结果（事件导致的影响和后果）：{event}
 
 教学背景：{context_desc}
@@ -302,8 +298,10 @@ Generate {count} effects:"""
 
         # Add diversity note for later batches
         if batch_num > 1:
-            if language == 'zh':
-                prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
+            if language == "zh":
+                prompt += (
+                    f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
+                )
             else:
                 prompt += (
                     f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "

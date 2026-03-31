@@ -29,6 +29,7 @@ import aiofiles.os  # Async file system operations
 
 try:
     from services.redis.redis_client import get_redis, is_redis_available
+
     _REDIS_AVAILABLE = True
 except ImportError:
     get_redis = None
@@ -58,6 +59,7 @@ CLEANUP_LOCK_TTL = 600  # 10 minutes - auto-release if worker crashes
 
 class CleanupLockState:
     """Encapsulates cleanup lock state to avoid global variables."""
+
     def __init__(self):
         self.lock_id: Optional[str] = None
 
@@ -117,14 +119,7 @@ async def refresh_cleanup_lock() -> bool:
             return 0
         end
         """
-        result = await asyncio.to_thread(
-            redis.eval,
-            lua_script,
-            1,
-            CLEANUP_LOCK_KEY,
-            lock_id,
-            CLEANUP_LOCK_TTL
-        )
+        result = await asyncio.to_thread(redis.eval, lua_script, 1, CLEANUP_LOCK_KEY, lock_id, CLEANUP_LOCK_TTL)
 
         if result == 1:
             return True
@@ -177,7 +172,7 @@ async def acquire_cleanup_lock() -> bool:
             CLEANUP_LOCK_KEY,
             lock_id,
             nx=True,  # Only set if not exists
-            ex=CLEANUP_LOCK_TTL  # TTL in seconds
+            ex=CLEANUP_LOCK_TTL,  # TTL in seconds
         )
 
         if acquired:
@@ -185,7 +180,10 @@ async def acquire_cleanup_lock() -> bool:
             return True
         # Lock held by another worker - check who
         holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
-        logger.info("[Cleanup] Another worker holds the cleanup lock (holder=%s), skipping cleanup", holder)
+        logger.info(
+            "[Cleanup] Another worker holds the cleanup lock (holder=%s), skipping cleanup",
+            holder,
+        )
         return False
 
     except Exception as e:
@@ -229,7 +227,11 @@ async def cleanup_temp_images(max_age_seconds: int = 86400):
                         # Delete file asynchronously (non-blocking)
                         await aiofiles.os.remove(file_path)
                         deleted_count += 1
-                        logger.debug("Deleted expired image: %s (age: %.1fh)", file_path.name, file_age / 3600)
+                        logger.debug(
+                            "Deleted expired image: %s (age: %.1fh)",
+                            file_path.name,
+                            file_age / 3600,
+                        )
                     except Exception as e:
                         logger.error("Failed to delete %s: %s", file_path.name, e)
             except Exception as e:

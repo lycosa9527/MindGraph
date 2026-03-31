@@ -3,6 +3,7 @@
 Aligned with prompts/node_palette.get_flow_steps_prompt,
 get_flow_substeps_prompt.
 """
+
 from typing import Any, Dict, List, Optional
 
 from ._common import append_batch_note
@@ -16,12 +17,12 @@ def build_flow_steps_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for flow map step recommendations."""
-    topic = (context.get('topic') or '').strip()
-    step_names = context.get('step_names') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
+    topic = (context.get("topic") or "").strip()
+    step_names = context.get("step_names") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"为流程「{topic}」生成{count}个按时间顺序排列的步骤" if topic else "流程未设置"
         prompt = f"""{topic_ctx}
 
@@ -36,18 +37,14 @@ def build_flow_steps_prompt(
         if step_names:
             prompt += f"""
 
-图中已有步骤：{', '.join(step_names)}。请生成更聚焦、互补的步骤推荐，与已有步骤形成补充，避免重复。"""
+图中已有步骤：{", ".join(step_names)}。请生成更聚焦、互补的步骤推荐，与已有步骤形成补充，避免重复。"""
         prompt += f"""
 
 要求：每个步骤要简洁明了（1-6个词），不要标点符号，不要编号前缀。只输出步骤文本，每行一个。请按照时间顺序从早到晚排列步骤。
 
 生成{count}个按顺序的步骤："""
     else:
-        topic_ctx = (
-            f"Generate {count} chronologically ordered steps for: {topic}"
-            if topic
-            else "Flow not set"
-        )
+        topic_ctx = f"Generate {count} chronologically ordered steps for: {topic}" if topic else "Flow not set"
         prompt = f"""{topic_ctx}
 
 Educational Context: {context_desc}
@@ -59,7 +56,7 @@ Thinking approach: Sequential, Procedural
 3. Use action phrases or noun phrases to describe steps
 4. Steps should be logically connected"""
         if step_names:
-            steps = ', '.join(step_names)
+            steps = ", ".join(step_names)
             prompt += (
                 f"\n\nThe diagram already has steps: {steps}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
@@ -85,13 +82,13 @@ def build_flow_substeps_prompt(
     Second-stage: we are working on step X, it has substeps Y.
     Generate more focused recommendations that build on these.
     """
-    topic = (context.get('topic') or '').strip()
-    step_name = (context.get('step_name') or '').strip()
-    substep_texts = context.get('substep_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
+    topic = (context.get("topic") or "").strip()
+    step_name = (context.get("step_name") or "").strip()
+    substep_texts = context.get("substep_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"流程：{topic}" if topic else "流程未设置"
         prompt = f"""为步骤「{step_name}」生成{count}个子步骤
 
@@ -108,7 +105,7 @@ def build_flow_substeps_prompt(
         if substep_texts:
             prompt += f"""
 
-我们正在步骤「{step_name}」下工作，该步骤已有子步骤：{', '.join(substep_texts)}。请生成更聚焦、互补的子步骤推荐，与已有子步骤形成补充，避免重复。"""
+我们正在步骤「{step_name}」下工作，该步骤已有子步骤：{", ".join(substep_texts)}。请生成更聚焦、互补的子步骤推荐，与已有子步骤形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个子步骤："""
@@ -127,9 +124,9 @@ Thinking approach: Refinement, Expansion
 3. Use action phrases or noun phrases
 4. Output only substep text, one per line, no numbering"""
         if substep_texts:
-            substeps = ', '.join(substep_texts)
+            substeps = ", ".join(substep_texts)
             prompt += (
-                f"\n\nWe are working on step \"{step_name}\". "
+                f'\n\nWe are working on step "{step_name}". '
                 f"It has existing substeps: {substeps}. "
                 "Generate more focused, complementary substep recommendations "
                 "that build on these, avoid repetition."

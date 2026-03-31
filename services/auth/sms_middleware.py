@@ -17,6 +17,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from contextlib import asynccontextmanager
 from typing import Dict, Any, Optional, Tuple
 import asyncio
@@ -30,10 +31,6 @@ from services.monitoring.performance_tracker import performance_tracker
 from services.auth.sms_service import (
     SMSService,
     SMSServiceError,
-    SMS_CODE_EXPIRY_MINUTES,
-    SMS_RESEND_INTERVAL_SECONDS,
-    SMS_MAX_ATTEMPTS_PER_PHONE,
-    SMS_MAX_ATTEMPTS_WINDOW_HOURS
 )
 
 
@@ -54,7 +51,7 @@ class SMSMiddleware:
         qpm_limit: Optional[int] = None,
         enable_rate_limiting: bool = True,
         enable_error_handling: bool = True,
-        enable_performance_tracking: bool = True
+        enable_performance_tracking: bool = True,
     ):
         """
         Initialize SMS middleware.
@@ -89,19 +86,17 @@ class SMSMiddleware:
             self.rate_limiter = DashscopeRateLimiter(
                 qpm_limit=self.qpm_limit,
                 concurrent_limit=self.max_concurrent_requests,
-                enabled=True
+                enabled=True,
             )
             logger.info(
-                "[SMSMiddleware] Initialized with rate limiting: "
-                "QPM=%s, Concurrent=%s",
+                "[SMSMiddleware] Initialized with rate limiting: QPM=%s, Concurrent=%s",
                 self.qpm_limit,
-                self.max_concurrent_requests
+                self.max_concurrent_requests,
             )
         else:
             logger.info(
-                "[SMSMiddleware] Initialized without rate limiting: "
-                "Concurrent=%s",
-                self.max_concurrent_requests
+                "[SMSMiddleware] Initialized without rate limiting: Concurrent=%s",
+                self.max_concurrent_requests,
             )
 
     @property
@@ -119,7 +114,7 @@ class SMSMiddleware:
         phone: str,
         purpose: str,
         user_id: Optional[int] = None,
-        organization_id: Optional[int] = None
+        organization_id: Optional[int] = None,
     ):
         """
         Context manager for SMS request lifecycle.
@@ -147,14 +142,12 @@ class SMSMiddleware:
         async with self._request_lock:
             self._active_requests += 1
             logger.debug(
-                "[SMSMiddleware] Request %s started "
-                "(%s/%s active) "
-                "for %s (%s)",
+                "[SMSMiddleware] Request %s started (%s/%s active) for %s (%s)",
                 request_id,
                 self._active_requests,
                 self.max_concurrent_requests,
                 masked_phone,
-                purpose
+                purpose,
             )
 
         # Apply rate limiting if enabled
@@ -164,13 +157,13 @@ class SMSMiddleware:
                     try:
                         # Prepare context for request
                         ctx = {
-                            'request_id': request_id,
-                            'phone': phone,
-                            'masked_phone': masked_phone,
-                            'purpose': purpose,
-                            'user_id': user_id,
-                            'organization_id': organization_id,
-                            'start_time': request_start_time
+                            "request_id": request_id,
+                            "phone": phone,
+                            "masked_phone": masked_phone,
+                            "purpose": purpose,
+                            "user_id": user_id,
+                            "organization_id": organization_id,
+                            "start_time": request_start_time,
                         }
 
                         yield ctx
@@ -182,15 +175,14 @@ class SMSMiddleware:
                                 duration=duration,
                                 success=True,
                                 error=None,
-                                purpose=purpose
+                                purpose=purpose,
                             )
 
                         logger.debug(
-                            "[SMSMiddleware] Request %s completed successfully "
-                            "in %.2fs for %s",
+                            "[SMSMiddleware] Request %s completed successfully in %.2fs for %s",
                             request_id,
                             duration,
-                            masked_phone
+                            masked_phone,
                         )
 
                     except Exception as e:
@@ -201,17 +193,16 @@ class SMSMiddleware:
                                 duration=duration,
                                 success=False,
                                 error=str(e),
-                                purpose=purpose
+                                purpose=purpose,
                             )
 
                         logger.error(
-                            "[SMSMiddleware] Request %s failed "
-                            "after %.2fs for %s: %s",
+                            "[SMSMiddleware] Request %s failed after %.2fs for %s: %s",
                             request_id,
                             duration,
                             masked_phone,
                             e,
-                            exc_info=True
+                            exc_info=True,
                         )
 
                         # Apply error handling if enabled
@@ -224,11 +215,10 @@ class SMSMiddleware:
                         async with self._request_lock:
                             self._active_requests -= 1
                             logger.debug(
-                                "[SMSMiddleware] Request %s completed "
-                                "(%s/%s active)",
+                                "[SMSMiddleware] Request %s completed (%s/%s active)",
                                 request_id,
                                 self._active_requests,
-                                self.max_concurrent_requests
+                                self.max_concurrent_requests,
                             )
             except Exception as e:
                 logger.warning("[SMSMiddleware] Rate limiter acquisition failed: %s", e)
@@ -237,8 +227,7 @@ class SMSMiddleware:
                     self._active_requests -= 1
                 if self.enable_error_handling:
                     raise SMSServiceError(
-                        "SMS service temporarily unavailable due to rate limiting. "
-                        "Please try again in a moment."
+                        "SMS service temporarily unavailable due to rate limiting. Please try again in a moment."
                     ) from e
                 raise
         else:
@@ -246,13 +235,13 @@ class SMSMiddleware:
             try:
                 # Prepare context for request
                 ctx = {
-                    'request_id': request_id,
-                    'phone': phone,
-                    'masked_phone': masked_phone,
-                    'purpose': purpose,
-                    'user_id': user_id,
-                    'organization_id': organization_id,
-                    'start_time': request_start_time
+                    "request_id": request_id,
+                    "phone": phone,
+                    "masked_phone": masked_phone,
+                    "purpose": purpose,
+                    "user_id": user_id,
+                    "organization_id": organization_id,
+                    "start_time": request_start_time,
                 }
 
                 yield ctx
@@ -260,40 +249,28 @@ class SMSMiddleware:
                 # Track successful request
                 duration = time.time() - request_start_time
                 if self.enable_performance_tracking:
-                    self._track_performance(
-                        duration=duration,
-                        success=True,
-                        error=None,
-                        purpose=purpose
-                    )
+                    self._track_performance(duration=duration, success=True, error=None, purpose=purpose)
 
                 logger.debug(
-                    "[SMSMiddleware] Request %s completed successfully "
-                    "in %.2fs for %s",
+                    "[SMSMiddleware] Request %s completed successfully in %.2fs for %s",
                     request_id,
                     duration,
-                    masked_phone
+                    masked_phone,
                 )
 
             except Exception as e:
                 # Track failed request
                 duration = time.time() - request_start_time
                 if self.enable_performance_tracking:
-                    self._track_performance(
-                        duration=duration,
-                        success=False,
-                        error=str(e),
-                        purpose=purpose
-                    )
+                    self._track_performance(duration=duration, success=False, error=str(e), purpose=purpose)
 
                 logger.error(
-                    "[SMSMiddleware] Request %s failed "
-                    "after %.2fs for %s: %s",
+                    "[SMSMiddleware] Request %s failed after %.2fs for %s: %s",
                     request_id,
                     duration,
                     masked_phone,
                     e,
-                    exc_info=True
+                    exc_info=True,
                 )
 
                 # Apply error handling if enabled
@@ -306,11 +283,10 @@ class SMSMiddleware:
                 async with self._request_lock:
                     self._active_requests -= 1
                     logger.debug(
-                        "[SMSMiddleware] Request %s completed "
-                        "(%s/%s active)",
+                        "[SMSMiddleware] Request %s completed (%s/%s active)",
                         request_id,
                         self._active_requests,
-                        self.max_concurrent_requests
+                        self.max_concurrent_requests,
                     )
 
     async def send_verification_code(
@@ -320,7 +296,7 @@ class SMSMiddleware:
         code: Optional[str] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
-        lang: Language = "en"
+        lang: Language = "en",
     ) -> Tuple[bool, str, Optional[str]]:
         """
         Send SMS verification code with middleware (recommended method).
@@ -341,11 +317,7 @@ class SMSMiddleware:
         async with self.request_context(phone, purpose, user_id, organization_id):
             return await self._sms_service.send_verification_code(phone, purpose, code, lang)
 
-    async def send_alert(
-        self,
-        phones: list[str],
-        lang: Language = "zh"
-    ) -> Tuple[bool, str]:
+    async def send_alert(self, phones: list[str], lang: Language = "zh") -> Tuple[bool, str]:
         """
         Send SMS alert notification to multiple admin phones.
 
@@ -368,7 +340,7 @@ class SMSMiddleware:
         phones: list[str],
         template_id: str,
         template_params: Optional[list[str]] = None,
-        lang: Language = "zh"
+        lang: Language = "zh",
     ) -> Tuple[bool, str]:
         """
         Send SMS notification with custom template ID.
@@ -395,18 +367,13 @@ class SMSMiddleware:
         duration: float,
         success: bool,
         error: Optional[str] = None,
-        purpose: Optional[str] = None
+        purpose: Optional[str] = None,
     ):
         """Track performance metrics for SMS requests."""
         try:
             # Use 'sms' as model name, append purpose for better tracking
             model_name = f"sms-{purpose}" if purpose else "sms"
-            performance_tracker.record_request(
-                model=model_name,
-                duration=duration,
-                success=success,
-                error=error
-            )
+            performance_tracker.record_request(model=model_name, duration=duration, success=success, error=error)
         except Exception as e:
             logger.debug("[SMSMiddleware] Performance tracking failed (non-critical): %s", e)
 
@@ -431,6 +398,7 @@ class SMSMiddleware:
 
 class _SMSMiddlewareSingleton:
     """Singleton holder for SMS middleware instance."""
+
     _instance: Optional[SMSMiddleware] = None
 
     @classmethod

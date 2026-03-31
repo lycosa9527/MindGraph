@@ -4,6 +4,7 @@
 Samples first 30 pages of document for LLM analysis,
 reducing cost by 94% compared to full document analysis.
 """
+
 from typing import Optional
 import logging
 

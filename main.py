@@ -50,7 +50,7 @@ app = FastAPI(
     # Disable Swagger UI in production for security (only enable in DEBUG mode)
     docs_url="/docs" if config.debug else None,
     redoc_url="/redoc" if config.debug else None,
-    lifespan=lifespan
+    lifespan=lifespan,
 )
 
 # ============================================================================

@@ -22,7 +22,10 @@ from sqlalchemy.orm import Session
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.workshop_chat import (
-    ChannelMember, ChatMessage, ChatTopic, UserTopicPreference,
+    ChannelMember,
+    ChatMessage,
+    ChatTopic,
+    UserTopicPreference,
 )
 
 logger = logging.getLogger(__name__)
@@ -46,10 +49,7 @@ class TopicService:
         id above that cursor count as unread, matching channel-level catch-up.
         """
         topics = (
-            db.query(ChatTopic)
-            .filter(ChatTopic.channel_id == channel_id)
-            .order_by(ChatTopic.updated_at.desc())
-            .all()
+            db.query(ChatTopic).filter(ChatTopic.channel_id == channel_id).order_by(ChatTopic.updated_at.desc()).all()
         )
         if not topics:
             return []
@@ -62,7 +62,10 @@ class TopicService:
             unread_pref_map,
             unread_no_pref_map,
         ) = TopicService._topic_list_batch_data(
-            db, channel_id, user_id, topic_ids,
+            db,
+            channel_id,
+            user_id,
+            topic_ids,
         )
 
         return [
@@ -76,11 +79,7 @@ class TopicService:
                     unread_pref_map=unread_pref_map,
                     unread_no_pref_map=unread_no_pref_map,
                 ),
-                visibility_policy=(
-                    prefs[topic.id].visibility_policy
-                    if topic.id in prefs
-                    else "inherit"
-                ),
+                visibility_policy=(prefs[topic.id].visibility_policy if topic.id in prefs else "inherit"),
             )
             for topic in topics
         ]
@@ -158,9 +157,7 @@ class TopicService:
             )
             unread_pref_map = dict(unread_pref_rows)
 
-        topic_ids_no_pref = [
-            tid for tid in topic_ids if tid not in prefs
-        ]
+        topic_ids_no_pref = [tid for tid in topic_ids if tid not in prefs]
         unread_no_pref_map: Dict[int, int] = {}
         if topic_ids_no_pref:
             no_pref_rows = (
@@ -237,11 +234,15 @@ class TopicService:
         db.commit()
         logger.info(
             "[WorkshopChat] Topic '%s' created in channel %d by user %d",
-            title, channel_id, created_by,
+            title,
+            channel_id,
+            created_by,
         )
         return {
-            "id": topic.id, "channel_id": topic.channel_id,
-            "title": topic.title, "description": topic.description,
+            "id": topic.id,
+            "channel_id": topic.channel_id,
+            "title": topic.title,
+            "description": topic.description,
             "created_by": topic.created_by,
             "created_at": topic.created_at.isoformat(),
         }
@@ -266,8 +267,10 @@ class TopicService:
         topic.updated_at = datetime.utcnow()
         db.commit()
         return {
-            "id": topic.id, "channel_id": topic.channel_id,
-            "title": topic.title, "description": topic.description,
+            "id": topic.id,
+            "channel_id": topic.channel_id,
+            "title": topic.title,
+            "description": topic.description,
             "updated_at": topic.updated_at.isoformat(),
         }
 
@@ -278,7 +281,9 @@ class TopicService:
 
     @staticmethod
     def move_topic(
-        db: Session, topic_id: int, target_channel_id: int,
+        db: Session,
+        topic_id: int,
+        target_channel_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Move a topic (and its messages) to a different channel."""
         topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
@@ -295,7 +300,9 @@ class TopicService:
         db.commit()
         logger.info(
             "[WorkshopChat] Topic %d moved from channel %d to %d",
-            topic_id, old_channel, target_channel_id,
+            topic_id,
+            old_channel,
+            target_channel_id,
         )
         return {
             "id": topic.id,
@@ -318,7 +325,9 @@ class TopicService:
 
     @staticmethod
     def mark_topic_read(
-        db: Session, topic_id: int, user_id: int,
+        db: Session,
+        topic_id: int,
+        user_id: int,
     ) -> Dict[str, Any]:
         """Update topic read state and advance channel last-read waterline.
 
@@ -415,7 +424,9 @@ class TopicService:
 
     @staticmethod
     def rename_topic(
-        db: Session, topic_id: int, new_title: str,
+        db: Session,
+        topic_id: int,
+        new_title: str,
     ) -> Optional[Dict[str, Any]]:
         """Rename a topic."""
         topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()

@@ -29,7 +29,9 @@ class StarService:
 
     @staticmethod
     def toggle_star(
-        db: Session, message_id: int, user_id: int,
+        db: Session,
+        message_id: int,
+        user_id: int,
     ) -> Dict[str, Any]:
         """Star a message if not starred, unstar if already starred.
 
@@ -55,16 +57,17 @@ class StarService:
 
     @staticmethod
     def get_starred_messages(
-        db: Session, user_id: int,
-        limit: int = DEFAULT_PAGE_SIZE, offset: int = 0,
+        db: Session,
+        user_id: int,
+        limit: int = DEFAULT_PAGE_SIZE,
+        offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get a user's starred messages, most recently starred first."""
         stars = (
             db.query(StarredMessage)
             .filter(StarredMessage.user_id == user_id)
             .options(
-                joinedload(StarredMessage.message)
-                .joinedload(ChatMessage.sender),
+                joinedload(StarredMessage.message).joinedload(ChatMessage.sender),
             )
             .order_by(StarredMessage.created_at.desc())
             .offset(offset)
@@ -77,26 +80,30 @@ class StarService:
             if not msg or msg.is_deleted:
                 continue
             sender = msg.sender
-            results.append({
-                "star_id": star.id,
-                "starred_at": star.created_at.isoformat(),
-                "message": {
-                    "id": msg.id,
-                    "channel_id": msg.channel_id,
-                    "topic_id": msg.topic_id,
-                    "sender_id": msg.sender_id,
-                    "sender_name": sender.name if sender else f"User {msg.sender_id}",
-                    "sender_avatar": sender.avatar if sender else None,
-                    "content": msg.content,
-                    "message_type": msg.message_type,
-                    "created_at": msg.created_at.isoformat(),
-                },
-            })
+            results.append(
+                {
+                    "star_id": star.id,
+                    "starred_at": star.created_at.isoformat(),
+                    "message": {
+                        "id": msg.id,
+                        "channel_id": msg.channel_id,
+                        "topic_id": msg.topic_id,
+                        "sender_id": msg.sender_id,
+                        "sender_name": sender.name if sender else f"User {msg.sender_id}",
+                        "sender_avatar": sender.avatar if sender else None,
+                        "content": msg.content,
+                        "message_type": msg.message_type,
+                        "created_at": msg.created_at.isoformat(),
+                    },
+                }
+            )
         return results
 
     @staticmethod
     def is_starred_batch(
-        db: Session, message_ids: List[int], user_id: int,
+        db: Session,
+        message_ids: List[int],
+        user_id: int,
     ) -> Set[int]:
         """Return the subset of *message_ids* that the user has starred."""
         if not message_ids:

@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import asyncio
 import logging
 import threading
@@ -43,13 +44,13 @@ class LLMTimingStats:
     def get_stats(self) -> dict:
         """Get current timing statistics."""
         with self._lock:
-            avg_time = (self._total_time / self._total_calls if self._total_calls > 0 else 0.0)
+            avg_time = self._total_time / self._total_calls if self._total_calls > 0 else 0.0
             return {
-                'total_calls': self._total_calls,
-                'total_time': self._total_time,
-                'average_time': avg_time,
-                'last_call_time': self._last_call_time,
-                'call_times': self._call_times[-10:]
+                "total_calls": self._total_calls,
+                "total_time": self._total_time,
+                "average_time": avg_time,
+                "last_call_time": self._last_call_time,
+                "call_times": self._call_times[-10:],
             }
 
 
@@ -67,12 +68,9 @@ class _LegacyLLMStub:
 
     def invoke(self, prompt: str) -> str:
         """Public interface for LLM invocation."""
+
         async def _async_call():
-            return await llm_service.chat(
-                prompt=prompt,
-                model='qwen',
-                timeout=30.0
-            )
+            return await llm_service.chat(prompt=prompt, model="qwen", timeout=30.0)
 
         try:
             loop = asyncio.get_event_loop()
@@ -96,7 +94,8 @@ class QwenLLM:
     Now uses LLM Service instead of direct client (Phase 5 migration).
     Used by: LearningAgent, LearningAgentV3, and qwen_langchain.py
     """
-    def __init__(self, model_type='generation'):
+
+    def __init__(self, model_type="generation"):
         """
         Initialize QwenLLM wrapper.
 
@@ -120,11 +119,7 @@ class QwenLLM:
         del stop
 
         async def _async_call():
-            return await llm_service.chat(
-                prompt=prompt,
-                model='qwen',
-                timeout=30.0
-            )
+            return await llm_service.chat(prompt=prompt, model="qwen", timeout=30.0)
 
         try:
             loop = asyncio.get_event_loop()

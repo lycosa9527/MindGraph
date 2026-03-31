@@ -119,7 +119,7 @@ const path = computed(() => {
   const dt = props.data?.diagramType as DiagramType | undefined
   const debugCurve = (window as unknown as { __DEBUG_CURVE_LENGTH__?: boolean })
     .__DEBUG_CURVE_LENGTH__
-  if ((dt === 'mindmap' || dt === 'mind_map') && debugCurve) {
+  if (import.meta.env.DEV && (dt === 'mindmap' || dt === 'mind_map') && debugCurve) {
     const span = Math.abs(props.targetX - props.sourceX)
     if (props.source === 'topic') {
       const side = props.target.startsWith('branch-l-') ? 'left' : 'right'

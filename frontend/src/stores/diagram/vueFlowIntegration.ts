@@ -33,8 +33,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
   const braceMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'brace_map' || !ctx.data.value?.nodes) return []
-    const trigger = ctx.layoutRecalcTrigger.value
-    console.log(`[NodeLayout:VueFlow] braceMapLayoutNodes computed, trigger=${trigger}, nodeDimKeys=`, Object.keys(ctx.nodeDimensions.value))
+    void ctx.layoutRecalcTrigger.value
     return recalculateBraceMapLayout(
       ctx.data.value.nodes,
       ctx.data.value.connections ?? [],
@@ -62,9 +61,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
   const multiFlowMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'multi_flow_map' || !ctx.data.value?.nodes) return []
-    const trigger = ctx.layoutRecalcTrigger.value
+    void ctx.layoutRecalcTrigger.value
     void ctx.multiFlowMapRecalcTrigger.value
-    console.log(`[NodeLayout:VueFlow] multiFlowMapLayoutNodes computed, trigger=${trigger}, nodeDimKeys=`, Object.keys(ctx.nodeDimensions.value))
     return recalculateMultiFlowMapLayout(
       ctx.data.value.nodes,
       ctx.topicNodeWidth.value,
@@ -75,8 +73,7 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
   const bridgeMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'bridge_map' || !ctx.data.value?.nodes) return []
-    const trigger = ctx.layoutRecalcTrigger.value
-    console.log(`[NodeLayout:VueFlow] bridgeMapLayoutNodes computed, trigger=${trigger}, nodeDimKeys=`, Object.keys(ctx.nodeDimensions.value))
+    void ctx.layoutRecalcTrigger.value
     return recalculateBridgeMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
   })
 

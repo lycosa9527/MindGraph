@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
@@ -32,7 +33,7 @@ async def create_bookmark(
     document_id: int,
     data: BookmarkCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Create or update a bookmark for a document page.
@@ -40,11 +41,7 @@ async def create_bookmark(
     service = LibraryService(db, user_id=current_user.id)
 
     try:
-        bookmark = service.create_bookmark(
-            document_id=document_id,
-            page_number=data.page_number,
-            note=data.note
-        )
+        bookmark = service.create_bookmark(document_id=document_id, page_number=data.page_number, note=data.note)
 
         # Structured logging
         logger.info(
@@ -53,14 +50,10 @@ async def create_bookmark(
                 "bookmark_id": bookmark.id,
                 "document_id": document_id,
                 "page_number": data.page_number,
-                "user_id": current_user.id
-            }
+                "user_id": current_user.id,
+            },
         )
-        logger.info(
-            "Bookmark created successfully: id=%s, uuid=%s",
-            bookmark.id,
-            bookmark.uuid
-        )
+        logger.info("Bookmark created successfully: id=%s, uuid=%s", bookmark.id, bookmark.uuid)
 
         return {
             "id": bookmark.id,
@@ -71,8 +64,8 @@ async def create_bookmark(
                 "document_id": bookmark.document_id,
                 "page_number": bookmark.page_number,
                 "note": bookmark.note,
-                "created_at": bookmark.created_at.isoformat() if bookmark.created_at else None
-            }
+                "created_at": bookmark.created_at.isoformat() if bookmark.created_at else None,
+            },
         }
     except ValueError as e:
         logger.error("Failed to create bookmark: %s", e)
@@ -83,7 +76,7 @@ async def create_bookmark(
 async def get_recent_bookmarks(
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get recent bookmarks for the current user.
@@ -102,7 +95,7 @@ async def get_bookmark(
     document_id: int,
     page_number: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get bookmark for a specific document page.
@@ -113,10 +106,7 @@ async def get_bookmark(
     bookmark = service.get_bookmark(document_id, page_number)
 
     if not bookmark:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bookmark not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bookmark not found")
 
     return {
         "id": bookmark.id,
@@ -133,7 +123,7 @@ async def get_bookmark(
 async def get_bookmark_by_uuid(
     bookmark_uuid: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get bookmark by UUID.
@@ -142,10 +132,7 @@ async def get_bookmark_by_uuid(
     bookmark = service.get_bookmark_by_uuid(bookmark_uuid)
 
     if not bookmark:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bookmark not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bookmark not found")
 
     return {
         "id": bookmark.id,
@@ -158,7 +145,9 @@ async def get_bookmark_by_uuid(
         "document": {
             "id": bookmark.document.id if bookmark.document else None,
             "title": bookmark.document.title if bookmark.document else None,
-        } if bookmark.document else None
+        }
+        if bookmark.document
+        else None,
     }
 
 
@@ -166,7 +155,7 @@ async def get_bookmark_by_uuid(
 async def delete_bookmark(
     bookmark_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a bookmark.
@@ -177,7 +166,7 @@ async def delete_bookmark(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Bookmark not found or you don't have permission"
+            detail="Bookmark not found or you don't have permission",
         )
 
     return {"message": "Bookmark deleted successfully"}

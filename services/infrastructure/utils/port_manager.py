@@ -58,29 +58,29 @@ def find_process_on_port(port: int):
         Optional[int]: PID of process using the port, or None if not found
     """
     try:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             # Windows: use netstat
             result = subprocess.run(
-                ['netstat', '-ano'],
+                ["netstat", "-ano"],
                 capture_output=True,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
             )
 
-            for line in result.stdout.split('\n'):
-                if f':{port}' in line and 'LISTENING' in line:
+            for line in result.stdout.split("\n"):
+                if f":{port}" in line and "LISTENING" in line:
                     parts = line.split()
                     if len(parts) >= 5:
                         return int(parts[-1])
         else:
             # Linux/Mac: use lsof
             result = subprocess.run(
-                ['lsof', '-ti', f':{port}'],
+                ["lsof", "-ti", f":{port}"],
                 capture_output=True,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
                 return int(result.stdout.strip())
@@ -105,41 +105,41 @@ def cleanup_stale_process(pid: int, port: int) -> bool:
     logger.info("Attempting to terminate stale server process...")
 
     try:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             # Windows: taskkill
             # First try graceful termination
             subprocess.run(
-                ['taskkill', '/PID', str(pid)],
+                ["taskkill", "/PID", str(pid)],
                 capture_output=True,
                 timeout=3,
-                check=False
+                check=False,
             )
             time.sleep(1)
 
             # Check if still running
             check_result = subprocess.run(
-                ['tasklist', '/FI', f'PID eq {pid}'],
+                ["tasklist", "/FI", f"PID eq {pid}"],
                 capture_output=True,
                 text=True,
                 timeout=2,
-                check=False
+                check=False,
             )
             if str(pid) in check_result.stdout:
                 # Force kill if graceful failed
                 logger.info("Process still running, forcing termination...")
                 subprocess.run(
-                    ['taskkill', '/F', '/PID', str(pid)],
+                    ["taskkill", "/F", "/PID", str(pid)],
                     capture_output=True,
                     timeout=2,
-                    check=False
+                    check=False,
                 )
         else:
             # Linux/Mac: kill
             os.kill(pid, signal.SIGTERM)
             time.sleep(0.5)
             try:
-                if hasattr(signal, 'SIGKILL'):
-                    sigkill = getattr(signal, 'SIGKILL')  # pylint: disable=no-member
+                if hasattr(signal, "SIGKILL"):
+                    sigkill = getattr(signal, "SIGKILL")  # pylint: disable=no-member
                     os.kill(pid, sigkill)
                 else:
                     # Fallback for systems without SIGKILL
@@ -149,7 +149,7 @@ def cleanup_stale_process(pid: int, port: int) -> bool:
 
         # Wait for port to be released
         time.sleep(1)
-        port_available, _ = check_port_available('0.0.0.0', port)
+        port_available, _ = check_port_available("0.0.0.0", port)
 
         if port_available:
             logger.info("✅ Successfully cleaned up stale process (PID: %s)", pid)
@@ -177,21 +177,21 @@ class ShutdownErrorFilter:
         self.buffer += text
 
         # Check for start of traceback
-        if 'Process SpawnProcess' in text or 'Traceback (most recent call last)' in text:
+        if "Process SpawnProcess" in text or "Traceback (most recent call last)" in text:
             self.in_traceback = True
             self.suppress_current = False
 
         # Check if this traceback is a CancelledError
-        if self.in_traceback and 'asyncio.exceptions.CancelledError' in self.buffer:
+        if self.in_traceback and "asyncio.exceptions.CancelledError" in self.buffer:
             self.suppress_current = True
 
         # If we hit a blank line or new process line, decide whether to flush
-        if text.strip() == '' or text.startswith('Process '):
+        if text.strip() == "" or text.startswith("Process "):
             if self.in_traceback and not self.suppress_current:
                 # This was a real error, write it
                 self.original_stderr.write(self.buffer)
             # Reset state
-            if text.strip() == '':
+            if text.strip() == "":
                 self.buffer = ""
                 self.in_traceback = False
                 self.suppress_current = False

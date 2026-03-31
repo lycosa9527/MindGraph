@@ -31,18 +31,17 @@ Proprietary License
 """
 
 
-
-
-
-logger = logging.getLogger('VOICE_AGENT')
+logger = logging.getLogger("VOICE_AGENT")
 
 
 # ============================================================================
 # Agent State Definition
 # ============================================================================
 
+
 class DiagramNode(TypedDict):
     """Represents a node in the diagram"""
+
     id: str
     index: int
     text: str
@@ -50,6 +49,7 @@ class DiagramNode(TypedDict):
 
 class DiagramState(TypedDict):
     """Current diagram state"""
+
     diagram_type: str
     center_text: str
     nodes: List[DiagramNode]
@@ -58,6 +58,7 @@ class DiagramState(TypedDict):
 
 class AgentState(TypedDict):
     """Complete agent state with memory"""
+
     # Conversation messages (with memory)
     messages: Annotated[List, add_messages]
 
@@ -81,6 +82,7 @@ class AgentState(TypedDict):
 # Tools for Diagram Operations
 # ============================================================================
 
+
 @tool
 def select_node(node_identifier: str) -> Dict[str, Any]:
     """
@@ -92,11 +94,7 @@ def select_node(node_identifier: str) -> Dict[str, Any]:
     Returns:
         Action to select the node
     """
-    return {
-        "action": "select_node",
-        "target": node_identifier,
-        "confidence": 0.95
-    }
+    return {"action": "select_node", "target": node_identifier, "confidence": 0.95}
 
 
 @tool
@@ -110,11 +108,7 @@ def update_center(new_text: str) -> Dict[str, Any]:
     Returns:
         Action to update center
     """
-    return {
-        "action": "update_center",
-        "target": new_text,
-        "confidence": 0.95
-    }
+    return {"action": "update_center", "target": new_text, "confidence": 0.95}
 
 
 @tool
@@ -131,11 +125,7 @@ def add_node(text: str, position: Optional[int] = None) -> Dict[str, Any]:
     Returns:
         Action to add node
     """
-    result = {
-        "action": "add_node",
-        "target": text,
-        "confidence": 0.95
-    }
+    result = {"action": "add_node", "target": text, "confidence": 0.95}
     if position is not None:
         result["node_index"] = position
     return result
@@ -152,11 +142,7 @@ def delete_node(node_identifier: str) -> Dict[str, Any]:
     Returns:
         Action to delete node
     """
-    return {
-        "action": "delete_node",
-        "target": node_identifier,
-        "confidence": 0.95
-    }
+    return {"action": "delete_node", "target": node_identifier, "confidence": 0.95}
 
 
 @tool
@@ -175,7 +161,7 @@ def update_node(node_identifier: str, new_text: str) -> Dict[str, Any]:
         "action": "update_node",
         "target": new_text,
         "node_identifier": node_identifier,
-        "confidence": 0.95
+        "confidence": 0.95,
     }
 
 
@@ -187,10 +173,7 @@ def auto_complete() -> Dict[str, Any]:
     Returns:
         Action to trigger auto-complete
     """
-    return {
-        "action": "auto_complete",
-        "confidence": 0.95
-    }
+    return {"action": "auto_complete", "confidence": 0.95}
 
 
 @tool
@@ -208,13 +191,10 @@ def open_panel(panel_name: str) -> Dict[str, Any]:
         "thinkguide": "open_mindmate",  # Redirect to MindMate
         "mindmate": "open_mindmate",
         "node_palette": "open_node_palette",
-        "palette": "open_node_palette"
+        "palette": "open_node_palette",
     }
     action = panel_map.get(panel_name.lower(), f"open_{panel_name}")
-    return {
-        "action": action,
-        "confidence": 0.95
-    }
+    return {"action": action, "confidence": 0.95}
 
 
 @tool
@@ -234,18 +214,16 @@ def close_panel(panel_name: str) -> Dict[str, Any]:
     panel_map = {
         "thinkguide": "close_mindmate",  # Redirect to MindMate
         "mindmate": "close_mindmate",
-        "node_palette": "close_node_palette"
+        "node_palette": "close_node_palette",
     }
     action = panel_map.get(panel_name.lower(), f"close_{panel_name}")
-    return {
-        "action": action,
-        "confidence": 0.95
-    }
+    return {"action": action, "confidence": 0.95}
 
 
 # ============================================================================
 # Voice Agent Class
 # ============================================================================
+
 
 class VoiceAgent:
     """
@@ -262,7 +240,7 @@ class VoiceAgent:
         update_node,
         auto_complete,
         open_panel,
-        close_panel
+        close_panel,
     ]
 
     def __init__(self, session_id: str):
@@ -284,14 +262,14 @@ class VoiceAgent:
                 "diagram_type": "unknown",
                 "center_text": "",
                 "nodes": [],
-                "selected_nodes": []
+                "selected_nodes": [],
             },
             "active_panel": "none",
             "mindmate_open": False,
             "node_palette_open": False,
             "action": None,
             "session_id": self.session_id,
-            "last_updated": datetime.now().isoformat()
+            "last_updated": datetime.now().isoformat(),
         }
 
     def _build_graph(self) -> StateGraph:
@@ -321,7 +299,7 @@ class VoiceAgent:
             return {"action": None}
 
         last_message = messages[-1]
-        user_text = last_message.content if hasattr(last_message, 'content') else str(last_message)
+        user_text = last_message.content if hasattr(last_message, "content") else str(last_message)
 
         # Build context-aware prompt
         diagram = state.get("diagram", {})
@@ -330,13 +308,13 @@ class VoiceAgent:
         # Format nodes for prompt
         nodes_text = ""
         for node in nodes[:15]:
-            nodes_text += f'\n  {node["index"]+1}. "{node["text"]}" (id: {node["id"]})'
+            nodes_text += f'\n  {node["index"] + 1}. "{node["text"]}" (id: {node["id"]})'
 
-        diagram_type = diagram.get('diagram_type', 'unknown')
+        diagram_type = diagram.get("diagram_type", "unknown")
 
         # Build diagram-specific instructions for all diagram types
         diagram_specific_notes = ""
-        if diagram_type == 'double_bubble_map':
+        if diagram_type == "double_bubble_map":
             diagram_specific_notes = """
 【Double Bubble Map Special Handling】
 - Center structure: Uses TWO topics (left and right) instead of single center
@@ -362,7 +340,7 @@ class VoiceAgent:
     {"action": "add_node", "target": "shape",
      "category": "left_differences", "node_index": 0, "confidence": 0.95}
 """
-        elif diagram_type == 'flow_map':
+        elif diagram_type == "flow_map":
             diagram_specific_notes = """
 【Flow Map Special Handling】
 - Center structure: Uses "title" field instead of "topic"
@@ -397,7 +375,7 @@ class VoiceAgent:
     {"action": "delete_node", "step_index": 1, "substep_index": 0,
      "confidence": 0.95}
 """
-        elif diagram_type == 'multi_flow_map':
+        elif diagram_type == "multi_flow_map":
             diagram_specific_notes = """
 【Multi-Flow Map Special Handling】
 - Center structure: Uses "event" field instead of "topic"
@@ -415,7 +393,7 @@ class VoiceAgent:
     {"action": "add_node", "target": "flood", "category": "effects",
      "node_index": 0, "confidence": 0.95}
 """
-        elif diagram_type == 'brace_map':
+        elif diagram_type == "brace_map":
             diagram_specific_notes = """
 【Brace Map Special Handling】
 - Center structure: Uses "whole" field instead of "topic"
@@ -433,7 +411,7 @@ class VoiceAgent:
     {"action": "add_node", "target": "引擎", "node_index": 0,
      "confidence": 0.95}
 """
-        elif diagram_type == 'bridge_map':
+        elif diagram_type == "bridge_map":
             diagram_specific_notes = """
 【Bridge Map Special Handling】
 - Center structure: Uses "dimension" field instead of "topic" (can be empty for diverse relationships)
@@ -448,7 +426,7 @@ class VoiceAgent:
     {"action": "add_node", "target": "wheel : car", "left": "wheel",
      "right": "car", "node_index": 0, "confidence": 0.95}
 """
-        elif diagram_type in ['mindmap', 'mind_map']:
+        elif diagram_type in ["mindmap", "mind_map"]:
             diagram_specific_notes = """
 【Mind Map Special Handling】
 - Center structure: Uses "topic" field
@@ -486,7 +464,7 @@ class VoiceAgent:
     {"action": "delete_node", "branch_index": 1, "child_index": 0,
      "confidence": 0.95}
 """
-        elif diagram_type == 'tree_map':
+        elif diagram_type == "tree_map":
             diagram_specific_notes = """
 【Tree Map Special Handling】
 - Center structure: Uses "topic" field
@@ -521,7 +499,7 @@ class VoiceAgent:
     {"action": "delete_node", "category_index": 1, "item_index": 0,
      "confidence": 0.95}
 """
-        elif diagram_type == 'circle_map':
+        elif diagram_type == "circle_map":
             diagram_specific_notes = """
 【Circle Map Special Handling】
 - Center structure: Uses "topic" or "center.text" field
@@ -534,7 +512,7 @@ class VoiceAgent:
   * "context 1 is classroom" → {"action": "add_node", "target": "classroom", "node_index": 0, "confidence": 0.95}
   * "上下文1是教室" → {"action": "add_node", "target": "教室", "node_index": 0, "confidence": 0.95}
 """
-        elif diagram_type == 'bubble_map':
+        elif diagram_type == "bubble_map":
             diagram_specific_notes = """
 【Bubble Map Special Handling】
 - Center structure: Uses "topic" field
@@ -547,7 +525,7 @@ class VoiceAgent:
   * "attribute 1 is red" → {"action": "add_node", "target": "red", "node_index": 0, "confidence": 0.95}
   * "属性1是红色" → {"action": "add_node", "target": "红色", "node_index": 0, "confidence": 0.95}
 """
-        elif diagram_type == 'concept_map':
+        elif diagram_type == "concept_map":
             diagram_specific_notes = """
 【Concept Map Special Handling】
 - Center structure: Uses "topic" field
@@ -586,8 +564,8 @@ class VoiceAgent:
 
 【Current Diagram】
 - Type: {diagram_type}
-- Center: {diagram.get('center_text', 'Not set')}
-- Nodes:{nodes_text if nodes_text else ' None'}
+- Center: {diagram.get("center_text", "Not set")}
+- Nodes:{nodes_text if nodes_text else " None"}
 {diagram_specific_notes}
 【User Command】
 "{user_text}"
@@ -917,23 +895,27 @@ Return only JSON:"""
             # Use qwen-turbo for intention checking/classification (faster and optimized for this task)
             response = await llm_service.chat(
                 prompt=prompt,
-                model='qwen-turbo',  # Use Turbo for classification/intention checking
+                model="qwen-turbo",  # Use Turbo for classification/intention checking
                 temperature=0.1,
                 max_tokens=200,
                 timeout=5.0,
                 # Token tracking parameters
                 user_id=user_id,
                 organization_id=organization_id,
-                request_type='voice_command_parsing',
+                request_type="voice_command_parsing",
                 diagram_type=diagram_type,
                 session_id=voice_session_id,
-                endpoint_path='/ws/voice'
+                endpoint_path="/ws/voice",
             )
 
             # Parse JSON response
             action = self._parse_json_response(response)
 
-            logger.info("Voice agent parsed command: user_text='%s', action=%s", user_text, action)
+            logger.info(
+                "Voice agent parsed command: user_text='%s', action=%s",
+                user_text,
+                action,
+            )
 
             return {"action": action}
 
@@ -959,7 +941,11 @@ Return only JSON:"""
                 action["resolved_text"] = nodes[idx]["text"]
 
         # Resolve target if it matches a node name
-        if "target" in action and action.get("action") in ["select_node", "delete_node", "update_node"]:
+        if "target" in action and action.get("action") in [
+            "select_node",
+            "delete_node",
+            "update_node",
+        ]:
             target = action["target"]
 
             # Try exact match first
@@ -987,9 +973,9 @@ Return only JSON:"""
             cleaned = response.strip()
 
             # Extract JSON from markdown code block
-            if '```' in cleaned:
-                start = cleaned.find('{')
-                end = cleaned.rfind('}') + 1
+            if "```" in cleaned:
+                start = cleaned.find("{")
+                end = cleaned.rfind("}") + 1
                 if start >= 0 and end > start:
                     cleaned = cleaned[start:end]
 
@@ -1011,23 +997,21 @@ Return only JSON:"""
 
         for child in children:
             if isinstance(child, dict):
-                nodes.append({
-                    "id": child.get("id", f"node_{len(nodes)}"),
-                    "index": child.get("index", len(nodes)),
-                    "text": child.get("text", "")
-                })
+                nodes.append(
+                    {
+                        "id": child.get("id", f"node_{len(nodes)}"),
+                        "index": child.get("index", len(nodes)),
+                        "text": child.get("text", ""),
+                    }
+                )
             elif isinstance(child, str):
-                nodes.append({
-                    "id": f"node_{len(nodes)}",
-                    "index": len(nodes),
-                    "text": child
-                })
+                nodes.append({"id": f"node_{len(nodes)}", "index": len(nodes), "text": child})
 
         self._state["diagram"] = {
             "diagram_type": diagram_data.get("diagram_type", self._state["diagram"]["diagram_type"]),
             "center_text": diagram_data.get("center", {}).get("text", ""),
             "nodes": nodes,
-            "selected_nodes": diagram_data.get("selected_nodes", [])
+            "selected_nodes": diagram_data.get("selected_nodes", []),
         }
         self._state["last_updated"] = datetime.now().isoformat()
 
@@ -1046,7 +1030,7 @@ Return only JSON:"""
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         voice_session_id: Optional[str] = None,
-        diagram_type: Optional[str] = None
+        diagram_type: Optional[str] = None,
     ) -> Dict[str, Any]:
         """
         Process a voice command and return the action.
@@ -1066,7 +1050,7 @@ Return only JSON:"""
             "user_id": user_id,
             "organization_id": organization_id,
             "voice_session_id": voice_session_id,
-            "diagram_type": diagram_type or self._state.get("diagram", {}).get("diagram_type", "unknown")
+            "diagram_type": diagram_type or self._state.get("diagram", {}).get("diagram_type", "unknown"),
         }
 
         # Add user message to state
@@ -1079,9 +1063,7 @@ Return only JSON:"""
             action = result.get("action", {"action": "none", "confidence": 0.0})
 
             # Store the action in conversation for context
-            self._state["messages"].append(
-                AIMessage(content=f"Action: {action.get('action', 'none')}")
-            )
+            self._state["messages"].append(AIMessage(content=f"Action: {action.get('action', 'none')}"))
 
             # Clean up tracking info from state (temporary data, not part of agent state)
             if "_tracking_info" in self._state:
@@ -1109,6 +1091,7 @@ Return only JSON:"""
 # ============================================================================
 # Agent Manager (Session-based)
 # ============================================================================
+
 
 class VoiceAgentManager:
     """
@@ -1144,4 +1127,3 @@ class VoiceAgentManager:
 
 # Global manager instance
 voice_agent_manager = VoiceAgentManager()
-

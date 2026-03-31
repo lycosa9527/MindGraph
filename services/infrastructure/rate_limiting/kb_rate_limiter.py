@@ -10,12 +10,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Tuple, Optional
 import logging
 import os
 
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
-
 
 
 logger = logging.getLogger(__name__)
@@ -51,13 +51,10 @@ class KBRateLimiter:
         self.upload_window = 3600  # 1 hour window
 
         logger.info(
-            "[KBRateLimiter] Initialized: "
-            "Retrieval=%s/min, "
-            "Embedding=%s/min, "
-            "Upload=%s/hour",
+            "[KBRateLimiter] Initialized: Retrieval=%s/min, Embedding=%s/min, Upload=%s/hour",
             self.retrieval_rpm,
             self.embedding_rpm,
-            self.upload_per_hour
+            self.upload_per_hour,
         )
 
     def check_retrieval_limit(self, user_id: int) -> Tuple[bool, int, str]:
@@ -74,7 +71,7 @@ class KBRateLimiter:
             category="kb_retrieval",
             identifier=str(user_id),
             max_attempts=self.retrieval_rpm,
-            window_seconds=self.retrieval_window
+            window_seconds=self.retrieval_window,
         )
 
     def check_embedding_limit(self, user_id: int) -> Tuple[bool, int, str]:
@@ -91,7 +88,7 @@ class KBRateLimiter:
             category="kb_embedding",
             identifier=str(user_id),
             max_attempts=self.embedding_rpm,
-            window_seconds=self.embedding_window
+            window_seconds=self.embedding_window,
         )
 
     def check_upload_limit(self, user_id: int) -> Tuple[bool, int, str]:
@@ -108,7 +105,7 @@ class KBRateLimiter:
             category="kb_upload",
             identifier=str(user_id),
             max_attempts=self.upload_per_hour,
-            window_seconds=self.upload_window
+            window_seconds=self.upload_window,
         )
 
     def get_retrieval_remaining(self, user_id: int) -> Tuple[int, int]:
@@ -125,7 +122,7 @@ class KBRateLimiter:
             category="kb_retrieval",
             identifier=str(user_id),
             max_attempts=self.retrieval_rpm,
-            window_seconds=self.retrieval_window
+            window_seconds=self.retrieval_window,
         )
 
     def get_embedding_remaining(self, user_id: int) -> Tuple[int, int]:
@@ -142,7 +139,7 @@ class KBRateLimiter:
             category="kb_embedding",
             identifier=str(user_id),
             max_attempts=self.embedding_rpm,
-            window_seconds=self.embedding_window
+            window_seconds=self.embedding_window,
         )
 
     def get_upload_remaining(self, user_id: int) -> Tuple[int, int]:
@@ -159,7 +156,7 @@ class KBRateLimiter:
             category="kb_upload",
             identifier=str(user_id),
             max_attempts=self.upload_per_hour,
-            window_seconds=self.upload_window
+            window_seconds=self.upload_window,
         )
 
     def clear_retrieval_limit(self, user_id: int) -> bool:

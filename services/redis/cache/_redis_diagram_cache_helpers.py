@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import os
 from typing import Any, Dict, List, Optional, Tuple
@@ -17,11 +18,11 @@ from models.domain.diagrams import Diagram
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL = int(os.getenv('DIAGRAM_CACHE_TTL', '604800'))
-SYNC_INTERVAL = float(os.getenv('DIAGRAM_SYNC_INTERVAL', '300'))
-SYNC_BATCH_SIZE = int(os.getenv('DIAGRAM_SYNC_BATCH_SIZE', '100'))
-MAX_PER_USER = int(os.getenv('DIAGRAM_MAX_PER_USER', '20'))
-MAX_SPEC_SIZE_KB = int(os.getenv('DIAGRAM_MAX_SPEC_SIZE_KB', '500'))
+CACHE_TTL = int(os.getenv("DIAGRAM_CACHE_TTL", "604800"))
+SYNC_INTERVAL = float(os.getenv("DIAGRAM_SYNC_INTERVAL", "300"))
+SYNC_BATCH_SIZE = int(os.getenv("DIAGRAM_SYNC_BATCH_SIZE", "100"))
+MAX_PER_USER = int(os.getenv("DIAGRAM_MAX_PER_USER", "20"))
+MAX_SPEC_SIZE_KB = int(os.getenv("DIAGRAM_MAX_SPEC_SIZE_KB", "500"))
 
 DIAGRAM_KEY = "diagram:{user_id}:{diagram_id}"
 USER_META_KEY = "diagrams:user:{user_id}:meta"
@@ -71,10 +72,7 @@ async def count_diagrams_from_db(user_id: int) -> int:
     try:
         db = SessionLocal()
         try:
-            count = db.query(Diagram).filter(
-                Diagram.user_id == user_id,
-                Diagram.is_deleted.is_(False)
-            ).count()
+            count = db.query(Diagram).filter(Diagram.user_id == user_id, Diagram.is_deleted.is_(False)).count()
             return count
         finally:
             db.close()

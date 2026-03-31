@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import shutil
 from datetime import datetime
@@ -101,9 +102,7 @@ def _build_doc_lookups(all_docs: list, storage_dir: Path, project_root: Path) ->
     docs_by_folder: dict = {}
     for doc in all_docs:
         if doc.pages_dir_path:
-            canonical = _pages_dir_key_for_lookup(
-                doc.pages_dir_path, storage_dir, project_root
-            )
+            canonical = _pages_dir_key_for_lookup(doc.pages_dir_path, storage_dir, project_root)
             docs_by_path[canonical] = doc
             docs_by_folder[Path(doc.pages_dir_path).name] = doc
     return docs_by_path, docs_by_folder
@@ -127,8 +126,7 @@ def _collect_disk_books(
         if not folder_path.is_dir() or folder_path.name == "covers":
             continue
         image_files = [
-            f for f in folder_path.iterdir()
-            if f.is_file() and f.suffix.lower() in (".jpg", ".jpeg", ".png")
+            f for f in folder_path.iterdir() if f.is_file() and f.suffix.lower() in (".jpg", ".jpeg", ".png")
         ]
         if not image_files:
             continue
@@ -144,26 +142,25 @@ def _collect_disk_books(
         needs_repair = bool(doc_by_folder and not doc_by_path)
 
         folders_seen.add(folder_name)
-        books.append({
-            "folder_name": folder_name,
-            "page_count": page_count,
-            "exists_on_disk": True,
-            "in_db": doc is not None,
-            "document_id": doc.id if doc else None,
-            "title": doc.title if doc else None,
-            "is_active": doc.is_active if doc else None,
-            "needs_repair": needs_repair,
-            "created_at": doc.created_at.isoformat() if doc and doc.created_at else None,
-        })
+        books.append(
+            {
+                "folder_name": folder_name,
+                "page_count": page_count,
+                "exists_on_disk": True,
+                "in_db": doc is not None,
+                "document_id": doc.id if doc else None,
+                "title": doc.title if doc else None,
+                "is_active": doc.is_active if doc else None,
+                "needs_repair": needs_repair,
+                "created_at": doc.created_at.isoformat() if doc and doc.created_at else None,
+            }
+        )
 
     return books, folders_seen
 
 
 @router.get("/admin/scan")
-def scan_library_folders(
-    current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
-):
+def scan_library_folders(current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
     """
     Scan library storage directory and return all folder/document status (admin only).
 
@@ -181,30 +178,28 @@ def scan_library_folders(
             detail=f"Library storage directory not found: {library_dir}",
         )
 
-    all_docs = db.query(LibraryDocument).filter(
-        LibraryDocument.use_images.is_(True)
-    ).all()
+    all_docs = db.query(LibraryDocument).filter(LibraryDocument.use_images.is_(True)).all()
 
     docs_by_path, docs_by_folder = _build_doc_lookups(all_docs, library_dir, project_root)
-    books, folders_seen = _collect_disk_books(
-        library_dir, docs_by_path, docs_by_folder, project_root
-    )
+    books, folders_seen = _collect_disk_books(library_dir, docs_by_path, docs_by_folder, project_root)
 
     for doc in all_docs:
         if not doc.pages_dir_path:
             continue
         if Path(doc.pages_dir_path).name not in folders_seen:
-            books.append({
-                "folder_name": Path(doc.pages_dir_path).name,
-                "page_count": doc.total_pages or 0,
-                "exists_on_disk": False,
-                "in_db": True,
-                "document_id": doc.id,
-                "title": doc.title,
-                "is_active": doc.is_active,
-                "needs_repair": False,
-                "created_at": doc.created_at.isoformat() if doc.created_at else None,
-            })
+            books.append(
+                {
+                    "folder_name": Path(doc.pages_dir_path).name,
+                    "page_count": doc.total_pages or 0,
+                    "exists_on_disk": False,
+                    "in_db": True,
+                    "document_id": doc.id,
+                    "title": doc.title,
+                    "is_active": doc.is_active,
+                    "needs_repair": False,
+                    "created_at": doc.created_at.isoformat() if doc.created_at else None,
+                }
+            )
 
     return {
         "scanned_at": datetime.utcnow().isoformat(),
@@ -236,9 +231,7 @@ def repair_library_paths(
     library_dir = service.storage_dir
     project_root = Path.cwd()
 
-    all_docs = db.query(LibraryDocument).filter(
-        LibraryDocument.use_images.is_(True)
-    ).all()
+    all_docs = db.query(LibraryDocument).filter(LibraryDocument.use_images.is_(True)).all()
 
     updated = 0
     skipped = 0
@@ -265,9 +258,7 @@ def repair_library_paths(
             doc.updated_at = datetime.utcnow()
             updated += 1
         except Exception as exc:  # pylint: disable=broad-except
-            logger.error(
-                "[Library] Repair failed for document %s: %s", doc.id, exc
-            )
+            logger.error("[Library] Repair failed for document %s: %s", doc.id, exc)
             errors += 1
 
     if updated:
@@ -282,8 +273,12 @@ def repair_library_paths(
 
     logger.info(
         "[Library] Path repair completed",
-        extra={"updated": updated, "skipped": skipped, "errors": errors,
-               "admin_user_id": current_user.id},
+        extra={
+            "updated": updated,
+            "skipped": skipped,
+            "errors": errors,
+            "admin_user_id": current_user.id,
+        },
     )
     return {"updated": updated, "skipped": skipped, "errors": errors}
 
@@ -293,16 +288,14 @@ def update_document_visibility(
     document_id: int,
     data: DocumentVisibilityUpdate,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Show or hide a library document (admin only).
 
     Sets is_active to the requested value and invalidates the document cache.
     """
-    document = db.query(LibraryDocument).filter(
-        LibraryDocument.id == document_id
-    ).first()
+    document = db.query(LibraryDocument).filter(LibraryDocument.id == document_id).first()
 
     if not document:
         raise HTTPException(
@@ -331,7 +324,7 @@ def update_document_visibility(
             "document_id": document_id,
             "is_active": data.is_active,
             "admin_user_id": current_user.id,
-        }
+        },
     )
     return {
         "id": document.id,
@@ -349,10 +342,7 @@ def _build_rename_plan(folder_path: Path, book_name: str) -> tuple | None:
 
     Each plan entry is (orig_page_num, seq_num, image_path, target_name, target_path).
     """
-    image_files = [
-        f for f in folder_path.iterdir()
-        if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS
-    ]
+    image_files = [f for f in folder_path.iterdir() if f.is_file() and f.suffix.lower() in IMAGE_EXTENSIONS]
     if not image_files:
         return None
 
@@ -400,7 +390,12 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
             img_path.rename(temp_path)
             temp_files.append((temp_path, target_path))
         except Exception as exc:
-            logger.error("[Library] Rename phase-1 error: %s → %s: %s", img_path.name, temp_name, exc)
+            logger.error(
+                "[Library] Rename phase-1 error: %s → %s: %s",
+                img_path.name,
+                temp_name,
+                exc,
+            )
             errors += 1
 
     for temp_path, target_path in temp_files:
@@ -408,7 +403,12 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
             temp_path.rename(target_path)
             renamed += 1
         except Exception as exc:
-            logger.error("[Library] Rename phase-2 error: %s → %s: %s", temp_path.name, target_path.name, exc)
+            logger.error(
+                "[Library] Rename phase-2 error: %s → %s: %s",
+                temp_path.name,
+                target_path.name,
+                exc,
+            )
             errors += 1
 
     return renamed, errors
@@ -418,7 +418,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
 def rename_book_pages(
     data: RenameRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Rename page images in a book folder to sequential numbering (admin only).
@@ -429,7 +429,7 @@ def rename_book_pages(
     When dry_run=True (default), returns a preview without changing any files.
     When dry_run=False, executes the two-phase rename and returns the result.
     """
-    if any(c in data.folder_name for c in ('/', '\\', '..')):
+    if any(c in data.folder_name for c in ("/", "\\", "..")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid folder name — must be a direct subfolder of storage/library/",
@@ -478,7 +478,7 @@ def rename_book_pages(
                 "renamed": renamed_count,
                 "errors": error_count,
                 "admin_user_id": current_user.id,
-            }
+            },
         )
     else:
         renamed_count = len(plan)
@@ -501,7 +501,7 @@ def rename_book_pages(
 def generate_document_cover(
     document_id: int,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Generate (or regenerate) cover image from the first page of a book (admin only).
@@ -526,7 +526,7 @@ def generate_document_cover(
 
     logger.info(
         "[Library] Cover regenerated",
-        extra={"document_id": document_id, "admin_user_id": current_user.id}
+        extra={"document_id": document_id, "admin_user_id": current_user.id},
     )
     return {
         "document_id": document_id,
@@ -535,7 +535,7 @@ def generate_document_cover(
     }
 
 
-_COVER_FILE_EXTENSIONS = ('.jpg', '.jpeg', '.png', '.webp')
+_COVER_FILE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
 
 
 @router.delete("/admin/documents/{document_id}")
@@ -543,10 +543,10 @@ def delete_document_record(
     document_id: int,
     delete_files: bool = Query(
         False,
-        description="When True, also remove the book folder and all page images from disk"
+        description="When True, also remove the book folder and all page images from disk",
     ),
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a library document (admin only).
@@ -557,9 +557,7 @@ def delete_document_record(
     With delete_files=True: additionally deletes the entire book folder from disk
     (all page images).  This is a destructive, irreversible operation.
     """
-    document = db.query(LibraryDocument).filter(
-        LibraryDocument.id == document_id
-    ).first()
+    document = db.query(LibraryDocument).filter(LibraryDocument.id == document_id).first()
 
     if not document:
         raise HTTPException(
@@ -572,9 +570,7 @@ def delete_document_record(
 
     # Optionally delete the book folder from disk
     if delete_files and document.pages_dir_path:
-        folder_path = resolve_library_path(
-            document.pages_dir_path, service.storage_dir, Path.cwd()
-        )
+        folder_path = resolve_library_path(document.pages_dir_path, service.storage_dir, Path.cwd())
         if folder_path and folder_path.exists() and folder_path.is_dir():
             # Safety: must be a direct child of storage_dir
             try:
@@ -584,7 +580,8 @@ def delete_document_record(
                     logger.info("[Library] Book folder deleted: %s", folder_path)
                 else:
                     logger.warning(
-                        "[Library] Refused to delete folder outside storage_dir: %s", folder_path
+                        "[Library] Refused to delete folder outside storage_dir: %s",
+                        folder_path,
                     )
             except OSError as exc:
                 logger.error("[Library] Could not remove book folder %s: %s", folder_path, exc)
@@ -621,7 +618,7 @@ def delete_document_record(
             "document_id": document_id,
             "deleted_files": deleted_folder,
             "admin_user_id": current_user.id,
-        }
+        },
     )
     return {
         "id": document_id,

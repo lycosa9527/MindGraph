@@ -33,20 +33,21 @@ def cleanup_expired_workshops_impl() -> int:
     db = SessionLocal()
     cleaned_count = 0
     try:
-        diagrams_with_workshop = db.query(Diagram).filter(
-            Diagram.workshop_code.isnot(None),
-            ~Diagram.is_deleted,
-        ).all()
+        diagrams_with_workshop = (
+            db.query(Diagram)
+            .filter(
+                Diagram.workshop_code.isnot(None),
+                ~Diagram.is_deleted,
+            )
+            .all()
+        )
 
         for diagram in diagrams_with_workshop:
             code = diagram.workshop_code
             if code is None:
                 continue
             backfill_workshop_expiry_if_needed(diagram, db)
-            if (
-                not diagram.workshop_expires_at
-                or not is_workshop_expired(diagram.workshop_expires_at)
-            ):
+            if not diagram.workshop_expires_at or not is_workshop_expired(diagram.workshop_expires_at):
                 continue
             purge_workshop_redis_keys(redis, code)
             clear_workshop_session_fields(diagram)

@@ -58,96 +58,89 @@ class PromptManager:
         """Load default prompt templates."""
         # Common system messages
         self.register_prompt(
-            category='common',
-            function='system',
-            name='default',
-            language='en',
-            template="You are a helpful AI assistant. Provide clear and concise responses."
+            category="common",
+            function="system",
+            name="default",
+            language="en",
+            template="You are a helpful AI assistant. Provide clear and concise responses.",
         )
 
         self.register_prompt(
-            category='common',
-            function='system',
-            name='default',
-            language='zh',
-            template="你是一个有帮助的AI助手。请提供清晰简洁的回答。"
+            category="common",
+            function="system",
+            name="default",
+            language="zh",
+            template="你是一个有帮助的AI助手。请提供清晰简洁的回答。",
         )
 
         # AI Assistant prompts
         self.register_prompt(
-            category='assistant',
-            function='welcome',
-            name='default',
-            language='en',
+            category="assistant",
+            function="welcome",
+            name="default",
+            language="en",
             template=(
                 "Hello! I'm here to help you optimize your {diagram_type} "
                 "diagram about '{topic}'. How can I assist you?"
-            )
+            ),
         )
 
         self.register_prompt(
-            category='assistant',
-            function='welcome',
-            name='default',
-            language='zh',
-            template='你好！我来帮你优化关于"{topic}"的{diagram_type}图。需要什么帮助吗？'
+            category="assistant",
+            function="welcome",
+            name="default",
+            language="zh",
+            template='你好！我来帮你优化关于"{topic}"的{diagram_type}图。需要什么帮助吗？',
         )
 
         # Node generation prompts
         self.register_prompt(
-            category='generation',
-            function='nodes',
-            name='circle_map',
-            language='en',
+            category="generation",
+            function="nodes",
+            name="circle_map",
+            language="en",
             template=(
                 "Generate {count} descriptive attributes or observations "
                 "about: {center_topic}\n\nProvide diverse, specific "
                 "characteristics."
-            )
+            ),
         )
 
         self.register_prompt(
-            category='generation',
-            function='nodes',
-            name='circle_map',
-            language='zh',
-            template='为"{center_topic}"生成{count}个描述性特征或观察。\n\n请提供多样化、具体的特征。'
+            category="generation",
+            function="nodes",
+            name="circle_map",
+            language="zh",
+            template='为"{center_topic}"生成{count}个描述性特征或观察。\n\n请提供多样化、具体的特征。',
         )
 
         # Classification prompts
         self.register_prompt(
-            category='classification',
-            function='intent',
-            name='default',
-            language='en',
+            category="classification",
+            function="intent",
+            name="default",
+            language="en",
             template=(
                 "Classify the user's intent from this message: "
                 "'{user_message}'\n\nPossible intents: {intents}\n\n"
-                "Respond with JSON: {{\"intent\": \"...\", "
-                "\"parameters\": {{}}}}"
-            )
+                'Respond with JSON: {{"intent": "...", '
+                '"parameters": {{}}}}'
+            ),
         )
 
         self.register_prompt(
-            category='classification',
-            function='intent',
-            name='default',
-            language='zh',
+            category="classification",
+            function="intent",
+            name="default",
+            language="zh",
             template=(
                 "分类用户意图: '{user_message}'\n\n可能的意图: {intents}\n\n"
-                "用JSON格式回答: {{\"intent\": \"...\", "
-                "\"parameters\": {{}}}}"
-            )
+                '用JSON格式回答: {{"intent": "...", '
+                '"parameters": {{}}}}'
+            ),
         )
 
-    def register_prompt(
-        self,
-        category: str,
-        function: str,
-        name: str,
-        language: str,
-        template: str
-    ):
+    def register_prompt(self, category: str, function: str, name: str, language: str, template: str):
         """
         Register a prompt template.
 
@@ -171,16 +164,19 @@ class PromptManager:
 
         logger.debug(
             "[PromptManager] Registered: %s/%s/%s/%s",
-            category, function, name, language
+            category,
+            function,
+            name,
+            language,
         )
 
     def get_prompt(
         self,
         category: str,
         function: str,
-        name: str = 'default',
-        language: str = 'en',
-        **kwargs
+        name: str = "default",
+        language: str = "en",
+        **kwargs,
     ) -> str:
         """
         Get a formatted prompt template.
@@ -215,35 +211,22 @@ class PromptManager:
         template = self._find_template(category, function, name, language)
 
         if template is None:
-            raise PromptTemplateError(
-                f"Prompt not found: {category}/{function}/{name}/{language}"
-            )
+            raise PromptTemplateError(f"Prompt not found: {category}/{function}/{name}/{language}")
 
         # Validate required variables
         required_vars = self._extract_variables(template)
         missing_vars = required_vars - set(kwargs.keys())
 
         if missing_vars:
-            raise PromptTemplateError(
-                f"Missing required variables: {missing_vars}. "
-                f"Template: {template[:100]}..."
-            )
+            raise PromptTemplateError(f"Missing required variables: {missing_vars}. Template: {template[:100]}...")
 
         # Format template
         try:
             return template.format(**kwargs)
         except KeyError as e:
-            raise PromptTemplateError(
-                f"Error formatting template: {e}"
-            ) from e
+            raise PromptTemplateError(f"Error formatting template: {e}") from e
 
-    def _find_template(
-        self,
-        category: str,
-        function: str,
-        name: str,
-        language: str
-    ) -> Optional[str]:
+    def _find_template(self, category: str, function: str, name: str, language: str) -> Optional[str]:
         """
         Find template with fallback logic.
 
@@ -254,39 +237,43 @@ class PromptManager:
         4. Default English: category/function/default/en
         """
         # Try exact match
-        if (category in self._prompts and
-            function in self._prompts[category] and
-            name in self._prompts[category][function] and
-            language in self._prompts[category][function][name]):
+        if (
+            category in self._prompts
+            and function in self._prompts[category]
+            and name in self._prompts[category][function]
+            and language in self._prompts[category][function][name]
+        ):
             return self._prompts[category][function][name][language]
 
         # Try default name
-        if (category in self._prompts and
-            function in self._prompts[category] and
-            'default' in self._prompts[category][function] and
-            language in self._prompts[category][function]['default']):
-            logger.debug(
-                "[PromptManager] Using default name for %s", name
-            )
-            return self._prompts[category][function]['default'][language]
+        if (
+            category in self._prompts
+            and function in self._prompts[category]
+            and "default" in self._prompts[category][function]
+            and language in self._prompts[category][function]["default"]
+        ):
+            logger.debug("[PromptManager] Using default name for %s", name)
+            return self._prompts[category][function]["default"][language]
 
         # Try English fallback
-        if (category in self._prompts and
-            function in self._prompts[category] and
-            name in self._prompts[category][function] and
-            'en' in self._prompts[category][function][name]):
-            logger.debug(
-                "[PromptManager] Using English fallback for %s", language
-            )
-            return self._prompts[category][function][name]['en']
+        if (
+            category in self._prompts
+            and function in self._prompts[category]
+            and name in self._prompts[category][function]
+            and "en" in self._prompts[category][function][name]
+        ):
+            logger.debug("[PromptManager] Using English fallback for %s", language)
+            return self._prompts[category][function][name]["en"]
 
         # Try default English
-        if (category in self._prompts and
-            function in self._prompts[category] and
-            'default' in self._prompts[category][function] and
-            'en' in self._prompts[category][function]['default']):
+        if (
+            category in self._prompts
+            and function in self._prompts[category]
+            and "default" in self._prompts[category][function]
+            and "en" in self._prompts[category][function]["default"]
+        ):
             logger.debug("[PromptManager] Using default English")
-            return self._prompts[category][function]['default']['en']
+            return self._prompts[category][function]["default"]["en"]
 
         return None
 
@@ -300,7 +287,7 @@ class PromptManager:
         Returns:
             Set of variable names
         """
-        pattern = r'\{(\w+)\}'
+        pattern = r"\{(\w+)\}"
         matches = re.findall(pattern, template)
         return set(matches)
 
@@ -320,11 +307,7 @@ class PromptManager:
 
         return result
 
-    def validate_template(
-        self,
-        template: str,
-        required_vars: Optional[List[str]] = None
-    ) -> bool:
+    def validate_template(self, template: str, required_vars: Optional[List[str]] = None) -> bool:
         """
         Validate a prompt template.
 
@@ -345,18 +328,14 @@ class PromptManager:
         if required_vars:
             missing = set(required_vars) - template_vars
             if missing:
-                raise PromptTemplateError(
-                    f"Template missing required variables: {missing}"
-                )
+                raise PromptTemplateError(f"Template missing required variables: {missing}")
 
         # Try to format with dummy values
         try:
-            dummy_values = {var: 'test' for var in template_vars}
+            dummy_values = {var: "test" for var in template_vars}
             template.format(**dummy_values)
         except Exception as e:
-            raise PromptTemplateError(
-                f"Template formatting error: {e}"
-            ) from e
+            raise PromptTemplateError(f"Template formatting error: {e}") from e
 
         return True
 
@@ -381,8 +360,7 @@ class PromptManager:
         if not self._initialized:
             self.initialize()
 
-        if (category not in self._prompts or
-            function not in self._prompts[category]):
+        if category not in self._prompts or function not in self._prompts[category]:
             return []
 
         return list(self._prompts[category][function].keys())

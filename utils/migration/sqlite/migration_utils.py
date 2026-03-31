@@ -25,12 +25,14 @@ from typing import Optional, Dict, Any, Tuple
 
 try:
     import psutil
+
     PSUTIL_AVAILABLE = True
 except ImportError:
     PSUTIL_AVAILABLE = False
 
 try:
     import fcntl
+
     FCNTL_AVAILABLE = True
 except ImportError:
     FCNTL_AVAILABLE = False
@@ -59,7 +61,7 @@ def get_sqlite_db_path() -> Optional[Path]:
         Path to SQLite database file, or None if not found
     """
     # Check for explicit SQLite path override first
-    sqlite_path_override = os.getenv('SQLITE_DB_PATH')
+    sqlite_path_override = os.getenv("SQLITE_DB_PATH")
     if sqlite_path_override:
         db_path = Path(sqlite_path_override)
         try:
@@ -69,10 +71,10 @@ def get_sqlite_db_path() -> Optional[Path]:
             logger.debug("[Migration] Permission denied checking SQLITE_DB_PATH: %s", db_path)
         return None
 
-    db_url = os.getenv('DATABASE_URL', '')
+    db_url = os.getenv("DATABASE_URL", "")
 
     # Check if using SQLite in DATABASE_URL
-    if 'sqlite' in db_url.lower():
+    if "sqlite" in db_url.lower():
         # Extract file path from SQLite URL
         if db_url.startswith("sqlite:////"):
             # Absolute path (4 slashes)
@@ -100,9 +102,9 @@ def get_sqlite_db_path() -> Optional[Path]:
     # This allows migration even when DATABASE_URL is already set to PostgreSQL
     common_locations = [
         _project_root / "data" / "mindgraph.db",  # New default location
-        _project_root / "mindgraph.db",           # Old default location
-        Path("/root/mindgraph/mindgraph.db"),     # Common server location
-        Path("/root/mindgraph/data/mindgraph.db"), # Alternative server location
+        _project_root / "mindgraph.db",  # Old default location
+        Path("/root/mindgraph/mindgraph.db"),  # Common server location
+        Path("/root/mindgraph/data/mindgraph.db"),  # Alternative server location
     ]
 
     # Also check WSL paths if running in WSL (Windows filesystem mounted at /mnt/c/)
@@ -114,9 +116,11 @@ def get_sqlite_db_path() -> Optional[Path]:
         windows_path_parts = str(cwd).split("/")
         if len(windows_path_parts) >= 3 and windows_path_parts[1] == "mnt":
             # Reconstruct relative to current WSL directory
-            common_locations.extend([
-                Path("data/mindgraph.db"),  # Relative path should still work
-            ])
+            common_locations.extend(
+                [
+                    Path("data/mindgraph.db"),  # Relative path should still work
+                ]
+            )
     elif str(cwd).startswith("/home/"):
         # Native Linux path, check if there's a Windows mount
         # Try common Windows project locations via WSL mount
@@ -161,7 +165,7 @@ def load_migration_progress() -> Dict[str, Any]:
         return {}
 
     try:
-        with open(MIGRATION_PROGRESS_FILE, 'r', encoding='utf-8') as f:
+        with open(MIGRATION_PROGRESS_FILE, "r", encoding="utf-8") as f:
             return json.load(f)
     except Exception as e:
         logger.warning("[Migration] Failed to load migration progress: %s", e)
@@ -180,7 +184,7 @@ def save_migration_progress(progress: Dict[str, Any]) -> bool:
     """
     try:
         BACKUP_DIR.mkdir(parents=True, exist_ok=True)
-        with open(MIGRATION_PROGRESS_FILE, 'w', encoding='utf-8') as f:
+        with open(MIGRATION_PROGRESS_FILE, "w", encoding="utf-8") as f:
             json.dump(progress, f, indent=2)
         return True
     except Exception as e:
@@ -216,26 +220,26 @@ def acquire_migration_lock() -> Optional[Any]:
         if MIGRATION_LOCK_FILE.exists():
             try:
                 # Read PID from lock file
-                with open(MIGRATION_LOCK_FILE, 'r', encoding='utf-8') as f:
+                with open(MIGRATION_LOCK_FILE, "r", encoding="utf-8") as f:
                     pid_str = f.read().strip()
                     if pid_str.isdigit():
                         pid = int(pid_str)
                         # Check if process is still running
-                        if sys.platform != 'win32':
+                        if sys.platform != "win32":
                             # Unix: use kill(pid, 0) to check if process exists
                             try:
                                 os.kill(pid, 0)  # Signal 0 doesn't kill, just checks existence
                                 # Process exists - lock is valid
                                 logger.warning(
                                     "[Migration] Migration lock held by process %d (still running)",
-                                    pid
+                                    pid,
                                 )
                                 return None
                             except ProcessLookupError:
                                 # Process doesn't exist - stale lock
                                 logger.warning(
                                     "[Migration] Removing stale migration lock (process %d not running)",
-                                    pid
+                                    pid,
                                 )
                                 MIGRATION_LOCK_FILE.unlink()
                             except PermissionError:
@@ -251,24 +255,21 @@ def acquire_migration_lock() -> Optional[Any]:
                                 if psutil.pid_exists(pid):
                                     logger.warning(
                                         "[Migration] Migration lock held by process %d (still running)",
-                                        pid
+                                        pid,
                                     )
                                     return None
                                 else:
                                     logger.warning(
                                         "[Migration] Removing stale migration lock (process %d not running)",
-                                        pid
+                                        pid,
                                     )
                                     MIGRATION_LOCK_FILE.unlink()
                             else:
                                 # psutil not available, skip stale check
-                                logger.debug(
-                                    "[Migration] psutil not available, skipping stale lock check"
-                                )
+                                logger.debug("[Migration] psutil not available, skipping stale lock check")
                                 if MIGRATION_LOCK_FILE.exists():
                                     logger.warning(
-                                        "[Migration] Migration lock file exists - "
-                                        "another migration may be in progress"
+                                        "[Migration] Migration lock file exists - another migration may be in progress"
                                     )
                                     return None
             except Exception as e:
@@ -279,10 +280,10 @@ def acquire_migration_lock() -> Optional[Any]:
                     return None
 
         # Try to create lock file
-        lock_file = open(MIGRATION_LOCK_FILE, 'w', encoding='utf-8')
+        lock_file = open(MIGRATION_LOCK_FILE, "w", encoding="utf-8")
 
         # Try to acquire exclusive lock (non-blocking)
-        if sys.platform != 'win32':
+        if sys.platform != "win32":
             if FCNTL_AVAILABLE:
                 try:
                     fcntl.flock(lock_file.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
@@ -322,7 +323,7 @@ def release_migration_lock(lock_file: Optional[Any]) -> None:
     """
     if lock_file:
         try:
-            if sys.platform != 'win32' and FCNTL_AVAILABLE:
+            if sys.platform != "win32" and FCNTL_AVAILABLE:
                 fcntl.flock(lock_file.fileno(), fcntl.LOCK_UN)
             lock_file.close()
             if MIGRATION_LOCK_FILE.exists():
@@ -337,7 +338,7 @@ def check_table_completeness(
     pg_url: str,
     table_name: str,
     pg_engine: Optional[Any] = None,
-    pg_inspector: Optional[Any] = None
+    pg_inspector: Optional[Any] = None,
 ) -> Tuple[bool, Optional[int], Optional[int]]:
     """
     Check if a PostgreSQL table has complete data by comparing row counts with SQLite.
@@ -365,7 +366,7 @@ def check_table_completeness(
             cursor = sqlite_conn.cursor()
             cursor.execute(
                 "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                (table_name,)
+                (table_name,),
             )
             if cursor.fetchone():
                 cursor.execute(f'SELECT COUNT(*) FROM "{table_name}"')
@@ -415,9 +416,7 @@ def check_table_completeness(
 
 
 def is_postgresql_empty(
-    pg_url: str,
-    force: bool = False,
-    sqlite_path: Optional[Path] = None
+    pg_url: str, force: bool = False, sqlite_path: Optional[Path] = None
 ) -> Tuple[bool, Optional[str]]:
     """
     Check if PostgreSQL database is empty or has incomplete data.
@@ -457,12 +456,15 @@ def is_postgresql_empty(
                         logger.warning(
                             "[Migration] Marker file exists but SQLite database still in original location: %s. "
                             "Allowing migration to sync data and move SQLite to backup.",
-                            sqlite_path_for_check
+                            sqlite_path_for_check,
                         )
                         # Don't return False - allow migration to proceed
                     else:
                         # SQLite doesn't exist in original location - migration truly complete
-                        return False, "Migration already completed (marker file exists, SQLite moved)"
+                        return (
+                            False,
+                            "Migration already completed (marker file exists, SQLite moved)",
+                        )
                 except Exception:
                     # If we can't check, be conservative but still allow if SQLite path was provided
                     if sqlite_path:
@@ -480,7 +482,7 @@ def is_postgresql_empty(
             # In force mode, allow migration even if tables exist (for resume)
             logger.warning(
                 "[Migration] Force mode: PostgreSQL has %d tables, proceeding anyway",
-                len(tables)
+                len(tables),
             )
             return True, None
 
@@ -491,7 +493,7 @@ def is_postgresql_empty(
         # Normal mode: VERIFY completeness first if tables exist
         # Compare with SQLite to determine if data migration is needed
         try:
-            user_tables = [t for t in tables if not (t.startswith('pg_') or t.startswith('sql_'))]
+            user_tables = [t for t in tables if not (t.startswith("pg_") or t.startswith("sql_"))]
 
             if not user_tables:
                 # Only system tables exist
@@ -505,7 +507,7 @@ def is_postgresql_empty(
             if not sqlite_path or not sqlite_path.exists():
                 logger.warning(
                     "[Migration] SQLite database not found at %s - checking if PostgreSQL is empty",
-                    sqlite_path
+                    sqlite_path,
                 )
                 # Check if all tables are empty (allow migration if PostgreSQL is empty)
                 try:
@@ -520,7 +522,7 @@ def is_postgresql_empty(
                             # PostgreSQL is empty - allow migration
                             logger.info(
                                 "[Migration] PostgreSQL has %d tables but all are empty - allowing migration",
-                                len(user_tables)
+                                len(user_tables),
                             )
                             pg_engine.dispose()
                             return True, None
@@ -535,7 +537,7 @@ def is_postgresql_empty(
                 except Exception as check_error:
                     logger.warning(
                         "[Migration] Could not check if PostgreSQL is empty: %s. Blocking migration.",
-                        check_error
+                        check_error,
                     )
                     pg_engine.dispose()
                     return False, (
@@ -548,7 +550,7 @@ def is_postgresql_empty(
             # we compare and migrate only missing data
             logger.info(
                 "[Migration] Verifying completeness of %d existing table(s) by comparing with SQLite...",
-                len(user_tables)
+                len(user_tables),
             )
 
             incomplete_tables = []
@@ -572,7 +574,10 @@ def is_postgresql_empty(
                     if sqlite_count is None:
                         # Table doesn't exist in SQLite - not relevant for migration
                         tables_not_in_sqlite.append(table_name)
-                        logger.debug("[Migration] Table %s not in SQLite, skipping verification", table_name)
+                        logger.debug(
+                            "[Migration] Table %s not in SQLite, skipping verification",
+                            table_name,
+                        )
                         continue
 
                     # After continue, we know sqlite_count is not None
@@ -581,7 +586,8 @@ def is_postgresql_empty(
                         incomplete_tables.append(table_name)
                         logger.info(
                             "[Migration] Table %s missing in PostgreSQL (SQLite has %d rows)",
-                            table_name, sqlite_count
+                            table_name,
+                            sqlite_count,
                         )
                     elif pg_count == 0:
                         # Table exists but is empty - incomplete
@@ -589,21 +595,26 @@ def is_postgresql_empty(
                         incomplete_tables.append(table_name)
                         logger.info(
                             "[Migration] Table %s is empty in PostgreSQL (SQLite has %d rows)",
-                            table_name, sqlite_count
+                            table_name,
+                            sqlite_count,
                         )
                     elif not is_complete:
                         # Table has fewer rows than SQLite - incomplete
                         incomplete_tables.append(table_name)
                         logger.info(
                             "[Migration] Table %s is incomplete: SQLite=%d rows, PostgreSQL=%d rows",
-                            table_name, sqlite_count, pg_count
+                            table_name,
+                            sqlite_count,
+                            pg_count,
                         )
                     else:
                         # Table has complete data (same or more rows than SQLite)
                         complete_tables.append(table_name)
                         logger.info(
                             "[Migration] Table %s has complete data: SQLite=%d rows, PostgreSQL=%d rows",
-                            table_name, sqlite_count, pg_count
+                            table_name,
+                            sqlite_count,
+                            pg_count,
                         )
 
                 # Decision based on verification results
@@ -612,13 +623,13 @@ def is_postgresql_empty(
                     logger.info(
                         "[Migration] Verification complete: %d table(s) need migration: %s",
                         len(incomplete_tables),
-                        ', '.join(incomplete_tables[:5]) + ('...' if len(incomplete_tables) > 5 else '')
+                        ", ".join(incomplete_tables[:5]) + ("..." if len(incomplete_tables) > 5 else ""),
                     )
                     if complete_tables:
                         logger.info(
                             "[Migration] %d table(s) already have complete data and will be skipped: %s",
                             len(complete_tables),
-                            ', '.join(complete_tables[:5]) + ('...' if len(complete_tables) > 5 else '')
+                            ", ".join(complete_tables[:5]) + ("..." if len(complete_tables) > 5 else ""),
                         )
                     return True, None
 
@@ -631,7 +642,9 @@ def is_postgresql_empty(
                         "[Migration] Verification complete: All %d table(s) have matching row counts "
                         "(PostgreSQL=%d rows, SQLite=%d rows). "
                         "However, SQLite may have newer data. Migration will proceed with timestamp-aware updates.",
-                        len(complete_tables), total_pg_rows, total_sqlite_rows
+                        len(complete_tables),
+                        total_pg_rows,
+                        total_sqlite_rows,
                     )
                     # Allow migration to proceed - timestamp-aware updates will handle data freshness
                     # This ensures PostgreSQL gets the newest data even if row counts match
@@ -641,7 +654,7 @@ def is_postgresql_empty(
                 if total_pg_rows == 0:
                     logger.info(
                         "[Migration] Verification complete: All %d tables are empty - allowing migration",
-                        len(user_tables)
+                        len(user_tables),
                     )
                     return True, None
 
@@ -659,7 +672,7 @@ def is_postgresql_empty(
             # If we can't check row counts, be conservative and block
             logger.warning(
                 "[Migration] Could not check table completeness: %s. Blocking migration.",
-                check_error
+                check_error,
             )
             return False, (
                 f"PostgreSQL database is not empty ({len(tables)} tables exist) "

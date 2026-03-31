@@ -36,19 +36,16 @@ class Diagram(Base):
     Supports soft delete for data recovery.
     Uses UUID for secure, non-guessable diagram IDs.
     """
+
     __tablename__ = "diagrams"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=generate_uuid, index=True
-    )
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Metadata (queryable)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
     diagram_type: Mapped[str] = mapped_column(String(50), nullable=False, index=True)
-    language: Mapped[str] = mapped_column(String(10), default='zh')
+    language: Mapped[str] = mapped_column(String(10), default="zh")
 
     # The actual diagram data — stored as JSONB for native parsing and GIN indexing.
     spec: Mapped[dict] = mapped_column(pg.JSONB, nullable=False)
@@ -73,9 +70,7 @@ class Diagram(Base):
 
     # Timestamps
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     user: Mapped["User"] = relationship("User", back_populates="diagrams")
@@ -84,9 +79,7 @@ class Diagram(Base):
     )
 
     # Composite index for efficient queries
-    __table_args__ = (
-        Index('ix_diagrams_user_updated', 'user_id', 'updated_at', 'is_deleted'),
-    )
+    __table_args__ = (Index("ix_diagrams_user_updated", "user_id", "updated_at", "is_deleted"),)
 
     def __repr__(self) -> str:
         return f"<Diagram {self.id}: {self.title} ({self.diagram_type})>"

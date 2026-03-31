@@ -4,6 +4,7 @@ Circle map palette module.
 Circle Map specific node palette generator.
 Generates context nodes for Circle Maps.
 """
+
 from typing import Any, Dict, List, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
@@ -17,7 +18,7 @@ class CircleMapPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build Circle Map prompt for node generation.
@@ -36,15 +37,14 @@ class CircleMapPaletteGenerator(BasePaletteGenerator):
 
         # Use same context extraction as auto-complete
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
+            educational_context.get("raw_message", "General K12 teaching")
             if educational_context
-            else 'General K12 teaching'
+            else "General K12 teaching"
         )
 
         # Build prompt based on language
-        if language == 'zh':
-            prompt = (
-                f"""为以下主题生成{count}个圆圈图观察点：{center_topic}
+        if language == "zh":
+            prompt = f"""为以下主题生成{count}个圆圈图观察点：{center_topic}
 
 教学背景：{context_desc}
 
@@ -58,10 +58,8 @@ class CircleMapPaletteGenerator(BasePaletteGenerator):
 只输出观察点文本，每行一个，不要编号。
 
 生成{count}个观察点："""
-            )
         else:
-            prompt = (
-                f"""Generate {count} Circle Map observations for: {center_topic}
+            prompt = f"""Generate {count} Circle Map observations for: {center_topic}
 
 Educational Context: {context_desc}
 
@@ -78,11 +76,10 @@ sentences.
 Output only the observation text, one per line, no numbering.
 
 Generate {count} observations:"""
-            )
 
         # Add diversity note for later batches (node palette specific)
         if batch_num > 1:
-            if language == 'zh':
+            if language == "zh":
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，避免与之前批次重复。"
             else:
                 prompt += (
@@ -91,6 +88,7 @@ Generate {count} observations:"""
                 )
 
         return prompt
+
 
 _PALETTE_GENERATOR_CACHE: List[Optional[CircleMapPaletteGenerator]] = [None]
 

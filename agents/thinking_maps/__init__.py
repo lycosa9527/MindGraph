@@ -19,12 +19,12 @@ from .circle_map_agent import CircleMapAgent
 from .bridge_map_agent import BridgeMapAgent
 
 __all__ = [
-    'FlowMapAgent',
-    'TreeMapAgent', 
-    'BraceMapAgent',
-    'MultiFlowMapAgent',
-    'BubbleMapAgent',
-    'DoubleBubbleMapAgent',
-    'CircleMapAgent',
-    'BridgeMapAgent'
+    "FlowMapAgent",
+    "TreeMapAgent",
+    "BraceMapAgent",
+    "MultiFlowMapAgent",
+    "BubbleMapAgent",
+    "DoubleBubbleMapAgent",
+    "CircleMapAgent",
+    "BridgeMapAgent",
 ]

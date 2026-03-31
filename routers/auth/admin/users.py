@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, cast
 import logging
 
@@ -34,9 +35,6 @@ from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
 
 
-
-
-
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -48,7 +46,7 @@ def list_users_admin(
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
-    organization_id: Optional[int] = Query(None)
+    organization_id: Optional[int] = Query(None),
 ):
     """
     List users with pagination and filtering (ADMIN ONLY)
@@ -67,9 +65,7 @@ def list_users_admin(
     # Apply search filter (name or phone)
     if search:
         search_term = f"%{search}%"
-        query = query.filter(
-            (User.name.like(search_term)) | (User.phone.like(search_term))
-        )
+        query = query.filter((User.name.like(search_term)) | (User.phone.like(search_term)))
 
     # Get total count for pagination
     total = query.count()
@@ -92,23 +88,23 @@ def list_users_admin(
     token_stats_by_user = {}
 
     try:
-        user_token_stats = db.query(
-            TokenUsage.user_id,
-            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
-            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
-        ).filter(
-            TokenUsage.success,
-            TokenUsage.user_id.isnot(None)
-        ).group_by(
-            TokenUsage.user_id
-        ).all()
+        user_token_stats = (
+            db.query(
+                TokenUsage.user_id,
+                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+            )
+            .filter(TokenUsage.success, TokenUsage.user_id.isnot(None))
+            .group_by(TokenUsage.user_id)
+            .all()
+        )
 
         for stat in user_token_stats:
             token_stats_by_user[stat.user_id] = {
                 "input_tokens": int(stat.input_tokens or 0),
                 "output_tokens": int(stat.output_tokens or 0),
-                "total_tokens": int(stat.total_tokens or 0)
+                "total_tokens": int(stat.total_tokens or 0),
             }
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage not available yet: %s", e)
@@ -122,25 +118,23 @@ def list_users_admin(
         if len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
 
-        user_token_stats = token_stats_by_user.get(user.id, {
-            "input_tokens": 0,
-            "output_tokens": 0,
-            "total_tokens": 0
-        })
+        user_token_stats = token_stats_by_user.get(user.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
 
-        result.append({
-            "id": user.id,
-            "phone": masked_phone,
-            "phone_real": user.phone,
-            "name": user.name,
-            "role": getattr(user, 'role', 'user') or 'user',
-            "organization_id": user.organization_id,
-            "organization_code": org.code if org else None,
-            "organization_name": org.name if org else None,
-            "locked_until": utc_to_beijing_iso(user.locked_until),
-            "created_at": utc_to_beijing_iso(user.created_at),
-            "token_stats": user_token_stats
-        })
+        result.append(
+            {
+                "id": user.id,
+                "phone": masked_phone,
+                "phone_real": user.phone,
+                "name": user.name,
+                "role": getattr(user, "role", "user") or "user",
+                "organization_id": user.organization_id,
+                "organization_code": org.code if org else None,
+                "organization_name": org.name if org else None,
+                "locked_until": utc_to_beijing_iso(user.locked_until),
+                "created_at": utc_to_beijing_iso(user.created_at),
+                "token_stats": user_token_stats,
+            }
+        )
 
     return {
         "users": result,
@@ -148,8 +142,8 @@ def list_users_admin(
             "page": page,
             "page_size": page_size,
             "total": total,
-            "total_pages": total_pages
-        }
+            "total_pages": total_pages,
+        },
     }
 
 
@@ -159,7 +153,7 @@ def update_user_admin(
     request: dict,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ):
     """Update user information (ADMIN ONLY)"""
     # Check if user exists (use cache for quick check)
@@ -187,7 +181,7 @@ def update_user_admin(
         if not new_phone:
             error_msg = Messages.error("phone_cannot_be_empty", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith('1'):
+        if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith("1"):
             error_msg = Messages.error("phone_format_invalid", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
@@ -230,7 +224,7 @@ def update_user_admin(
         logger.error("[Auth] Failed to update user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update user"
+            detail="Failed to update user",
         ) from e
 
     # Invalidate old cache entries
@@ -283,8 +277,8 @@ def update_user_admin(
             "phone": user.phone,
             "name": user.name,
             "organization_code": org.code if org else None,
-            "organization_name": org.name if org else None
-        }
+            "organization_name": org.name if org else None,
+        },
     }
 
 
@@ -293,7 +287,7 @@ def delete_user_admin(
     user_id: int,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ):
     """Delete user (ADMIN ONLY)"""
     user = db.query(User).filter(User.id == user_id).first()
@@ -317,7 +311,7 @@ def delete_user_admin(
         logger.error("[Auth] Failed to delete user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete user"
+            detail="Failed to delete user",
         ) from e
 
     # Invalidate cache (non-blocking)
@@ -336,7 +330,7 @@ def unlock_user_admin(
     user_id: int,
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ):
     """Unlock user account (ADMIN ONLY)"""
     user = db.query(User).filter(User.id == user_id).first()
@@ -356,7 +350,7 @@ def unlock_user_admin(
         logger.error("[Auth] Failed to unlock user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to unlock user"
+            detail="Failed to unlock user",
         ) from e
 
     # Invalidate and re-cache user
@@ -377,7 +371,7 @@ def reset_user_password_admin(
     request: Optional[dict] = Body(None),
     current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ):
     """Reset user password (ADMIN ONLY)
 
@@ -427,7 +421,7 @@ def reset_user_password_admin(
         logger.error("[Auth] Failed to reset password in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to reset password"
+            detail="Failed to reset password",
         ) from e
 
     invalidate_user_cache_after_password_write(user, "Admin password reset")

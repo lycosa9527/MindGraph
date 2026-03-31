@@ -185,11 +185,14 @@ function handleSuggestionSelect(suggestion: string) {
     <div class="input-area-fullpage">
       <!-- Hidden file input -->
       <input
+        id="mindmate-file-input"
         ref="fileInputRef"
         type="file"
         class="hidden"
+        name="mindmate-file-input"
         accept="image/*"
         multiple
+        :aria-label="t('mindmate.input.attachFile')"
         @change="handleFileSelect"
       />
 
@@ -228,14 +231,17 @@ function handleSuggestionSelect(suggestion: string) {
         <!-- Text Input -->
         <div class="input-field-fullpage">
           <ElInput
+            id="mindmate-chat-input"
             :model-value="inputText"
             type="textarea"
+            name="mindmate-chat-input"
             :autosize="{ minRows: 1, maxRows: 4 }"
             :placeholder="placeholder || t('mindmate.input.placeholder')"
             :disabled="isLoading || !authStore.isAuthenticated"
             :maxlength="maxlength"
             :show-word-limit="maxlength != null"
             class="fullpage-textarea"
+            :aria-label="placeholder || t('mindmate.input.placeholder')"
             @update:model-value="emit('update:inputText', $event)"
             @keydown="handleKeydown"
             @focus="handleInputFocus"

@@ -17,8 +17,8 @@ _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.insert(0, _PROJECT_ROOT)
 
 # Dynamic imports after path modification
-_config_database = importlib.import_module('config.database')
-_models_knowledge_space = importlib.import_module('models.knowledge_space')
+_config_database = importlib.import_module("config.database")
+_models_knowledge_space = importlib.import_module("models.knowledge_space")
 
 SessionLocal = _config_database.SessionLocal
 engine = _config_database.engine
@@ -34,7 +34,7 @@ def get_sqlite_column_type(column):
     column_type_upper = column_type.upper()
 
     # Handle ENUM types - SQLite stores as TEXT
-    if hasattr(column.type, 'enums') or 'ENUM' in str(type(column.type)).upper():
+    if hasattr(column.type, "enums") or "ENUM" in str(type(column.type)).upper():
         return "TEXT"
 
     # Map common types
@@ -42,8 +42,12 @@ def get_sqlite_column_type(column):
         return "INTEGER"
     elif "REAL" in column_type_upper or "FLOAT" in column_type_upper or "DOUBLE" in column_type_upper:
         return "REAL"
-    elif ("TEXT" in column_type_upper or "VARCHAR" in column_type_upper or
-          "STRING" in column_type_upper or "CHAR" in column_type_upper):
+    elif (
+        "TEXT" in column_type_upper
+        or "VARCHAR" in column_type_upper
+        or "STRING" in column_type_upper
+        or "CHAR" in column_type_upper
+    ):
         return "TEXT"
     elif "DATETIME" in column_type_upper or "DATE" in column_type_upper or "TIMESTAMP" in column_type_upper:
         return "TEXT"
@@ -67,14 +71,14 @@ def get_column_default_sql(column, has_rows):
                 return "DEFAULT 0"
             elif "TEXT" in column_type:
                 # Check if it's an ENUM with a default
-                if hasattr(column.type, 'enums'):
+                if hasattr(column.type, "enums"):
                     # For ENUM, use first value as default if no explicit default
                     return "DEFAULT 'pending'"  # Common default for status columns
                 return "DEFAULT ''"
         return ""
 
     # Handle explicit defaults
-    if hasattr(column.default, 'arg'):
+    if hasattr(column.default, "arg"):
         default_value = column.default.arg
         if isinstance(default_value, (int, float)):
             return f"DEFAULT {default_value}"
@@ -95,12 +99,12 @@ def fix_chunk_test_columns():
     inspector = inspect(engine)
 
     # Check if table exists
-    if 'chunk_test_results' not in inspector.get_table_names():
+    if "chunk_test_results" not in inspector.get_table_names():
         logger.error("Table 'chunk_test_results' does not exist")
         return False
 
     # Get existing columns
-    existing_columns = {col['name'] for col in inspector.get_columns('chunk_test_results')}
+    existing_columns = {col["name"] for col in inspector.get_columns("chunk_test_results")}
     logger.info("Existing columns: %s", sorted(existing_columns))
 
     # Get expected columns from model
@@ -142,7 +146,10 @@ def fix_chunk_test_columns():
             logger.info("Successfully added column '%s'", column_name)
 
         db.commit()
-        logger.info("Successfully added %d column(s) to chunk_test_results table", len(missing_columns))
+        logger.info(
+            "Successfully added %d column(s) to chunk_test_results table",
+            len(missing_columns),
+        )
         return True
 
     except Exception as e:

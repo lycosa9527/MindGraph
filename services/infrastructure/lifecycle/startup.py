@@ -20,6 +20,7 @@ from pathlib import Path
 from dotenv import load_dotenv
 from utils.env_utils import ensure_utf8_env_file
 from utils.tiktoken_cache import ensure_tiktoken_cache
+
 # Redis is REQUIRED - import will fail if module doesn't exist
 # This is intentional: application cannot start without Redis
 from services.redis.redis_client import get_redis, is_redis_available
@@ -28,6 +29,7 @@ logger = logging.getLogger(__name__)
 
 try:
     import psutil
+
     _PSUTIL_AVAILABLE = True
 except ImportError:
     _PSUTIL_AVAILABLE = False
@@ -69,6 +71,7 @@ class _UvicornProcessHints:
 
 class _BannerLockIdManager:
     """Manages the worker lock ID for banner printing."""
+
     _lock_id = None
 
     @classmethod
@@ -109,7 +112,7 @@ def _acquire_banner_lock() -> bool:
             BANNER_LOCK_KEY,
             worker_lock_id,
             nx=True,  # Only set if not exists
-            ex=BANNER_LOCK_TTL  # TTL in seconds
+            ex=BANNER_LOCK_TTL,  # TTL in seconds
         )
 
         return bool(acquired)
@@ -149,6 +152,7 @@ def _release_banner_lock() -> None:
 
 class _ShutdownEventManager:
     """Manages shutdown event state without using global variables"""
+
     _shutdown_event = None
 
     @classmethod
@@ -191,7 +195,7 @@ def _is_uvicorn_reloader_process() -> bool:
     - Workers have UVICORN_WORKER_ID set, reloader doesn't (but initial process also doesn't)
     """
     # If UVICORN_WORKER_ID is set, we're definitely a worker (not reloader)
-    if os.getenv('UVICORN_WORKER_ID') is not None:
+    if os.getenv("UVICORN_WORKER_ID") is not None:
         return False
 
     if _PSUTIL_AVAILABLE:
@@ -200,7 +204,7 @@ def _is_uvicorn_reloader_process() -> bool:
             process_name = current_process.name().lower()
 
             # Check if process name indicates reloader
-            if 'reload' in process_name or 'watch' in process_name:
+            if "reload" in process_name or "watch" in process_name:
                 return True
 
             # Check parent process name
@@ -208,7 +212,7 @@ def _is_uvicorn_reloader_process() -> bool:
                 parent = current_process.parent()
                 if parent:
                     parent_name = parent.name().lower()
-                    if 'reload' in parent_name or 'watch' in parent_name:
+                    if "reload" in parent_name or "watch" in parent_name:
                         return True
             except (psutil.NoSuchProcess, psutil.AccessDenied):
                 pass
@@ -217,7 +221,7 @@ def _is_uvicorn_reloader_process() -> bool:
 
     # Check if we're being imported (not run directly)
     # If __main__ is not in sys.modules, we're being imported
-    if '__main__' not in sys.modules:
+    if "__main__" not in sys.modules:
         # Check call stack to see if we're being imported by uvicorn
         frame = inspect.currentframe()
         if frame:
@@ -225,9 +229,9 @@ def _is_uvicorn_reloader_process() -> bool:
                 # Go up the call stack to see caller
                 caller_frame = frame.f_back
                 if caller_frame:
-                    caller_module = caller_frame.f_globals.get('__name__', '')
+                    caller_module = caller_frame.f_globals.get("__name__", "")
                     # If being imported by uvicorn reloader
-                    if 'uvicorn.reload' in caller_module.lower() or 'reload' in caller_module.lower():
+                    if "uvicorn.reload" in caller_module.lower() or "reload" in caller_module.lower():
                         return True
             finally:
                 del frame
@@ -237,6 +241,7 @@ def _is_uvicorn_reloader_process() -> bool:
 
 class _BannerManager:
     """Manages banner printing state without using global variables"""
+
     _banner_printed = False
 
     @classmethod
@@ -274,7 +279,7 @@ class _BannerManager:
         # Skip if we're a Uvicorn worker (workers have UVICORN_WORKER_ID set)
         # Only print in the main process that spawns workers
         # Note: This check is secondary to Redis lock - Redis lock handles coordination
-        worker_id = os.getenv('UVICORN_WORKER_ID')
+        worker_id = os.getenv("UVICORN_WORKER_ID")
         if worker_id is not None:
             # We're a worker process - release lock and don't print banner
             # The main process (which spawned us) already printed it
@@ -295,7 +300,7 @@ class _BannerManager:
         try:
             # Read version from VERSION file directly to avoid importing config
             try:
-                version_file = Path(__file__).parent.parent.parent.parent / 'VERSION'
+                version_file = Path(__file__).parent.parent.parent.parent / "VERSION"
                 version = version_file.read_text().strip()
             except Exception:  # pylint: disable=broad-except
                 version = "0.0.0"
@@ -339,38 +344,30 @@ def setup_early_configuration():
     """
     # Only print startup messages from main process (not reloader, not workers)
     # Check if we should skip startup messages
-    worker_id = os.getenv('UVICORN_WORKER_ID')
+    worker_id = os.getenv("UVICORN_WORKER_ID")
     is_reloader = _is_uvicorn_reloader_process()
-    should_log_startup = (
-        not is_reloader
-        and worker_id is None
-        and not _UvicornProcessHints.is_launched_child()
-    )
+    should_log_startup = not is_reloader and worker_id is None and not _UvicornProcessHints.is_launched_child()
 
     # Print banner (handles its own worker detection)
     _print_startup_banner()
 
     # Fix for Windows: Set event loop policy to support subprocesses (required for Playwright)
     # MUST be set before any event loop is created (before Uvicorn starts)
-    if sys.platform == 'win32':
+    if sys.platform == "win32":
         try:
             current_policy = asyncio.get_event_loop_policy()
             if not isinstance(current_policy, asyncio.WindowsProactorEventLoopPolicy):
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 if should_log_startup:
                     logging.debug(
-                        "Windows: Set event loop policy to "
-                        "WindowsProactorEventLoopPolicy for Playwright support"
+                        "Windows: Set event loop policy to WindowsProactorEventLoopPolicy for Playwright support"
                     )
         except Exception:  # pylint: disable=broad-except
             # If we can't check/set, try to set it anyway
             try:
                 asyncio.set_event_loop_policy(asyncio.WindowsProactorEventLoopPolicy())
                 if should_log_startup:
-                    logging.debug(
-                        "Windows: Set event loop policy to "
-                        "WindowsProactorEventLoopPolicy (unconditional)"
-                    )
+                    logging.debug("Windows: Set event loop policy to WindowsProactorEventLoopPolicy (unconditional)")
             except Exception as e2:  # pylint: disable=broad-except
                 if should_log_startup:
                     logging.warning("Windows: Could not set event loop policy: %s", e2)
@@ -379,15 +376,19 @@ def setup_early_configuration():
     ensure_utf8_env_file()
 
     # Load environment variables
-    env_file_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))), '.env')
+    env_file_path = os.path.join(
+        os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(__file__)))),
+        ".env",
+    )
     env_file_exists = os.path.exists(env_file_path)
     load_dotenv()
 
     # Diagnostic: Log CHUNKING_ENGINE value at startup (DEBUG level only)
     # Use print because logging is not configured yet (setup_logging runs after this)
-    _log_debug = (
-        os.getenv('LOG_LEVEL', 'INFO').upper() == 'DEBUG'
-        or os.getenv('DEBUG', '').lower() in ('1', 'true', 'yes')
+    _log_debug = os.getenv("LOG_LEVEL", "INFO").upper() == "DEBUG" or os.getenv("DEBUG", "").lower() in (
+        "1",
+        "true",
+        "yes",
     )
     if should_log_startup and _log_debug:
         chunking_engine_startup = os.getenv("CHUNKING_ENGINE", "not set (default: semchunk)")

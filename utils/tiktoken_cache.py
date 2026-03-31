@@ -87,6 +87,7 @@ TIKTOKEN_CACHE_LOCK_TTL = 60  # 60 seconds - enough for cache check/download
 
 class _LockIdManager:
     """Manages the worker lock ID to avoid global variables."""
+
     _lock_id = None
 
     @classmethod
@@ -134,11 +135,7 @@ def _acquire_tiktoken_cache_lock() -> bool:
         False if lock held by another worker
     """
     try:
-        redis_unavailable = (
-            not is_redis_available
-            or not callable(is_redis_available)
-            or not is_redis_available()
-        )
+        redis_unavailable = not is_redis_available or not callable(is_redis_available) or not is_redis_available()
         if redis_unavailable:
             return True
 
@@ -149,18 +146,13 @@ def _acquire_tiktoken_cache_lock() -> bool:
             return True
 
         worker_lock_id = _LockIdManager.get_lock_id()
-        acquired = redis.set(
-            TIKTOKEN_CACHE_LOCK_KEY,
-            worker_lock_id,
-            nx=True,
-            ex=TIKTOKEN_CACHE_LOCK_TTL
-        )
+        acquired = redis.set(TIKTOKEN_CACHE_LOCK_KEY, worker_lock_id, nx=True, ex=TIKTOKEN_CACHE_LOCK_TTL)
 
         if acquired:
             try:
                 logger.debug(
                     "[TiktokenCache] Lock acquired for cache check (id=%s)",
-                    worker_lock_id
+                    worker_lock_id,
                 )
             except Exception:  # pylint: disable=broad-except
                 pass
@@ -210,12 +202,13 @@ def _release_tiktoken_cache_lock() -> None:
 
 def _log_http_debug_cached_up_to_date(encoding_name: str, encoding_file: Path) -> None:
     """If HTTP_DEBUG is on, log that an encoding file is already current."""
-    if os.getenv('HTTP_DEBUG', '').lower() not in ('1', 'true', 'yes'):
+    if os.getenv("HTTP_DEBUG", "").lower() not in ("1", "true", "yes"):
         return
     try:
         logger.debug(
             "Tiktoken encoding %s already cached and up-to-date at %s",
-            encoding_name, encoding_file
+            encoding_name,
+            encoding_file,
         )
     except Exception:  # pylint: disable=broad-except
         pass
@@ -247,14 +240,14 @@ def _encoding_requires_download(
 
         logger.debug(
             "[Startup] New version of tiktoken encoding %s available, updating...",
-            encoding_name
+            encoding_name,
         )
         return True
     except Exception as network_error:  # pylint: disable=broad-except
         logger.debug(
-            "[Startup] Network check failed for tiktoken encoding %s, "
-            "using existing cache: %s",
-            encoding_name, network_error
+            "[Startup] Network check failed for tiktoken encoding %s, using existing cache: %s",
+            encoding_name,
+            network_error,
         )
         return False
 
@@ -276,13 +269,16 @@ def _sync_one_encoding_if_needed(
         file_size_mb = encoding_file.stat().st_size / (1024 * 1024)
         logger.debug(
             "[Startup] OK Cached tiktoken encoding %s (%.2f MB) at %s",
-            encoding_name, file_size_mb, encoding_file
+            encoding_name,
+            file_size_mb,
+            encoding_file,
         )
     except Exception as exc:  # pylint: disable=broad-except
         logger.warning(
             "[Startup] Failed to download tiktoken encoding %s: %s. "
             "Tiktoken will download it automatically on first use.",
-            encoding_name, exc
+            encoding_name,
+            exc,
         )
 
 
@@ -353,11 +349,11 @@ def _check_if_update_needed(url: str, metadata_file: Path) -> bool:
         return True
 
     # Load cached metadata
-    with open(metadata_file, 'r', encoding='utf-8') as f:
+    with open(metadata_file, "r", encoding="utf-8") as f:
         cached_metadata = json.load(f)
 
-    cached_etag = cached_metadata.get('etag')
-    cached_last_modified = cached_metadata.get('last_modified')
+    cached_etag = cached_metadata.get("etag")
+    cached_last_modified = cached_metadata.get("last_modified")
 
     # Make HEAD request to check current version with shorter timeout
     # Use 5 seconds timeout to avoid hanging during startup
@@ -366,8 +362,8 @@ def _check_if_update_needed(url: str, metadata_file: Path) -> bool:
         response = client.head(url, follow_redirects=True)
         response.raise_for_status()
 
-        server_etag = response.headers.get('ETag')
-        server_last_modified = response.headers.get('Last-Modified')
+        server_etag = response.headers.get("ETag")
+        server_last_modified = response.headers.get("Last-Modified")
 
         # If server provides ETag, use it for comparison (most reliable)
         if server_etag and cached_etag:
@@ -416,11 +412,11 @@ def _download_encoding_file(url: str, output_path: Path, metadata_file: Path) ->
 
         # Save metadata for version checking
         metadata = {
-            'etag': response.headers.get('ETag'),
-            'last_modified': response.headers.get('Last-Modified'),
-            'content_length': response.headers.get('Content-Length'),
-            'downloaded_at': datetime.utcnow().isoformat() + 'Z'
+            "etag": response.headers.get("ETag"),
+            "last_modified": response.headers.get("Last-Modified"),
+            "content_length": response.headers.get("Content-Length"),
+            "downloaded_at": datetime.utcnow().isoformat() + "Z",
         }
 
-        with open(metadata_file, 'w', encoding='utf-8') as f:
+        with open(metadata_file, "w", encoding="utf-8") as f:
             json.dump(metadata, f, indent=2)

@@ -36,9 +36,7 @@ class MentionResolutionError(Exception):
     ) -> None:
         self.unknown_names = list(unknown_names)
         self.ambiguous_names = list(ambiguous_names)
-        super().__init__(
-            f"unknown={self.unknown_names!r}, ambiguous={self.ambiguous_names!r}"
-        )
+        super().__init__(f"unknown={self.unknown_names!r}, ambiguous={self.ambiguous_names!r}")
 
 
 def parse_mention_display_names(content: str) -> List[str]:
@@ -120,7 +118,10 @@ def resolve_mentioned_user_ids(
         if not lowered:
             continue
         matches = _users_matching_mention(
-            db, lowered, effective_org, staff_ids,
+            db,
+            lowered,
+            effective_org,
+            staff_ids,
         )
         if len(matches) == 0:
             unknown.append(label)

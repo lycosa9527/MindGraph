@@ -32,8 +32,12 @@ from services.redis.session.redis_session_manager import get_session_manager
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.auth.ip_geolocation import get_geolocation_service
 from utils.auth import (
-    create_access_token, is_https, get_client_ip, compute_device_hash,
-    ACCESS_TOKEN_EXPIRY_MINUTES, REFRESH_TOKEN_EXPIRY_DAYS
+    create_access_token,
+    is_https,
+    get_client_ip,
+    compute_device_hash,
+    ACCESS_TOKEN_EXPIRY_MINUTES,
+    REFRESH_TOKEN_EXPIRY_DAYS,
 )
 
 logger = logging.getLogger(__name__)
@@ -89,6 +93,7 @@ def utc_to_beijing_iso(utc_dt: Optional[datetime]) -> Optional[str]:
 # USER ACTIVITY TRACKING
 # ============================================================================
 
+
 def track_user_activity(
     user: User,
     activity_type: str,
@@ -114,15 +119,15 @@ def track_user_activity(
 
         # For login activities, start a new session (or reuse existing)
         # For other activities, just record (will find/create session automatically)
-        if activity_type == 'login':
+        if activity_type == "login":
             session_id = tracker.start_session(
                 user_id=user.id,
                 user_phone=user.phone,
                 user_name=user.name,
                 ip_address=ip_address,
-                reuse_existing=True  # Reuse existing session if user already has one
+                reuse_existing=True,  # Reuse existing session if user already has one
             )
-            if db and user.role == 'user':
+            if db and user.role == "user":
                 _log_login_and_compute_stats(user.id, db)
         else:
             session_id = None  # Let record_activity find/create session
@@ -135,7 +140,7 @@ def track_user_activity(
             details=details or {},
             session_id=session_id,
             user_name=user.name,
-            ip_address=ip_address
+            ip_address=ip_address,
         )
     except Exception as e:
         # Don't fail the request if tracking fails
@@ -147,7 +152,7 @@ def _log_login_and_compute_stats(user_id: int, db: Session) -> None:
     try:
         log_entry = UserActivityLog(
             user_id=user_id,
-            activity_type='login',
+            activity_type="login",
             created_at=datetime.utcnow(),
         )
         db.add(log_entry)
@@ -169,15 +174,16 @@ def _record_city_flag_async(ip_address: str):
     to avoid blocking the login request.
     """
     try:
+
         async def _record_flag():
             try:
                 geolocation = get_geolocation_service()
                 location = await geolocation.get_location(ip_address)
-                if location and not location.get('is_fallback'):
-                    city = location.get('city', '')
-                    province = location.get('province', '')
-                    lat = location.get('lat')
-                    lng = location.get('lng')
+                if location and not location.get("is_fallback"):
+                    city = location.get("city", "")
+                    province = location.get("province", "")
+                    lat = location.get("lat")
+                    lng = location.get("lng")
                     if city or province:
                         flag_tracker = get_city_flag_tracker()
                         flag_tracker.record_city_flag(city, province, lat, lng)
@@ -212,11 +218,8 @@ def _record_city_flag_async(ip_address: str):
 # DATABASE RETRY LOGIC
 # ============================================================================
 
-async def commit_user_with_retry(
-    db: Session,
-    new_user: User,
-    max_retries: int = 5
-) -> int:
+
+async def commit_user_with_retry(db: Session, new_user: User, max_retries: int = 5) -> int:
     """
     Commit user to database with retry logic for database deadlock errors.
 
@@ -246,30 +249,35 @@ async def commit_user_with_retry(
             if "deadlock detected" in error_msg.lower() or "could not obtain lock" in error_msg.lower():
                 if attempt < max_retries - 1:
                     # Retry with exponential backoff + jitter (prevents thundering herd)
-                    base_delay = 0.1 * (2 ** attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
+                    base_delay = 0.1 * (2**attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
                     jitter = random.uniform(0, 0.05)  # Random jitter up to 50ms
                     delay = base_delay + jitter
-                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'
+                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
                     logger.warning(
                         "[Auth] Database deadlock on user registration attempt %d/%d, "
                         "retrying after %.3fs delay (base: %.3fs + jitter: %.3fs). "
                         "Phone: %s***",
-                        attempt + 1, max_retries, delay, base_delay, jitter, phone_prefix
+                        attempt + 1,
+                        max_retries,
+                        delay,
+                        base_delay,
+                        jitter,
+                        phone_prefix,
                     )
                     await asyncio.sleep(delay)  # Non-blocking async sleep
                     continue
                 else:
                     # All retries exhausted
                     db.rollback()
-                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else '***'
+                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
                     logger.error(
-                        "[Auth] Database deadlock persists after %d retries. "
-                        "Phone: %s***",
-                        max_retries, phone_prefix
+                        "[Auth] Database deadlock persists after %d retries. Phone: %s***",
+                        max_retries,
+                        phone_prefix,
                     )
                     raise HTTPException(
                         status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                        detail="Database temporarily unavailable due to high load. Please try again in a moment."
+                        detail="Database temporarily unavailable due to high load. Please try again in a moment.",
                     ) from e
             else:
                 # Other OperationalError (not a lock) - don't retry
@@ -277,7 +285,7 @@ async def commit_user_with_retry(
                 logger.error("[Auth] Database operational error during registration: %s", e)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail="Failed to create user account"
+                    detail="Failed to create user account",
                 ) from e
         except Exception as e:
             # Non-OperationalError - don't retry
@@ -285,14 +293,14 @@ async def commit_user_with_retry(
             logger.error("[Auth] Failed to create user in database: %s", e, exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                detail="Failed to create user account"
+                detail="Failed to create user account",
             ) from e
 
     # Should never reach here, but just in case
     db.rollback()
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-        detail="Failed to create user account"
+        detail="Failed to create user account",
     )
 
 
@@ -300,10 +308,11 @@ async def commit_user_with_retry(
 # SESSION MANAGEMENT HELPERS
 # ============================================================================
 
+
 async def create_user_session(
     user: User,
     http_request: Request,
-    cache_user_func: Optional[Callable[[], Awaitable[None]]] = None
+    cache_user_func: Optional[Callable[[], Awaitable[None]]] = None,
 ) -> tuple[str, str]:
     """
     Create a new user session and generate a new token.
@@ -334,7 +343,7 @@ async def create_user_session(
     if cache_user_func:
         await asyncio.gather(
             cache_user_func(),
-            return_exceptions=True  # Don't fail if cache fails
+            return_exceptions=True,  # Don't fail if cache fails
         )
 
     return token, client_ip
@@ -344,12 +353,8 @@ async def create_user_session(
 # COOKIE MANAGEMENT HELPERS
 # ============================================================================
 
-def set_auth_cookies(
-    response: Response,
-    access_token: str,
-    refresh_token: str,
-    http_request: Request
-):
+
+def set_auth_cookies(response: Response, access_token: str, refresh_token: str, http_request: Request):
     """
     Set authentication cookies for both access and refresh tokens.
 
@@ -375,7 +380,7 @@ def set_auth_cookies(
         secure=is_secure,
         samesite="lax",
         path="/",
-        max_age=ACCESS_TOKEN_EXPIRY_MINUTES * 60  # 1 hour default
+        max_age=ACCESS_TOKEN_EXPIRY_MINUTES * 60,  # 1 hour default
     )
 
     # Set refresh token as httpOnly cookie with restricted path
@@ -386,7 +391,7 @@ def set_auth_cookies(
         secure=is_secure,
         samesite="strict",  # Stricter for refresh token
         path="/api/auth",  # Only sent to auth endpoints
-        max_age=REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60  # 7 days default
+        max_age=REFRESH_TOKEN_EXPIRY_DAYS * 24 * 60 * 60,  # 7 days default
     )
 
     # Set flag cookie to indicate new login session (for AI disclaimer notification)
@@ -396,5 +401,5 @@ def set_auth_cookies(
         httponly=False,  # Allow JavaScript to read it
         secure=is_secure,
         samesite="lax",
-        max_age=60 * 60  # 1 hour (should be cleared after showing notification)
+        max_age=60 * 60,  # 1 hour (should be cleared after showing notification)
     )

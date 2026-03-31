@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from functools import lru_cache
 from typing import Optional, Dict, Any, AsyncGenerator
 import logging
@@ -29,11 +30,11 @@ def _parse_analogy_node(node: Dict[str, Any]) -> bool:
     Parse pipe-separated analogy in node text. Mutates node in place.
     Returns True if valid, False if should skip.
     """
-    text = node.get('text', '')
-    if '|' not in text:
+    text = node.get("text", "")
+    if "|" not in text:
         logger.warning("[BridgeMap] Skipping node without pipe separator: '%s'", text)
         return False
-    parts = text.split('|')
+    parts = text.split("|")
     if len(parts) < 2:
         logger.warning("[BridgeMap] Skipping malformed node: '%s'", text)
         return False
@@ -43,21 +44,23 @@ def _parse_analogy_node(node: Dict[str, Any]) -> bool:
     if len(left_text) < 2 or len(right_text) < 2:
         logger.debug("[BridgeMap] Skipping too short: '%s | %s'", left_text, right_text)
         return False
-    if left_text.startswith('-') or right_text.startswith('-'):
+    if left_text.startswith("-") or right_text.startswith("-"):
         logger.debug("[BridgeMap] Skipping markdown separator: '%s | %s'", left_text, right_text)
         return False
-    if 'as' in left_text.lower() and 'as' in right_text.lower():
+    if "as" in left_text.lower() and "as" in right_text.lower():
         logger.debug("[BridgeMap] Skipping header pattern: '%s | %s'", left_text, right_text)
         return False
-    node['left'] = left_text
-    node['right'] = right_text
+    node["left"] = left_text
+    node["right"] = right_text
     if dimension:
-        node['dimension'] = dimension
-    node['text'] = text
+        node["dimension"] = dimension
+    node["text"] = text
     dim_info = f" | dimension='{dimension}'" if dimension else ""
     logger.debug(
         "[BridgeMap] Parsed pair successfully: left='%s' | right='%s'%s",
-        left_text, right_text, dim_info
+        left_text,
+        right_text,
+        dim_info,
     )
     logger.debug("[BridgeMap] Node now has: %s", list(node.keys()))
     return True
@@ -84,7 +87,7 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
         diagram_type: Optional[str] = None,
-        endpoint_path: Optional[str] = None
+        endpoint_path: Optional[str] = None,
     ) -> AsyncGenerator[Dict, None]:
         """
         Generate batch with stage support: dimensions or pairs.
@@ -96,8 +99,8 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
             educational_context = {}
         educational_context = {
             **educational_context,
-            '_stage': _stage or 'dimensions',
-            '_stage_data': _stage_data or {},
+            "_stage": _stage or "dimensions",
+            "_stage_data": _stage_data or {},
         }
         async for chunk in super().generate_batch(
             session_id=session_id,
@@ -110,20 +113,20 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
             user_id=user_id,
             organization_id=organization_id,
             diagram_type=diagram_type,
-            endpoint_path=endpoint_path
+            endpoint_path=endpoint_path,
         ):
-            if chunk.get('event') == 'node_generated':
-                node = chunk.get('node', {})
-                if _stage == 'dimensions':
-                    node['mode'] = 'dimensions'
+            if chunk.get("event") == "node_generated":
+                node = chunk.get("node", {})
+                if _stage == "dimensions":
+                    node["mode"] = "dimensions"
                 else:
                     logger.debug(
                         "[BridgeMap] Processing node with text: '%s'",
-                        node.get('text', '')
+                        node.get("text", ""),
                     )
                     if not _parse_analogy_node(node):
                         continue
-                    node['mode'] = 'pairs'
+                    node["mode"] = "pairs"
             yield chunk
 
     def _build_prompt(
@@ -131,7 +134,7 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         center_topic: str,
         educational_context: Optional[Dict[str, Any]],
         count: int,
-        batch_num: int
+        batch_num: int,
     ) -> str:
         """
         Build Bridge Map prompt: dimensions (stage 1) or pairs (stage 2).
@@ -139,45 +142,30 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         Stage 'dimensions': Generate relationship dimension options.
         Stage 'pairs': Generate analogy pairs (use dimension from stage_data if set).
         """
-        stage = (
-            educational_context.get('_stage', 'dimensions')
-            if educational_context else 'dimensions'
-        )
-        stage_data = (
-            educational_context.get('_stage_data', {})
-            if educational_context else {}
-        )
+        stage = educational_context.get("_stage", "dimensions") if educational_context else "dimensions"
+        stage_data = educational_context.get("_stage_data", {}) if educational_context else {}
         language = self._detect_language(center_topic, educational_context)
         context_desc = (
-            educational_context.get('raw_message', 'General K12 teaching')
-            if educational_context else 'General K12 teaching'
+            educational_context.get("raw_message", "General K12 teaching")
+            if educational_context
+            else "General K12 teaching"
         )
 
-        if stage == 'dimensions':
-            existing_pairs = stage_data.get('analogies') or stage_data.get('existing_pairs')
+        if stage == "dimensions":
+            existing_pairs = stage_data.get("analogies") or stage_data.get("existing_pairs")
             if isinstance(existing_pairs, list):
-                existing_pairs = [
-                    p for p in existing_pairs
-                    if isinstance(p, dict) and p.get('left') and p.get('right')
-                ]
+                existing_pairs = [p for p in existing_pairs if isinstance(p, dict) and p.get("left") and p.get("right")]
             else:
                 existing_pairs = None
-            return self._build_dimensions_prompt(
-                center_topic, context_desc, language, count, batch_num, existing_pairs
-            )
+            return self._build_dimensions_prompt(center_topic, context_desc, language, count, batch_num, existing_pairs)
 
-        raw_dim = stage_data.get('dimension', '') or center_topic
-        dimension = '' if placeholder.is_placeholder_text(str(raw_dim)) else str(raw_dim or '').strip()
+        raw_dim = stage_data.get("dimension", "") or center_topic
+        dimension = "" if placeholder.is_placeholder_text(str(raw_dim)) else str(raw_dim or "").strip()
         is_specific_relationship = bool(dimension)
-        logger.debug(
-            "[BridgeMap-Prompt] Stage: %s | Dimension: '%s'",
-            stage, dimension
-        )
+        logger.debug("[BridgeMap-Prompt] Stage: %s | Dimension: '%s'", stage, dimension)
 
         dim_for_prompt = dimension if is_specific_relationship else None
-        return get_bridge_pairs_prompt(
-            center_topic, dim_for_prompt, context_desc, language, count, batch_num
-        )
+        return get_bridge_pairs_prompt(center_topic, dim_for_prompt, context_desc, language, count, batch_num)
 
     def _build_dimensions_prompt(
         self,
@@ -186,16 +174,14 @@ class BridgeMapPaletteGenerator(BasePaletteGenerator):
         language: str,
         count: int,
         batch_num: int,
-        existing_pairs: Optional[list] = None
+        existing_pairs: Optional[list] = None,
     ) -> str:
         """Build prompt for generating relationship dimension options (stage 1).
 
         When existing_pairs provided: infer dimension from item pairs.
         Otherwise: suggest diverse dimension options.
         """
-        return get_bridge_dimensions_prompt(
-            center_topic, context_desc, language, count, batch_num, existing_pairs
-        )
+        return get_bridge_dimensions_prompt(center_topic, context_desc, language, count, batch_num, existing_pairs)
 
 
 @lru_cache(maxsize=1)

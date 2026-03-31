@@ -16,6 +16,7 @@ Usage:
     python scripts/db/clear_library_tables.py --yes  # Skip confirmation
     python scripts/db/clear_library_tables.py --dry-run  # Preview only
 """
+
 import argparse
 import importlib
 import logging
@@ -30,11 +31,11 @@ _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
 # Dynamic imports to avoid Ruff E402 warning
-_config_database = importlib.import_module('config.database')
+_config_database = importlib.import_module("config.database")
 get_db = _config_database.get_db
 engine = _config_database.engine
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
@@ -45,7 +46,7 @@ def is_sqlite_database() -> bool:
     Returns:
         True if SQLite, False otherwise
     """
-    return engine.dialect.name == 'sqlite'
+    return engine.dialect.name == "sqlite"
 
 
 def table_exists(_db: Session, table_name: str) -> bool:
@@ -105,51 +106,51 @@ def clear_library_tables(db: Session, dry_run: bool = False) -> tuple[int, dict]
     # Get counts before deletion using raw SQL to avoid model column issues
     # This works even if new columns haven't been added yet
     # Check table existence first to avoid errors
-    counts['danmaku_replies'] = get_table_count(db, 'library_danmaku_replies')
-    counts['danmaku_likes'] = get_table_count(db, 'library_danmaku_likes')
-    counts['danmaku'] = get_table_count(db, 'library_danmaku')
-    counts['bookmarks'] = get_table_count(db, 'library_bookmarks')
-    counts['documents'] = get_table_count(db, 'library_documents')
+    counts["danmaku_replies"] = get_table_count(db, "library_danmaku_replies")
+    counts["danmaku_likes"] = get_table_count(db, "library_danmaku_likes")
+    counts["danmaku"] = get_table_count(db, "library_danmaku")
+    counts["bookmarks"] = get_table_count(db, "library_bookmarks")
+    counts["documents"] = get_table_count(db, "library_documents")
 
     total = sum(counts.values())
 
     if dry_run:
         logger.info("DRY RUN - Would delete:")
-        logger.info("  library_danmaku_replies: %s records", counts['danmaku_replies'])
-        logger.info("  library_danmaku_likes: %s records", counts['danmaku_likes'])
-        logger.info("  library_danmaku: %s records", counts['danmaku'])
-        logger.info("  library_bookmarks: %s records", counts['bookmarks'])
-        logger.info("  library_documents: %s records", counts['documents'])
+        logger.info("  library_danmaku_replies: %s records", counts["danmaku_replies"])
+        logger.info("  library_danmaku_likes: %s records", counts["danmaku_likes"])
+        logger.info("  library_danmaku: %s records", counts["danmaku"])
+        logger.info("  library_bookmarks: %s records", counts["bookmarks"])
+        logger.info("  library_documents: %s records", counts["documents"])
         logger.info("  Total: %s records", total)
         return total, counts
 
     # Delete in order (respecting foreign key constraints) using raw SQL
     # This avoids issues with model columns that might not exist yet
     # Use pre-computed counts for deleted totals (full table delete = count before)
-    if table_exists(db, 'library_danmaku_replies'):
+    if table_exists(db, "library_danmaku_replies"):
         db.execute(text("DELETE FROM library_danmaku_replies"))
         db.commit()
-        logger.info("Deleted %s danmaku replies", counts['danmaku_replies'])
+        logger.info("Deleted %s danmaku replies", counts["danmaku_replies"])
 
-    if table_exists(db, 'library_danmaku_likes'):
+    if table_exists(db, "library_danmaku_likes"):
         db.execute(text("DELETE FROM library_danmaku_likes"))
         db.commit()
-        logger.info("Deleted %s danmaku likes", counts['danmaku_likes'])
+        logger.info("Deleted %s danmaku likes", counts["danmaku_likes"])
 
-    if table_exists(db, 'library_danmaku'):
+    if table_exists(db, "library_danmaku"):
         db.execute(text("DELETE FROM library_danmaku"))
         db.commit()
-        logger.info("Deleted %s danmaku", counts['danmaku'])
+        logger.info("Deleted %s danmaku", counts["danmaku"])
 
-    if table_exists(db, 'library_bookmarks'):
+    if table_exists(db, "library_bookmarks"):
         db.execute(text("DELETE FROM library_bookmarks"))
         db.commit()
-        logger.info("Deleted %s bookmarks", counts['bookmarks'])
+        logger.info("Deleted %s bookmarks", counts["bookmarks"])
 
-    if table_exists(db, 'library_documents'):
+    if table_exists(db, "library_documents"):
         db.execute(text("DELETE FROM library_documents"))
         db.commit()
-        logger.info("Deleted %s documents", counts['documents'])
+        logger.info("Deleted %s documents", counts["documents"])
 
     total_deleted = sum(counts.values())
 
@@ -165,15 +166,11 @@ def main():
     parser = argparse.ArgumentParser(
         description="Clear library-related tables in SQLite or PostgreSQL (dev environment)"
     )
+    parser.add_argument("--yes", action="store_true", help="Skip confirmation prompt")
     parser.add_argument(
-        '--yes',
-        action='store_true',
-        help='Skip confirmation prompt'
-    )
-    parser.add_argument(
-        '--dry-run',
-        action='store_true',
-        help='Preview what would be deleted without actually deleting'
+        "--dry-run",
+        action="store_true",
+        help="Preview what would be deleted without actually deleting",
     )
 
     args = parser.parse_args()
@@ -207,7 +204,7 @@ def main():
                 logger.info("")
                 logger.info("This will delete %s records from library tables.", total)
                 response = input("Are you sure? (yes/no): ")
-                if response.lower() not in ['yes', 'y']:
+                if response.lower() not in ["yes", "y"]:
                     logger.info("Cancelled")
                     return 0
 
@@ -234,5 +231,5 @@ def main():
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional
 import logging
 
@@ -36,7 +37,7 @@ async def get_danmaku(
     page_number: Optional[int] = Query(None, ge=1),
     selected_text: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get danmaku for a document.
@@ -47,11 +48,7 @@ async def get_danmaku(
     user_id = current_user.id
     service = LibraryService(db, user_id=user_id)
 
-    danmaku_list = service.get_danmaku(
-        document_id=document_id,
-        page_number=page_number,
-        selected_text=selected_text
-    )
+    danmaku_list = service.get_danmaku(document_id=document_id, page_number=page_number, selected_text=selected_text)
 
     return {"danmaku": danmaku_list}
 
@@ -60,7 +57,7 @@ async def get_danmaku(
 async def get_recent_danmaku(
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get recent danmaku across all documents.
@@ -81,7 +78,7 @@ async def create_danmaku(
     document_id: int,
     data: DanmakuCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Create a danmaku comment.
@@ -91,15 +88,15 @@ async def create_danmaku(
     # Rate limit: 1 danmaku per minute per user (prevents spam)
     rate_limiter = RedisRateLimiter()
     is_allowed, _, error_msg = rate_limiter.check_and_record(
-        category='library_danmaku_create',
+        category="library_danmaku_create",
         identifier=str(current_user.id),
         max_attempts=1,
-        window_seconds=60
+        window_seconds=60,
     )
     if not is_allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Rate limit exceeded: {error_msg}. Maximum 1 danmaku per minute."
+            detail=f"Rate limit exceeded: {error_msg}. Maximum 1 danmaku per minute.",
         )
 
     service = LibraryService(db, user_id=current_user.id)
@@ -114,7 +111,7 @@ async def create_danmaku(
             selected_text=data.selected_text,
             text_bbox=data.text_bbox,
             color=data.color,
-            highlight_color=data.highlight_color
+            highlight_color=data.highlight_color,
         )
 
         # Structured logging
@@ -124,8 +121,8 @@ async def create_danmaku(
                 "danmaku_id": danmaku.id,
                 "document_id": document_id,
                 "user_id": current_user.id,
-                "page_number": data.page_number
-            }
+                "page_number": data.page_number,
+            },
         )
 
         return {
@@ -137,8 +134,8 @@ async def create_danmaku(
                 "page_number": danmaku.page_number,
                 "selected_text": danmaku.selected_text,
                 "text_bbox": danmaku.text_bbox,
-                "created_at": danmaku.created_at.isoformat() if danmaku.created_at else None
-            }
+                "created_at": danmaku.created_at.isoformat() if danmaku.created_at else None,
+            },
         }
 
     except ValueError as e:
@@ -147,8 +144,8 @@ async def create_danmaku(
             extra={
                 "document_id": document_id,
                 "user_id": current_user.id,
-                "error": str(e)
-            }
+                "error": str(e),
+            },
         )
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
@@ -157,7 +154,7 @@ async def create_danmaku(
 async def toggle_like(
     danmaku_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Toggle like on a danmaku.
@@ -175,7 +172,7 @@ async def toggle_like(
 async def get_replies(
     danmaku_id: int,
     _current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get replies to a danmaku.
@@ -192,7 +189,7 @@ async def create_reply(
     danmaku_id: int,
     data: ReplyCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Reply to a danmaku.
@@ -203,7 +200,7 @@ async def create_reply(
         reply = service.create_reply(
             danmaku_id=danmaku_id,
             content=data.content,
-            parent_reply_id=data.parent_reply_id
+            parent_reply_id=data.parent_reply_id,
         )
 
         # Structured logging
@@ -213,8 +210,8 @@ async def create_reply(
                 "reply_id": reply.id,
                 "danmaku_id": danmaku_id,
                 "user_id": current_user.id,
-                "parent_reply_id": data.parent_reply_id
-            }
+                "parent_reply_id": data.parent_reply_id,
+            },
         )
 
         return {
@@ -224,8 +221,8 @@ async def create_reply(
                 "id": reply.id,
                 "content": reply.content,
                 "parent_reply_id": reply.parent_reply_id,
-                "created_at": reply.created_at.isoformat() if reply.created_at else None
-            }
+                "created_at": reply.created_at.isoformat() if reply.created_at else None,
+            },
         }
 
     except ValueError as e:
@@ -234,8 +231,8 @@ async def create_reply(
             extra={
                 "danmaku_id": danmaku_id,
                 "user_id": current_user.id,
-                "error": str(e)
-            }
+                "error": str(e),
+            },
         )
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
 
@@ -245,7 +242,7 @@ async def update_danmaku_position(
     danmaku_id: int,
     data: DanmakuUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Update danmaku position.
@@ -257,13 +254,13 @@ async def update_danmaku_position(
         danmaku_id=danmaku_id,
         position_x=data.position_x,
         position_y=data.position_y,
-        is_admin=is_admin(current_user)
+        is_admin=is_admin(current_user),
     )
 
     if not updated:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Danmaku not found or you don't have permission"
+            detail="Danmaku not found or you don't have permission",
         )
 
     return {"message": "Danmaku position updated successfully"}
@@ -273,7 +270,7 @@ async def update_danmaku_position(
 async def delete_danmaku(
     danmaku_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete danmaku.
@@ -286,7 +283,7 @@ async def delete_danmaku(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Danmaku not found or you don't have permission"
+            detail="Danmaku not found or you don't have permission",
         )
 
     return {"message": "Danmaku deleted successfully"}
@@ -296,7 +293,7 @@ async def delete_danmaku(
 async def delete_reply(
     reply_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete reply.
@@ -309,7 +306,7 @@ async def delete_reply(
     if not deleted:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Reply not found or you don't have permission"
+            detail="Reply not found or you don't have permission",
         )
 
     return {"message": "Reply deleted successfully"}

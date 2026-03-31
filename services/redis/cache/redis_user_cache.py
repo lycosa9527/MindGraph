@@ -33,7 +33,6 @@ from models.domain.auth import User
 from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
 
-
 logger = logging.getLogger(__name__)
 
 # Redis key prefixes
@@ -68,19 +67,19 @@ class UserCache:
             Dict with string values for Redis hash
         """
         return {
-            'id': str(user.id),
-            'phone': user.phone or '',
-            'password_hash': user.password_hash or '',
-            'name': user.name or '',
-            'organization_id': str(user.organization_id) if user.organization_id else '',
-            'avatar': user.avatar or '',
-            'role': getattr(user, 'role', 'user') or 'user',
-            'failed_login_attempts': str(user.failed_login_attempts) if user.failed_login_attempts else '0',
-            'locked_until': user.locked_until.isoformat() if user.locked_until else '',
-            'created_at': user.created_at.isoformat() if user.created_at else '',
-            'last_login': user.last_login.isoformat() if user.last_login else '',
-            'ui_language': getattr(user, 'ui_language', None) or '',
-            'prompt_language': getattr(user, 'prompt_language', None) or '',
+            "id": str(user.id),
+            "phone": user.phone or "",
+            "password_hash": user.password_hash or "",
+            "name": user.name or "",
+            "organization_id": str(user.organization_id) if user.organization_id else "",
+            "avatar": user.avatar or "",
+            "role": getattr(user, "role", "user") or "user",
+            "failed_login_attempts": str(user.failed_login_attempts) if user.failed_login_attempts else "0",
+            "locked_until": user.locked_until.isoformat() if user.locked_until else "",
+            "created_at": user.created_at.isoformat() if user.created_at else "",
+            "last_login": user.last_login.isoformat() if user.last_login else "",
+            "ui_language": getattr(user, "ui_language", None) or "",
+            "prompt_language": getattr(user, "prompt_language", None) or "",
         }
 
     def _deserialize_user(self, data: Dict[str, str]) -> User:
@@ -94,43 +93,43 @@ class UserCache:
             User SQLAlchemy model instance (detached from session)
         """
         user = User()
-        user.id = int(data.get('id', '0'))
-        user.phone = data.get('phone') or ''
-        user.password_hash = data.get('password_hash') or ''
-        user.name = data.get('name') or None
-        org_id_val = data.get('organization_id')
+        user.id = int(data.get("id", "0"))
+        user.phone = data.get("phone") or ""
+        user.password_hash = data.get("password_hash") or ""
+        user.name = data.get("name") or None
+        org_id_val = data.get("organization_id")
         user.organization_id = int(org_id_val) if org_id_val else None
-        user.avatar = data.get('avatar') or None
-        user.role = data.get('role') or 'user'
-        user.failed_login_attempts = int(data.get('failed_login_attempts', '0'))
+        user.avatar = data.get("avatar") or None
+        user.role = data.get("role") or "user"
+        user.failed_login_attempts = int(data.get("failed_login_attempts", "0"))
 
         # Parse datetime fields
-        if data.get('locked_until'):
+        if data.get("locked_until"):
             try:
-                user.locked_until = datetime.fromisoformat(data['locked_until'])
+                user.locked_until = datetime.fromisoformat(data["locked_until"])
             except (ValueError, TypeError):
                 user.locked_until = None
         else:
             user.locked_until = None
 
-        if data.get('created_at'):
+        if data.get("created_at"):
             try:
-                user.created_at = datetime.fromisoformat(data['created_at'])
+                user.created_at = datetime.fromisoformat(data["created_at"])
             except (ValueError, TypeError):
                 user.created_at = datetime.utcnow()
         else:
             user.created_at = datetime.utcnow()
 
-        if data.get('last_login'):
+        if data.get("last_login"):
             try:
-                user.last_login = datetime.fromisoformat(data['last_login'])
+                user.last_login = datetime.fromisoformat(data["last_login"])
             except (ValueError, TypeError):
                 user.last_login = None
         else:
             user.last_login = None
 
-        user.ui_language = data.get('ui_language') or None
-        user.prompt_language = data.get('prompt_language') or None
+        user.ui_language = data.get("ui_language") or None
+        user.prompt_language = data.get("prompt_language") or None
 
         return user
 
@@ -182,7 +181,10 @@ class UserCache:
         """
         # Check Redis availability
         if not is_redis_available():
-            logger.debug("[UserCache] Redis unavailable, loading user ID %s from database", user_id)
+            logger.debug(
+                "[UserCache] Redis unavailable, loading user ID %s from database",
+                user_id,
+            )
             return self._load_from_database(user_id=user_id)
 
         try:
@@ -197,17 +199,30 @@ class UserCache:
                     return user
                 except (KeyError, ValueError, TypeError) as e:
                     # Corrupted cache entry
-                    logger.error("[UserCache] Corrupted cache for user ID %s: %s", user_id, e, exc_info=True)
+                    logger.error(
+                        "[UserCache] Corrupted cache for user ID %s: %s",
+                        user_id,
+                        e,
+                        exc_info=True,
+                    )
                     # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
                     except Exception as exc:
-                        logger.debug("Corrupted user cache entry deletion failed for user ID %s: %s", user_id, exc)
+                        logger.debug(
+                            "Corrupted user cache entry deletion failed for user ID %s: %s",
+                            user_id,
+                            exc,
+                        )
                     # Fallback to database
                     return self._load_from_database(user_id=user_id)
         except Exception as e:
             # Transient Redis errors - fallback to database
-            logger.warning("[UserCache] Redis error for user ID %s, falling back to database: %s", user_id, e)
+            logger.warning(
+                "[UserCache] Redis error for user ID %s, falling back to database: %s",
+                user_id,
+                e,
+            )
             return self._load_from_database(user_id=user_id)
 
         # Cache miss - load from database
@@ -227,7 +242,10 @@ class UserCache:
         # Check Redis availability
         if not is_redis_available():
             phone_masked = phone[:3] + "***" + phone[-4:]
-            logger.debug("[UserCache] Redis unavailable, loading user by phone %s from database", phone_masked)
+            logger.debug(
+                "[UserCache] Redis unavailable, loading user by phone %s from database",
+                phone_masked,
+            )
             return self._load_from_database(phone=phone)
 
         try:
@@ -242,7 +260,11 @@ class UserCache:
                     return self.get_by_id(user_id)
                 except (ValueError, TypeError) as e:
                     phone_masked = phone[:3] + "***" + phone[-4:]
-                    logger.error("[UserCache] Invalid user ID in phone index for %s: %s", phone_masked, e)
+                    logger.error(
+                        "[UserCache] Invalid user ID in phone index for %s: %s",
+                        phone_masked,
+                        e,
+                    )
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
@@ -253,7 +275,11 @@ class UserCache:
         except Exception as e:
             # Transient Redis errors - fallback to database
             phone_masked = phone[:3] + "***" + phone[-4:]
-            logger.warning("[UserCache] Redis error for phone %s, falling back to database: %s", phone_masked, e)
+            logger.warning(
+                "[UserCache] Redis error for phone %s, falling back to database: %s",
+                phone_masked,
+                e,
+            )
             return self._load_from_database(phone=phone)
 
         # Cache miss - load from database
@@ -339,13 +365,17 @@ class UserCache:
             logger.info("[UserCache] Invalidated cache for user ID %s", user_id)
             return True
         except Exception as exc:
-            logger.warning("[UserCache] Failed to invalidate cache for user ID %s: %s", user_id, exc)
+            logger.warning(
+                "[UserCache] Failed to invalidate cache for user ID %s: %s",
+                user_id,
+                exc,
+            )
             return False
 
 
 def get_user_cache() -> UserCache:
     """Get or create global UserCache instance."""
-    if not hasattr(get_user_cache, 'cache_instance'):
+    if not hasattr(get_user_cache, "cache_instance"):
         get_user_cache.cache_instance = UserCache()
         logger.info("[UserCache] Initialized")
     return get_user_cache.cache_instance

@@ -55,11 +55,7 @@ class RedisRateLimiter:
         return is_redis_available()
 
     def check_and_record(
-        self,
-        category: str,
-        identifier: str,
-        max_attempts: int,
-        window_seconds: int
+        self, category: str, identifier: str, max_attempts: int, window_seconds: int
     ) -> Tuple[bool, int, str]:
         """
         Check rate limit and record attempt atomically.
@@ -76,27 +72,17 @@ class RedisRateLimiter:
             Tuple of (is_allowed, attempt_count, error_message)
         """
         if self._use_redis():
-            return self._redis_check_and_record(
-                category, identifier, max_attempts, window_seconds
-            )
+            return self._redis_check_and_record(category, identifier, max_attempts, window_seconds)
         else:
-            return self._memory_check_and_record(
-                category, identifier, max_attempts, window_seconds
-            )
+            return self._memory_check_and_record(category, identifier, max_attempts, window_seconds)
 
     def _redis_check_and_record(
-        self,
-        category: str,
-        identifier: str,
-        max_attempts: int,
-        window_seconds: int
+        self, category: str, identifier: str, max_attempts: int, window_seconds: int
     ) -> Tuple[bool, int, str]:
         """Check rate limit using Redis."""
         redis = get_redis()
         if not redis:
-            return self._memory_check_and_record(
-                category, identifier, max_attempts, window_seconds
-            )
+            return self._memory_check_and_record(category, identifier, max_attempts, window_seconds)
 
         try:
             key = f"{RATE_PREFIX}{category}:{identifier}"
@@ -106,9 +92,9 @@ class RedisRateLimiter:
             # Atomic pipeline: cleanup old entries, add current, count, set expiry
             pipe = redis.pipeline()
             pipe.zremrangebyscore(key, 0, window_start)  # Remove old entries
-            pipe.zadd(key, {str(now): now})              # Add current attempt
-            pipe.zcard(key)                               # Count entries
-            pipe.expire(key, window_seconds)              # Set expiry
+            pipe.zadd(key, {str(now): now})  # Add current attempt
+            pipe.zcard(key)  # Count entries
+            pipe.expire(key, window_seconds)  # Set expiry
             results = pipe.execute()
 
             count = results[2]
@@ -120,7 +106,7 @@ class RedisRateLimiter:
                     wait_seconds = int(oldest[0][1] + window_seconds - now) + 1
                     minutes = (wait_seconds // 60) + 1
                     error_msg = (
-                        f"Too many attempts ({count} in {window_seconds//60} minutes). "
+                        f"Too many attempts ({count} in {window_seconds // 60} minutes). "
                         f"Please try again in {minutes} minute{'s' if minutes > 1 else ''}."
                     )
                 else:
@@ -128,7 +114,10 @@ class RedisRateLimiter:
 
                 logger.warning(
                     "[RateLimiter] Limit exceeded: %s:%s (%s/%s)",
-                    category, identifier, count, max_attempts
+                    category,
+                    identifier,
+                    count,
+                    max_attempts,
                 )
                 return False, count, error_msg
 
@@ -136,16 +125,10 @@ class RedisRateLimiter:
 
         except Exception as e:
             logger.error("[RateLimiter] Redis error: %s", e)
-            return self._memory_check_and_record(
-                category, identifier, max_attempts, window_seconds
-            )
+            return self._memory_check_and_record(category, identifier, max_attempts, window_seconds)
 
     def _memory_check_and_record(
-        self,
-        category: str,
-        identifier: str,
-        max_attempts: int,
-        window_seconds: int
+        self, category: str, identifier: str, max_attempts: int, window_seconds: int
     ) -> Tuple[bool, int, str]:
         """Check rate limit using in-memory storage (fallback)."""
         key = f"{category}:{identifier}"
@@ -163,12 +146,14 @@ class RedisRateLimiter:
             wait_seconds = int(oldest + window_seconds - now) + 1
             minutes = (wait_seconds // 60) + 1
             error_msg = (
-                f"Too many attempts ({count} in {window_seconds//60} minutes). "
+                f"Too many attempts ({count} in {window_seconds // 60} minutes). "
                 f"Please try again in {minutes} minute{'s' if minutes > 1 else ''}."
             )
             logger.warning(
                 "[RateLimiter] (memory) Limit exceeded: %s (%s/%s)",
-                key, count, max_attempts
+                key,
+                count,
+                max_attempts,
             )
             return False, count, error_msg
 
@@ -201,13 +186,7 @@ class RedisRateLimiter:
             del self._memory_store[key]
         return True
 
-    def get_remaining(
-        self,
-        category: str,
-        identifier: str,
-        max_attempts: int,
-        window_seconds: int
-    ) -> Tuple[int, int]:
+    def get_remaining(self, category: str, identifier: str, max_attempts: int, window_seconds: int) -> Tuple[int, int]:
         """
         Get remaining attempts and time until reset.
 
@@ -268,6 +247,7 @@ class RedisRateLimiter:
 # Singleton instance holder
 class _RateLimiterHolder:
     """Holder for singleton rate limiter instance."""
+
     _instance: Optional[RedisRateLimiter] = None
 
     @classmethod
@@ -306,9 +286,7 @@ def check_ip_rate_limit(ip: str) -> Tuple[bool, str]:
     """Check login rate limit for IP address."""
     limiter = get_rate_limiter()
     # IP limit is 2x phone limit
-    allowed, _, error = limiter.check_and_record(
-        "ip", ip, DEFAULT_MAX_LOGIN_ATTEMPTS * 2, DEFAULT_WINDOW_MINUTES * 60
-    )
+    allowed, _, error = limiter.check_and_record("ip", ip, DEFAULT_MAX_LOGIN_ATTEMPTS * 2, DEFAULT_WINDOW_MINUTES * 60)
     return allowed, error
 
 
@@ -347,9 +325,7 @@ def get_login_attempts_remaining(phone: str) -> int:
         Number of attempts remaining before rate limit hit
     """
     limiter = get_rate_limiter()
-    remaining, _ = limiter.get_remaining(
-        "login", phone, DEFAULT_MAX_LOGIN_ATTEMPTS, DEFAULT_WINDOW_MINUTES * 60
-    )
+    remaining, _ = limiter.get_remaining("login", phone, DEFAULT_MAX_LOGIN_ATTEMPTS, DEFAULT_WINDOW_MINUTES * 60)
     return remaining
 
 
@@ -361,7 +337,5 @@ def get_attempt_count(category: str, identifier: str, max_attempts: int, window_
         Number of attempts made in the current window
     """
     limiter = get_rate_limiter()
-    remaining, _ = limiter.get_remaining(
-        category, identifier, max_attempts, window_minutes * 60
-    )
+    remaining, _ = limiter.get_remaining(category, identifier, max_attempts, window_minutes * 60)
     return max_attempts - remaining

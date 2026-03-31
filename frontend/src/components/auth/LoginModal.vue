@@ -159,12 +159,15 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="login-phone"
                 >
                   {{ t('auth.phone') }}
                 </label>
                 <input
+                  id="login-phone"
                   v-model="loginForm.phone"
                   type="tel"
+                  name="login-phone"
                   :placeholder="t('auth.modal.phonePlaceholder11')"
                   maxlength="11"
                   autocomplete="username"
@@ -175,13 +178,16 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="login-password"
                 >
                   {{ t('auth.password') }}
                 </label>
                 <div class="relative">
                   <input
+                    id="login-password"
                     v-model="loginForm.password"
                     :type="showPassword ? 'text' : 'password'"
+                    name="login-password"
                     :placeholder="t('auth.modal.passwordPlaceholder')"
                     autocomplete="current-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -206,13 +212,16 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="login-captcha"
                 >
                   {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
+                    id="login-captcha"
                     v-model="loginForm.captcha"
                     type="text"
+                    name="login-captcha"
                     :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -283,12 +292,15 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="register-phone"
                 >
                   {{ t('auth.phone') }} *
                 </label>
                 <input
+                  id="register-phone"
                   v-model="registerForm.phone"
                   type="tel"
+                  name="register-phone"
                   :placeholder="t('auth.modal.phonePlaceholder11')"
                   maxlength="11"
                   autocomplete="username"
@@ -299,13 +311,16 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="register-password"
                 >
                   {{ t('auth.password') }} *
                 </label>
                 <div class="relative">
                   <input
+                    id="register-password"
                     v-model="registerForm.password"
                     :type="showPassword ? 'text' : 'password'"
+                    name="register-password"
                     :placeholder="t('auth.modal.passwordMinPlaceholder')"
                     autocomplete="new-password"
                     class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -330,13 +345,17 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="register-name"
                 >
                   {{ t('auth.name') }} *
                 </label>
                 <input
+                  id="register-name"
                   v-model="registerForm.name"
                   type="text"
+                  name="register-name"
                   :placeholder="t('auth.modal.namePlaceholder')"
+                  autocomplete="name"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                 />
               </div>
@@ -344,12 +363,15 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="register-invitation-code"
                 >
                   {{ t('auth.invitationCode') }} *
                 </label>
                 <input
+                  id="register-invitation-code"
                   v-model="registerForm.invitationCode"
                   type="text"
+                  name="register-invitation-code"
                   :placeholder="t('auth.modal.invitationPlaceholder')"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                 />
@@ -358,13 +380,16 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="register-captcha"
                 >
                   {{ t('auth.captcha') }} *
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
+                    id="register-captcha"
                     v-model="registerForm.captcha"
                     type="text"
+                    name="register-captcha"
                     :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -416,12 +441,15 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="sms-login-phone"
                 >
                   {{ t('auth.phone') }}
                 </label>
                 <input
+                  id="sms-login-phone"
                   v-model="smsLoginForm.phone"
                   type="tel"
+                  name="sms-login-phone"
                   :placeholder="t('auth.modal.phoneRegisteredPlaceholder')"
                   maxlength="11"
                   autocomplete="username"
@@ -433,13 +461,16 @@ const {
               <div v-if="!smsSent">
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="sms-login-captcha"
                 >
                   {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
+                    id="sms-login-captcha"
                     v-model="smsLoginForm.captcha"
                     type="text"
+                    name="sms-login-captcha"
                     :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -487,14 +518,18 @@ const {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    for="sms-login-code"
                   >
                     {{ t('auth.modal.smsCodeLabel') }}
                   </label>
                   <input
+                    id="sms-login-code"
                     v-model="smsLoginForm.smsCode"
                     type="text"
+                    name="sms-login-code"
                     :placeholder="t('auth.modal.smsCodePlaceholder')"
                     maxlength="6"
+                    autocomplete="one-time-code"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <p class="text-xs text-stone-400 mt-1">
@@ -541,12 +576,15 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="forgot-phone"
                 >
                   {{ t('auth.phone') }}
                 </label>
                 <input
+                  id="forgot-phone"
                   v-model="forgotForm.phone"
                   type="tel"
+                  name="forgot-phone"
                   :placeholder="t('auth.modal.phoneRegisteredPlaceholder')"
                   maxlength="11"
                   autocomplete="username"
@@ -558,13 +596,16 @@ const {
               <div v-if="!smsSent">
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="forgot-captcha"
                 >
                   {{ t('auth.captcha') }}
                 </label>
                 <div class="flex gap-3 items-center">
                   <input
+                    id="forgot-captcha"
                     v-model="forgotForm.captcha"
                     type="text"
+                    name="forgot-captcha"
                     :placeholder="t('auth.modal.captchaPlaceholderShort')"
                     maxlength="4"
                     class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -612,14 +653,18 @@ const {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    for="forgot-sms-code"
                   >
                     {{ t('auth.modal.smsCodeLabel') }}
                   </label>
                   <input
+                    id="forgot-sms-code"
                     v-model="forgotForm.smsCode"
                     type="text"
+                    name="forgot-sms-code"
                     :placeholder="t('auth.modal.smsCodePlaceholder')"
                     maxlength="6"
+                    autocomplete="one-time-code"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                 </div>
@@ -627,13 +672,16 @@ const {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    for="forgot-new-password"
                   >
                     {{ t('auth.modal.newPassword') }}
                   </label>
                   <div class="relative">
                     <input
+                      id="forgot-new-password"
                       v-model="forgotForm.newPassword"
                       :type="showPassword ? 'text' : 'password'"
+                      name="forgot-new-password"
                       :placeholder="t('auth.modal.passwordMinPlaceholder')"
                       autocomplete="new-password"
                       class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -658,13 +706,16 @@ const {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    for="forgot-confirm-password"
                   >
                     {{ t('auth.modal.confirmPassword') }}
                   </label>
                   <div class="relative">
                     <input
+                      id="forgot-confirm-password"
                       v-model="forgotForm.confirmPassword"
                       :type="showConfirmPassword ? 'text' : 'password'"
+                      name="forgot-confirm-password"
                       :placeholder="t('auth.modal.confirmPasswordPlaceholder')"
                       autocomplete="new-password"
                       class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"

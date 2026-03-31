@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, List, Optional
 import base64
 import hashlib
@@ -49,7 +50,7 @@ class EmbeddingCache:
 
     def generate_text_hash(self, text: str) -> str:
         """Generate hash for text (for cache key)."""
-        return hashlib.md5(text.encode('utf-8')).hexdigest()
+        return hashlib.md5(text.encode("utf-8")).hexdigest()
 
     def get_document_embedding(self, db: Session, text: str) -> Optional[List[float]]:
         """
@@ -63,19 +64,22 @@ class EmbeddingCache:
             Embedding vector or None if not cached
         """
         text_hash = self.generate_text_hash(text)
-        model_name = config.DASHSCOPE_EMBEDDING_MODEL or 'text-embedding-v4'
-        provider_name = 'dashscope'
+        model_name = config.DASHSCOPE_EMBEDDING_MODEL or "text-embedding-v4"
+        provider_name = "dashscope"
 
         try:
-            embedding_record = db.query(Embedding).filter_by(
-                model_name=model_name,
-                provider_name=provider_name,
-                hash=text_hash
-            ).first()
+            embedding_record = (
+                db.query(Embedding)
+                .filter_by(model_name=model_name, provider_name=provider_name, hash=text_hash)
+                .first()
+            )
 
             if embedding_record:
                 hash_preview = text_hash[:8] + "..."
-                logger.debug("[EmbeddingCache] Document embedding cache hit for hash %s", hash_preview)
+                logger.debug(
+                    "[EmbeddingCache] Document embedding cache hit for hash %s",
+                    hash_preview,
+                )
                 return embedding_record.get_embedding()
         except Exception as e:
             logger.warning("[EmbeddingCache] Failed to get document embedding from cache: %s", e)
@@ -92,28 +96,27 @@ class EmbeddingCache:
             embedding: Embedding vector
         """
         text_hash = self.generate_text_hash(text)
-        model_name = config.DASHSCOPE_EMBEDDING_MODEL or 'text-embedding-v4'
-        provider_name = 'dashscope'
+        model_name = config.DASHSCOPE_EMBEDDING_MODEL or "text-embedding-v4"
+        provider_name = "dashscope"
 
         try:
             # Check if already exists
-            existing = db.query(Embedding).filter_by(
-                model_name=model_name,
-                provider_name=provider_name,
-                hash=text_hash
-            ).first()
+            existing = (
+                db.query(Embedding)
+                .filter_by(model_name=model_name, provider_name=provider_name, hash=text_hash)
+                .first()
+            )
 
             if existing:
                 hash_preview = text_hash[:8] + "..."
-                logger.debug("[EmbeddingCache] Embedding already cached for hash %s", hash_preview)
+                logger.debug(
+                    "[EmbeddingCache] Embedding already cached for hash %s",
+                    hash_preview,
+                )
                 return
 
             # Create new embedding cache record
-            embedding_record = Embedding(
-                model_name=model_name,
-                provider_name=provider_name,
-                hash=text_hash
-            )
+            embedding_record = Embedding(model_name=model_name, provider_name=provider_name, hash=text_hash)
             embedding_record.set_embedding(embedding)
 
             db.add(embedding_record)
@@ -125,7 +128,10 @@ class EmbeddingCache:
             # Race condition: another process cached it first
             db.rollback()
             hash_preview = text_hash[:8] + "..."
-            logger.debug("[EmbeddingCache] Embedding already cached (race condition) for hash %s", hash_preview)
+            logger.debug(
+                "[EmbeddingCache] Embedding already cached (race condition) for hash %s",
+                hash_preview,
+            )
         except Exception as e:
             db.rollback()
             logger.warning("[EmbeddingCache] Failed to cache document embedding: %s", e)
@@ -145,9 +151,13 @@ class EmbeddingCache:
         try:
             embedding_array = np.array(embedding, dtype=np.float32)
             results = redis_client.execute_command(
-                "VSIM", vset_key,
-                "VALUES", len(embedding_array), *embedding_array.tolist(),
-                "COUNT", 1,
+                "VSIM",
+                vset_key,
+                "VALUES",
+                len(embedding_array),
+                *embedding_array.tolist(),
+                "COUNT",
+                1,
                 "WITHSCORES",
             )
             if results and len(results) >= 2:
@@ -157,7 +167,9 @@ class EmbeddingCache:
                     decoded_bytes = base64.b64decode(stored_b64)
                     decoded = np.frombuffer(decoded_bytes, dtype=np.float32)
                     logger.debug(
-                        "[EmbeddingCache] VSET semantic hit (score=%.4f >= %.4f)", score, threshold
+                        "[EmbeddingCache] VSET semantic hit (score=%.4f >= %.4f)",
+                        score,
+                        threshold,
                     )
                     return [float(x) for x in decoded]
         except Exception as exc:
@@ -169,8 +181,11 @@ class EmbeddingCache:
         try:
             embedding_array = np.array(embedding, dtype=np.float32)
             redis_client.execute_command(
-                "VADD", vset_key,
-                "VALUES", len(embedding_array), *embedding_array.tolist(),
+                "VADD",
+                vset_key,
+                "VALUES",
+                len(embedding_array),
+                *embedding_array.tolist(),
                 encoded,
             )
         except Exception as exc:
@@ -195,7 +210,7 @@ class EmbeddingCache:
 
         try:
             query_hash = self.generate_text_hash(query)
-            model_name = config.DASHSCOPE_EMBEDDING_MODEL or 'text-embedding-v4'
+            model_name = config.DASHSCOPE_EMBEDDING_MODEL or "text-embedding-v4"
             dimensions = config.EMBEDDING_DIMENSIONS
             dim_suffix = f":{dimensions}" if dimensions else ""
             cache_key = f"query_embedding:dashscope:{model_name}{dim_suffix}:{query_hash}"
@@ -234,7 +249,7 @@ class EmbeddingCache:
         if not redis:
             return None
 
-        model_name = config.DASHSCOPE_EMBEDDING_MODEL or 'text-embedding-v4'
+        model_name = config.DASHSCOPE_EMBEDDING_MODEL or "text-embedding-v4"
         return self._vset_lookup(redis, self._vset_key(model_name), embedding)
 
     def cache_query_embedding(self, query: str, embedding: List[float]) -> None:
@@ -258,13 +273,13 @@ class EmbeddingCache:
 
         try:
             query_hash = self.generate_text_hash(query)
-            model_name = config.DASHSCOPE_EMBEDDING_MODEL or 'text-embedding-v4'
+            model_name = config.DASHSCOPE_EMBEDDING_MODEL or "text-embedding-v4"
             dimensions = config.EMBEDDING_DIMENSIONS
             dim_suffix = f":{dimensions}" if dimensions else ""
             cache_key = f"query_embedding:dashscope:{model_name}{dim_suffix}:{query_hash}"
 
             embedding_array = np.array(embedding, dtype=np.float32)
-            encoded = base64.b64encode(embedding_array.tobytes()).decode('utf-8')
+            encoded = base64.b64encode(embedding_array.tobytes()).decode("utf-8")
 
             redis.setex(cache_key, self.query_cache_ttl, encoded)
 

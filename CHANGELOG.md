@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.67.0] - 2026-03-31
+
+### Changed
+- **Python codebase**: PEP8 / Pylint alignment across agents, clients, config, routers, services, utils, and tests—formatting, imports, line length, and string quoting; LF line endings on version-controlled Python sources.
+- **Gewe client**: Removed legacy `clients/gewe.py`; the WeChat API client is provided only via the `clients/gewe/` package.
+- **Root `VERSION`**: Bumped to match this release (the root file had remained at 5.65.0 while 5.66.0 shipped in the frontend).
+- **Tooling**: `pyproject.toml` and related project metadata updates.
+
 ## [5.66.0] - 2026-03-31
 
 ### Added

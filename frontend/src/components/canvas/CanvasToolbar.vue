@@ -9,13 +9,13 @@ import { ElButton, ElTooltip } from 'element-plus'
 import { ArrowDownUp, Brush } from 'lucide-vue-next'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
-import { eventBus } from '@/composables/core/useEventBus'
 import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
+import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
-import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { useDiagramStore, useUIStore } from '@/stores'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 
 import CanvasMathInsertDialog from './CanvasMathInsertDialog.vue'
 import CanvasToolbarAddDelete from './CanvasToolbarAddDelete.vue'
@@ -120,9 +120,7 @@ function handleMathInsertConfirm(latex: string): void {
   unsub()
   if (!consumed) {
     const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
-    const base = String(
-      node?.text ?? (node?.data as { label?: string } | undefined)?.label ?? ''
-    )
+    const base = String(node?.text ?? (node?.data as { label?: string } | undefined)?.label ?? '')
     const nextText =
       diagramStore.type && shouldReplaceLabelWithMathInsert(diagramStore.type, nodeId, base)
         ? snippet

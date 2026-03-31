@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from typing import Optional
 
@@ -31,14 +32,13 @@ from utils.auth import (
 )
 
 
-
 # Optional security scheme (auto_error=False means no 401 if missing)
 security_optional = HTTPBearer(auto_error=False)
 
 
 def get_current_user_optional(
     request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security_optional)
+    credentials: HTTPAuthorizationCredentials = Depends(security_optional),
 ) -> Optional[User]:
     """
     Get current user if authenticated, return None if not.
@@ -95,10 +95,7 @@ def get_current_user_optional(
         return None
 
 
-def get_language_dependency(
-    request: Request,
-    x_language: Optional[str] = Header(None, alias="X-Language")
-) -> Language:
+def get_language_dependency(request: Request, x_language: Optional[str] = Header(None, alias="X-Language")) -> Language:
     """
     FastAPI dependency to detect user language from request headers.
 
@@ -115,7 +112,7 @@ def get_language_dependency(
 
 def require_admin(
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
     FastAPI dependency to require admin access.
@@ -134,16 +131,13 @@ def require_admin(
     """
     if not is_admin(current_user):
         error_msg = Messages.error("admin_access_required", lang)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
 
 
 def require_manager(
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
     FastAPI dependency to require manager access.
@@ -163,16 +157,13 @@ def require_manager(
     """
     if not is_manager(current_user):
         error_msg = Messages.error("manager_access_required", lang)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
 
 
 def require_admin_or_manager(
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
     FastAPI dependency to require admin OR manager access.
@@ -192,16 +183,13 @@ def require_admin_or_manager(
     """
     if not is_admin_or_manager(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
 
 
 def require_workshop_chat_access(
     current_user: User = Depends(get_current_user),
-    lang: Language = Depends(get_language_dependency)
+    lang: Language = Depends(get_language_dependency),
 ) -> User:
     """
     Require access to Workshop Chat: global flag on, then DB rules or preview org list.
@@ -210,8 +198,5 @@ def require_workshop_chat_access(
     """
     if not can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=error_msg
-        )
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user

@@ -29,10 +29,13 @@ from services.library.exceptions import (
     PageNotFoundError,
     PageImageNotFoundError,
     PagesDirectoryNotFoundError,
-    DocumentNotImageBasedError
+    DocumentNotImageBasedError,
 )
 from services.library.library_document_mixin import LibraryDocumentMixin
-from services.library.library_path_utils import normalize_library_path, resolve_library_path
+from services.library.library_path_utils import (
+    normalize_library_path,
+    resolve_library_path,
+)
 from models.domain.library import LibraryDocument, LibraryDanmaku, LibraryBookmark
 
 
@@ -167,16 +170,12 @@ class TestLibraryDanmakuOperations:
         """Test creating a danmaku successfully."""
         db_mock.query.return_value.filter.return_value.first.return_value = mock_document
 
-        with patch('services.library.library_danmaku_mixin.LibraryDanmaku') as danmaku_mock:
+        with patch("services.library.library_danmaku_mixin.LibraryDanmaku") as danmaku_mock:
             new_danmaku = Mock()
             new_danmaku.id = 1
             danmaku_mock.return_value = new_danmaku
 
-            result = service.create_danmaku(
-                document_id=1,
-                content="Test comment",
-                page_number=1
-            )
+            result = service.create_danmaku(document_id=1, content="Test comment", page_number=1)
 
             assert result == new_danmaku
             assert mock_document.comments_count == 1
@@ -188,11 +187,7 @@ class TestLibraryDanmakuOperations:
         db_mock.query.return_value.filter.return_value.first.return_value = None
 
         with pytest.raises(ValueError, match="Document.*not found"):
-            service.create_danmaku(
-                document_id=999,
-                content="Test comment",
-                page_number=1
-            )
+            service.create_danmaku(document_id=999, content="Test comment", page_number=1)
 
     def test_get_danmaku_empty_list(self, service, db_mock):
         """Test getting danmaku when none exist."""
@@ -256,16 +251,12 @@ class TestLibraryBookmarkOperations:
         # Mock query - bookmark doesn't exist yet
         db_mock.query.return_value.filter.return_value.first.return_value = None
 
-        with patch('services.library.library_bookmark_mixin.LibraryBookmark') as bookmark_mock:
+        with patch("services.library.library_bookmark_mixin.LibraryBookmark") as bookmark_mock:
             new_bookmark = Mock()
             new_bookmark.id = 1
             bookmark_mock.return_value = new_bookmark
 
-            result = service.create_bookmark(
-                document_id=1,
-                page_number=5,
-                note="Test note"
-            )
+            result = service.create_bookmark(document_id=1, page_number=5, note="Test note")
 
             assert result == new_bookmark
             db_mock.add.assert_called()
@@ -275,11 +266,7 @@ class TestLibraryBookmarkOperations:
         """Test updating an existing bookmark."""
         db_mock.query.return_value.filter.return_value.first.return_value = mock_bookmark
 
-        result = service.create_bookmark(
-            document_id=1,
-            page_number=5,
-            note="Updated note"
-        )
+        result = service.create_bookmark(document_id=1, page_number=5, note="Updated note")
 
         assert result == mock_bookmark
         assert mock_bookmark.note == "Updated note"
@@ -331,7 +318,7 @@ class TestLibraryPathResolution:
         project_root = Path("/project")
         pages_dir_path = "storage/library/test_book"
 
-        with patch('pathlib.Path.exists', return_value=True):
+        with patch("pathlib.Path.exists", return_value=True):
             result = resolve_library_path(pages_dir_path, storage_dir, project_root)
 
             assert result is not None

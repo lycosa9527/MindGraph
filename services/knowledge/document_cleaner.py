@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Dict, Any
 import logging
 import re
@@ -27,7 +28,7 @@ class DocumentCleaner:
     Singleton pattern: only one instance is created.
     """
 
-    _instance: Optional['DocumentCleaner'] = None
+    _instance: Optional["DocumentCleaner"] = None
 
     def __new__(cls):
         """Singleton pattern: return the same instance on every call."""
@@ -82,11 +83,7 @@ class DocumentCleaner:
         return text
 
     @staticmethod
-    def clean(
-        text: str,
-        remove_extra_spaces: bool = True,
-        remove_urls_emails: bool = False
-    ) -> str:
+    def clean(text: str, remove_extra_spaces: bool = True, remove_urls_emails: bool = False) -> str:
         """
         Clean and normalize text content.
 
@@ -158,7 +155,7 @@ class DocumentCleaner:
                 text = DocumentCleaner.clean(
                     text,
                     remove_extra_spaces=remove_extra_spaces,
-                    remove_urls_emails=remove_urls_emails
+                    remove_urls_emails=remove_urls_emails,
                 )
 
         return text

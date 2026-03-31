@@ -9,11 +9,7 @@ import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
-import {
-  CONTEXT_FONT_SIZE,
-  TOPIC_FONT_SIZE,
-  computeMinDiameterForNoWrap,
-} from './textMeasurement'
+import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE, computeMinDiameterForNoWrap } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 import { calculateCircleMapLayout } from './utils'
 

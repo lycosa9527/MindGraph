@@ -7,6 +7,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Optional, Any, AsyncGenerator
 from abc import ABC, abstractmethod
 import logging
@@ -36,7 +37,7 @@ class BaseLLMClient(ABC):
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 1000,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Send chat completion request.
@@ -58,7 +59,7 @@ class BaseLLMClient(ABC):
         temperature: Optional[float] = None,
         max_tokens: int = 1000,
         enable_thinking: bool = False,
-        **kwargs
+        **kwargs,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion.
@@ -98,11 +99,11 @@ def extract_usage_from_openai_completion(completion: Any) -> Dict[str, int]:
         Dict with usage statistics
     """
     usage = {}
-    if hasattr(completion, 'usage') and completion.usage:
+    if hasattr(completion, "usage") and completion.usage:
         usage = {
-            'prompt_tokens': getattr(completion.usage, 'prompt_tokens', 0),
-            'completion_tokens': getattr(completion.usage, 'completion_tokens', 0),
-            'total_tokens': getattr(completion.usage, 'total_tokens', 0)
+            "prompt_tokens": getattr(completion.usage, "prompt_tokens", 0),
+            "completion_tokens": getattr(completion.usage, "completion_tokens", 0),
+            "total_tokens": getattr(completion.usage, "total_tokens", 0),
         }
     return usage
 
@@ -117,10 +118,10 @@ def extract_usage_from_stream_chunk(chunk: Any) -> Optional[Dict[str, int]]:
     Returns:
         Dict with usage statistics or None if not present
     """
-    if hasattr(chunk, 'usage') and chunk.usage:
+    if hasattr(chunk, "usage") and chunk.usage:
         return {
-            'prompt_tokens': getattr(chunk.usage, 'prompt_tokens', 0),
-            'completion_tokens': getattr(chunk.usage, 'completion_tokens', 0),
-            'total_tokens': getattr(chunk.usage, 'total_tokens', 0)
+            "prompt_tokens": getattr(chunk.usage, "prompt_tokens", 0),
+            "completion_tokens": getattr(chunk.usage, "completion_tokens", 0),
+            "total_tokens": getattr(chunk.usage, "total_tokens", 0),
         }
     return None

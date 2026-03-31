@@ -1,6 +1,9 @@
 """Tests for Redis live spec merge (Phase 2)."""
 
-from services.workshop.workshop_live_spec import apply_live_update, merge_granular_into_spec
+from services.workshop.workshop_live_spec import (
+    apply_live_update,
+    merge_granular_into_spec,
+)
 
 
 def test_merge_granular_nodes():

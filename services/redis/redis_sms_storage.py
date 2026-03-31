@@ -60,7 +60,7 @@ class RedisSMSStorage:
         phone: str,
         code: str,
         purpose: str = "verification",
-        ttl_seconds: int = DEFAULT_SMS_TTL
+        ttl_seconds: int = DEFAULT_SMS_TTL,
     ) -> bool:
         """
         Store SMS verification code with TTL.
@@ -85,18 +85,18 @@ class RedisSMSStorage:
 
         if success:
             phone_masked = phone[:3] + "***" + phone[-4:]
-            logger.info("[SMS] Code stored for %s (purpose: %s, TTL: %ss)", phone_masked, purpose, ttl_seconds)
+            logger.info(
+                "[SMS] Code stored for %s (purpose: %s, TTL: %ss)",
+                phone_masked,
+                purpose,
+                ttl_seconds,
+            )
         else:
             logger.error("[SMS] Failed to store code for %s", phone)
 
         return success
 
-    def verify_and_remove(
-        self,
-        phone: str,
-        code: str,
-        purpose: str = "verification"
-    ) -> bool:
+    def verify_and_remove(self, phone: str, code: str, purpose: str = "verification") -> bool:
         """
         Verify SMS code and remove it (one-time use).
 
@@ -130,7 +130,11 @@ class RedisSMSStorage:
             deleted = redis_client.delex(key, code)
 
             if deleted:
-                logger.info("[SMS] Code verified and consumed for %s (purpose: %s)", phone_masked, purpose)
+                logger.info(
+                    "[SMS] Code verified and consumed for %s (purpose: %s)",
+                    phone_masked,
+                    purpose,
+                )
                 return True
 
             # DELEX returned 0: either key missing or value mismatch.
@@ -139,10 +143,9 @@ class RedisSMSStorage:
             # old GET-after-Lua had.
             if redis_client.exists(key):
                 logger.warning(
-                    "[SMS] Invalid code for %s (purpose: %s) - "
-                    "code preserved for retry",
+                    "[SMS] Invalid code for %s (purpose: %s) - code preserved for retry",
                     phone_masked,
-                    purpose
+                    purpose,
                 )
             else:
                 logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)

@@ -124,12 +124,7 @@ class WhitelistLoadLockManager:
 
         try:
             lock_id = self.get_lock_id()
-            acquired = redis.set(
-                WHITELIST_LOAD_LOCK_KEY,
-                lock_id,
-                nx=True,
-                ex=WHITELIST_LOAD_LOCK_TTL
-            )
+            acquired = redis.set(WHITELIST_LOAD_LOCK_KEY, lock_id, nx=True, ex=WHITELIST_LOAD_LOCK_TTL)
 
             if acquired:
                 logger.debug("[BayiWhitelist] Lock acquired by this worker (id=%s)", lock_id)
@@ -137,9 +132,8 @@ class WhitelistLoadLockManager:
 
             holder = redis.get(WHITELIST_LOAD_LOCK_KEY)
             logger.info(
-                "[BayiWhitelist] Another worker holds the whitelist load lock (holder=%s), "
-                "skipping whitelist load",
-                holder
+                "[BayiWhitelist] Another worker holds the whitelist load lock (holder=%s), skipping whitelist load",
+                holder,
             )
             return False
 
@@ -227,7 +221,7 @@ class BayiIPWhitelist:
                     logger.warning(
                         "[BayiWhitelist] Redis error checking IP %s, falling back to in-memory: %s",
                         ip,
-                        e
+                        e,
                     )
                     # Fall through to in-memory fallback
 
@@ -383,7 +377,10 @@ class BayiIPWhitelist:
             else:
                 errors += 1
                 if auth_module and auth_module.AUTH_MODE == "bayi":
-                    logger.warning("[BayiWhitelist] Invalid IP entry in BAYI_IP_WHITELIST: %s", ip_entry)
+                    logger.warning(
+                        "[BayiWhitelist] Invalid IP entry in BAYI_IP_WHITELIST: %s",
+                        ip_entry,
+                    )
 
         if auth_module and auth_module.AUTH_MODE == "bayi":
             if count > 0:

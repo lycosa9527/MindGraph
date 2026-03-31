@@ -36,6 +36,7 @@ class OrgMembersPage(BaseModel):
 
 class CreateChannelRequest(BaseModel):
     """Request body for creating a channel (group or lesson-study)."""
+
     name: str = Field(..., min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     avatar: Optional[str] = Field(None, max_length=50)
@@ -48,6 +49,7 @@ class CreateChannelRequest(BaseModel):
 
 class UpdateChannelRequest(BaseModel):
     """Request body for updating a channel."""
+
     name: Optional[str] = Field(None, min_length=1, max_length=100)
     description: Optional[str] = Field(None, max_length=500)
     avatar: Optional[str] = Field(None, max_length=50)
@@ -60,18 +62,21 @@ class UpdateChannelRequest(BaseModel):
 
 class CreateTopicRequest(BaseModel):
     """Request body for creating a topic (lightweight conversation)."""
+
     title: str = Field(..., min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
 
 
 class UpdateTopicRequest(BaseModel):
     """Request body for updating a topic."""
+
     title: Optional[str] = Field(None, min_length=1, max_length=200)
     description: Optional[str] = Field(None, max_length=1000)
 
 
 class SendMessageRequest(BaseModel):
     """Request body for sending a message."""
+
     content: str = Field(..., min_length=1, max_length=5000)
     message_type: str = "text"
     parent_id: Optional[int] = None
@@ -79,19 +84,23 @@ class SendMessageRequest(BaseModel):
 
 class EditMessageRequest(BaseModel):
     """Request body for editing a message."""
+
     content: str = Field(..., min_length=1, max_length=5000)
 
 
 class SendDMRequest(BaseModel):
     """Request body for sending a direct message."""
+
     content: str = Field(..., min_length=1, max_length=5000)
     message_type: str = "text"
 
 
 # ── Channel settings / preferences ──────────────────────────────
 
+
 class UpdateMemberPrefsRequest(BaseModel):
     """Request body for updating per-user channel subscription prefs."""
+
     color: Optional[str] = Field(None, max_length=10)
     desktop_notifications: Optional[bool] = None
     email_notifications: Optional[bool] = None
@@ -99,6 +108,7 @@ class UpdateMemberPrefsRequest(BaseModel):
 
 class UpdateChannelPermissionsRequest(BaseModel):
     """Request body for updating channel-level settings."""
+
     channel_type: Optional[str] = Field(None, max_length=20)
     posting_policy: Optional[str] = Field(None, max_length=20)
     is_default: Optional[bool] = None
@@ -106,26 +116,32 @@ class UpdateChannelPermissionsRequest(BaseModel):
 
 class ReorderTeachingGroupsRequest(BaseModel):
     """Ordered list of top-level teaching group channel IDs (same org)."""
+
     channel_ids: List[int] = Field(..., min_length=1)
 
 
 class InviteChannelMemberRequest(BaseModel):
     """Add an org colleague to a channel (manager invite)."""
+
     user_id: int = Field(..., ge=1)
 
 
 # ── Topic settings ───────────────────────────────────────────────
 
+
 class MoveTopicRequest(BaseModel):
     """Request body for moving a topic to another channel."""
+
     target_channel_id: int
 
 
 class RenameTopicRequest(BaseModel):
     """Request body for renaming a topic."""
+
     title: str = Field(..., min_length=1, max_length=200)
 
 
 class SetTopicVisibilityRequest(BaseModel):
     """Request body for setting user topic visibility."""
+
     visibility_policy: str = Field(..., max_length=20)

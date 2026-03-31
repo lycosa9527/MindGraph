@@ -40,8 +40,14 @@ export function measureTreeMapTopicDimensions(text: string): { width: number; he
       measureOpts
     )
     return {
-      width: Math.max(contentW + 2 * TREE_MAP_TOPIC_PADDING_X + 2 * b, NODE_MIN_DIMENSIONS.topic.minWidth),
-      height: Math.max(Math.ceil(contentH) + 2 * TREE_MAP_TOPIC_PADDING_Y + 2 * b, NODE_MIN_DIMENSIONS.topic.minHeight),
+      width: Math.max(
+        contentW + 2 * TREE_MAP_TOPIC_PADDING_X + 2 * b,
+        NODE_MIN_DIMENSIONS.topic.minWidth
+      ),
+      height: Math.max(
+        Math.ceil(contentH) + 2 * TREE_MAP_TOPIC_PADDING_Y + 2 * b,
+        NODE_MIN_DIMENSIONS.topic.minHeight
+      ),
     }
   }
 

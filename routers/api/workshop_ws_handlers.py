@@ -47,9 +47,14 @@ def build_participants_with_names(participant_ids: List[int]) -> List[Dict[str, 
         if redis_user_cache:
             participant_user = redis_user_cache.get_by_id(pid)
             if participant_user:
-                p_username = getattr(
-                    participant_user, "username", None,
-                ) or f"User {pid}"
+                p_username = (
+                    getattr(
+                        participant_user,
+                        "username",
+                        None,
+                    )
+                    or f"User {pid}"
+                )
                 out.append({"user_id": pid, "username": p_username})
             else:
                 out.append({"user_id": pid, "username": f"User {pid}"})
@@ -98,16 +103,20 @@ async def _handle_node_editing(ctx: CollabWsContext, message: Dict[str, Any]) ->
     editing = message.get("editing", False)
     username = getattr(ctx.user, "username", None) or f"User {ctx.user.id}"
     if not node_id or not isinstance(node_id, str) or len(node_id) > 200:
-        await ctx.websocket.send_json({
-            "type": "error",
-            "message": "Invalid node_id",
-        })
+        await ctx.websocket.send_json(
+            {
+                "type": "error",
+                "message": "Invalid node_id",
+            }
+        )
         return
     if not node_id:
-        await ctx.websocket.send_json({
-            "type": "error",
-            "message": "Missing node_id in node_editing",
-        })
+        await ctx.websocket.send_json(
+            {
+                "type": "error",
+                "message": "Missing node_id in node_editing",
+            }
+        )
         return
 
     if ctx.code not in active_editors:
@@ -148,10 +157,12 @@ async def _handle_node_selected(ctx: CollabWsContext, message: Dict[str, Any]) -
     selected = bool(message.get("selected", True))
     sel_username = getattr(ctx.user, "username", None) or f"User {ctx.user.id}"
     if not node_sel or not isinstance(node_sel, str) or len(node_sel) > 200:
-        await ctx.websocket.send_json({
-            "type": "error",
-            "message": "Invalid node_id",
-        })
+        await ctx.websocket.send_json(
+            {
+                "type": "error",
+                "message": "Invalid node_id",
+            }
+        )
         return
     sel_color = ctx.user_colors[ctx.user.id % len(ctx.user_colors)]
     await broadcast_to_others(
@@ -206,7 +217,8 @@ async def _handle_update(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
 
     await workshop_service.refresh_participant_ttl(ctx.code, ctx.user.id)
     await workshop_service.refresh_mutation_idle_for_update(
-        ctx.code, ctx.user.id,
+        ctx.code,
+        ctx.user.id,
     )
 
     redis = get_redis()
@@ -242,9 +254,7 @@ async def _handle_update(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
     }
 
     if nodes is not None or connections is not None:
-        editors_redis = (
-            load_editors(ctx.code) if is_ws_fanout_enabled() else None
-        )
+        editors_redis = load_editors(ctx.code) if is_ws_fanout_enabled() else None
         has_payload = False
         if nodes is not None:
             filtered_nodes = filter_granular_nodes_for_locks(
@@ -298,29 +308,35 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
     while True:
         data = await ctx.websocket.receive_text()
         if inbound_text_exceeds_limit(data, DEFAULT_MAX_WS_TEXT_BYTES):
-            await ctx.websocket.send_json({
-                "type": "error",
-                "message": "Message too large",
-            })
+            await ctx.websocket.send_json(
+                {
+                    "type": "error",
+                    "message": "Message too large",
+                }
+            )
             continue
         if not ctx.rate_limiter.allow():
             try:
                 record_ws_rate_limit_hit()
             except Exception as exc:
                 logger.debug("Failed to record rate limit metric: %s", exc)
-            await ctx.websocket.send_json({
-                "type": "error",
-                "message": "Rate limit exceeded",
-            })
+            await ctx.websocket.send_json(
+                {
+                    "type": "error",
+                    "message": "Rate limit exceeded",
+                }
+            )
             continue
 
         try:
             message = json.loads(data)
         except json.JSONDecodeError:
-            await ctx.websocket.send_json({
-                "type": "error",
-                "message": "Invalid JSON",
-            })
+            await ctx.websocket.send_json(
+                {
+                    "type": "error",
+                    "message": "Invalid JSON",
+                }
+            )
             continue
 
         msg_type = message.get("type")
@@ -329,7 +345,9 @@ async def run_canvas_collab_receive_loop(ctx: CollabWsContext) -> None:
             await handler(ctx, message)
             continue
 
-        await ctx.websocket.send_json({
-            "type": "error",
-            "message": f"Unknown message type: {msg_type}",
-        })
+        await ctx.websocket.send_json(
+            {
+                "type": "error",
+                "message": f"Unknown message type: {msg_type}",
+            }
+        )

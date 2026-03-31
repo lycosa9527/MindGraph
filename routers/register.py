@@ -4,6 +4,7 @@ Router Registration Module
 Centralized router registration for all FastAPI routes.
 This module handles the registration order and conditional feature flags.
 """
+
 import logging
 
 from fastapi import FastAPI
@@ -48,7 +49,11 @@ if config.FEATURE_DEBATEVERSE:
         from routers.features import debateverse as DEBATEVERSE_MODULE
     except Exception as e:
         DEBATEVERSE_MODULE = None
-        logger.debug("[RouterRegistration] Failed to import debateverse router: %s", e, exc_info=True)
+        logger.debug(
+            "[RouterRegistration] Failed to import debateverse router: %s",
+            e,
+            exc_info=True,
+        )
 else:
     logger.debug("[RouterRegistration] DebateVerse feature disabled via FEATURE_DEBATEVERSE flag")
 
@@ -58,7 +63,11 @@ if config.FEATURE_COMMUNITY:
         from routers.features.community import router as COMMUNITY_MODULE
     except Exception as e:
         COMMUNITY_MODULE = None
-        logger.debug("[RouterRegistration] Failed to import community router: %s", e, exc_info=True)
+        logger.debug(
+            "[RouterRegistration] Failed to import community router: %s",
+            e,
+            exc_info=True,
+        )
 else:
     logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
 
@@ -78,6 +87,7 @@ if config.FEATURE_WORKSHOP_CHAT:
     try:
         from routers.features import workshop_chat as _wc_mod
         from routers.features import workshop_chat_ws as _wc_ws_mod
+
         WORKSHOP_CHAT_MODULE = _wc_mod.router
         WORKSHOP_CHAT_WS_MODULE = _wc_ws_mod.router
     except Exception as e:
@@ -96,7 +106,7 @@ else:
 def register_routers(app: FastAPI) -> None:
     """
     Register all FastAPI routers in the correct order.
-    
+
     Router registration order is critical:
     1. Health check endpoints (no prefix)
     2. Core API routes (must be before vue_spa catch-all)
@@ -104,7 +114,7 @@ def register_routers(app: FastAPI) -> None:
     4. Admin routers (must be before vue_spa)
     5. Remaining feature routers with API endpoints (before vue_spa)
     6. Vue SPA catch-all route (MUST be last)
-    
+
     Args:
         app: FastAPI application instance
     """

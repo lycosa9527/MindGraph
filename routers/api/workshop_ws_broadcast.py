@@ -16,9 +16,7 @@ from services.workshop.workshop_service import workshop_service
 logger = logging.getLogger(__name__)
 
 
-async def broadcast_to_others(
-    code: str, sender_id: int, message: Dict[str, Any]
-) -> None:
+async def broadcast_to_others(code: str, sender_id: int, message: Dict[str, Any]) -> None:
     """Broadcast message to all participants except sender."""
     if is_ws_fanout_enabled():
         try:
@@ -26,10 +24,16 @@ async def broadcast_to_others(
         except (TypeError, ValueError):
             logger.warning("[WorkshopWS] broadcast_to_others: serialize failed")
             return
-        await publish_workshop_fanout_async({
-            "v": 1, "k": "ws", "code": code, "mode": "others",
-            "ex": sender_id, "d": data_str,
-        })
+        await publish_workshop_fanout_async(
+            {
+                "v": 1,
+                "k": "ws",
+                "code": code,
+                "mode": "others",
+                "ex": sender_id,
+                "d": data_str,
+            }
+        )
         return
 
     if code not in active_connections:
@@ -66,10 +70,16 @@ async def broadcast_to_all(code: str, message: Dict[str, Any]) -> None:
         except (TypeError, ValueError):
             logger.warning("[WorkshopWS] broadcast_to_all: serialize failed")
             return
-        await publish_workshop_fanout_async({
-            "v": 1, "k": "ws", "code": code, "mode": "all",
-            "ex": None, "d": data_str,
-        })
+        await publish_workshop_fanout_async(
+            {
+                "v": 1,
+                "k": "ws",
+                "code": code,
+                "mode": "all",
+                "ex": None,
+                "d": data_str,
+            }
+        )
         return
 
     if code not in active_connections:

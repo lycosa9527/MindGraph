@@ -24,7 +24,11 @@ from models.domain.auth import User, Organization
 from models.domain.token_usage import TokenUsage
 from utils.auth import get_current_user, is_admin
 
-from ..dependencies import get_language_dependency, require_admin, require_admin_or_manager
+from ..dependencies import (
+    get_language_dependency,
+    require_admin,
+    require_admin_or_manager,
+)
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
 
 logger = logging.getLogger(__name__)
@@ -38,9 +42,7 @@ def _sql_count(column: Any) -> ColumnElement:
 
 
 @router.get("/admin/status")
-def get_admin_status(
-    current_user: User = Depends(get_current_user)
-) -> Dict[str, bool]:
+def get_admin_status(current_user: User = Depends(get_current_user)) -> Dict[str, bool]:
     """
     Lightweight endpoint to check if current user is admin.
 
@@ -58,7 +60,7 @@ def get_stats_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    _lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get system statistics (ADMIN ONLY)"""
     total_users = db.query(User).count()
@@ -67,17 +69,12 @@ def get_stats_admin(
     # Performance optimization: Get user counts for all organizations in one GROUP BY query
     # instead of N+1 queries (one per organization)
     users_by_org = {}
-    user_counts_query = db.query(
-        Organization.id,
-        Organization.name,
-        _sql_count(User.id).label('user_count')
-    ).outerjoin(
-        User,
-        Organization.id == User.organization_id
-    ).group_by(
-        Organization.id,
-        Organization.name
-    ).all()
+    user_counts_query = (
+        db.query(Organization.id, Organization.name, _sql_count(User.id).label("user_count"))
+        .outerjoin(User, Organization.id == User.organization_id)
+        .group_by(Organization.id, Organization.name)
+        .all()
+    )
 
     # Build dictionary with organization name as key
     for count_result in user_counts_query:
@@ -96,52 +93,48 @@ def get_stats_admin(
     recent_registrations = db.query(User).filter(User.created_at >= today_start).count()
 
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
-    token_stats = {
-        "input_tokens": 0,
-        "output_tokens": 0,
-        "total_tokens": 0
-    }
+    token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
     # Per-organization token usage (for school-level reporting)
     token_stats_by_org = {}
 
     try:
         # Global token stats for past week
-        week_token_stats = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.created_at >= week_ago,
-            TokenUsage.success
-        ).first()
+        week_token_stats = (
+            db.query(
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+            )
+            .filter(TokenUsage.created_at >= week_ago, TokenUsage.success)
+            .first()
+        )
 
         if week_token_stats:
             token_stats = {
                 "input_tokens": int(week_token_stats.input_tokens or 0),
                 "output_tokens": int(week_token_stats.output_tokens or 0),
-                "total_tokens": int(week_token_stats.total_tokens or 0)
+                "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
         # Per-organization TOTAL token usage (all time, for active school ranking)
         # Use LEFT JOIN to include organizations with no token usage
-        org_token_stats = db.query(
-            Organization.id,
-            Organization.name,
-            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
-            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
-            func.coalesce(_sql_count(TokenUsage.id), 0).label('request_count')
-        ).outerjoin(
-            TokenUsage,
-            and_(
-                Organization.id == TokenUsage.organization_id,
-                TokenUsage.success
+        org_token_stats = (
+            db.query(
+                Organization.id,
+                Organization.name,
+                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                func.coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
             )
-        ).group_by(
-            Organization.id,
-            Organization.name
-        ).all()
+            .outerjoin(
+                TokenUsage,
+                and_(Organization.id == TokenUsage.organization_id, TokenUsage.success),
+            )
+            .group_by(Organization.id, Organization.name)
+            .all()
+        )
 
         # Build per-organization stats dictionary
         # Only include organizations that actually have token usage
@@ -152,7 +145,7 @@ def get_stats_admin(
                     "input_tokens": int(org_stat.input_tokens or 0),
                     "output_tokens": int(org_stat.output_tokens or 0),
                     "total_tokens": int(org_stat.total_tokens or 0),
-                    "request_count": int(org_stat.request_count or 0)
+                    "request_count": int(org_stat.request_count or 0),
                 }
 
     except (ImportError, Exception) as e:
@@ -165,7 +158,7 @@ def get_stats_admin(
         "users_by_org": users_by_org,
         "recent_registrations": recent_registrations,
         "token_stats": token_stats,  # Global token stats
-        "token_stats_by_org": token_stats_by_org  # Per-organization TOTAL token stats (all time)
+        "token_stats_by_org": token_stats_by_org,  # Per-organization TOTAL token stats (all time)
     }
 
 
@@ -174,7 +167,7 @@ def get_school_stats(
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
     db: Session = Depends(get_db),
-    _lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
     Get school-scoped statistics (ADMIN or MANAGER).
@@ -187,27 +180,24 @@ def get_school_stats(
         if effective_org_id is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="organization_id required for admin"
+                detail="organization_id required for admin",
             )
     else:
         effective_org_id = current_user.organization_id
         if effective_org_id is None:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Manager must belong to an organization"
+                detail="Manager must belong to an organization",
             )
         if organization_id is not None and organization_id != effective_org_id:
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Manager can only view their own organization"
+                detail="Manager can only view their own organization",
             )
 
     org = db.query(Organization).filter(Organization.id == effective_org_id).first()
     if not org:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Organization not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
 
     today_start = get_beijing_today_start_utc()
     beijing_now = get_beijing_now()
@@ -215,10 +205,9 @@ def get_school_stats(
     week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
 
     total_users = db.query(User).filter(User.organization_id == effective_org_id).count()
-    recent_registrations = db.query(User).filter(
-        User.organization_id == effective_org_id,
-        User.created_at >= today_start
-    ).count()
+    recent_registrations = (
+        db.query(User).filter(User.organization_id == effective_org_id, User.created_at >= today_start).count()
+    )
 
     token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     token_stats_by_org = {}
@@ -226,31 +215,36 @@ def get_school_stats(
     top_users = []
 
     try:
-        week_token_stats = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.organization_id == effective_org_id,
-            TokenUsage.created_at >= week_ago,
-            TokenUsage.success
-        ).first()
+        week_token_stats = (
+            db.query(
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+            )
+            .filter(
+                TokenUsage.organization_id == effective_org_id,
+                TokenUsage.created_at >= week_ago,
+                TokenUsage.success,
+            )
+            .first()
+        )
 
         if week_token_stats:
             token_stats = {
                 "input_tokens": int(week_token_stats.input_tokens or 0),
                 "output_tokens": int(week_token_stats.output_tokens or 0),
-                "total_tokens": int(week_token_stats.total_tokens or 0)
+                "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
-        org_token_stats = db.query(
-            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
-            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens'),
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
-        ).filter(
-            TokenUsage.organization_id == effective_org_id,
-            TokenUsage.success
-        ).first()
+        org_token_stats = (
+            db.query(
+                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+            )
+            .filter(TokenUsage.organization_id == effective_org_id, TokenUsage.success)
+            .first()
+        )
 
         if org_token_stats:
             token_stats_by_org[org.name] = {
@@ -258,41 +252,37 @@ def get_school_stats(
                 "input_tokens": int(org_token_stats.input_tokens or 0),
                 "output_tokens": int(org_token_stats.output_tokens or 0),
                 "total_tokens": int(org_token_stats.total_tokens or 0),
-                "request_count": 0
+                "request_count": 0,
             }
 
-        top_users_query = db.query(
-            User.id,
-            User.phone,
-            User.name,
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens')
-        ).outerjoin(
-            TokenUsage,
-            and_(
-                User.id == TokenUsage.user_id,
-                TokenUsage.success
+        top_users_query = (
+            db.query(
+                User.id,
+                User.phone,
+                User.name,
+                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
             )
-        ).filter(
-            User.organization_id == effective_org_id
-        ).group_by(
-            User.id,
-            User.phone,
-            User.name
-        ).order_by(
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
-        ).limit(10).all()
+            .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
+            .filter(User.organization_id == effective_org_id)
+            .group_by(User.id, User.phone, User.name)
+            .order_by(func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc())
+            .limit(10)
+            .all()
+        )
 
         top_users = []
         for u in top_users_query:
             masked_phone = u.phone
             if u.phone and len(u.phone) == 11:
                 masked_phone = u.phone[:3] + "****" + u.phone[-4:]
-            top_users.append({
-                "id": u.id,
-                "phone": masked_phone,
-                "name": u.name or u.phone,
-                "total_tokens": int(u.total_tokens or 0)
-            })
+            top_users.append(
+                {
+                    "id": u.id,
+                    "phone": masked_phone,
+                    "name": u.name or u.phone,
+                    "total_tokens": int(u.total_tokens or 0),
+                }
+            )
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage not available: %s", e)
 
@@ -316,19 +306,19 @@ def _resolve_school_org_id(
         if organization_id is None:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="organization_id required for admin"
+                detail="organization_id required for admin",
             )
         return organization_id
     effective = current_user.organization_id
     if effective is None:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Manager must belong to an organization"
+            detail="Manager must belong to an organization",
         )
     if organization_id is not None and organization_id != effective:
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Manager can only view their own organization"
+            detail="Manager can only view their own organization",
         )
     return effective
 
@@ -339,7 +329,7 @@ def get_school_token_stats(
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
     db: Session = Depends(get_db),
-    lang: str = Depends(get_language_dependency)
+    lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
     Get token stats for a school (ADMIN or MANAGER).
@@ -351,7 +341,7 @@ def get_school_token_stats(
         organization_id=org_id,
         _current_user=current_user,
         db=db,
-        _lang=lang
+        _lang=lang,
     )
 
 
@@ -361,7 +351,7 @@ def get_token_stats_admin(
     organization_id: Optional[int] = None,
     _current_user: User = Depends(require_admin),
     db: Session = Depends(get_db),
-    _lang: str = Depends(get_language_dependency)
+    _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get detailed token usage statistics (ADMIN ONLY)
 
@@ -395,20 +385,25 @@ def get_token_stats_admin(
     top_users = []
 
     # Initialize breakdown by service type
-    empty_breakdown = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0, "request_count": 0}
+    empty_breakdown = {
+        "input_tokens": 0,
+        "output_tokens": 0,
+        "total_tokens": 0,
+        "request_count": 0,
+    }
     by_service = {
         "mindgraph": {
             "today": empty_breakdown.copy(),
             "week": empty_breakdown.copy(),
             "month": empty_breakdown.copy(),
-            "total": empty_breakdown.copy()
+            "total": empty_breakdown.copy(),
         },
         "mindmate": {
             "today": empty_breakdown.copy(),
             "week": empty_breakdown.copy(),
             "month": empty_breakdown.copy(),
-            "total": empty_breakdown.copy()
-        }
+            "total": empty_breakdown.copy(),
+        },
     }
 
     # Build base filter for organization if specified
@@ -419,33 +414,30 @@ def get_token_stats_admin(
             if not org:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Organization not found"
+                    detail="Organization not found",
                 )
             org_filter.append(TokenUsage.organization_id == organization_id)
 
         # Today stats - sum all token usage today (including records with user_id=NULL)
         # Note: This includes API key usage without user_id, so it may be larger than sum of top users
         today_query = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.created_at >= today_start,
-            TokenUsage.success
-        )
+            func.sum(TokenUsage.input_tokens).label("input_tokens"),
+            func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            func.sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).filter(TokenUsage.created_at >= today_start, TokenUsage.success)
         if org_filter:
             today_query = today_query.filter(*org_filter)
         today_token_stats = today_query.first()
 
         # Also calculate today stats for authenticated users only (for comparison)
         today_user_token_stats_query = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
+            func.sum(TokenUsage.input_tokens).label("input_tokens"),
+            func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            func.sum(TokenUsage.total_tokens).label("total_tokens"),
         ).filter(
             TokenUsage.created_at >= today_start,
             TokenUsage.success,
-            TokenUsage.user_id.isnot(None)
+            TokenUsage.user_id.isnot(None),
         )
         if org_filter:
             today_user_token_stats_query = today_user_token_stats_query.filter(*org_filter)
@@ -455,34 +447,34 @@ def get_token_stats_admin(
             today_stats = {
                 "input_tokens": int(today_token_stats.input_tokens or 0),
                 "output_tokens": int(today_token_stats.output_tokens or 0),
-                "total_tokens": int(today_token_stats.total_tokens or 0)
+                "total_tokens": int(today_token_stats.total_tokens or 0),
             }
 
         # Verify consistency: sum of top users should not exceed authenticated user total
         if today_user_token_stats:
             authenticated_total = int(today_user_token_stats.total_tokens or 0)
-            all_total = today_stats.get('total_tokens', 0)
+            all_total = today_stats.get("total_tokens", 0)
             # Log for debugging if there's a discrepancy
-            logger.debug("Today token stats - All: %s, Authenticated users only: %s", all_total, authenticated_total)
+            logger.debug(
+                "Today token stats - All: %s, Authenticated users only: %s",
+                all_total,
+                authenticated_total,
+            )
 
             # Warn if authenticated total exceeds all total (shouldn't happen)
             if authenticated_total > all_total:
                 logger.warning(
-                    "Token count mismatch: Authenticated users (%s) > "
-                    "All users (%s)",
+                    "Token count mismatch: Authenticated users (%s) > All users (%s)",
                     authenticated_total,
-                    all_total
+                    all_total,
                 )
 
         # Past week stats
         week_query = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.created_at >= week_ago,
-            TokenUsage.success
-        )
+            func.sum(TokenUsage.input_tokens).label("input_tokens"),
+            func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            func.sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).filter(TokenUsage.created_at >= week_ago, TokenUsage.success)
         if org_filter:
             week_query = week_query.filter(*org_filter)
         week_token_stats = week_query.first()
@@ -491,18 +483,15 @@ def get_token_stats_admin(
             week_stats = {
                 "input_tokens": int(week_token_stats.input_tokens or 0),
                 "output_tokens": int(week_token_stats.output_tokens or 0),
-                "total_tokens": int(week_token_stats.total_tokens or 0)
+                "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
         # Past month stats
         month_query = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.created_at >= month_ago,
-            TokenUsage.success
-        )
+            func.sum(TokenUsage.input_tokens).label("input_tokens"),
+            func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            func.sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).filter(TokenUsage.created_at >= month_ago, TokenUsage.success)
         if org_filter:
             month_query = month_query.filter(*org_filter)
         month_token_stats = month_query.first()
@@ -511,17 +500,15 @@ def get_token_stats_admin(
             month_stats = {
                 "input_tokens": int(month_token_stats.input_tokens or 0),
                 "output_tokens": int(month_token_stats.output_tokens or 0),
-                "total_tokens": int(month_token_stats.total_tokens or 0)
+                "total_tokens": int(month_token_stats.total_tokens or 0),
             }
 
         # Total stats (all time)
         total_query = db.query(
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens')
-        ).filter(
-            TokenUsage.success
-        )
+            func.sum(TokenUsage.input_tokens).label("input_tokens"),
+            func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            func.sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).filter(TokenUsage.success)
         if org_filter:
             total_query = total_query.filter(*org_filter)
         total_token_stats = total_query.first()
@@ -530,7 +517,7 @@ def get_token_stats_admin(
             total_stats = {
                 "input_tokens": int(total_token_stats.input_tokens or 0),
                 "output_tokens": int(total_token_stats.output_tokens or 0),
-                "total_tokens": int(total_token_stats.total_tokens or 0)
+                "total_tokens": int(total_token_stats.total_tokens or 0),
             }
 
         # Service breakdown: MindGraph vs MindMate
@@ -539,10 +526,10 @@ def get_token_stats_admin(
             """Get stats grouped by service type (mindgraph vs mindmate)"""
             query = db.query(
                 TokenUsage.request_type,
-                func.sum(TokenUsage.input_tokens).label('input_tokens'),
-                func.sum(TokenUsage.output_tokens).label('output_tokens'),
-                func.sum(TokenUsage.total_tokens).label('total_tokens'),
-                _sql_count(TokenUsage.id).label('request_count')
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                _sql_count(TokenUsage.id).label("request_count"),
             ).filter(TokenUsage.success)
 
             if date_filter is not None:
@@ -553,16 +540,21 @@ def get_token_stats_admin(
             return query.group_by(TokenUsage.request_type).all()
 
         # Get breakdown for each time period
-        for period, date_filter in [("today", today_start), ("week", week_ago), ("month", month_ago), ("total", None)]:
+        for period, date_filter in [
+            ("today", today_start),
+            ("week", week_ago),
+            ("month", month_ago),
+            ("total", None),
+        ]:
             service_results = get_service_stats(date_filter)
             for result in service_results:
-                request_type = result.request_type or 'unknown'
+                request_type = result.request_type or "unknown"
                 # Map request_type to service category
-                if request_type == 'mindmate':
-                    service = 'mindmate'
+                if request_type == "mindmate":
+                    service = "mindmate"
                 else:
                     # All other types (diagram_generation, node_palette, autocomplete, etc.) are MindGraph
-                    service = 'mindgraph'
+                    service = "mindgraph"
 
                 by_service[service][period]["input_tokens"] += int(result.input_tokens or 0)
                 by_service[service][period]["output_tokens"] += int(result.output_tokens or 0)
@@ -572,36 +564,28 @@ def get_token_stats_admin(
         # Top 10 users by total tokens (all time), including organization name
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
         # Skip top_users if organization_id is specified (not needed for organization-specific stats)
-        top_users_query = db.query(
-            User.id,
-            User.phone,
-            User.name,
-            Organization.id.label('organization_id'),
-            Organization.name.label('organization_name'),
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).label('total_tokens'),
-            func.coalesce(func.sum(TokenUsage.input_tokens), 0).label('input_tokens'),
-            func.coalesce(func.sum(TokenUsage.output_tokens), 0).label('output_tokens')
-        ).outerjoin(
-            Organization,
-            User.organization_id == Organization.id
-        ).outerjoin(
-            TokenUsage,
-            and_(
-                User.id == TokenUsage.user_id,
-                TokenUsage.success
+        top_users_query = (
+            db.query(
+                User.id,
+                User.phone,
+                User.name,
+                Organization.id.label("organization_id"),
+                Organization.name.label("organization_name"),
+                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
             )
+            .outerjoin(Organization, User.organization_id == Organization.id)
+            .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
         )
         if org_filter:
             top_users_query = top_users_query.filter(*org_filter)
-        top_users_query = top_users_query.group_by(
-            User.id,
-            User.phone,
-            User.name,
-            Organization.id,
-            Organization.name
-        ).order_by(
-            func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc()
-        ).limit(10).all()
+        top_users_query = (
+            top_users_query.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
+            .order_by(func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc())
+            .limit(10)
+            .all()
+        )
 
         top_users = [
             {
@@ -611,7 +595,7 @@ def get_token_stats_admin(
                 "organization_name": user.organization_name or "",
                 "input_tokens": int(user.input_tokens or 0),
                 "output_tokens": int(user.output_tokens or 0),
-                "total_tokens": int(user.total_tokens or 0)
+                "total_tokens": int(user.total_tokens or 0),
             }
             for user in top_users_query
         ]
@@ -620,40 +604,36 @@ def get_token_stats_admin(
         # Use inner join to only include users with actual token usage today
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
         # Skip top_users_today if organization_id is specified (not needed for organization-specific stats)
-        top_users_today_query = db.query(
-            User.id,
-            User.phone,
-            User.name,
-            Organization.id.label('organization_id'),
-            Organization.name.label('organization_name'),
-            func.sum(TokenUsage.total_tokens).label('total_tokens'),
-            func.sum(TokenUsage.input_tokens).label('input_tokens'),
-            func.sum(TokenUsage.output_tokens).label('output_tokens')
-        ).join(
-            Organization,
-            User.organization_id == Organization.id,
-            isouter=True
-        ).join(
-            TokenUsage,
-            and_(
-                User.id == TokenUsage.user_id,
-                TokenUsage.created_at >= today_start,
-                TokenUsage.success
+        top_users_today_query = (
+            db.query(
+                User.id,
+                User.phone,
+                User.name,
+                Organization.id.label("organization_id"),
+                Organization.name.label("organization_name"),
+                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                func.sum(TokenUsage.input_tokens).label("input_tokens"),
+                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+            )
+            .join(Organization, User.organization_id == Organization.id, isouter=True)
+            .join(
+                TokenUsage,
+                and_(
+                    User.id == TokenUsage.user_id,
+                    TokenUsage.created_at >= today_start,
+                    TokenUsage.success,
+                ),
             )
         )
         if org_filter:
             top_users_today_query = top_users_today_query.filter(*org_filter)
-        top_users_today_query = top_users_today_query.group_by(
-            User.id,
-            User.phone,
-            User.name,
-            Organization.id,
-            Organization.name
-        ).having(
-            func.sum(TokenUsage.total_tokens) > 0
-        ).order_by(
-            func.sum(TokenUsage.total_tokens).desc()
-        ).limit(10).all()
+        top_users_today_query = (
+            top_users_today_query.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
+            .having(func.sum(TokenUsage.total_tokens) > 0)
+            .order_by(func.sum(TokenUsage.total_tokens).desc())
+            .limit(10)
+            .all()
+        )
 
         top_users_today = [
             {
@@ -663,7 +643,7 @@ def get_token_stats_admin(
                 "organization_name": user.organization_name or "",
                 "input_tokens": int(user.input_tokens or 0),
                 "output_tokens": int(user.output_tokens or 0),
-                "total_tokens": int(user.total_tokens or 0)
+                "total_tokens": int(user.total_tokens or 0),
             }
             for user in top_users_today_query
         ]
@@ -671,33 +651,30 @@ def get_token_stats_admin(
         # Verify consistency: sum of top 10 users today should not exceed authenticated user total
         if today_user_token_stats and top_users_today:
             authenticated_total = int(today_user_token_stats.total_tokens or 0)
-            top10_sum = sum(user['total_tokens'] for user in top_users_today)
-            all_total = today_stats.get('total_tokens', 0)
+            top10_sum = sum(user["total_tokens"] for user in top_users_today)
+            all_total = today_stats.get("total_tokens", 0)
 
             # Log for debugging
             logger.debug(
-                "Today token verification - All: %s, Authenticated: %s, "
-                "Top 10 sum: %s",
+                "Today token verification - All: %s, Authenticated: %s, Top 10 sum: %s",
                 all_total,
                 authenticated_total,
-                top10_sum
+                top10_sum,
             )
 
             # Warn if top 10 sum exceeds authenticated total (indicates double counting or grouping issue)
             if top10_sum > authenticated_total:
                 logger.warning(
-                    "Token count mismatch: Top 10 users sum (%s) > "
-                    "Authenticated users total (%s)",
+                    "Token count mismatch: Top 10 users sum (%s) > Authenticated users total (%s)",
                     top10_sum,
-                    authenticated_total
+                    authenticated_total,
                 )
             # Warn if authenticated total exceeds all total (shouldn't happen)
             if authenticated_total > all_total:
                 logger.warning(
-                    "Token count mismatch: Authenticated users (%s) > "
-                    "All users (%s)",
+                    "Token count mismatch: Authenticated users (%s) > All users (%s)",
                     authenticated_total,
-                    all_total
+                    all_total,
                 )
 
     except HTTPException:
@@ -712,6 +689,6 @@ def get_token_stats_admin(
         "past_month": month_stats,
         "total": total_stats,
         "top_users": top_users,
-        "top_users_today": top_users_today if 'top_users_today' in locals() else [],
-        "by_service": by_service  # MindGraph vs MindMate breakdown
+        "top_users_today": top_users_today if "top_users_today" in locals() else [],
+        "by_service": by_service,  # MindGraph vs MindMate breakdown
     }

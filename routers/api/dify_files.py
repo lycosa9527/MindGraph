@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional
 import logging
 import os
@@ -26,12 +27,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["api"])
 
 
-@router.post('/dify/files/upload')
+@router.post("/dify/files/upload")
 async def upload_file_to_dify(
     file: UploadFile = File(...),
     user_id: str = Form(...),
     x_language: Optional[str] = None,
-    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    _current_user: Optional[User] = Depends(get_current_user_or_api_key),
 ):
     """
     Upload a file to Dify for use in chat messages.
@@ -52,15 +53,12 @@ async def upload_file_to_dify(
     lang = get_request_language(x_language)
 
     # Get Dify configuration
-    api_key = os.getenv('DIFY_API_KEY')
-    api_url = os.getenv('DIFY_API_URL', 'https://api.dify.ai/v1')
+    api_key = os.getenv("DIFY_API_KEY")
+    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
 
     if not api_key:
         logger.error("DIFY_API_KEY not configured")
-        raise HTTPException(
-            status_code=500,
-            detail=Messages.error("ai_not_configured", lang)
-        )
+        raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))
 
     # Validate file
     if not file.filename:
@@ -75,20 +73,25 @@ async def upload_file_to_dify(
     if file_size > max_size:
         raise HTTPException(
             status_code=413,
-            detail=f"File too large. Maximum size is 15MB, got {file_size / 1024 / 1024:.1f}MB"
+            detail=f"File too large. Maximum size is 15MB, got {file_size / 1024 / 1024:.1f}MB",
         )
 
-    logger.info("Uploading file to Dify: %s (%s bytes) for user %s", file.filename, file_size, user_id)
+    logger.info(
+        "Uploading file to Dify: %s (%s bytes) for user %s",
+        file.filename,
+        file_size,
+        user_id,
+    )
 
     try:
         # Create form data for Dify upload
         form_data = aiohttp.FormData()
-        form_data.add_field('user', user_id)
+        form_data.add_field("user", user_id)
         form_data.add_field(
-            'file',
+            "file",
             content,
             filename=file.filename,
-            content_type=file.content_type or 'application/octet-stream'
+            content_type=file.content_type or "application/octet-stream",
         )
 
         # Upload to Dify
@@ -109,11 +112,11 @@ async def upload_file_to_dify(
                     else:
                         raise HTTPException(
                             status_code=response.status,
-                            detail=f"File upload failed: {error_text}"
+                            detail=f"File upload failed: {error_text}",
                         )
 
                 result = await response.json()
-                logger.info("File uploaded successfully: %s", result.get('id'))
+                logger.info("File uploaded successfully: %s", result.get("id"))
 
                 return {
                     "success": True,
@@ -123,8 +126,8 @@ async def upload_file_to_dify(
                         "size": result.get("size"),
                         "extension": result.get("extension"),
                         "mime_type": result.get("mime_type"),
-                        "created_at": result.get("created_at")
-                    }
+                        "created_at": result.get("created_at"),
+                    },
                 }
 
     except aiohttp.ClientError as e:
@@ -137,10 +140,10 @@ async def upload_file_to_dify(
         raise HTTPException(status_code=500, detail=str(e)) from e
 
 
-@router.get('/dify/app/parameters')
+@router.get("/dify/app/parameters")
 async def get_dify_parameters(
     x_language: Optional[str] = None,
-    _current_user: Optional[User] = Depends(get_current_user_or_api_key)
+    _current_user: Optional[User] = Depends(get_current_user_or_api_key),
 ):
     """
     Get Dify app parameters including opening_statement, suggested_questions,
@@ -148,8 +151,8 @@ async def get_dify_parameters(
     """
     lang = get_request_language(x_language)
 
-    api_key = os.getenv('DIFY_API_KEY')
-    api_url = os.getenv('DIFY_API_URL', 'https://api.dify.ai/v1')
+    api_key = os.getenv("DIFY_API_KEY")
+    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
 
     if not api_key:
         raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))

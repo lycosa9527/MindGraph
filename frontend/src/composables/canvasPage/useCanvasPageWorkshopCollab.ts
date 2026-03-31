@@ -56,10 +56,8 @@ export function useCanvasPageWorkshopCollab() {
     },
     (nodeId, editor) => {
       if (editor) {
-        console.log(`[Workshop] User ${editor.username} ${editor.emoji} editing node ${nodeId}`)
         applyNodeEditingIndicator(nodeId, editor)
       } else {
-        console.log(`[Workshop] Node ${nodeId} editing stopped`)
         removeNodeEditingIndicator(nodeId)
       }
     },

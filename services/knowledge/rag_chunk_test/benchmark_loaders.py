@@ -12,6 +12,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from abc import ABC, abstractmethod
 from pathlib import Path
 from typing import List, Dict, Any, Optional
@@ -21,16 +22,15 @@ import logging
 
 try:
     from datasets import load_dataset
+
     HAS_DATASETS = True
 except ImportError:
     HAS_DATASETS = False
     logging.warning("[BenchmarkLoaders] datasets library not installed. Hugging Face fallback disabled.")
 
 try:
-    from models.domain.knowledge_space import (
-        ChunkTestDocument,
-        ChunkTestDocumentChunk
-    )
+    from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
+
     HAS_CHUNK_TEST_MODELS = True
 except ImportError:
     HAS_CHUNK_TEST_MODELS = False
@@ -97,27 +97,23 @@ class BenchmarkLoader(ABC):
             return None
 
         try:
-            if filename.endswith('.json'):
-                with open(file_path, 'r', encoding='utf-8') as f:
+            if filename.endswith(".json"):
+                with open(file_path, "r", encoding="utf-8") as f:
                     return json.load(f)
-            elif filename.endswith('.jsonl'):
+            elif filename.endswith(".jsonl"):
                 data = []
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     for line in f:
                         data.append(json.loads(line))
                 return data
-            elif filename.endswith('.csv'):
+            elif filename.endswith(".csv"):
                 data = []
-                with open(file_path, 'r', encoding='utf-8') as f:
+                with open(file_path, "r", encoding="utf-8") as f:
                     reader = csv.DictReader(f)
                     data = list(reader)
                 return data
         except Exception as e:
-            logger.warning(
-                "[BenchmarkLoaders] Failed to load local file %s: %s",
-                file_path,
-                e
-            )
+            logger.warning("[BenchmarkLoaders] Failed to load local file %s: %s", file_path, e)
         return None
 
     def _load_from_huggingface(self, dataset_path: str, config: Optional[str] = None) -> Optional[Any]:
@@ -132,9 +128,7 @@ class BenchmarkLoader(ABC):
             Dataset object or None if failed
         """
         if not HAS_DATASETS:
-            logger.warning(
-                "[BenchmarkLoaders] Cannot load from Hugging Face: datasets library not installed"
-            )
+            logger.warning("[BenchmarkLoaders] Cannot load from Hugging Face: datasets library not installed")
             return None
 
         try:
@@ -145,7 +139,7 @@ class BenchmarkLoader(ABC):
             logger.error(
                 "[BenchmarkLoaders] Failed to load dataset %s from Hugging Face: %s",
                 dataset_path,
-                e
+                e,
             )
             return None
 
@@ -207,21 +201,26 @@ class FinanceBenchLoader(BenchmarkLoader):
 
                     # Use evidence text as document content, or fallback to other fields
                     doc_text = (
-                        "\n\n".join(evidence_texts)
-                        if evidence_texts
-                        else item.get("text", item.get("content", ""))
+                        "\n\n".join(evidence_texts) if evidence_texts else item.get("text", item.get("content", ""))
                     )
 
                     doc = {
                         "id": item.get("financebench_id", item.get("id", f"doc_{idx}")),
                         "text": doc_text,
                         "metadata": {
-                            k: v for k, v in item.items()
-                            if k not in [
-                                "id", "financebench_id", "text", "content",
-                                "evidence", "question", "answer"
+                            k: v
+                            for k, v in item.items()
+                            if k
+                            not in [
+                                "id",
+                                "financebench_id",
+                                "text",
+                                "content",
+                                "evidence",
+                                "question",
+                                "answer",
                             ]
-                        }
+                        },
                     }
                     documents.append(doc)
         elif isinstance(data, dict):
@@ -238,7 +237,7 @@ class FinanceBenchLoader(BenchmarkLoader):
                     query = {
                         "query": item.get("query", item.get("question", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
-                        "relevance_scores": item.get("relevance_scores", {})
+                        "relevance_scores": item.get("relevance_scores", {}),
                     }
                     if query["query"]:  # Only add non-empty queries
                         queries.append(query)
@@ -257,7 +256,7 @@ class FinanceBenchLoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{split_name}_{idx}"),
                         "text": item.get("text", item.get("content", item.get("document", ""))),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "content", "document"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "content", "document"]},
                     }
                     documents.append(doc)
                 break
@@ -275,7 +274,7 @@ class FinanceBenchLoader(BenchmarkLoader):
                         "query": item.get("query", item.get("question", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
                         "relevance_scores": item.get("relevance_scores", {}),
-                        "answer": item.get("answer", "")
+                        "answer": item.get("answer", ""),
                     }
                     if query["query"]:
                         queries.append(query)
@@ -330,7 +329,7 @@ class KGRAGLoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{idx}"),
                         "text": item.get("text", item.get("context", item.get("document", ""))),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context", "document"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context", "document"]},
                     }
                     documents.append(doc)
         elif isinstance(data, dict):
@@ -346,7 +345,7 @@ class KGRAGLoader(BenchmarkLoader):
                     query = {
                         "query": item.get("query", item.get("question", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
-                        "relevance_scores": item.get("relevance_scores", {})
+                        "relevance_scores": item.get("relevance_scores", {}),
                     }
                     if query["query"]:  # Only add non-empty queries
                         queries.append(query)
@@ -364,7 +363,7 @@ class KGRAGLoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{split_name}_{idx}"),
                         "text": item.get("context", item.get("text", item.get("document", ""))),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context", "document"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context", "document"]},
                     }
                     documents.append(doc)
                 break
@@ -380,7 +379,7 @@ class KGRAGLoader(BenchmarkLoader):
                     query = {
                         "query": item.get("question", item.get("query", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
-                        "relevance_scores": item.get("relevance_scores", {})
+                        "relevance_scores": item.get("relevance_scores", {}),
                     }
                     if query["query"]:
                         queries.append(query)
@@ -435,7 +434,7 @@ class FRAMESLoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{idx}"),
                         "text": item.get("text", item.get("content", "")),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "content"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "content"]},
                     }
                     documents.append(doc)
         elif isinstance(data, dict):
@@ -454,7 +453,7 @@ class FRAMESLoader(BenchmarkLoader):
                         "query": item.get("query", item.get("question", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
                         "relevance_scores": item.get("relevance_scores", {}),
-                        "answer": answer
+                        "answer": answer,
                     }
                     if query["query"]:  # Only add non-empty queries
                         queries.append(query)
@@ -472,7 +471,7 @@ class FRAMESLoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{split_name}_{idx}"),
                         "text": item.get("text", item.get("content", item.get("document", ""))),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "content", "document"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "content", "document"]},
                     }
                     documents.append(doc)
                 break
@@ -491,7 +490,7 @@ class FRAMESLoader(BenchmarkLoader):
                         "query": item.get("query", item.get("question", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
                         "relevance_scores": item.get("relevance_scores", {}),
-                        "answer": answer
+                        "answer": answer,
                     }
                     if query["query"]:
                         queries.append(query)
@@ -546,7 +545,7 @@ class PubMedQALoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{idx}"),
                         "text": item.get("context", item.get("text", "")),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context"]},
                     }
                     documents.append(doc)
         elif isinstance(data, dict):
@@ -565,7 +564,7 @@ class PubMedQALoader(BenchmarkLoader):
                         "query": item.get("question", item.get("query", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
                         "relevance_scores": item.get("relevance_scores", {}),
-                        "answer": answer
+                        "answer": answer,
                     }
                     queries.append(query)
         elif isinstance(data, dict):
@@ -582,7 +581,7 @@ class PubMedQALoader(BenchmarkLoader):
                     doc = {
                         "id": item.get("id", f"doc_{split_name}_{idx}"),
                         "text": item.get("context", item.get("text", "")),
-                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context"]}
+                        "metadata": {k: v for k, v in item.items() if k not in ["id", "text", "context"]},
                     }
                     documents.append(doc)
                 break
@@ -598,7 +597,7 @@ class PubMedQALoader(BenchmarkLoader):
                     query = {
                         "query": item.get("question", item.get("query", "")),
                         "expected_chunk_ids": item.get("expected_chunk_ids", []),
-                        "relevance_scores": item.get("relevance_scores", {})
+                        "relevance_scores": item.get("relevance_scores", {}),
                     }
                     if query["query"]:
                         queries.append(query)
@@ -629,22 +628,23 @@ class UserDocumentLoader(BenchmarkLoader):
     def load_documents(self) -> List[Dict[str, Any]]:
         """Load chunk test documents from database."""
         if not HAS_CHUNK_TEST_MODELS:
-            raise ImportError(
-                "Chunk test document models not available. "
-                "Cannot load user documents."
-            )
+            raise ImportError("Chunk test document models not available. Cannot load user documents.")
 
         documents = []
         for doc_id in self.document_ids:
-            doc = self.db.query(ChunkTestDocument).filter(
-                ChunkTestDocument.id == doc_id,
-                ChunkTestDocument.user_id == self.user_id
-            ).first()
+            doc = (
+                self.db.query(ChunkTestDocument)
+                .filter(
+                    ChunkTestDocument.id == doc_id,
+                    ChunkTestDocument.user_id == self.user_id,
+                )
+                .first()
+            )
 
             if not doc:
                 logger.warning(
                     "[UserDocumentLoader] Document %s not found or access denied",
-                    doc_id
+                    doc_id,
                 )
                 continue
 
@@ -658,7 +658,7 @@ class UserDocumentLoader(BenchmarkLoader):
             cleaner = get_document_cleaner()
 
             # Extract text from file
-            if doc.file_type == 'application/pdf':
+            if doc.file_type == "application/pdf":
                 text, _ = processor.extract_text_with_pages(doc.file_path, doc.file_type)
             else:
                 text = processor.extract_text(doc.file_path, doc.file_type)
@@ -670,32 +670,28 @@ class UserDocumentLoader(BenchmarkLoader):
                 text = str(text) if text else ""
 
             # Clean text (same as ChunkTestDocumentService)
-            full_text = cleaner.clean(
-                text,
-                remove_extra_spaces=True,
-                remove_urls_emails=False
-            )
+            full_text = cleaner.clean(text, remove_extra_spaces=True, remove_urls_emails=False)
 
             # Get chunk count for metadata (optional, for reference)
-            chunks = self.db.query(ChunkTestDocumentChunk).filter(
-                ChunkTestDocumentChunk.document_id == doc_id
-            ).count()
+            chunks = self.db.query(ChunkTestDocumentChunk).filter(ChunkTestDocumentChunk.document_id == doc_id).count()
 
-            documents.append({
-                "id": f"user_doc_{doc_id}",
-                "text": full_text,
-                "metadata": {
-                    "document_id": doc_id,
-                    "file_name": doc.file_name,
-                    "file_type": doc.file_type,
-                    "chunk_count": len(chunks)
+            documents.append(
+                {
+                    "id": f"user_doc_{doc_id}",
+                    "text": full_text,
+                    "metadata": {
+                        "document_id": doc_id,
+                        "file_name": doc.file_name,
+                        "file_type": doc.file_type,
+                        "chunk_count": len(chunks),
+                    },
                 }
-            })
+            )
 
         logger.info(
             "[UserDocumentLoader] Loaded %s documents for user %s",
             len(documents),
-            self.user_id
+            self.user_id,
         )
         return documents
 

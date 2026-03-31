@@ -30,7 +30,6 @@ export function useSmartResponseWebSocket(sessionId: Ref<string | null>) {
       ws.value.onopen = () => {
         connected.value = true
         error.value = null
-        console.log('Smart Response WebSocket connected')
       }
 
       ws.value.onmessage = (event) => {
@@ -40,12 +39,13 @@ export function useSmartResponseWebSocket(sessionId: Ref<string | null>) {
 
       ws.value.onerror = (err) => {
         error.value = 'WebSocket error'
-        console.error('WebSocket error:', err)
+        if (import.meta.env.DEV) {
+          console.error('WebSocket error:', err)
+        }
       }
 
       ws.value.onclose = () => {
         connected.value = false
-        console.log('Smart Response WebSocket disconnected')
       }
     } catch (e) {
       error.value = e instanceof Error ? e.message : 'Connection failed'
@@ -101,20 +101,8 @@ export function useSmartResponseWebSocket(sessionId: Ref<string | null>) {
     }
   }
 
-  const handleMessage = (message: SmartResponseWebSocketMessage) => {
-    switch (message.type) {
-      case 'learning_mode_started':
-        console.log('Learning mode started:', message)
-        break
-      case 'watch_ready':
-        console.log('Watch ready:', message.watch_id)
-        break
-      case 'transcription_notification':
-        console.log('Transcription:', message.text)
-        break
-      default:
-        console.log('Unknown message type:', message.type)
-    }
+  const handleMessage = (_message: SmartResponseWebSocketMessage) => {
+    void _message
   }
 
   onMounted(() => {

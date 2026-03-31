@@ -1,4 +1,5 @@
 """Diagram helpers for voice command handling."""
+
 from typing import Dict
 import re
 
@@ -14,17 +15,17 @@ def get_diagram_prefix_map() -> Dict[str, str]:
         Dictionary mapping diagram_type to node ID prefix
     """
     return {
-        'circle_map': 'context',
-        'bubble_map': 'attribute',
-        'double_bubble_map': 'node',
-        'tree_map': 'item',
-        'flow_map': 'step',
-        'multi_flow_map': 'step',  # Uses same prefix as flow_map
-        'brace_map': 'part',
-        'bridge_map': 'node',  # Bridge maps use node prefix
-        'mindmap': 'branch',
-        'mind_map': 'branch',  # Alias for mindmap
-        'concept_map': 'concept'
+        "circle_map": "context",
+        "bubble_map": "attribute",
+        "double_bubble_map": "node",
+        "tree_map": "item",
+        "flow_map": "step",
+        "multi_flow_map": "step",  # Uses same prefix as flow_map
+        "brace_map": "part",
+        "bridge_map": "node",  # Bridge maps use node prefix
+        "mindmap": "branch",
+        "mind_map": "branch",  # Alias for mindmap
+        "concept_map": "concept",
     }
 
 
@@ -57,7 +58,7 @@ def is_paragraph_text(text: str) -> bool:
     if len(text_stripped) > 5000:
         logger.warning(
             "Text too long (%d chars), treating as paragraph but may be truncated",
-            len(text_stripped)
+            len(text_stripped),
         )
         # Still process, but warn
 
@@ -66,7 +67,7 @@ def is_paragraph_text(text: str) -> bool:
     word_count = len(words)
 
     # Count sentences (periods, exclamation marks, question marks)
-    sentence_endings = len(re.findall(r'[.!?。！？]', text_stripped))
+    sentence_endings = len(re.findall(r"[.!?。！？]", text_stripped))
 
     # Check word count and sentence count
     # Changed from 100 chars to 30 words - more accurate for paragraph detection
@@ -75,15 +76,22 @@ def is_paragraph_text(text: str) -> bool:
 
     # Check if it looks like a command (short, imperative structure)
     command_prefixes = (
-        '请', '帮我', '请帮我', 'can you', 'please', 'change',
-        'update', 'add', 'delete', 'select'
+        "请",
+        "帮我",
+        "请帮我",
+        "can you",
+        "please",
+        "change",
+        "update",
+        "add",
+        "delete",
+        "select",
     )
-    command_suffixes = ('吗', '?', '？')
+    command_suffixes = ("吗", "?", "？")
     is_command_like = (
-        word_count < 10 and
-        sentence_endings <= 1 and
-        (text_stripped.startswith(command_prefixes) or
-         text_stripped.endswith(command_suffixes))
+        word_count < 10
+        and sentence_endings <= 1
+        and (text_stripped.startswith(command_prefixes) or text_stripped.endswith(command_suffixes))
     )
 
     # It's a paragraph if it has 30+ words OR has multiple sentences AND doesn't look like a command

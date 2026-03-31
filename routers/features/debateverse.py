@@ -18,6 +18,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import asyncio
 import base64
 import json
@@ -48,7 +49,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/debateverse", tags=["DebateVerse"])
 
 # Constants for TTS buffering
-SENTENCE_ENDINGS = {'.', '。', '!', '！', '?', '？', '\n'}
+SENTENCE_ENDINGS = {".", "。", "!", "！", "?", "？", "\n"}
 MIN_BUFFER_SIZE = 50  # Minimum buffer size before sending
 MAX_BUFFER_SIZE = 200  # Maximum buffer size (force send even without sentence ending)
 
@@ -56,13 +57,22 @@ MAX_BUFFER_SIZE = 200  # Maximum buffer size (force send even without sentence e
 # Request/Response Models
 # ============================================================================
 
-_ALLOWED_DEBATE_FORMATS = frozenset({'us_parliamentary', 'british_parliamentary', 'lincoln_douglas'})
-_ALLOWED_STAGES = frozenset({
-    'setup', 'coin_toss', 'opening', 'rebuttal', 'cross_exam', 'closing', 'judgment', 'completed'
-})
-_ALLOWED_MODELS = frozenset({'qwen', 'deepseek', 'kimi', 'doubao'})
-_ALLOWED_ROLES = frozenset({'debater', 'judge', 'viewer'})
-_ALLOWED_SIDES = frozenset({'affirmative', 'negative'})
+_ALLOWED_DEBATE_FORMATS = frozenset({"us_parliamentary", "british_parliamentary", "lincoln_douglas"})
+_ALLOWED_STAGES = frozenset(
+    {
+        "setup",
+        "coin_toss",
+        "opening",
+        "rebuttal",
+        "cross_exam",
+        "closing",
+        "judgment",
+        "completed",
+    }
+)
+_ALLOWED_MODELS = frozenset({"qwen", "deepseek", "kimi", "doubao"})
+_ALLOWED_ROLES = frozenset({"debater", "judge", "viewer"})
+_ALLOWED_SIDES = frozenset({"affirmative", "negative"})
 
 
 class CreateSessionRequest(BaseModel):
@@ -70,10 +80,10 @@ class CreateSessionRequest(BaseModel):
 
     topic: str = Field(..., min_length=1, max_length=500)
     llm_assignments: Dict[str, str] = Field(...)
-    format: Optional[str] = Field('us_parliamentary')
-    language: Optional[str] = Field('zh')
+    format: Optional[str] = Field("us_parliamentary")
+    language: Optional[str] = Field("zh")
 
-    @field_validator('format')
+    @field_validator("format")
     @classmethod
     def validate_format(cls, value: Optional[str]) -> Optional[str]:
         """Allow only known debate formats."""
@@ -81,15 +91,13 @@ class CreateSessionRequest(BaseModel):
             raise ValueError(f"format must be one of: {', '.join(_ALLOWED_DEBATE_FORMATS)}")
         return value
 
-    @field_validator('llm_assignments')
+    @field_validator("llm_assignments")
     @classmethod
     def validate_llm_assignments(cls, value: Dict[str, str]) -> Dict[str, str]:
         """Validate that model IDs are from the allowed set."""
         for model_id in value.values():
             if model_id not in _ALLOWED_MODELS:
-                raise ValueError(
-                    f"Invalid model '{model_id}'. Allowed: {', '.join(_ALLOWED_MODELS)}"
-                )
+                raise ValueError(f"Invalid model '{model_id}'. Allowed: {', '.join(_ALLOWED_MODELS)}")
         return value
 
 
@@ -100,7 +108,7 @@ class JoinSessionRequest(BaseModel):
     side: Optional[str] = Field(None)
     position: Optional[int] = Field(None, ge=1, le=2)
 
-    @field_validator('role')
+    @field_validator("role")
     @classmethod
     def validate_role(cls, value: Optional[str]) -> Optional[str]:
         """Allow only known roles."""
@@ -108,7 +116,7 @@ class JoinSessionRequest(BaseModel):
             raise ValueError(f"role must be one of: {', '.join(_ALLOWED_ROLES)}")
         return value
 
-    @field_validator('side')
+    @field_validator("side")
     @classmethod
     def validate_side(cls, value: Optional[str]) -> Optional[str]:
         """Allow only known sides."""
@@ -128,7 +136,7 @@ class AdvanceStageRequest(BaseModel):
 
     new_stage: str = Field(...)
 
-    @field_validator('new_stage')
+    @field_validator("new_stage")
     @classmethod
     def validate_new_stage(cls, value: str) -> str:
         """Allow only known stage values."""
@@ -141,12 +149,13 @@ class AdvanceStageRequest(BaseModel):
 # Streaming Implementation
 # ============================================================================
 
+
 async def stream_debater_response(
     session_id: str,
     participant_id: int,
     stage: str,
-    language: str = 'zh',
-    user_id: Optional[int] = None
+    language: str = "zh",
+    user_id: Optional[int] = None,
 ):
     """
     Stream debater response using DebateVerseService.
@@ -165,25 +174,19 @@ async def stream_debater_response(
 
         # Build context-aware messages
         context_builder = service.context_builder
-        messages = context_builder.build_debater_messages(
-            participant_id=participant_id,
-            stage=stage,
-            language=language
-        )
+        messages = context_builder.build_debater_messages(participant_id=participant_id, stage=stage, language=language)
 
         # Get participant and model
-        participant = await asyncio.to_thread(
-            lambda: db.query(DebateParticipant).filter_by(id=participant_id).first()
-        )
+        participant = await asyncio.to_thread(lambda: db.query(DebateParticipant).filter_by(id=participant_id).first())
 
         if not participant:
-            yield f'data: {json.dumps({"type": "error", "error": "Participant not found"})}\n\n'
+            yield f"data: {json.dumps({'type': 'error', 'error': 'Participant not found'})}\n\n"
             return
 
-        model = participant.model_id or 'qwen'
+        model = participant.model_id or "qwen"
 
         # Disable thinking for Kimi model
-        enable_thinking = model.lower() != 'kimi'
+        enable_thinking = model.lower() != "kimi"
 
         # Stream from LLM service and collect content
 
@@ -202,8 +205,8 @@ async def stream_debater_response(
             try:
                 # Prioritize role over model_id for voice selection
                 # Judges always use Neil voice regardless of underlying model
-                if participant.role == 'judge':
-                    voice = tts_service.get_voice_for_model('judge')
+                if participant.role == "judge":
+                    voice = tts_service.get_voice_for_model("judge")
                 else:
                     voice = tts_service.get_voice_for_model(model)
 
@@ -220,7 +223,7 @@ async def stream_debater_response(
                     raise ValueError("TTS service API key is not configured")
                 tts_client = TTSRealtimeClient(
                     api_key=tts_service.api_key,
-                    model='qwen3-tts-flash-realtime',
+                    model="qwen3-tts-flash-realtime",
                     voice=voice,
                     mode=SessionMode.COMMIT,  # Use COMMIT mode for better control
                     response_format=AudioFormat.MP3_24000HZ_MONO,
@@ -230,10 +233,17 @@ async def stream_debater_response(
                 )
                 logger.info(
                     "[DEBATEVERSE] TTS client initialized: participant_id=%s, role=%s, model_id=%s, voice=%s",
-                    participant_id, participant.role, model, voice
+                    participant_id,
+                    participant.role,
+                    model,
+                    voice,
                 )
             except Exception as tts_init_error:
-                logger.error("[DEBATEVERSE] TTS initialization error: %s", tts_init_error, exc_info=True)
+                logger.error(
+                    "[DEBATEVERSE] TTS initialization error: %s",
+                    tts_init_error,
+                    exc_info=True,
+                )
                 tts_client = None
                 tts_available = False
 
@@ -286,7 +296,7 @@ async def stream_debater_response(
                     logger.debug(
                         "[DEBATEVERSE] TTS appended %s chars: %s...",
                         len(text_to_send),
-                        text_to_send[:50]
+                        text_to_send[:50],
                     )
 
                     # In COMMIT mode, commit after appending to trigger synthesis
@@ -307,13 +317,13 @@ async def stream_debater_response(
             enable_thinking=enable_thinking,
             yield_structured=True,
             user_id=user_id,
-            request_type='debateverse',
-            endpoint_path=f'/api/debateverse/sessions/{session_id}/stream'
+            request_type="debateverse",
+            endpoint_path=f"/api/debateverse/sessions/{session_id}/stream",
         ):
             if isinstance(chunk, dict):
-                chunk_type = chunk.get('type')
-                if chunk_type == 'token':
-                    token_content = chunk.get('content', '')
+                chunk_type = chunk.get("type")
+                if chunk_type == "token":
+                    token_content = chunk.get("content", "")
                     full_content += token_content
 
                     # Start TTS connection on first token
@@ -324,7 +334,11 @@ async def stream_debater_response(
                             tts_started = True
                             logger.info("[DEBATEVERSE] TTS streaming started")
                         except Exception as tts_start_error:
-                            logger.error("[DEBATEVERSE] TTS start error: %s", tts_start_error, exc_info=True)
+                            logger.error(
+                                "[DEBATEVERSE] TTS start error: %s",
+                                tts_start_error,
+                                exc_info=True,
+                            )
                             tts_client = None
 
                     # Buffer text for fluent TTS (send on sentence boundaries)
@@ -337,14 +351,14 @@ async def stream_debater_response(
                     while not tts_audio_queue.empty():
                         try:
                             audio_chunk = tts_audio_queue.get_nowait()
-                            audio_b64 = base64.b64encode(audio_chunk).decode('utf-8')
-                            yield f'data: {json.dumps({"type": "audio_chunk", "data": audio_b64})}\n\n'
+                            audio_b64 = base64.b64encode(audio_chunk).decode("utf-8")
+                            yield f"data: {json.dumps({'type': 'audio_chunk', 'data': audio_b64})}\n\n"
                         except queue.Empty:
                             break
 
-                elif chunk_type == 'thinking':
-                    full_thinking += chunk.get('content', '')
-                yield f'data: {json.dumps(chunk)}\n\n'
+                elif chunk_type == "thinking":
+                    full_thinking += chunk.get("content", "")
+                yield f"data: {json.dumps(chunk)}\n\n"
 
         # Finish TTS session and collect remaining audio
         if tts_client and tts_started:
@@ -370,21 +384,23 @@ async def stream_debater_response(
                 while not tts_audio_queue.empty():
                     try:
                         audio_chunk = tts_audio_queue.get_nowait()
-                        audio_b64 = base64.b64encode(audio_chunk).decode('utf-8')
-                        yield f'data: {json.dumps({"type": "audio_chunk", "data": audio_b64})}\n\n'
+                        audio_b64 = base64.b64encode(audio_chunk).decode("utf-8")
+                        yield f"data: {json.dumps({'type': 'audio_chunk', 'data': audio_b64})}\n\n"
                     except queue.Empty:
                         break
 
                 await tts_client.close()
             except Exception as tts_finish_error:
-                logger.error("[DEBATEVERSE] TTS finish error: %s", tts_finish_error, exc_info=True)
+                logger.error(
+                    "[DEBATEVERSE] TTS finish error: %s",
+                    tts_finish_error,
+                    exc_info=True,
+                )
 
         # Save message to database
-        session = await asyncio.to_thread(
-            lambda: db.query(DebateSession).filter_by(id=session_id).first()
-        )
+        session = await asyncio.to_thread(lambda: db.query(DebateSession).filter_by(id=session_id).first())
         if not session:
-            yield f'data: {json.dumps({"type": "error", "error": "Session not found"})}\n\n'
+            yield f"data: {json.dumps({'type': 'error', 'error': 'Session not found'})}\n\n"
             return
 
         round_number = service.get_next_round_number(stage)
@@ -397,8 +413,9 @@ async def stream_debater_response(
             thinking=full_thinking if full_thinking else None,
             stage=stage,
             round_number=round_number,
-            message_type=message_type
+            message_type=message_type,
         )
+
         def _sync_add_and_flush():
             db.add(message)
             db.flush()
@@ -424,11 +441,11 @@ async def stream_debater_response(
                     message.audio_url = f"/static/debateverse_audio/{audio_filename}"
                     await asyncio.to_thread(db.commit)
 
-                    yield f'data: {json.dumps({"type": "audio_url", "url": message.audio_url})}\n\n'
+                    yield f"data: {json.dumps({'type': 'audio_url', 'url': message.audio_url})}\n\n"
                     logger.info(
                         "[DEBATEVERSE] Generated TTS audio for message %s: %s",
                         message.id,
-                        message.audio_url
+                        message.audio_url,
                     )
                 else:
                     await asyncio.to_thread(db.commit)
@@ -439,14 +456,14 @@ async def stream_debater_response(
         else:
             await asyncio.to_thread(db.commit)
 
-        yield f'data: {json.dumps({"type": "done"})}\n\n'
+        yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
     except asyncio.CancelledError:
         logger.info("[DEBATEVERSE] Stream cancelled for participant %s", participant_id)
         raise
     except Exception as e:
         logger.error("[DEBATEVERSE] Streaming error: %s", e, exc_info=True)
-        yield f'data: {json.dumps({"type": "error", "error": "Internal server error"})}\n\n'
+        yield f"data: {json.dumps({'type': 'error', 'error': 'Internal server error'})}\n\n"
     finally:
         await asyncio.to_thread(db.close)
 
@@ -455,11 +472,12 @@ async def stream_debater_response(
 # API Endpoints
 # ============================================================================
 
+
 @router.post("/sessions")
 async def create_session(
     request: CreateSessionRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Create a new debate session. Requires authentication."""
 
@@ -469,7 +487,7 @@ async def create_session(
             topic=request.topic,
             user_id=current_user.id,
             llm_assignments=request.llm_assignments,
-            format=request.format or 'us_parliamentary'
+            debate_format=request.format or "us_parliamentary",
         )
 
         return {
@@ -477,7 +495,7 @@ async def create_session(
             "topic": session.topic,
             "current_stage": session.current_stage,
             "status": session.status,
-            "created_at": session.created_at.isoformat()
+            "created_at": session.created_at.isoformat(),
         }
     except Exception as e:
         logger.error("Error creating debate session: %s", e, exc_info=True)
@@ -488,7 +506,7 @@ async def create_session(
 def get_session(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    _current_user=Depends(get_current_user),
 ):
     """Get debate session with messages and participants. Requires authentication."""
     session = db.query(DebateSession).filter_by(id=session_id).first()
@@ -499,9 +517,7 @@ def get_session(
     participants = db.query(DebateParticipant).filter_by(session_id=session_id).all()
 
     # Get messages
-    messages = db.query(DebateMessage).filter_by(session_id=session_id).order_by(
-        DebateMessage.created_at
-    ).all()
+    messages = db.query(DebateMessage).filter_by(session_id=session_id).order_by(DebateMessage.created_at).all()
 
     return {
         "session": {
@@ -511,7 +527,7 @@ def get_session(
             "status": session.status,
             "coin_toss_result": session.coin_toss_result,
             "created_at": session.created_at.isoformat(),
-            "updated_at": session.updated_at.isoformat()
+            "updated_at": session.updated_at.isoformat(),
         },
         "participants": [
             {
@@ -520,7 +536,7 @@ def get_session(
                 "role": p.role,
                 "side": p.side,
                 "is_ai": p.is_ai,
-                "model_id": p.model_id
+                "model_id": p.model_id,
             }
             for p in participants
         ],
@@ -534,10 +550,10 @@ def get_session(
                 "round_number": m.round_number,
                 "message_type": m.message_type,
                 "audio_url": m.audio_url,
-                "created_at": m.created_at.isoformat()
+                "created_at": m.created_at.isoformat(),
             }
             for m in messages
-        ]
+        ],
     }
 
 
@@ -545,7 +561,7 @@ def get_session(
 async def coin_toss(
     session_id: str,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Execute coin toss to determine speaking order. Requires authentication."""
     session = db.query(DebateSession).filter_by(id=session_id).first()
@@ -558,7 +574,7 @@ async def coin_toss(
 
     return {
         "result": result,
-        "message": "affirmative_first" if result == "affirmative_first" else "negative_first"
+        "message": "affirmative_first" if result == "affirmative_first" else "negative_first",
     }
 
 
@@ -566,9 +582,9 @@ async def coin_toss(
 def generate_positions(
     session_id: str,
     request: Request,
-    language: str = Query('zh', description="Language for position generation"),
+    language: str = Query("zh", description="Language for position generation"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """
     Generate debate positions using Doubao LLM with SSE streaming.
@@ -579,18 +595,16 @@ def generate_positions(
     async def generate():
         try:
             # Rate limit: 30 LLM streaming requests per minute per user
-            await check_endpoint_rate_limit(
-                'debateverse_positions', identifier, max_requests=30, window_seconds=60
-            )
+            await check_endpoint_rate_limit("debateverse_positions", identifier, max_requests=30, window_seconds=60)
 
             # Get session and verify ownership
             session = db.query(DebateSession).filter_by(id=session_id).first()
             if not session:
-                yield f'data: {json.dumps({"type": "error", "error": "Session not found"})}\n\n'
+                yield f"data: {json.dumps({'type': 'error', 'error': 'Session not found'})}\n\n"
                 return
 
             if session.user_id != current_user.id:
-                yield f'data: {json.dumps({"type": "error", "error": "Not authorized"})}\n\n'
+                yield f"data: {json.dumps({'type': 'error', 'error': 'Not authorized'})}\n\n"
                 return
 
             # Get topic from session (this is the user's statement/topic)
@@ -599,7 +613,7 @@ def generate_positions(
             logger.info(
                 "[DEBATEVERSE] Generating positions for session %s, topic: %s",
                 session_id,
-                debate_topic
+                debate_topic,
             )
 
             # Build prompt with user's topic/statement from the session
@@ -609,33 +623,33 @@ def generate_positions(
             full_content = ""
             async for chunk in llm_service.chat_stream(
                 messages=[{"role": "user", "content": prompt}],
-                model='doubao',
+                model="doubao",
                 temperature=0.7,
                 max_tokens=1000,
                 enable_thinking=False,
                 yield_structured=True,
                 user_id=current_user.id,
-                request_type='debateverse',
-                endpoint_path=f'/api/debateverse/sessions/{session_id}/generate-positions'
+                request_type="debateverse",
+                endpoint_path=f"/api/debateverse/sessions/{session_id}/generate-positions",
             ):
                 if isinstance(chunk, dict):
-                    chunk_type = chunk.get('type')
-                    if chunk_type == 'token':
-                        content = chunk.get('content', '')
+                    chunk_type = chunk.get("type")
+                    if chunk_type == "token":
+                        content = chunk.get("content", "")
                         full_content += content
-                        yield f'data: {json.dumps({"type": "token", "content": content})}\n\n'
+                        yield f"data: {json.dumps({'type': 'token', 'content': content})}\n\n"
 
-            yield f'data: {json.dumps({"type": "done"})}\n\n'
+            yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
         except asyncio.CancelledError:
             logger.info("[DEBATEVERSE] Position generation cancelled for session %s", session_id)
             raise
         except HTTPException as e:
             logger.warning("[DEBATEVERSE] Position generation rejected: %s", e.detail)
-            yield f'data: {json.dumps({"type": "error", "error": e.detail})}\n\n'
+            yield f"data: {json.dumps({'type': 'error', 'error': e.detail})}\n\n"
         except Exception as e:
             logger.error("[DEBATEVERSE] Position generation error: %s", e, exc_info=True)
-            yield f'data: {json.dumps({"type": "error", "error": "Internal server error"})}\n\n'
+            yield f"data: {json.dumps({'type': 'error', 'error': 'Internal server error'})}\n\n"
         finally:
             db.close()
 
@@ -645,8 +659,8 @@ def generate_positions(
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
-        }
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
@@ -655,7 +669,7 @@ async def advance_stage(
     session_id: str,
     request: AdvanceStageRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Advance debate to next stage. Requires authentication and session ownership."""
     session = db.query(DebateSession).filter_by(id=session_id).first()
@@ -677,10 +691,9 @@ def send_user_message(
     session_id: str,
     request: SendMessageRequest,
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Send a user message in the debate session. Requires authentication."""
-
 
     # Get session
     session = db.query(DebateSession).filter_by(id=session_id).first()
@@ -688,11 +701,9 @@ def send_user_message(
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Find user participant
-    user_participant = db.query(DebateParticipant).filter_by(
-        session_id=session_id,
-        user_id=current_user.id,
-        is_ai=False
-    ).first()
+    user_participant = (
+        db.query(DebateParticipant).filter_by(session_id=session_id, user_id=current_user.id, is_ai=False).first()
+    )
 
     if not user_participant:
         raise HTTPException(status_code=403, detail="User is not a participant in this session")
@@ -710,7 +721,7 @@ def send_user_message(
         content=request.content,
         stage=current_stage,
         round_number=round_number,
-        message_type=message_type
+        message_type=message_type,
     )
     db.add(message)
     db.commit()
@@ -727,17 +738,17 @@ def send_user_message(
             "stage": message.stage,
             "round_number": message.round_number,
             "message_type": message.message_type,
-            "created_at": message.created_at.isoformat()
-        }
+            "created_at": message.created_at.isoformat(),
+        },
     }
 
 
 @router.post("/next")
 def trigger_next(
     session_id: str = Query(...),
-    language: str = Query('zh'),
+    language: str = Query("zh"),
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    _current_user=Depends(get_current_user),
 ):
     """
     Trigger next conversation in debate.
@@ -767,11 +778,20 @@ def trigger_next(
             "participant_role": next_speaker.role,
             "participant_side": next_speaker.side,
             "stage": session.current_stage,
-            "language": language
+            "language": language,
         }
     else:
         # Stage is complete, return next stage info
-        stage_order = ['setup', 'coin_toss', 'opening', 'rebuttal', 'cross_exam', 'closing', 'judgment', 'completed']
+        stage_order = [
+            "setup",
+            "coin_toss",
+            "opening",
+            "rebuttal",
+            "cross_exam",
+            "closing",
+            "judgment",
+            "completed",
+        ]
         current_index = stage_order.index(session.current_stage) if session.current_stage in stage_order else -1
 
         if current_index < len(stage_order) - 1:
@@ -781,7 +801,7 @@ def trigger_next(
                 "has_next_speaker": False,
                 "stage_complete": True,
                 "next_stage": next_stage,
-                "current_stage": session.current_stage
+                "current_stage": session.current_stage,
             }
         else:
             return {
@@ -789,7 +809,7 @@ def trigger_next(
                 "has_next_speaker": False,
                 "stage_complete": True,
                 "debate_complete": True,
-                "current_stage": session.current_stage
+                "current_stage": session.current_stage,
             }
 
 
@@ -799,9 +819,9 @@ async def stream_debater(
     participant_id: int,
     stage: str,
     request: Request,
-    language: str = 'zh',
+    language: str = "zh",
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user)
+    current_user=Depends(get_current_user),
 ):
     """Stream debater response. Requires authentication and session ownership."""
     # Verify session ownership before triggering LLM streaming
@@ -813,9 +833,7 @@ async def stream_debater(
 
     # Rate limit: 60 streaming requests per minute per user
     identifier = get_rate_limit_identifier(current_user, request)
-    await check_endpoint_rate_limit(
-        'debateverse_stream', identifier, max_requests=60, window_seconds=60
-    )
+    await check_endpoint_rate_limit("debateverse_stream", identifier, max_requests=60, window_seconds=60)
 
     return StreamingResponse(
         stream_debater_response(
@@ -823,31 +841,34 @@ async def stream_debater(
             participant_id=participant_id,
             stage=stage,
             language=language,
-            user_id=current_user.id
+            user_id=current_user.id,
         ),
         media_type="text/event-stream",
         headers={
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
-            "X-Accel-Buffering": "no"
-        }
+            "X-Accel-Buffering": "no",
+        },
     )
 
 
 @router.get("/sessions")
 def list_sessions(
     db: Session = Depends(get_db),
-    current_user = Depends(get_current_user),
+    current_user=Depends(get_current_user),
     limit: int = 20,
-    offset: int = 0
+    offset: int = 0,
 ):
     """List user's debate sessions. Requires authentication."""
 
-    sessions = db.query(DebateSession).filter_by(
-        user_id=current_user.id
-    ).order_by(
-        DebateSession.updated_at.desc()
-    ).offset(offset).limit(limit).all()
+    sessions = (
+        db.query(DebateSession)
+        .filter_by(user_id=current_user.id)
+        .order_by(DebateSession.updated_at.desc())
+        .offset(offset)
+        .limit(limit)
+        .all()
+    )
 
     return {
         "sessions": [
@@ -857,9 +878,9 @@ def list_sessions(
                 "current_stage": s.current_stage,
                 "status": s.status,
                 "created_at": s.created_at.isoformat(),
-                "updated_at": s.updated_at.isoformat()
+                "updated_at": s.updated_at.isoformat(),
             }
             for s in sessions
         ],
-        "total": db.query(DebateSession).filter_by(user_id=current_user.id).count()
+        "total": db.query(DebateSession).filter_by(user_id=current_user.id).count(),
     }

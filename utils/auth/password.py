@@ -40,33 +40,31 @@ def hash_password(password: str) -> str:
         password = str(password)
 
     # Convert to bytes and truncate to bcrypt's 72-byte limit if needed
-    password_bytes = password.encode('utf-8')
+    password_bytes = password.encode("utf-8")
 
     if len(password_bytes) > 72:
         # Truncate to 71 bytes for multi-byte character safety
         password_bytes = password_bytes[:71]
-        password_decoded = password_bytes.decode('utf-8', errors='ignore')
+        password_decoded = password_bytes.decode("utf-8", errors="ignore")
 
         # Ensure result is actually under 72 bytes after re-encoding
-        while len(password_decoded.encode('utf-8')) > 72:
+        while len(password_decoded.encode("utf-8")) > 72:
             password_decoded = password_decoded[:-1]
 
-        password_bytes = password_decoded.encode('utf-8')
+        password_bytes = password_decoded.encode("utf-8")
         logger.warning(
             "Password truncated to %d bytes for bcrypt compatibility",
-            len(password_bytes)
+            len(password_bytes),
         )
 
     try:
         # Generate salt and hash password
         salt = bcrypt.gensalt(rounds=BCRYPT_ROUNDS)
         hashed = bcrypt.hashpw(password_bytes, salt)
-        return hashed.decode('utf-8')
+        return hashed.decode("utf-8")
     except Exception as e:
         logger.error("Password hashing failed: %s", e)
-        logger.error(
-            "Password length: %d chars, %d bytes", len(password), len(password_bytes)
-        )
+        logger.error("Password length: %d chars, %d bytes", len(password), len(password_bytes))
         raise
 
 
@@ -92,20 +90,20 @@ def verify_password(plain_password: str, hashed_password: str) -> bool:
             plain_password = str(plain_password)
 
         # Apply same truncation logic as hash_password
-        password_bytes = plain_password.encode('utf-8')
+        password_bytes = plain_password.encode("utf-8")
 
         if len(password_bytes) > 72:
             password_bytes = password_bytes[:71]
-            password_decoded = password_bytes.decode('utf-8', errors='ignore')
+            password_decoded = password_bytes.decode("utf-8", errors="ignore")
 
-            while len(password_decoded.encode('utf-8')) > 72:
+            while len(password_decoded.encode("utf-8")) > 72:
                 password_decoded = password_decoded[:-1]
 
-            password_bytes = password_decoded.encode('utf-8')
+            password_bytes = password_decoded.encode("utf-8")
             logger.warning("Password truncated during verification")
 
         # Verify password against hash
-        return bcrypt.checkpw(password_bytes, hashed_password.encode('utf-8'))
+        return bcrypt.checkpw(password_bytes, hashed_password.encode("utf-8"))
     except Exception as e:
         logger.error("Password verification failed: %s", e)
         return False

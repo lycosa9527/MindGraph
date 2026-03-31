@@ -21,6 +21,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Tuple
 import hashlib
 import logging
@@ -28,7 +29,6 @@ import time
 
 from services.redis.redis_client import is_redis_available, RedisOps
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
-
 
 
 logger = logging.getLogger(__name__)
@@ -73,7 +73,7 @@ class BayiTokenTracker:
         Returns:
             SHA256 hash (hex string)
         """
-        return hashlib.sha256(token.encode('utf-8')).hexdigest()
+        return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
     def is_token_used(self, token: str) -> bool:
         """
@@ -183,7 +183,11 @@ class BayiTokenTracker:
             value = "1" if valid else "0"
             success = RedisOps.set_with_ttl(key, value, TOKEN_TTL)
             if success:
-                logger.debug("[BayiToken] Cached token validation result: %s (TTL: %ss)", valid, TOKEN_TTL)
+                logger.debug(
+                    "[BayiToken] Cached token validation result: %s (TTL: %ss)",
+                    valid,
+                    TOKEN_TTL,
+                )
             return success
         except Exception as e:
             logger.warning("[BayiToken] Failed to cache token validation: %s", e)
@@ -203,7 +207,7 @@ class BayiTokenTracker:
             category="bayi_token",
             identifier=ip,
             max_attempts=RATE_LIMIT_MAX_ATTEMPTS,
-            window_seconds=RATE_LIMIT_WINDOW
+            window_seconds=RATE_LIMIT_WINDOW,
         )
 
     def clear_rate_limit(self, ip: str) -> bool:
@@ -221,9 +225,9 @@ class BayiTokenTracker:
 
 def get_bayi_token_tracker() -> BayiTokenTracker:
     """Get singleton instance of BayiTokenTracker."""
-    if not hasattr(get_bayi_token_tracker, '_instance'):
-        setattr(get_bayi_token_tracker, '_instance', BayiTokenTracker())
-    return getattr(get_bayi_token_tracker, '_instance')
+    if not hasattr(get_bayi_token_tracker, "_instance"):
+        setattr(get_bayi_token_tracker, "_instance", BayiTokenTracker())
+    return getattr(get_bayi_token_tracker, "_instance")
 
 
 # Convenience alias

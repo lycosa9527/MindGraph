@@ -32,11 +32,7 @@ def update_language_preferences(
     Persist interface language, prompt output language, and/or UI version
     for the signed-in user.
     """
-    if (
-        body.ui_language is None
-        and body.prompt_language is None
-        and body.ui_version is None
-    ):
+    if body.ui_language is None and body.prompt_language is None and body.ui_version is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Provide at least one of ui_language, prompt_language, or ui_version",

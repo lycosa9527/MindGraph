@@ -97,10 +97,7 @@ export function recalculateMultiFlowMapLayout(
 
   const getH = (id: string): number => {
     const pinia = nodeDimensions[id]?.height
-    const h = pinia ?? DEFAULT_NODE_HEIGHT
-    const src = pinia != null ? 'pinia' : 'DEFAULT'
-    console.log(`[NodeLayout:getH] id="${id}" h=${h} src=${src} (pinia=${pinia})`)
-    return h
+    return pinia ?? DEFAULT_NODE_HEIGHT
   }
 
   // Use actual DOM-measured topic width, then explicit topicNodeWidth, then default
@@ -161,20 +158,10 @@ export function recalculateMultiFlowMapLayout(
     })
   }
 
-  console.log('[NodeLayout:MultiFlow] recalculateMultiFlowMapLayout called', {
-    nodeCount: nodes.length,
-    causeCount: causes.length,
-    effectCount: effects.length,
-    nodeDimensionKeys: Object.keys(nodeDimensions),
-  })
-
   const causeIds = causes.map((_, i) => `cause-${i}`)
   const effectIds = effects.map((_, i) => `effect-${i}`)
   const causeYPositions = stackColumnYPositions(causeIds)
   const effectYPositions = stackColumnYPositions(effectIds)
-
-  console.log('[NodeLayout:MultiFlow] causeYPositions', causeYPositions)
-  console.log('[NodeLayout:MultiFlow] effectYPositions', effectYPositions)
 
   const result: DiagramNode[] = []
 

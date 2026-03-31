@@ -35,9 +35,7 @@ class CommunityPost(Base):
 
     __tablename__ = "community_posts"
 
-    id: Mapped[str] = mapped_column(
-        String(36), primary_key=True, default=generate_uuid, index=True
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid, index=True)
 
     # Content
     title: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -50,29 +48,23 @@ class CommunityPost(Base):
     thumbnail_path: Mapped[Optional[str]] = mapped_column(String(255), nullable=True)
 
     # Author
-    author_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True
-    )
+    author_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Engagement
     likes_count: Mapped[int] = mapped_column(Integer, default=0)
     comments_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow
-    )
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
     # Relationships
     author: Mapped["User"] = relationship("User")
 
     __table_args__ = (
-        Index('ix_community_posts_author_created', 'author_id', 'created_at'),
-        Index('ix_community_posts_category', 'category'),
-        Index('ix_community_posts_created', 'created_at'),
+        Index("ix_community_posts_author_created", "author_id", "created_at"),
+        Index("ix_community_posts_category", "category"),
+        Index("ix_community_posts_created", "created_at"),
     )
 
 
@@ -82,20 +74,14 @@ class CommunityPostLike(Base):
     __tablename__ = "community_post_likes"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    post_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("community_posts.id"), nullable=False, index=True
-    )
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True
-    )
+    post_id: Mapped[str] = mapped_column(String(36), ForeignKey("community_posts.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     post: Mapped["CommunityPost"] = relationship("CommunityPost")
     user: Mapped["User"] = relationship("User")
 
-    __table_args__ = (
-        Index('ix_community_post_likes_unique', 'post_id', 'user_id', unique=True),
-    )
+    __table_args__ = (Index("ix_community_post_likes_unique", "post_id", "user_id", unique=True),)
 
 
 class CommunityPostComment(Base):
@@ -104,16 +90,12 @@ class CommunityPostComment(Base):
     __tablename__ = "community_post_comments"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    post_id: Mapped[str] = mapped_column(
-        String(36), ForeignKey("community_posts.id"), nullable=False, index=True
-    )
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id"), nullable=False, index=True
-    )
+    post_id: Mapped[str] = mapped_column(String(36), ForeignKey("community_posts.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
 
     post: Mapped["CommunityPost"] = relationship("CommunityPost")
     user: Mapped["User"] = relationship("User")
 
-    __table_args__ = (Index('ix_community_post_comments_post', 'post_id', 'created_at'),)
+    __table_args__ = (Index("ix_community_post_comments_post", "post_id", "created_at"),)

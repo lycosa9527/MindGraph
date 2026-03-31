@@ -7,9 +7,9 @@ Defines chunk structures for different chunking strategies:
 - Q&A: Question-answer pairs
 - Teaching: Enhanced chunks for educational content
 """
+
 from dataclasses import dataclass, field
 from typing import Dict, List, Any, Optional
-
 
 
 @dataclass
@@ -19,6 +19,7 @@ class Chunk:
 
     Compatible with existing ChunkingService.Chunk model.
     """
+
     text: str
     start_char: int
     end_char: int
@@ -36,6 +37,7 @@ class Chunk:
 @dataclass
 class ChildChunk(Chunk):
     """Child chunk in a parent-child hierarchy."""
+
     parent_id: Optional[str] = None
     parent_text: Optional[str] = None
     parent_index: Optional[int] = None
@@ -48,6 +50,7 @@ class ParentChunk:
 
     Only child chunks are embedded; parent provides context.
     """
+
     text: str
     start_char: int
     end_char: int
@@ -76,6 +79,7 @@ class QAChunk(Chunk):
 
     Used for FAQ documents and Q&A structures.
     """
+
     question: str = ""
     answer: str = ""
     qa_index: Optional[int] = field(default=None)
@@ -92,6 +96,7 @@ class QAChunk(Chunk):
 @dataclass
 class CodeBlock:
     """Represents a code block in a chunk."""
+
     code: str
     language: Optional[str] = None
     start_pos: Optional[int] = None
@@ -102,6 +107,7 @@ class CodeBlock:
 @dataclass
 class Formula:
     """Represents a mathematical formula in a chunk."""
+
     formula: str
     format: str = "latex"  # latex, mathml, plain
     start_pos: Optional[int] = None
@@ -115,6 +121,7 @@ class TeachingChunk(Chunk):
 
     Includes educational metadata and relationships.
     """
+
     content_type: str = "theory"  # "theory", "example", "exercise", "summary", "code", "formula"
     learning_objectives: List[str] = field(default_factory=list)
     key_concepts: List[str] = field(default_factory=list)
@@ -147,6 +154,7 @@ class ExerciseChunk(Chunk):
 
     Used for exercise books and question collections.
     """
+
     question_type: str = "short_answer"  # "multiple_choice", "short_answer", "essay", "calculation", "true_false"
     question_number: Optional[int] = field(default=None)
     quiz_section: Optional[str] = field(default=None)  # "Quiz 1", "Test 2", etc.
@@ -173,6 +181,7 @@ class DocumentStructure:
 
     Cached and reused for full document chunking.
     """
+
     document_id: str
     structure_type: str  # "general", "parent_child", "qa"
     toc: List[Dict[str, Any]] = field(default_factory=list)

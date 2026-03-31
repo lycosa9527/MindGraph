@@ -13,6 +13,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict, List, Optional, Set, Tuple
 import json
 import logging
@@ -29,7 +30,6 @@ from utils.prompt_locale import output_language_instruction, template_lang_for_r
 from utils.text_width_estimate import estimate_text_width_px
 
 from ..core.base_agent import BaseAgent
-
 
 
 logger = logging.getLogger(__name__)
@@ -70,13 +70,13 @@ class ConceptMapAgent(BaseAgent):
 
     async def enhance_spec(self, spec: Dict) -> Dict:
         """Enhance and sanitize concept map specification.
-        
+
         Normalizes concepts, validates relationships, generates layout,
         and computes recommended dimensions.
-        
+
         Args:
             spec: Dictionary containing topic, concepts, and relationships
-            
+
         Returns:
             Dictionary with success status and enhanced spec or error message
         """
@@ -91,7 +91,10 @@ class ConceptMapAgent(BaseAgent):
             if not isinstance(topic, str) or not topic.strip():
                 return {"success": False, "error": "Invalid or missing 'topic'"}
             if not isinstance(concepts, list) or not isinstance(relationships, list):
-                return {"success": False, "error": "'concepts' and 'relationships' must be lists"}
+                return {
+                    "success": False,
+                    "error": "'concepts' and 'relationships' must be lists",
+                }
 
             normalized_topic = self._clean_text(topic, self.MAX_LABEL_LEN)
 
@@ -177,14 +180,11 @@ class ConceptMapAgent(BaseAgent):
             concept_or_topic = set(normalized_concepts)
             concept_or_topic.add(normalized_topic)
             sanitized_relationships = [
-                r for r in sanitized_relationships
-                if r["from"] in concept_or_topic and r["to"] in concept_or_topic
+                r for r in sanitized_relationships if r["from"] in concept_or_topic and r["to"] in concept_or_topic
             ]
 
             # ALWAYS use radial layout for all concept maps
-            layout = self._generate_layout_radial(
-                normalized_topic, normalized_concepts, sanitized_relationships
-            )
+            layout = self._generate_layout_radial(normalized_topic, normalized_concepts, sanitized_relationships)
 
             # Compute recommended dimensions based on normalized positions extents
             recommended = self._compute_recommended_dimensions_from_layout(
@@ -202,15 +202,15 @@ class ConceptMapAgent(BaseAgent):
                 "_config": {
                     "nodeSpacing": 4.0,  # Maximum node spacing multiplier (increased from 3.0)
                     "canvasPadding": 140,  # Even more padding around the diagram (increased from 120)
-                    "minNodeDistance": 320  # Maximum minimum distance between nodes in pixels (increased from 250)
-                }
+                    "minNodeDistance": 320,  # Maximum minimum distance between nodes in pixels (increased from 250)
+                },
             }
 
             # Preserve important metadata from original spec
-            if spec.get('_method'):
-                enhanced_spec['_method'] = spec['_method']
-            if spec.get('_concept_count'):
-                enhanced_spec['_concept_count'] = spec['_concept_count']
+            if spec.get("_method"):
+                enhanced_spec["_method"] = spec["_method"]
+            if spec.get("_concept_count"):
+                enhanced_spec["_concept_count"] = spec["_concept_count"]
 
             if isinstance(spec.get("_style"), dict):
                 enhanced_spec["_style"] = spec["_style"]
@@ -219,9 +219,7 @@ class ConceptMapAgent(BaseAgent):
         except Exception as exc:
             return {"success": False, "error": f"ConceptMapAgent failed: {exc}"}
 
-    def _get_direction_instruction(
-        self, link_direction: str | None, language: str
-    ) -> str:
+    def _get_direction_instruction(self, link_direction: str | None, language: str) -> str:
         """Return direction-specific instruction for relationship generation."""
         direction = (link_direction or "").strip().lower()
         instructions: Dict[str, Dict[str, str]] = {
@@ -234,9 +232,7 @@ class ConceptMapAgent(BaseAgent):
                     "该连线有箭头，从概念B指向概念A。请生成 3–5 个不同的动词/短语，描述 B 如何导致、引导或指向 A。"
                     "类型宜多样。"
                 ),
-                "both": (
-                    "该连线两端均有箭头（双向）。请生成 3–5 个不同的动词/短语，描述 A 与 B 如何相互关联或影响。"
-                ),
+                "both": ("该连线两端均有箭头（双向）。请生成 3–5 个不同的动词/短语，描述 A 与 B 如何相互关联或影响。"),
                 "none": (
                     "该连线无箭头。这两个概念是平行或对称相关的。"
                     "请生成 3–5 个不同的标签（对称、非方向性），可以是名词、形容词或短语。"
@@ -276,23 +272,15 @@ class ConceptMapAgent(BaseAgent):
         language: str,
         concept_map_topic: str = "",
         link_direction: str | None = None,
-        **_kwargs: Any
+        **_kwargs: Any,
     ) -> Dict[str, Any]:
         """Generate only the relationship label between two concepts."""
         topic = (concept_map_topic or "").strip()
         if language == "zh":
-            topic_context = (
-                f"主题是：{topic}" if topic else "此图尚未设置主主题。"
-            )
+            topic_context = f"主题是：{topic}" if topic else "此图尚未设置主主题。"
         else:
-            topic_context = (
-                f"The topic is about: {topic}"
-                if topic
-                else "No main topic has been set for this map."
-            )
-        direction_instruction = self._get_direction_instruction(
-            link_direction, language
-        )
+            topic_context = f"The topic is about: {topic}" if topic else "No main topic has been set for this map."
+        direction_instruction = self._get_direction_instruction(link_direction, language)
         registry_lang = template_lang_for_registry(language)
         prompt_key = f"concept_map_relationship_only_{registry_lang}"
         prompt_template = self._get_prompt(
@@ -309,16 +297,17 @@ class ConceptMapAgent(BaseAgent):
         logger.debug(
             "Concept map relationship-only request: concept_a=%r concept_b=%r topic=%r "
             "link_direction=%r language=%s model=%s",
-            concept_a, concept_b, topic, link_direction, language, self.model
+            concept_a,
+            concept_b,
+            topic,
+            link_direction,
+            language,
+            self.model,
         )
         logger.debug("Concept map relationship prompt (first 500 chars): %.500s", prompt_template)
 
         try:
-            response = await llm_service.chat(
-                prompt=prompt_template,
-                model=self.model,
-                timeout=15.0
-            )
+            response = await llm_service.chat(prompt=prompt_template, model=self.model, timeout=15.0)
             raw = (response or "").strip()
             logger.debug("Concept map relationship LLM raw response: %r", raw)
             if raw.startswith("```"):
@@ -348,7 +337,7 @@ class ConceptMapAgent(BaseAgent):
         dimension_preference: str | None = None,
         fixed_dimension: str | None = None,
         dimension_only_mode: bool | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Generate a concept map graph specification from user prompt.
@@ -367,10 +356,10 @@ class ConceptMapAgent(BaseAgent):
         Returns:
             dict: Graph specification or {success, relationship_label} for relationship_only
         """
-        relationship_only = kwargs.get('relationship_only', False)
-        concept_a = kwargs.get('concept_a')
-        concept_b = kwargs.get('concept_b')
-        concept_map_topic = kwargs.get('concept_map_topic') or ""
+        relationship_only = kwargs.get("relationship_only", False)
+        concept_a = kwargs.get("concept_a")
+        concept_b = kwargs.get("concept_b")
+        concept_map_topic = kwargs.get("concept_map_topic") or ""
         try:
             if relationship_only and concept_a and concept_b:
                 return await self._generate_relationship_only(
@@ -378,12 +367,11 @@ class ConceptMapAgent(BaseAgent):
                     concept_b,
                     language,
                     concept_map_topic=concept_map_topic,
-                    link_direction=kwargs.get('link_direction'),
+                    link_direction=kwargs.get("link_direction"),
                 )
 
             logger.info(
-                "ConceptMapAgent: Returning minimal spec (multi-stage removed, "
-                "use real-time relationship generation)"
+                "ConceptMapAgent: Returning minimal spec (multi-stage removed, use real-time relationship generation)"
             )
             # Multi-stage generation removed. Return minimal spec for user to build
             # manually with real-time relationship suggestions on link creation.
@@ -394,13 +382,13 @@ class ConceptMapAgent(BaseAgent):
                 "relationships": [],
             }
             enhanced_result = await self.enhance_spec(minimal_spec)
-            if not enhanced_result.get('success'):
+            if not enhanced_result.get("success"):
                 logger.warning(
                     "ConceptMapAgent: Enhancement failed: %s",
-                    enhanced_result.get('error')
+                    enhanced_result.get("error"),
                 )
                 return minimal_spec
-            return enhanced_result.get('spec', minimal_spec)
+            return enhanced_result.get("spec", minimal_spec)
 
         except Exception as e:
             logger.error("ConceptMapAgent: Generation error: %s", e)
@@ -410,11 +398,11 @@ class ConceptMapAgent(BaseAgent):
         """Get prompt from the prompts module."""
         try:
             # Try to get the language-specific prompt first
-            language = kwargs.get('language', 'en')
+            language = kwargs.get("language", "en")
             formatted: Optional[str] = None
-            if language == 'zh':
+            if language == "zh":
                 # Try Chinese version first
-                zh_key = prompt_key.replace('_en', '_zh')
+                zh_key = prompt_key.replace("_en", "_zh")
                 prompt_template = CONCEPT_MAP_PROMPTS.get(zh_key)
                 if prompt_template:
                     formatted = prompt_template.format(**kwargs)
@@ -443,18 +431,18 @@ class ConceptMapAgent(BaseAgent):
         """Get response from LLM client, handling different client types."""
         try:
             # Check if it's a mock client with get_response method
-            if hasattr(llm_client, 'get_response'):
+            if hasattr(llm_client, "get_response"):
                 return llm_client.get_response(prompt)
 
             # Check if it's a LangChain LLM client with invoke method
-            if hasattr(llm_client, 'invoke'):
+            if hasattr(llm_client, "invoke"):
                 # Use LangChain's invoke method
                 pt = PromptTemplate(input_variables=[], template=prompt)
                 result = llm_client.invoke(pt)
                 return str(result) if result else ""
 
             # Check if it's an async client with chat_completion method
-            if hasattr(llm_client, 'chat_completion'):
+            if hasattr(llm_client, "chat_completion"):
                 # For now, return a mock response since we can't easily run async here
                 # In production, you'd want to properly handle the async call
                 if "concepts" in prompt.lower():
@@ -521,25 +509,25 @@ class ConceptMapAgent(BaseAgent):
                     if last_quote_pos > 0:
                         # Check if this looks like an unterminated string
                         before_quote = cleaned[:last_quote_pos]
-                        if before_quote.rstrip().endswith(':'):
+                        if before_quote.rstrip().endswith(":"):
                             # This looks like a key without a value, remove it
-                            cleaned = cleaned[:last_quote_pos].rstrip().rstrip(':').rstrip()
-                            cleaned += '}'
+                            cleaned = cleaned[:last_quote_pos].rstrip().rstrip(":").rstrip()
+                            cleaned += "}"
 
                 # Additional fix for unterminated strings at the end
                 # Look for patterns like "key": "value where the closing quote is missing
                 cleaned = re.sub(r'"([^"]*?)(?=\s*[,}\]]|$)', r'"\1"', cleaned)
 
                 # Try to balance braces if they're mismatched
-                open_braces = cleaned.count('{')
-                close_braces = cleaned.count('}')
+                open_braces = cleaned.count("{")
+                close_braces = cleaned.count("}")
                 if open_braces > close_braces:
-                    cleaned += '}' * (open_braces - close_braces)
+                    cleaned += "}" * (open_braces - close_braces)
                 elif close_braces > open_braces:
                     # Remove extra closing braces from the end
-                    cleaned = cleaned.rstrip('}')
+                    cleaned = cleaned.rstrip("}")
                     # Add back the right number
-                    cleaned += '}' * open_braces
+                    cleaned += "}" * open_braces
 
                 logger.info("Attempting to parse cleaned JSON after fixes")
                 # Try to parse the cleaned JSON
@@ -552,7 +540,7 @@ class ConceptMapAgent(BaseAgent):
 
             # Try to find JSON-like content
             try:
-                json_match = re.search(r'\{.*\}', cleaned, re.DOTALL)
+                json_match = re.search(r"\{.*\}", cleaned, re.DOTALL)
                 if json_match:
                     return json.loads(json_match.group())
             except json.JSONDecodeError:
@@ -561,10 +549,10 @@ class ConceptMapAgent(BaseAgent):
             # Try to fix common issues
             try:
                 # Remove any leading/trailing whitespace and newlines
-                cleaned = re.sub(r'^\s+|\s+$', '', cleaned, flags=re.MULTILINE)
+                cleaned = re.sub(r"^\s+|\s+$", "", cleaned, flags=re.MULTILINE)
                 # Try to find the start and end of JSON
-                start = cleaned.find('{')
-                end = cleaned.rfind('}') + 1
+                start = cleaned.find("{")
+                end = cleaned.rfind("}") + 1
                 if 0 <= start < end:
                     json_content = cleaned[start:end]
                     return json.loads(json_content)
@@ -582,7 +570,7 @@ class ConceptMapAgent(BaseAgent):
             concepts_match = re.search(r'"concepts"\s*:\s*\[(.*?)\]', cleaned, re.DOTALL)
             if concepts_match:
                 concepts_str = concepts_match.group(1)
-                concepts = [c.strip().strip('"') for c in concepts_str.split(',') if c.strip()]
+                concepts = [c.strip().strip('"') for c in concepts_str.split(",") if c.strip()]
                 logger.info("Extracted concepts using Pattern 1 (concepts array): %s", concepts)
 
             # Pattern 2: Look for keys array (for two-stage approach)
@@ -600,17 +588,40 @@ class ConceptMapAgent(BaseAgent):
                 # Find all quoted strings that look like concept names
                 concept_candidates = re.findall(r'"([^"]{2,20})"', cleaned)
                 # Filter out common JSON keys and short strings
-                json_keys = {'topic', 'concepts', 'keys', 'key_parts', 'relationships', 'from', 'to', 'label'}
+                json_keys = {
+                    "topic",
+                    "concepts",
+                    "keys",
+                    "key_parts",
+                    "relationships",
+                    "from",
+                    "to",
+                    "label",
+                }
                 concepts = [c for c in concept_candidates if c not in json_keys and len(c) > 1]
                 if concepts:
-                    logger.info("Extracted concepts using Pattern 3 (quoted strings): %s", concepts)
+                    logger.info(
+                        "Extracted concepts using Pattern 3 (quoted strings): %s",
+                        concepts,
+                    )
 
             # Pattern 4: Look for unquoted concept names in the response
             if not concepts:
                 # Find Chinese characters that might be concept names
-                chinese_concepts = re.findall(r'[\u4e00-\u9fff]{2,6}', cleaned)
+                chinese_concepts = re.findall(r"[\u4e00-\u9fff]{2,6}", cleaned)
                 # Filter out common words and keep meaningful concepts
-                common_words = {'概念', '主题', '包含', '相关', '应用', '原理', '特点', '方法', '工具', '技术'}
+                common_words = {
+                    "概念",
+                    "主题",
+                    "包含",
+                    "相关",
+                    "应用",
+                    "原理",
+                    "特点",
+                    "方法",
+                    "工具",
+                    "技术",
+                }
                 concepts = [c for c in chinese_concepts if c not in common_words and len(c) >= 2]
                 # Remove duplicates while preserving order
                 seen = set()
@@ -621,14 +632,20 @@ class ConceptMapAgent(BaseAgent):
                         unique_concepts.append(c)
                 concepts = unique_concepts[:6]  # Limit to 6 concepts
                 if concepts:
-                    logger.info("Extracted concepts using Pattern 4 (Chinese characters): %s", concepts)
+                    logger.info(
+                        "Extracted concepts using Pattern 4 (Chinese characters): %s",
+                        concepts,
+                    )
 
             # Return whatever we found, even if incomplete
             if concepts:
                 logger.info("Extracted partial concepts from malformed JSON: %s", concepts)
                 return {"topic": topic, "concepts": concepts}
             # If we found absolutely nothing, just return the topic
-            logger.warning("Could not extract any concepts from response, returning topic only: %s", topic)
+            logger.warning(
+                "Could not extract any concepts from response, returning topic only: %s",
+                topic,
+            )
             return {"topic": topic, "concepts": []}
 
     def _clean_text(self, text: str, max_len: int) -> str:
@@ -759,8 +776,8 @@ class ConceptMapAgent(BaseAgent):
                 "baseRadius": base_radius,
                 "radiusIncrement": radius_increment,
                 "maxLayers": max_layer,
-                "canvasBounds": 0.95
-            }
+                "canvasBounds": 0.95,
+            },
         }
 
     def _compute_recommended_dimensions_from_layout(
@@ -776,7 +793,13 @@ class ConceptMapAgent(BaseAgent):
         positions = layout.get("positions") or {}
         if not positions:
             # Minimal fallback sizing for empty layouts
-            return {"baseWidth": 800, "baseHeight": 600, "width": 800, "height": 600, "padding": 100}
+            return {
+                "baseWidth": 800,
+                "baseHeight": 600,
+                "width": 800,
+                "height": 600,
+                "padding": 100,
+            }
 
         # Simulate D3.js text measurement and box sizing
         def estimate_text_box(text: str, is_topic: bool = False) -> tuple:
@@ -816,7 +839,13 @@ class ConceptMapAgent(BaseAgent):
         xs = [positions[c]["x"] for c in positions if "x" in positions[c]]
         ys = [positions[c]["y"] for c in positions if "y" in positions[c]]
         if not xs or not ys:
-            return {"baseWidth": 800, "baseHeight": 600, "width": 800, "height": 600, "padding": 100}
+            return {
+                "baseWidth": 800,
+                "baseHeight": 600,
+                "width": 800,
+                "height": 600,
+                "padding": 100,
+            }
 
         xmin, xmax = min(xs), max(xs)
         ymin, ymax = min(ys), max(ys)
@@ -850,9 +879,9 @@ class ConceptMapAgent(BaseAgent):
 
         # Apply reasonable bounds
         num_concepts = len(concepts)
-        min_width = max(600, 400 + num_concepts * 10)   # Increased for larger text and spacing
+        min_width = max(600, 400 + num_concepts * 10)  # Increased for larger text and spacing
         min_height = max(500, 350 + num_concepts * 8)
-        max_width = 1400   # Increased maximum to accommodate larger text and spacing (was 1200)
+        max_width = 1400  # Increased maximum to accommodate larger text and spacing (was 1200)
         max_height = 1200  # Increased maximum to accommodate larger text and spacing (was 1000)
 
         width_px = int(max(min_width, min(max_width, total_width)))
@@ -863,7 +892,7 @@ class ConceptMapAgent(BaseAgent):
             "baseHeight": height_px,
             "width": width_px,
             "height": height_px,
-            "padding": base_padding
+            "padding": base_padding,
         }
 
 

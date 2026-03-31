@@ -11,7 +11,11 @@ from typing import Any, Dict
 from sqlalchemy import text
 
 from config.database import (
-    recover_from_kill_9, SessionLocal, check_integrity, engine, DATABASE_URL,
+    recover_from_kill_9,
+    SessionLocal,
+    check_integrity,
+    engine,
+    DATABASE_URL,
 )
 from models.domain.knowledge_space import ChunkTestDocument
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
@@ -33,7 +37,9 @@ def _cleanup_user_documents(db, user_id, docs) -> int:
     except Exception as exc:
         logger.error(
             "[Recovery] Failed to create service for user %s: %s",
-            user_id, exc, exc_info=True,
+            user_id,
+            exc,
+            exc_info=True,
         )
         return 0
 
@@ -43,12 +49,15 @@ def _cleanup_user_documents(db, user_id, docs) -> int:
             cleaned += 1
             logger.info(
                 "[Recovery] Cleaned up incomplete processing for document %s (user %s)",
-                doc.id, user_id,
+                doc.id,
+                user_id,
             )
         except Exception as exc:
             logger.error(
                 "[Recovery] Failed to cleanup document %s: %s",
-                doc.id, exc, exc_info=True,
+                doc.id,
+                exc,
+                exc_info=True,
             )
     return cleaned
 
@@ -75,14 +84,13 @@ def cleanup_incomplete_chunk_operations() -> int:
         return 0
     except Exception as exc:
         logger.warning(
-            "[Recovery] Error during incomplete chunk operations cleanup: %s", exc,
+            "[Recovery] Error during incomplete chunk operations cleanup: %s",
+            exc,
         )
         return 0
 
     try:
-        stuck_docs = db.query(ChunkTestDocument).filter(
-            ChunkTestDocument.status == 'processing'
-        ).all()
+        stuck_docs = db.query(ChunkTestDocument).filter(ChunkTestDocument.status == "processing").all()
 
         if not stuck_docs:
             logger.debug("[Recovery] No documents stuck in processing status")
@@ -97,10 +105,7 @@ def cleanup_incomplete_chunk_operations() -> int:
         for doc in stuck_docs:
             docs_by_user.setdefault(doc.user_id, []).append(doc)
 
-        cleaned_count = sum(
-            _cleanup_user_documents(db, uid, docs)
-            for uid, docs in docs_by_user.items()
-        )
+        cleaned_count = sum(_cleanup_user_documents(db, uid, docs) for uid, docs in docs_by_user.items())
 
         if cleaned_count > 0:
             logger.info(
@@ -112,7 +117,8 @@ def cleanup_incomplete_chunk_operations() -> int:
     except Exception as exc:
         logger.error(
             "[Recovery] Error during incomplete chunk operations cleanup: %s",
-            exc, exc_info=True,
+            exc,
+            exc_info=True,
         )
         db.rollback()
         return 0
@@ -135,17 +141,14 @@ def check_database_on_startup() -> bool:
     logger.debug("[Recovery] Recovering from potential kill -9 scenario...")
     recovery_success = recover_from_kill_9()
     if not recovery_success:
-        logger.warning(
-            "[Recovery] Database recovery from kill -9 failed, "
-            "but continuing with connectivity check"
-        )
+        logger.warning("[Recovery] Database recovery from kill -9 failed, but continuing with connectivity check")
 
     logger.debug("[Recovery] Cleaning up incomplete chunk operations...")
     cleaned_count = cleanup_incomplete_chunk_operations()
     if cleaned_count > 0:
         logger.info(
             "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
-            cleaned_count
+            cleaned_count,
         )
 
     skip_check_env = os.getenv("SKIP_INTEGRITY_CHECK", "")
@@ -170,10 +173,7 @@ def check_database_on_startup() -> bool:
         CriticalAlertService.send_startup_failure_alert_sync(
             component="Database",
             error_message="PostgreSQL connectivity check failed",
-            details=(
-                "Cannot connect to PostgreSQL. "
-                "Check DATABASE_URL, PostgreSQL service status, and pg_hba.conf."
-            ),
+            details=("Cannot connect to PostgreSQL. Check DATABASE_URL, PostgreSQL service status, and pg_hba.conf."),
         )
     except Exception as alert_error:
         logger.error("[Recovery] Failed to send database alert: %s", alert_error)
@@ -186,9 +186,7 @@ def check_database_on_startup() -> bool:
     logger.critical("[Recovery] POSTGRESQL UNREACHABLE - STARTUP ABORTED")
     logger.critical("[Recovery] %s", separator)
     logger.critical("[Recovery] ")
-    logger.critical(
-        "[Recovery] Cannot connect to PostgreSQL. Verify:"
-    )
+    logger.critical("[Recovery] Cannot connect to PostgreSQL. Verify:")
     logger.critical("[Recovery]   1. PostgreSQL service is running")
     logger.critical("[Recovery]   2. DATABASE_URL is correct")
     logger.critical("[Recovery]   3. pg_hba.conf allows connections")
@@ -221,11 +219,7 @@ def get_recovery_status() -> Dict[str, Any]:
         dict with database health and backup info
     """
     is_healthy = check_integrity()
-    message = (
-        "PostgreSQL connection check passed"
-        if is_healthy
-        else "PostgreSQL connection check failed"
-    )
+    message = "PostgreSQL connection check passed" if is_healthy else "PostgreSQL connection check failed"
 
     current_stats: Dict[str, Any] = {}
     try:
@@ -237,11 +231,7 @@ def get_recovery_status() -> Dict[str, Any]:
             )
             size_row = result.fetchone()
             if size_row:
-                masked_url = (
-                    DATABASE_URL.split("@")[-1]
-                    if "@" in DATABASE_URL
-                    else DATABASE_URL
-                )
+                masked_url = DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else DATABASE_URL
                 current_stats = {
                     "database_url": masked_url,
                     "size": size_row[0],

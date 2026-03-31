@@ -180,12 +180,13 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       selectedModel.value = model
       // Always keep activeDiagramId - we're updating the same diagram with different
       // LLM result. Clearing it caused duplicate CREATE when debounced save fired.
-      console.log(`[LLMResults] Switched to ${model} result`)
       return true
     }
 
     contentChangeIsFromModelSwitch.value = false
-    console.error(`[LLMResults] Failed to load ${model} result into diagram store`)
+    if (import.meta.env.DEV) {
+      console.error(`[LLMResults] Failed to load ${model} result into diagram store`)
+    }
     return false
   }
 
@@ -260,7 +261,9 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
     }
 
     if (normalizedCurrentType !== expectedDiagramType.value) {
-      console.warn(`[LLMResults] Diagram type changed during ${model} generation`)
+      if (import.meta.env.DEV) {
+        console.warn(`[LLMResults] Diagram type changed during ${model} generation`)
+      }
       return false
     }
 
@@ -279,8 +282,6 @@ export const useLLMResultsStore = defineStore('llmResults', () => {
       const loaded = await switchToModel(model)
       if (!loaded) {
         selectedModel.value = null
-      } else {
-        console.log(`[LLMResults] First result from ${model} rendered`)
       }
       return loaded
     }

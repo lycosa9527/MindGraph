@@ -3,6 +3,7 @@ Chunk test document management endpoints.
 
 Handles document upload, listing, deletion, and processing.
 """
+
 import logging
 import tempfile
 import threading
@@ -29,7 +30,7 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
     logger.info(
         "[ChunkTestDocuments] Starting background processing for document %s (user %s)",
         document_id,
-        user_id
+        user_id,
     )
     db = SessionLocal()
     try:
@@ -37,36 +38,40 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
         service.process_document(document_id)
         logger.info(
             "[ChunkTestDocuments] Successfully completed processing document %s",
-            document_id
+            document_id,
         )
     except Exception as e:
         logger.error(
             "[ChunkTestDocuments] Background processing failed for document %s: %s",
             document_id,
             e,
-            exc_info=True
+            exc_info=True,
         )
         try:
-            document = db.query(ChunkTestDocument).filter(
-                ChunkTestDocument.id == document_id,
-                ChunkTestDocument.user_id == user_id
-            ).first()
-            if document and document.status == 'processing':
-                document.status = 'failed'
+            document = (
+                db.query(ChunkTestDocument)
+                .filter(
+                    ChunkTestDocument.id == document_id,
+                    ChunkTestDocument.user_id == user_id,
+                )
+                .first()
+            )
+            if document and document.status == "processing":
+                document.status = "failed"
                 document.error_message = str(e)
-                document.processing_progress = 'failed'
+                document.processing_progress = "failed"
                 document.processing_progress_percent = 0
                 db.commit()
                 logger.info(
                     "[ChunkTestDocuments] Marked document %s as failed due to processing error",
-                    document_id
+                    document_id,
                 )
         except Exception as update_error:
             logger.error(
                 "[ChunkTestDocuments] Failed to update document %s status to failed: %s",
                 document_id,
                 update_error,
-                exc_info=True
+                exc_info=True,
             )
             db.rollback()
     finally:
@@ -77,7 +82,7 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
 async def upload_chunk_test_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     check_feature_enabled()
     """
@@ -100,7 +105,7 @@ async def upload_chunk_test_document(
             file_name=file.filename,
             file_path=tmp_path,
             file_type=file_type,
-            file_size=len(content)
+            file_size=len(content),
         )
 
         return DocumentResponse(
@@ -114,25 +119,18 @@ async def upload_chunk_test_document(
             processing_progress=document.processing_progress,
             processing_progress_percent=document.processing_progress_percent or 0,
             created_at=document.created_at.isoformat(),
-            updated_at=document.updated_at.isoformat()
+            updated_at=document.updated_at.isoformat(),
         )
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(
-            "[ChunkTestDocuments] Upload failed for user %s: %s",
-            current_user.id,
-            e
-        )
+        logger.error("[ChunkTestDocuments] Upload failed for user %s: %s", current_user.id, e)
         raise HTTPException(status_code=500, detail="Upload failed") from e
 
 
 @router.get("/chunk-test/documents", response_model=DocumentListResponse)
-async def list_chunk_test_documents(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def list_chunk_test_documents(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     List all chunk test documents for the user.
 
@@ -149,7 +147,7 @@ async def list_chunk_test_documents(
         "[ChunkTestDocuments] Listing documents for user %s: %s (statuses: %s)",
         current_user.id,
         len(documents),
-        status_counts
+        status_counts,
     )
 
     return DocumentListResponse(
@@ -165,11 +163,11 @@ async def list_chunk_test_documents(
                 processing_progress=doc.processing_progress,
                 processing_progress_percent=doc.processing_progress_percent or 0,
                 created_at=doc.created_at.isoformat(),
-                updated_at=doc.updated_at.isoformat()
+                updated_at=doc.updated_at.isoformat(),
             )
             for doc in documents
         ],
-        total=len(documents)
+        total=len(documents),
     )
 
 
@@ -177,7 +175,7 @@ async def list_chunk_test_documents(
 async def delete_chunk_test_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a chunk test document and all associated data.
@@ -197,15 +195,14 @@ async def delete_chunk_test_document(
             "[ChunkTestDocuments] Delete failed for user %s, document %s: %s",
             current_user.id,
             document_id,
-            e
+            e,
         )
         raise HTTPException(status_code=500, detail="Delete failed") from e
 
 
 @router.post("/chunk-test/documents/start-processing")
 def start_processing_chunk_test_documents(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
 ):
     """
     Manually trigger processing for all pending chunk test documents.
@@ -216,55 +213,52 @@ def start_processing_chunk_test_documents(
     service = ChunkTestDocumentService(db, current_user.id)
     documents = service.get_user_documents()
 
-    pending_docs = [doc for doc in documents if doc.status in ('pending', 'failed')]
+    pending_docs = [doc for doc in documents if doc.status in ("pending", "failed")]
 
     if not pending_docs:
-        return {
-            "message": "No pending documents to process",
-            "processed_count": 0
-        }
+        return {"message": "No pending documents to process", "processed_count": 0}
 
     processed_count = 0
     logger.info(
         "[ChunkTestDocuments] Found %d pending documents to process for user %s",
         len(pending_docs),
-        current_user.id
+        current_user.id,
     )
     for doc in pending_docs:
         try:
-            doc.status = 'processing'
-            doc.processing_progress = 'queued'
+            doc.status = "processing"
+            doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
             db.commit()
 
             logger.info(
                 "[ChunkTestDocuments] Starting background thread for document %s (user %s)",
                 doc.id,
-                current_user.id
+                current_user.id,
             )
             thread = threading.Thread(
                 target=_process_chunk_test_document,
                 args=(current_user.id, doc.id),
                 daemon=False,
-                name=f"ChunkTestDocProcess-{doc.id}"
+                name=f"ChunkTestDocProcess-{doc.id}",
             )
             thread.start()
             logger.info(
                 "[ChunkTestDocuments] Background thread started for document %s (thread: %s)",
                 doc.id,
-                thread.name
+                thread.name,
             )
             processed_count += 1
         except Exception as e:
             logger.error(
                 "[ChunkTestDocuments] Failed to start processing document %s: %s",
                 doc.id,
-                e
+                e,
             )
 
     return {
         "message": f"Started processing {processed_count} document(s)",
-        "processed_count": processed_count
+        "processed_count": processed_count,
     }
 
 
@@ -272,7 +266,7 @@ def start_processing_chunk_test_documents(
 def process_selected_chunk_test_documents(
     request: ProcessSelectedRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Process selected chunk test documents by their IDs.
@@ -289,58 +283,52 @@ def process_selected_chunk_test_documents(
     if not valid_ids:
         raise HTTPException(status_code=400, detail="No valid documents to process")
 
-    docs_to_process = [
-        doc for doc in documents
-        if doc.id in valid_ids and doc.status in ('pending', 'failed')
-    ]
+    docs_to_process = [doc for doc in documents if doc.id in valid_ids and doc.status in ("pending", "failed")]
 
     if not docs_to_process:
-        return {
-            "message": "No pending documents in selection",
-            "processed_count": 0
-        }
+        return {"message": "No pending documents in selection", "processed_count": 0}
 
     processed_count = 0
     logger.info(
         "[ChunkTestDocuments] Processing %d selected documents for user %s",
         len(docs_to_process),
-        current_user.id
+        current_user.id,
     )
     for doc in docs_to_process:
         try:
-            doc.status = 'processing'
-            doc.processing_progress = 'queued'
+            doc.status = "processing"
+            doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
             db.commit()
 
             logger.info(
                 "[ChunkTestDocuments] Starting background thread for selected document %s (user %s)",
                 doc.id,
-                current_user.id
+                current_user.id,
             )
             thread = threading.Thread(
                 target=_process_chunk_test_document,
                 args=(current_user.id, doc.id),
                 daemon=False,
-                name=f"ChunkTestDocProcess-{doc.id}"
+                name=f"ChunkTestDocProcess-{doc.id}",
             )
             thread.start()
             logger.info(
                 "[ChunkTestDocuments] Background thread started for document %s (thread: %s)",
                 doc.id,
-                thread.name
+                thread.name,
             )
             processed_count += 1
         except Exception as e:
             logger.error(
                 "[ChunkTestDocuments] Failed to start processing document %s: %s",
                 doc.id,
-                e
+                e,
             )
 
     return {
         "message": f"Started processing {processed_count} document(s)",
-        "processed_count": processed_count
+        "processed_count": processed_count,
     }
 
 
@@ -350,7 +338,7 @@ def get_chunk_test_document_chunks(
     page: int = 1,
     page_size: int = 20,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get chunks for a chunk test document with pagination.
@@ -365,13 +353,16 @@ def get_chunk_test_document_chunks(
         raise HTTPException(status_code=404, detail="Document not found")
 
     offset = (page - 1) * page_size
-    chunks = db.query(ChunkTestDocumentChunk).filter(
-        ChunkTestDocumentChunk.document_id == document_id
-    ).order_by(ChunkTestDocumentChunk.chunk_index).offset(offset).limit(page_size).all()
+    chunks = (
+        db.query(ChunkTestDocumentChunk)
+        .filter(ChunkTestDocumentChunk.document_id == document_id)
+        .order_by(ChunkTestDocumentChunk.chunk_index)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
 
-    total = db.query(ChunkTestDocumentChunk).filter(
-        ChunkTestDocumentChunk.document_id == document_id
-    ).count()
+    total = db.query(ChunkTestDocumentChunk).filter(ChunkTestDocumentChunk.document_id == document_id).count()
 
     return {
         "document_id": document_id,
@@ -386,8 +377,8 @@ def get_chunk_test_document_chunks(
                 "text": chunk.text,
                 "start_char": chunk.start_char,
                 "end_char": chunk.end_char,
-                "metadata": chunk.meta_data
+                "metadata": chunk.meta_data,
             }
             for chunk in chunks
-        ]
+        ],
     }

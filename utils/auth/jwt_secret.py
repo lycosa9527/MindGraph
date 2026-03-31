@@ -30,6 +30,7 @@ _is_redis_available = None
 try:
     from services.redis.redis_client import get_redis as redis_get_redis
     from services.redis.redis_client import is_redis_available as redis_is_available
+
     _REDIS_AVAILABLE = True
     _get_redis = redis_get_redis
     _is_redis_available = redis_is_available
@@ -57,7 +58,7 @@ def _save_jwt_secret_backup(secret: str) -> bool:
             os.makedirs(data_dir, exist_ok=True)
 
         # Write secret to file with restricted permissions
-        with open(JWT_SECRET_BACKUP_FILE, 'w', encoding='utf-8') as f:
+        with open(JWT_SECRET_BACKUP_FILE, "w", encoding="utf-8") as f:
             f.write(secret)
 
         # Set file permissions to owner-only (Unix)
@@ -85,7 +86,7 @@ def _load_jwt_secret_backup() -> Optional[str]:
         if not os.path.exists(JWT_SECRET_BACKUP_FILE):
             return None
 
-        with open(JWT_SECRET_BACKUP_FILE, 'r', encoding='utf-8') as f:
+        with open(JWT_SECRET_BACKUP_FILE, "r", encoding="utf-8") as f:
             secret = f.read().strip()
 
         # Validate secret format (should be URL-safe base64)
@@ -126,9 +127,7 @@ def get_jwt_secret() -> str:
         return _jwt_secret_cache
 
     if not _REDIS_AVAILABLE:
-        raise RuntimeError(
-            "Redis client not available. Redis is required for JWT secret storage."
-        )
+        raise RuntimeError("Redis client not available. Redis is required for JWT secret storage.")
 
     if _is_redis_available is None:
         raise RuntimeError("is_redis_available function not available")
@@ -138,8 +137,7 @@ def get_jwt_secret() -> str:
     try:
         if not _is_redis_available():
             raise RuntimeError(
-                "Redis is required for JWT secret storage. "
-                "Please ensure Redis is running and REDIS_URL is configured."
+                "Redis is required for JWT secret storage. Please ensure Redis is running and REDIS_URL is configured."
             )
 
         redis = _get_redis()
@@ -149,7 +147,7 @@ def get_jwt_secret() -> str:
         # Try to get existing secret from Redis
         secret = redis.get(JWT_SECRET_REDIS_KEY)
         if secret:
-            secret_str = secret.decode('utf-8') if isinstance(secret, bytes) else secret
+            secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
             _jwt_secret_cache = secret_str
             logger.debug("[Auth] Retrieved JWT secret from Redis")
             return secret_str
@@ -165,7 +163,7 @@ def get_jwt_secret() -> str:
             # Another worker restored it first, fetch theirs
             secret = redis.get(JWT_SECRET_REDIS_KEY)
             if secret:
-                secret_str = secret.decode('utf-8') if isinstance(secret, bytes) else secret
+                secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
                 _jwt_secret_cache = secret_str
                 return secret_str
 
@@ -181,7 +179,7 @@ def get_jwt_secret() -> str:
         # Another worker created it first, fetch theirs
         secret = redis.get(JWT_SECRET_REDIS_KEY)
         if secret:
-            secret_str = secret.decode('utf-8') if isinstance(secret, bytes) else secret
+            secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
             _jwt_secret_cache = secret_str
             _save_jwt_secret_backup(secret_str)
             return secret_str
@@ -189,9 +187,7 @@ def get_jwt_secret() -> str:
         raise RuntimeError("Failed to retrieve or generate JWT secret from Redis")
 
     except ImportError as exc:
-        raise RuntimeError(
-            "Redis client not available. Redis is required for JWT secret storage."
-        ) from exc
+        raise RuntimeError("Redis client not available. Redis is required for JWT secret storage.") from exc
     except Exception as e:
         logger.error("[Auth] JWT secret retrieval failed: %s", e)
         raise

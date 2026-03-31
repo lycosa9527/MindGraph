@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import List, Dict, Any, Optional, Callable, Union
@@ -27,6 +28,7 @@ from services.llm import llm_service as llm_svc
 try:
     from llm_chunking.chunker import LLMSemanticChunker
     from llm_chunking.models import ParentChunk, QAChunk
+
     HAS_LLM_CHUNKING = True
 except ImportError:
     HAS_LLM_CHUNKING = False
@@ -40,6 +42,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class Chunk:
     """Represents a text chunk."""
+
     text: str
     start_char: int
     end_char: int
@@ -58,7 +61,7 @@ class BaseChunkingService(ABC):
         separator: Optional[str] = None,
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
-        language: Optional[str] = None
+        language: Optional[str] = None,
     ) -> List[Chunk]:
         """Chunk text into chunks."""
 
@@ -87,13 +90,14 @@ class ChunkingService(BaseChunkingService):
     """
 
     # Automatic segmentation rules (like Dify's AUTOMATIC_RULES)
-    AUTOMATIC_RULES = {
-        "max_tokens": 500,
-        "chunk_overlap": 50,
-        "separator": "\n\n"
-    }
+    AUTOMATIC_RULES = {"max_tokens": 500, "chunk_overlap": 50, "separator": "\n\n"}
 
-    def __init__(self, chunk_size: Optional[int] = None, overlap: Optional[int] = None, mode: str = "automatic"):
+    def __init__(
+        self,
+        chunk_size: Optional[int] = None,
+        overlap: Optional[int] = None,
+        mode: str = "automatic",
+    ):
         """
         Initialize chunking service with semchunk.
 
@@ -118,7 +122,7 @@ class ChunkingService(BaseChunkingService):
             logger.warning(
                 "[ChunkingService] Chunk size %s out of range [50, %s], using default 500",
                 self.chunk_size,
-                max_segmentation_tokens
+                max_segmentation_tokens,
             )
             self.chunk_size = 500
 
@@ -137,14 +141,14 @@ class ChunkingService(BaseChunkingService):
             "[ChunkingService] Initialized with mode=%s, chunk_size=%s, overlap=%s",
             mode,
             self.chunk_size,
-            self.overlap
+            self.overlap,
         )
 
     def _split(
         self,
         text: str,
         metadata: Optional[Dict[str, Any]] = None,
-        page_info: Optional[List[Dict[str, Any]]] = None
+        page_info: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Chunk]:
         """
         Split text using semchunk.
@@ -175,7 +179,7 @@ class ChunkingService(BaseChunkingService):
             if not isinstance(chunk_text, str):
                 logger.warning(
                     "[ChunkingService] Unexpected chunk type: %s, skipping",
-                    type(chunk_text)
+                    type(chunk_text),
                 )
                 continue
 
@@ -192,19 +196,19 @@ class ChunkingService(BaseChunkingService):
             # Add page number if available
             if page_info:
                 for page_data in page_info:
-                    if page_data['start'] <= start_pos < page_data['end']:
-                        chunk_metadata['page_number'] = page_data['page']
+                    if page_data["start"] <= start_pos < page_data["end"]:
+                        chunk_metadata["page_number"] = page_data["page"]
                         break
 
             # Add token count
-            chunk_metadata['token_count'] = self._token_counter(chunk_text)
+            chunk_metadata["token_count"] = self._token_counter(chunk_text)
 
             chunk = Chunk(
                 text=chunk_text.strip(),
                 start_char=start_pos,
                 end_char=end_pos,
                 chunk_index=i,
-                metadata=chunk_metadata
+                metadata=chunk_metadata,
             )
             chunks.append(chunk)
 
@@ -212,7 +216,7 @@ class ChunkingService(BaseChunkingService):
             "[ChunkingService] Created %s chunks from %s chars (avg %s chars/chunk)",
             len(chunks),
             len(text),
-            len(text) // max(len(chunks), 1)
+            len(text) // max(len(chunks), 1),
         )
         return chunks
 
@@ -223,7 +227,7 @@ class ChunkingService(BaseChunkingService):
         separator: Optional[str] = None,
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
-        language: Optional[str] = None
+        language: Optional[str] = None,
     ) -> List[Chunk]:
         """
         Split text into chunks using semchunk.
@@ -279,7 +283,7 @@ class ChunkingService(BaseChunkingService):
                 "[ChunkingService] User %s would exceed chunk limit: %s > %s",
                 user_id,
                 chunk_count,
-                max_chunks
+                max_chunks,
             )
             return False
 
@@ -297,22 +301,18 @@ def _initialize_mindchunk_service():
         RuntimeError: If LLM service cannot be initialized
     """
     logger.info(
-        "[ChunkingService] ✓ Using MindChunk (LLM-based semantic chunking) - "
-        "requires LLM service initialization"
+        "[ChunkingService] ✓ Using MindChunk (LLM-based semantic chunking) - requires LLM service initialization"
     )
     # Verify LLM service is initialized, try to initialize if not
     try:
-        if not hasattr(llm_svc, 'client_manager'):
+        if not hasattr(llm_svc, "client_manager"):
             raise RuntimeError(
                 "[ChunkingService] LLM service missing client_manager attribute. "
                 "MindChunk cannot work without LLM service."
             )
 
         if not llm_svc.client_manager.is_initialized():
-            logger.warning(
-                "[ChunkingService] LLM service not initialized. "
-                "Attempting to initialize now..."
-            )
+            logger.warning("[ChunkingService] LLM service not initialized. Attempting to initialize now...")
 
             # Try to initialize if API key is available
             if not config.QWEN_API_KEY:
@@ -348,22 +348,19 @@ def _initialize_mindchunk_service():
 
     if not HAS_LLM_CHUNKING or LLMSemanticChunker is None:
         raise RuntimeError(
-            "[ChunkingService] llm_chunking module not available. "
-            "MindChunk requires llm_chunking package."
+            "[ChunkingService] llm_chunking module not available. MindChunk requires llm_chunking package."
         )
 
     chunker = LLMSemanticChunker(
         llm_service=llm_svc,
         sample_pages=int(os.getenv("CHUNK_SAMPLE_PAGES", "30")),
-        batch_size=int(os.getenv("CHUNK_BATCH_SIZE", "10"))
+        batch_size=int(os.getenv("CHUNK_BATCH_SIZE", "10")),
     )
     return MindChunkAdapter(chunker)
 
 
 # Module-level singleton instance container (avoids global statement)
-_chunking_service_container: Dict[str, Optional[Union[ChunkingService, "MindChunkAdapter"]]] = {
-    "instance": None
-}
+_chunking_service_container: Dict[str, Optional[Union[ChunkingService, "MindChunkAdapter"]]] = {"instance": None}
 
 
 def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
@@ -380,16 +377,13 @@ def get_chunking_service() -> Union[ChunkingService, "MindChunkAdapter"]:
         logger.info(
             "[ChunkingService] Initializing chunking service: CHUNKING_ENGINE=%s (env value: %s)",
             chunking_engine,
-            env_value
+            env_value,
         )
 
         if chunking_engine == "mindchunk":
             _chunking_service_container["instance"] = _initialize_mindchunk_service()
         else:
-            logger.info(
-                "[ChunkingService] Using semchunk (chunking_engine=%s)",
-                chunking_engine
-            )
+            logger.info("[ChunkingService] Using semchunk (chunking_engine=%s)", chunking_engine)
             _chunking_service_container["instance"] = ChunkingService()
 
     # Type narrowing: instance is always initialized above
@@ -421,7 +415,7 @@ class MindChunkAdapter(BaseChunkingService):
         logger.info(
             "[MindChunkAdapter] Initialized with LLM-based chunking (chunk_size=%s, overlap=%s)",
             self.chunk_size,
-            self.overlap
+            self.overlap,
         )
 
     def chunk_text(
@@ -431,7 +425,7 @@ class MindChunkAdapter(BaseChunkingService):
         separator: Optional[str] = None,
         extract_structure: bool = False,
         page_info: Optional[List[Dict[str, Any]]] = None,
-        language: Optional[str] = None
+        language: Optional[str] = None,
     ) -> List[Chunk]:
         """
         Chunk text using MindChunk (LLM-based chunking).
@@ -459,10 +453,7 @@ class MindChunkAdapter(BaseChunkingService):
             if loop.is_running():
                 # If loop is already running (async context), we can't use run_until_complete
                 # This shouldn't happen in Flask sync routes, but handle gracefully
-                logger.warning(
-                    "[MindChunkAdapter] Event loop already running, "
-                    "this may indicate async context issue"
-                )
+                logger.warning("[MindChunkAdapter] Event loop already running, this may indicate async context issue")
                 # Create new loop for this operation
                 loop = asyncio.new_event_loop()
                 asyncio.set_event_loop(loop)
@@ -481,7 +472,7 @@ class MindChunkAdapter(BaseChunkingService):
             len(text),
             extract_structure,
             self.chunk_size,
-            self.overlap
+            self.overlap,
         )
 
         # Determine structure type if extract_structure is True
@@ -490,16 +481,13 @@ class MindChunkAdapter(BaseChunkingService):
             structure_type = "general"  # Can be enhanced to detect structure
             logger.debug(
                 "[MindChunkAdapter] Structure extraction enabled, type=%s",
-                structure_type
+                structure_type,
             )
 
         # Extract PDF outline from page_info if available
         pdf_outline = None
         if page_info:
-            pdf_outline = [
-                {"page": p["page"], "title": f"Page {p['page']}"}
-                for p in page_info
-            ]
+            pdf_outline = [{"page": p["page"], "title": f"Page {p['page']}"} for p in page_info]
 
         # Call async method
         logger.info(
@@ -509,7 +497,7 @@ class MindChunkAdapter(BaseChunkingService):
             len(text),
             structure_type,
             self.chunk_size,
-            self.overlap
+            self.overlap,
         )
         try:
             llm_chunks = loop.run_until_complete(
@@ -519,32 +507,25 @@ class MindChunkAdapter(BaseChunkingService):
                     structure_type=structure_type,
                     pdf_outline=pdf_outline,
                     chunk_size=self.chunk_size,
-                    overlap=self.overlap
+                    overlap=self.overlap,
                 )
             )
             logger.info(
-                "[MindChunkAdapter] LLM chunker returned: doc_id=%s, chunks_count=%s, "
-                "chunks_type=%s",
+                "[MindChunkAdapter] LLM chunker returned: doc_id=%s, chunks_count=%s, chunks_type=%s",
                 document_id,
                 len(llm_chunks) if llm_chunks else 0,
-                type(llm_chunks).__name__ if llm_chunks else "None"
+                type(llm_chunks).__name__ if llm_chunks else "None",
             )
         except Exception as e:
             logger.error(
                 "[MindChunkAdapter] ✗ ERROR during LLM chunking for doc_id=%s: %s",
                 document_id,
-                e
+                e,
             )
             logger.error("[MindChunkAdapter] Full traceback:")
             logger.error(traceback.format_exc())
-            logger.error(
-                "[MindChunkAdapter] Exception type: %s",
-                type(e).__name__
-            )
-            logger.error(
-                "[MindChunkAdapter] Exception args: %s",
-                e.args
-            )
+            logger.error("[MindChunkAdapter] Exception type: %s", type(e).__name__)
+            logger.error("[MindChunkAdapter] Exception args: %s", e.args)
             # Raise error instead of returning empty - we removed fallback
             raise RuntimeError(
                 f"[MindChunkAdapter] LLM chunking failed for doc_id={document_id}: {e}. "
@@ -562,8 +543,7 @@ class MindChunkAdapter(BaseChunkingService):
         # Convert to legacy Chunk format
         if not HAS_LLM_CHUNKING or ParentChunk is None or QAChunk is None:
             raise RuntimeError(
-                "[MindChunkAdapter] llm_chunking.models not available. "
-                "Cannot convert chunks to legacy format."
+                "[MindChunkAdapter] llm_chunking.models not available. Cannot convert chunks to legacy format."
             )
 
         chunks = []
@@ -572,7 +552,8 @@ class MindChunkAdapter(BaseChunkingService):
                 # Parent-child structure: extract child chunks
                 logger.debug(
                     "[MindChunkAdapter] Converting %s parent chunks to legacy format for doc_id=%s",
-                    len(llm_chunks), document_id
+                    len(llm_chunks),
+                    document_id,
                 )
                 for parent in llm_chunks:
                     for child in parent.children:  # type: ignore[attr-defined]
@@ -587,14 +568,15 @@ class MindChunkAdapter(BaseChunkingService):
                                 "parent_text": parent.text,
                                 "parent_index": parent.chunk_index,
                                 "structure_type": "parent_child",
-                            }
+                            },
                         )
                         chunks.append(chunk)
             elif isinstance(llm_chunks[0], QAChunk):
                 # Q&A structure: convert to chunks
                 logger.debug(
                     "[MindChunkAdapter] Converting %s QA chunks to legacy format for doc_id=%s",
-                    len(llm_chunks), document_id
+                    len(llm_chunks),
+                    document_id,
                 )
                 for qa in llm_chunks:
                     chunk = Chunk(
@@ -608,14 +590,15 @@ class MindChunkAdapter(BaseChunkingService):
                             "question": qa.question,  # type: ignore[attr-defined]
                             "answer": qa.answer,  # type: ignore[attr-defined]
                             "structure_type": "qa",
-                        }
+                        },
                     )
                     chunks.append(chunk)
             else:
                 # General structure: direct conversion
                 logger.debug(
                     "[MindChunkAdapter] Converting %s general chunks to legacy format for doc_id=%s",
-                    len(llm_chunks), document_id
+                    len(llm_chunks),
+                    document_id,
                 )
                 for llm_chunk in llm_chunks:
                     chunk = Chunk(
@@ -628,14 +611,15 @@ class MindChunkAdapter(BaseChunkingService):
                             **(llm_chunk.metadata or {}),
                             "token_count": llm_chunk.token_count,
                             "structure_type": "general",
-                        }
+                        },
                     )
                     chunks.append(chunk)
         except (IndexError, AttributeError, KeyError) as e:
             logger.error(
                 "[MindChunkAdapter] Error converting chunks to legacy format for doc_id=%s: %s",
-                document_id, e,
-                exc_info=True
+                document_id,
+                e,
+                exc_info=True,
             )
             raise RuntimeError(
                 f"[MindChunkAdapter] Chunk conversion failed for doc_id={document_id}: {e}. "
@@ -653,12 +637,11 @@ class MindChunkAdapter(BaseChunkingService):
         total_chars = sum(len(c.text) for c in chunks)
         avg_chunk_size = total_chars / len(chunks) if chunks else 0
         logger.debug(
-            "[MindChunkAdapter] Created %s chunks from %s chars for doc_id=%s, "
-            "avg_chunk_size=%.1f chars",
+            "[MindChunkAdapter] Created %s chunks from %s chars for doc_id=%s, avg_chunk_size=%.1f chars",
             len(chunks),
             len(text),
             document_id,
-            avg_chunk_size
+            avg_chunk_size,
         )
 
         # Log metadata presence for debugging vector storage compatibility
@@ -668,23 +651,22 @@ class MindChunkAdapter(BaseChunkingService):
             logger.debug(
                 "[MindChunkAdapter] Chunk metadata keys for doc_id=%s: %s",
                 document_id,
-                metadata_keys
+                metadata_keys,
             )
             # Verify critical metadata fields for vector storage
-            required_fields = ['document_id', 'structure_type']
+            required_fields = ["document_id", "structure_type"]
             missing_fields = [f for f in required_fields if f not in sample_metadata]
             if missing_fields:
                 logger.warning(
-                    "[MindChunkAdapter] Missing metadata fields %s for doc_id=%s, "
-                    "may affect vector storage",
+                    "[MindChunkAdapter] Missing metadata fields %s for doc_id=%s, may affect vector storage",
                     missing_fields,
-                    document_id
+                    document_id,
                 )
             else:
                 logger.debug(
                     "[MindChunkAdapter] All required metadata fields present for vector storage "
                     "compatibility for doc_id=%s",
-                    document_id
+                    document_id,
                 )
         return chunks
 
@@ -728,7 +710,7 @@ class MindChunkAdapter(BaseChunkingService):
                 "[MindChunkAdapter] User %s would exceed chunk limit: %s > %s",
                 user_id,
                 chunk_count,
-                max_chunks
+                max_chunks,
             )
             return False
 

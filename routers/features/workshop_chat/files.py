@@ -42,7 +42,9 @@ async def upload_file(
     """
     try:
         result = await file_service.save_attachment(
-            db, file, current_user.id,
+            db,
+            file,
+            current_user.id,
             message_id=message_id if message_id > 0 else None,
             dm_id=dm_id if dm_id > 0 else None,
         )

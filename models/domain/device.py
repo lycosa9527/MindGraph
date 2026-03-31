@@ -11,6 +11,7 @@ from models.domain.auth import Base
 
 class Device(Base):
     """ESP32 Watch Device Model"""
+
     __tablename__ = "devices"
 
     id = Column(Integer, primary_key=True, index=True)

@@ -10,6 +10,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional
 import hashlib
 import json
@@ -30,7 +31,7 @@ from utils.dashscope_error_handler import (
     handle_dashscope_response,
     DashScopeError,
     should_retry,
-    get_retry_delay
+    get_retry_delay,
 )
 
 logger = logging.getLogger(__name__)
@@ -63,8 +64,7 @@ class DashScopeRerankClient:
         # Get model from parameter, environment variable, or config
         # (in order of priority)
         self.model = (
-            model or os.getenv("DASHSCOPE_RERANK_MODEL") or
-            getattr(config, 'DASHSCOPE_RERANK_MODEL', 'qwen3-rerank')
+            model or os.getenv("DASHSCOPE_RERANK_MODEL") or getattr(config, "DASHSCOPE_RERANK_MODEL", "qwen3-rerank")
         )
 
         # Check if model is qwen3-rerank (uses compatible API with flat structure)
@@ -74,25 +74,19 @@ class DashScopeRerankClient:
         # - qwen3-rerank: uses new compatible API (flat structure)
         # - gte-rerank-v2: uses old API (nested input/parameters structure)
         if self.is_qwen3:
-            self.rerank_url = (
-                "https://dashscope.aliyuncs.com/compatible-api/v1/reranks"
-            )
+            self.rerank_url = "https://dashscope.aliyuncs.com/compatible-api/v1/reranks"
         else:
-            self.rerank_url = (
-                "https://dashscope.aliyuncs.com/api/v1/services/"
-                "rerank/text-rerank/text-rerank"
-            )
+            self.rerank_url = "https://dashscope.aliyuncs.com/api/v1/services/rerank/text-rerank/text-rerank"
 
         # Rerank cache configuration (10 minutes TTL for query-document pairs)
         self.cache_enabled = os.getenv("RERANK_CACHE_ENABLED", "true").lower() == "true"
         self.cache_ttl = int(os.getenv("RERANK_CACHE_TTL", "600"))  # 10 minutes
 
         logger.info(
-            "[DashScopeRerank] Initialized with model=%s "
-            "(API URL: %s, cache=%s)",
+            "[DashScopeRerank] Initialized with model=%s (API URL: %s, cache=%s)",
             self.model,
             self.rerank_url,
-            'enabled' if self.cache_enabled else 'disabled'
+            "enabled" if self.cache_enabled else "disabled",
         )
 
     def _generate_cache_key(
@@ -101,7 +95,7 @@ class DashScopeRerankClient:
         documents: List[str],
         top_n: int,
         score_threshold: float,
-        instruct: Optional[str]
+        instruct: Optional[str],
     ) -> str:
         """Generate cache key for rerank request."""
         # Create hash of query + document texts + parameters
@@ -111,10 +105,10 @@ class DashScopeRerankClient:
             "top_n": top_n,
             "score_threshold": score_threshold,
             "instruct": instruct,
-            "model": self.model
+            "model": self.model,
         }
         cache_str = json.dumps(cache_data, sort_keys=True)
-        cache_hash = hashlib.md5(cache_str.encode('utf-8')).hexdigest()
+        cache_hash = hashlib.md5(cache_str.encode("utf-8")).hexdigest()
         return f"rerank:{self.model}:{cache_hash}"
 
     def _get_cached_result(self, cache_key: str) -> Optional[List[Dict[str, Any]]]:
@@ -137,8 +131,11 @@ class DashScopeRerankClient:
         except (json.JSONDecodeError, TypeError, ValueError) as e:
             logger.debug("[DashScopeRerank] Failed to parse cached result: %s", e)
         except Exception as e:
-            if (redis_client and redis_module is not None and
-                    isinstance(e, (redis_module.ConnectionError, redis_module.TimeoutError))):
+            if (
+                redis_client
+                and redis_module is not None
+                and isinstance(e, (redis_module.ConnectionError, redis_module.TimeoutError))
+            ):
                 logger.debug("[DashScopeRerank] Redis connection error: %s", e)
             else:
                 logger.debug("[DashScopeRerank] Failed to get cached result: %s", e)
@@ -161,8 +158,11 @@ class DashScopeRerankClient:
         except (TypeError, ValueError) as e:
             logger.debug("[DashScopeRerank] Failed to serialize result: %s", e)
         except Exception as e:
-            if (redis_client and redis_module is not None and
-                    isinstance(e, (redis_module.ConnectionError, redis_module.TimeoutError))):
+            if (
+                redis_client
+                and redis_module is not None
+                and isinstance(e, (redis_module.ConnectionError, redis_module.TimeoutError))
+            ):
                 logger.debug("[DashScopeRerank] Redis connection error: %s", e)
             else:
                 logger.debug("[DashScopeRerank] Failed to cache result: %s", e)
@@ -173,7 +173,7 @@ class DashScopeRerankClient:
         documents: List[str],
         top_n: int = 5,
         score_threshold: float = 0.5,
-        instruct: Optional[str] = None
+        instruct: Optional[str] = None,
     ) -> List[Dict[str, Any]]:
         """
         Rerank documents by relevance to query.
@@ -213,10 +213,9 @@ class DashScopeRerankClient:
         max_chars = max_tokens_per_text * 2
         if len(query) > max_chars:
             logger.warning(
-                "[DashScopeRerank] Query length %d chars exceeds limit, "
-                "truncating to %d",
+                "[DashScopeRerank] Query length %d chars exceeds limit, truncating to %d",
                 len(query),
-                max_chars
+                max_chars,
             )
             query = query[:max_chars]
 
@@ -225,10 +224,9 @@ class DashScopeRerankClient:
         for i, doc in enumerate(documents):
             if len(doc) > max_chars:
                 logger.debug(
-                    "[DashScopeRerank] Document %d length %d chars exceeds limit, "
-                    "truncating",
+                    "[DashScopeRerank] Document %d length %d chars exceeds limit, truncating",
                     i,
-                    len(doc)
+                    len(doc),
                 )
                 truncated_docs.append(doc[:max_chars])
             else:
@@ -240,15 +238,12 @@ class DashScopeRerankClient:
             logger.warning(
                 "[DashScopeRerank] Document count %d exceeds limit %d, truncating",
                 len(documents),
-                max_documents
+                max_documents,
             )
             documents = documents[:max_documents]
 
         # Check total token limit (30,000)
-        total_tokens = (
-            estimate_tokens(query) +
-            sum(estimate_tokens(doc) for doc in documents)
-        )
+        total_tokens = estimate_tokens(query) + sum(estimate_tokens(doc) for doc in documents)
         if total_tokens > max_total_tokens:
             # Reduce documents to fit within limit
             query_tokens = estimate_tokens(query)
@@ -266,12 +261,11 @@ class DashScopeRerankClient:
 
             if len(kept_docs) < len(documents):
                 logger.warning(
-                    "[DashScopeRerank] Total tokens %d exceeds limit %d, "
-                    "reduced from %d to %d documents",
+                    "[DashScopeRerank] Total tokens %d exceeds limit %d, reduced from %d to %d documents",
                     total_tokens,
                     max_total_tokens,
                     len(documents),
-                    len(kept_docs)
+                    len(kept_docs),
                 )
                 documents = kept_docs
 
@@ -280,9 +274,7 @@ class DashScopeRerankClient:
             return []
 
         # Check cache first (after truncation to ensure consistent cache keys)
-        cache_key = self._generate_cache_key(
-            query, documents, top_n, score_threshold, instruct
-        )
+        cache_key = self._generate_cache_key(query, documents, top_n, score_threshold, instruct)
         cached_result = self._get_cached_result(cache_key)
         if cached_result is not None:
             return cached_result
@@ -318,14 +310,14 @@ class DashScopeRerankClient:
                 "parameters": {
                     "top_n": min(top_n, len(documents)),
                     "return_documents": False,  # We already have documents
-                }
+                },
             }
 
         logger.debug(
             "[DashScopeRerank] Payload: model=%s, query_len=%d, docs_count=%d",
             self.model,
             len(query),
-            len(documents)
+            len(documents),
         )
         payload_preview = json.dumps(payload, ensure_ascii=False)[:500]
         logger.debug("[DashScopeRerank] Full payload: %s", payload_preview)
@@ -347,7 +339,7 @@ class DashScopeRerankClient:
                     logger.debug(
                         "[DashScopeRerank] Response status=%d, body=%s",
                         response.status_code,
-                        response_preview
+                        response_preview,
                     )
 
                     # Check for errors with comprehensive handling
@@ -358,12 +350,11 @@ class DashScopeRerankClient:
                         if should_retry(error, attempt, max_retries):
                             delay = get_retry_delay(attempt, error)
                             logger.warning(
-                                "[DashScopeRerank] Error on attempt %d/%d: %s. "
-                                "Retrying in %ds...",
+                                "[DashScopeRerank] Error on attempt %d/%d: %s. Retrying in %ds...",
                                 attempt,
                                 max_retries,
                                 error.message,
-                                delay
+                                delay,
                             )
                             time.sleep(delay)
                             continue
@@ -394,22 +385,23 @@ class DashScopeRerankClient:
 
                     # Validate index and score
                     if score >= score_threshold and 0 <= index < len(documents):
-                        reranked.append({
-                            "document": documents[index],
-                            "score": score,
-                            "index": index,
-                        })
+                        reranked.append(
+                            {
+                                "document": documents[index],
+                                "score": score,
+                                "index": index,
+                            }
+                        )
 
                 # Results are already sorted by relevance_score descending
                 # But we sort again to be safe
                 reranked.sort(key=lambda x: x["score"], reverse=True)
 
                 logger.debug(
-                    "[DashScopeRerank] Reranked %d documents, "
-                    "returned %d above threshold %f",
+                    "[DashScopeRerank] Reranked %d documents, returned %d above threshold %f",
                     len(documents),
                     len(reranked),
-                    score_threshold
+                    score_threshold,
                 )
 
                 # Cache the result
@@ -425,77 +417,58 @@ class DashScopeRerankClient:
                 if should_retry(e, attempt, max_retries):
                     delay = get_retry_delay(attempt, e)
                     logger.warning(
-                        "[DashScopeRerank] DashScope error on attempt %d/%d: %s. "
-                        "Retrying in %ds...",
+                        "[DashScopeRerank] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
                         attempt,
                         max_retries,
                         e.message,
-                        delay
+                        delay,
                     )
                     time.sleep(delay)
                     continue
                 # Don't retry, raise immediately
                 logger.error(
-                    "[DashScopeRerank] DashScope API error: %s "
-                    "(code: %s, type: %s)",
+                    "[DashScopeRerank] DashScope API error: %s (code: %s, type: %s)",
                     e.message,
                     e.error_code,
-                    e.error_type
+                    e.error_type,
                 )
                 raise
             except httpx.HTTPError as e:
                 # Network/HTTP errors - retry if transient
                 # Get status_code safely - only HTTPStatusError has response attribute
                 status_code = None
-                response = getattr(e, 'response', None)
+                response = getattr(e, "response", None)
                 if response is not None:
-                    status_code = getattr(response, 'status_code', None)
+                    status_code = getattr(response, "status_code", None)
 
                 error_message = f"HTTP error: {e}"
-                last_error = DashScopeError(
-                    message=error_message,
-                    status_code=status_code,
-                    retryable=True
-                )
+                last_error = DashScopeError(message=error_message, status_code=status_code, retryable=True)
                 if should_retry(last_error, attempt, max_retries):
                     delay = get_retry_delay(attempt, last_error)
                     logger.warning(
-                        "[DashScopeRerank] HTTP error on attempt %d/%d: %s. "
-                        "Retrying in %ds...",
+                        "[DashScopeRerank] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
                         attempt,
                         max_retries,
                         e,
-                        delay
+                        delay,
                     )
                     if response is not None:
                         try:
                             error_detail = response.json()
-                            logger.debug(
-                                "[DashScopeRerank] Error details: %s",
-                                error_detail
-                            )
+                            logger.debug("[DashScopeRerank] Error details: %s", error_detail)
                         except (ValueError, TypeError, KeyError):
-                            response_text = getattr(response, 'text', 'N/A')
-                            logger.debug(
-                                "[DashScopeRerank] Response text: %s",
-                                response_text
-                            )
+                            response_text = getattr(response, "text", "N/A")
+                            logger.debug("[DashScopeRerank] Response text: %s", response_text)
                     time.sleep(delay)
                     continue
                 logger.error("[DashScopeRerank] HTTP error: %s", e)
                 if response is not None:
                     try:
                         error_detail = response.json()
-                        logger.error(
-                            "[DashScopeRerank] Error details: %s",
-                            error_detail
-                        )
+                        logger.error("[DashScopeRerank] Error details: %s", error_detail)
                     except (ValueError, TypeError, KeyError):
-                        response_text = getattr(response, 'text', 'N/A')
-                        logger.error(
-                            "[DashScopeRerank] Response text: %s",
-                            response_text
-                        )
+                        response_text = getattr(response, "text", "N/A")
+                        logger.error("[DashScopeRerank] Response text: %s", response_text)
                 raise
             except (ValueError, TypeError, KeyError) as e:
                 # Data/format errors - don't retry
@@ -513,9 +486,7 @@ class DashScopeRerankClient:
         # This should never be reached, but satisfies type checker
         # If we somehow exit the loop without an error or return,
         # raise a generic error
-        raise RuntimeError(
-            "Rerank operation failed after all retries without a specific error"
-        )
+        raise RuntimeError("Rerank operation failed after all retries without a specific error")
 
 
 # Global instance stored in closure to avoid global statement and protected access

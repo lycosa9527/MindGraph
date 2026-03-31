@@ -148,76 +148,58 @@ def resolve_setup_interactive_options() -> Tuple[bool, bool, bool]:
 # Constants
 CORE_DEPENDENCIES = {
     # Web framework (FastAPI)
-    'fastapi': 'FastAPI',
-    'uvicorn': 'Uvicorn',
-    'starlette': 'starlette',
-    'pydantic': 'pydantic',
-    'pydantic_settings': 'pydantic-settings',
-    'email_validator': 'email-validator',
-    'jinja2': 'jinja2',
-
+    "fastapi": "FastAPI",
+    "uvicorn": "Uvicorn",
+    "starlette": "starlette",
+    "pydantic": "pydantic",
+    "pydantic_settings": "pydantic-settings",
+    "email_validator": "email-validator",
+    "jinja2": "jinja2",
     # HTTP and networking (async)
-    'aiohttp': 'aiohttp',
-    'httpx': 'httpx',
-    'requests': 'requests',
-    'openai': 'openai',
-    'multipart': 'python-multipart',
-    'websockets': 'websockets',
-
+    "aiohttp": "aiohttp",
+    "httpx": "httpx",
+    "requests": "requests",
+    "openai": "openai",
+    "multipart": "python-multipart",
+    "websockets": "websockets",
     # AI and language processing
-    'langchain': 'langchain',
-    'langchain_community': 'langchain-community',
-    'langchain_core': 'langchain-core',
-    'langchain_openai': 'langchain-openai',
-    'langgraph': 'langgraph',
-    'langgraph_checkpoint': 'langgraph-checkpoint',
-    'dashscope': 'dashscope',
-
+    "langchain": "langchain",
+    "langchain_community": "langchain-community",
+    "langchain_core": "langchain-core",
+    "langchain_openai": "langchain-openai",
+    "langgraph": "langgraph",
+    "langgraph_checkpoint": "langgraph-checkpoint",
+    "dashscope": "dashscope",
     # Configuration and environment
-    'yaml': 'PyYAML',
-    'dotenv': 'python-dotenv',
-
+    "yaml": "PyYAML",
+    "dotenv": "python-dotenv",
     # Async and concurrency
-    'nest_asyncio': 'nest-asyncio',
-    'aiofiles': 'aiofiles',
-
+    "nest_asyncio": "nest-asyncio",
+    "aiofiles": "aiofiles",
     # Browser automation and image processing
-    'playwright': 'playwright',
-    'PIL': 'Pillow',
-
+    "playwright": "playwright",
+    "PIL": "Pillow",
     # Database and authentication
-    'sqlalchemy': 'SQLAlchemy',
-    'alembic': 'alembic',
-    'jose': 'python-jose',
-    'bcrypt': 'bcrypt',  # passlib removed in v4.12.0, using bcrypt directly
-    'captcha': 'captcha',
-    'Crypto': 'pycryptodome',
-
+    "sqlalchemy": "SQLAlchemy",
+    "alembic": "alembic",
+    "jose": "python-jose",
+    "bcrypt": "bcrypt",  # passlib removed in v4.12.0, using bcrypt directly
+    "captcha": "captcha",
+    "Crypto": "pycryptodome",
     # System utilities
-    'psutil': 'psutil',
-    'watchfiles': 'watchfiles',
-
+    "psutil": "psutil",
+    "watchfiles": "watchfiles",
     # JSON serialization
-    'orjson': 'orjson'
+    "orjson": "orjson",
 }
 
 PROGRESS_BAR_LENGTH = 30
 MAX_LINE_LENGTH = 100
 SETUP_STEPS = 8
 
-REQUIRED_LOG_FILES = [
-    "uvicorn_access.log",
-    "uvicorn_error.log",
-    "app.log",
-    "agent.log"
-]
+REQUIRED_LOG_FILES = ["uvicorn_access.log", "uvicorn_error.log", "app.log", "agent.log"]
 
-ESSENTIAL_FILES = [
-    "VERSION",
-    "main.py",
-    "requirements.txt",
-    "uvicorn_config.py"
-]
+ESSENTIAL_FILES = ["VERSION", "main.py", "requirements.txt", "uvicorn_config.py"]
 
 ESSENTIAL_DIRECTORIES = [
     "logs",
@@ -228,14 +210,23 @@ ESSENTIAL_DIRECTORIES = [
     "models",
     "clients",
     "services",
-    "config"
+    "config",
 ]
 
 # Packages where check_dependencies_already_installed skips import test (legacy behavior)
-_SKIP_IMPORT_CHECK_MODULES = frozenset({
-    "PIL", "multipart", "yaml", "dotenv", "nest_asyncio", "Crypto", "jose",
-    "pydantic_settings", "email_validator",
-})
+_SKIP_IMPORT_CHECK_MODULES = frozenset(
+    {
+        "PIL",
+        "multipart",
+        "yaml",
+        "dotenv",
+        "nest_asyncio",
+        "Crypto",
+        "jose",
+        "pydantic_settings",
+        "email_validator",
+    }
+)
 
 # Offline Chromium installation directory
 BROWSERS_DIR = "browsers"
@@ -408,8 +399,7 @@ def _install_tesseract_linux_apt() -> bool:
         check=False,
     )
     ok = run_command_with_progress(
-        "DEBIAN_FRONTEND=noninteractive apt-get install -y "
-        "tesseract-ocr tesseract-ocr-eng tesseract-ocr-chi-sim",
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y tesseract-ocr tesseract-ocr-eng tesseract-ocr-chi-sim",
         "Installing Tesseract OCR packages",
         check=False,
     )
@@ -423,10 +413,7 @@ def _install_tesseract_linux_apt() -> bool:
 def _install_tesseract_macos_brew() -> bool:
     """Install Tesseract via Homebrew on macOS."""
     if not shutil.which("brew"):
-        print(
-            "[WARNING] Install Tesseract manually: "
-            "brew install tesseract tesseract-lang"
-        )
+        print("[WARNING] Install Tesseract manually: brew install tesseract tesseract-lang")
         return False
     if run_command_with_progress(
         "brew install tesseract tesseract-lang",
@@ -435,9 +422,7 @@ def _install_tesseract_macos_brew() -> bool:
     ) and shutil.which("tesseract"):
         print("[SUCCESS] Tesseract OCR installed via brew")
         return True
-    print(
-        "[WARNING] Install Tesseract manually: brew install tesseract tesseract-lang"
-    )
+    print("[WARNING] Install Tesseract manually: brew install tesseract tesseract-lang")
     return False
 
 
@@ -450,8 +435,7 @@ def _install_tesseract_windows() -> bool:
     )
     if shutil.which("winget"):
         run_command_with_progress(
-            "winget install --id UB-Mannheim.TesseractOCR -e "
-            "--accept-package-agreements --accept-source-agreements",
+            "winget install --id UB-Mannheim.TesseractOCR -e --accept-package-agreements --accept-source-agreements",
             "Installing Tesseract via winget (if available)",
             check=False,
         )
@@ -605,11 +589,7 @@ def _apply_key_memory_histograms_to_conf_text(content: str) -> Tuple[str, bool]:
         new_content, _ = pattern.subn("key-memory-histograms yes", content)
         return new_content, new_content != content
     trailing = "" if content.endswith("\n") else "\n"
-    addition = (
-        f"{trailing}"
-        "# MindGraph: INFO keysizes memory histograms (Redis 8.6+)\n"
-        "key-memory-histograms yes\n"
-    )
+    addition = f"{trailing}# MindGraph: INFO keysizes memory histograms (Redis 8.6+)\nkey-memory-histograms yes\n"
     return content + addition, True
 
 
@@ -631,8 +611,7 @@ def ensure_redis_key_memory_histograms_linux() -> None:
     conf_path = _find_redis_conf_path_linux()
     if not conf_path:
         print(
-            "[INFO] key-memory-histograms: redis.conf not found; "
-            "set manually in Redis config (Redis 8.6+)",
+            "[INFO] key-memory-histograms: redis.conf not found; set manually in Redis config (Redis 8.6+)",
         )
         return
     try:
@@ -660,8 +639,7 @@ def ensure_redis_key_memory_histograms_linux() -> None:
         print("[SUCCESS] key-memory-histograms: Redis restarted and responds to PING")
     else:
         print(
-            "[WARNING] key-memory-histograms: Redis did not respond after restart; "
-            "check systemd logs",
+            "[WARNING] key-memory-histograms: Redis did not respond after restart; check systemd logs",
         )
 
 
@@ -752,16 +730,12 @@ def install_redis_linux_official_apt() -> bool:
 
     print("[INFO] Installing Redis via official Redis apt repository (latest 8.x)...")
     run_command_with_progress(
-        "DEBIAN_FRONTEND=noninteractive apt-get install -y "
-        "lsb-release curl gpg",
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y lsb-release curl gpg",
         "Installing prerequisites (lsb-release, curl, gpg) for Redis repo",
         check=False,
     )
     if not _add_redis_io_apt_repository():
-        print(
-            "[ERROR] Could not add Redis.io apt repository. "
-            "MindGraph requires Redis 8.6+; see docs/REDIS_SETUP.md"
-        )
+        print("[ERROR] Could not add Redis.io apt repository. MindGraph requires Redis 8.6+; see docs/REDIS_SETUP.md")
         return False
 
     run_command_with_progress(
@@ -829,8 +803,7 @@ def install_postgresql_linux_pgdg() -> bool:
         else:
             print("[SUCCESS] PostgreSQL meets minimum version requirement")
         run_command(
-            "systemctl enable postgresql 2>/dev/null; "
-            "systemctl start postgresql 2>/dev/null",
+            "systemctl enable postgresql 2>/dev/null; systemctl start postgresql 2>/dev/null",
             "Ensure PostgreSQL service is running",
             check=False,
         )
@@ -846,8 +819,7 @@ def install_postgresql_linux_pgdg() -> bool:
 
     print("[INFO] Installing PostgreSQL 18 from PGDG (latest 18.x in repo)...")
     run_command_with_progress(
-        "DEBIAN_FRONTEND=noninteractive apt-get install -y "
-        "lsb-release curl ca-certificates",
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y lsb-release curl ca-certificates",
         "Installing prerequisites for PostgreSQL PGDG repo",
         check=False,
     )
@@ -866,10 +838,7 @@ def install_postgresql_linux_pgdg() -> bool:
         "Downloading PostgreSQL PGDG GPG key (apt.postgresql.org.asc)",
         check=False,
     ):
-        print(
-            "[ERROR] Could not download PGDG key. "
-            "MindGraph requires PostgreSQL 18.3+; see docs/POSTGRES_SETUP.md"
-        )
+        print("[ERROR] Could not download PGDG key. MindGraph requires PostgreSQL 18.3+; see docs/POSTGRES_SETUP.md")
         return False
 
     pgdg_line = (
@@ -888,14 +857,12 @@ def install_postgresql_linux_pgdg() -> bool:
         check=False,
     )
     run_command_with_progress(
-        "DEBIAN_FRONTEND=noninteractive apt-get install -y "
-        "postgresql-18 postgresql-client-18",
+        "DEBIAN_FRONTEND=noninteractive apt-get install -y postgresql-18 postgresql-client-18",
         "Installing latest PostgreSQL 18 from PGDG",
         check=False,
     )
     run_command_with_progress(
-        "DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade -y "
-        "postgresql-18 postgresql-client-18",
+        "DEBIAN_FRONTEND=noninteractive apt-get install --only-upgrade -y postgresql-18 postgresql-client-18",
         "Upgrading PostgreSQL 18 to newest patch in repo",
         check=False,
     )
@@ -954,53 +921,35 @@ def install_redis_and_postgresql_linux(skip: bool) -> Tuple[bool, bool]:
 def verify_redis_postgres_hints() -> None:
     """Print quick status for Redis and PostgreSQL (MindGraph minimum versions)."""
     min_r = f"{MIN_REDIS_VERSION[0]}.{MIN_REDIS_VERSION[1]}.{MIN_REDIS_VERSION[2]}"
-    min_p = (
-        f"{MIN_POSTGRESQL_VERSION[0]}.{MIN_POSTGRESQL_VERSION[1]}."
-        f"{MIN_POSTGRESQL_VERSION[2]}"
-    )
+    min_p = f"{MIN_POSTGRESQL_VERSION[0]}.{MIN_POSTGRESQL_VERSION[1]}.{MIN_POSTGRESQL_VERSION[2]}"
     if redis_server_responding():
         if redis_meets_mindgraph_minimum():
             ver = redis_version_reported()
             if ver:
-                print(
-                    f"    [SUCCESS] Redis {ver[0]}.{ver[1]}.{ver[2]} "
-                    f"(MindGraph requires >= {min_r})"
-                )
+                print(f"    [SUCCESS] Redis {ver[0]}.{ver[1]}.{ver[2]} (MindGraph requires >= {min_r})")
             else:
                 print("    [SUCCESS] Redis: redis-cli ping -> PONG")
         else:
             ver = redis_version_reported()
             vtxt = f"{ver[0]}.{ver[1]}.{ver[2]}" if ver else "unknown"
-            print(
-                f"    [WARNING] Redis {vtxt} is below required {min_r}; upgrade via apt "
-                "(docs/REDIS_SETUP.md)"
-            )
+            print(f"    [WARNING] Redis {vtxt} is below required {min_r}; upgrade via apt (docs/REDIS_SETUP.md)")
     else:
-        print(
-            f"    [WARNING] Redis: not responding; install Redis >= {min_r} "
-            "(docs/REDIS_SETUP.md)"
-        )
+        print(f"    [WARNING] Redis: not responding; install Redis >= {min_r} (docs/REDIS_SETUP.md)")
     if postgresql_client_available():
         if postgresql_meets_mindgraph_minimum():
             ver = get_postgresql_version()
             if ver:
-                print(
-                    f"    [SUCCESS] PostgreSQL {ver[0]}.{ver[1]}.{ver[2]} "
-                    f"(MindGraph requires >= {min_p})"
-                )
+                print(f"    [SUCCESS] PostgreSQL {ver[0]}.{ver[1]}.{ver[2]} (MindGraph requires >= {min_p})")
             else:
                 print("    [SUCCESS] PostgreSQL: psql client found")
         else:
             ver = get_postgresql_version()
             vtxt = f"{ver[0]}.{ver[1]}.{ver[2]}" if ver else "unknown"
             print(
-                f"    [WARNING] PostgreSQL {vtxt} is below required {min_p}; "
-                "upgrade via PGDG (docs/POSTGRES_SETUP.md)"
+                f"    [WARNING] PostgreSQL {vtxt} is below required {min_p}; upgrade via PGDG (docs/POSTGRES_SETUP.md)"
             )
     else:
-        print(
-            f"    [WARNING] PostgreSQL: psql not in PATH; install {min_p}+ if using DATABASE_URL"
-        )
+        print(f"    [WARNING] PostgreSQL: psql not in PATH; install {min_p}+ if using DATABASE_URL")
 
 
 def qdrant_api_responding() -> bool:
@@ -1100,19 +1049,10 @@ def install_qdrant_linux_server() -> bool:
     if not binary_exists:
         arch = _qdrant_linux_arch_suffix()
         if arch is None:
-            print(
-                "[ERROR] Unsupported CPU for Qdrant prebuilt binary; "
-                "see https://github.com/qdrant/qdrant/releases"
-            )
+            print("[ERROR] Unsupported CPU for Qdrant prebuilt binary; see https://github.com/qdrant/qdrant/releases")
             return False
-        url = (
-            f"https://github.com/qdrant/qdrant/releases/download/"
-            f"v{QDRANT_GITHUB_VERSION}/qdrant-{arch}.tar.gz"
-        )
-        print(
-            f"[INFO] Downloading Qdrant v{QDRANT_GITHUB_VERSION} from GitHub "
-            f"({arch})..."
-        )
+        url = f"https://github.com/qdrant/qdrant/releases/download/v{QDRANT_GITHUB_VERSION}/qdrant-{arch}.tar.gz"
+        print(f"[INFO] Downloading Qdrant v{QDRANT_GITHUB_VERSION} from GitHub ({arch})...")
         tmp_dir = tempfile.mkdtemp(prefix="mg_qdrant_")
         tar_path = os.path.join(tmp_dir, "qdrant.tgz")
         if not _qdrant_download_to_file(url, tar_path):
@@ -1163,10 +1103,7 @@ def install_qdrant_linux_server() -> bool:
         print("[INFO] sudo systemctl status qdrant  |  sudo journalctl -u qdrant -f")
         return True
 
-    print(
-        "[WARNING] Qdrant did not respond; check: sudo journalctl -u qdrant -n 50 "
-        "(docs/QDRANT_SETUP.md)"
-    )
+    print("[WARNING] Qdrant did not respond; check: sudo journalctl -u qdrant -n 50 (docs/QDRANT_SETUP.md)")
     return False
 
 
@@ -1213,10 +1150,7 @@ def install_qdrant_via_documented_flow(
 def verify_qdrant_hint() -> None:
     """Print Qdrant server and Python client status (Knowledge Space)."""
     if qdrant_api_responding():
-        print(
-            "    [SUCCESS] Qdrant API http://127.0.0.1:6333/collections "
-            "(docs/QDRANT_SETUP.md)"
-        )
+        print("    [SUCCESS] Qdrant API http://127.0.0.1:6333/collections (docs/QDRANT_SETUP.md)")
     else:
         print(
             "    [WARNING] Qdrant not listening on port 6333; "
@@ -1226,10 +1160,7 @@ def verify_qdrant_hint() -> None:
         importlib.import_module("qdrant_client")
         print("    [SUCCESS] Python package qdrant-client is importable")
     except ImportError:
-        print(
-            "    [WARNING] qdrant-client not importable; "
-            "ensure Step 4 (pip install -r requirements.txt) completed"
-        )
+        print("    [WARNING] qdrant-client not importable; ensure Step 4 (pip install -r requirements.txt) completed")
 
 
 def run_command(command: str, description: str, check: bool = True) -> bool:
@@ -1250,13 +1181,7 @@ def run_command(command: str, description: str, check: bool = True) -> bool:
     print(f"[INFO] {description}...")
 
     try:
-        result = subprocess.run(
-            command,
-            shell=True,
-            check=False,
-            capture_output=True,
-            text=True
-        )
+        result = subprocess.run(command, shell=True, check=False, capture_output=True, text=True)
 
         if result.returncode == 0:
             print(f"[SUCCESS] {description} completed")
@@ -1300,7 +1225,7 @@ def run_command_with_progress(command: str, description: str, check: bool = True
             stderr=subprocess.STDOUT,
             text=True,
             bufsize=1,
-            universal_newlines=True
+            universal_newlines=True,
         )
 
         # Track progress and download speed
@@ -1314,7 +1239,7 @@ def run_command_with_progress(command: str, description: str, check: bool = True
             if proc_stdout is None:
                 break
             output = proc_stdout.readline()
-            if output == '' and process.poll() is not None:
+            if output == "" and process.poll() is not None:
                 break
             if output:
                 line = output.strip()
@@ -1322,7 +1247,7 @@ def run_command_with_progress(command: str, description: str, check: bool = True
                 # Parse pip progress output
                 if "Downloading" in line and "%" in line:
                     # Extract percentage and speed info
-                    print(f"\r    [INFO] {line}", end='', flush=True)
+                    print(f"\r    [INFO] {line}", end="", flush=True)
                 elif "Installing collected packages" in line:
                     print(f"\n    [INFO] {line}")
                 elif "Successfully installed" in line:
@@ -1341,7 +1266,7 @@ def run_command_with_progress(command: str, description: str, check: bool = True
                             total_bytes += size_mb * 1024 * 1024
                         except ValueError:
                             pass
-                    print(f"\r    [INFO] {line}", end='', flush=True)
+                    print(f"\r    [INFO] {line}", end="", flush=True)
                 elif "Installing" in line and "..." in line:
                     print(f"\n    [INFO] {line}")
                 elif "Successfully" in line:
@@ -1391,10 +1316,7 @@ def check_python_version() -> bool:
 
     version = sys.version_info
     if version.major < 3 or (version.major == 3 and version.minor < 8):
-        raise SetupError(
-            f"Python {version.major}.{version.minor} detected. "
-            "MindGraph requires Python 3.8+"
-        )
+        raise SetupError(f"Python {version.major}.{version.minor} detected. MindGraph requires Python 3.8+")
 
     print(f"[SUCCESS] Python {version.major}.{version.minor}.{version.micro} - Compatible")
     return True
@@ -1437,11 +1359,11 @@ def get_package_version(package_name: str) -> str:
         return importlib.metadata.version(package_name)
     except Exception:
         if pkg_resources is None:
-            return 'unknown'
+            return "unknown"
         try:
             return pkg_resources.get_distribution(package_name).version
         except Exception:
-            return 'unknown'
+            return "unknown"
 
 
 def check_pip() -> bool:
@@ -1457,11 +1379,7 @@ def check_pip() -> bool:
     print("[INFO] Checking pip availability...")
 
     try:
-        subprocess.run(
-            [sys.executable, "-m", "pip", "--version"],
-            check=True,
-            capture_output=True
-        )
+        subprocess.run([sys.executable, "-m", "pip", "--version"], check=True, capture_output=True)
         print("[SUCCESS] pip is available")
         return True
 
@@ -1533,7 +1451,7 @@ def install_python_dependencies() -> bool:
     # Use pip with progress bar and verbose output
     if not run_command_with_progress(
         f"{sys.executable} -m pip install -r requirements.txt --progress-bar on",
-        "Installing Python packages"
+        "Installing Python packages",
     ):
         raise SetupError("Failed to install Python dependencies")
 
@@ -1559,10 +1477,7 @@ def check_playwright_already_installed() -> bool:
         with sync_playwright() as p:
             try:
                 # Try to launch with minimal options to avoid issues
-                browser = p.chromium.launch(
-                    headless=True,
-                    args=['--no-sandbox', '--disable-dev-shm-usage']
-                )
+                browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-dev-shm-usage"])
 
                 # If browser launches successfully, consider it working regardless of version check
                 print("[SUCCESS] Playwright Chromium already installed and working")
@@ -1636,10 +1551,7 @@ def install_playwright() -> bool:
                 f"{pw} install chromium",
                 "Installing Chromium",
             ):
-                raise SetupError(
-                    "Playwright installation failed. "
-                    f"Try manually: {pw} install chromium"
-                )
+                raise SetupError(f"Playwright installation failed. Try manually: {pw} install chromium")
     else:
         print("[INFO] Unix-like system detected - installing with system dependencies")
         print("[INFO] This will install fonts, libraries, and other system packages")
@@ -1694,7 +1606,7 @@ def get_local_chromium_executable() -> Optional[str]:
         possible_paths = [
             chromium_path / "chrome-mac" / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
             chromium_path / "Chromium.app" / "Contents" / "MacOS" / "Chromium",
-            chromium_path / "chrome"
+            chromium_path / "chrome",
         ]
         for path in possible_paths:
             if path.exists():
@@ -1703,7 +1615,7 @@ def get_local_chromium_executable() -> Optional[str]:
     else:  # Linux
         possible_paths = [
             chromium_path / "chrome-linux" / "chrome",
-            chromium_path / "chrome"
+            chromium_path / "chrome",
         ]
         for path in possible_paths:
             if path.exists():
@@ -1730,7 +1642,7 @@ def check_offline_chromium_installed() -> bool:
             check=False,
             capture_output=True,
             text=True,
-            timeout=10
+            timeout=10,
         )
         if result.returncode == 0:
             version = result.stdout.strip()
@@ -1753,6 +1665,7 @@ def get_platform_name():
         return "linux"
     else:
         return system
+
 
 def extract_chromium_zip() -> bool:
     """
@@ -1789,12 +1702,12 @@ def extract_chromium_zip() -> bool:
             shutil.rmtree(chromium_dest_dir)
 
         # Check what platforms are available in zip
-        with zipfile.ZipFile(zip_path, 'r') as zipf:
+        with zipfile.ZipFile(zip_path, "r") as zipf:
             available_platforms = set()
             for name in zipf.namelist():
-                if '/' in name:
-                    platform_in_zip = name.split('/')[0]
-                    if platform_in_zip in ['windows', 'linux', 'mac']:
+                if "/" in name:
+                    platform_in_zip = name.split("/")[0]
+                    if platform_in_zip in ["windows", "linux", "mac"]:
                         available_platforms.add(platform_in_zip)
 
             if available_platforms:
@@ -1811,16 +1724,16 @@ def extract_chromium_zip() -> bool:
         print(f"[INFO] Extracting {platform_name} platform from zip...")
         print("    This may take a few minutes (~150MB)...")
 
-        with zipfile.ZipFile(zip_path, 'r') as zipf:
+        with zipfile.ZipFile(zip_path, "r") as zipf:
             # Get files for current platform
-            platform_files = [f for f in zipf.namelist() if f.startswith(f'{platform_name}/')]
+            platform_files = [f for f in zipf.namelist() if f.startswith(f"{platform_name}/")]
             total_files = len(platform_files)
             extracted = 0
 
             # Extract only platform-specific files
             for member in platform_files:
                 # Remove platform prefix from path
-                target_path = member[len(f'{platform_name}/'):]
+                target_path = member[len(f"{platform_name}/") :]
                 if target_path:  # Skip empty paths
                     # Extract to chromium directory
                     full_path = chromium_dest_dir / target_path
@@ -1829,12 +1742,15 @@ def extract_chromium_zip() -> bool:
                     # Extract file (use copyfileobj for better memory efficiency)
                     with zipf.open(member) as source:
                         full_path.parent.mkdir(parents=True, exist_ok=True)
-                        with open(full_path, 'wb') as target:
+                        with open(full_path, "wb") as target:
                             shutil.copyfileobj(source, target)
 
                     extracted += 1
                     if extracted % 100 == 0:
-                        print(f"    Progress: {extracted}/{total_files} files...", end='\r')
+                        print(
+                            f"    Progress: {extracted}/{total_files} files...",
+                            end="\r",
+                        )
 
         # Clear progress line and print completion
         print(f"    Progress: {extracted}/{total_files} files...")
@@ -1922,9 +1838,6 @@ def copy_playwright_chromium_to_offline() -> bool:
         return False
 
 
-
-
-
 def verify_dependencies() -> bool:
     """
     Verify all key dependencies are properly installed.
@@ -1950,39 +1863,39 @@ def verify_dependencies() -> bool:
 
         try:
             # Handle special cases for packages with different import names
-            if module_name == 'PIL':
-                importlib.import_module('PIL')
-                version = get_package_version('Pillow')
-            elif module_name == 'multipart':
-                importlib.import_module('multipart')
-                version = get_package_version('python-multipart')
-            elif module_name == 'yaml':
-                importlib.import_module('yaml')
-                version = get_package_version('PyYAML')
-            elif module_name == 'dotenv':
-                importlib.import_module('dotenv')
-                version = get_package_version('python-dotenv')
-            elif module_name == 'nest_asyncio':
-                importlib.import_module('nest_asyncio')
-                version = get_package_version('nest-asyncio')
-            elif module_name == 'Crypto':
-                importlib.import_module('Crypto.Cipher')
-                version = get_package_version('pycryptodome')
-            elif module_name == 'jose':
-                importlib.import_module('jose.jwt')
-                version = get_package_version('python-jose')
-            elif module_name == 'pydantic_settings':
-                importlib.import_module('pydantic_settings')
-                version = get_package_version('pydantic-settings')
-            elif module_name == 'email_validator':
-                importlib.import_module('email_validator')
-                version = get_package_version('email-validator')
-            elif module_name == 'langchain_openai':
-                importlib.import_module('langchain_openai')
-                version = get_package_version('langchain-openai')
-            elif module_name == 'langgraph_checkpoint':
-                importlib.import_module('langgraph_checkpoint')
-                version = get_package_version('langgraph-checkpoint')
+            if module_name == "PIL":
+                importlib.import_module("PIL")
+                version = get_package_version("Pillow")
+            elif module_name == "multipart":
+                importlib.import_module("multipart")
+                version = get_package_version("python-multipart")
+            elif module_name == "yaml":
+                importlib.import_module("yaml")
+                version = get_package_version("PyYAML")
+            elif module_name == "dotenv":
+                importlib.import_module("dotenv")
+                version = get_package_version("python-dotenv")
+            elif module_name == "nest_asyncio":
+                importlib.import_module("nest_asyncio")
+                version = get_package_version("nest-asyncio")
+            elif module_name == "Crypto":
+                importlib.import_module("Crypto.Cipher")
+                version = get_package_version("pycryptodome")
+            elif module_name == "jose":
+                importlib.import_module("jose.jwt")
+                version = get_package_version("python-jose")
+            elif module_name == "pydantic_settings":
+                importlib.import_module("pydantic_settings")
+                version = get_package_version("pydantic-settings")
+            elif module_name == "email_validator":
+                importlib.import_module("email_validator")
+                version = get_package_version("email-validator")
+            elif module_name == "langchain_openai":
+                importlib.import_module("langchain_openai")
+                version = get_package_version("langchain-openai")
+            elif module_name == "langgraph_checkpoint":
+                importlib.import_module("langgraph_checkpoint")
+                version = get_package_version("langgraph-checkpoint")
             else:
                 importlib.import_module(module_name)
                 version = get_package_version(package_name)
@@ -2004,8 +1917,7 @@ def verify_dependencies() -> bool:
 
     if failed_imports:
         raise SetupError(
-            f"Failed dependencies: {', '.join(failed_imports)}. "
-            "Please reinstall: pip install -r requirements.txt"
+            f"Failed dependencies: {', '.join(failed_imports)}. Please reinstall: pip install -r requirements.txt"
         )
 
     print("[SUCCESS] All core dependencies verified successfully!")
@@ -2035,10 +1947,10 @@ def verify_playwright_browsers() -> bool:
 
                 # Try to get version, but don't worry if it fails
                 try:
-                    if hasattr(browser, 'version') and callable(browser.version):
+                    if hasattr(browser, "version") and callable(browser.version):
                         version = browser.version()
                         print(f"    [SUCCESS] Chromium browser - {version}")
-                    elif hasattr(browser, 'version'):
+                    elif hasattr(browser, "version"):
                         version = browser.version
                         print(f"    [SUCCESS] Chromium browser - {version}")
                     else:
@@ -2055,7 +1967,7 @@ def verify_playwright_browsers() -> bool:
                         # Test browser launch with system dependency flags
                         browser = p.chromium.launch(
                             headless=True,
-                            args=['--no-sandbox', '--disable-dev-shm-usage']
+                            args=["--no-sandbox", "--disable-dev-shm-usage"],
                         )
                         browser.close()
                         print("    [SUCCESS] System dependencies verified (fonts, libraries)")
@@ -2140,12 +2052,20 @@ def print_progress(current: int, total: int, description: str = "") -> None:
     percentage = (current / total) * 100
     bar_length = PROGRESS_BAR_LENGTH
     filled_length = int(bar_length * current // total)
-    progress_bar = '█' * filled_length + '░' * (bar_length - filled_length)
+    progress_bar = "█" * filled_length + "░" * (bar_length - filled_length)
 
     if description:
-        print(f"\r[INFO] {description} [{progress_bar}] {percentage:.1f}% ({current}/{total})", end='', flush=True)
+        print(
+            f"\r[INFO] {description} [{progress_bar}] {percentage:.1f}% ({current}/{total})",
+            end="",
+            flush=True,
+        )
     else:
-        print(f"\r[INFO] Progress [{progress_bar}] {percentage:.1f}% ({current}/{total})", end='', flush=True)
+        print(
+            f"\r[INFO] Progress [{progress_bar}] {percentage:.1f}% ({current}/{total})",
+            end="",
+            flush=True,
+        )
 
     if current == total:
         print()  # New line when complete
@@ -2225,7 +2145,7 @@ def setup_logs_directory() -> bool:
             log_path = os.path.join(logs_dir, log_file)
             if not os.path.exists(log_path):
                 # Create empty log file
-                with open(log_path, 'w', encoding='utf-8'):
+                with open(log_path, "w", encoding="utf-8"):
                     pass
                 print(f"    [SUCCESS] Created log file: {log_file}")
             else:
@@ -2303,7 +2223,7 @@ def setup_application_directories() -> bool:
             ("static/images", "Static images"),
             ("static/community", "Community thumbnails"),
             ("tests/images", "Test images"),
-            ("temp_images", "Temporary images")
+            ("temp_images", "Temporary images"),
         ]
 
         for dir_path, description in directories_to_create:
@@ -2339,7 +2259,7 @@ def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
     """Print a formatted setup summary"""
     print("\n[INFO] Setup Summary:")
 
-    if setup_summary.get('tesseract'):
+    if setup_summary.get("tesseract"):
         print("    ✅ Tesseract OCR - Installed or verified")
     else:
         print("    ⏭️  Tesseract OCR - Skipped or verify PATH manually")
@@ -2354,7 +2274,7 @@ def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
     else:
         print("    ⏭️  PostgreSQL - Not verified (install or use SQLite)")
 
-    if setup_summary['python_deps']:
+    if setup_summary["python_deps"]:
         print("    ✅ Python dependencies - Installed/Updated")
     else:
         print("    ⏭️  Python dependencies - Already installed (skipped)")
@@ -2364,19 +2284,19 @@ def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
     else:
         print("    ⏭️  Qdrant - Skipped or verify QDRANT_HOST (docs/QDRANT_SETUP.md)")
 
-    if setup_summary['playwright']:
+    if setup_summary["playwright"]:
         print("    ✅ Playwright browser - Installed/Updated")
     else:
         print("    ⏭️  Playwright browser - Already installed (skipped)")
 
-    if setup_summary.get('offline_chromium', False):
+    if setup_summary.get("offline_chromium", False):
         print("    ✅ Offline Chromium - Installed in browsers/chromium/")
     elif check_offline_chromium_installed():
         print("    ⏭️  Offline Chromium - Already installed (skipped)")
     else:
         print("    ⏭️  Offline Chromium - Not installed (optional)")
 
-    if setup_summary['logs']:
+    if setup_summary["logs"]:
         print("    ✅ Logging system - Configured")
     else:
         print("    ⏭️  Logging system - Already configured (skipped)")
@@ -2476,14 +2396,14 @@ def main() -> None:
 
     # Track what was actually performed vs skipped
     setup_summary = {
-        'python_deps': False,
-        'playwright': False,
-        'logs': False,
-        'offline_chromium': False,
-        'tesseract': False,
-        'redis': False,
-        'postgres': False,
-        'qdrant': False,
+        "python_deps": False,
+        "playwright": False,
+        "logs": False,
+        "offline_chromium": False,
+        "tesseract": False,
+        "redis": False,
+        "postgres": False,
+        "qdrant": False,
     }
 
     try:
@@ -2497,18 +2417,18 @@ def main() -> None:
         # Step 2: Tesseract OCR (system binary)
         print(f"\n[STEP 2/{SETUP_STEPS}] Tesseract OCR (system)...")
         if install_tesseract_ocr_system():
-            setup_summary['tesseract'] = True
+            setup_summary["tesseract"] = True
 
         # Step 3: Redis and PostgreSQL (Linux + sudo, unless skipped)
         print(f"\n[STEP 3/{SETUP_STEPS}] Redis and PostgreSQL (systemd services)...")
         redis_ok, pg_ok = install_redis_and_postgresql_linux(skip=skip_redis_postgres)
-        setup_summary['redis'] = redis_ok
-        setup_summary['postgres'] = pg_ok
+        setup_summary["redis"] = redis_ok
+        setup_summary["postgres"] = pg_ok
 
         # Step 4: Install Python dependencies
         print(f"\n[STEP 4/{SETUP_STEPS}] Python dependencies...")
         if install_python_dependencies():
-            setup_summary['python_deps'] = True
+            setup_summary["python_deps"] = True
 
         # Step 5: Qdrant vector server (Linux + sudo; docs/QDRANT_SETUP.md)
         print(f"\n[STEP 5/{SETUP_STEPS}] Qdrant vector database (Knowledge Space)...")
@@ -2531,7 +2451,7 @@ def main() -> None:
             try:
                 if extract_chromium_zip():
                     chromium_from_zip = True
-                    setup_summary['offline_chromium'] = True
+                    setup_summary["offline_chromium"] = True
                     print("[SUCCESS] Using Chromium from zip file - skipping Playwright download")
                 else:
                     print("[WARNING] Zip extraction failed, falling back to Playwright download")
@@ -2544,12 +2464,12 @@ def main() -> None:
         # If zip extraction didn't work, install via Playwright
         if not chromium_from_zip:
             if install_playwright():
-                setup_summary['playwright'] = True
+                setup_summary["playwright"] = True
 
                 # Copy Chromium for offline use (optional, non-blocking)
                 try:
                     if copy_playwright_chromium_to_offline():
-                        setup_summary['offline_chromium'] = True
+                        setup_summary["offline_chromium"] = True
                 except Exception as e:
                     print(f"[WARNING] Offline Chromium setup skipped: {e}")
                     print("[INFO] You can run this manually later if needed")
@@ -2557,7 +2477,7 @@ def main() -> None:
         # Step 7: Setup logging and data directories
         print(f"\n[STEP 7/{SETUP_STEPS}] Directory setup...")
         if setup_logs_directory():
-            setup_summary['logs'] = True
+            setup_summary["logs"] = True
         setup_data_directory()
         setup_application_directories()
 

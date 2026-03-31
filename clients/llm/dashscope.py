@@ -12,6 +12,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Optional, Any, AsyncGenerator, Union
 import json
 import logging
@@ -23,9 +24,11 @@ from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
     LLMProviderError,
     LLMAccessDeniedError,
-    LLMTimeoutError
+    LLMTimeoutError,
 )
-from services.llm.error_parsers.dashscope_error_parser import parse_and_raise_dashscope_error
+from services.llm.error_parsers.dashscope_error_parser import (
+    parse_and_raise_dashscope_error,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +36,7 @@ logger = logging.getLogger(__name__)
 class QwenClient:
     """Async client for Qwen LLM API using httpx with HTTP/2 support."""
 
-    def __init__(self, model_type='classification'):
+    def __init__(self, model_type="classification"):
         """
         Initialize QwenClient with specific model type
 
@@ -46,7 +49,7 @@ class QwenClient:
         self.stream_timeout = 120  # Longer timeout for streaming (thinking models)
         self.model_type = model_type
         # DIVERSITY FIX: Use higher temperature for generation to increase variety
-        self.default_temperature = 0.9 if model_type == 'generation' else 0.7
+        self.default_temperature = 0.9 if model_type == "generation" else 0.7
 
     async def chat_completion(
         self,
@@ -61,7 +64,7 @@ class QwenClient:
         n: Optional[int] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> Dict[str, Any]:
         """
         Send chat completion request to Qwen (async version).
@@ -107,11 +110,11 @@ class QwenClient:
                 temperature = self.default_temperature
 
             # Select appropriate model based on task type
-            if self.model_type == 'classification':
+            if self.model_type == "classification":
                 model_name = config.QWEN_MODEL_CLASSIFICATION
             else:  # generation
                 model_name = config.QWEN_MODEL_GENERATION
-            dashscope_model = kwargs.pop('dashscope_model', None)
+            dashscope_model = kwargs.pop("dashscope_model", None)
             if dashscope_model:
                 model_name = dashscope_model
 
@@ -142,7 +145,7 @@ class QwenClient:
                 "temperature": temperature,
                 "max_tokens": max_tokens,
                 "stream": False,
-                "extra_body": extra_body
+                "extra_body": extra_body,
             }
 
             # Add optional standard parameters
@@ -175,67 +178,64 @@ class QwenClient:
 
             # Pass through any remaining kwargs (for future extensibility)
             if kwargs:
-                logger.debug('[QwenClient] Additional kwargs passed through: %s', list(kwargs.keys()))
+                logger.debug(
+                    "[QwenClient] Additional kwargs passed through: %s",
+                    list(kwargs.keys()),
+                )
                 payload.update(kwargs)
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             # Use httpx with HTTP/2 support
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(self.timeout, connect=10.0),
-                http2=True
-            ) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout, connect=10.0), http2=True) as client:
                 response = await client.post(self.api_url, json=payload, headers=headers)
 
                 if response.status_code == 200:
                     data = response.json()
-                    choices = data.get('choices', [])
-                    usage = data.get('usage', {})
+                    choices = data.get("choices", [])
+                    usage = data.get("usage", {})
 
                     # Handle multiple completions (n > 1)
                     if n and n > 1 and len(choices) > 1:
                         # Return list of completions
                         completions = []
                         for choice in choices:
-                            message = choice.get('message', {})
-                            content = message.get('content', '')
-                            tool_calls = message.get('tool_calls')
+                            message = choice.get("message", {})
+                            content = message.get("content", "")
+                            tool_calls = message.get("tool_calls")
                             completion_item = {
-                                'content': content,
-                                'index': choice.get('index', 0),
-                                'finish_reason': choice.get('finish_reason'),
-                                'logprobs': choice.get('logprobs')
+                                "content": content,
+                                "index": choice.get("index", 0),
+                                "finish_reason": choice.get("finish_reason"),
+                                "logprobs": choice.get("logprobs"),
                             }
                             # Include tool_calls if present
                             if tool_calls:
-                                completion_item['tool_calls'] = tool_calls
+                                completion_item["tool_calls"] = tool_calls
                             completions.append(completion_item)
                         return {
-                            'content': completions,  # List of completions
-                            'usage': usage
+                            "content": completions,  # List of completions
+                            "usage": usage,
                         }
                     else:
                         # Single completion (default behavior)
-                        message = choices[0].get('message', {}) if choices else {}
-                        content = message.get('content', '')
-                        tool_calls = message.get('tool_calls')
-                        result = {
-                            'content': content,
-                            'usage': usage
-                        }
+                        message = choices[0].get("message", {}) if choices else {}
+                        content = message.get("content", "")
+                        tool_calls = message.get("tool_calls")
+                        result = {"content": content, "usage": usage}
                         # Include tool_calls if present (function calling response)
                         if tool_calls:
-                            result['tool_calls'] = tool_calls
+                            result["tool_calls"] = tool_calls
                         # Include logprobs if requested
-                        if choices and logprobs and 'logprobs' in choices[0]:
-                            result['logprobs'] = choices[0].get('logprobs')
+                        if choices and logprobs and "logprobs" in choices[0]:
+                            result["logprobs"] = choices[0].get("logprobs")
                         return result
                 else:
                     error_text = response.text
-                    logger.error('Qwen API error %d: %s', response.status_code, error_text)
+                    logger.error("Qwen API error %d: %s", response.status_code, error_text)
 
                     # Parse error using comprehensive DashScope error parser
                     try:
@@ -249,24 +249,24 @@ class QwenClient:
                         elif response.status_code == 401:
                             raise LLMAccessDeniedError(
                                 f"Unauthorized: {error_text}",
-                                provider='qwen',
-                                error_code='Unauthorized'
+                                provider="qwen",
+                                error_code="Unauthorized",
                             ) from exc
                         else:
                             raise LLMProviderError(
                                 f"Qwen API error ({response.status_code}): {error_text}",
-                                provider='qwen',
-                                error_code=f'HTTP{response.status_code}'
+                                provider="qwen",
+                                error_code=f"HTTP{response.status_code}",
                             ) from exc
 
         except httpx.TimeoutException as e:
-            logger.error('Qwen API timeout')
+            logger.error("Qwen API timeout")
             raise LLMTimeoutError("Qwen API timeout") from e
         except httpx.HTTPError as e:
-            logger.error('Qwen HTTP error: %s', e)
-            raise LLMProviderError(f"Qwen HTTP error: {e}", provider='qwen', error_code='HTTPError') from e
+            logger.error("Qwen HTTP error: %s", e)
+            raise LLMProviderError(f"Qwen HTTP error: {e}", provider="qwen", error_code="HTTPError") from e
         except Exception as e:
-            logger.error('Qwen API error: %s', e)
+            logger.error("Qwen API error: %s", e)
             raise
 
     async def async_stream_chat_completion(
@@ -282,7 +282,7 @@ class QwenClient:
         seed: Optional[int] = None,
         logprobs: Optional[bool] = None,
         top_logprobs: Optional[int] = None,
-        **kwargs
+        **kwargs,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Qwen API (async generator).
@@ -331,11 +331,11 @@ class QwenClient:
                 temperature = self.default_temperature
 
             # Select appropriate model
-            if self.model_type == 'classification':
+            if self.model_type == "classification":
                 model_name = config.QWEN_MODEL_CLASSIFICATION
             else:
                 model_name = config.QWEN_MODEL_GENERATION
-            dashscope_model = kwargs.pop('dashscope_model', None)
+            dashscope_model = kwargs.pop("dashscope_model", None)
             if dashscope_model:
                 model_name = dashscope_model
 
@@ -367,7 +367,7 @@ class QwenClient:
                 "max_tokens": max_tokens,
                 "stream": True,
                 "stream_options": {"include_usage": True},
-                "extra_body": extra_body
+                "extra_body": extra_body,
             }
 
             # Add optional standard parameters
@@ -398,24 +398,24 @@ class QwenClient:
 
             # Pass through any remaining kwargs
             if kwargs:
-                logger.debug('[QwenClient] Additional kwargs in stream: %s', list(kwargs.keys()))
+                logger.debug("[QwenClient] Additional kwargs in stream: %s", list(kwargs.keys()))
                 payload.update(kwargs)
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             # Use httpx with streaming and HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
-                http2=True
+                http2=True,
             ) as client:
-                async with client.stream('POST', self.api_url, json=payload, headers=headers) as response:
+                async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
                     if response.status_code != 200:
                         error_text = await response.aread()
-                        error_text = error_text.decode('utf-8')
-                        logger.error('Qwen stream error %d: %s', response.status_code, error_text)
+                        error_text = error_text.decode("utf-8")
+                        logger.error("Qwen stream error %d: %s", response.status_code, error_text)
 
                         # Parse error using comprehensive DashScope error parser
                         try:
@@ -427,76 +427,82 @@ class QwenClient:
                             elif response.status_code == 401:
                                 raise LLMAccessDeniedError(
                                     f"Unauthorized: {error_text}",
-                                    provider='qwen',
-                                    error_code='Unauthorized'
+                                    provider="qwen",
+                                    error_code="Unauthorized",
                                 ) from exc
                             else:
                                 raise LLMProviderError(
                                     f"Qwen stream error ({response.status_code}): {error_text}",
-                                    provider='qwen',
-                                    error_code=f'HTTP{response.status_code}'
+                                    provider="qwen",
+                                    error_code=f"HTTP{response.status_code}",
                                 ) from exc
 
                     # Read SSE stream line by line using httpx's aiter_lines()
                     last_usage = None
                     async for line in response.aiter_lines():
-                        if not line or not line.startswith('data: '):
+                        if not line or not line.startswith("data: "):
                             continue
 
                         data_content = line[6:]  # Remove 'data: ' prefix
 
                         # Handle [DONE] signal
-                        if data_content.strip() == '[DONE]':
+                        if data_content.strip() == "[DONE]":
                             if last_usage:
-                                yield {'type': 'usage', 'usage': last_usage}
+                                yield {"type": "usage", "usage": last_usage}
                             break
 
                         try:
                             data = json.loads(data_content)
 
                             # Check for usage data (in final chunk)
-                            if 'usage' in data and data['usage']:
-                                last_usage = data.get('usage', {})
+                            if "usage" in data and data["usage"]:
+                                last_usage = data.get("usage", {})
 
                             # Extract delta from streaming response
-                            choices = data.get('choices', [])
+                            choices = data.get("choices", [])
                             if choices:
-                                delta = choices[0].get('delta', {})
+                                delta = choices[0].get("delta", {})
 
                                 # Check for thinking/reasoning content (Qwen3 thinking mode)
-                                reasoning_content = delta.get('reasoning_content', '')
+                                reasoning_content = delta.get("reasoning_content", "")
                                 if reasoning_content:
-                                    yield {'type': 'thinking', 'content': reasoning_content}
+                                    yield {
+                                        "type": "thinking",
+                                        "content": reasoning_content,
+                                    }
 
                                 # Check for tool calls (function calling)
-                                tool_calls = delta.get('tool_calls')
+                                tool_calls = delta.get("tool_calls")
                                 if tool_calls:
-                                    yield {'type': 'tool_calls', 'tool_calls': tool_calls}
+                                    yield {
+                                        "type": "tool_calls",
+                                        "tool_calls": tool_calls,
+                                    }
 
                                 # Check for regular content
-                                content = delta.get('content', '')
+                                content = delta.get("content", "")
                                 if content:
-                                    yield {'type': 'token', 'content': content}
+                                    yield {"type": "token", "content": content}
 
                         except json.JSONDecodeError:
                             continue
 
                     # If stream ended without [DONE], yield usage if we have it
                     if last_usage:
-                        yield {'type': 'usage', 'usage': last_usage}
+                        yield {"type": "usage", "usage": last_usage}
 
         except httpx.TimeoutException as e:
-            logger.error('Qwen streaming timeout')
+            logger.error("Qwen streaming timeout")
             raise LLMTimeoutError("Qwen streaming timeout") from e
         except httpx.HTTPError as e:
-            logger.error('Qwen streaming HTTP error: %s', e)
+            logger.error("Qwen streaming HTTP error: %s", e)
             raise LLMProviderError(
                 f"Qwen streaming HTTP error: {e}",
-                provider='qwen',
-                error_code='HTTPError'
+                provider="qwen",
+                error_code="HTTPError",
             ) from e
         except Exception as e:
-            logger.error('Qwen streaming error: %s', e)
+            logger.error("Qwen streaming error: %s", e)
             raise
 
 
@@ -509,17 +515,20 @@ class DeepSeekClient:
         self.api_key = config.QWEN_API_KEY
         self.timeout = 60  # seconds (DeepSeek R1 can be slower for reasoning)
         self.stream_timeout = 180  # Longer timeout for streaming (DeepSeek thinking can be slow)
-        self.model_id = 'deepseek'
+        self.model_id = "deepseek"
         self.model_name = config.DEEPSEEK_MODEL
         # DIVERSITY FIX: Lower temperature for DeepSeek (reasoning model, more deterministic)
         self.default_temperature = 0.6
-        logger.debug('[DeepSeekClient] DeepSeekClient initialized with model: %s', self.model_name)
+        logger.debug(
+            "[DeepSeekClient] DeepSeekClient initialized with model: %s",
+            self.model_name,
+        )
 
     async def async_chat_completion(
         self,
         messages: List[Dict],
         temperature: Optional[float] = None,
-        max_tokens: int = 2000
+        max_tokens: int = 2000,
     ) -> Dict[str, Any]:
         """
         Send async chat completion request to DeepSeek R1
@@ -537,41 +546,32 @@ class DeepSeekClient:
             if temperature is None:
                 temperature = self.default_temperature
 
-            payload = config.get_llm_data(
-                messages[-1]['content'] if messages else '',
-                self.model_id
-            )
-            payload['messages'] = messages
-            payload['temperature'] = temperature
-            payload['max_tokens'] = max_tokens
+            payload = config.get_llm_data(messages[-1]["content"] if messages else "", self.model_id)
+            payload["messages"] = messages
+            payload["temperature"] = temperature
+            payload["max_tokens"] = max_tokens
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
-            logger.debug('DeepSeek async API request: %s', self.model_name)
+            logger.debug("DeepSeek async API request: %s", self.model_name)
 
             # Use httpx with HTTP/2 support
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(self.timeout, connect=10.0),
-                http2=True
-            ) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout, connect=10.0), http2=True) as client:
                 response = await client.post(self.api_url, json=payload, headers=headers)
 
                 if response.status_code == 200:
                     data = response.json()
-                    content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                    logger.debug('DeepSeek response length: %d chars', len(content))
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    logger.debug("DeepSeek response length: %d chars", len(content))
                     # Extract usage data
-                    usage = data.get('usage', {})
-                    return {
-                        'content': content,
-                        'usage': usage
-                    }
+                    usage = data.get("usage", {})
+                    return {"content": content, "usage": usage}
                 else:
                     error_text = response.text
-                    logger.error('DeepSeek API error %d: %s', response.status_code, error_text)
+                    logger.error("DeepSeek API error %d: %s", response.status_code, error_text)
 
                     # Parse error using comprehensive DashScope error parser
                     try:
@@ -583,28 +583,24 @@ class DeepSeekClient:
                         elif response.status_code == 401:
                             raise LLMAccessDeniedError(
                                 f"Unauthorized: {error_text}",
-                                provider='deepseek',
-                                error_code='Unauthorized'
+                                provider="deepseek",
+                                error_code="Unauthorized",
                             ) from exc
                         else:
                             raise LLMProviderError(
                                 f"DeepSeek API error ({response.status_code}): {error_text}",
-                                provider='deepseek',
-                                error_code=f'HTTP{response.status_code}'
+                                provider="deepseek",
+                                error_code=f"HTTP{response.status_code}",
                             ) from exc
 
         except httpx.TimeoutException as e:
-            logger.error('DeepSeek API timeout')
+            logger.error("DeepSeek API timeout")
             raise LLMTimeoutError("DeepSeek API timeout") from e
         except httpx.HTTPError as e:
-            logger.error('DeepSeek HTTP error: %s', e)
-            raise LLMProviderError(
-                f"DeepSeek HTTP error: {e}",
-                provider='deepseek',
-                error_code='HTTPError'
-            ) from e
+            logger.error("DeepSeek HTTP error: %s", e)
+            raise LLMProviderError(f"DeepSeek HTTP error: {e}", provider="deepseek", error_code="HTTPError") from e
         except Exception as e:
-            logger.error('DeepSeek API error: %s', e)
+            logger.error("DeepSeek API error: %s", e)
             raise
 
     # Alias for compatibility with agents that call chat_completion
@@ -612,7 +608,7 @@ class DeepSeekClient:
         self,
         messages: List[Dict],
         temperature: Optional[float] = None,
-        max_tokens: int = 2000
+        max_tokens: int = 2000,
     ) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
@@ -622,7 +618,7 @@ class DeepSeekClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
-        enable_thinking: bool = False
+        enable_thinking: bool = False,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from DeepSeek R1 (async generator).
@@ -643,36 +639,37 @@ class DeepSeekClient:
             if temperature is None:
                 temperature = self.default_temperature
 
-            payload = config.get_llm_data(
-                messages[-1]['content'] if messages else '',
-                self.model_id
-            )
-            payload['messages'] = messages
-            payload['temperature'] = temperature
-            payload['max_tokens'] = max_tokens
-            payload['stream'] = True
-            payload['stream_options'] = {"include_usage": True}
+            payload = config.get_llm_data(messages[-1]["content"] if messages else "", self.model_id)
+            payload["messages"] = messages
+            payload["temperature"] = temperature
+            payload["max_tokens"] = max_tokens
+            payload["stream"] = True
+            payload["stream_options"] = {"include_usage": True}
 
             # Enable thinking mode if requested
-            if 'extra_body' not in payload:
-                payload['extra_body'] = {}
-            payload['extra_body']['enable_thinking'] = enable_thinking
+            if "extra_body" not in payload:
+                payload["extra_body"] = {}
+            payload["extra_body"]["enable_thinking"] = enable_thinking
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             # Use httpx with streaming and HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
-                http2=True
+                http2=True,
             ) as client:
-                async with client.stream('POST', self.api_url, json=payload, headers=headers) as response:
+                async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
                     if response.status_code != 200:
                         error_text = await response.aread()
-                        error_text = error_text.decode('utf-8')
-                        logger.error('DeepSeek stream error %d: %s', response.status_code, error_text)
+                        error_text = error_text.decode("utf-8")
+                        logger.error(
+                            "DeepSeek stream error %d: %s",
+                            response.status_code,
+                            error_text,
+                        )
 
                         try:
                             error_data = json.loads(error_text)
@@ -683,69 +680,72 @@ class DeepSeekClient:
                             elif response.status_code == 401:
                                 raise LLMAccessDeniedError(
                                     f"Unauthorized: {error_text}",
-                                    provider='deepseek',
-                                    error_code='Unauthorized'
+                                    provider="deepseek",
+                                    error_code="Unauthorized",
                                 ) from exc
                             else:
                                 raise LLMProviderError(
                                     f"DeepSeek stream error ({response.status_code}): {error_text}",
-                                    provider='deepseek',
-                                    error_code=f'HTTP{response.status_code}'
+                                    provider="deepseek",
+                                    error_code=f"HTTP{response.status_code}",
                                 ) from exc
 
                     # Read SSE stream using httpx's aiter_lines()
                     last_usage = None
                     async for line in response.aiter_lines():
-                        if not line or not line.startswith('data: '):
+                        if not line or not line.startswith("data: "):
                             continue
 
                         data_content = line[6:]
 
-                        if data_content.strip() == '[DONE]':
+                        if data_content.strip() == "[DONE]":
                             if last_usage:
-                                yield {'type': 'usage', 'usage': last_usage}
+                                yield {"type": "usage", "usage": last_usage}
                             break
 
                         try:
                             data = json.loads(data_content)
 
                             # Check for usage data (in final chunk)
-                            if 'usage' in data and data['usage']:
-                                last_usage = data.get('usage', {})
+                            if "usage" in data and data["usage"]:
+                                last_usage = data.get("usage", {})
 
-                            choices = data.get('choices', [])
+                            choices = data.get("choices", [])
                             if choices:
-                                delta = choices[0].get('delta', {})
+                                delta = choices[0].get("delta", {})
 
                                 # Check for thinking/reasoning content (DeepSeek R1)
-                                reasoning_content = delta.get('reasoning_content', '')
+                                reasoning_content = delta.get("reasoning_content", "")
                                 if reasoning_content:
-                                    yield {'type': 'thinking', 'content': reasoning_content}
+                                    yield {
+                                        "type": "thinking",
+                                        "content": reasoning_content,
+                                    }
 
                                 # Check for regular content
-                                content = delta.get('content', '')
+                                content = delta.get("content", "")
                                 if content:
-                                    yield {'type': 'token', 'content': content}
+                                    yield {"type": "token", "content": content}
 
                         except json.JSONDecodeError:
                             continue
 
                     # If stream ended without [DONE], yield usage if we have it
                     if last_usage:
-                        yield {'type': 'usage', 'usage': last_usage}
+                        yield {"type": "usage", "usage": last_usage}
 
         except httpx.TimeoutException as e:
-            logger.error('DeepSeek streaming timeout')
+            logger.error("DeepSeek streaming timeout")
             raise LLMTimeoutError("DeepSeek streaming timeout") from e
         except httpx.HTTPError as e:
-            logger.error('DeepSeek streaming HTTP error: %s', e)
+            logger.error("DeepSeek streaming HTTP error: %s", e)
             raise LLMProviderError(
                 f"DeepSeek streaming HTTP error: {e}",
-                provider='deepseek',
-                error_code='HTTPError'
+                provider="deepseek",
+                error_code="HTTPError",
             ) from e
         except Exception as e:
-            logger.error('DeepSeek streaming error: %s', e)
+            logger.error("DeepSeek streaming error: %s", e)
             raise
 
 
@@ -758,17 +758,17 @@ class KimiClient:
         self.api_key = config.QWEN_API_KEY
         self.timeout = 60  # seconds
         self.stream_timeout = 180  # Longer timeout for streaming (Kimi K2 thinking)
-        self.model_id = 'kimi'
+        self.model_id = "kimi"
         self.model_name = config.KIMI_MODEL
         # DIVERSITY FIX: Higher temperature for Kimi to increase creative variation
         self.default_temperature = 1.0
-        logger.debug('[KimiClient] KimiClient initialized with model: %s', self.model_name)
+        logger.debug("[KimiClient] KimiClient initialized with model: %s", self.model_name)
 
     async def async_chat_completion(
         self,
         messages: List[Dict],
         temperature: Optional[float] = None,
-        max_tokens: int = 2000
+        max_tokens: int = 2000,
     ) -> Dict[str, Any]:
         """Async chat completion for Kimi"""
         try:
@@ -776,41 +776,32 @@ class KimiClient:
             if temperature is None:
                 temperature = self.default_temperature
 
-            payload = config.get_llm_data(
-                messages[-1]['content'] if messages else '',
-                self.model_id
-            )
-            payload['messages'] = messages
-            payload['temperature'] = temperature
-            payload['max_tokens'] = max_tokens
+            payload = config.get_llm_data(messages[-1]["content"] if messages else "", self.model_id)
+            payload["messages"] = messages
+            payload["temperature"] = temperature
+            payload["max_tokens"] = max_tokens
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
-            logger.debug('Kimi async API request: %s', self.model_name)
+            logger.debug("Kimi async API request: %s", self.model_name)
 
             # Use httpx with HTTP/2 support
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(self.timeout, connect=10.0),
-                http2=True
-            ) as client:
+            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout, connect=10.0), http2=True) as client:
                 response = await client.post(self.api_url, json=payload, headers=headers)
 
                 if response.status_code == 200:
                     data = response.json()
-                    content = data.get('choices', [{}])[0].get('message', {}).get('content', '')
-                    logger.debug('Kimi response length: %d chars', len(content))
+                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                    logger.debug("Kimi response length: %d chars", len(content))
                     # Extract usage data
-                    usage = data.get('usage', {})
-                    return {
-                        'content': content,
-                        'usage': usage
-                    }
+                    usage = data.get("usage", {})
+                    return {"content": content, "usage": usage}
                 else:
                     error_text = response.text
-                    logger.error('Kimi API error %d: %s', response.status_code, error_text)
+                    logger.error("Kimi API error %d: %s", response.status_code, error_text)
 
                     try:
                         error_data = json.loads(error_text)
@@ -821,24 +812,24 @@ class KimiClient:
                         elif response.status_code == 401:
                             raise LLMAccessDeniedError(
                                 f"Unauthorized: {error_text}",
-                                provider='kimi',
-                                error_code='Unauthorized'
+                                provider="kimi",
+                                error_code="Unauthorized",
                             ) from exc
                         else:
                             raise LLMProviderError(
                                 f"Kimi API error ({response.status_code}): {error_text}",
-                                provider='kimi',
-                                error_code=f'HTTP{response.status_code}'
+                                provider="kimi",
+                                error_code=f"HTTP{response.status_code}",
                             ) from exc
 
         except httpx.TimeoutException as e:
-            logger.error('Kimi API timeout')
+            logger.error("Kimi API timeout")
             raise LLMTimeoutError("Kimi API timeout") from e
         except httpx.HTTPError as e:
-            logger.error('Kimi HTTP error: %s', e)
-            raise LLMProviderError(f"Kimi HTTP error: {e}", provider='kimi', error_code='HTTPError') from e
+            logger.error("Kimi HTTP error: %s", e)
+            raise LLMProviderError(f"Kimi HTTP error: {e}", provider="kimi", error_code="HTTPError") from e
         except Exception as e:
-            logger.error('Kimi API error: %s', e)
+            logger.error("Kimi API error: %s", e)
             raise
 
     # Alias for compatibility with agents that call chat_completion
@@ -846,7 +837,7 @@ class KimiClient:
         self,
         messages: List[Dict],
         temperature: Optional[float] = None,
-        max_tokens: int = 2000
+        max_tokens: int = 2000,
     ) -> Dict[str, Any]:
         """Alias for async_chat_completion for API consistency"""
         return await self.async_chat_completion(messages, temperature, max_tokens)
@@ -856,7 +847,7 @@ class KimiClient:
         messages: List[Dict],
         temperature: Optional[float] = None,
         max_tokens: int = 2000,
-        enable_thinking: bool = False
+        enable_thinking: bool = False,
     ) -> AsyncGenerator[Dict[str, Any], None]:
         """
         Stream chat completion from Kimi (async generator).
@@ -877,36 +868,33 @@ class KimiClient:
             if temperature is None:
                 temperature = self.default_temperature
 
-            payload = config.get_llm_data(
-                messages[-1]['content'] if messages else '',
-                self.model_id
-            )
-            payload['messages'] = messages
-            payload['temperature'] = temperature
-            payload['max_tokens'] = max_tokens
-            payload['stream'] = True
-            payload['stream_options'] = {"include_usage": True}
+            payload = config.get_llm_data(messages[-1]["content"] if messages else "", self.model_id)
+            payload["messages"] = messages
+            payload["temperature"] = temperature
+            payload["max_tokens"] = max_tokens
+            payload["stream"] = True
+            payload["stream_options"] = {"include_usage": True}
 
             # Enable thinking mode if requested
-            if 'extra_body' not in payload:
-                payload['extra_body'] = {}
-            payload['extra_body']['enable_thinking'] = enable_thinking
+            if "extra_body" not in payload:
+                payload["extra_body"] = {}
+            payload["extra_body"]["enable_thinking"] = enable_thinking
 
             headers = {
                 "Authorization": f"Bearer {self.api_key}",
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
             }
 
             # Use httpx with streaming and HTTP/2 support
             async with httpx.AsyncClient(
                 timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
-                http2=True
+                http2=True,
             ) as client:
-                async with client.stream('POST', self.api_url, json=payload, headers=headers) as response:
+                async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
                     if response.status_code != 200:
                         error_text = await response.aread()
-                        error_text = error_text.decode('utf-8')
-                        logger.error('Kimi stream error %d: %s', response.status_code, error_text)
+                        error_text = error_text.decode("utf-8")
+                        logger.error("Kimi stream error %d: %s", response.status_code, error_text)
 
                         try:
                             error_data = json.loads(error_text)
@@ -917,67 +905,70 @@ class KimiClient:
                             elif response.status_code == 401:
                                 raise LLMAccessDeniedError(
                                     f"Unauthorized: {error_text}",
-                                    provider='kimi',
-                                    error_code='Unauthorized'
+                                    provider="kimi",
+                                    error_code="Unauthorized",
                                 ) from exc
                             else:
                                 raise LLMProviderError(
                                     f"Kimi stream error ({response.status_code}): {error_text}",
-                                    provider='kimi',
-                                    error_code=f'HTTP{response.status_code}'
+                                    provider="kimi",
+                                    error_code=f"HTTP{response.status_code}",
                                 ) from exc
 
                     # Read SSE stream using httpx's aiter_lines()
                     last_usage = None
                     async for line in response.aiter_lines():
-                        if not line or not line.startswith('data: '):
+                        if not line or not line.startswith("data: "):
                             continue
 
                         data_content = line[6:]
 
-                        if data_content.strip() == '[DONE]':
+                        if data_content.strip() == "[DONE]":
                             if last_usage:
-                                yield {'type': 'usage', 'usage': last_usage}
+                                yield {"type": "usage", "usage": last_usage}
                             break
 
                         try:
                             data = json.loads(data_content)
 
                             # Check for usage data (in final chunk)
-                            if 'usage' in data and data['usage']:
-                                last_usage = data.get('usage', {})
+                            if "usage" in data and data["usage"]:
+                                last_usage = data.get("usage", {})
 
-                            choices = data.get('choices', [])
+                            choices = data.get("choices", [])
                             if choices:
-                                delta = choices[0].get('delta', {})
+                                delta = choices[0].get("delta", {})
 
                                 # Check for thinking/reasoning content (Kimi K2)
-                                reasoning_content = delta.get('reasoning_content', '')
+                                reasoning_content = delta.get("reasoning_content", "")
                                 if reasoning_content:
-                                    yield {'type': 'thinking', 'content': reasoning_content}
+                                    yield {
+                                        "type": "thinking",
+                                        "content": reasoning_content,
+                                    }
 
                                 # Check for regular content
-                                content = delta.get('content', '')
+                                content = delta.get("content", "")
                                 if content:
-                                    yield {'type': 'token', 'content': content}
+                                    yield {"type": "token", "content": content}
 
                         except json.JSONDecodeError:
                             continue
 
                     # If stream ended without [DONE], yield usage if we have it
                     if last_usage:
-                        yield {'type': 'usage', 'usage': last_usage}
+                        yield {"type": "usage", "usage": last_usage}
 
         except httpx.TimeoutException as e:
-            logger.error('Kimi streaming timeout')
+            logger.error("Kimi streaming timeout")
             raise LLMTimeoutError("Kimi streaming timeout") from e
         except httpx.HTTPError as e:
-            logger.error('Kimi streaming HTTP error: %s', e)
+            logger.error("Kimi streaming HTTP error: %s", e)
             raise LLMProviderError(
                 f"Kimi streaming HTTP error: {e}",
-                provider='kimi',
-                error_code='HTTPError'
+                provider="kimi",
+                error_code="HTTPError",
             ) from e
         except Exception as e:
-            logger.error('Kimi streaming error: %s', e)
+            logger.error("Kimi streaming error: %s", e)
             raise

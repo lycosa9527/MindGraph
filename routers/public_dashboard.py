@@ -14,6 +14,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from collections import defaultdict
 from datetime import datetime, timezone
 from typing import Dict, Any, List
@@ -87,15 +88,15 @@ def is_localhost_ip(ip_address: str) -> bool:
     ip_lower = ip_address.lower().strip()
 
     # Common localhost identifiers
-    if ip_lower in ('localhost', '::1', '::', '0.0.0.0'):
+    if ip_lower in ("localhost", "::1", "::", "0.0.0.0"):
         return True
 
     # Check IPv4 localhost range (127.0.0.0/8)
-    if ip_lower.startswith('127.'):
+    if ip_lower.startswith("127."):
         return True
 
     # Check IPv6 IPv4-mapped localhost (::ffff:127.x.x.x)
-    if ip_lower.startswith('::ffff:127.'):
+    if ip_lower.startswith("::ffff:127."):
         return True
 
     return False
@@ -111,8 +112,7 @@ def filter_localhost_users(active_users: List[Dict]) -> List[Dict]:
     Returns:
         Filtered list excluding localhost connections
     """
-    return [user for user in active_users
-            if not is_localhost_ip(user.get('ip_address', ''))]
+    return [user for user in active_users if not is_localhost_ip(user.get("ip_address", ""))]
 
 
 def count_non_localhost_users(active_users: List[Dict]) -> int:
@@ -127,10 +127,11 @@ def count_non_localhost_users(active_users: List[Dict]) -> int:
     Returns:
         Count of non-localhost users with valid IP addresses
     """
-    return sum(1 for user in active_users
-               if (ip_address := user.get('ip_address', ''))
-               and ip_address != 'unknown'
-               and not is_localhost_ip(ip_address))
+    return sum(
+        1
+        for user in active_users
+        if (ip_address := user.get("ip_address", "")) and ip_address != "unknown" and not is_localhost_ip(ip_address)
+    )
 
 
 def verify_dashboard_session(request: Request) -> bool:
@@ -144,7 +145,7 @@ def verify_dashboard_session(request: Request) -> bool:
     if not dashboard_token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Dashboard session required"
+            detail="Dashboard session required",
         )
 
     # Get client IP for validation (handles reverse proxies)
@@ -154,7 +155,7 @@ def verify_dashboard_session(request: Request) -> bool:
     if not session_manager.verify_session(dashboard_token, client_ip=client_ip):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired dashboard session"
+            detail="Invalid or expired dashboard session",
         )
 
     return True
@@ -164,7 +165,7 @@ async def check_dashboard_rate_limit(
     request: Request,
     endpoint_name: str,
     max_requests: int = 60,
-    window_seconds: int = 60
+    window_seconds: int = 60,
 ):
     """
     Check rate limit for dashboard endpoints.
@@ -182,20 +183,23 @@ async def check_dashboard_rate_limit(
     rate_limiter = RedisRateLimiter()
 
     is_allowed, count, error_msg = rate_limiter.check_and_record(
-        category=f'dashboard_{endpoint_name}',
+        category=f"dashboard_{endpoint_name}",
         identifier=client_ip,
         max_attempts=max_requests,
-        window_seconds=window_seconds
+        window_seconds=window_seconds,
     )
 
     if not is_allowed:
         logger.warning(
             "Dashboard rate limit exceeded for %s: %s (%s/%s requests)",
-            endpoint_name, client_ip, count, max_requests
+            endpoint_name,
+            client_ip,
+            count,
+            max_requests,
         )
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Too many requests. {error_msg}"
+            detail=f"Too many requests. {error_msg}",
         )
 
 
@@ -239,7 +243,7 @@ def get_cached_stats(tracker) -> Dict:
             redis.setex(
                 STATS_CACHE_KEY,
                 STATS_CACHE_TTL,
-                json.dumps(stats, ensure_ascii=False)  # Preserve UTF-8 characters
+                json.dumps(stats, ensure_ascii=False),  # Preserve UTF-8 characters
             )
         except Exception as e:
             logger.debug("Failed to cache stats: %s", e)
@@ -254,10 +258,7 @@ def get_cached_stats(tracker) -> Dict:
 
 
 @router.get("/stats")
-async def get_dashboard_stats(
-    request: Request,
-    db: Session = Depends(get_db)
-) -> Dict[str, Any]:
+async def get_dashboard_stats(request: Request, db: Session = Depends(get_db)) -> Dict[str, Any]:
     """
     Get public dashboard statistics.
 
@@ -268,7 +269,7 @@ async def get_dashboard_stats(
     verify_dashboard_session(request)
 
     # Rate limiting: 60 requests per minute per IP
-    await check_dashboard_rate_limit(request, 'stats', max_requests=60, window_seconds=60)
+    await check_dashboard_rate_limit(request, "stats", max_requests=60, window_seconds=60)
 
     try:
         # Get connected users count (excluding localhost)
@@ -303,7 +304,7 @@ async def get_dashboard_stats(
                     redis.setex(
                         REGISTERED_USERS_CACHE_KEY,
                         REGISTERED_USERS_CACHE_TTL,
-                        str(registered_users)
+                        str(registered_users),
                     )
                 except Exception as e:
                     logger.debug("Failed to cache registered users count: %s", e)
@@ -317,8 +318,8 @@ async def get_dashboard_stats(
                 cached_tokens = redis.get(TOKEN_USAGE_CACHE_KEY)
                 if cached_tokens:
                     token_data = json.loads(cached_tokens)
-                    tokens_used_today = token_data.get('today', None)
-                    total_tokens_used = token_data.get('total', None)
+                    tokens_used_today = token_data.get("today", None)
+                    total_tokens_used = token_data.get("total", None)
             except Exception as e:
                 logger.debug("Error reading token usage cache: %s", e)
 
@@ -328,17 +329,22 @@ async def get_dashboard_stats(
             # Single query that calculates both today and total in one pass
             # Uses conditional aggregation to avoid scanning the table twice
             token_stats_query = await asyncio.to_thread(
-                lambda: db.query(
-                    func.sum(
-                        case(
-                            (TokenUsage.created_at >= today_start, TokenUsage.total_tokens),
-                            else_=0
-                        )
-                    ).label('today_tokens'),
-                    func.sum(TokenUsage.total_tokens).label('total_tokens')
-                ).filter(
-                    TokenUsage.success.is_(True)
-                ).first()
+                lambda: (
+                    db.query(
+                        func.sum(
+                            case(
+                                (
+                                    TokenUsage.created_at >= today_start,
+                                    TokenUsage.total_tokens,
+                                ),
+                                else_=0,
+                            )
+                        ).label("today_tokens"),
+                        func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                    )
+                    .filter(TokenUsage.success.is_(True))
+                    .first()
+                )
             )
 
             if token_stats_query:
@@ -354,13 +360,13 @@ async def get_dashboard_stats(
                 if redis:
                     try:
                         token_data = {
-                            'today': tokens_used_today,
-                            'total': total_tokens_used
+                            "today": tokens_used_today,
+                            "total": total_tokens_used,
                         }
                         redis.setex(
                             TOKEN_USAGE_CACHE_KEY,
                             TOKEN_USAGE_CACHE_TTL,
-                            json.dumps(token_data)
+                            json.dumps(token_data),
                         )
                     except Exception as e:
                         logger.debug("Failed to cache token usage: %s", e)
@@ -370,7 +376,7 @@ async def get_dashboard_stats(
             "connected_users": connected_users,
             "registered_users": registered_users,
             "tokens_used_today": tokens_used_today,
-            "total_tokens_used": total_tokens_used
+            "total_tokens_used": total_tokens_used,
         }
 
     except HTTPException:
@@ -384,14 +390,12 @@ async def get_dashboard_stats(
             "connected_users": 0,
             "registered_users": 0,
             "tokens_used_today": 0,
-            "total_tokens_used": 0
+            "total_tokens_used": 0,
         }
 
 
 @router.get("/map-data")
-async def get_map_data(
-    request: Request
-) -> Dict[str, Any]:
+async def get_map_data(request: Request) -> Dict[str, Any]:
     """
     Get active users by province and city for map visualization.
 
@@ -404,7 +408,7 @@ async def get_map_data(
     verify_dashboard_session(request)
 
     # Rate limiting: 30 requests per minute per IP (more expensive endpoint)
-    await check_dashboard_rate_limit(request, 'map_data', max_requests=30, window_seconds=60)
+    await check_dashboard_rate_limit(request, "map_data", max_requests=30, window_seconds=60)
 
     # Try to get from cache first
     if is_redis_available():
@@ -429,11 +433,7 @@ async def get_map_data(
         if not ip_geolocation.is_ready():
             # Database not ready yet - return empty data with loading flag
             logger.debug("[MapData] IP geolocation database not ready, returning empty data")
-            return {
-                "map_data": [],
-                "flag_data": [],
-                "database_loading": True
-            }
+            return {"map_data": [], "flag_data": [], "database_loading": True}
 
         # Get active users within last hour
         tracker = get_activity_tracker()
@@ -446,8 +446,8 @@ async def get_map_data(
         ip_addresses = []
         ip_to_user = {}
         for user in active_users:
-            ip_address = user.get('ip_address', '')
-            if ip_address and ip_address != 'unknown':
+            ip_address = user.get("ip_address", "")
+            if ip_address and ip_address != "unknown":
                 if ip_address not in ip_to_user:
                     ip_addresses.append(ip_address)
                     ip_to_user[ip_address] = []
@@ -471,8 +471,8 @@ async def get_map_data(
             if not isinstance(location, dict):
                 continue
 
-            city = location.get('city', '')
-            province = location.get('province', '')
+            city = location.get("city", "")
+            province = location.get("province", "")
 
             # Count users for this IP
             user_count = len(ip_to_user[ip_address])
@@ -486,27 +486,24 @@ async def get_map_data(
             if location_name:
                 # Store coordinates (use first occurrence)
                 if location_name not in city_coords:
-                    lat = location.get('lat')
-                    lng = location.get('lng')
+                    lat = location.get("lat")
+                    lng = location.get("lng")
                     if lat is not None and lng is not None:
                         city_coords[location_name] = [lng, lat]
 
                 # Store location info for flag creation
                 if location_name not in city_to_location:
                     city_to_location[location_name] = {
-                        'city': city,
-                        'province': province,
-                        'lat': location.get('lat'),
-                        'lng': location.get('lng')
+                        "city": city,
+                        "province": province,
+                        "lat": location.get("lat"),
+                        "lng": location.get("lng"),
                     }
 
         # Build map data for province highlighting (ECharts map series format)
         map_data = []
         for province_name, count in province_data.items():
-            map_data.append({
-                "name": province_name,
-                "value": count
-            })
+            map_data.append({"name": province_name, "value": count})
 
         # Get city flags (cities with logins/activities in last hour)
         flag_tracker = get_city_flag_tracker()
@@ -519,30 +516,32 @@ async def get_map_data(
             # Get location info for this city
             location_info = city_to_location.get(city_name)
             if location_info:
-                lat = location_info.get('lat') or coords[1]  # Prefer geolocation lat, fallback to coords
-                lng = location_info.get('lng') or coords[0]  # Prefer geolocation lng, fallback to coords
-                city = location_info.get('city') or city_name
-                province = location_info.get('province')
+                lat = location_info.get("lat") or coords[1]  # Prefer geolocation lat, fallback to coords
+                lng = location_info.get("lng") or coords[0]  # Prefer geolocation lng, fallback to coords
+                city = location_info.get("city") or city_name
+                province = location_info.get("province")
 
                 # Record/refresh flag for this city (record_city_flag refreshes TTL if flag exists)
                 flag_tracker.record_city_flag(city, province, lat, lng)
 
                 # Update active_flags list for this response
                 # Remove existing flag if present, then add refreshed one
-                active_flags = [f for f in active_flags if f['city'] != city_name]
-                active_flags.append({
-                    'city': city_name,
-                    'timestamp': datetime.now(timezone.utc).isoformat(),
-                    'lat': lat,
-                    'lng': lng
-                })
+                active_flags = [f for f in active_flags if f["city"] != city_name]
+                active_flags.append(
+                    {
+                        "city": city_name,
+                        "timestamp": datetime.now(timezone.utc).isoformat(),
+                        "lat": lat,
+                        "lng": lng,
+                    }
+                )
 
         # Build flag data with coordinates
         flag_data = []
         for flag in active_flags:
-            city_name = flag['city']
-            lat = flag.get('lat')
-            lng = flag.get('lng')
+            city_name = flag["city"]
+            lat = flag.get("lat")
+            lng = flag.get("lng")
 
             # Use stored coordinates if available
             if lat is not None and lng is not None:
@@ -552,16 +551,18 @@ async def get_map_data(
                 coords = city_coords.get(city_name)
 
             if coords:
-                flag_data.append({
-                    "name": city_name,
-                    "value": [coords[0], coords[1]],  # [lng, lat]
-                    "timestamp": flag['timestamp']
-                })
+                flag_data.append(
+                    {
+                        "name": city_name,
+                        "value": [coords[0], coords[1]],  # [lng, lat]
+                        "timestamp": flag["timestamp"],
+                    }
+                )
 
         result = {
             "map_data": map_data,  # For province highlighting
             "flag_data": flag_data,  # For city flags (active session indicators)
-            "database_loading": False  # Database is ready
+            "database_loading": False,  # Database is ready
         }
 
         # Cache the result
@@ -572,7 +573,7 @@ async def get_map_data(
                     redis.setex(
                         MAP_DATA_CACHE_KEY,
                         MAP_DATA_CACHE_TTL,
-                        json.dumps(result, ensure_ascii=False)
+                        json.dumps(result, ensure_ascii=False),
                     )
                 except Exception as e:
                     logger.debug("Failed to cache map data: %s", e)
@@ -588,15 +589,12 @@ async def get_map_data(
             "map_data": [],
             "series_data": [],
             "flag_data": [],
-            "database_loading": False  # Error occurred, not a loading state
+            "database_loading": False,  # Error occurred, not a loading state
         }
 
 
 @router.get("/activity-history")
-async def get_activity_history(
-    request: Request,
-    limit: int = 100
-) -> Dict[str, Any]:
+async def get_activity_history(request: Request, limit: int = 100) -> Dict[str, Any]:
     """
     Get historical activity data for the dashboard.
 
@@ -614,7 +612,7 @@ async def get_activity_history(
     verify_dashboard_session(request)
 
     # Rate limiting: 30 requests per minute per IP
-    await check_dashboard_rate_limit(request, 'activity_history', max_requests=30, window_seconds=60)
+    await check_dashboard_rate_limit(request, "activity_history", max_requests=30, window_seconds=60)
 
     # Clamp limit to reasonable range
     limit = max(1, min(limit, 500))
@@ -627,34 +625,28 @@ async def get_activity_history(
         # Convert to JSON-serializable format (activities already in correct format)
         activity_list = []
         for activity in activities:
-            activity_list.append({
-                "type": activity.get("type", "activity"),
-                "timestamp": activity.get("timestamp", ""),
-                "user": activity.get("user", "User *"),
-                "action": activity.get("action", ""),
-                "diagram_type": activity.get("diagram_type", "")
-            })
+            activity_list.append(
+                {
+                    "type": activity.get("type", "activity"),
+                    "timestamp": activity.get("timestamp", ""),
+                    "user": activity.get("user", "User *"),
+                    "action": activity.get("action", ""),
+                    "diagram_type": activity.get("diagram_type", ""),
+                }
+            )
 
-        return {
-            "activities": activity_list,
-            "count": len(activity_list)
-        }
+        return {"activities": activity_list, "count": len(activity_list)}
 
     except HTTPException:
         raise
     except Exception as e:
         logger.error("Error getting activity history: %s", e, exc_info=True)
         # Return empty list on error (don't break dashboard)
-        return {
-            "activities": [],
-            "count": 0
-        }
+        return {"activities": [], "count": 0}
 
 
 @router.get("/activity-stream")
-async def stream_activity_updates(
-    request: Request
-):
+async def stream_activity_updates(request: Request):
     """
     Stream real-time activity updates using Server-Sent Events.
 
@@ -693,23 +685,25 @@ async def stream_activity_updates(
                     redis.decr(connection_key)
                     logger.warning(
                         "IP %s exceeded max concurrent SSE connections (%s)",
-                        client_ip, MAX_CONCURRENT_SSE_CONNECTIONS
+                        client_ip,
+                        MAX_CONCURRENT_SSE_CONNECTIONS,
                     )
                     raise HTTPException(
                         status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-                        detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed"
+                        detail=f"Maximum {MAX_CONCURRENT_SSE_CONNECTIONS} concurrent connections allowed",
                     )
 
                 logger.info(
                     "Dashboard SSE connection started for IP %s (connections: %s)",
-                    client_ip, current_connections
+                    client_ip,
+                    current_connections,
                 )
             except HTTPException:
                 raise
             except Exception as e:
                 logger.warning(
                     "Error tracking SSE connection in Redis: %s, continuing without tracking",
-                    e
+                    e,
                 )
                 # Continue without tracking - don't block on Redis errors
 
@@ -735,21 +729,15 @@ async def stream_activity_updates(
                     "connected_users": connected_users_count,
                     "registered_users": 0,  # Will be updated by stats endpoint
                     "tokens_used_today": 0,  # Will be updated by stats endpoint
-                    "total_tokens_used": 0  # Will be updated by stats endpoint
+                    "total_tokens_used": 0,  # Will be updated by stats endpoint
                 }
             except Exception as e:
                 logger.error("Error getting initial state: %s", e, exc_info=True)
-                error_data = json.dumps({
-                    'type': 'error',
-                    'error': 'Failed to fetch initial state'
-                })
+                error_data = json.dumps({"type": "error", "error": "Failed to fetch initial state"})
                 yield f"data: {error_data}\n\n"
                 return
 
-            initial_data = json.dumps({
-                'type': 'initial',
-                'stats': initial_stats
-            })
+            initial_data = json.dumps({"type": "initial", "stats": initial_stats})
             yield f"data: {initial_data}\n\n"
 
             # Poll for updates
@@ -777,14 +765,9 @@ async def stream_activity_updates(
                         active_users = tracker.get_active_users(hours=1)  # Get users active within last hour
                         # Filter out localhost connections
                         connected_users_count = count_non_localhost_users(active_users)
-                        stats_update = {
-                            "connected_users": connected_users_count
-                        }
+                        stats_update = {"connected_users": connected_users_count}
 
-                        stats_data = json.dumps({
-                            'type': 'stats_update',
-                            **stats_update
-                        })
+                        stats_data = json.dumps({"type": "stats_update", **stats_update})
                         yield f"data: {stats_data}\n\n"
                         stats_counter = 0
                     except Exception as e:
@@ -793,10 +776,12 @@ async def stream_activity_updates(
                 # Send heartbeat periodically
                 heartbeat_counter += 1
                 if heartbeat_counter >= (HEARTBEAT_INTERVAL // SSE_POLL_INTERVAL_SECONDS):
-                    heartbeat_data = json.dumps({
-                        'type': 'heartbeat',
-                        'timestamp': datetime.now(timezone.utc).isoformat()
-                    })
+                    heartbeat_data = json.dumps(
+                        {
+                            "type": "heartbeat",
+                            "timestamp": datetime.now(timezone.utc).isoformat(),
+                        }
+                    )
                     yield f"data: {heartbeat_data}\n\n"
                     heartbeat_counter = 0
 
@@ -806,10 +791,7 @@ async def stream_activity_updates(
         except Exception as e:
             logger.error("Error in activity stream: %s", e, exc_info=True)
             try:
-                error_data = json.dumps({
-                    'type': 'error',
-                    'error': str(e)
-                })
+                error_data = json.dumps({"type": "error", "error": str(e)})
                 yield f"data: {error_data}\n\n"
             except Exception:
                 return
@@ -829,7 +811,8 @@ async def stream_activity_updates(
                                 redis.delete(connection_key)
                             logger.debug(
                                 "Dashboard SSE connection closed for IP %s (remaining: %s)",
-                                client_ip, max(0, remaining)
+                                client_ip,
+                                max(0, remaining),
                             )
                         except Exception as e:
                             logger.debug("Error decrementing SSE connection count: %s", e)
@@ -841,5 +824,5 @@ async def stream_activity_updates(
             "Cache-Control": "no-cache",
             "Connection": "keep-alive",
             "X-Accel-Buffering": "no",  # Disable nginx buffering
-        }
+        },
     )

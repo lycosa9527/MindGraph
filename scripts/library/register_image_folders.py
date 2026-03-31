@@ -9,6 +9,7 @@ Interactive: scans, lists books for verification, then prompts to re-register.
 Usage:
     python scripts/library/register_image_folders.py
 """
+
 import importlib
 import logging
 import os
@@ -21,63 +22,64 @@ from sqlalchemy.orm import Session
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
-_config_database = importlib.import_module('config.database')
+_config_database = importlib.import_module("config.database")
 get_db = _config_database.get_db
 
-_models_domain_auth = importlib.import_module('models.domain.auth')
+_models_domain_auth = importlib.import_module("models.domain.auth")
 User = _models_domain_auth.User
 
-_models_domain_library = importlib.import_module('models.domain.library')
+_models_domain_library = importlib.import_module("models.domain.library")
 LibraryDocument = _models_domain_library.LibraryDocument
 
-_services_library = importlib.import_module('services.library')
+_services_library = importlib.import_module("services.library")
 LibraryService = _services_library.LibraryService
 
-_services_library_image_path_resolver = importlib.import_module(
-    'services.library.image_path_resolver'
-)
+_services_library_image_path_resolver = importlib.import_module("services.library.image_path_resolver")
 count_pages = _services_library_image_path_resolver.count_pages
 detect_image_pattern = _services_library_image_path_resolver.detect_image_pattern
 
-_services_library_path_utils = importlib.import_module(
-    'services.library.library_path_utils'
-)
+_services_library_path_utils = importlib.import_module("services.library.library_path_utils")
 normalize_library_path = _services_library_path_utils.normalize_library_path
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
+logging.basicConfig(level=logging.INFO, format="%(message)s")
 logger = logging.getLogger(__name__)
 
 
 def _find_existing_doc_by_path(db: Session, pages_dir_path: str) -> LibraryDocument | None:
     """Find LibraryDocument by exact pages_dir_path match."""
-    return db.query(LibraryDocument).filter(
-        LibraryDocument.pages_dir_path == pages_dir_path,
-        LibraryDocument.use_images.is_(True)
-    ).first()
+    return (
+        db.query(LibraryDocument)
+        .filter(
+            LibraryDocument.pages_dir_path == pages_dir_path,
+            LibraryDocument.use_images.is_(True),
+        )
+        .first()
+    )
 
 
 def _find_existing_doc_by_folder_name(db: Session, folder_name: str) -> LibraryDocument | None:
     """Find LibraryDocument by folder name (handles DB import with different paths)."""
     if not folder_name:
         return None
-    pattern = f'%/{folder_name}'
-    return db.query(LibraryDocument).filter(
-        LibraryDocument.pages_dir_path.like(pattern),
-        LibraryDocument.use_images.is_(True)
-    ).first()
+    pattern = f"%/{folder_name}"
+    return (
+        db.query(LibraryDocument)
+        .filter(
+            LibraryDocument.pages_dir_path.like(pattern),
+            LibraryDocument.use_images.is_(True),
+        )
+        .first()
+    )
 
 
 def _get_admin_user(db: Session) -> User | None:
     """Get admin user for uploader, with fallbacks."""
-    admin_user = db.query(User).filter(User.role == 'admin').first()
+    admin_user = db.query(User).filter(User.role == "admin").first()
     if admin_user:
         return admin_user
-    admin_user = db.query(User).filter(User.phone == '17801353751').first()
+    admin_user = db.query(User).filter(User.phone == "17801353751").first()
     if admin_user:
-        logger.info(
-            "Using user by phone (ID: %s) as uploader",
-            admin_user.id
-        )
+        logger.info("Using user by phone (ID: %s) as uploader", admin_user.id)
         return admin_user
     admin_user = db.query(User).first()
     if admin_user:
@@ -93,16 +95,13 @@ def scan_books(library_dir: Path, db: Session) -> list[dict]:
 
     Returns list of dicts: folder_name, folder_path, page_count, in_db, needs_repair
     """
-    folders = [d for d in library_dir.iterdir() if d.is_dir() and d.name != 'covers']
+    folders = [d for d in library_dir.iterdir() if d.is_dir() and d.name != "covers"]
     results = []
 
     for folder_path in folders:
         folder_name = folder_path.name
         all_files = list(folder_path.iterdir())
-        image_files = [
-            f for f in all_files
-            if f.is_file() and f.suffix.lower() in ('.jpg', '.jpeg', '.png')
-        ]
+        image_files = [f for f in all_files if f.is_file() and f.suffix.lower() in (".jpg", ".jpeg", ".png")]
 
         if not image_files:
             continue
@@ -122,20 +121,20 @@ def scan_books(library_dir: Path, db: Session) -> list[dict]:
         in_db = doc is not None
         needs_repair = bool(doc_by_name and not doc_by_path)
 
-        results.append({
-            'folder_name': folder_name,
-            'folder_path': folder_path,
-            'page_count': page_count,
-            'in_db': in_db,
-            'needs_repair': needs_repair,
-        })
+        results.append(
+            {
+                "folder_name": folder_name,
+                "folder_path": folder_path,
+                "page_count": page_count,
+                "in_db": in_db,
+                "needs_repair": needs_repair,
+            }
+        )
 
     return results
 
 
-def re_register_books(
-    library_dir: Path, db: Session, books: list[dict]
-) -> tuple[int, int, int]:
+def re_register_books(library_dir: Path, db: Session, books: list[dict]) -> tuple[int, int, int]:
     """Re-register the given books. Returns (registered, updated, repaired)."""
     admin_user = _get_admin_user(db)
     if not admin_user:
@@ -148,18 +147,16 @@ def re_register_books(
     repaired = 0
 
     for book in books:
-        folder_path = book['folder_path']
-        folder_name = book['folder_name']
-        page_count = book['page_count']
-        had_existing = book.get('in_db', False)
-        needs_repair = book.get('needs_repair', False)
+        folder_path = book["folder_path"]
+        folder_name = book["folder_name"]
+        page_count = book["page_count"]
+        had_existing = book.get("in_db", False)
+        needs_repair = book.get("needs_repair", False)
 
         if needs_repair:
             existing_doc = _find_existing_doc_by_folder_name(db, folder_name)
             if existing_doc:
-                correct_path = normalize_library_path(
-                    folder_path, library_dir, Path.cwd()
-                )
+                correct_path = normalize_library_path(folder_path, library_dir, Path.cwd())
                 existing_doc.pages_dir_path = correct_path
                 db.commit()
                 db.refresh(existing_doc)
@@ -205,18 +202,21 @@ def main() -> int:
             logger.info("Found %d book(s):", len(books))
             logger.info("-" * 60)
             for i, book in enumerate(books, 1):
-                status = "in DB" if book['in_db'] else "not in DB"
-                if book.get('needs_repair'):
+                status = "in DB" if book["in_db"] else "not in DB"
+                if book.get("needs_repair"):
                     status = "in DB (path needs repair)"
                 logger.info(
                     "  %d. %s  [%d pages]  %s",
-                    i, book['folder_name'], book['page_count'], status
+                    i,
+                    book["folder_name"],
+                    book["page_count"],
+                    status,
                 )
             logger.info("-" * 60)
             logger.info("")
 
             reply = input("Re-register all? [y/N]: ").strip().lower()
-            if reply not in ('y', 'yes'):
+            if reply not in ("y", "yes"):
                 logger.info("Cancelled.")
                 return 0
 
@@ -224,9 +224,12 @@ def main() -> int:
             registered, updated, repaired = re_register_books(library_dir, db, books)
 
             logger.info("")
-            logger.info("Done. Registered: %d, Updated: %d%s",
-                       registered, updated,
-                       f" (repaired: {repaired})" if repaired else "")
+            logger.info(
+                "Done. Registered: %d, Updated: %d%s",
+                registered,
+                updated,
+                f" (repaired: {repaired})" if repaired else "",
+            )
             return 0
 
         finally:
@@ -237,5 +240,5 @@ def main() -> int:
         return 1
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     sys.exit(main())

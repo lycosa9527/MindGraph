@@ -225,16 +225,9 @@ async function streamRecommendations(
                 inlineStore.setStreamPhase('streaming')
               }
               count++
-              console.log(
-                `[InlineRec] #${count} from backend:`,
-                data.text,
-                data.source_llm ? `(from ${data.source_llm})` : ''
-              )
               onText(data.text)
             } else if (data.event === 'error' && data.message) {
               onError?.(data.message)
-            } else if (data.event) {
-              console.debug('[InlineRec] Event:', data.event, data)
             }
           } catch {
             // Skip malformed
@@ -243,7 +236,6 @@ async function streamRecommendations(
       }
     } finally {
       reader.releaseLock()
-      console.log(`[InlineRec] Stream complete: ${count} recommendations received from backend`)
     }
     return count
   } finally {
@@ -375,13 +367,10 @@ export function useInlineRecommendations() {
     const controller = new AbortController()
     store.setStreamAbortController(controller)
 
-    console.log('[InlineRec] Starting stream for node:', nodeId, '| stage:', stage)
     const labels: string[] = []
     const onText = (text: string) => {
       labels.push(text)
       store.setOptions(nodeId, [...labels], labels.length > 1)
-      const totalInStore = store.allOptions[nodeId]?.length ?? 0
-      console.log(`[InlineRec] Store now has ${totalInStore} for ${nodeId} (latest: "${text}")`)
     }
     const onError = (msg: string) => {
       notify.error(t('notification.recommendationFailed', { msg }))
@@ -403,18 +392,12 @@ export function useInlineRecommendations() {
       }
 
       if (count > 0) {
-        const finalInStore = store.allOptions[nodeId]?.length ?? 0
-        console.log(
-          `[InlineRec] Done. Backend sent ${count}, store has ${finalInStore} for ${nodeId}`
-        )
         return { success: true }
       }
       return { success: false, error: 'No recommendations generated' }
     } catch (error) {
       const isAbort = error instanceof Error && error.name === 'AbortError'
       if (isAbort) {
-        const had = store.allOptions[nodeId]?.length ?? 0
-        console.warn(`[InlineRec] Stream ABORTED for ${nodeId}. Had ${had} in store before abort.`)
         return { success: false, error: 'Aborted' }
       }
       const errMsg = error instanceof Error ? error.message : 'Unknown error'

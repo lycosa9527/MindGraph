@@ -39,9 +39,7 @@ def cleanup_user_knowledge_space(db: Session, user_id: int) -> None:
     """
     try:
         # Get knowledge space
-        space = db.query(KnowledgeSpace).filter(
-            KnowledgeSpace.user_id == user_id
-        ).first()
+        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
 
         if not space:
             logger.debug("[UserCleanup] No knowledge space found for user %s", user_id)
@@ -53,7 +51,11 @@ def cleanup_user_knowledge_space(db: Session, user_id: int) -> None:
             qdrant.delete_user_collection(user_id)
             logger.info("[UserCleanup] Deleted Qdrant collection for user %s", user_id)
         except Exception as e:
-            logger.error("[UserCleanup] Failed to delete Qdrant collection for user %s: %s", user_id, e)
+            logger.error(
+                "[UserCleanup] Failed to delete Qdrant collection for user %s: %s",
+                user_id,
+                e,
+            )
 
         # Delete files
         storage_dir = Path(os.getenv("KNOWLEDGE_STORAGE_DIR", "./storage/knowledge_documents"))
@@ -64,7 +66,11 @@ def cleanup_user_knowledge_space(db: Session, user_id: int) -> None:
                 shutil.rmtree(user_dir)
                 logger.info("[UserCleanup] Deleted file storage for user %s", user_id)
             except Exception as e:
-                logger.error("[UserCleanup] Failed to delete file storage for user %s: %s", user_id, e)
+                logger.error(
+                    "[UserCleanup] Failed to delete file storage for user %s: %s",
+                    user_id,
+                    e,
+                )
 
         # Delete database records (cascade will handle chunks)
         db.delete(space)
@@ -73,6 +79,10 @@ def cleanup_user_knowledge_space(db: Session, user_id: int) -> None:
         logger.info("[UserCleanup] Cleaned up knowledge space for user %s", user_id)
 
     except Exception as e:
-        logger.error("[UserCleanup] Failed to cleanup knowledge space for user %s: %s", user_id, e)
+        logger.error(
+            "[UserCleanup] Failed to cleanup knowledge space for user %s: %s",
+            user_id,
+            e,
+        )
         db.rollback()
         raise

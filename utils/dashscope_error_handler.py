@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from enum import Enum
 from typing import Dict, Any, Optional, Tuple
 import logging
@@ -19,6 +20,7 @@ logger = logging.getLogger(__name__)
 
 class DashScopeErrorType(Enum):
     """DashScope error types."""
+
     INVALID_PARAMETER = "InvalidParameter"
     INVALID_API_KEY = "InvalidApiKey"
     ARREARAGE = "Arrearage"
@@ -41,7 +43,7 @@ class DashScopeError(Exception):
         error_type: Optional[DashScopeErrorType] = None,
         status_code: Optional[int] = None,
         retryable: bool = False,
-        retry_after: Optional[int] = None
+        retry_after: Optional[int] = None,
     ):
         self.message = message
         self.error_code = error_code
@@ -92,7 +94,7 @@ def parse_dashscope_error(response_data: Dict[str, Any], status_code: int) -> Da
         error_type=error_type,
         status_code=status_code,
         retryable=retryable,
-        retry_after=retry_after
+        retry_after=retry_after,
     )
 
 
@@ -100,7 +102,7 @@ def _get_user_friendly_message(
     error_code: Optional[str],
     error_message: Optional[str],
     error_type: DashScopeErrorType,
-    status_code: int
+    status_code: int,
 ) -> str:
     """
     Get user-friendly error message based on error code and type.
@@ -116,74 +118,74 @@ def _get_user_friendly_message(
         # API Key errors
         "InvalidApiKey": {
             "zh": "API密钥无效，请检查配置",
-            "en": "Invalid API key, please check configuration"
+            "en": "Invalid API key, please check configuration",
         },
         "invalid_api_key": {  # OpenAI-compatible format
             "zh": "API密钥无效，请检查配置",
-            "en": "Invalid API key, please check configuration"
+            "en": "Invalid API key, please check configuration",
         },
         # Account errors
         "Arrearage": {
             "zh": "账号欠费，请充值后重试",
-            "en": "Account arrears, please recharge and retry"
+            "en": "Account arrears, please recharge and retry",
         },
         # Parameter errors
         "InvalidParameter": {
             "zh": "参数错误，请检查请求参数",
-            "en": "Invalid parameter, please check request parameters"
+            "en": "Invalid parameter, please check request parameters",
         },
         "invalid_request_error": {  # OpenAI-compatible format
             "zh": "请求参数错误，请检查请求格式",
-            "en": "Invalid request error, please check request format"
+            "en": "Invalid request error, please check request format",
         },
         # Rate limiting
         "Throttling": {
             "zh": "请求频率过高，请稍后重试",
-            "en": "Request rate limit exceeded, please retry later"
+            "en": "Request rate limit exceeded, please retry later",
         },
         "Throttling.RateQuota": {
             "zh": "请求频率超限，请降低调用频率",
-            "en": "Request rate quota exceeded, please reduce call frequency"
+            "en": "Request rate quota exceeded, please reduce call frequency",
         },
         "Throttling.AllocationQuota": {
             "zh": "Token配额不足，请稍后重试",
-            "en": "Token quota insufficient, please retry later"
+            "en": "Token quota insufficient, please retry later",
         },
         "rate_limit_exceeded": {  # OpenAI-compatible format
             "zh": "请求频率超限，请稍后重试",
-            "en": "Rate limit exceeded, please retry later"
+            "en": "Rate limit exceeded, please retry later",
         },
         # Model errors
         "ModelNotFound": {
             "zh": "模型不存在或未授权，请检查模型名称",
-            "en": "Model not found or not authorized, please check model name"
+            "en": "Model not found or not authorized, please check model name",
         },
         "model_not_found": {  # OpenAI-compatible format
             "zh": "模型不存在，请检查模型名称",
-            "en": "Model not found, please check model name"
+            "en": "Model not found, please check model name",
         },
         # Access errors
         "AccessDenied": {
             "zh": "访问被拒绝，请检查权限配置",
-            "en": "Access denied, please check permissions"
+            "en": "Access denied, please check permissions",
         },
         # Content errors
         "DataInspectionFailed": {
             "zh": "内容审核未通过，请修改输入内容",
-            "en": "Content inspection failed, please modify input content"
+            "en": "Content inspection failed, please modify input content",
         },
         # Server errors
         "InternalError": {
             "zh": "服务内部错误，请稍后重试",
-            "en": "Internal server error, please retry later"
+            "en": "Internal server error, please retry later",
         },
         "internal_error": {  # OpenAI-compatible format
             "zh": "服务内部错误，请稍后重试",
-            "en": "Internal server error, please retry later"
+            "en": "Internal server error, please retry later",
         },
         "BadRequest": {
             "zh": "请求格式错误，请检查请求参数",
-            "en": "Bad request format, please check request parameters"
+            "en": "Bad request format, please check request parameters",
         },
     }
 
@@ -249,7 +251,7 @@ def handle_dashscope_response(response, raise_on_error: bool = True) -> Tuple[bo
             error = DashScopeError(
                 message=f"HTTP {response.status_code}: {response.text[:200]}",
                 status_code=response.status_code,
-                retryable=response.status_code in (429, 500, 502, 503, 504)
+                retryable=response.status_code in (429, 500, 502, 503, 504),
             )
 
         if raise_on_error:

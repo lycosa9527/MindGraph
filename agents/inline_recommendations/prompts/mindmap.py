@@ -3,6 +3,7 @@
 Aligned with prompts/node_palette.get_mindmap_branches_prompt,
 get_mindmap_children_prompt.
 """
+
 from typing import Any, Dict, List, Optional
 
 from ._common import append_batch_note, THINKING_APPROACH
@@ -16,13 +17,13 @@ def build_mindmap_branches_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for mindmap branch recommendations."""
-    topic = (context.get('topic') or '').strip()
-    branch_names = context.get('branch_names') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['mindmap'][language]
+    topic = (context.get("topic") or "").strip()
+    branch_names = context.get("branch_names") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["mindmap"][language]
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"为以下主题生成{count}个思维导图分支想法：{topic}" if topic else "主题未设置"
         prompt = f"""{topic_ctx}
 
@@ -37,18 +38,14 @@ def build_mindmap_branches_prompt(
         if branch_names:
             prompt += f"""
 
-图中已有分支：{', '.join(branch_names)}。请生成更聚焦、互补的分支推荐，与已有分支形成补充，避免重复。"""
+图中已有分支：{", ".join(branch_names)}。请生成更聚焦、互补的分支推荐，与已有分支形成补充，避免重复。"""
         prompt += f"""
 
 要求：每个分支想法要简洁明了（1-5个词），不要使用完整句子，不要编号。只输出分支文本，每行一个。
 
 生成{count}个分支想法："""
     else:
-        topic_ctx = (
-            f"Generate {count} Mind Map branch ideas for: {topic}"
-            if topic
-            else "Topic not set"
-        )
+        topic_ctx = f"Generate {count} Mind Map branch ideas for: {topic}" if topic else "Topic not set"
         prompt = f"""{topic_ctx}
 
 Educational Context: {context_desc}
@@ -60,7 +57,7 @@ Thinking approach: {thinking}
 3. Each branch should be concise, using nouns or noun phrases
 4. Encourage creative and diverse thinking"""
         if branch_names:
-            branches = ', '.join(branch_names)
+            branches = ", ".join(branch_names)
             prompt += (
                 f"\n\nThe diagram already has branches: {branches}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
@@ -86,13 +83,13 @@ def build_mindmap_children_prompt(
     Second-stage: we are working on branch X, it has children Y.
     Generate more focused recommendations that build on these.
     """
-    topic = (context.get('topic') or '').strip()
-    branch_name = (context.get('branch_name') or '').strip()
-    children_texts = context.get('children_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
+    topic = (context.get("topic") or "").strip()
+    branch_name = (context.get("branch_name") or "").strip()
+    children_texts = context.get("children_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topic_ctx = f"主题：{topic}" if topic else "主题未设置"
         prompt = f"""为思维导图分支「{branch_name}」生成{count}个子分支想法
 
@@ -110,7 +107,7 @@ def build_mindmap_children_prompt(
         if children_texts:
             prompt += f"""
 
-我们正在分支「{branch_name}」下工作，该分支已有子节点：{', '.join(children_texts)}。请生成更聚焦、互补的子分支推荐，与已有子节点形成补充，避免重复。"""
+我们正在分支「{branch_name}」下工作，该分支已有子节点：{", ".join(children_texts)}。请生成更聚焦、互补的子分支推荐，与已有子节点形成补充，避免重复。"""
         prompt += f"""
 
 要求：每个子分支想法要简洁明了（1-5个词），不要使用完整句子，不要编号。只输出子分支文本，每行一个。
@@ -132,9 +129,9 @@ Thinking approach: In-depth, Refinement, Expansion
 3. Each sub-branch should be concise, using nouns or noun phrases
 4. Maintain logical connection with the parent branch"""
         if children_texts:
-            children = ', '.join(children_texts)
+            children = ", ".join(children_texts)
             prompt += (
-                f"\n\nWe are working on branch \"{branch_name}\". "
+                f'\n\nWe are working on branch "{branch_name}". '
                 f"It has existing children: {children}. "
                 "Generate more focused, complementary sub-branch recommendations "
                 "that build on these, avoid repetition."

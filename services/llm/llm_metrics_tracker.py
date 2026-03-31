@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Optional, Any
 import logging
 
@@ -30,7 +31,7 @@ class LLMMetricsTracker:
         usage_data: Dict[str, Any],
         metadata: Dict[str, Any],
         success: bool,
-        duration: float
+        duration: float,
     ) -> None:
         """
         Track token usage for a request.
@@ -57,19 +58,11 @@ class LLMMetricsTracker:
             # Normalize token field names
             # (API uses prompt_tokens/completion_tokens,
             # we use input_tokens/output_tokens)
-            input_tokens = (
-                usage_data.get('prompt_tokens') or
-                usage_data.get('input_tokens') or
-                0
-            )
-            output_tokens = (
-                usage_data.get('completion_tokens') or
-                usage_data.get('output_tokens') or
-                0
-            )
+            input_tokens = usage_data.get("prompt_tokens") or usage_data.get("input_tokens") or 0
+            output_tokens = usage_data.get("completion_tokens") or usage_data.get("output_tokens") or 0
             # Use API's total_tokens (authoritative billing value)
             # - may include overhead tokens
-            total_tokens = usage_data.get('total_tokens') or None
+            total_tokens = usage_data.get("total_tokens") or None
 
             token_tracker = get_token_tracker()
             await token_tracker.track_usage(
@@ -77,29 +70,22 @@ class LLMMetricsTracker:
                 input_tokens=input_tokens,
                 output_tokens=output_tokens,
                 total_tokens=total_tokens,
-                request_type=metadata.get('request_type', 'diagram_generation'),
-                diagram_type=metadata.get('diagram_type'),
-                user_id=metadata.get('user_id'),
-                organization_id=metadata.get('organization_id'),
-                api_key_id=metadata.get('api_key_id'),
-                session_id=metadata.get('session_id'),
-                conversation_id=metadata.get('conversation_id'),
-                endpoint_path=metadata.get('endpoint_path'),
+                request_type=metadata.get("request_type", "diagram_generation"),
+                diagram_type=metadata.get("diagram_type"),
+                user_id=metadata.get("user_id"),
+                organization_id=metadata.get("organization_id"),
+                api_key_id=metadata.get("api_key_id"),
+                session_id=metadata.get("session_id"),
+                conversation_id=metadata.get("conversation_id"),
+                endpoint_path=metadata.get("endpoint_path"),
                 response_time=duration,
-                success=success
+                success=success,
             )
         except Exception as e:
-            logger.debug(
-                "[LLMMetricsTracker] Token tracking failed (non-critical): %s",
-                e
-            )
+            logger.debug("[LLMMetricsTracker] Token tracking failed (non-critical): %s", e)
 
     def record_performance_metrics(
-        self,
-        model: str,
-        duration: float,
-        success: bool,
-        error: Optional[str] = None
+        self, model: str, duration: float, success: bool, error: Optional[str] = None
     ) -> None:
         """
         Record performance metrics for a request.
@@ -110,12 +96,7 @@ class LLMMetricsTracker:
             success: Whether request succeeded
             error: Optional error message if failed
         """
-        self.performance_tracker.record_request(
-            model=model,
-            duration=duration,
-            success=success,
-            error=error
-        )
+        self.performance_tracker.record_request(model=model, duration=duration, success=success, error=error)
 
     def record_provider_metrics(
         self,
@@ -123,7 +104,7 @@ class LLMMetricsTracker:
         load_balancer: Any,
         success: bool,
         duration: float,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> None:
         """
         Record provider metrics for load balancing.
@@ -136,12 +117,7 @@ class LLMMetricsTracker:
             error: Optional error message if failed
         """
         if load_balancer:
-            load_balancer.record_provider_metrics(
-                provider=provider,
-                success=success,
-                duration=duration,
-                error=error
-            )
+            load_balancer.record_provider_metrics(provider=provider, success=success, duration=duration, error=error)
 
     async def track_all(
         self,
@@ -152,7 +128,7 @@ class LLMMetricsTracker:
         load_balancer: Optional[Any],
         success: bool,
         duration: float,
-        error: Optional[str] = None
+        error: Optional[str] = None,
     ) -> None:
         """
         Track all metrics (tokens, performance, provider) in one call.
@@ -176,16 +152,11 @@ class LLMMetricsTracker:
                 usage_data=usage_data,
                 metadata=metadata,
                 success=success,
-                duration=duration
+                duration=duration,
             )
 
         # Record performance metrics
-        self.record_performance_metrics(
-            model=model,
-            duration=duration,
-            success=success,
-            error=error
-        )
+        self.record_performance_metrics(model=model, duration=duration, success=success, error=error)
 
         # Record provider metrics (if load balancing enabled)
         if provider and load_balancer:
@@ -194,5 +165,5 @@ class LLMMetricsTracker:
                 load_balancer=load_balancer,
                 success=success,
                 duration=duration,
-                error=error
+                error=error,
             )

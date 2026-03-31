@@ -36,11 +36,12 @@ from functools import wraps
 logger = logging.getLogger(__name__)
 
 # Type variable for generic return type
-T = TypeVar('T')
+T = TypeVar("T")
 
 
 class _RedisState:
     """Manages Redis connection state to avoid global variables."""
+
     _available = False
     _client: Optional[Any] = None
 
@@ -66,6 +67,7 @@ class _RedisState:
         """Check if Redis is available."""
         return cls._available
 
+
 # Error message width
 _ERROR_WIDTH = 70
 
@@ -85,6 +87,7 @@ def _with_retry(operation_name: str, default_return: Any = None):
         operation_name: Name for logging (e.g., "SET", "GET")
         default_return: Value to return after all retries fail
     """
+
     def decorator(func: Callable) -> Callable:
         @wraps(func)
         def wrapper(*args, **kwargs):
@@ -98,14 +101,14 @@ def _with_retry(operation_name: str, default_return: Any = None):
                 except (redis.ConnectionError, redis.TimeoutError) as e:  # type: ignore[attr-defined]
                     last_error = e
                     if attempt < _RETRY_MAX_ATTEMPTS - 1:
-                        delay = _RETRY_BASE_DELAY * (2 ** attempt)
+                        delay = _RETRY_BASE_DELAY * (2**attempt)
                         time.sleep(delay)
                         logger.debug(
                             "[Redis] %s retry %d/%d after %.1fs",
                             operation_name,
                             attempt + 1,
                             _RETRY_MAX_ATTEMPTS,
-                            delay
+                            delay,
                         )
                 except Exception as e:
                     # Non-retryable error (data type mismatch, etc.)
@@ -117,10 +120,12 @@ def _with_retry(operation_name: str, default_return: Any = None):
                 "[Redis] %s failed after %d retries: %s",
                 operation_name,
                 _RETRY_MAX_ATTEMPTS,
-                last_error
+                last_error,
             )
             return default_return
+
         return wrapper
+
     return decorator
 
 
@@ -165,11 +170,11 @@ class RedisStartupError(Exception):
 def _get_redis_config() -> Dict[str, Any]:
     """Get Redis configuration from environment."""
     return {
-        'url': os.getenv('REDIS_URL', 'redis://localhost:6379/0'),
-        'max_connections': int(os.getenv('REDIS_MAX_CONNECTIONS', '50')),
-        'socket_timeout': int(os.getenv('REDIS_SOCKET_TIMEOUT', '5')),
-        'socket_connect_timeout': int(os.getenv('REDIS_SOCKET_CONNECT_TIMEOUT', '5')),
-        'retry_on_timeout': os.getenv('REDIS_RETRY_ON_TIMEOUT', 'true').lower() == 'true',
+        "url": os.getenv("REDIS_URL", "redis://localhost:6379/0"),
+        "max_connections": int(os.getenv("REDIS_MAX_CONNECTIONS", "50")),
+        "socket_timeout": int(os.getenv("REDIS_SOCKET_TIMEOUT", "5")),
+        "socket_connect_timeout": int(os.getenv("REDIS_SOCKET_CONNECT_TIMEOUT", "5")),
+        "retry_on_timeout": os.getenv("REDIS_RETRY_ON_TIMEOUT", "true").lower() == "true",
     }
 
 
@@ -228,7 +233,7 @@ def init_redis_sync() -> bool:
         SystemExit: Application will exit if Redis is unavailable.
     """
     config = _get_redis_config()
-    redis_url = config['url']
+    redis_url = config["url"]
 
     logger.info("[Redis] Connecting to %s...", redis_url)
 
@@ -240,19 +245,19 @@ def init_redis_sync() -> bool:
                 "",
                 "To fix, run:",
                 "  pip install redis>=5.0.0",
-            ]
+            ],
         )
         raise RedisStartupError("Redis package not installed") from None
 
     try:
         redis_client = redis.from_url(  # type: ignore[attr-defined]
             redis_url,
-            encoding='utf-8',
+            encoding="utf-8",
             decode_responses=True,
-            max_connections=config['max_connections'],
-            socket_timeout=config['socket_timeout'],
-            socket_connect_timeout=config['socket_connect_timeout'],
-            retry_on_timeout=config['retry_on_timeout'],
+            max_connections=config["max_connections"],
+            socket_timeout=config["socket_timeout"],
+            socket_connect_timeout=config["socket_connect_timeout"],
+            retry_on_timeout=config["retry_on_timeout"],
         )
 
         # Test connection
@@ -283,7 +288,7 @@ def init_redis_sync() -> bool:
                 "  macOS:   brew install redis && brew services start redis",
                 "",
                 "Then set REDIS_URL in your .env file (default: redis://localhost:6379/0)",
-            ]
+            ],
         )
         raise RedisStartupError(f"Failed to connect to Redis: {exc}") from exc
 
@@ -318,7 +323,7 @@ def get_redis():
 
 def get_redis_mode() -> str:
     """Get current Redis mode. Always 'external' (Redis required)."""
-    return 'external'
+    return "external"
 
 
 class RedisOperations:
@@ -489,11 +494,7 @@ class RedisOperations:
 
     @staticmethod
     @_with_retry("ZCOUNT", default_return=0)
-    def sorted_set_count_in_range(
-        key: str,
-        min_score: float,
-        max_score: float
-    ) -> int:
+    def sorted_set_count_in_range(key: str, min_score: float, max_score: float) -> int:
         """Count members in sorted set within score range."""
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:
@@ -502,11 +503,7 @@ class RedisOperations:
 
     @staticmethod
     @_with_retry("ZREMRANGEBYSCORE", default_return=0)
-    def sorted_set_remove_by_score(
-        key: str,
-        min_score: float,
-        max_score: float
-    ) -> int:
+    def sorted_set_remove_by_score(key: str, min_score: float, max_score: float) -> int:
         """Remove members from sorted set by score range."""
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:

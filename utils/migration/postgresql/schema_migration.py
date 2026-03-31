@@ -29,9 +29,7 @@ from utils.migration.postgresql.schema_table_ops import create_missing_tables
 logger = logging.getLogger(__name__)
 
 
-def verify_migration_results(
-    db_engine, base, expected_tables
-) -> Tuple[bool, Dict[str, Any]]:
+def verify_migration_results(db_engine, base, expected_tables) -> Tuple[bool, Dict[str, Any]]:
     """
     Verify migration results by checking tables, columns, sequences, and indexes.
 
@@ -49,10 +47,10 @@ def verify_migration_results(
 
     verification_success = True
     details = {
-        'tables_missing': list(final_missing_tables),
-        'columns_missing': {},
-        'sequences_missing': {},
-        'indexes_missing': {}
+        "tables_missing": list(final_missing_tables),
+        "columns_missing": {},
+        "sequences_missing": {},
+        "indexes_missing": {},
     }
 
     # Verify tables
@@ -62,13 +60,11 @@ def verify_migration_results(
         # Verify columns
         for table_name in sorted(final_existing_tables & expected_tables):
             table = base.metadata.tables[table_name]
-            existing_columns = {
-                col['name'] for col in inspector.get_columns(table_name)
-            }
+            existing_columns = {col["name"] for col in inspector.get_columns(table_name)}
             expected_columns = {col.name for col in table.columns}
             missing_cols = expected_columns - existing_columns
             if missing_cols:
-                details['columns_missing'][table_name] = list(missing_cols)
+                details["columns_missing"][table_name] = list(missing_cols)
                 verification_success = False
 
         # Verify sequences for primary key columns
@@ -76,37 +72,33 @@ def verify_migration_results(
             for table_name in sorted(final_existing_tables & expected_tables):
                 table = base.metadata.tables[table_name]
                 for column in table.columns:
-                    if column.primary_key and getattr(column, 'autoincrement',
-                                                       False):
+                    if column.primary_key and getattr(column, "autoincrement", False):
                         column_type_str = str(column.type).upper()
-                        if ('INTEGER' in column_type_str or
-                                'BIGINT' in column_type_str or
-                                'SMALLINT' in column_type_str):
+                        if "INTEGER" in column_type_str or "BIGINT" in column_type_str or "SMALLINT" in column_type_str:
                             sequence_name = f"{table_name}_{column.name}_seq"
-                            seq_check = conn.execute(text(
-                                "SELECT EXISTS(SELECT 1 FROM pg_sequences "
-                                "WHERE schemaname = 'public' AND "
-                                "sequencename = :seq_name)"
-                            ), {"seq_name": sequence_name})
+                            seq_check = conn.execute(
+                                text(
+                                    "SELECT EXISTS(SELECT 1 FROM pg_sequences "
+                                    "WHERE schemaname = 'public' AND "
+                                    "sequencename = :seq_name)"
+                                ),
+                                {"seq_name": sequence_name},
+                            )
                             sequence_exists = seq_check.scalar()
                             if not sequence_exists:
-                                if table_name not in details['sequences_missing']:
-                                    details['sequences_missing'][table_name] = []
-                                details['sequences_missing'][table_name].append(
-                                    sequence_name
-                                )
+                                if table_name not in details["sequences_missing"]:
+                                    details["sequences_missing"][table_name] = []
+                                details["sequences_missing"][table_name].append(sequence_name)
                                 verification_success = False
 
         # Verify indexes
         for table_name in sorted(final_existing_tables & expected_tables):
             table = base.metadata.tables[table_name]
-            existing_indexes = {
-                idx['name'] for idx in inspector.get_indexes(table_name)
-            }
+            existing_indexes = {idx["name"] for idx in inspector.get_indexes(table_name)}
             expected_indexes = {idx.name for idx in table.indexes}
             missing_idxs = expected_indexes - existing_indexes
             if missing_idxs:
-                details['indexes_missing'][table_name] = list(missing_idxs)
+                details["indexes_missing"][table_name] = list(missing_idxs)
                 verification_success = False
 
     return verification_success, details
@@ -132,19 +124,17 @@ def check_database_status(db_engine, base) -> Dict[str, Any]:
     missing_columns = {}
     for table_name in sorted(existing_tables & expected_tables):
         table = base.metadata.tables[table_name]
-        existing_cols = {
-            col['name'] for col in inspector.get_columns(table_name)
-        }
+        existing_cols = {col["name"] for col in inspector.get_columns(table_name)}
         expected_cols = {col.name for col in table.columns}
         missing_cols = expected_cols - existing_cols
         if missing_cols:
             missing_columns[table_name] = list(missing_cols)
 
     return {
-        'expected_tables': expected_tables,
-        'existing_tables': existing_tables,
-        'missing_tables': missing_tables,
-        'missing_columns': missing_columns
+        "expected_tables": expected_tables,
+        "existing_tables": existing_tables,
+        "missing_tables": missing_tables,
+        "missing_columns": missing_columns,
     }
 
 
@@ -205,47 +195,50 @@ def _ensure_jsonb_columns(db_engine: Any) -> None:
         for table_name, column_name in _JSONB_MIGRATIONS:
             if table_name not in existing_tables:
                 continue
-            existing_cols = {
-                col["name"]: col for col in insp.get_columns(table_name)
-            }
+            existing_cols = {col["name"]: col for col in insp.get_columns(table_name)}
             if column_name not in existing_cols:
                 continue
             col_type = str(existing_cols[column_name]["type"]).upper()
             if "JSONB" in col_type:
                 logger.debug(
                     "[DBMigration] %s.%s is already JSONB — skipping",
-                    table_name, column_name,
+                    table_name,
+                    column_name,
                 )
                 continue
 
             logger.info(
                 "[DBMigration] Converting %s.%s to JSONB ...",
-                table_name, column_name,
+                table_name,
+                column_name,
             )
             try:
                 _sanitize_invalid_json(conn, table_name, column_name, col_type)
 
                 # Cast: works for both text → jsonb and json → jsonb.
-                conn.execute(text(
-                    f"ALTER TABLE {table_name} "
-                    f"ALTER COLUMN {column_name} TYPE JSONB "
-                    f"USING {column_name}::jsonb"
-                ))
-                conn.execute(text(
-                    f"CREATE INDEX IF NOT EXISTS "
-                    f"ix_{table_name}_{column_name}_gin "
-                    f"ON {table_name} USING gin ({column_name})"
-                ))
+                conn.execute(
+                    text(f"ALTER TABLE {table_name} ALTER COLUMN {column_name} TYPE JSONB USING {column_name}::jsonb")
+                )
+                conn.execute(
+                    text(
+                        f"CREATE INDEX IF NOT EXISTS "
+                        f"ix_{table_name}_{column_name}_gin "
+                        f"ON {table_name} USING gin ({column_name})"
+                    )
+                )
                 conn.commit()
                 logger.info(
                     "[DBMigration] %s.%s converted to JSONB with GIN index",
-                    table_name, column_name,
+                    table_name,
+                    column_name,
                 )
             except Exception as exc:
                 conn.rollback()
                 logger.warning(
                     "[DBMigration] Could not convert %s.%s to JSONB: %s",
-                    table_name, column_name, exc,
+                    table_name,
+                    column_name,
+                    exc,
                 )
 
 
@@ -268,42 +261,49 @@ def _sanitize_invalid_json(
     if "TEXT" not in col_type and "CHARACTER VARYING" not in col_type and "VARCHAR" not in col_type:
         return
 
-    result = conn.execute(text(
-        f"UPDATE {table_name} "
-        f"SET {column_name} = NULL "
-        f"WHERE {column_name} IS NOT NULL "
-        f"AND TRIM({column_name}) = ''"
-    ))
+    result = conn.execute(
+        text(
+            f"UPDATE {table_name} SET {column_name} = NULL WHERE {column_name} IS NOT NULL AND TRIM({column_name}) = ''"
+        )
+    )
     if result.rowcount:
         logger.info(
             "[DBMigration] Nullified %d empty-string rows in %s.%s",
-            result.rowcount, table_name, column_name,
+            result.rowcount,
+            table_name,
+            column_name,
         )
 
     # Create a session-scoped temp function that safely validates JSON.
     # pg_temp functions are automatically dropped when the connection closes.
-    conn.execute(text(
-        "CREATE OR REPLACE FUNCTION pg_temp.is_valid_jsonb(val text) "
-        "RETURNS boolean AS $fn$ "
-        "BEGIN "
-        "  PERFORM val::jsonb; "
-        "  RETURN true; "
-        "EXCEPTION WHEN OTHERS THEN "
-        "  RETURN false; "
-        "END; "
-        "$fn$ LANGUAGE plpgsql IMMUTABLE"
-    ))
+    conn.execute(
+        text(
+            "CREATE OR REPLACE FUNCTION pg_temp.is_valid_jsonb(val text) "
+            "RETURNS boolean AS $fn$ "
+            "BEGIN "
+            "  PERFORM val::jsonb; "
+            "  RETURN true; "
+            "EXCEPTION WHEN OTHERS THEN "
+            "  RETURN false; "
+            "END; "
+            "$fn$ LANGUAGE plpgsql IMMUTABLE"
+        )
+    )
 
-    result = conn.execute(text(
-        f"UPDATE {table_name} "
-        f"SET {column_name} = NULL "
-        f"WHERE {column_name} IS NOT NULL "
-        f"AND NOT pg_temp.is_valid_jsonb({column_name})"
-    ))
+    result = conn.execute(
+        text(
+            f"UPDATE {table_name} "
+            f"SET {column_name} = NULL "
+            f"WHERE {column_name} IS NOT NULL "
+            f"AND NOT pg_temp.is_valid_jsonb({column_name})"
+        )
+    )
     if result.rowcount:
         logger.info(
             "[DBMigration] Nullified %d invalid-JSON rows in %s.%s",
-            result.rowcount, table_name, column_name,
+            result.rowcount,
+            table_name,
+            column_name,
         )
 
 
@@ -320,13 +320,16 @@ def _get_index_method(conn: Any, index_name: str) -> Optional[str]:
     This is reliable across all SQLAlchemy versions, unlike dialect_options
     reflection which varies in key format.
     """
-    row = conn.execute(text(
-        "SELECT am.amname "
-        "FROM pg_class c "
-        "JOIN pg_am am ON c.relam = am.oid "
-        "WHERE c.relname = :idx_name "
-        "AND c.relkind = 'i'"
-    ), {"idx_name": index_name}).fetchone()
+    row = conn.execute(
+        text(
+            "SELECT am.amname "
+            "FROM pg_class c "
+            "JOIN pg_am am ON c.relam = am.oid "
+            "WHERE c.relname = :idx_name "
+            "AND c.relkind = 'i'"
+        ),
+        {"idx_name": index_name},
+    ).fetchone()
     if row:
         return row[0]
     return None
@@ -351,20 +354,20 @@ def _ensure_hash_indexes(db_engine: Any) -> None:
 
             if current_method is None:
                 try:
-                    conn.execute(text(
-                        f"CREATE INDEX {index_name} "
-                        f"ON {table_name} USING hash ({column_name})"
-                    ))
+                    conn.execute(text(f"CREATE INDEX {index_name} ON {table_name} USING hash ({column_name})"))
                     conn.commit()
                     logger.info(
                         "[DBMigration] Created hash index %s on %s.%s",
-                        index_name, table_name, column_name,
+                        index_name,
+                        table_name,
+                        column_name,
                     )
                 except Exception as exc:
                     conn.rollback()
                     logger.warning(
                         "[DBMigration] Could not create hash index %s: %s",
-                        index_name, exc,
+                        index_name,
+                        exc,
                     )
                 continue
 
@@ -377,23 +380,23 @@ def _ensure_hash_indexes(db_engine: Any) -> None:
 
             logger.info(
                 "[DBMigration] Converting %s from %s to hash ...",
-                index_name, current_method,
+                index_name,
+                current_method,
             )
             try:
                 conn.execute(text(f"DROP INDEX IF EXISTS {index_name}"))
-                conn.execute(text(
-                    f"CREATE INDEX {index_name} "
-                    f"ON {table_name} USING hash ({column_name})"
-                ))
+                conn.execute(text(f"CREATE INDEX {index_name} ON {table_name} USING hash ({column_name})"))
                 conn.commit()
                 logger.info(
-                    "[DBMigration] Converted %s to hash index", index_name,
+                    "[DBMigration] Converted %s to hash index",
+                    index_name,
                 )
             except Exception as exc:
                 conn.rollback()
                 logger.warning(
                     "[DBMigration] Could not convert %s to hash: %s",
-                    index_name, exc,
+                    index_name,
+                    exc,
                 )
 
 
@@ -422,50 +425,35 @@ def run_migrations() -> bool:
         bool: True if migrations completed successfully, False otherwise
     """
     if database_module is None:
-        logger.warning(
-            "[DBMigration] Could not import database dependencies. "
-            "Skipping migrations."
-        )
+        logger.warning("[DBMigration] Could not import database dependencies. Skipping migrations.")
         return False
 
     base = database_module.Base
     db_engine = database_module.engine
 
     if base is None or db_engine is None:
-        logger.warning(
-            "[DBMigration] Database dependencies not available. "
-            "Skipping migrations."
-        )
+        logger.warning("[DBMigration] Database dependencies not available. Skipping migrations.")
         return False
 
     try:
         # Get database dialect
         dialect = db_engine.dialect.name
-        logger.debug(
-            "[DBMigration] Starting database migrations for dialect: %s",
-            dialect
-        )
-        logger.debug(
-            "[DBMigration] Running migrations for database dialect: %s",
-            dialect
-        )
+        logger.debug("[DBMigration] Starting database migrations for dialect: %s", dialect)
+        logger.debug("[DBMigration] Running migrations for database dialect: %s", dialect)
 
         # Only support PostgreSQL for schema migrations
         # SQLite migration is handled by separate migration scripts
         if dialect != "postgresql":
             logger.warning(
-                "[DBMigration] Schema migrations only support PostgreSQL. "
-                "Current dialect: %s. Skipping migrations.",
-                dialect
+                "[DBMigration] Schema migrations only support PostgreSQL. Current dialect: %s. Skipping migrations.",
+                dialect,
             )
             return True  # Return True to not block startup
 
         # =====================================================================
         # STEP 1: CHECK - Inspect current database status
         # =====================================================================
-        logger.debug(
-            "[DBMigration] Step 1: Checking current database status..."
-        )
+        logger.debug("[DBMigration] Step 1: Checking current database status...")
 
         inspector = inspect(db_engine)
         existing_tables = set(inspector.get_table_names())
@@ -476,18 +464,14 @@ def run_migrations() -> bool:
 
         # Log status
         logger.debug(
-            "[DBMigration] Status check: %d expected tables, "
-            "%d existing tables, %d missing",
+            "[DBMigration] Status check: %d expected tables, %d existing tables, %d missing",
             len(expected_tables),
             len(existing_tables),
-            len(missing_tables)
+            len(missing_tables),
         )
 
         if missing_tables:
-            logger.debug(
-                "[DBMigration] Missing tables: %s",
-                ', '.join(sorted(missing_tables))
-            )
+            logger.debug("[DBMigration] Missing tables: %s", ", ".join(sorted(missing_tables)))
 
         # Track migration results
         migration_success = True
@@ -501,9 +485,7 @@ def run_migrations() -> bool:
         # STEP 2: ACT - Create missing tables
         # =====================================================================
         if missing_tables:
-            tables_created, indexes_from_tables, success = (
-                create_missing_tables(db_engine, base, missing_tables)
-            )
+            tables_created, indexes_from_tables, success = create_missing_tables(db_engine, base, missing_tables)
             indexes_created_total += indexes_from_tables
             tables_with_changes.update(missing_tables)  # New tables need checks
             if not success:
@@ -524,26 +506,21 @@ def run_migrations() -> bool:
         if tables_to_migrate:
             if tables_with_changes:
                 logger.debug(
-                    "[DBMigration] Step 3: Migrating existing tables "
-                    "(%d tables to check, %d with changes)...",
+                    "[DBMigration] Step 3: Migrating existing tables (%d tables to check, %d with changes)...",
                     len(tables_to_migrate),
-                    len(tables_with_changes)
+                    len(tables_with_changes),
                 )
             else:
                 logger.debug(
-                    "[DBMigration] Step 3: Checking existing tables "
-                    "(%d tables, verifying sequences)...",
-                    len(tables_to_migrate)
+                    "[DBMigration] Step 3: Checking existing tables (%d tables, verifying sequences)...",
+                    len(tables_to_migrate),
                 )
 
             with db_engine.connect() as conn:
                 for table_name in tables_to_migrate:
                     try:
                         # Get existing columns in the table
-                        existing_columns = {
-                            col['name']
-                            for col in inspector.get_columns(table_name)
-                        }
+                        existing_columns = {col["name"] for col in inspector.get_columns(table_name)}
 
                         # Get expected columns from SQLAlchemy model
                         table = base.metadata.tables[table_name]
@@ -555,18 +532,15 @@ def run_migrations() -> bool:
                         # Add missing columns
                         if missing_columns:
                             logger.debug(
-                                "[DBMigration] Table '%s' has %d missing "
-                                "column(s): %s",
+                                "[DBMigration] Table '%s' has %d missing column(s): %s",
                                 table_name,
                                 len(missing_columns),
-                                ', '.join(missing_columns)
+                                ", ".join(missing_columns),
                             )
 
                             for column_name in missing_columns:
                                 column = table.columns[column_name]
-                                success = add_column_postgresql(
-                                    conn, table_name, column
-                                )
+                                success = add_column_postgresql(conn, table_name, column)
 
                                 if success:
                                     columns_added += 1
@@ -574,10 +548,9 @@ def run_migrations() -> bool:
                                 else:
                                     migration_success = False
                                     logger.error(
-                                        "[DBMigration] Failed to add column "
-                                        "'%s' to table '%s'",
+                                        "[DBMigration] Failed to add column '%s' to table '%s'",
                                         column_name,
-                                        table_name
+                                        table_name,
                                     )
 
                         # Always fix PostgreSQL sequences for primary key columns
@@ -585,9 +558,7 @@ def run_migrations() -> bool:
                         # may be missing even when tables/columns exist)
                         for column in table.columns:
                             if column.primary_key:
-                                sequence_fixed = fix_postgresql_sequence(
-                                    conn, table_name, column
-                                )
+                                sequence_fixed = fix_postgresql_sequence(conn, table_name, column)
                                 if sequence_fixed:
                                     sequences_fixed += 1
 
@@ -595,16 +566,13 @@ def run_migrations() -> bool:
                         # (index creation is more expensive; sequences must
                         # always be checked)
                         if table_name in tables_with_changes:
-                            indexes_created = create_table_indexes(
-                                conn, table_name, table
-                            )
+                            indexes_created = create_table_indexes(conn, table_name, table)
                             indexes_created_total += indexes_created
                             if indexes_created > 0:
                                 logger.debug(
-                                    "[DBMigration] Created %d missing index(es) "
-                                    "for table '%s'",
+                                    "[DBMigration] Created %d missing index(es) for table '%s'",
                                     indexes_created,
-                                    table_name
+                                    table_name,
                                 )
 
                     except Exception as e:
@@ -612,7 +580,7 @@ def run_migrations() -> bool:
                             "[DBMigration] Error migrating table '%s': %s",
                             table_name,
                             e,
-                            exc_info=True
+                            exc_info=True,
                         )
                         migration_success = False
                         # Continue with next table to allow partial migration
@@ -620,15 +588,11 @@ def run_migrations() -> bool:
         else:
             if tables_created > 0:
                 logger.debug(
-                    "[DBMigration] Created %d table(s), no columns to "
-                    "migrate",
-                    tables_created
+                    "[DBMigration] Created %d table(s), no columns to migrate",
+                    tables_created,
                 )
             else:
-                logger.debug(
-                    "[DBMigration] No tables to migrate (all tables exist "
-                    "and are up to date)"
-                )
+                logger.debug("[DBMigration] No tables to migrate (all tables exist and are up to date)")
 
         # =====================================================================
         # STEP 3.5: Full-text search GIN indexes (workshop chat messages)
@@ -673,112 +637,78 @@ def run_migrations() -> bool:
         # =====================================================================
         # STEP 4: VERIFY - Confirm all changes were applied
         # =====================================================================
-        logger.debug(
-            "[DBMigration] Step 4: Verifying migration results..."
-        )
+        logger.debug("[DBMigration] Step 4: Verifying migration results...")
 
-        _, verification_details = verify_migration_results(
-            db_engine, base, expected_tables
-        )
+        _, verification_details = verify_migration_results(db_engine, base, expected_tables)
 
         # Log verification results
-        if verification_details['tables_missing']:
+        if verification_details["tables_missing"]:
             logger.error(
-                "[DBMigration] VERIFICATION FAILED: %d table(s) still "
-                "missing: %s",
-                len(verification_details['tables_missing']),
-                ', '.join(sorted(verification_details['tables_missing']))
+                "[DBMigration] VERIFICATION FAILED: %d table(s) still missing: %s",
+                len(verification_details["tables_missing"]),
+                ", ".join(sorted(verification_details["tables_missing"])),
             )
             migration_success = False
         else:
             logger.debug(
-                "[DBMigration] ✓ Verification passed: All %d expected "
-                "tables exist",
-                len(expected_tables)
+                "[DBMigration] ✓ Verification passed: All %d expected tables exist",
+                len(expected_tables),
             )
 
-        if verification_details['columns_missing']:
-            logger.error(
-                "[DBMigration] VERIFICATION FAILED: Missing columns found:"
-            )
-            for table_name, missing_cols in (
-                verification_details['columns_missing'].items()
-            ):
+        if verification_details["columns_missing"]:
+            logger.error("[DBMigration] VERIFICATION FAILED: Missing columns found:")
+            for table_name, missing_cols in verification_details["columns_missing"].items():
                 logger.error(
                     "[DBMigration]   Table '%s' missing columns: %s",
                     table_name,
-                    ', '.join(sorted(missing_cols))
+                    ", ".join(sorted(missing_cols)),
                 )
             migration_success = False
         else:
-            logger.debug(
-                "[DBMigration] ✓ All tables have all expected columns"
-            )
+            logger.debug("[DBMigration] ✓ All tables have all expected columns")
 
-        if verification_details['sequences_missing']:
-            logger.error(
-                "[DBMigration] VERIFICATION FAILED: Missing sequences found:"
-            )
-            for table_name, missing_seqs in (
-                verification_details['sequences_missing'].items()
-            ):
+        if verification_details["sequences_missing"]:
+            logger.error("[DBMigration] VERIFICATION FAILED: Missing sequences found:")
+            for table_name, missing_seqs in verification_details["sequences_missing"].items():
                 logger.error(
                     "[DBMigration]   Table '%s' missing sequences: %s",
                     table_name,
-                    ', '.join(sorted(missing_seqs))
+                    ", ".join(sorted(missing_seqs)),
                 )
             migration_success = False
         else:
             logger.debug("[DBMigration] ✓ All required sequences exist")
 
-        if verification_details['indexes_missing']:
-            logger.error(
-                "[DBMigration] VERIFICATION FAILED: Missing indexes found:"
-            )
-            for table_name, missing_idxs in (
-                verification_details['indexes_missing'].items()
-            ):
+        if verification_details["indexes_missing"]:
+            logger.error("[DBMigration] VERIFICATION FAILED: Missing indexes found:")
+            for table_name, missing_idxs in verification_details["indexes_missing"].items():
                 logger.error(
                     "[DBMigration]   Table '%s' missing indexes: %s",
                     table_name,
-                    ', '.join(sorted(missing_idxs))
+                    ", ".join(sorted(missing_idxs)),
                 )
             migration_success = False
         else:
-            logger.debug(
-                "[DBMigration] ✓ All tables have all expected indexes"
-            )
+            logger.debug("[DBMigration] ✓ All tables have all expected indexes")
 
         # Summary
         logger.debug("[DBMigration] Migration summary:")
         if tables_created > 0:
-            logger.debug(
-                "[DBMigration]   - Created %d missing table(s)",
-                tables_created
-            )
+            logger.debug("[DBMigration]   - Created %d missing table(s)", tables_created)
         if columns_added > 0:
             logger.debug(
-                "[DBMigration]   - Added %d missing column(s) to existing "
-                "tables",
-                columns_added
+                "[DBMigration]   - Added %d missing column(s) to existing tables",
+                columns_added,
             )
         if sequences_fixed > 0:
             logger.debug(
-                "[DBMigration]   - Fixed %d PostgreSQL sequence(s) for "
-                "primary key columns",
-                sequences_fixed
+                "[DBMigration]   - Fixed %d PostgreSQL sequence(s) for primary key columns",
+                sequences_fixed,
             )
         if indexes_created_total > 0:
-            logger.debug(
-                "[DBMigration]   - Created %d missing index(es)",
-                indexes_created_total
-            )
-        if (tables_created == 0 and columns_added == 0 and
-                sequences_fixed == 0 and indexes_created_total == 0):
-            logger.debug(
-                "[DBMigration]   - No changes needed "
-                "(database is up to date)"
-            )
+            logger.debug("[DBMigration]   - Created %d missing index(es)", indexes_created_total)
+        if tables_created == 0 and columns_added == 0 and sequences_fixed == 0 and indexes_created_total == 0:
+            logger.debug("[DBMigration]   - No changes needed (database is up to date)")
 
         if migration_success:
             logger.debug("[DBMigration] ✓ Migration completed successfully")
@@ -788,7 +718,5 @@ def run_migrations() -> bool:
         return migration_success
 
     except Exception as e:
-        logger.error(
-            "[DBMigration] Migration error: %s", e, exc_info=True
-        )
+        logger.error("[DBMigration] Migration error: %s", e, exc_info=True)
         return False

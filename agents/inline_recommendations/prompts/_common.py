@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Any, Dict, List, Optional
 
 
@@ -18,7 +19,7 @@ def get_context_desc(educational_context: Optional[Dict[str, Any]]) -> str:
     """Derive context_desc from educational_context for prompt enrichment."""
     if not educational_context:
         return "General K12 teaching"
-    raw = educational_context.get('raw_message', '')
+    raw = educational_context.get("raw_message", "")
     if isinstance(raw, str) and raw.strip():
         return raw.strip()
     return "General K12 teaching"
@@ -64,15 +65,15 @@ BRIDGE_DIMENSION_TYPES_EN = """Analogy dimension examples: relationship, functio
 # ---------------------------------------------------------------------------
 
 THINKING_APPROACH: Dict[str, Dict[str, str]] = {
-    'mindmap': {'zh': '联想、发散', 'en': 'Association, Divergence'},
-    'flow_map': {'zh': '顺序、流程', 'en': 'Sequence, Process'},
-    'tree_map': {'zh': '分类、归纳', 'en': 'Classification, Induction'},
-    'brace_map': {'zh': '拆解、分解', 'en': 'Decomposition, Breakdown'},
-    'circle_map': {'zh': '定义、描述', 'en': 'Definition, Description'},
-    'bubble_map': {'zh': '描述、属性', 'en': 'Description, Attributes'},
-    'double_bubble_map': {'zh': '比较、对比', 'en': 'Comparison, Contrast'},
-    'multi_flow_map': {'zh': '因果、推理', 'en': 'Cause-effect, Reasoning'},
-    'bridge_map': {'zh': '类比、对应', 'en': 'Analogy, Correspondence'},
+    "mindmap": {"zh": "联想、发散", "en": "Association, Divergence"},
+    "flow_map": {"zh": "顺序、流程", "en": "Sequence, Process"},
+    "tree_map": {"zh": "分类、归纳", "en": "Classification, Induction"},
+    "brace_map": {"zh": "拆解、分解", "en": "Decomposition, Breakdown"},
+    "circle_map": {"zh": "定义、描述", "en": "Definition, Description"},
+    "bubble_map": {"zh": "描述、属性", "en": "Description, Attributes"},
+    "double_bubble_map": {"zh": "比较、对比", "en": "Comparison, Contrast"},
+    "multi_flow_map": {"zh": "因果、推理", "en": "Cause-effect, Reasoning"},
+    "bridge_map": {"zh": "类比、对应", "en": "Analogy, Correspondence"},
 }
 
 
@@ -86,15 +87,12 @@ def append_batch_note(
     if batch_num <= 1:
         return prompt
     if existing:
-        if language == 'zh':
+        if language == "zh":
             prompt += f"\n\n已生成：{', '.join(existing[:20])}\n请生成不同的推荐。"
         else:
-            prompt += (
-                f"\n\nAlready generated: {', '.join(existing[:20])}\n"
-                "Generate different recommendations."
-            )
+            prompt += f"\n\nAlready generated: {', '.join(existing[:20])}\nGenerate different recommendations."
     else:
-        if language == 'zh':
+        if language == "zh":
             prompt += f"\n\n第{batch_num}批。确保多样性。"
         else:
             prompt += f"\n\nBatch {batch_num}. Ensure diversity."

@@ -1,4 +1,5 @@
 """Double bubble map inline recommendation prompts."""
+
 from typing import Any, Dict, List, Optional
 
 from ._common import append_batch_note, THINKING_APPROACH
@@ -12,14 +13,14 @@ def build_double_bubble_similarities_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for double bubble map similarity recommendations."""
-    left = (context.get('left_topic') or '').strip()
-    right = (context.get('right_topic') or '').strip()
-    sim_texts = context.get('similarity_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['double_bubble_map'][language]
+    left = (context.get("left_topic") or "").strip()
+    right = (context.get("right_topic") or "").strip()
+    sim_texts = context.get("similarity_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["double_bubble_map"][language]
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topics_ctx = f"左主题：{left}，右主题：{right}" if left and right else "主题未设置"
         prompt = f"""用户正在创建双气泡图。{topics_ctx}
 
@@ -33,7 +34,7 @@ def build_double_bubble_similarities_prompt(
         if sim_texts:
             prompt += f"""
 
-图中已有相似点：{', '.join(sim_texts)}。请生成更聚焦、互补的相似点推荐，与已有相似点形成补充，避免重复。"""
+图中已有相似点：{", ".join(sim_texts)}。请生成更聚焦、互补的相似点推荐，与已有相似点形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个相似点："""
@@ -49,7 +50,7 @@ Generate {count} similarity recommendations (shared by both topics). Requirement
 2. Each similarity concise (1-6 words)
 3. Output only similarity text, one per line, no numbering"""
         if sim_texts:
-            sims = ', '.join(sim_texts)
+            sims = ", ".join(sim_texts)
             prompt += (
                 f"\n\nThe diagram already has similarities: {sims}. "
                 "Generate more focused, complementary recommendations, avoid repetition."
@@ -69,14 +70,14 @@ def build_double_bubble_differences_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for double bubble map difference pair recommendations."""
-    left = (context.get('left_topic') or '').strip()
-    right = (context.get('right_topic') or '').strip()
-    diff_texts = context.get('difference_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['double_bubble_map'][language]
+    left = (context.get("left_topic") or "").strip()
+    right = (context.get("right_topic") or "").strip()
+    diff_texts = context.get("difference_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["double_bubble_map"][language]
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         topics_ctx = f"左主题：{left}，右主题：{right}" if left and right else "主题未设置"
         prompt = f"""用户正在创建双气泡图。{topics_ctx}
 
@@ -90,7 +91,7 @@ def build_double_bubble_differences_prompt(
         if diff_texts:
             prompt += f"""
 
-图中已有不同点对：{', '.join(diff_texts)}。请生成更聚焦、互补的不同点对推荐，与已有不同点对形成补充，避免重复。"""
+图中已有不同点对：{", ".join(diff_texts)}。请生成更聚焦、互补的不同点对推荐，与已有不同点对形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个不同点对："""
@@ -106,7 +107,7 @@ Generate {count} difference pair recommendations, format "left | right". Require
 2. Each side concise (1-6 words)
 3. Output only "left | right" format, one per line, no numbering"""
         if diff_texts:
-            diffs = ', '.join(diff_texts)
+            diffs = ", ".join(diff_texts)
             prompt += (
                 f"\n\nThe diagram already has differences: {diffs}. "
                 "Generate more focused, complementary recommendations, avoid repetition."

@@ -28,11 +28,11 @@ try:
     from static.js.lazy_cache_manager import (
         get_cache_stats,
         get_performance_summary,
-        is_cache_initialized
+        is_cache_initialized,
     )
     from static.js.modular_cache_python import (
         get_modular_cache_stats,
-        get_modular_performance_summary
+        get_modular_performance_summary,
     )
 except ImportError:
     # Graceful fallback if modules are not available
@@ -51,6 +51,7 @@ router = APIRouter(prefix="/cache", tags=["Cache"])
 # CACHE STATUS ROUTES (3 routes from app.py)
 # ============================================================================
 
+
 @router.get("/status")
 async def get_cache_status(_current_user: User = Depends(get_current_user)):
     """
@@ -65,48 +66,49 @@ async def get_cache_status(_current_user: User = Depends(get_current_user)):
         if is_cache_initialized():
             stats = get_cache_stats()
             cache_data = {
-                'status': 'initialized',
-                'cache_strategy': 'lazy_loading_with_intelligent_caching',
-                'files_loaded': stats['files_loaded'],
-                'total_size_bytes': stats['total_memory_usage'],
-                'total_size_kb': round(stats['memory_usage_mb'] * 1024, 2),
-                'memory_usage_mb': stats['memory_usage_mb'],
-                'max_memory_mb': stats['max_memory_mb'],
-                'cache_hit_rate': round(stats['cache_hit_rate'], 1),
-                'total_requests': stats['total_requests'],
-                'cache_hits': stats['cache_hits'],
-                'cache_misses': stats['cache_misses'],
-                'average_load_time': round(stats['average_load_time'], 3),
-                'performance_improvement': '90-95%',
-                'optimization': 'Lazy loading + intelligent caching + memory optimization',
-                'cache_ttl_seconds': 3600,
-                'timestamp': time.time()
+                "status": "initialized",
+                "cache_strategy": "lazy_loading_with_intelligent_caching",
+                "files_loaded": stats["files_loaded"],
+                "total_size_bytes": stats["total_memory_usage"],
+                "total_size_kb": round(stats["memory_usage_mb"] * 1024, 2),
+                "memory_usage_mb": stats["memory_usage_mb"],
+                "max_memory_mb": stats["max_memory_mb"],
+                "cache_hit_rate": round(stats["cache_hit_rate"], 1),
+                "total_requests": stats["total_requests"],
+                "cache_hits": stats["cache_hits"],
+                "cache_misses": stats["cache_misses"],
+                "average_load_time": round(stats["average_load_time"], 3),
+                "performance_improvement": "90-95%",
+                "optimization": "Lazy loading + intelligent caching + memory optimization",
+                "cache_ttl_seconds": 3600,
+                "timestamp": time.time(),
             }
             logger.info(
                 "Lazy cache status check: OK - %s files loaded, hit rate: %.1f%%",
-                stats['files_loaded'],
-                stats['cache_hit_rate']
+                stats["files_loaded"],
+                stats["cache_hit_rate"],
             )
             return cache_data
 
         cache_data = {
-            'status': 'not_initialized',
-            'error': 'Lazy loading JavaScript cache not properly initialized',
-            'performance_impact': 'File I/O overhead per request (2-5 seconds)',
-            'timestamp': time.time()
+            "status": "not_initialized",
+            "error": "Lazy loading JavaScript cache not properly initialized",
+            "performance_impact": "File I/O overhead per request (2-5 seconds)",
+            "timestamp": time.time(),
         }
         logger.warning("Lazy cache status check: FAILED - cache not initialized")
         return cache_data
 
     except Exception as e:
         cache_data = {
-            'status': 'error',
-            'error': str(e),
-            'performance_impact': 'File I/O overhead per request (2-5 seconds)',
-            'timestamp': time.time()
+            "status": "error",
+            "error": str(e),
+            "performance_impact": "File I/O overhead per request (2-5 seconds)",
+            "timestamp": time.time(),
         }
         logger.error("Lazy cache status check: ERROR - %s", e)
         return cache_data
+
 
 @router.get("/performance")
 async def get_cache_performance(_current_user: User = Depends(get_current_user)):
@@ -121,51 +123,52 @@ async def get_cache_performance(_current_user: User = Depends(get_current_user))
 
         stats = get_cache_stats()
         performance_data = {
-            'status': 'success',
-            'performance_summary': get_performance_summary(),
-            'detailed_stats': {
-                'cache_efficiency': {
-                    'hit_rate_percent': round(stats['cache_hit_rate'], 1),
-                    'total_requests': stats['total_requests'],
-                    'cache_hits': stats['cache_hits'],
-                    'cache_misses': stats['cache_misses']
+            "status": "success",
+            "performance_summary": get_performance_summary(),
+            "detailed_stats": {
+                "cache_efficiency": {
+                    "hit_rate_percent": round(stats["cache_hit_rate"], 1),
+                    "total_requests": stats["total_requests"],
+                    "cache_hits": stats["cache_hits"],
+                    "cache_misses": stats["cache_misses"],
                 },
-                'memory_management': {
-                    'current_usage_mb': stats['memory_usage_mb'],
-                    'max_allowed_mb': stats['max_memory_mb'],
-                    'utilization_percent': round((stats['memory_usage_mb'] / stats['max_memory_mb']) * 100, 1)
+                "memory_management": {
+                    "current_usage_mb": stats["memory_usage_mb"],
+                    "max_allowed_mb": stats["max_memory_mb"],
+                    "utilization_percent": round((stats["memory_usage_mb"] / stats["max_memory_mb"]) * 100, 1),
                 },
-                'performance_metrics': {
-                    'files_loaded': stats['files_loaded'],
-                    'average_load_time_seconds': round(stats['average_load_time'], 3),
-                    'total_load_time_seconds': round(stats['total_load_time'], 3)
+                "performance_metrics": {
+                    "files_loaded": stats["files_loaded"],
+                    "average_load_time_seconds": round(stats["average_load_time"], 3),
+                    "total_load_time_seconds": round(stats["total_load_time"], 3),
                 },
-                'cache_strategy': {
-                    'type': 'lazy_loading_with_intelligent_caching',
-                    'ttl_seconds': 3600,
-                    'cleanup_interval_seconds': 3600,
-                    'memory_optimization': True,
-                    'thread_safe': True
-                }
+                "cache_strategy": {
+                    "type": "lazy_loading_with_intelligent_caching",
+                    "ttl_seconds": 3600,
+                    "cleanup_interval_seconds": 3600,
+                    "memory_optimization": True,
+                    "thread_safe": True,
+                },
             },
-            'timestamp': time.time()
+            "timestamp": time.time(),
         }
 
         logger.info(
             "Cache performance check: OK - Hit rate: %.1f%%, Memory: %.1fMB",
-            stats['cache_hit_rate'],
-            stats['memory_usage_mb']
+            stats["cache_hit_rate"],
+            stats["memory_usage_mb"],
         )
         return performance_data
 
     except Exception as e:
         performance_data = {
-            'status': 'error',
-            'error': str(e),
-            'timestamp': time.time()
+            "status": "error",
+            "error": str(e),
+            "timestamp": time.time(),
         }
         logger.error("Cache performance check: ERROR - %s", e)
         return performance_data
+
 
 @router.get("/modular")
 async def get_modular_cache_status(_current_user: User = Depends(get_current_user)):
@@ -182,43 +185,44 @@ async def get_modular_cache_status(_current_user: User = Depends(get_current_use
         performance_summary = get_modular_performance_summary()
 
         cache_data = {
-            'status': 'success',
-            'cache_type': 'modular',
-            'optimization': 'Option 3: Code Splitting by Graph Type',
-            'performance_summary': performance_summary,
-            'detailed_stats': {
-                'base_cache': {
-                    'files_loaded': stats.get('files_loaded', 0),
-                    'total_size_bytes': stats.get('total_memory_usage', 0),
-                    'cache_hit_rate_percent': stats.get('cache_hit_rate', 0)
+            "status": "success",
+            "cache_type": "modular",
+            "optimization": "Option 3: Code Splitting by Graph Type",
+            "performance_summary": performance_summary,
+            "detailed_stats": {
+                "base_cache": {
+                    "files_loaded": stats.get("files_loaded", 0),
+                    "total_size_bytes": stats.get("total_memory_usage", 0),
+                    "cache_hit_rate_percent": stats.get("cache_hit_rate", 0),
                 },
-                'modular_stats': stats.get('modular', {})
+                "modular_stats": stats.get("modular", {}),
             },
-            'benefits': {
-                'size_reduction': stats.get('modular', {}).get('compressionRatio', '0%'),
-                'load_time_improvement': '50-70% faster loading',
-                'supported_graph_types': len(stats.get('modular', {}).get('supportedGraphTypes', [])),
-                'available_modules': len(stats.get('modular', {}).get('availableModules', []))
+            "benefits": {
+                "size_reduction": stats.get("modular", {}).get("compressionRatio", "0%"),
+                "load_time_improvement": "50-70% faster loading",
+                "supported_graph_types": len(stats.get("modular", {}).get("supportedGraphTypes", [])),
+                "available_modules": len(stats.get("modular", {}).get("availableModules", [])),
             },
-            'timestamp': time.time()
+            "timestamp": time.time(),
         }
 
-        status_msg = performance_summary.get('status', 'Unknown')
+        status_msg = performance_summary.get("status", "Unknown")
         logger.info("Modular cache status check: OK - %s", status_msg)
         return cache_data
 
     except Exception as e:
         cache_data = {
-            'status': 'error',
-            'cache_type': 'modular',
-            'error': str(e),
-            'fallback': 'Modular cache not available',
-            'timestamp': time.time()
+            "status": "error",
+            "cache_type": "modular",
+            "error": str(e),
+            "fallback": "Modular cache not available",
+            "timestamp": time.time(),
         }
 
         logger.error("Modular cache status check: ERROR - %s", e)
         return cache_data
 
+
 # Only log from main worker to avoid duplicate messages
-if os.getenv('UVICORN_WORKER_ID') is None or os.getenv('UVICORN_WORKER_ID') == '0':
+if os.getenv("UVICORN_WORKER_ID") is None or os.getenv("UVICORN_WORKER_ID") == "0":
     logger.debug("Cache routes initialized: 3 routes registered")

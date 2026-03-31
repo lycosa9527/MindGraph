@@ -63,10 +63,18 @@ function k12NavRow(tooltips: { p1: string; p2: string; p3: string; p4: string })
 }
 
 function chemNavRow(tooltips: { p1: string; p2: string }): PartialKeycap[] {
-  return [switchLayerKey(1, CHEM_LAYER.p1, tooltips.p1), switchLayerKey(2, CHEM_LAYER.p2, tooltips.p2)]
+  return [
+    switchLayerKey(1, CHEM_LAYER.p1, tooltips.p1),
+    switchLayerKey(2, CHEM_LAYER.p2, tooltips.p2),
+  ]
 }
 
-function k12EqNavRow(tooltips: { p1: string; p2: string; p3: string; p4: string }): PartialKeycap[] {
+function k12EqNavRow(tooltips: {
+  p1: string
+  p2: string
+  p3: string
+  p4: string
+}): PartialKeycap[] {
   return [
     switchLayerKey(1, K12_EQ_LAYER.p1, tooltips.p1),
     switchLayerKey(2, K12_EQ_LAYER.p2, tooltips.p2),
@@ -84,7 +92,11 @@ function k12ChemFormNavRow(tooltips: { p1: string; p2: string; p3: string }): Pa
 }
 
 /** Short label + full LaTeX for common equation templates (same idea as `chemCe`). */
-function mathInsert(label: string, latex: string, options?: { width?: VirtualKeyboardKeycap['width'] }): Partial<VirtualKeyboardKeycap> {
+function mathInsert(
+  label: string,
+  latex: string,
+  options?: { width?: VirtualKeyboardKeycap['width'] }
+): Partial<VirtualKeyboardKeycap> {
   return {
     label,
     latex,
@@ -95,7 +107,11 @@ function mathInsert(label: string, latex: string, options?: { width?: VirtualKey
 }
 
 /** Short visible label + full `\\ce{...}` insert so keycaps stay readable for long formulas. */
-function chemCe(label: string, inner: string, options?: { width?: VirtualKeyboardKeycap['width'] }): Partial<VirtualKeyboardKeycap> {
+function chemCe(
+  label: string,
+  inner: string,
+  options?: { width?: VirtualKeyboardKeycap['width'] }
+): Partial<VirtualKeyboardKeycap> {
   const full = `\\ce{${inner}}`
   return {
     label,
@@ -264,7 +280,14 @@ export function buildK12MathVirtualKeyboardLayout(
         rows: [
           ['x^2', 'x^3', 'x^n', 'x^{2}', 'x^{-1}', 'x^{\\frac{1}{2}}'],
           ['\\sqrt{x}', '\\sqrt[3]{x}', '\\sqrt[n]{x}', '|x|', '\\left|x\\right|'],
-          ['\\frac{a}{b}', '\\dfrac{a}{b}', '\\frac{1}{2}', '\\frac{1}{4}', '\\frac{1}{3}', '\\tfrac{a}{b}'],
+          [
+            '\\frac{a}{b}',
+            '\\dfrac{a}{b}',
+            '\\frac{1}{2}',
+            '\\frac{1}{4}',
+            '\\frac{1}{3}',
+            '\\tfrac{a}{b}',
+          ],
           ['(', ')', '[', ']', '\\{', '\\}'],
           ['\\pi', '\\infty', '\\equiv', '\\ldots', '\\cdots'],
           nav,
@@ -329,7 +352,9 @@ export function buildK12EquationsVirtualKeyboardLayout(
           ],
           [
             mathInsert(L.p1.pointSlope, 'y-y_1=m(x-x_1)', { width: 1.5 }),
-            mathInsert(L.p1.midpoint, '\\left(\\frac{x_1+x_2}{2},\\frac{y_1+y_2}{2}\\right)', { width: 2 }),
+            mathInsert(L.p1.midpoint, '\\left(\\frac{x_1+x_2}{2},\\frac{y_1+y_2}{2}\\right)', {
+              width: 2,
+            }),
           ],
           [
             mathInsert(L.p1.ymxb, 'y=mx+b'),
@@ -411,7 +436,9 @@ export function buildK12EquationsVirtualKeyboardLayout(
           ],
           [
             mathInsert(L.p4.geomSum, 'S_n=a_1\\frac{1-r^n}{1-r}', { width: 2 }),
-            mathInsert(L.p4.binomial, '(a+b)^n=\\sum_{k=0}^{n}\\binom{n}{k}a^{n-k}b^k', { width: 2.0 }),
+            mathInsert(L.p4.binomial, '(a+b)^n=\\sum_{k=0}^{n}\\binom{n}{k}a^{n-k}b^k', {
+              width: 2.0,
+            }),
           ],
           [
             mathInsert(L.p4.meanXbar, '\\bar{x}=\\frac{1}{n}\\sum_{i=1}^{n}x_i', { width: 2 }),

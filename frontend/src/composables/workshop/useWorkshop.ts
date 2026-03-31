@@ -118,7 +118,6 @@ export function useWorkshop(
       const socket = new WebSocket(url)
 
       socket.onopen = () => {
-        console.log('[WorkshopWS] Connected')
         isConnected.value = true
         reconnectAttempts.value = 0
 
@@ -142,7 +141,6 @@ export function useWorkshop(
               if (message.owner_id !== undefined && message.owner_id !== null) {
                 diagramOwnerId.value = Number(message.owner_id)
               }
-              console.log('[WorkshopWS] Joined presentation mode', message)
               break
 
             case 'snapshot':
@@ -159,10 +157,11 @@ export function useWorkshop(
                   onGranularUpdate(message.nodes, message.connections)
                 } else if (onUpdate) {
                   // Fallback: if no granular handler, use full update handler
-                  // This requires the frontend to merge manually
-                  console.warn(
-                    '[WorkshopWS] Granular update received but no onGranularUpdate handler'
-                  )
+                  if (import.meta.env.DEV) {
+                    console.warn(
+                      '[WorkshopWS] Granular update received but no onGranularUpdate handler'
+                    )
+                  }
                 }
               } else if (message.spec && onUpdate) {
                 // Full spec update (backward compatibility)
@@ -261,18 +260,21 @@ export function useWorkshop(
               break
           }
         } catch (error) {
-          console.error('[WorkshopWS] Failed to parse message:', error)
+          if (import.meta.env.DEV) {
+            console.error('[WorkshopWS] Failed to parse message:', error)
+          }
         }
       }
 
       socket.onerror = (error) => {
-        console.error('[WorkshopWS] WebSocket error:', error)
+        if (import.meta.env.DEV) {
+          console.error('[WorkshopWS] WebSocket error:', error)
+        }
         isConnected.value = false
         notify.error(t('workshopCanvas.wsError'))
       }
 
       socket.onclose = (event) => {
-        console.log('[WorkshopWS] Disconnected', event.code, event.reason)
         isConnected.value = false
 
         if (event.code === 4002) {
@@ -297,7 +299,6 @@ export function useWorkshop(
         ) {
           reconnectAttempts.value++
           reconnectTimeout = setTimeout(() => {
-            console.log(`[WorkshopWS] Reconnecting (attempt ${reconnectAttempts.value})...`)
             connect()
           }, reconnectDelay)
         } else if (reconnectAttempts.value >= maxReconnectAttempts) {
@@ -307,7 +308,9 @@ export function useWorkshop(
 
       ws.value = socket
     } catch (error) {
-      console.error('[WorkshopWS] Failed to connect:', error)
+      if (import.meta.env.DEV) {
+        console.error('[WorkshopWS] Failed to connect:', error)
+      }
       notify.error(t('workshopCanvas.connectFailed'))
     }
   }
@@ -374,13 +377,17 @@ export function useWorkshop(
         // Fallback to full spec
         message.spec = spec
       } else {
-        console.warn('[WorkshopWS] sendUpdate called without spec, nodes, or connections')
+        if (import.meta.env.DEV) {
+          console.warn('[WorkshopWS] sendUpdate called without spec, nodes, or connections')
+        }
         return
       }
 
       ws.value.send(JSON.stringify(message))
     } catch (error) {
-      console.error('[WorkshopWS] Failed to send update:', error)
+      if (import.meta.env.DEV) {
+        console.error('[WorkshopWS] Failed to send update:', error)
+      }
     }
   }
 

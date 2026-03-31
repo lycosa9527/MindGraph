@@ -73,7 +73,9 @@ async def list_topics(
         request,
         etag,
         lambda: topic_service.list_topics(
-            db, channel_id, user_id=current_user.id,
+            db,
+            channel_id,
+            user_id=current_user.id,
         ),
     )
 
@@ -90,12 +92,20 @@ async def create_topic(
     require_membership(db, channel_id, current_user.id)
     require_post_permission(channel, current_user)
     result = topic_service.create_topic(
-        db, channel_id, body.title, current_user.id,
+        db,
+        channel_id,
+        body.title,
+        current_user.id,
         description=body.description,
     )
-    await chat_ws_manager.broadcast_to_channel(channel_id, {
-        "type": "topic_updated", "channel_id": channel_id, "topic": result,
-    })
+    await chat_ws_manager.broadcast_to_channel(
+        channel_id,
+        {
+            "type": "topic_updated",
+            "channel_id": channel_id,
+            "topic": result,
+        },
+    )
     return result
 
 
@@ -117,7 +127,10 @@ async def get_topic_detail(
     if not match:
         raise HTTPException(status_code=404, detail="Topic not found")
     recent_msgs = message_service.get_topic_messages(
-        db, topic_id, channel_id, num_before=30,
+        db,
+        topic_id,
+        channel_id,
+        num_before=30,
     )
     match["recent_messages"] = recent_msgs
     return match
@@ -141,17 +154,25 @@ async def update_topic(
     if not can_moderate_workshop_channel(current_user, channel):
         require_membership(db, channel_id, current_user.id)
     result = topic_service.update_topic(
-        db, topic_id,
-        title=body.title, description=body.description,
+        db,
+        topic_id,
+        title=body.title,
+        description=body.description,
     )
     if result:
-        await chat_ws_manager.broadcast_to_channel(channel_id, {
-            "type": "topic_updated", "channel_id": channel_id, "topic": result,
-        })
+        await chat_ws_manager.broadcast_to_channel(
+            channel_id,
+            {
+                "type": "topic_updated",
+                "channel_id": channel_id,
+                "topic": result,
+            },
+        )
     return result
 
 
 # ── Move ─────────────────────────────────────────────────────────
+
 
 @router.post("/channels/{channel_id}/topics/{topic_id}/move")
 async def move_topic(
@@ -173,16 +194,20 @@ async def move_topic(
     access_channel(db, body.target_channel_id, current_user)
     result = topic_service.move_topic(db, topic_id, body.target_channel_id)
     if result:
-        await chat_ws_manager.broadcast_to_channel(channel_id, {
-            "type": "topic_moved",
-            "channel_id": channel_id,
-            "target_channel_id": body.target_channel_id,
-            "topic_id": topic_id,
-        })
+        await chat_ws_manager.broadcast_to_channel(
+            channel_id,
+            {
+                "type": "topic_moved",
+                "channel_id": channel_id,
+                "target_channel_id": body.target_channel_id,
+                "topic_id": topic_id,
+            },
+        )
     return result
 
 
 # ── Rename ───────────────────────────────────────────────────────
+
 
 @router.post("/channels/{channel_id}/topics/{topic_id}/rename")
 async def rename_topic(
@@ -203,13 +228,19 @@ async def rename_topic(
         require_membership(db, channel_id, current_user.id)
     result = topic_service.rename_topic(db, topic_id, body.title)
     if result:
-        await chat_ws_manager.broadcast_to_channel(channel_id, {
-            "type": "topic_updated", "channel_id": channel_id, "topic": result,
-        })
+        await chat_ws_manager.broadcast_to_channel(
+            channel_id,
+            {
+                "type": "topic_updated",
+                "channel_id": channel_id,
+                "topic": result,
+            },
+        )
     return result
 
 
 # ── Delete ───────────────────────────────────────────────────────
+
 
 @router.delete("/channels/{channel_id}/topics/{topic_id}")
 async def delete_topic(
@@ -228,13 +259,19 @@ async def delete_topic(
     if not can_moderate_workshop_channel(current_user, channel):
         require_membership(db, channel_id, current_user.id)
     topic_service.delete_topic(db, topic_id)
-    await chat_ws_manager.broadcast_to_channel(channel_id, {
-        "type": "topic_deleted", "channel_id": channel_id, "topic_id": topic_id,
-    })
+    await chat_ws_manager.broadcast_to_channel(
+        channel_id,
+        {
+            "type": "topic_deleted",
+            "channel_id": channel_id,
+            "topic_id": topic_id,
+        },
+    )
     return {"ok": True}
 
 
 # ── Mark as read ─────────────────────────────────────────────────
+
 
 @router.post("/channels/{channel_id}/topics/{topic_id}/read")
 async def mark_topic_read(
@@ -250,6 +287,7 @@ async def mark_topic_read(
 
 
 # ── Visibility preference ────────────────────────────────────────
+
 
 @router.post("/channels/{channel_id}/topics/{topic_id}/visibility")
 async def set_topic_visibility(
@@ -267,9 +305,13 @@ async def set_topic_visibility(
         raise HTTPException(status_code=404, detail="Topic not found")
     try:
         return topic_service.set_visibility(
-            db, topic_id, current_user.id, body.visibility_policy,
+            db,
+            topic_id,
+            current_user.id,
+            body.visibility_policy,
         )
     except ValueError as exc:
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc),
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
         ) from exc

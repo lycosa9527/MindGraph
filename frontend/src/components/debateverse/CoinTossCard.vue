@@ -112,7 +112,9 @@ async function generatePositions(sessionId: string, topic: string, language: str
                     parsePositions(positionsText)
                   }
                 } catch (e) {
-                  console.warn('[CoinTossCard] Failed to parse SSE:', jsonStr, e)
+                  if (import.meta.env.DEV) {
+                    console.warn('[CoinTossCard] Failed to parse SSE:', jsonStr, e)
+                  }
                 }
               }
             }
@@ -145,18 +147,20 @@ async function generatePositions(sessionId: string, topic: string, language: str
             if (e instanceof Error && e.message.includes('Position generation')) {
               throw e
             }
-            console.warn('[CoinTossCard] Failed to parse SSE:', jsonStr, e)
+            if (import.meta.env.DEV) {
+              console.warn('[CoinTossCard] Failed to parse SSE:', jsonStr, e)
+            }
           }
         }
       }
     }
   } catch (err: unknown) {
-    if (err instanceof Error && err.name === 'AbortError') {
-      console.log('[CoinTossCard] Generation aborted')
-    } else {
+    if (!(err instanceof Error && err.name === 'AbortError')) {
       const errorMsg = err instanceof Error ? err.message : 'Unknown error'
       error.value = errorMsg
-      console.error('[CoinTossCard] Generation error:', err)
+      if (import.meta.env.DEV) {
+        console.error('[CoinTossCard] Generation error:', err)
+      }
     }
   } finally {
     isGenerating.value = false

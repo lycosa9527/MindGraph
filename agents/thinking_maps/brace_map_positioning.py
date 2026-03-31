@@ -1,6 +1,7 @@
 """
 Block-based positioning system and flexible layout calculator for brace maps.
 """
+
 from typing import Any, Dict, List, Tuple, Union
 
 from .brace_map_models import (
@@ -37,50 +38,53 @@ class BlockBasedPositioningSystem:
         blocks = []
 
         # Define standard block heights (only width varies based on text)
-        topic_height = theme['fontTopic'] + 20
-        part_height = theme['fontPart'] + 20
-        subpart_height = theme['fontSubpart'] + 20
+        topic_height = theme["fontTopic"] + 20
+        part_height = theme["fontPart"] + 20
+        subpart_height = theme["fontSubpart"] + 20
 
         # Create topic block
-        whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width(whole, theme['fontTopic'])
+        whole = spec.get("whole", "Main Topic")
+        topic_width = self._calculate_text_width(whole, theme["fontTopic"])
         topic_block = Block(
-            id='topic',
-            x=0, y=0,  # Will be positioned later
+            id="topic",
+            x=0,
+            y=0,  # Will be positioned later
             width=topic_width,
             height=topic_height,  # Standard height for all topic blocks
             text=whole,
-            node_type='topic'
+            node_type="topic",
         )
         blocks.append(topic_block)
 
         # Create part and subpart blocks
-        for i, part in enumerate(spec.get('parts', [])):
-            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
+        for i, part in enumerate(spec.get("parts", [])):
+            part_width = self._calculate_text_width(part["name"], theme["fontPart"])
             part_block = Block(
-                id=f'part_{i}',
-                x=0, y=0,  # Will be positioned later
+                id=f"part_{i}",
+                x=0,
+                y=0,  # Will be positioned later
                 width=part_width,
                 height=part_height,  # Standard height for all part blocks
-                text=part['name'],
-                node_type='part',
-                part_index=i
+                text=part["name"],
+                node_type="part",
+                part_index=i,
             )
             blocks.append(part_block)
 
             # Create subpart blocks
-            for j, subpart in enumerate(part.get('subparts', [])):
-                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
+            for j, subpart in enumerate(part.get("subparts", [])):
+                subpart_width = self._calculate_text_width(subpart["name"], theme["fontSubpart"])
                 subpart_block = Block(
-                    id=f'subpart_{i}_{j}',
-                    x=0, y=0,  # Will be positioned later
+                    id=f"subpart_{i}_{j}",
+                    x=0,
+                    y=0,  # Will be positioned later
                     width=subpart_width,
                     height=subpart_height,  # Standard height for all subpart blocks
-                    text=subpart['name'],
-                    node_type='subpart',
+                    text=subpart["name"],
+                    node_type="subpart",
                     part_index=i,
                     subpart_index=j,
-                    parent_block_id=f'part_{i}'
+                    parent_block_id=f"part_{i}",
                 )
                 blocks.append(subpart_block)
 
@@ -91,19 +95,22 @@ class BlockBasedPositioningSystem:
         units = []
 
         # Find all part blocks
-        part_blocks = [block for block in blocks if block.node_type == 'part']
+        part_blocks = [block for block in blocks if block.node_type == "part"]
 
         for part_block in part_blocks:
             # Find subpart blocks belonging to this part
-            subpart_blocks = [block for block in blocks
-                            if block.node_type == 'subpart' and
-                            block.parent_block_id == part_block.id]
+            subpart_blocks = [
+                block for block in blocks if block.node_type == "subpart" and block.parent_block_id == part_block.id
+            ]
 
             unit = BlockUnit(
                 unit_id=part_block.id,
                 part_block=part_block,
                 subpart_blocks=subpart_blocks,
-                x=0, y=0, width=0, height=0  # Will be calculated later
+                x=0,
+                y=0,
+                width=0,
+                height=0,  # Will be calculated later
             )
             units.append(unit)
 
@@ -111,9 +118,9 @@ class BlockBasedPositioningSystem:
 
     def _calculate_spacing_config(self, spec: Dict, dimensions: Dict, _theme: Dict) -> Dict:
         """Calculate dynamic spacing configuration based on content"""
-        parts = spec.get('parts', [])
+        parts = spec.get("parts", [])
         total_parts = len(parts)
-        total_subparts = sum(len(part.get('subparts', [])) for part in parts)
+        total_subparts = sum(len(part.get("subparts", [])) for part in parts)
 
         # Calculate complexity score
         complexity_score = total_parts * 2 + total_subparts * 1.5
@@ -121,28 +128,28 @@ class BlockBasedPositioningSystem:
         # Dynamic spacing based on complexity - tightened for more compact layout
         if complexity_score > 50:
             block_spacing = 12.0  # Reduced from 20.0 for tighter spacing
-            unit_spacing = 18.0   # Reduced from 30.0 for tighter spacing
+            unit_spacing = 18.0  # Reduced from 30.0 for tighter spacing
             brace_padding = 30.0  # Reduced from 40.0 for tighter spacing
         elif complexity_score > 25:
             block_spacing = 10.0  # Reduced from 15.0 for tighter spacing
-            unit_spacing = 15.0   # Reduced from 25.0 for tighter spacing
+            unit_spacing = 15.0  # Reduced from 25.0 for tighter spacing
             brace_padding = 24.0  # Reduced from 30.0 for tighter spacing
         else:
-            block_spacing = 8.0   # Reduced from 12.0 for tighter spacing
-            unit_spacing = 12.0   # Reduced from 20.0 for tighter spacing
+            block_spacing = 8.0  # Reduced from 12.0 for tighter spacing
+            unit_spacing = 12.0  # Reduced from 20.0 for tighter spacing
             brace_padding = 20.0  # Reduced from 25.0 for tighter spacing
 
         # Calculate available space
-        available_width = dimensions['width'] - 2 * dimensions['padding']
-        available_height = dimensions['height'] - 2 * dimensions['padding']
+        available_width = dimensions["width"] - 2 * dimensions["padding"]
+        available_height = dimensions["height"] - 2 * dimensions["padding"]
 
         return {
-            'block_spacing': block_spacing,
-            'unit_spacing': unit_spacing,
-            'brace_padding': brace_padding,
-            'available_width': available_width,
-            'available_height': available_height,
-            'complexity_score': complexity_score
+            "block_spacing": block_spacing,
+            "unit_spacing": unit_spacing,
+            "brace_padding": brace_padding,
+            "available_width": available_width,
+            "available_height": available_height,
+            "complexity_score": complexity_score,
         }
 
     def _position_blocks(self, units: List[BlockUnit], spacing_config: Dict, dimensions: Dict) -> List[BlockUnit]:
@@ -154,12 +161,12 @@ class BlockBasedPositioningSystem:
         for unit in units:
             self._calculate_unit_dimensions(unit, spacing_config)
         # Step 2: Define column layout with fixed brace columns and flexible node columns
-        canvas_width = dimensions['width']
-        padding = dimensions['padding']
+        canvas_width = dimensions["width"]
+        padding = dimensions["padding"]
 
         # Gaps around braces - increased to prevent overlap with nodes
         gap_topic_to_main_brace = 24.0  # Increased to prevent brace overlap with topic
-        gap_main_brace_to_part = 28.0   # Increased to prevent brace overlap with parts
+        gap_main_brace_to_part = 28.0  # Increased to prevent brace overlap with parts
         gap_part_to_small_brace = 22.0  # Increased to prevent small brace overlap with parts
         gap_small_brace_to_subpart = 22.0  # Increased to prevent small brace overlap with subparts
 
@@ -187,9 +194,13 @@ class BlockBasedPositioningSystem:
 
         # Column 3: Parts center depends on estimated brace depth + gap + half of max part width (minimized)
         part_column_x = (
-            topic_column_x + approx_topic_width / 2.0 + gap_topic_to_main_brace +
-            estimated_main_depth + gap_main_brace_to_part + 6.0 +
-            max_part_block_width / 2.0  # Reduced from 12px to move parts closer to brace
+            topic_column_x
+            + approx_topic_width / 2.0
+            + gap_topic_to_main_brace
+            + estimated_main_depth
+            + gap_main_brace_to_part
+            + 6.0
+            + max_part_block_width / 2.0  # Reduced from 12px to move parts closer to brace
         )
 
         # Column 4: Small brace X (use estimated small depth/2 past part-right + gap)
@@ -199,13 +210,16 @@ class BlockBasedPositioningSystem:
 
         # Column 5: Subparts center depends on estimated small brace depth + gap + half of max subpart width
         subpart_column_x = (
-            part_column_x + max_part_block_width / 2.0 + gap_part_to_small_brace +
-            estimated_small_depth + gap_small_brace_to_subpart +
-            max_subpart_block_width / 2.0
+            part_column_x
+            + max_part_block_width / 2.0
+            + gap_part_to_small_brace
+            + estimated_small_depth
+            + gap_small_brace_to_subpart
+            + max_subpart_block_width / 2.0
         )
 
         # Step 3: Position units vertically with proper column separation
-        current_y = dimensions['padding']
+        current_y = dimensions["padding"]
 
         for _i, unit in enumerate(units):
             # Position unit at current_y
@@ -219,9 +233,10 @@ class BlockBasedPositioningSystem:
                 # Calculate the vertical range of subparts for this part
                 subparts_start_y = unit.y + unit.part_block.height + 12  # Reduced from 20
                 subparts_end_y = (
-                    subparts_start_y +
-                    (len(unit.subpart_blocks) * unit.subpart_blocks[0].height) +
-                    ((len(unit.subpart_blocks) - 1) * 7) - 7
+                    subparts_start_y
+                    + (len(unit.subpart_blocks) * unit.subpart_blocks[0].height)
+                    + ((len(unit.subpart_blocks) - 1) * 7)
+                    - 7
                 )  # Reduced from 10 for tighter spacing
                 subparts_range_center_y = (subparts_start_y + subparts_end_y) / 2
 
@@ -235,7 +250,7 @@ class BlockBasedPositioningSystem:
             if unit.subpart_blocks:
                 # Calculate total subpart height for centering
                 total_subpart_height = len(unit.subpart_blocks) * unit.subpart_blocks[0].height
-                total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config['block_spacing']
+                total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config["block_spacing"]
                 total_height = total_subpart_height + total_spacing
 
                 # Start position to center subparts within unit
@@ -243,10 +258,10 @@ class BlockBasedPositioningSystem:
 
                 for j, subpart_block in enumerate(unit.subpart_blocks):
                     subpart_block.x = subpart_column_x
-                    subpart_block.y = start_y + j * (subpart_block.height + spacing_config['block_spacing'])
+                    subpart_block.y = start_y + j * (subpart_block.height + spacing_config["block_spacing"])
 
             # Update current_y for next unit
-            current_y = unit.y + unit.height + spacing_config['unit_spacing']
+            current_y = unit.y + unit.height + spacing_config["unit_spacing"]
 
         return units
 
@@ -254,33 +269,45 @@ class BlockBasedPositioningSystem:
         """Calculate unit dimensions based on its blocks with standard heights"""
         if not unit.subpart_blocks:
             # Unit with only part block
-            unit.width = unit.part_block.width + spacing_config['brace_padding']
+            unit.width = unit.part_block.width + spacing_config["brace_padding"]
             unit.height = unit.part_block.height  # Standard part height
         else:
             # Unit with part and subpart blocks
             # Calculate width: part width + spacing + max subpart width
             max_subpart_width = max(block.width for block in unit.subpart_blocks)
-            unit.width = (unit.part_block.width + spacing_config['block_spacing'] +
-                         max_subpart_width + spacing_config['brace_padding'])
+            unit.width = (
+                unit.part_block.width
+                + spacing_config["block_spacing"]
+                + max_subpart_width
+                + spacing_config["brace_padding"]
+            )
 
             # Calculate height: total height of all subpart blocks + spacing
             # All subpart blocks have the same height, so just multiply by count
             subpart_height = unit.subpart_blocks[0].height  # Standard subpart height
             total_subpart_height = len(unit.subpart_blocks) * subpart_height
-            total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config['block_spacing']
+            total_spacing = (len(unit.subpart_blocks) - 1) * spacing_config["block_spacing"]
             unit.height = max(unit.part_block.height, total_subpart_height + total_spacing)
 
     def _calculate_text_width(self, text: str, font_size: int) -> float:
         """Calculate text width based on font size and character count"""
         char_widths = {
-            'i': 0.3, 'l': 0.3, 'I': 0.4, 'f': 0.4, 't': 0.4, 'r': 0.4,
-            'm': 0.8, 'w': 0.8, 'M': 0.8, 'W': 0.8,
-            'default': 0.6
+            "i": 0.3,
+            "l": 0.3,
+            "I": 0.4,
+            "f": 0.4,
+            "t": 0.4,
+            "r": 0.4,
+            "m": 0.8,
+            "w": 0.8,
+            "M": 0.8,
+            "W": 0.8,
+            "default": 0.6,
         }
 
         total_width = 0
         for char in text:
-            char_width = char_widths.get(char, char_widths['default'])
+            char_width = char_widths.get(char, char_widths["default"])
             total_width += char_width * font_size
 
         return total_width
@@ -294,32 +321,28 @@ class FlexibleLayoutCalculator:
 
     def calculate_text_dimensions(self, spec: Dict, theme: Dict) -> Dict[str, Any]:
         """Calculate text dimensions for all nodes"""
-        dimensions = {
-            'topic': {'width': 0, 'height': 0},
-            'parts': [],
-            'subparts': []
-        }
+        dimensions = {"topic": {"width": 0, "height": 0}, "parts": [], "subparts": []}
 
         # Calculate topic dimensions
-        whole = spec.get('whole', 'Main Topic')
-        topic_width = self._calculate_text_width(whole, theme['fontTopic'])
-        topic_height = theme['fontTopic'] + 20
-        dimensions['topic'] = {'width': topic_width, 'height': topic_height}
+        whole = spec.get("whole", "Main Topic")
+        topic_width = self._calculate_text_width(whole, theme["fontTopic"])
+        topic_height = theme["fontTopic"] + 20
+        dimensions["topic"] = {"width": topic_width, "height": topic_height}
 
         # Calculate part dimensions
-        for part in spec.get('parts', []):
-            part_width = self._calculate_text_width(part['name'], theme['fontPart'])
-            part_height = theme['fontPart'] + 20
-            dimensions['parts'].append({'width': part_width, 'height': part_height})
+        for part in spec.get("parts", []):
+            part_width = self._calculate_text_width(part["name"], theme["fontPart"])
+            part_height = theme["fontPart"] + 20
+            dimensions["parts"].append({"width": part_width, "height": part_height})
 
         # Calculate subpart dimensions
-        for part in spec.get('parts', []):
+        for part in spec.get("parts", []):
             part_subparts = []
-            for subpart in part.get('subparts', []):
-                subpart_width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
-                subpart_height = theme['fontSubpart'] + 20
-                part_subparts.append({'width': subpart_width, 'height': subpart_height})
-            dimensions['subparts'].append(part_subparts)
+            for subpart in part.get("subparts", []):
+                subpart_width = self._calculate_text_width(subpart["name"], theme["fontSubpart"])
+                subpart_height = theme["fontSubpart"] + 20
+                part_subparts.append({"width": subpart_width, "height": subpart_height})
+            dimensions["subparts"].append(part_subparts)
 
         return dimensions
 
@@ -345,8 +368,8 @@ class FlexibleLayoutCalculator:
                 height = unit.height
                 subpart_count = len(unit.subpart_positions)
             elif isinstance(unit, dict):
-                height = unit.get('height', 100.0)
-                subpart_count = unit.get('subpart_count', 0)
+                height = unit.get("height", 100.0)
+                subpart_count = unit.get("subpart_count", 0)
             else:
                 height = 100.0
                 subpart_count = 0
@@ -386,7 +409,7 @@ class FlexibleLayoutCalculator:
 
         # Adjust based on text length (longer text needs more space)
         if subparts:
-            avg_text_length = sum(len(subpart.get('name', '')) for subpart in subparts) / len(subparts)
+            avg_text_length = sum(len(subpart.get("name", "")) for subpart in subparts) / len(subparts)
             text_factor = min(1.3, avg_text_length / 20.0)
             return base_spacing * density_factor * text_factor
 
@@ -395,7 +418,7 @@ class FlexibleLayoutCalculator:
     def calculate_main_topic_position(self, units: List[UnitPosition], dimensions: Dict) -> Tuple[float, float]:
         """Calculate main topic position (center-left of entire unit group)"""
         if not units:
-            return (dimensions['padding'] + 50, dimensions['height'] / 2)
+            return (dimensions["padding"] + 50, dimensions["height"] / 2)
 
         # Sort units by Y position to ensure proper ordering
         sorted_units = sorted(units, key=lambda u: u.y)
@@ -412,8 +435,7 @@ class FlexibleLayoutCalculator:
         # Further reduced for tighter horizontal layout
         # Ensure topic is positioned at least 170px to the left of the leftmost part
         topic_x = max(
-            dimensions['padding'] + 15,
-            leftmost_part_x - 170
+            dimensions["padding"] + 15, leftmost_part_x - 170
         )  # Further reduced from 220px for tighter horizontal spacing
         topic_y = center_y
 
@@ -422,27 +444,26 @@ class FlexibleLayoutCalculator:
     def calculate_unit_positions(self, spec: Dict, dimensions: Dict, theme: Dict) -> List[UnitPosition]:
         """Calculate positions for all units (part + subparts) using global grid alignment"""
         units = []
-        parts = spec.get('parts', [])
+        parts = spec.get("parts", [])
 
         # Start with padding to account for canvas boundaries
-        current_y = dimensions['padding']
+        current_y = dimensions["padding"]
 
         # Calculate dynamic positioning based on content structure
-        total_subparts = sum(len(part.get('subparts', [])) for part in parts)
+        total_subparts = sum(len(part.get("subparts", [])) for part in parts)
 
         # Analyze content for dynamic positioning
-        _max_topic_width = self._calculate_text_width(
-            spec.get('whole', 'Main Topic'), theme['fontTopic'])
+        _max_topic_width = self._calculate_text_width(spec.get("whole", "Main Topic"), theme["fontTopic"])
         max_subpart_width = 0
         if total_subparts > 0:
             for part in parts:
-                for subpart in part.get('subparts', []):
-                    width = self._calculate_text_width(subpart['name'], theme['fontSubpart'])
+                for subpart in part.get("subparts", []):
+                    width = self._calculate_text_width(subpart["name"], theme["fontSubpart"])
                     max_subpart_width = max(max_subpart_width, width)
 
         # Dynamic horizontal positioning based on content analysis
-        _canvas_width = dimensions['width']
-        available_width = _canvas_width - 2 * dimensions['padding']
+        _canvas_width = dimensions["width"]
+        available_width = _canvas_width - 2 * dimensions["padding"]
 
         # Calculate optimal spacing based on content
         part_offset = max(80, min(160, available_width * 0.2))
@@ -451,28 +472,30 @@ class FlexibleLayoutCalculator:
         # Calculate global grid positions for all subparts across all parts
         all_subparts = []
         for i, part in enumerate(parts):
-            subparts = part.get('subparts', [])
+            subparts = part.get("subparts", [])
             for j, subpart in enumerate(subparts):
-                all_subparts.append({
-                    'part_index': i,
-                    'subpart_index': j,
-                    'name': subpart['name'],
-                    'height': theme['fontSubpart'] + 20
-                })
+                all_subparts.append(
+                    {
+                        "part_index": i,
+                        "subpart_index": j,
+                        "name": subpart["name"],
+                        "height": theme["fontSubpart"] + 20,
+                    }
+                )
 
         # Calculate global grid spacing
         # Calculate single global X position for ALL subparts (perfect vertical line)
-        global_subpart_x = dimensions['padding'] + part_offset + subpart_offset
+        global_subpart_x = dimensions["padding"] + part_offset + subpart_offset
 
         if all_subparts:
-            subpart_spacing = self.calculate_subpart_spacing([{'name': 'dummy'} for _ in range(len(all_subparts))])
+            subpart_spacing = self.calculate_subpart_spacing([{"name": "dummy"} for _ in range(len(all_subparts))])
 
             # Calculate global grid positions
             grid_positions = {}
             grid_y = current_y
             for subpart_info in all_subparts:
-                grid_positions[(subpart_info['part_index'], subpart_info['subpart_index'])] = grid_y
-                grid_y += subpart_info['height'] + subpart_spacing
+                grid_positions[(subpart_info["part_index"], subpart_info["subpart_index"])] = grid_y
+                grid_y += subpart_info["height"] + subpart_spacing
         else:
             # No subparts case
             subpart_spacing = 20.0
@@ -480,7 +503,7 @@ class FlexibleLayoutCalculator:
 
         # Now position each unit using the global grid
         for i, part in enumerate(parts):
-            subparts = part.get('subparts', [])
+            subparts = part.get("subparts", [])
 
             if subparts:
                 # Find the grid positions for this part's subparts
@@ -493,22 +516,25 @@ class FlexibleLayoutCalculator:
                 if part_subpart_positions:
                     first_j = 0
                     last_j = len(subparts) - 1
-                    first_center = grid_positions[(i, first_j)] + (theme['fontSubpart'] + 20) / 2
-                    last_center = grid_positions[(i, last_j)] + (theme['fontSubpart'] + 20) / 2
+                    first_center = grid_positions[(i, first_j)] + (theme["fontSubpart"] + 20) / 2
+                    last_center = grid_positions[(i, last_j)] + (theme["fontSubpart"] + 20) / 2
                     part_center_y = (first_center + last_center) / 2
                 else:
                     part_center_y = current_y
 
                 # Position part at center-left of its subpart grid span
-                part_x = dimensions['padding'] + part_offset
-                part_y = part_center_y - (theme['fontPart'] + 20) / 2
+                part_x = dimensions["padding"] + part_offset
+                part_y = part_center_y - (theme["fontPart"] + 20) / 2
 
                 # Create part node
                 part_node = NodePosition(
-                    x=part_x, y=part_y,
-                    width=self._calculate_text_width(part['name'], theme['fontPart']),
-                    height=theme['fontPart'] + 20,
-                    text=part['name'], node_type='part', part_index=i
+                    x=part_x,
+                    y=part_y,
+                    width=self._calculate_text_width(part["name"], theme["fontPart"]),
+                    height=theme["fontPart"] + 20,
+                    text=part["name"],
+                    node_type="part",
+                    part_index=i,
                 )
 
                 # Calculate subpart positions using global grid (all subparts in one vertical line)
@@ -518,11 +544,14 @@ class FlexibleLayoutCalculator:
                     subpart_y = grid_positions[(i, j)]
 
                     subpart_node = NodePosition(
-                        x=subpart_x, y=subpart_y,
-                        width=self._calculate_text_width(subpart['name'], theme['fontSubpart']),
-                        height=theme['fontSubpart'] + 20,
-                        text=subpart['name'], node_type='subpart',
-                        part_index=i, subpart_index=j
+                        x=subpart_x,
+                        y=subpart_y,
+                        width=self._calculate_text_width(subpart["name"], theme["fontSubpart"]),
+                        height=theme["fontSubpart"] + 20,
+                        text=subpart["name"],
+                        node_type="subpart",
+                        part_index=i,
+                        subpart_index=j,
                     )
                     subpart_positions.append(subpart_node)
 
@@ -531,7 +560,7 @@ class FlexibleLayoutCalculator:
                     first_j = 0
                     last_j = len(subparts) - 1
                     first_top = grid_positions[(i, first_j)]
-                    last_bottom = grid_positions[(i, last_j)] + (theme['fontSubpart'] + 20)
+                    last_bottom = grid_positions[(i, last_j)] + (theme["fontSubpart"] + 20)
                     unit_height = last_bottom - first_top
                     unit_y = first_top
                 else:
@@ -544,7 +573,7 @@ class FlexibleLayoutCalculator:
                     if k < len(units):
                         temp_units.append(units[k])
                     else:
-                        temp_units.append({'height': unit_height})
+                        temp_units.append({"height": unit_height})
                 unit_spacing = self.calculate_unit_spacing(temp_units)
 
                 # Calculate next_y with overlap prevention
@@ -573,44 +602,47 @@ class FlexibleLayoutCalculator:
                             subpart_positions = []
                             for j, subpart in enumerate(subparts):
                                 subpart_x = global_subpart_x
-                                subpart_y = (
-                                    unit_y + j * (theme['fontSubpart'] + 20 + subpart_spacing)
+                                subpart_y = unit_y + j * (
+                                    theme["fontSubpart"] + 20 + subpart_spacing
                                 )  # subpart_spacing already reduced
 
                                 subpart_node = NodePosition(
-                                    x=subpart_x, y=subpart_y,
-                                    width=self._calculate_text_width(
-                                        subpart['name'], theme['fontSubpart']
-                                    ),
-                                    height=theme['fontSubpart'] + 20,
-                                    text=subpart['name'], node_type='subpart',
-                                    part_index=i, subpart_index=j
+                                    x=subpart_x,
+                                    y=subpart_y,
+                                    width=self._calculate_text_width(subpart["name"], theme["fontSubpart"]),
+                                    height=theme["fontSubpart"] + 20,
+                                    text=subpart["name"],
+                                    node_type="subpart",
+                                    part_index=i,
+                                    subpart_index=j,
                                 )
                                 subpart_positions.append(subpart_node)
 
                             # Recalculate part position to maintain centering
                             if subpart_positions:
-                                first_center = subpart_positions[0].y + (theme['fontSubpart'] + 20) / 2
-                                last_center = subpart_positions[-1].y + (theme['fontSubpart'] + 20) / 2
+                                first_center = subpart_positions[0].y + (theme["fontSubpart"] + 20) / 2
+                                last_center = subpart_positions[-1].y + (theme["fontSubpart"] + 20) / 2
                                 part_center_y = (first_center + last_center) / 2
-                                part_y = part_center_y - (theme['fontPart'] + 20) / 2
+                                part_y = part_center_y - (theme["fontPart"] + 20) / 2
                                 part_node = NodePosition(
-                                    x=part_x, y=part_y,
-                                    width=self._calculate_text_width(
-                                        part['name'], theme['fontPart']
-                                    ),
-                                    height=theme['fontPart'] + 20,
-                                    text=part['name'], node_type='part', part_index=i
+                                    x=part_x,
+                                    y=part_y,
+                                    width=self._calculate_text_width(part["name"], theme["fontPart"]),
+                                    height=theme["fontPart"] + 20,
+                                    text=part["name"],
+                                    node_type="part",
+                                    part_index=i,
                                 )
 
                 unit_width = max(400, part_node.width + subpart_offset + 50)  # Dynamic width
                 unit = UnitPosition(
                     unit_index=i,
-                    x=part_x, y=unit_y,
+                    x=part_x,
+                    y=unit_y,
                     width=unit_width,
                     height=unit_height,
                     part_position=part_node,
-                    subpart_positions=subpart_positions
+                    subpart_positions=subpart_positions,
                 )
 
                 # Final overlap check and adjustment using actual subpart bounds
@@ -631,10 +663,10 @@ class FlexibleLayoutCalculator:
                                 subpart.y += adjustment_needed
                             # Update part position to maintain centering
                             if subpart_positions:
-                                first_center = subpart_positions[0].y + (theme['fontSubpart'] + 20) / 2
-                                last_center = subpart_positions[-1].y + (theme['fontSubpart'] + 20) / 2
+                                first_center = subpart_positions[0].y + (theme["fontSubpart"] + 20) / 2
+                                last_center = subpart_positions[-1].y + (theme["fontSubpart"] + 20) / 2
                                 part_center_y = (first_center + last_center) / 2
-                                unit.part_position.y = part_center_y - (theme['fontPart'] + 20) / 2
+                                unit.part_position.y = part_center_y - (theme["fontPart"] + 20) / 2
 
                 units.append(unit)
 
@@ -642,26 +674,30 @@ class FlexibleLayoutCalculator:
                 current_y = next_y
             else:
                 # Part without subparts - dynamic positioning
-                part_x = dimensions['padding'] + part_offset
-                part_y = current_y + (theme['fontPart'] + 20) / 2  # Center the part
+                part_x = dimensions["padding"] + part_offset
+                part_y = current_y + (theme["fontPart"] + 20) / 2  # Center the part
 
                 part_node = NodePosition(
-                    x=part_x, y=part_y,
-                    width=self._calculate_text_width(part['name'], theme['fontPart']),
-                    height=theme['fontPart'] + 20,
-                    text=part['name'], node_type='part', part_index=i
+                    x=part_x,
+                    y=part_y,
+                    width=self._calculate_text_width(part["name"], theme["fontPart"]),
+                    height=theme["fontPart"] + 20,
+                    text=part["name"],
+                    node_type="part",
+                    part_index=i,
                 )
 
                 # Dynamic height for unit without subparts
-                unit_height = max(60, theme['fontPart'] + 40)  # Based on font size
+                unit_height = max(60, theme["fontPart"] + 40)  # Based on font size
                 unit_width = max(200, part_node.width + 50)  # Dynamic width
                 unit = UnitPosition(
                     unit_index=i,
-                    x=part_x, y=current_y,
+                    x=part_x,
+                    y=current_y,
                     width=unit_width,
                     height=unit_height,
                     part_position=part_node,
-                    subpart_positions=[]
+                    subpart_positions=[],
                 )
                 units.append(unit)
 
@@ -672,7 +708,7 @@ class FlexibleLayoutCalculator:
                         temp_units.append(units[k])
                     else:
                         # Estimate for remaining units
-                        temp_units.append({'height': unit_height})
+                        temp_units.append({"height": unit_height})
                 unit_spacing = self.calculate_unit_spacing(temp_units)
                 current_y += unit_height + unit_spacing
 
@@ -685,7 +721,7 @@ class FlexibleLayoutCalculator:
 
         # Calculate unit spacing based on actual unit heights
         unit_heights = [unit.height for unit in units]
-        unit_spacing = self.calculate_unit_spacing([{'height': height} for height in unit_heights])
+        unit_spacing = self.calculate_unit_spacing([{"height": height} for height in unit_heights])
 
         # Calculate subpart spacing based on actual subpart counts
         subpart_spacing = 20.0  # Default
@@ -694,7 +730,7 @@ class FlexibleLayoutCalculator:
             for unit in units:
                 if unit.subpart_positions:
                     subpart_spacing = self.calculate_subpart_spacing(
-                        [{'name': 'dummy'} for _ in unit.subpart_positions]
+                        [{"name": "dummy"} for _ in unit.subpart_positions]
                     )
                     break
 
@@ -705,7 +741,7 @@ class FlexibleLayoutCalculator:
             unit_spacing=unit_spacing,
             subpart_spacing=subpart_spacing,
             brace_offset=brace_offset,
-            content_density=content_density
+            content_density=content_density,
         )
 
     def _calculate_text_width(self, text: str, font_size: int) -> float:
@@ -720,7 +756,7 @@ class FlexibleLayoutCalculator:
 
         total_width = 0
         for char in text:
-            char_width = CHAR_WIDTH_CONFIG.get(char, CHAR_WIDTH_CONFIG['default'])
+            char_width = CHAR_WIDTH_CONFIG.get(char, CHAR_WIDTH_CONFIG["default"])
             total_width += char_width * font_size
 
         # Cache the result
@@ -730,4 +766,4 @@ class FlexibleLayoutCalculator:
 
     def _get_font_weight(self, node_type: str) -> str:
         """Get font weight for node type using configuration"""
-        return FONT_WEIGHT_CONFIG.get(node_type, 'normal')
+        return FONT_WEIGHT_CONFIG.get(node_type, "normal")

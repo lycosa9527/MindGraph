@@ -68,10 +68,7 @@ class EmbeddingService:
 
         try:
             # DashScopeEmbeddingClient already normalizes embeddings
-            embeddings = self.embedding_client.embed_texts(
-                texts=texts,
-                text_type="document"
-            )
+            embeddings = self.embedding_client.embed_texts(texts=texts, text_type="document")
             return embeddings
         except Exception as e:
             logger.error("[EmbeddingService] Failed to embed texts: %s", e)

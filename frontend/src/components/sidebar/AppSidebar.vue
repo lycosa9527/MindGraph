@@ -18,13 +18,8 @@ import AppSidebarNav from './AppSidebarNav.vue'
 const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
 
-const {
-  isCollapsed,
-  showLanguageSettingsModal,
-  showLoginModal,
-  showAccountModal,
-  authStore,
-} = sidebar
+const { isCollapsed, showLanguageSettingsModal, showLoginModal, showAccountModal, authStore } =
+  sidebar
 </script>
 
 <template>

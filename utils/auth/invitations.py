@@ -46,9 +46,7 @@ def load_invitation_codes() -> Dict[str, Tuple[str, Optional[datetime]]]:
                 try:
                     expiry = datetime.strptime(parts[2], "%Y-%m-%d")
                 except ValueError:
-                    logger.warning(
-                        "Invalid expiry date for %s: %s", org_code, parts[2]
-                    )
+                    logger.warning("Invalid expiry date for %s: %s", org_code, parts[2])
 
             codes[org_code] = (invitation_code, expiry)
 

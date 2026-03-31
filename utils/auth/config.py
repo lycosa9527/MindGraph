@@ -26,9 +26,7 @@ JWT_ALGORITHM = "HS256"
 JWT_SECRET_REDIS_KEY = "jwt:secret"
 # File path for JWT secret backup (for recovery after Redis flush)
 JWT_SECRET_BACKUP_FILE = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.dirname(__file__))),
-    "data",
-    ".jwt_secret"
+    os.path.dirname(os.path.dirname(os.path.dirname(__file__))), "data", ".jwt_secret"
 )
 
 # Access token: Short-lived (1 hour default), refreshed automatically
@@ -42,11 +40,7 @@ JWT_EXPIRY_HOURS = ACCESS_TOKEN_EXPIRY_MINUTES // 60 if ACCESS_TOKEN_EXPIRY_MINU
 # Reverse Proxy Configuration
 # ============================================================================
 
-TRUSTED_PROXY_IPS = (
-    os.getenv("TRUSTED_PROXY_IPS", "").split(",")
-    if os.getenv("TRUSTED_PROXY_IPS")
-    else []
-)
+TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("TRUSTED_PROXY_IPS") else []
 
 # ============================================================================
 # Authentication Mode Configuration
@@ -57,9 +51,7 @@ AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()
 
 # Enterprise Mode Configuration
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
-ENTERPRISE_DEFAULT_USER_PHONE = os.getenv(
-    "ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com"
-).strip()
+ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()
 
 # Demo Mode Configuration
 DEMO_PASSKEY = os.getenv("DEMO_PASSKEY", "888888").strip()
@@ -72,9 +64,7 @@ PUBLIC_DASHBOARD_PASSKEY = os.getenv("PUBLIC_DASHBOARD_PASSKEY", "123456").strip
 # Bayi Mode Configuration
 # ============================================================================
 
-BAYI_DECRYPTION_KEY = os.getenv(
-    "BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk"
-).strip()
+BAYI_DECRYPTION_KEY = os.getenv("BAYI_DECRYPTION_KEY", "v8IT7XujLPsM7FYuDPRhPtZk").strip()
 BAYI_DEFAULT_ORG_CODE = os.getenv("BAYI_DEFAULT_ORG_CODE", "BAYI-001").strip()
 # Allow 10 seconds clock skew tolerance
 BAYI_CLOCK_SKEW_TOLERANCE = int(os.getenv("BAYI_CLOCK_SKEW_TOLERANCE", "10"))
@@ -126,9 +116,7 @@ def init_bayi_ip_whitelist() -> None:
                 logger.info("Added IP to bayi IP whitelist: %s", ip_entry)
         except ValueError as e:
             if AUTH_MODE == "bayi":
-                logger.warning(
-                    "Invalid IP entry in BAYI_IP_WHITELIST: %s - %s", ip_entry, e
-                )
+                logger.warning("Invalid IP entry in BAYI_IP_WHITELIST: %s - %s", ip_entry, e)
 
     if AUTH_MODE == "bayi":
         if BAYI_IP_WHITELIST:

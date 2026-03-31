@@ -40,20 +40,12 @@ async def vue_favicon():
     """Serve favicon from Vue dist."""
     favicon_path = VUE_DIST_DIR / "favicon.svg"
     if favicon_path.exists():
-        return FileResponse(
-            path=str(favicon_path),
-            media_type="image/svg+xml"
-        )
+        return FileResponse(path=str(favicon_path), media_type="image/svg+xml")
     # Fallback to public folder (dev mode)
     fallback_path = VUE_DIST_DIR.parent / "public" / "favicon.svg"
     if fallback_path.exists():
-        return FileResponse(
-            path=str(fallback_path),
-            media_type="image/svg+xml"
-        )
+        return FileResponse(path=str(fallback_path), media_type="image/svg+xml")
     raise HTTPException(status_code=404, detail="Favicon not found")
-
-
 
 
 @router.get("/", response_class=HTMLResponse)
@@ -247,10 +239,7 @@ async def vue_catch_all(path: str):
                 media_type = "image/x-icon"
 
             logger.info("[Catch-all] Serving file: %s", file_path)
-            return FileResponse(
-                path=str(file_path),
-                media_type=media_type
-            )
+            return FileResponse(path=str(file_path), media_type=media_type)
         # File doesn't exist, return 404
         logger.warning("[Catch-all] File not found: %s (VUE_DIST_DIR: %s)", file_path, VUE_DIST_DIR)
         raise HTTPException(status_code=404, detail=f"File not found: {path}")
@@ -289,11 +278,8 @@ npm run build
             </body>
             </html>
             """,
-            status_code=503
+            status_code=503,
         )
 
     logger.info("Serving Vue SPA index.html from: %s", index_path)
-    return FileResponse(
-        path=str(index_path),
-        media_type="text/html"
-    )
+    return FileResponse(path=str(index_path), media_type="text/html")

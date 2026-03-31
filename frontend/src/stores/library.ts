@@ -104,10 +104,8 @@ export const useLibraryStore = defineStore('library', () => {
         return null
       }
 
-      console.debug(`[LibraryStore] Loaded document ${documentId} from localStorage cache`)
       return entry.document
-    } catch (error) {
-      console.debug('[LibraryStore] Failed to load document from localStorage:', error)
+    } catch {
       return null
     }
   }
@@ -123,9 +121,7 @@ export const useLibraryStore = defineStore('library', () => {
         cachedAt: Date.now(),
       }
       localStorage.setItem(key, JSON.stringify(entry))
-      console.debug(`[LibraryStore] Saved document ${document.id} to localStorage cache`)
-    } catch (error) {
-      console.debug('[LibraryStore] Failed to save document to localStorage:', error)
+    } catch {
       // localStorage might be full or disabled - continue without error
     }
   }

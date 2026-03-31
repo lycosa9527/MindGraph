@@ -16,11 +16,7 @@ from utils.migration.postgresql.schema_helpers import create_table_indexes
 logger = logging.getLogger(__name__)
 
 
-def _drop_orphaned_indexes_for_pending_tables(
-    db_engine: Any,
-    base: Any,
-    missing_tables: Set[str]
-) -> None:
+def _drop_orphaned_indexes_for_pending_tables(db_engine: Any, base: Any, missing_tables: Set[str]) -> None:
     """
     Drop indexes by model name when the target table is still missing.
 
@@ -40,9 +36,7 @@ def _drop_orphaned_indexes_for_pending_tables(
                 table = base.metadata.tables[table_name]
                 for index in table.indexes:
                     quoted_index = quoted_name(index.name, quote=True)
-                    conn.execute(
-                        text(f'DROP INDEX IF EXISTS {quoted_index} CASCADE')
-                    )
+                    conn.execute(text(f"DROP INDEX IF EXISTS {quoted_index} CASCADE"))
 
 
 def _commit_open_transaction(conn: Any) -> None:
@@ -61,15 +55,12 @@ def _verify_orphan_cleanup(conn: Any, table_name: str) -> None:
             AND t.relname = :table_name
             AND c.contype IN ('u', 'p')
         """)
-        result = conn.execute(
-            verify_constraint_query, {"table_name": table_name}
-        )
+        result = conn.execute(verify_constraint_query, {"table_name": table_name})
         remaining_constraints = [row[0] for row in result.fetchall()]
         if remaining_constraints:
             logger.warning(
-                "[DBMigration] Warning: Some constraints still exist "
-                "after drop: %s",
-                ', '.join(remaining_constraints)
+                "[DBMigration] Warning: Some constraints still exist after drop: %s",
+                ", ".join(remaining_constraints),
             )
 
         verify_index_query = text("""
@@ -83,9 +74,8 @@ def _verify_orphan_cleanup(conn: Any, table_name: str) -> None:
         remaining_indexes = [row[0] for row in result.fetchall()]
         if remaining_indexes:
             logger.warning(
-                "[DBMigration] Warning: Some indexes still exist after "
-                "drop: %s",
-                ', '.join(remaining_indexes)
+                "[DBMigration] Warning: Some indexes still exist after drop: %s",
+                ", ".join(remaining_indexes),
             )
     except Exception:
         pass
@@ -102,51 +92,40 @@ def _drop_orphan_unique_pk_constraints(conn: Any, table_name: str) -> None:
             AND t.relname = :table_name
             AND c.contype IN ('u', 'p')
         """)
-        result = conn.execute(
-            constraint_query, {"table_name": table_name}
-        )
+        result = conn.execute(constraint_query, {"table_name": table_name})
         constraints = result.fetchall()
 
         if constraints:
             logger.info(
-                "[DBMigration] Found %d constraint(s) for "
-                "table '%s': %s",
+                "[DBMigration] Found %d constraint(s) for table '%s': %s",
                 len(constraints),
                 table_name,
-                ', '.join([c[0] for c in constraints])
+                ", ".join([c[0] for c in constraints]),
             )
 
         for constraint_name, constraint_type in constraints:
             try:
                 quoted_table = quoted_name(table_name, quote=True)
-                quoted_constraint = quoted_name(
-                    constraint_name, quote=True
-                )
-                conn.execute(text(
-                    f'ALTER TABLE {quoted_table} '
-                    f'DROP CONSTRAINT IF EXISTS {quoted_constraint} '
-                    f'CASCADE'
-                ))
+                quoted_constraint = quoted_name(constraint_name, quote=True)
+                conn.execute(text(f"ALTER TABLE {quoted_table} DROP CONSTRAINT IF EXISTS {quoted_constraint} CASCADE"))
                 logger.info(
                     "[DBMigration] Dropped constraint: %s (type: %s)",
                     constraint_name,
-                    ('UNIQUE' if constraint_type == 'u'
-                     else 'PRIMARY KEY')
+                    ("UNIQUE" if constraint_type == "u" else "PRIMARY KEY"),
                 )
             except Exception as drop_error:
                 error_msg = str(drop_error).lower()
                 if "does not exist" not in error_msg:
                     logger.warning(
-                        "[DBMigration] Could not drop constraint "
-                        "%s: %s",
+                        "[DBMigration] Could not drop constraint %s: %s",
                         constraint_name,
-                        drop_error
+                        drop_error,
                     )
     except Exception as constraint_error:
         logger.debug(
             "[DBMigration] Could not query constraints for %s: %s",
             table_name,
-            constraint_error
+            constraint_error,
         )
 
 
@@ -154,33 +133,20 @@ def _drop_orphan_indexes_from_model(conn: Any, table: Any) -> None:
     for index in table.indexes:
         try:
             quoted_index = quoted_name(index.name, quote=True)
-            conn.execute(
-                text(f'DROP INDEX IF EXISTS {quoted_index} CASCADE')
-            )
-            logger.info(
-                "[DBMigration] Dropped orphaned index: %s",
-                index.name
-            )
+            conn.execute(text(f"DROP INDEX IF EXISTS {quoted_index} CASCADE"))
+            logger.info("[DBMigration] Dropped orphaned index: %s", index.name)
         except Exception as drop_error:
             error_msg = str(drop_error).lower()
             if "does not exist" not in error_msg:
-                logger.debug(
-                    "[DBMigration] Could not drop index %s: %s",
-                    index.name,
-                    drop_error
-                )
+                logger.debug("[DBMigration] Could not drop index %s: %s", index.name, drop_error)
 
 
-def _drop_orphan_indexes_from_pg_class(
-    conn: Any, table_name: str, table: Any
-) -> None:
+def _drop_orphan_indexes_from_pg_class(conn: Any, table_name: str, table: Any) -> None:
     try:
         model_index_names_list = [idx.name for idx in table.indexes]
         if not model_index_names_list:
             return
-        index_names_placeholders = ', '.join(
-            [f"'{name}'" for name in model_index_names_list]
-        )
+        index_names_placeholders = ", ".join([f"'{name}'" for name in model_index_names_list])
         pattern = f"ix_{table_name}_%"
 
         orphaned_query = text(f"""
@@ -194,107 +160,71 @@ def _drop_orphan_indexes_from_pg_class(
                 OR c.relname IN ({index_names_placeholders})
             )
         """)
-        result = conn.execute(
-            orphaned_query,
-            {"pattern": pattern}
-        )
+        result = conn.execute(orphaned_query, {"pattern": pattern})
         found_indexes = [row[0] for row in result.fetchall()]
 
         if found_indexes:
             logger.info(
-                "[DBMigration] Found %d additional orphaned "
-                "index(es): %s",
+                "[DBMigration] Found %d additional orphaned index(es): %s",
                 len(found_indexes),
-                ', '.join(found_indexes)
+                ", ".join(found_indexes),
             )
 
         for index_name in found_indexes:
             try:
                 quoted_index = quoted_name(index_name, quote=True)
-                conn.execute(
-                    text(f'DROP INDEX IF EXISTS {quoted_index} '
-                         f'CASCADE')
-                )
-                logger.info(
-                    "[DBMigration] Dropped orphaned index from "
-                    "pg_class: %s",
-                    index_name
-                )
+                conn.execute(text(f"DROP INDEX IF EXISTS {quoted_index} CASCADE"))
+                logger.info("[DBMigration] Dropped orphaned index from pg_class: %s", index_name)
             except Exception as drop_error:
                 error_msg = str(drop_error).lower()
                 if "does not exist" not in error_msg:
                     logger.debug(
-                        "[DBMigration] Could not drop index %s: "
-                        "%s",
+                        "[DBMigration] Could not drop index %s: %s",
                         index_name,
-                        drop_error
+                        drop_error,
                     )
     except Exception as query_error:
         logger.debug(
-            "[DBMigration] Could not query pg_class for orphaned "
-            "indexes: %s",
-            query_error
+            "[DBMigration] Could not query pg_class for orphaned indexes: %s",
+            query_error,
         )
 
 
-def _drop_orphan_constraints_and_indexes_in_tx(
-    conn: Any, table_name: str, table: Any
-) -> None:
+def _drop_orphan_constraints_and_indexes_in_tx(conn: Any, table_name: str, table: Any) -> None:
     _drop_orphan_unique_pk_constraints(conn, table_name)
     _drop_orphan_indexes_from_model(conn, table)
     _drop_orphan_indexes_from_pg_class(conn, table_name, table)
 
 
 def _recreate_missing_tables_after_orphan_cleanup(
-    db_engine: Any,
-    base: Any,
-    missing_tables: Set[str]
+    db_engine: Any, base: Any, missing_tables: Set[str]
 ) -> Tuple[int, int]:
-    tables_to_create = [
-        base.metadata.tables[table_name]
-        for table_name in missing_tables
-    ]
+    tables_to_create = [base.metadata.tables[table_name] for table_name in missing_tables]
 
-    _drop_orphaned_indexes_for_pending_tables(
-        db_engine, base, missing_tables
-    )
+    _drop_orphaned_indexes_for_pending_tables(db_engine, base, missing_tables)
 
     with db_engine.connect() as create_conn:
         with create_conn.begin():
-            base.metadata.create_all(
-                bind=create_conn,
-                tables=tables_to_create,
-                checkfirst=True
-            )
+            base.metadata.create_all(bind=create_conn, tables=tables_to_create, checkfirst=True)
     tables_created = len(missing_tables)
-    logger.info(
-        "[DBMigration] Created %d missing table(s) (after cleanup)",
-        tables_created
-    )
+    logger.info("[DBMigration] Created %d missing table(s) (after cleanup)", tables_created)
 
     indexes_created_total = 0
     with db_engine.connect() as index_conn:
         for table_name in missing_tables:
             table = base.metadata.tables[table_name]
-            indexes_created = create_table_indexes(
-                index_conn, table_name, table
-            )
+            indexes_created = create_table_indexes(index_conn, table_name, table)
             indexes_created_total += indexes_created
             if indexes_created > 0:
                 logger.info(
-                    "[DBMigration] Created %d index(es) for "
-                    "table '%s'",
+                    "[DBMigration] Created %d index(es) for table '%s'",
                     indexes_created,
-                    table_name
+                    table_name,
                 )
     return tables_created, indexes_created_total
 
 
-def create_missing_tables(
-    db_engine: Any,
-    base: Any,
-    missing_tables: Set[str]
-) -> Tuple[int, int, bool]:
+def create_missing_tables(db_engine: Any, base: Any, missing_tables: Set[str]) -> Tuple[int, int, bool]:
     """
     Create missing tables and handle orphaned indexes/constraints.
 
@@ -313,7 +243,7 @@ def create_missing_tables(
     logger.info(
         "[DBMigration] Found %d missing table(s): %s",
         len(missing_tables),
-        ', '.join(sorted(missing_tables))
+        ", ".join(sorted(missing_tables)),
     )
 
     tables_created = 0
@@ -323,23 +253,11 @@ def create_missing_tables(
     try:
         # Create missing tables using SQLAlchemy
         # Use checkfirst=True to avoid errors if table already exists
-        tables_to_create = [
-            base.metadata.tables[table_name]
-            for table_name in missing_tables
-        ]
-        _drop_orphaned_indexes_for_pending_tables(
-            db_engine, base, missing_tables
-        )
-        base.metadata.create_all(
-            bind=db_engine,
-            tables=tables_to_create,
-            checkfirst=True
-        )
+        tables_to_create = [base.metadata.tables[table_name] for table_name in missing_tables]
+        _drop_orphaned_indexes_for_pending_tables(db_engine, base, missing_tables)
+        base.metadata.create_all(bind=db_engine, tables=tables_to_create, checkfirst=True)
         tables_created = len(missing_tables)
-        logger.info(
-            "[DBMigration] Created %d missing table(s)",
-            tables_created
-        )
+        logger.info("[DBMigration] Created %d missing table(s)", tables_created)
 
         # Create indexes for newly created tables
         with db_engine.connect() as conn:
@@ -351,40 +269,32 @@ def create_missing_tables(
                     logger.info(
                         "[DBMigration] Created %d index(es) for table '%s'",
                         indexes_created,
-                        table_name
+                        table_name,
                     )
 
     except ProgrammingError as e:
         # Handle partial table creation (e.g., indexes exist but table doesn't)
         error_msg = str(e).lower()
-        if "duplicate" in error_msg and ("index" in error_msg or
-                                          "relation" in error_msg):
+        if "duplicate" in error_msg and ("index" in error_msg or "relation" in error_msg):
             logger.warning(
                 "[DBMigration] Partial table creation detected "
                 "(orphaned indexes exist). Checking if tables are empty "
                 "and recreating if needed..."
             )
             try:
-                tables_created, indexes_created_total, migration_success = (
-                    _handle_orphaned_objects(
-                        db_engine, base, missing_tables
-                    )
+                tables_created, indexes_created_total, migration_success = _handle_orphaned_objects(
+                    db_engine, base, missing_tables
                 )
             except Exception as retry_error:
                 logger.error(
-                    "[DBMigration] Error creating tables after handling "
-                    "orphaned indexes: %s",
+                    "[DBMigration] Error creating tables after handling orphaned indexes: %s",
                     retry_error,
-                    exc_info=True
+                    exc_info=True,
                 )
                 migration_success = False
         else:
             # Non-index-related ProgrammingError
-            logger.error(
-                "[DBMigration] Error creating missing tables: %s",
-                e,
-                exc_info=True
-            )
+            logger.error("[DBMigration] Error creating missing tables: %s", e, exc_info=True)
             migration_success = False
 
     except Exception as e:
@@ -392,18 +302,14 @@ def create_missing_tables(
         logger.error(
             "[DBMigration] Unexpected error creating missing tables: %s",
             e,
-            exc_info=True
+            exc_info=True,
         )
         migration_success = False
 
     return tables_created, indexes_created_total, migration_success
 
 
-def _handle_orphaned_objects(
-    db_engine: Any,
-    base: Any,
-    missing_tables: Set[str]
-) -> Tuple[int, int, bool]:
+def _handle_orphaned_objects(db_engine: Any, base: Any, missing_tables: Set[str]) -> Tuple[int, int, bool]:
     """
     Handle orphaned constraints and indexes, then recreate tables.
 
@@ -427,18 +333,16 @@ def _handle_orphaned_objects(
             # This is safe for dev environments
             if table_name in existing_tables:
                 logger.info(
-                    "[DBMigration] Table '%s' exists. "
-                    "Dropping and recreating...",
-                    table_name
+                    "[DBMigration] Table '%s' exists. Dropping and recreating...",
+                    table_name,
                 )
                 tables_to_recreate.append(table_name)
 
             # If table doesn't exist, drop any orphaned constraints/indexes
             if table_name not in existing_tables:
                 logger.info(
-                    "[DBMigration] Table '%s' doesn't exist. Cleaning up "
-                    "orphaned constraints and indexes...",
-                    table_name
+                    "[DBMigration] Table '%s' doesn't exist. Cleaning up orphaned constraints and indexes...",
+                    table_name,
                 )
                 _cleanup_orphaned_objects(conn, table_name, table)
 
@@ -448,18 +352,13 @@ def _handle_orphaned_objects(
                 for table_name in tables_to_recreate:
                     try:
                         quoted_table = quoted_name(table_name, quote=True)
-                        conn.execute(
-                            text(f'DROP TABLE IF EXISTS {quoted_table} CASCADE')
-                        )
-                        logger.info(
-                            "[DBMigration] Dropped table: %s",
-                            table_name
-                        )
+                        conn.execute(text(f"DROP TABLE IF EXISTS {quoted_table} CASCADE"))
+                        logger.info("[DBMigration] Dropped table: %s", table_name)
                     except Exception as drop_error:
                         logger.error(
                             "[DBMigration] Could not drop table '%s': %s",
                             table_name,
-                            drop_error
+                            drop_error,
                         )
                         # Remove from missing_tables if drop failed
                         if table_name in missing_tables:
@@ -470,16 +369,11 @@ def _handle_orphaned_objects(
         indexes_created_total = 0
 
         if missing_tables:
-            tables_created, indexes_created_total = (
-                _recreate_missing_tables_after_orphan_cleanup(
-                    db_engine, base, missing_tables
-                )
+            tables_created, indexes_created_total = _recreate_missing_tables_after_orphan_cleanup(
+                db_engine, base, missing_tables
             )
         else:
-            logger.info(
-                "[DBMigration] All tables already exist "
-                "(some were empty and recreated)"
-            )
+            logger.info("[DBMigration] All tables already exist (some were empty and recreated)")
 
         return tables_created, indexes_created_total, True
 
@@ -495,9 +389,7 @@ def _cleanup_orphaned_objects(conn: Any, table_name: str, table: Any) -> None:
     """
     try:
         with conn.begin():
-            _drop_orphan_constraints_and_indexes_in_tx(
-                conn, table_name, table
-            )
+            _drop_orphan_constraints_and_indexes_in_tx(conn, table_name, table)
         _verify_orphan_cleanup(conn, table_name)
         _commit_open_transaction(conn)
     except Exception as cleanup_error:
@@ -505,5 +397,5 @@ def _cleanup_orphaned_objects(conn: Any, table_name: str, table: Any) -> None:
             "[DBMigration] Error cleaning up orphaned indexes for %s: %s",
             table_name,
             cleanup_error,
-            exc_info=True
+            exc_info=True,
         )

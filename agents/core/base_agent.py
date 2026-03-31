@@ -1,6 +1,7 @@
 """
 base agent module.
 """
+
 from abc import ABC, abstractmethod
 from typing import Any, Dict, Tuple
 import logging
@@ -8,11 +9,11 @@ import logging
 from dotenv import load_dotenv
 
 
-
 # Load environment variables for logging configuration
 load_dotenv()
 
 logger = logging.getLogger(__name__)
+
 
 class BaseAgent(ABC):
     """
@@ -22,14 +23,14 @@ class BaseAgent(ABC):
     specialized agents must implement.
     """
 
-    def __init__(self, model='qwen'):
+    def __init__(self, model="qwen"):
         """
         Initialize the base agent.
 
         Args:
             model (str): LLM model to use ('qwen', 'deepseek', 'kimi'). Defaults to 'qwen'.
         """
-        self.language = 'zh'
+        self.language = "zh"
         self.model = model  # Store model for this agent instance
         self.logger = logger
 
@@ -37,11 +38,11 @@ class BaseAgent(ABC):
     async def generate_graph(
         self,
         user_prompt: str,
-        language: str = 'zh',
+        language: str = "zh",
         dimension_preference: str | None = None,
         fixed_dimension: str | None = None,
         dimension_only_mode: bool | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> Dict[str, Any]:
         """
         Generate a graph specification from user prompt.
@@ -75,8 +76,8 @@ class BaseAgent(ABC):
         if not output:
             return False, "Empty output"
 
-        if isinstance(output, dict) and output.get('error'):
-            return False, output.get('error', 'Unknown error')
+        if isinstance(output, dict) and output.get("error"):
+            return False, output.get("error", "Unknown error")
 
         return True, ""
 

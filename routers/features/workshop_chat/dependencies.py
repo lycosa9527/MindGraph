@@ -71,10 +71,7 @@ def access_channel(
     if channel.channel_type == "announce":
         return channel
 
-    if (
-        channel.organization_id != current_user.organization_id
-        and not is_admin(current_user)
-    ):
+    if channel.organization_id != current_user.organization_id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Not your organization",
@@ -82,7 +79,9 @@ def access_channel(
 
     if channel.channel_type == "private":
         if not channel_service.is_channel_member(
-            db, channel_id, current_user.id,
+            db,
+            channel_id,
+            current_user.id,
         ) and not is_admin(current_user):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
@@ -168,10 +167,7 @@ def require_channel_manager(
             )
         return
 
-    if (
-        channel.organization_id != current_user.organization_id
-        and not is_admin(current_user)
-    ):
+    if channel.organization_id != current_user.organization_id and not is_admin(current_user):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Permission denied",

@@ -55,11 +55,7 @@ class LogStreamer:
         self.max_lines_per_second = max_lines_per_second
 
         # Log file patterns (base names - will resolve to timestamped files)
-        self.log_files = {
-            'app': 'app',
-            'uvicorn': 'uvicorn.log',
-            'error': 'error.log'
-        }
+        self.log_files = {"app": "app", "uvicorn": "uvicorn.log", "error": "error.log"}
 
         logger.info("LogStreamer initialized for directory: %s", self.log_dir)
 
@@ -74,7 +70,7 @@ class LogStreamer:
             Path to the most recent log file, or None if not found
         """
         # Handle both 'app' and 'app.log' formats
-        if base_name.endswith('.log'):
+        if base_name.endswith(".log"):
             base_name = base_name[:-4]
 
         # Pattern: base_name.YYYY-MM-DD_HH-MM-SS.log
@@ -82,7 +78,7 @@ class LogStreamer:
 
         try:
             for filename in self.log_dir.iterdir():
-                if filename.is_file() and filename.name.startswith(base_name + '.') and filename.name.endswith('.log'):
+                if filename.is_file() and filename.name.startswith(base_name + ".") and filename.name.endswith(".log"):
                     # Extract timestamp from filename: base_name.YYYY-MM-DD_HH-MM-SS.log
                     try:
                         # Get modification time as fallback, but prefer filename timestamp
@@ -101,10 +97,7 @@ class LogStreamer:
         return None
 
     async def tail_logs(
-        self,
-        source: str = 'app',
-        follow: bool = True,
-        max_lines: int = 1000
+        self, source: str = "app", follow: bool = True, max_lines: int = 1000
     ) -> AsyncGenerator[Dict, None]:
         """
         Tail a log file and yield parsed log entries.
@@ -117,47 +110,37 @@ class LogStreamer:
         Yields:
             Dict with parsed log data: {timestamp, level, module, message}
         """
-        if source == 'all':
+        if source == "all":
             # Stream from all log sources
             async for entry in self._tail_all_logs(follow, max_lines):
                 yield entry
         else:
             # Stream from single source
-            base_name = self.log_files.get(source, 'app')
+            base_name = self.log_files.get(source, "app")
             log_file = self._find_latest_log_file(base_name)
 
             if log_file is None:
                 logger.warning("Log file not found for source '%s' (base: %s)", source, base_name)
                 yield {
-                    'timestamp': datetime.now().isoformat(),
-                    'level': 'WARNING',
-                    'module': 'LogStreamer',
-                    'message': f'Log file not found for source: {source}',
-                    'source': source
+                    "timestamp": datetime.now().isoformat(),
+                    "level": "WARNING",
+                    "module": "LogStreamer",
+                    "message": f"Log file not found for source: {source}",
+                    "source": source,
                 }
                 return
 
             async for entry in self._tail_file(log_file, follow, max_lines, source):
                 yield entry
 
-    async def _tail_all_logs(
-        self,
-        follow: bool,
-        max_lines: int
-    ) -> AsyncGenerator[Dict, None]:
+    async def _tail_all_logs(self, follow: bool, max_lines: int) -> AsyncGenerator[Dict, None]:
         """Tail all log sources and merge streams."""
         # For simplicity, just tail app.log (primary log)
         # In production, could use asyncio.gather to tail multiple files
-        async for entry in self.tail_logs('app', follow, max_lines):
+        async for entry in self.tail_logs("app", follow, max_lines):
             yield entry
 
-    async def _tail_file(
-        self,
-        log_file: Path,
-        follow: bool,
-        max_lines: int,
-        source: str
-    ) -> AsyncGenerator[Dict, None]:
+    async def _tail_file(self, log_file: Path, follow: bool, max_lines: int, source: str) -> AsyncGenerator[Dict, None]:
         """
         Tail a single log file.
 
@@ -178,7 +161,7 @@ class LogStreamer:
             return
 
         try:
-            async with aiofiles.open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+            async with aiofiles.open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                 # Seek to end if following, otherwise read from start
                 if follow:
                     await f.seek(0, 2)  # Seek to end
@@ -233,15 +216,22 @@ class LogStreamer:
 
                                 if current_pos > file_size:
                                     # File was rotated, reopen
-                                    logger.info("Log rotation detected for %s, reopening...", log_file)
+                                    logger.info(
+                                        "Log rotation detected for %s, reopening...",
+                                        log_file,
+                                    )
                                     break  # Exit and let caller handle reconnection
 
                                 # Check if a newer timestamped file exists (for timestamped rotation)
-                                base_name = self.log_files.get(source, 'app')
+                                base_name = self.log_files.get(source, "app")
                                 latest_file = self._find_latest_log_file(base_name)
                                 if latest_file and latest_file != log_file:
                                     # New timestamped file created, switch to it
-                                    logger.info("New log file detected: %s, switching from %s", latest_file, log_file)
+                                    logger.info(
+                                        "New log file detected: %s, switching from %s",
+                                        latest_file,
+                                        log_file,
+                                    )
                                     break  # Exit and let caller handle reconnection
                             except Exception as e:
                                 logger.error("Error checking file rotation: %s", e)
@@ -249,23 +239,19 @@ class LogStreamer:
         except Exception as e:
             logger.error("Error tailing log file %s: %s", log_file, e)
             yield {
-                'timestamp': datetime.now().isoformat(),
-                'level': 'ERROR',
-                'module': 'LogStreamer',
-                'message': 'Error reading log file: %s' % str(e),
-                'source': source
+                "timestamp": datetime.now().isoformat(),
+                "level": "ERROR",
+                "module": "LogStreamer",
+                "message": f"Error reading log file: {e}",
+                "source": source,
             }
 
     async def _tail_file_sync(
-        self,
-        log_file: Path,
-        follow: bool,
-        max_lines: int,
-        source: str
+        self, log_file: Path, follow: bool, max_lines: int, source: str
     ) -> AsyncGenerator[Dict, None]:
         """Synchronous fallback for tailing files."""
         try:
-            with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+            with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                 if follow:
                     f.seek(0, 2)  # Seek to end
                 else:
@@ -290,11 +276,11 @@ class LogStreamer:
         except Exception as e:
             logger.error("Error tailing log file %s: %s", log_file, e)
             yield {
-                'timestamp': datetime.now().isoformat(),
-                'level': 'ERROR',
-                'module': 'LogStreamer',
-                'message': 'Error reading log file: %s' % str(e),
-                'source': source
+                "timestamp": datetime.now().isoformat(),
+                "level": "ERROR",
+                "module": "LogStreamer",
+                "message": f"Error reading log file: {e}",
+                "source": source,
             }
 
     def parse_log_line(self, line: str, source: str) -> Optional[Dict]:
@@ -313,47 +299,47 @@ class LogStreamer:
         Returns:
             Dict with timestamp, level, module, message or None if can't parse
         """
-        if not line or line.strip() == '':
+        if not line or line.strip() == "":
             return None
 
         # Try to parse Uvicorn-style format: [HH:MM:SS] LEVEL | MODULE | Message
-        uvicorn_pattern = r'^\[(\d{2}:\d{2}:\d{2})\]\s+(\w+)\s+\|\s+(\w+)\s+\|\s+(.+)$'
+        uvicorn_pattern = r"^\[(\d{2}:\d{2}:\d{2})\]\s+(\w+)\s+\|\s+(\w+)\s+\|\s+(.+)$"
         match = re.match(uvicorn_pattern, line)
 
         if match:
             time_str, level, module, message = match.groups()
             return {
-                'timestamp': f"{datetime.now().strftime('%Y-%m-%d')} {time_str}",
-                'level': level.strip(),
-                'module': module.strip(),
-                'message': message.strip(),
-                'source': source,
-                'raw': line
+                "timestamp": f"{datetime.now().strftime('%Y-%m-%d')} {time_str}",
+                "level": level.strip(),
+                "module": module.strip(),
+                "message": message.strip(),
+                "source": source,
+                "raw": line,
             }
 
         # Try Python logging format: LEVEL:module:message
-        python_pattern = r'^(\w+):([^:]+):(.+)$'
+        python_pattern = r"^(\w+):([^:]+):(.+)$"
         match = re.match(python_pattern, line)
 
         if match:
             level, module, message = match.groups()
             return {
-                'timestamp': datetime.now().isoformat(),
-                'level': level.strip(),
-                'module': module.strip(),
-                'message': message.strip(),
-                'source': source,
-                'raw': line
+                "timestamp": datetime.now().isoformat(),
+                "level": level.strip(),
+                "module": module.strip(),
+                "message": message.strip(),
+                "source": source,
+                "raw": line,
             }
 
         # Fallback: return as generic log entry
         return {
-            'timestamp': datetime.now().isoformat(),
-            'level': 'INFO',
-            'module': source,
-            'message': line,
-            'source': source,
-            'raw': line
+            "timestamp": datetime.now().isoformat(),
+            "level": "INFO",
+            "module": source,
+            "message": line,
+            "source": source,
+            "raw": line,
         }
 
     def get_log_files(self) -> List[Dict]:
@@ -368,40 +354,39 @@ class LogStreamer:
         try:
             for name, base_name in self.log_files.items():
                 # For timestamped files (like 'app'), find the latest one
-                if name == 'app':
+                if name == "app":
                     log_path = self._find_latest_log_file(base_name)
                     if log_path:
                         stat = log_path.stat()
-                        log_files.append({
-                            'name': name,
-                            'filename': log_path.name,
-                            'path': str(log_path),
-                            'size_bytes': stat.st_size,
-                            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                        })
+                        log_files.append(
+                            {
+                                "name": name,
+                                "filename": log_path.name,
+                                "path": str(log_path),
+                                "size_bytes": stat.st_size,
+                                "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                            }
+                        )
                 else:
                     # For non-timestamped files, use direct path
                     log_path = self.log_dir / base_name
                     if log_path.exists():
                         stat = log_path.stat()
-                        log_files.append({
-                            'name': name,
-                            'filename': base_name,
-                            'path': str(log_path),
-                            'size_bytes': stat.st_size,
-                            'modified': datetime.fromtimestamp(stat.st_mtime).isoformat()
-                        })
+                        log_files.append(
+                            {
+                                "name": name,
+                                "filename": base_name,
+                                "path": str(log_path),
+                                "size_bytes": stat.st_size,
+                                "modified": datetime.fromtimestamp(stat.st_mtime).isoformat(),
+                            }
+                        )
         except Exception as e:
             logger.error("Error listing log files: %s", e)
 
         return log_files
 
-    async def read_log_file(
-        self,
-        source: str = 'app',
-        start_line: int = 0,
-        num_lines: int = 100
-    ) -> List[Dict]:
+    async def read_log_file(self, source: str = "app", start_line: int = 0, num_lines: int = 100) -> List[Dict]:
         """
         Read a range of lines from a log file.
 
@@ -413,7 +398,7 @@ class LogStreamer:
         Returns:
             List of parsed log entries
         """
-        base_name = self.log_files.get(source, 'app')
+        base_name = self.log_files.get(source, "app")
         log_file = self._find_latest_log_file(base_name)
 
         if log_file is None:
@@ -423,14 +408,14 @@ class LogStreamer:
 
         try:
             if aiofiles:
-                async with aiofiles.open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                async with aiofiles.open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                     lines = await f.readlines()
             else:
-                with open(log_file, 'r', encoding='utf-8', errors='ignore') as f:
+                with open(log_file, "r", encoding="utf-8", errors="ignore") as f:
                     lines = f.readlines()
 
             # Get requested range
-            for line in lines[start_line:start_line + num_lines]:
+            for line in lines[start_line : start_line + num_lines]:
                 entry = self.parse_log_line(line.strip(), source)
                 if entry:
                     entries.append(entry)
@@ -439,4 +424,3 @@ class LogStreamer:
             logger.error("Error reading log file %s: %s", log_file, e)
 
         return entries
-

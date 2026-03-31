@@ -1,4 +1,5 @@
 """Bridge map inline recommendation prompts."""
+
 from typing import Any, Dict, List, Optional
 
 from ._common import (
@@ -17,14 +18,14 @@ def build_bridge_dimensions_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for bridge map dimension recommendations."""
-    dimension = (context.get('dimension') or '').strip()
-    pair_texts = context.get('pair_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['bridge_map'][language]
-    dim_types = BRIDGE_DIMENSION_TYPES_ZH if language == 'zh' else BRIDGE_DIMENSION_TYPES_EN
+    dimension = (context.get("dimension") or "").strip()
+    pair_texts = context.get("pair_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["bridge_map"][language]
+    dim_types = BRIDGE_DIMENSION_TYPES_ZH if language == "zh" else BRIDGE_DIMENSION_TYPES_EN
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         dim_ctx = f"当前维度：{dimension}" if dimension else "请推荐类比关系维度"
         prompt = f"""用户正在创建桥型图。{dim_ctx}
 
@@ -40,7 +41,7 @@ def build_bridge_dimensions_prompt(
         if pair_texts:
             prompt += f"""
 
-图中已有类比对：{', '.join(pair_texts)}。请生成更聚焦、互补的维度推荐，与已有类比对形成补充，避免重复。"""
+图中已有类比对：{", ".join(pair_texts)}。请生成更聚焦、互补的维度推荐，与已有类比对形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个维度："""
@@ -58,7 +59,7 @@ Generate {count} analogy dimension recommendations. Requirements:
 2. Each dimension concise (2-6 words)
 3. Output only dimension names, one per line, no numbering"""
         if pair_texts:
-            pairs = ', '.join(pair_texts)
+            pairs = ", ".join(pair_texts)
             prompt += (
                 f"\n\nThe diagram already has pairs: {pairs}. "
                 "Generate more focused, complementary dimension recommendations, "
@@ -79,13 +80,13 @@ def build_bridge_pairs_prompt(
     existing: Optional[List[str]] = None,
 ) -> str:
     """Build prompt for bridge map analogy pair recommendations."""
-    dimension = (context.get('dimension') or '').strip()
-    pair_texts = context.get('pair_texts') or []
-    context_desc = context.get('context_desc') or 'General K12 teaching'
-    thinking = THINKING_APPROACH['bridge_map'][language]
+    dimension = (context.get("dimension") or "").strip()
+    pair_texts = context.get("pair_texts") or []
+    context_desc = context.get("context_desc") or "General K12 teaching"
+    thinking = THINKING_APPROACH["bridge_map"][language]
     existing = existing or []
 
-    if language == 'zh':
+    if language == "zh":
         dim_ctx = f"类比维度：{dimension}" if dimension else "请遵循同一类比关系"
         prompt = f"""用户正在创建桥型图。{dim_ctx}
 
@@ -100,7 +101,7 @@ def build_bridge_pairs_prompt(
         if pair_texts:
             prompt += f"""
 
-图中已有类比对：{', '.join(pair_texts)}。请生成更聚焦、互补的类比对推荐，与已有类比对形成补充，避免重复。"""
+图中已有类比对：{", ".join(pair_texts)}。请生成更聚焦、互补的类比对推荐，与已有类比对形成补充，避免重复。"""
         prompt += f"""
 
 生成{count}个类比对："""
@@ -117,7 +118,7 @@ Generate {count} analogy pair recommendations, format "left | right". Requiremen
 3. Each side concise (2-8 words)
 4. Output only "left | right" format, one per line, no numbering"""
         if pair_texts:
-            pairs = ', '.join(pair_texts)
+            pairs = ", ".join(pair_texts)
             prompt += (
                 f"\n\nThe diagram already has pairs: {pairs}. "
                 "Generate more focused, complementary recommendations, avoid repetition."

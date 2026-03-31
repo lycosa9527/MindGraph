@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 import tempfile
 from typing import List
@@ -27,7 +28,7 @@ from services.knowledge.knowledge_space_service import KnowledgeSpaceService
 from tasks.knowledge_space_tasks import (
     process_document_task,
     batch_process_documents_task,
-    update_document_task
+    update_document_task,
 )
 from utils.auth import get_current_user
 
@@ -41,7 +42,7 @@ router = APIRouter()
 async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Upload a document to user's knowledge space.
@@ -65,7 +66,7 @@ async def upload_document(
             file_name=file.filename,
             file_path=tmp_path,
             file_type=file_type,
-            file_size=len(content)
+            file_size=len(content),
         )
 
         # Note: Processing must be triggered manually via /documents/start-processing
@@ -82,17 +83,13 @@ async def upload_document(
             processing_progress=document.processing_progress,
             processing_progress_percent=document.processing_progress_percent or 0,
             created_at=document.created_at.isoformat(),
-            updated_at=document.updated_at.isoformat()
+            updated_at=document.updated_at.isoformat(),
         )
 
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e)) from e
     except Exception as e:
-        logger.error(
-            "[KnowledgeSpaceAPI] Upload failed for user %s: %s",
-            current_user.id,
-            e
-        )
+        logger.error("[KnowledgeSpaceAPI] Upload failed for user %s: %s", current_user.id, e)
         raise HTTPException(status_code=500, detail="Upload failed") from e
 
 
@@ -100,7 +97,7 @@ async def upload_document(
 async def batch_upload_documents(
     files: List[UploadFile] = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Upload multiple documents in a batch.
@@ -122,12 +119,14 @@ async def batch_upload_documents(
                 tmp_paths.append(tmp_path)
 
             file_type = service.processor.get_file_type(file.filename)
-            file_infos.append({
-                'file_name': file.filename,
-                'file_path': tmp_path,
-                'file_type': file_type,
-                'file_size': len(content)
-            })
+            file_infos.append(
+                {
+                    "file_name": file.filename,
+                    "file_path": tmp_path,
+                    "file_type": file_type,
+                    "file_size": len(content),
+                }
+            )
 
         # Upload batch
         batch = service.batch_upload_documents(file_infos)
@@ -142,7 +141,7 @@ async def batch_upload_documents(
             completed_count=batch.completed_count,
             failed_count=batch.failed_count,
             created_at=batch.created_at.isoformat(),
-            updated_at=batch.updated_at.isoformat()
+            updated_at=batch.updated_at.isoformat(),
         )
 
     except ValueError as e:
@@ -151,7 +150,7 @@ async def batch_upload_documents(
         logger.error(
             "[KnowledgeSpaceAPI] Batch upload failed for user %s: %s",
             current_user.id,
-            e
+            e,
         )
         raise HTTPException(status_code=500, detail="Batch upload failed") from e
 
@@ -160,17 +159,16 @@ async def batch_upload_documents(
 def get_batch_status(
     batch_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get batch processing status.
 
     Requires authentication. Verifies ownership.
     """
-    batch = db.query(DocumentBatch).filter(
-        DocumentBatch.id == batch_id,
-        DocumentBatch.user_id == current_user.id
-    ).first()
+    batch = (
+        db.query(DocumentBatch).filter(DocumentBatch.id == batch_id, DocumentBatch.user_id == current_user.id).first()
+    )
 
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
@@ -182,15 +180,12 @@ def get_batch_status(
         completed_count=batch.completed_count,
         failed_count=batch.failed_count,
         created_at=batch.created_at.isoformat(),
-        updated_at=batch.updated_at.isoformat()
+        updated_at=batch.updated_at.isoformat(),
     )
 
 
 @router.get("/documents")
-async def list_documents(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+async def list_documents(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     List all documents in user's knowledge space.
 
@@ -212,11 +207,11 @@ async def list_documents(
                 processing_progress=doc.processing_progress,
                 processing_progress_percent=doc.processing_progress_percent or 0,
                 created_at=doc.created_at.isoformat(),
-                updated_at=doc.updated_at.isoformat()
+                updated_at=doc.updated_at.isoformat(),
             )
             for doc in documents
         ],
-        total=len(documents)
+        total=len(documents),
     )
 
 
@@ -224,7 +219,7 @@ async def list_documents(
 async def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get document details.
@@ -246,7 +241,7 @@ async def get_document(
         chunk_count=document.chunk_count,
         error_message=document.error_message,
         created_at=document.created_at.isoformat(),
-        updated_at=document.updated_at.isoformat()
+        updated_at=document.updated_at.isoformat(),
     )
 
 
@@ -255,7 +250,7 @@ async def update_document(
     document_id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Update a document with new file content.
@@ -273,11 +268,7 @@ async def update_document(
             tmp_path = tmp_file.name
 
         # Update document (triggers background reindexing)
-        document = service.update_document(
-            document_id=document_id,
-            file_path=tmp_path,
-            file_name=file.filename
-        )
+        document = service.update_document(document_id=document_id, file_path=tmp_path, file_name=file.filename)
 
         # Trigger background update task
         update_document_task.delay(current_user.id, document.id)
@@ -293,7 +284,7 @@ async def update_document(
             processing_progress=document.processing_progress,
             processing_progress_percent=document.processing_progress_percent or 0,
             created_at=document.created_at.isoformat(),
-            updated_at=document.updated_at.isoformat()
+            updated_at=document.updated_at.isoformat(),
         )
 
     except ValueError as e:
@@ -303,7 +294,7 @@ async def update_document(
             "[KnowledgeSpaceAPI] Update failed for user %s, document %s: %s",
             current_user.id,
             document_id,
-            e
+            e,
         )
         raise HTTPException(status_code=500, detail="Update failed") from e
 
@@ -312,7 +303,7 @@ async def update_document(
 async def delete_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a document and all associated data.
@@ -331,7 +322,7 @@ async def delete_document(
             "[KnowledgeSpaceAPI] Delete failed for user %s, document %s: %s",
             current_user.id,
             document_id,
-            e
+            e,
         )
         raise HTTPException(status_code=500, detail="Delete failed") from e
 
@@ -340,7 +331,7 @@ async def delete_document(
 async def get_document_status(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get document processing status.
@@ -359,7 +350,7 @@ async def get_document_status(
         "error_message": document.error_message,
         "processing_task_id": document.processing_task_id,
         "processing_progress": document.processing_progress,
-        "processing_progress_percent": document.processing_progress_percent
+        "processing_progress_percent": document.processing_progress_percent,
     }
 
 
@@ -369,7 +360,7 @@ def get_document_chunks(
     page: int = 1,
     page_size: int = 20,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get chunks for a document with pagination.
@@ -384,13 +375,16 @@ def get_document_chunks(
 
     # Get chunks with pagination
     offset = (page - 1) * page_size
-    chunks = db.query(DocumentChunk).filter(
-        DocumentChunk.document_id == document_id
-    ).order_by(DocumentChunk.chunk_index).offset(offset).limit(page_size).all()
+    chunks = (
+        db.query(DocumentChunk)
+        .filter(DocumentChunk.document_id == document_id)
+        .order_by(DocumentChunk.chunk_index)
+        .offset(offset)
+        .limit(page_size)
+        .all()
+    )
 
-    total = db.query(DocumentChunk).filter(
-        DocumentChunk.document_id == document_id
-    ).count()
+    total = db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).count()
 
     return {
         "document_id": document_id,
@@ -405,18 +399,15 @@ def get_document_chunks(
                 "text": chunk.text,
                 "start_char": chunk.start_char,
                 "end_char": chunk.end_char,
-                "metadata": chunk.meta_data
+                "metadata": chunk.meta_data,
             }
             for chunk in chunks
-        ]
+        ],
     }
 
 
 @router.post("/documents/start-processing")
-def start_processing(
-    current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
-):
+def start_processing(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
     """
     Manually trigger processing for all pending documents in user's knowledge space.
 
@@ -425,20 +416,17 @@ def start_processing(
     service = KnowledgeSpaceService(db, current_user.id)
     documents = service.get_user_documents()
 
-    pending_docs = [doc for doc in documents if doc.status in ('pending', 'failed')]
+    pending_docs = [doc for doc in documents if doc.status in ("pending", "failed")]
 
     if not pending_docs:
-        return {
-            "message": "No pending documents to process",
-            "processed_count": 0
-        }
+        return {"message": "No pending documents to process", "processed_count": 0}
 
     processed_count = 0
     for doc in pending_docs:
         try:
             # Update status to 'processing' immediately so frontend can show progress
-            doc.status = 'processing'
-            doc.processing_progress = 'queued'
+            doc.status = "processing"
+            doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
             db.commit()
 
@@ -449,12 +437,12 @@ def start_processing(
             logger.error(
                 "[KnowledgeSpaceAPI] Failed to start processing document %s: %s",
                 doc.id,
-                e
+                e,
             )
 
     return {
         "message": f"Started processing {processed_count} document(s)",
-        "processed_count": processed_count
+        "processed_count": processed_count,
     }
 
 
@@ -462,7 +450,7 @@ def start_processing(
 def process_selected_documents(
     request: ProcessSelectedRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Process selected documents by their IDs.
@@ -481,23 +469,17 @@ def process_selected_documents(
         raise HTTPException(status_code=400, detail="No valid documents to process")
 
     # Get documents that can be processed (pending or failed status)
-    docs_to_process = [
-        doc for doc in documents
-        if doc.id in valid_ids and doc.status in ('pending', 'failed')
-    ]
+    docs_to_process = [doc for doc in documents if doc.id in valid_ids and doc.status in ("pending", "failed")]
 
     if not docs_to_process:
-        return {
-            "message": "No pending documents in selection",
-            "processed_count": 0
-        }
+        return {"message": "No pending documents in selection", "processed_count": 0}
 
     processed_count = 0
     for doc in docs_to_process:
         try:
             # Update status to 'processing' immediately so frontend can show progress
-            doc.status = 'processing'
-            doc.processing_progress = 'queued'
+            doc.status = "processing"
+            doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
             db.commit()
 
@@ -508,10 +490,10 @@ def process_selected_documents(
             logger.error(
                 "[KnowledgeSpaceAPI] Failed to start processing document %s: %s",
                 doc.id,
-                e
+                e,
             )
 
     return {
         "message": f"Started processing {processed_count} document(s)",
-        "processed_count": processed_count
+        "processed_count": processed_count,
     }

@@ -25,6 +25,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional
 import logging
 
@@ -66,7 +67,7 @@ class SecurityLogger:
         method: str = "password",
         ip: Optional[str] = None,
         phone: Optional[str] = None,
-        org: Optional[str] = None
+        org: Optional[str] = None,
     ):
         """Log successful authentication."""
         # Mask phone for privacy
@@ -79,7 +80,7 @@ class SecurityLogger:
             method=method,
             phone=masked_phone,
             org=org,
-            ip=ip
+            ip=ip,
         )
 
     def auth_failure(
@@ -87,7 +88,7 @@ class SecurityLogger:
         reason: str,
         ip: Optional[str] = None,
         phone: Optional[str] = None,
-        attempts_remaining: Optional[int] = None
+        attempts_remaining: Optional[int] = None,
     ):
         """Log failed authentication attempt."""
         masked_phone = f"{phone[:3]}****{phone[-4:]}" if phone and len(phone) >= 7 else phone
@@ -97,50 +98,31 @@ class SecurityLogger:
             f"Authentication failed: {reason}",
             phone=masked_phone,
             attempts_remaining=attempts_remaining,
-            ip=ip
+            ip=ip,
         )
 
-    def logout(
-        self,
-        user_id: int,
-        ip: Optional[str] = None
-    ):
+    def logout(self, user_id: int, ip: Optional[str] = None):
         """Log user logout."""
-        self._log(
-            logging.INFO,
-            self.LOGOUT,
-            "User logged out",
-            user_id=user_id,
-            ip=ip
-        )
+        self._log(logging.INFO, self.LOGOUT, "User logged out", user_id=user_id, ip=ip)
 
-    def token_refresh(
-        self,
-        user_id: int,
-        ip: Optional[str] = None
-    ):
+    def token_refresh(self, user_id: int, ip: Optional[str] = None):
         """Log token refresh."""
         self._log(
             logging.DEBUG,  # Debug level since this happens frequently
             self.TOKEN_REFRESH,
             "Token refreshed",
             user_id=user_id,
-            ip=ip
+            ip=ip,
         )
 
-    def session_invalidated(
-        self,
-        user_id: int,
-        reason: str = "logout",
-        ip: Optional[str] = None
-    ):
+    def session_invalidated(self, user_id: int, reason: str = "logout", ip: Optional[str] = None):
         """Log session invalidation."""
         self._log(
             logging.INFO,
             self.SESSION_INVALIDATED,
             f"Session invalidated: {reason}",
             user_id=user_id,
-            ip=ip
+            ip=ip,
         )
 
     def rate_limit_exceeded(
@@ -148,7 +130,7 @@ class SecurityLogger:
         identifier: str,
         endpoint: str,
         ip: Optional[str] = None,
-        limit: Optional[int] = None
+        limit: Optional[int] = None,
     ):
         """Log rate limit exceeded."""
         self._log(
@@ -157,7 +139,7 @@ class SecurityLogger:
             f"Rate limit exceeded for {endpoint}",
             identifier=identifier,
             limit=limit,
-            ip=ip
+            ip=ip,
         )
 
     def access_denied(
@@ -165,7 +147,7 @@ class SecurityLogger:
         user_id: Optional[int],
         resource: str,
         reason: str = "insufficient_permissions",
-        ip: Optional[str] = None
+        ip: Optional[str] = None,
     ):
         """Log access denied event."""
         self._log(
@@ -173,7 +155,7 @@ class SecurityLogger:
             self.ACCESS_DENIED,
             f"Access denied to {resource}: {reason}",
             user_id=user_id,
-            ip=ip
+            ip=ip,
         )
 
     def input_validation_failed(
@@ -181,7 +163,7 @@ class SecurityLogger:
         field: str,
         reason: str,
         ip: Optional[str] = None,
-        value_size: Optional[int] = None
+        value_size: Optional[int] = None,
     ):
         """Log input validation failure (potential attack)."""
         self._log(
@@ -189,7 +171,7 @@ class SecurityLogger:
             self.INPUT_VALIDATION_FAILED,
             f"Input validation failed for {field}: {reason}",
             value_size=value_size,
-            ip=ip
+            ip=ip,
         )
 
     def suspicious_activity(
@@ -197,7 +179,7 @@ class SecurityLogger:
         description: str,
         ip: Optional[str] = None,
         user_id: Optional[int] = None,
-        **extra_context
+        **extra_context,
     ):
         """Log suspicious activity for investigation."""
         self._log(
@@ -206,7 +188,7 @@ class SecurityLogger:
             description,
             user_id=user_id,
             ip=ip,
-            **extra_context
+            **extra_context,
         )
 
 

@@ -47,7 +47,7 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
         "total_records": 0,
         "mismatches": [],
         "missing_tables": [],
-        "incomplete_tables": []
+        "incomplete_tables": [],
     }
 
     try:
@@ -66,13 +66,16 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                 sqlite_cursor = sqlite_conn.cursor()
                 sqlite_cursor.execute(
                     "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                    (table_name,)
+                    (table_name,),
                 )
                 table_exists_in_sqlite = sqlite_cursor.fetchone() is not None
 
                 if not table_exists_in_sqlite:
                     # Table doesn't exist in SQLite - skip verification
-                    logger.debug("[Migration] Table %s does not exist in SQLite, skipping", table_name)
+                    logger.debug(
+                        "[Migration] Table %s does not exist in SQLite, skipping",
+                        table_name,
+                    )
                     continue
 
                 # Count SQLite records (table_name is from trusted source, but quote for safety)
@@ -83,15 +86,18 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                 if table_name not in pg_tables:
                     # Table missing in PostgreSQL - CRITICAL ERROR
                     stats["missing_tables"].append(table_name)
-                    stats["mismatches"].append({
-                        "table": table_name,
-                        "sqlite_count": sqlite_count,
-                        "postgresql_count": 0,
-                        "error": "Table missing in PostgreSQL"
-                    })
+                    stats["mismatches"].append(
+                        {
+                            "table": table_name,
+                            "sqlite_count": sqlite_count,
+                            "postgresql_count": 0,
+                            "error": "Table missing in PostgreSQL",
+                        }
+                    )
                     logger.error(
                         "[Migration] CRITICAL: Table %s missing in PostgreSQL (SQLite has %d rows)",
-                        table_name, sqlite_count
+                        table_name,
+                        sqlite_count,
                     )
                     continue
 
@@ -104,19 +110,24 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                 if pg_count < sqlite_count:
                     # PostgreSQL has fewer rows - CRITICAL ERROR
                     stats["incomplete_tables"].append(table_name)
-                    stats["mismatches"].append({
-                        "table": table_name,
-                        "sqlite_count": sqlite_count,
-                        "postgresql_count": pg_count,
-                        "error": (
-                            f"PostgreSQL has {pg_count} rows, SQLite has {sqlite_count} rows "
-                            f"(missing {sqlite_count - pg_count} rows)"
-                        )
-                    })
+                    stats["mismatches"].append(
+                        {
+                            "table": table_name,
+                            "sqlite_count": sqlite_count,
+                            "postgresql_count": pg_count,
+                            "error": (
+                                f"PostgreSQL has {pg_count} rows, SQLite has {sqlite_count} rows "
+                                f"(missing {sqlite_count - pg_count} rows)"
+                            ),
+                        }
+                    )
                     logger.error(
                         "[Migration] CRITICAL: Table %s incomplete in PostgreSQL: "
                         "SQLite=%d, PostgreSQL=%d (missing %d rows)",
-                        table_name, sqlite_count, pg_count, sqlite_count - pg_count
+                        table_name,
+                        sqlite_count,
+                        pg_count,
+                        sqlite_count - pg_count,
                     )
                 elif pg_count > sqlite_count:
                     # PostgreSQL has more rows - acceptable (may have new data)
@@ -125,7 +136,9 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                     logger.info(
                         "[Migration] Table %s verified: SQLite=%d, PostgreSQL=%d "
                         "(PostgreSQL has more rows - acceptable)",
-                        table_name, sqlite_count, pg_count
+                        table_name,
+                        sqlite_count,
+                        pg_count,
                     )
                 else:
                     # Exact match - perfect
@@ -133,18 +146,19 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                     stats["total_records"] += sqlite_count
                     logger.debug(
                         "[Migration] Table %s verified: SQLite=%d, PostgreSQL=%d (match)",
-                        table_name, sqlite_count, pg_count
+                        table_name,
+                        sqlite_count,
+                        pg_count,
                     )
 
             except Exception as e:
                 logger.error(
                     "[Migration] Failed to verify table %s: %s",
-                    table_name, e, exc_info=True
+                    table_name,
+                    e,
+                    exc_info=True,
                 )
-                stats["mismatches"].append({
-                    "table": table_name,
-                    "error": str(e)
-                })
+                stats["mismatches"].append({"table": table_name, "error": str(e)})
 
         sqlite_conn.close()
         pg_engine.dispose()
@@ -155,9 +169,9 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
         # 2. No incomplete tables (PostgreSQL >= SQLite for all tables)
         # 3. No errors
         is_valid = (
-            len(stats["missing_tables"]) == 0 and
-            len(stats["incomplete_tables"]) == 0 and
-            len([m for m in stats["mismatches"] if "error" in m]) == 0
+            len(stats["missing_tables"]) == 0
+            and len(stats["incomplete_tables"]) == 0
+            and len([m for m in stats["mismatches"] if "error" in m]) == 0
         )
 
         if not is_valid:
@@ -165,13 +179,13 @@ def verify_migration(sqlite_path: Path, pg_url: str) -> Tuple[bool, Dict[str, An
                 "[Migration] Verification FAILED: %d missing tables, %d incomplete tables, %d errors",
                 len(stats["missing_tables"]),
                 len(stats["incomplete_tables"]),
-                len([m for m in stats["mismatches"] if "error" in m])
+                len([m for m in stats["mismatches"] if "error" in m]),
             )
         else:
             logger.info(
                 "[Migration] Verification PASSED: %d tables verified, %d total records",
                 stats["tables_migrated"],
-                stats["total_records"]
+                stats["total_records"],
             )
 
         return is_valid, stats
@@ -198,10 +212,10 @@ def create_migration_marker(backup_path: Optional[Path], stats: Dict[str, Any]) 
         marker_data = {
             "migration_completed_at": datetime.now().isoformat(),
             "backup_path": str(backup_path) if backup_path else None,
-            "statistics": stats
+            "statistics": stats,
         }
 
-        with open(MIGRATION_MARKER_FILE, 'w', encoding='utf-8') as f:
+        with open(MIGRATION_MARKER_FILE, "w", encoding="utf-8") as f:
             json.dump(marker_data, f, indent=2)
 
         logger.info("[Migration] Migration marker created: %s", MIGRATION_MARKER_FILE)
@@ -235,10 +249,10 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                 try:
                     # Get primary key column
                     pk_cols = inspector.get_pk_constraint(table_name)
-                    if not pk_cols.get('constrained_columns'):
+                    if not pk_cols.get("constrained_columns"):
                         continue
 
-                    pk_col = pk_cols['constrained_columns'][0]
+                    pk_col = pk_cols["constrained_columns"][0]
 
                     # Get the maximum ID value (use proper identifier quoting)
                     result = conn.execute(text(f'SELECT MAX("{pk_col}") FROM "{table_name}"'))
@@ -248,15 +262,13 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                         # Use pg_get_serial_sequence() to find actual sequence name
                         # This is more reliable than assuming naming convention
                         # pg_get_serial_sequence expects string literals (single quotes), not identifiers
-                        seq_result = conn.execute(text(
-                            f"SELECT pg_get_serial_sequence('{table_name}', '{pk_col}')"
-                        ))
+                        seq_result = conn.execute(text(f"SELECT pg_get_serial_sequence('{table_name}', '{pk_col}')"))
                         sequence_name = seq_result.scalar()
 
                         if sequence_name:
                             # Remove schema prefix if present (e.g., "public.users_id_seq" -> "users_id_seq")
-                            if '.' in sequence_name:
-                                sequence_name = sequence_name.split('.')[-1]
+                            if "." in sequence_name:
+                                sequence_name = sequence_name.split(".")[-1]
 
                             try:
                                 conn.execute(text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)"))
@@ -264,19 +276,24 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                                 sequences_reset += 1
                                 logger.debug(
                                     "[Migration] Reset sequence %s to %d (table: %s)",
-                                    sequence_name, max_id + 1, table_name
+                                    sequence_name,
+                                    max_id + 1,
+                                    table_name,
                                 )
                             except Exception as seq_error:
                                 logger.warning(
                                     "[Migration] Failed to reset sequence %s for table %s: %s",
-                                    sequence_name, table_name, seq_error
+                                    sequence_name,
+                                    table_name,
+                                    seq_error,
                                 )
                                 sequences_failed.append(f"{table_name}.{pk_col}")
                         else:
                             # No sequence found - might be a non-serial primary key
                             logger.debug(
                                 "[Migration] No sequence found for %s.%s (may not be serial)",
-                                table_name, pk_col
+                                table_name,
+                                pk_col,
                             )
 
                 except Exception as e:
@@ -287,7 +304,9 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
         if sequences_failed:
             logger.warning(
                 "[Migration] PostgreSQL sequences reset: %d succeeded, %d failed: %s",
-                sequences_reset, len(sequences_failed), ', '.join(sequences_failed)
+                sequences_reset,
+                len(sequences_failed),
+                ", ".join(sequences_failed),
             )
         else:
             logger.info("[Migration] PostgreSQL sequences reset (%d sequences)", sequences_reset)

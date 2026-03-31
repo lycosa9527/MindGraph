@@ -26,10 +26,7 @@ async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
     """Clear editor state when multi-worker Redis fan-out is enabled."""
     um_leave = getattr(user, "username", None) or f"User {user.id}"
     editors_map = load_editors(code)
-    nodes_with_user = [
-        nid for nid, ed in editors_map.items()
-        if user.id in ed
-    ]
+    nodes_with_user = [nid for nid, ed in editors_map.items() if user.id in ed]
     remove_user_from_all_nodes(code, user.id, editors_map)
     for nid in nodes_with_user:
         await broadcast_to_others(

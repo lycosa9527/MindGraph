@@ -62,15 +62,14 @@ _USER_COLUMN_LIMITS: Dict[str, int] = {
 
 # ── helpers ──────────────────────────────────────────────────────────
 
+
 def _sqlite_tables(conn: sqlite3.Connection) -> Dict[str, int]:
     """Return {table_name: row_count} for every user table in the SQLite db."""
     cur = conn.cursor()
-    cur.execute(
-        "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
-    )
+    cur.execute("SELECT name FROM sqlite_master WHERE type='table' ORDER BY name")
     result: Dict[str, int] = {}
     for (name,) in cur.fetchall():
-        cur.execute(f'SELECT COUNT(*) FROM [{name}]')
+        cur.execute(f"SELECT COUNT(*) FROM [{name}]")
         result[name] = cur.fetchone()[0]
     return result
 
@@ -104,25 +103,24 @@ def _pg_existing_api_keys(pg_engine: Engine) -> Set[str]:
 def _pg_token_usage_keys(pg_engine: Engine) -> Set[str]:
     """Build a set of (user_id, session_id, created_at) strings for dedup."""
     with pg_engine.connect() as conn:
-        rows = conn.execute(text(
-            "SELECT user_id, session_id, created_at FROM token_usage"
-        ))
-        return {
-            f"{r[0]}|{r[1]}|{r[2]}" for r in rows
-        }
+        rows = conn.execute(text("SELECT user_id, session_id, created_at FROM token_usage"))
+        return {f"{r[0]}|{r[1]}|{r[2]}" for r in rows}
 
 
 def _validate_user_column_lengths(
-    values: Dict[str, Any], sq_id: int,
+    values: Dict[str, Any],
+    sq_id: int,
 ) -> bool:
     """Return True if all string values fit within PG column limits."""
     for col, max_len in _USER_COLUMN_LIMITS.items():
         val = values.get(col)
         if val is not None and isinstance(val, str) and len(val) > max_len:
             logger.warning(
-                "[SQLiteMerge] Skipping SQLite user id=%d: "
-                "%s='%s' exceeds VARCHAR(%d)",
-                sq_id, col, val, max_len,
+                "[SQLiteMerge] Skipping SQLite user id=%d: %s='%s' exceeds VARCHAR(%d)",
+                sq_id,
+                col,
+                val,
+                max_len,
             )
             return False
     return True
@@ -131,15 +129,18 @@ def _validate_user_column_lengths(
 def _pg_boolean_columns(pg_engine: Engine, table: str) -> Set[str]:
     """Return the set of column names that are BOOLEAN in PostgreSQL."""
     with pg_engine.connect() as conn:
-        rows = conn.execute(text(
-            "SELECT column_name FROM information_schema.columns "
-            "WHERE table_name = :tbl AND data_type = 'boolean'"
-        ), {"tbl": table})
+        rows = conn.execute(
+            text(
+                "SELECT column_name FROM information_schema.columns WHERE table_name = :tbl AND data_type = 'boolean'"
+            ),
+            {"tbl": table},
+        )
         return {r[0] for r in rows}
 
 
 def _coerce_booleans(
-    values: Dict[str, Any], bool_cols: Set[str],
+    values: Dict[str, Any],
+    bool_cols: Set[str],
 ) -> None:
     """Convert SQLite integer booleans (0/1) to Python bool in-place."""
     for col in bool_cols:
@@ -149,6 +150,7 @@ def _coerce_booleans(
 
 
 # ── SQLite orphan cleanup ────────────────────────────────────────────
+
 
 def cleanup_sqlite_orphans(sqlite_path: Path) -> Dict[str, int]:
     """Delete orphaned records from a SQLite file and return counts."""
@@ -165,19 +167,13 @@ def _cleanup_sqlite_orphans_impl(sq: sqlite3.Connection) -> Dict[str, int]:
     cleaned: Dict[str, int] = {}
 
     cur.execute(
-        "DELETE FROM users "
-        "WHERE organization_id IS NOT NULL "
-        "AND organization_id NOT IN (SELECT id FROM organizations)"
+        "DELETE FROM users WHERE organization_id IS NOT NULL AND organization_id NOT IN (SELECT id FROM organizations)"
     )
     if cur.rowcount > 0:
         cleaned["users_nullified_missing_org"] = cur.rowcount
 
     if "token_usage" in table_names:
-        cur.execute(
-            "DELETE FROM token_usage "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)"
-        )
+        cur.execute("DELETE FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
         if cur.rowcount > 0:
             cleaned["token_usage_deleted_missing_user"] = cur.rowcount
 
@@ -191,9 +187,7 @@ def _cleanup_sqlite_orphans_impl(sq: sqlite3.Connection) -> Dict[str, int]:
 
     if "dashboard_activities" in table_names:
         cur.execute(
-            "DELETE FROM dashboard_activities "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)"
+            "DELETE FROM dashboard_activities WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)"
         )
         if cur.rowcount > 0:
             cleaned["dashboard_deleted_missing_user"] = cur.rowcount
@@ -212,12 +206,14 @@ def _cleanup_sqlite_orphans_impl(sq: sqlite3.Connection) -> Dict[str, int]:
     total = sum(cleaned.values())
     logger.info(
         "[SQLiteMerge] SQLite orphan cleanup: %d records removed (%s)",
-        total, cleaned,
+        total,
+        cleaned,
     )
     return cleaned
 
 
 # ── analyse ──────────────────────────────────────────────────────────
+
 
 def analyze_sqlite(
     sqlite_path: Path,
@@ -264,9 +260,7 @@ def _analyze_impl(
 
     if "token_usage" in table_counts:
         cur.execute(
-            "SELECT COUNT(*) FROM token_usage "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)"
+            "SELECT COUNT(*) FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)"
         )
         orphans["token_usage_missing_user"] = cur.fetchone()[0]
 
@@ -346,6 +340,7 @@ def _analyze_impl(
 
 # ── merge ────────────────────────────────────────────────────────────
 
+
 def merge_sqlite_into_postgres(
     sqlite_path: Path,
     pg_engine: Engine,
@@ -403,51 +398,67 @@ def _merge_impl(
 
     # ── 1. organizations ──
     results["organizations"] = _merge_organizations(
-        sq, pg_engine, org_map, new_org_sq_ids,
+        sq,
+        pg_engine,
+        org_map,
+        new_org_sq_ids,
         bool_cols_cache.get("organizations", set()),
     )
 
     # ── 2. users ──
     results["users"] = _merge_users(
-        sq, pg_engine, user_map, new_user_sq_ids, org_map,
+        sq,
+        pg_engine,
+        user_map,
+        new_user_sq_ids,
+        org_map,
         bool_cols_cache.get("users", set()),
     )
 
     # ── 3. api_keys ──
     if "api_keys" in sq_table_names:
         results["api_keys"] = _merge_api_keys(
-            sq, pg_engine, org_map,
+            sq,
+            pg_engine,
+            org_map,
             bool_cols_cache.get("api_keys", set()),
         )
 
     # ── 4. token_usage ──
     if "token_usage" in sq_table_names:
         results["token_usage"] = _merge_token_usage(
-            sq, pg_engine, user_map, org_map,
+            sq,
+            pg_engine,
+            user_map,
+            org_map,
             bool_cols_cache.get("token_usage", set()),
         )
 
     # ── 5. dashboard_activities ──
     if "dashboard_activities" in sq_table_names:
         results["dashboard_activities"] = _merge_dashboard_activities(
-            sq, pg_engine, user_map,
+            sq,
+            pg_engine,
+            user_map,
             bool_cols_cache.get("dashboard_activities", set()),
         )
 
     # ── 6. update_notifications ──
     if "update_notifications" in sq_table_names:
         results["update_notifications"] = _merge_simple_table(
-            sq, pg_engine, "update_notifications",
+            sq,
+            pg_engine,
+            "update_notifications",
             bool_cols_cache.get("update_notifications", set()),
         )
 
     # ── 7. update_notification_dismissed ──
     if "update_notification_dismissed" in sq_table_names:
-        results["update_notification_dismissed"] = (
-            _merge_update_notification_dismissed(
-                sq, pg_engine, user_map,
-                bool_cols_cache.get("update_notification_dismissed", set()),
-            )
+        results["update_notification_dismissed"] = _merge_update_notification_dismissed(
+            sq,
+            pg_engine,
+            user_map,
+            bool_cols_cache.get("update_notification_dismissed", set()),
         )
 
     # ── reset sequences ──
@@ -464,6 +475,7 @@ def _merge_impl(
 
 # ── per-table merge helpers ──────────────────────────────────────────
 
+
 def _merge_organizations(
     sq: sqlite3.Connection,
     pg_engine: Engine,
@@ -479,9 +491,7 @@ def _merge_organizations(
 
     inserted = 0
     for sq_id in new_org_sq_ids:
-        cur.execute(
-            "SELECT * FROM organizations WHERE id = ?", (sq_id,)
-        )
+        cur.execute("SELECT * FROM organizations WHERE id = ?", (sq_id,))
         row = cur.fetchone()
         if row is None:
             continue
@@ -499,8 +509,7 @@ def _merge_organizations(
 
         with pg_engine.begin() as conn:
             result = conn.execute(
-                text(f'INSERT INTO organizations ({cols_sql}) '
-                     f'VALUES ({placeholders}) RETURNING id'),
+                text(f"INSERT INTO organizations ({cols_sql}) VALUES ({placeholders}) RETURNING id"),
                 values,
             )
             new_pg_id = result.scalar()
@@ -509,7 +518,8 @@ def _merge_organizations(
 
     logger.info(
         "[SQLiteMerge] organizations: inserted=%d, skipped=%d",
-        inserted, len(org_map) - inserted,
+        inserted,
+        len(org_map) - inserted,
     )
     return {"inserted": inserted, "skipped": len(org_map) - inserted}
 
@@ -561,8 +571,7 @@ def _merge_users(
 
         with pg_engine.begin() as conn:
             result = conn.execute(
-                text(f'INSERT INTO users ({cols_sql}) '
-                     f'VALUES ({placeholders}) RETURNING id'),
+                text(f"INSERT INTO users ({cols_sql}) VALUES ({placeholders}) RETURNING id"),
                 values,
             )
             new_pg_id = result.scalar()
@@ -571,7 +580,9 @@ def _merge_users(
 
     logger.info(
         "[SQLiteMerge] users: inserted=%d, skipped=%d, rejected=%d",
-        inserted, len(user_map) - inserted, rejected,
+        inserted,
+        len(user_map) - inserted,
+        rejected,
     )
     return {
         "inserted": inserted,
@@ -612,15 +623,15 @@ def _merge_api_keys(
 
         with pg_engine.begin() as conn:
             conn.execute(
-                text(f'INSERT INTO api_keys ({cols_sql}) '
-                     f'VALUES ({placeholders})'),
+                text(f"INSERT INTO api_keys ({cols_sql}) VALUES ({placeholders})"),
                 values,
             )
             inserted += 1
 
     logger.info(
         "[SQLiteMerge] api_keys: inserted=%d, skipped=%d",
-        inserted, skipped,
+        inserted,
+        skipped,
     )
     return {"inserted": inserted, "skipped": skipped}
 
@@ -677,8 +688,7 @@ def _merge_token_usage(
             cols_sql = ", ".join(f'"{c}"' for c in col_names)
             with pg_engine.begin() as conn:
                 conn.execute(
-                    text(f'INSERT INTO token_usage ({cols_sql}) '
-                         f'VALUES ({placeholders})'),
+                    text(f"INSERT INTO token_usage ({cols_sql}) VALUES ({placeholders})"),
                     batch_values,
                 )
             inserted += len(batch_values)
@@ -687,7 +697,9 @@ def _merge_token_usage(
 
     logger.info(
         "[SQLiteMerge] token_usage: inserted=%d, skipped=%d, orphaned=%d",
-        inserted, skipped, orphaned,
+        inserted,
+        skipped,
+        orphaned,
     )
     return {"inserted": inserted, "skipped": skipped, "orphaned": orphaned}
 
@@ -727,8 +739,7 @@ def _merge_dashboard_activities(
 
         with pg_engine.begin() as conn:
             conn.execute(
-                text(f'INSERT INTO dashboard_activities ({cols_sql}) '
-                     f'VALUES ({placeholders})'),
+                text(f"INSERT INTO dashboard_activities ({cols_sql}) VALUES ({placeholders})"),
                 values,
             )
             inserted += 1
@@ -754,10 +765,7 @@ def _merge_simple_table(
     rows = cur.fetchall()
 
     with pg_engine.connect() as conn:
-        pg_ids = {
-            r[0]
-            for r in conn.execute(text(f'SELECT id FROM "{table_name}"'))
-        }
+        pg_ids = {r[0] for r in conn.execute(text(f'SELECT id FROM "{table_name}"'))}
 
     inserted = 0
     skipped = 0
@@ -775,8 +783,7 @@ def _merge_simple_table(
 
         with pg_engine.begin() as conn:
             conn.execute(
-                text(f'INSERT INTO "{table_name}" ({cols_sql}) '
-                     f'VALUES ({placeholders})'),
+                text(f'INSERT INTO "{table_name}" ({cols_sql}) VALUES ({placeholders})'),
                 values,
             )
             inserted += 1
@@ -821,10 +828,7 @@ def _merge_update_notification_dismissed(
         try:
             with pg_engine.begin() as conn:
                 conn.execute(
-                    text(
-                        f'INSERT INTO update_notification_dismissed '
-                        f'({cols_sql}) VALUES ({placeholders})'
-                    ),
+                    text(f"INSERT INTO update_notification_dismissed ({cols_sql}) VALUES ({placeholders})"),
                     values,
                 )
                 inserted += 1
@@ -836,29 +840,33 @@ def _merge_update_notification_dismissed(
 
 # ── sequence reset ───────────────────────────────────────────────────
 
+
 def _reset_sequences(pg_engine: Engine) -> None:
     """Reset PG serial sequences to max(id)+1 for all merged tables."""
     tables_with_serial = [
-        "organizations", "users", "api_keys", "token_usage",
-        "dashboard_activities", "update_notifications",
+        "organizations",
+        "users",
+        "api_keys",
+        "token_usage",
+        "dashboard_activities",
+        "update_notifications",
         "update_notification_dismissed",
     ]
     with pg_engine.begin() as conn:
         for table in tables_with_serial:
             try:
                 seq_name = f"{table}_id_seq"
-                conn.execute(text(
-                    f"SELECT setval('{seq_name}', "
-                    f"COALESCE((SELECT MAX(id) FROM \"{table}\"), 1))"
-                ))
+                conn.execute(text(f"SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM \"{table}\"), 1))"))
             except Exception as exc:
                 logger.debug(
                     "[SQLiteMerge] Could not reset sequence for %s: %s",
-                    table, exc,
+                    table,
+                    exc,
                 )
 
 
 # ── PG orphan detection ─────────────────────────────────────────────
+
 
 def detect_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
     """Detect orphaned FK references in the current PostgreSQL database."""
@@ -872,9 +880,7 @@ def detect_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
         ),
         (
             "token_usage_missing_user",
-            "SELECT COUNT(*) FROM token_usage "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)",
+            "SELECT COUNT(*) FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
         ),
         (
             "token_usage_missing_org",
@@ -919,9 +925,7 @@ def cleanup_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
         ),
         (
             "token_usage_delete_missing_user",
-            "DELETE FROM token_usage "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)",
+            "DELETE FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
         ),
         (
             "token_usage_nullify_missing_org",
@@ -931,9 +935,7 @@ def cleanup_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
         ),
         (
             "dashboard_delete_missing_user",
-            "DELETE FROM dashboard_activities "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)",
+            "DELETE FROM dashboard_activities WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
         ),
         (
             "dismissed_delete_missing_user",
@@ -951,10 +953,13 @@ def cleanup_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
                     cleaned[label] = affected
                     logger.info(
                         "[OrphanCleanup] %s: %d rows affected",
-                        label, affected,
+                        label,
+                        affected,
                     )
             except Exception as exc:
                 logger.warning(
-                    "[OrphanCleanup] %s failed: %s", label, exc,
+                    "[OrphanCleanup] %s failed: %s",
+                    label,
+                    exc,
                 )
     return cleaned

@@ -17,8 +17,16 @@ import logging
 from typing import Optional
 
 try:
-    from rich.progress import Progress, SpinnerColumn, BarColumn, TextColumn, TimeElapsedColumn, TimeRemainingColumn
+    from rich.progress import (
+        Progress,
+        SpinnerColumn,
+        BarColumn,
+        TextColumn,
+        TimeElapsedColumn,
+        TimeRemainingColumn,
+    )
     from rich.console import Console
+
     RICH_AVAILABLE = True
 except ImportError:
     RICH_AVAILABLE = False
@@ -49,7 +57,7 @@ STAGE_NAMES = {
     STAGE_VERIFY: "Verifying Migration",
     STAGE_MOVE_SQLITE: "Moving SQLite to Backup",
     STAGE_CREATE_MARKER: "Creating Migration Marker",
-    STAGE_COMPLETE: "Complete"
+    STAGE_COMPLETE: "Complete",
 }
 
 TOTAL_STAGES = len(STAGE_NAMES) - 1  # Exclude COMPLETE stage
@@ -93,7 +101,7 @@ class MigrationProgressTracker:
                 TimeElapsedColumn(),
                 TimeRemainingColumn(),
                 console=self.console,
-                expand=True
+                expand=True,
             )
             self.stage_task = None
             self.table_task = None
@@ -111,8 +119,7 @@ class MigrationProgressTracker:
             self.progress.__enter__()
             # Create main stage progress task
             self.stage_task = self.progress.add_task(
-                f"[cyan]Stage: {STAGE_NAMES[STAGE_PREREQUISITES]}",
-                total=TOTAL_STAGES
+                f"[cyan]Stage: {STAGE_NAMES[STAGE_PREREQUISITES]}", total=TOTAL_STAGES
             )
         return self
 
@@ -136,7 +143,7 @@ class MigrationProgressTracker:
             self.progress.update(
                 self.stage_task,
                 completed=stage,
-                description=f"[cyan]Stage: {stage_name} ({stage}/{TOTAL_STAGES})"
+                description=f"[cyan]Stage: {stage_name} ({stage}/{TOTAL_STAGES})",
             )
         else:
             logger.info("[Migration] %s", stage_name)
@@ -160,32 +167,32 @@ class MigrationProgressTracker:
             if self.table_task is None:
                 self.table_task = self.progress.add_task(
                     f"[green]Table: {table_name} ({table_index}/{self.total_tables})",
-                    total=self.total_tables
+                    total=self.total_tables,
                 )
             else:
                 self.progress.update(
                     self.table_task,
                     completed=table_index - 1,
-                    description=f"[green]Table: {table_name} ({table_index}/{self.total_tables})"
+                    description=f"[green]Table: {table_name} ({table_index}/{self.total_tables})",
                 )
 
             # Create record task for this table if it has records
             if total_records > 0:
                 if self.record_task is None:
-                    self.record_task = self.progress.add_task(
-                        f"[yellow]Records: {table_name}",
-                        total=total_records
-                    )
+                    self.record_task = self.progress.add_task(f"[yellow]Records: {table_name}", total=total_records)
                 else:
                     self.progress.reset(
                         self.record_task,
                         total=total_records,
-                        description=f"[yellow]Records: {table_name}"
+                        description=f"[yellow]Records: {table_name}",
                     )
         else:
             logger.info(
                 "[Migration] Migrating table %d/%d: %s (%d records)",
-                table_index, self.total_tables, table_name, total_records
+                table_index,
+                self.total_tables,
+                table_name,
+                total_records,
             )
 
     def update_table_records(self, records_migrated: int) -> None:
@@ -203,7 +210,10 @@ class MigrationProgressTracker:
             progress_pct = (records_migrated / self.current_table_total) * 100
             logger.debug(
                 "[Migration] %s: %d/%d records (%.1f%%)",
-                self.current_table, records_migrated, self.current_table_total, progress_pct
+                self.current_table,
+                records_migrated,
+                self.current_table_total,
+                progress_pct,
             )
 
     def complete_table(self, records_migrated: int) -> None:
@@ -223,7 +233,10 @@ class MigrationProgressTracker:
         else:
             logger.info(
                 "[Migration] ✓ Completed table %d/%d: %s (%d records)",
-                self.current_table_index, self.total_tables, self.current_table, records_migrated
+                self.current_table_index,
+                self.total_tables,
+                self.current_table,
+                records_migrated,
             )
 
     def add_error(self, error_message: str) -> None:
@@ -260,9 +273,9 @@ class MigrationProgressTracker:
                     self.console.print(f"  ... and {len(self.errors) - 10} more")
 
             if stats:
-                verification = stats.get('verification', {})
+                verification = stats.get("verification", {})
                 if verification:
-                    mismatches = verification.get('mismatches', [])
+                    mismatches = verification.get("mismatches", [])
                     if mismatches:
                         self.console.print(f"\n[bold yellow]Verification Mismatches: {len(mismatches)}[/bold yellow]")
         else:
@@ -280,8 +293,8 @@ class MigrationProgressTracker:
                     logger.warning("  ... and %d more", len(self.errors) - 10)
 
             if stats:
-                verification = stats.get('verification', {})
+                verification = stats.get("verification", {})
                 if verification:
-                    mismatches = verification.get('mismatches', [])
+                    mismatches = verification.get("mismatches", [])
                     if mismatches:
                         logger.warning("Verification Mismatches: %d", len(mismatches))

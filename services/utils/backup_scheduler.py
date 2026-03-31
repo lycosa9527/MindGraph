@@ -78,6 +78,7 @@ def _cos_exc_call(exc: Exception, method: str, default: str) -> str:
         return default
     return str(val) if val is not None else default
 
+
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
 # ============================================================================
@@ -132,8 +133,7 @@ def acquire_backup_scheduler_lock() -> bool:
         # Redis is REQUIRED for multi-worker coordination
         # Without Redis, we cannot guarantee only one worker runs backups
         logger.error(
-            "[Backup] Redis unavailable - cannot coordinate backups across workers. "
-            "Backup scheduler disabled."
+            "[Backup] Redis unavailable - cannot coordinate backups across workers. Backup scheduler disabled."
         )
         return False
 
@@ -153,19 +153,21 @@ def acquire_backup_scheduler_lock() -> bool:
             BACKUP_LOCK_KEY,
             _backup_scheduler_lock.worker_lock_id,
             nx=True,  # Only set if not exists
-            ex=BACKUP_LOCK_TTL  # TTL in seconds
+            ex=BACKUP_LOCK_TTL,  # TTL in seconds
         )
 
         if acquired:
-            logger.info("[Backup] Lock acquired by this worker (id=%s)", _backup_scheduler_lock.worker_lock_id)
+            logger.info(
+                "[Backup] Lock acquired by this worker (id=%s)",
+                _backup_scheduler_lock.worker_lock_id,
+            )
             return True
         else:
             # Lock held by another worker - check who
             holder = redis.get(BACKUP_LOCK_KEY)
             logger.debug(
-                "[Backup] Another worker holds the scheduler lock (holder=%s), "
-                "this worker will not run backups",
-                holder
+                "[Backup] Another worker holds the scheduler lock (holder=%s), this worker will not run backups",
+                holder,
             )
             return False
 
@@ -173,7 +175,7 @@ def acquire_backup_scheduler_lock() -> bool:
         # On Redis error, fail safe - do not allow backup to prevent duplicates
         logger.error(
             "[Backup] Lock acquisition failed: %s. Backup scheduler disabled to prevent duplicate backups.",
-            e
+            e,
         )
         return False
 
@@ -209,7 +211,10 @@ def release_backup_scheduler_lock() -> bool:
         result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _backup_scheduler_lock.worker_lock_id)
 
         if result == 1:
-            logger.info("[Backup] Lock released by this worker (id=%s)", _backup_scheduler_lock.worker_lock_id)
+            logger.info(
+                "[Backup] Lock released by this worker (id=%s)",
+                _backup_scheduler_lock.worker_lock_id,
+            )
 
         return result == 1
 
@@ -251,7 +256,13 @@ def refresh_backup_scheduler_lock() -> bool:
             return 0
         end
         """
-        result = redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _backup_scheduler_lock.worker_lock_id, BACKUP_LOCK_TTL)
+        result = redis.eval(
+            lua_script,
+            1,
+            BACKUP_LOCK_KEY,
+            _backup_scheduler_lock.worker_lock_id,
+            BACKUP_LOCK_TTL,
+        )
 
         if result == 1:
             logger.debug("[Backup] Lock refreshed (TTL=%ss)", BACKUP_LOCK_TTL)
@@ -259,7 +270,11 @@ def refresh_backup_scheduler_lock() -> bool:
         else:
             # Lock not held by us - check who holds it
             holder = redis.get(BACKUP_LOCK_KEY)
-            logger.warning("[Backup] Lock lost! Holder: %s, our ID: %s", holder, _backup_scheduler_lock.worker_lock_id)
+            logger.warning(
+                "[Backup] Lock lost! Holder: %s, our ID: %s",
+                holder,
+                _backup_scheduler_lock.worker_lock_id,
+            )
             return False
 
     except Exception as e:
@@ -296,6 +311,7 @@ def is_backup_lock_holder() -> bool:
         # On error, fail safe - do not assume we hold the lock
         logger.warning("[Backup] Error checking lock ownership: %s", e)
         return False
+
 
 # Thread-safe flag to indicate backup is in progress
 _backup_in_progress = threading.Event()
@@ -377,7 +393,7 @@ def _check_disk_space(backup_dir: Path, required_mb: int = 100) -> bool:
             logger.warning(
                 "[Backup] Low disk space: %.1f MB free, %s MB required",
                 free_mb,
-                required_mb
+                required_mb,
             )
             return False
         return True
@@ -413,18 +429,18 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         # Use .dump format (custom format) for better compression and restore options
         # Can also use .sql for plain text, but .dump is more efficient
         if not backup_path.suffix:
-            backup_path = backup_path.with_suffix('.dump')
+            backup_path = backup_path.with_suffix(".dump")
 
         logger.info("[Backup] Starting PostgreSQL backup using pg_dump...")
 
         # Find pg_dump binary
         pg_dump_paths = [
-            '/usr/lib/postgresql/18/bin/pg_dump',
-            '/usr/lib/postgresql/16/bin/pg_dump',
-            '/usr/lib/postgresql/15/bin/pg_dump',
-            '/usr/lib/postgresql/14/bin/pg_dump',
-            '/usr/local/pgsql/bin/pg_dump',
-            '/usr/bin/pg_dump',
+            "/usr/lib/postgresql/18/bin/pg_dump",
+            "/usr/lib/postgresql/16/bin/pg_dump",
+            "/usr/lib/postgresql/15/bin/pg_dump",
+            "/usr/lib/postgresql/14/bin/pg_dump",
+            "/usr/local/pgsql/bin/pg_dump",
+            "/usr/bin/pg_dump",
         ]
 
         pg_dump_binary = None
@@ -436,14 +452,9 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         if not pg_dump_binary:
             # Try to find pg_dump in PATH
             try:
-                result = subprocess.run(
-                    ['which', 'pg_dump'],
-                    capture_output=True,
-                    timeout=2,
-                    check=False
-                )
+                result = subprocess.run(["which", "pg_dump"], capture_output=True, timeout=2, check=False)
                 if result.returncode == 0:
-                    pg_dump_binary = result.stdout.decode('utf-8').strip()
+                    pg_dump_binary = result.stdout.decode("utf-8").strip()
             except Exception as exc:
                 logger.debug("pg_dump binary lookup via which failed: %s", exc)
 
@@ -458,19 +469,20 @@ def backup_postgresql_database(backup_path: Path) -> bool:
         # We use -Fc for better compression and restore flexibility
         cmd = [
             pg_dump_binary,
-            '-Fc',  # Custom format (compressed)
-            '-f', str(backup_path),
+            "-Fc",  # Custom format (compressed)
+            "-f",
+            str(backup_path),
             libpq_database_url(db_url),
         ]
 
-        logger.debug("[Backup] Running: %s", ' '.join(cmd[:3]) + ' [URL]')
+        logger.debug("[Backup] Running: %s", " ".join(cmd[:3]) + " [URL]")
 
         result = subprocess.run(
             cmd,
             capture_output=True,
             timeout=3600,  # 1 hour timeout
             check=False,
-            text=True
+            text=True,
         )
 
         if result.returncode != 0:
@@ -486,7 +498,11 @@ def backup_postgresql_database(backup_path: Path) -> bool:
             return False
 
         size_mb = backup_path.stat().st_size / (1024 * 1024)
-        logger.info("[Backup] PostgreSQL backup created: %s (%.2f MB)", backup_path.name, size_mb)
+        logger.info(
+            "[Backup] PostgreSQL backup created: %s (%.2f MB)",
+            backup_path.name,
+            size_mb,
+        )
         return True
 
     except subprocess.TimeoutExpired:
@@ -520,12 +536,12 @@ def verify_backup(backup_path: Path) -> bool:
     # PostgreSQL backup verification using pg_restore --list (dry-run)
     try:
         pg_restore_paths = [
-            '/usr/lib/postgresql/18/bin/pg_restore',
-            '/usr/lib/postgresql/16/bin/pg_restore',
-            '/usr/lib/postgresql/15/bin/pg_restore',
-            '/usr/lib/postgresql/14/bin/pg_restore',
-            '/usr/local/pgsql/bin/pg_restore',
-            '/usr/bin/pg_restore',
+            "/usr/lib/postgresql/18/bin/pg_restore",
+            "/usr/lib/postgresql/16/bin/pg_restore",
+            "/usr/lib/postgresql/15/bin/pg_restore",
+            "/usr/lib/postgresql/14/bin/pg_restore",
+            "/usr/local/pgsql/bin/pg_restore",
+            "/usr/bin/pg_restore",
         ]
 
         pg_restore_binary = None
@@ -537,24 +553,19 @@ def verify_backup(backup_path: Path) -> bool:
         if not pg_restore_binary:
             # Try PATH
             try:
-                result = subprocess.run(
-                    ['which', 'pg_restore'],
-                    capture_output=True,
-                    timeout=2,
-                    check=False
-                )
+                result = subprocess.run(["which", "pg_restore"], capture_output=True, timeout=2, check=False)
                 if result.returncode == 0:
-                    pg_restore_binary = result.stdout.decode('utf-8').strip()
+                    pg_restore_binary = result.stdout.decode("utf-8").strip()
             except Exception as exc:
                 logger.debug("pg_restore binary lookup via which failed: %s", exc)
 
         if pg_restore_binary:
             # Use pg_restore --list to verify backup integrity
             result = subprocess.run(
-                [pg_restore_binary, '--list', str(backup_path)],
+                [pg_restore_binary, "--list", str(backup_path)],
                 capture_output=True,
                 timeout=60,
-                check=False
+                check=False,
             )
             if result.returncode == 0:
                 logger.debug("[Backup] PostgreSQL backup verification passed")
@@ -607,15 +618,11 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
         return False
 
     if not COS_BUCKET:
-        logger.warning(
-            "[Backup] COS backup enabled but bucket not configured (COS_BUCKET), skipping upload"
-        )
+        logger.warning("[Backup] COS backup enabled but bucket not configured (COS_BUCKET), skipping upload")
         return False
 
     if not COS_REGION:
-        logger.warning(
-            "[Backup] COS backup enabled but region not configured (COS_REGION), skipping upload"
-        )
+        logger.warning("[Backup] COS backup enabled but region not configured (COS_REGION), skipping upload")
         return False
 
     # Get file information for logging and validation
@@ -635,11 +642,11 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
     # Construct object key with prefix (before try block for error handling)
     # Format: {COS_KEY_PREFIX}/mindgraph.postgresql.{timestamp}.dump
     # Normalize prefix (remove trailing slash) to avoid double slashes
-    normalized_prefix = COS_KEY_PREFIX.rstrip('/')
+    normalized_prefix = COS_KEY_PREFIX.rstrip("/")
     object_key = f"{normalized_prefix}/{backup_path.name}"
 
     # Remove leading slash if object_key starts with one (shouldn't happen, but safety check)
-    if object_key.startswith('/'):
+    if object_key.startswith("/"):
         object_key = object_key[1:]
 
     # Log configuration for debugging
@@ -648,13 +655,13 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
         COS_BUCKET,
         COS_REGION,
         COS_KEY_PREFIX,
-        object_key
+        object_key,
     )
 
     if CosConfig is None or CosS3Client is None:
         logger.error(
             "[Backup] COS SDK not installed. Install with: pip install cos-python-sdk-v5",
-            exc_info=True
+            exc_info=True,
         )
         return False
 
@@ -666,7 +673,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             Region=COS_REGION,
             SecretId=COS_SECRET_ID,
             SecretKey=COS_SECRET_KEY,
-            Scheme='https'
+            Scheme="https",
         )
         client = CosS3Client(config)
 
@@ -675,7 +682,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             COS_BUCKET,
             object_key,
             file_size_mb,
-            COS_REGION
+            COS_REGION,
         )
 
         # Retry logic with exponential backoff
@@ -692,20 +699,24 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                     Key=object_key,
                     PartSize=1,  # 1MB per part
                     MAXThread=10,  # Up to 10 concurrent threads
-                    EnableMD5=False  # Disable MD5 for faster upload
+                    EnableMD5=False,  # Disable MD5 for faster upload
                 )
 
                 # Log upload result with details
                 # Response contains ETag, Location, etc.
-                if 'ETag' in response:
+                if "ETag" in response:
                     logger.info(
                         "[Backup] Successfully uploaded to COS: %s (ETag: %s, bucket: %s)",
                         object_key,
-                        response['ETag'],
-                        COS_BUCKET
+                        response["ETag"],
+                        COS_BUCKET,
                     )
                 else:
-                    logger.info("[Backup] Successfully uploaded to COS: %s (bucket: %s)", object_key, COS_BUCKET)
+                    logger.info(
+                        "[Backup] Successfully uploaded to COS: %s (bucket: %s)",
+                        object_key,
+                        COS_BUCKET,
+                    )
 
                 return True
 
@@ -719,11 +730,11 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                 is_retryable = False
                 # Type narrowing: after isinstance check, e is CosServiceError or CosClientError
                 if CosServiceError is not None and isinstance(e, CosServiceError):
-                    status_code = _cos_exc_call(e, 'get_status_code', '')
-                    error_code = _cos_exc_call(e, 'get_error_code', '')
-                    if status_code and str(status_code).startswith('5'):
+                    status_code = _cos_exc_call(e, "get_status_code", "")
+                    error_code = _cos_exc_call(e, "get_error_code", "")
+                    if status_code and str(status_code).startswith("5"):
                         is_retryable = True
-                    elif error_code in ('SlowDown', 'RequestLimitExceeded'):
+                    elif error_code in ("SlowDown", "RequestLimitExceeded"):
                         is_retryable = True
                 else:
                     # Retry on client errors (network issues)
@@ -734,13 +745,13 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                     raise
 
                 # Calculate delay with exponential backoff: 5s, 10s, 20s
-                delay = min(5.0 * (2 ** attempt), 30.0)
+                delay = min(5.0 * (2**attempt), 30.0)
                 logger.warning(
                     "[Backup] COS upload attempt %s/%s failed: %s. Retrying in %.1fs...",
                     attempt + 1,
                     max_retries,
                     e,
-                    delay
+                    delay,
                 )
                 time.sleep(delay)
                 continue
@@ -756,7 +767,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             "[Backup] File system error uploading %s to COS: %s",
             backup_path.name,
             e,
-            exc_info=True
+            exc_info=True,
         )
         return False
     except Exception as e:
@@ -768,7 +779,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                 COS_BUCKET,
                 object_key,
                 e,
-                exc_info=True
+                exc_info=True,
             )
             return False
         # Server-side errors (permissions, bucket not found, etc.)
@@ -776,33 +787,31 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             # Following official COS SDK exception handling pattern:
             # https://cloud.tencent.com/document/product/436/35154
             # Error codes reference: https://cloud.tencent.com/document/product/436/7730
-            status_code = _cos_exc_call(e, 'get_status_code', 'Unknown')
-            error_code = _cos_exc_call(e, 'get_error_code', 'Unknown')
-            error_msg = _cos_exc_call(e, 'get_error_msg', '')
+            status_code = _cos_exc_call(e, "get_status_code", "Unknown")
+            error_code = _cos_exc_call(e, "get_error_code", "Unknown")
+            error_msg = _cos_exc_call(e, "get_error_msg", "")
             if not error_msg:
                 error_msg = str(e)
-            request_id = _cos_exc_call(e, 'get_request_id', 'N/A')
-            trace_id = _cos_exc_call(e, 'get_trace_id', 'N/A')
-            resource_location = _cos_exc_call(e, 'get_resource_location', 'N/A')
+            request_id = _cos_exc_call(e, "get_request_id", "N/A")
+            trace_id = _cos_exc_call(e, "get_trace_id", "N/A")
+            resource_location = _cos_exc_call(e, "get_resource_location", "N/A")
 
             # Provide actionable error messages for common error codes
             # Reference: https://cloud.tencent.com/document/product/436/7730
             actionable_msg = ""
-            if error_code == 'AccessDenied':
+            if error_code == "AccessDenied":
                 actionable_msg = " - Check COS credentials and bucket permissions"
-            elif error_code == 'NoSuchBucket':
-                actionable_msg = (
-                    f" - Bucket '{COS_BUCKET}' does not exist or is inaccessible"
-                )
-            elif error_code == 'InvalidAccessKeyId':
+            elif error_code == "NoSuchBucket":
+                actionable_msg = f" - Bucket '{COS_BUCKET}' does not exist or is inaccessible"
+            elif error_code == "InvalidAccessKeyId":
                 actionable_msg = " - Check TENCENT_SMS_SECRET_ID configuration"
-            elif error_code == 'SignatureDoesNotMatch':
+            elif error_code == "SignatureDoesNotMatch":
                 actionable_msg = " - Check TENCENT_SMS_SECRET_KEY configuration"
-            elif error_code == 'EntityTooLarge':
+            elif error_code == "EntityTooLarge":
                 actionable_msg = " - Backup file exceeds COS size limit (5GB for single upload)"
-            elif error_code in ('SlowDown', 'RequestLimitExceeded'):
+            elif error_code in ("SlowDown", "RequestLimitExceeded"):
                 actionable_msg = " - Rate limit exceeded, backup will retry on next schedule"
-            elif status_code and str(status_code).startswith('5'):
+            elif status_code and str(status_code).startswith("5"):
                 actionable_msg = " - Server error, may be transient - backup will retry on next schedule"
 
             # Log detailed error information
@@ -814,13 +823,13 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
                 status_code,
                 error_code,
                 error_msg,
-                actionable_msg
+                actionable_msg,
             )
             logger.error(
                 "[Backup] COS error details: RequestID=%s, TraceID=%s, Resource=%s",
                 request_id,
                 trace_id,
-                resource_location
+                resource_location,
             )
             logger.debug("[Backup] COS service error full details", exc_info=True)
             return False
@@ -831,7 +840,7 @@ def upload_backup_to_cos(backup_path: Path, max_retries: int = 3) -> bool:
             COS_BUCKET,
             object_key,
             e,
-            exc_info=True
+            exc_info=True,
         )
         return False
 
@@ -860,7 +869,7 @@ def list_cos_backups() -> List[dict]:
             Region=COS_REGION,
             SecretId=COS_SECRET_ID,
             SecretKey=COS_SECRET_KEY,
-            Scheme='https'
+            Scheme="https",
         )
         client = CosS3Client(config)
 
@@ -871,38 +880,43 @@ def list_cos_backups() -> List[dict]:
         marker = ""
         is_truncated = True
 
-        logger.debug("[Backup] Listing COS backups with prefix: %s (bucket: %s)", COS_KEY_PREFIX, COS_BUCKET)
+        logger.debug(
+            "[Backup] Listing COS backups with prefix: %s (bucket: %s)",
+            COS_KEY_PREFIX,
+            COS_BUCKET,
+        )
 
         # Normalize prefix (remove trailing slash for consistency)
-        normalized_prefix = COS_KEY_PREFIX.rstrip('/')
+        normalized_prefix = COS_KEY_PREFIX.rstrip("/")
 
         while is_truncated:
-            response = client.list_objects(
-                Bucket=COS_BUCKET,
-                Prefix=normalized_prefix,
-                Marker=marker
-            )
+            response = client.list_objects(Bucket=COS_BUCKET, Prefix=normalized_prefix, Marker=marker)
 
-            if 'Contents' in response:
-                for obj in response['Contents']:
-                    obj_key = obj['Key']
+            if "Contents" in response:
+                for obj in response["Contents"]:
+                    obj_key = obj["Key"]
 
                     # Double-check: ensure key starts with our prefix (security)
                     if not obj_key.startswith(normalized_prefix):
-                        logger.warning("[Backup] Skipping object with unexpected prefix: %s", obj_key)
+                        logger.warning(
+                            "[Backup] Skipping object with unexpected prefix: %s",
+                            obj_key,
+                        )
                         continue
 
                     # Only include files matching backup pattern (mindgraph.postgresql.*.dump)
-                    if 'mindgraph.postgresql.' in obj_key and obj_key.endswith('.dump'):
-                        backups.append({
-                            'key': obj_key,
-                            'size': obj['Size'],
-                            'last_modified': obj['LastModified']
-                        })
+                    if "mindgraph.postgresql." in obj_key and obj_key.endswith(".dump"):
+                        backups.append(
+                            {
+                                "key": obj_key,
+                                "size": obj["Size"],
+                                "last_modified": obj["LastModified"],
+                            }
+                        )
 
-            is_truncated = response.get('IsTruncated', 'false') == 'true'
+            is_truncated = response.get("IsTruncated", "false") == "true"
             if is_truncated:
-                marker = response.get('NextMarker', '')
+                marker = response.get("NextMarker", "")
 
         logger.debug("[Backup] Found %s backup(s) in COS", len(backups))
         return backups
@@ -915,15 +929,15 @@ def list_cos_backups() -> List[dict]:
             # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
             try:
                 # Type checker doesn't know CosServiceError methods, use hasattr checks
-                status_code = e.get_status_code() if hasattr(e, 'get_status_code') else 'Unknown'  # type: ignore
-                error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'  # type: ignore
-                error_msg = e.get_error_msg() if hasattr(e, 'get_error_msg') else str(e)  # type: ignore
-                request_id = e.get_request_id() if hasattr(e, 'get_request_id') else 'N/A'  # type: ignore
+                status_code = e.get_status_code() if hasattr(e, "get_status_code") else "Unknown"  # type: ignore
+                error_code = e.get_error_code() if hasattr(e, "get_error_code") else "Unknown"  # type: ignore
+                error_msg = e.get_error_msg() if hasattr(e, "get_error_msg") else str(e)  # type: ignore
+                request_id = e.get_request_id() if hasattr(e, "get_request_id") else "N/A"  # type: ignore
             except Exception:
-                status_code = 'Unknown'
-                error_code = 'Unknown'
+                status_code = "Unknown"
+                error_code = "Unknown"
                 error_msg = str(e)
-                request_id = 'N/A'
+                request_id = "N/A"
 
             logger.error(
                 "[Backup] COS service error listing backups: HTTP %s, Error %s - %s (RequestID: %s)",
@@ -931,7 +945,7 @@ def list_cos_backups() -> List[dict]:
                 error_code,
                 error_msg,
                 request_id,
-                exc_info=True
+                exc_info=True,
             )
             return []
         logger.error("[Backup] Unexpected error listing COS backups: %s", e, exc_info=True)
@@ -967,7 +981,7 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
             Region=COS_REGION,
             SecretId=COS_SECRET_ID,
             SecretKey=COS_SECRET_KEY,
-            Scheme='https'
+            Scheme="https",
         )
         client = CosS3Client(config)
 
@@ -977,7 +991,11 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
             logger.debug("[Backup] No COS backups found with prefix: %s", COS_KEY_PREFIX)
             return 0
 
-        logger.debug("[Backup] Found %s COS backup(s) with prefix: %s", len(backups), COS_KEY_PREFIX)
+        logger.debug(
+            "[Backup] Found %s COS backup(s) with prefix: %s",
+            len(backups),
+            COS_KEY_PREFIX,
+        )
 
         # Calculate cutoff time (backups older than this will be deleted)
         cutoff_time = datetime.now() - timedelta(days=retention_days)
@@ -988,7 +1006,7 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
             try:
                 # Parse LastModified timestamp
                 # COS returns timestamps as strings in ISO format: "2023-05-23T15:41:30.000Z"
-                last_modified_value = backup['last_modified']
+                last_modified_value = backup["last_modified"]
 
                 if isinstance(last_modified_value, datetime):
                     # Already a datetime object
@@ -996,22 +1014,28 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                 elif isinstance(last_modified_value, str):
                     # Parse string timestamp
                     # Remove 'Z' suffix if present and parse ISO format
-                    timestamp_str = last_modified_value.replace('Z', '')
+                    timestamp_str = last_modified_value.replace("Z", "")
                     try:
                         # Try parsing with microseconds
-                        if '.' in timestamp_str:
-                            last_modified = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S.%f')
+                        if "." in timestamp_str:
+                            last_modified = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S.%f")
                         else:
-                            last_modified = datetime.strptime(timestamp_str, '%Y-%m-%dT%H:%M:%S')
+                            last_modified = datetime.strptime(timestamp_str, "%Y-%m-%dT%H:%M:%S")
                     except ValueError:
                         # Fallback: try fromisoformat
                         try:
                             last_modified = datetime.fromisoformat(timestamp_str)
                         except ValueError:
-                            logger.warning("[Backup] Cannot parse timestamp: %s", last_modified_value)
+                            logger.warning(
+                                "[Backup] Cannot parse timestamp: %s",
+                                last_modified_value,
+                            )
                             continue
                 else:
-                    logger.warning("[Backup] Unexpected timestamp type: %s", type(last_modified_value))
+                    logger.warning(
+                        "[Backup] Unexpected timestamp type: %s",
+                        type(last_modified_value),
+                    )
                     continue
 
                 # Delete if older than retention period
@@ -1019,17 +1043,17 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                     age_days = (datetime.now() - last_modified).days
                     logger.info(
                         "[Backup] Deleting old COS backup: %s (age: %s days)",
-                        backup['key'],
-                        age_days
+                        backup["key"],
+                        age_days,
                     )
 
                     try:
                         client.delete_object(
                             Bucket=COS_BUCKET,
-                            Key=backup['key'],
+                            Key=backup["key"],
                         )
                         deleted_count += 1
-                        logger.debug("[Backup] Deleted COS backup: %s", backup['key'])
+                        logger.debug("[Backup] Deleted COS backup: %s", backup["key"])
 
                         # Also delete the companion manifest if it exists
                         manifest_key = f"{backup['key']}.manifest.json"
@@ -1043,16 +1067,24 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                             pass  # Manifest may not exist for older backups
                     except Exception as delete_error:
                         if CosServiceError is not None and isinstance(delete_error, CosServiceError):
-                            error_code = _cos_exc_call(delete_error, 'get_error_code', 'Unknown')
-                            logger.warning("[Backup] Failed to delete COS backup %s: %s", backup['key'], error_code)
+                            error_code = _cos_exc_call(delete_error, "get_error_code", "Unknown")
+                            logger.warning(
+                                "[Backup] Failed to delete COS backup %s: %s",
+                                backup["key"],
+                                error_code,
+                            )
                         else:
-                            logger.warning("[Backup] Failed to delete COS backup %s: %s", backup['key'], delete_error)
+                            logger.warning(
+                                "[Backup] Failed to delete COS backup %s: %s",
+                                backup["key"],
+                                delete_error,
+                            )
 
             except Exception as e:
                 logger.warning(
                     "[Backup] Error processing COS backup %s: %s",
-                    backup.get('key', 'unknown'),
-                    e
+                    backup.get("key", "unknown"),
+                    e,
                 )
                 continue
 
@@ -1069,15 +1101,15 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
             # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
             try:
                 # Type checker doesn't know CosServiceError methods, use hasattr checks
-                status_code = e.get_status_code() if hasattr(e, 'get_status_code') else 'Unknown'  # type: ignore
-                error_code = e.get_error_code() if hasattr(e, 'get_error_code') else 'Unknown'  # type: ignore
-                error_msg = e.get_error_msg() if hasattr(e, 'get_error_msg') else str(e)  # type: ignore
-                request_id = e.get_request_id() if hasattr(e, 'get_request_id') else 'N/A'  # type: ignore
+                status_code = e.get_status_code() if hasattr(e, "get_status_code") else "Unknown"  # type: ignore
+                error_code = e.get_error_code() if hasattr(e, "get_error_code") else "Unknown"  # type: ignore
+                error_msg = e.get_error_msg() if hasattr(e, "get_error_msg") else str(e)  # type: ignore
+                request_id = e.get_request_id() if hasattr(e, "get_request_id") else "N/A"  # type: ignore
             except Exception:
-                status_code = 'Unknown'
-                error_code = 'Unknown'
+                status_code = "Unknown"
+                error_code = "Unknown"
                 error_msg = str(e)
-                request_id = 'N/A'
+                request_id = "N/A"
 
             logger.error(
                 "[Backup] COS service error cleaning up backups: HTTP %s, Error %s - %s (RequestID: %s)",
@@ -1085,7 +1117,7 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
                 error_code,
                 error_msg,
                 request_id,
-                exc_info=True
+                exc_info=True,
             )
             return 0
         logger.error("[Backup] Unexpected error cleaning up COS backups: %s", e, exc_info=True)
@@ -1169,9 +1201,7 @@ def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
         with engine.connect() as conn:
             for table in table_names:
                 try:
-                    result = conn.execute(
-                        text(f'SELECT COUNT(*) FROM "{table}"')
-                    )
+                    result = conn.execute(text(f'SELECT COUNT(*) FROM "{table}"'))
                     counts[table] = result.scalar() or 0
                 except Exception:
                     counts[table] = -1
@@ -1215,7 +1245,9 @@ def _upload_to_cos_if_enabled(
     logger.info("[Backup] COS backup enabled, starting upload...")
     logger.info(
         "[Backup] COS config: bucket=%s, region=%s, prefix=%s",
-        COS_BUCKET, COS_REGION, COS_KEY_PREFIX,
+        COS_BUCKET,
+        COS_REGION,
+        COS_KEY_PREFIX,
     )
 
     if not upload_backup_to_cos(backup_path):
@@ -1339,7 +1371,7 @@ async def start_backup_scheduler():
     logger.info(
         "[Backup] Configuration: daily at %02d:00, keep %s backups",
         BACKUP_HOUR,
-        BACKUP_RETENTION_COUNT
+        BACKUP_RETENTION_COUNT,
     )
     logger.info("[Backup] Backup directory: %s", BACKUP_DIR.resolve())
     if COS_BACKUP_ENABLED:
@@ -1347,7 +1379,7 @@ async def start_backup_scheduler():
             "[Backup] COS backup enabled: bucket=%s, region=%s, prefix=%s",
             COS_BUCKET,
             COS_REGION,
-            COS_KEY_PREFIX
+            COS_KEY_PREFIX,
         )
     else:
         logger.info("[Backup] COS backup disabled")
@@ -1365,7 +1397,7 @@ async def start_backup_scheduler():
 
             logger.debug(
                 "[Backup] Next backup scheduled at %s",
-                next_backup.strftime('%Y-%m-%d %H:%M:%S')
+                next_backup.strftime("%Y-%m-%d %H:%M:%S"),
             )
 
             # Wait until backup time, refreshing lock every 5 minutes
@@ -1395,7 +1427,11 @@ async def start_backup_scheduler():
                 else:
                     logger.error("[Backup] Scheduled backup failed")
             except Exception as e:
-                logger.error("[Backup] Scheduled backup failed with exception: %s", e, exc_info=True)
+                logger.error(
+                    "[Backup] Scheduled backup failed with exception: %s",
+                    e,
+                    exc_info=True,
+                )
 
             # Refresh lock after backup completes
             refresh_backup_scheduler_lock()

@@ -41,16 +41,16 @@ def check_port_in_use(host: str, port: int) -> tuple[bool, Optional[int]]:
         test_sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         test_sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         try:
-            test_sock.bind(('127.0.0.1', port))
+            test_sock.bind(("127.0.0.1", port))
             test_sock.close()
             return (False, None)
         except OSError as e:
             test_sock.close()
-            errno = getattr(e, 'errno', None)
+            errno = getattr(e, "errno", None)
             error_msg = str(e).lower()
-            if errno == 98 or errno == 48 or errno == 10048:
+            if errno in (98, 48, 10048):
                 bind_failed_eaddrinuse = True
-            elif 'address already in use' in error_msg or 'address is already in use' in error_msg:
+            elif "address already in use" in error_msg or "address is already in use" in error_msg:
                 bind_failed_eaddrinuse = True
     except Exception as exc:
         logger.debug("Port %d bind check failed: %s", port, exc)
@@ -86,26 +86,26 @@ def find_process_on_port(port: int) -> Optional[int]:
         Optional[int]: PID of process using the port, or None if not found
     """
     try:
-        if sys.platform == 'win32':
+        if sys.platform == "win32":
             result = subprocess.run(
-                ['netstat', '-ano'],
+                ["netstat", "-ano"],
                 capture_output=True,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
             )
-            for line in result.stdout.split('\n'):
-                if f':{port}' in line and 'LISTENING' in line:
+            for line in result.stdout.split("\n"):
+                if f":{port}" in line and "LISTENING" in line:
                     parts = line.split()
                     if len(parts) >= 5:
                         return int(parts[-1])
         else:
             result = subprocess.run(
-                ['lsof', '-ti', f':{port}'],
+                ["lsof", "-ti", f":{port}"],
                 capture_output=True,
                 text=True,
                 timeout=5,
-                check=False
+                check=False,
             )
             if result.stdout.strip():
                 return int(result.stdout.strip())

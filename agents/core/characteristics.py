@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Any
 import logging
 import re
@@ -16,7 +17,7 @@ import yaml
 
 from config.characteristics_fallbacks import (
     get_fallback_characteristics,
-    get_default_fallback
+    get_default_fallback,
 )
 from utils.prompt_locale import template_lang_for_registry
 from utils.prompt_output_languages import is_prompt_output_language
@@ -24,9 +25,7 @@ from utils.prompt_output_languages import is_prompt_output_language
 logger = logging.getLogger(__name__)
 
 
-def generate_characteristics_with_agent(
-    topic1: str, topic2: str, language: str = 'zh'
-) -> Dict[str, Any]:
+def generate_characteristics_with_agent(topic1: str, topic2: str, language: str = "zh") -> Dict[str, Any]:
     """
     Use LangChain agent to generate characteristics for double bubble map.
 
@@ -52,13 +51,14 @@ def generate_characteristics_with_agent(
 
     if not isinstance(language, str) or not is_prompt_output_language(language):
         logger.warning("Invalid language '%s', defaulting to 'zh'", language)
-        language = 'zh'
+        language = "zh"
 
     registry_lang = template_lang_for_registry(language)
 
     logger.debug("Agent: Generating characteristics for %s vs %s", topic1, topic2)
     # Create the characteristics generation function
     from .prompt_helpers import create_characteristics_chain  # pylint: disable=import-outside-toplevel
+
     char_func = create_characteristics_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
@@ -73,9 +73,7 @@ def generate_characteristics_with_agent(
         return generate_characteristics_fallback(topic1, topic2)
 
 
-def parse_characteristics_result(
-    result: str, _topic1: str, _topic2: str
-) -> Dict[str, Any]:
+def parse_characteristics_result(result: str, _topic1: str, _topic2: str) -> Dict[str, Any]:
     """
     Parse the result from characteristics generation agent.
 
@@ -93,7 +91,7 @@ def parse_characteristics_result(
     # Handle case where LLM returns a complete JSON block
     if text.startswith("```json"):
         # Extract the content between ```json and ```
-        json_match = re.search(r'```json\s*\n(.*?)\n```', text, re.DOTALL)
+        json_match = re.search(r"```json\s*\n(.*?)\n```", text, re.DOTALL)
         if json_match:
             json_content = json_match.group(1).strip()
             try:
@@ -109,7 +107,7 @@ def parse_characteristics_result(
             text = text[7:]
         elif text.startswith("```"):
             text = text[3:]
-        text = text.strip('`\n ')
+        text = text.strip("`\n ")
 
     # Clean up any remaining template placeholders
     # Ensure text is a string before processing
@@ -166,19 +164,19 @@ def _extract_characteristics_from_text(text: str) -> Dict[str, list]:
     """
     spec = {"similarities": [], "left_differences": [], "right_differences": []}
     text_str = str(text)
-    lines = text_str.split('\n')
+    lines = text_str.split("\n")
     current_key = None
     for line in lines:
         line = line.strip()
-        if line.startswith('similarities:'):
-            current_key = 'similarities'
-        elif line.startswith('left_differences:'):
-            current_key = 'left_differences'
-        elif line.startswith('right_differences:'):
-            current_key = 'right_differences'
-        elif line.startswith('- ') and current_key:
+        if line.startswith("similarities:"):
+            current_key = "similarities"
+        elif line.startswith("left_differences:"):
+            current_key = "left_differences"
+        elif line.startswith("right_differences:"):
+            current_key = "right_differences"
+        elif line.startswith("- ") and current_key:
             item = line[2:].strip().strip('"')
-            if item and not item.startswith('trait') and not item.startswith('feature'):
+            if item and not item.startswith("trait") and not item.startswith("feature"):
                 spec[current_key].append(item)
 
     return spec
@@ -194,12 +192,12 @@ def _validate_and_fill_characteristics(spec: Dict[str, Any]) -> Dict[str, list]:
     Returns:
         Validated and filled specification
     """
-    if not spec.get('similarities') or len(spec.get('similarities', [])) < 2:
-        spec['similarities'] = ["Comparable"]
-    if not spec.get('left_differences') or len(spec.get('left_differences', [])) < 2:
-        spec['left_differences'] = ["Unique"]
-    if not spec.get('right_differences') or len(spec.get('right_differences', [])) < 2:
-        spec['right_differences'] = ["Unique"]
+    if not spec.get("similarities") or len(spec.get("similarities", [])) < 2:
+        spec["similarities"] = ["Comparable"]
+    if not spec.get("left_differences") or len(spec.get("left_differences", [])) < 2:
+        spec["left_differences"] = ["Unique"]
+    if not spec.get("right_differences") or len(spec.get("right_differences", [])) < 2:
+        spec["right_differences"] = ["Unique"]
 
     return spec
 
@@ -214,8 +212,8 @@ def _has_meaningful_content(spec: Dict[str, Any]) -> bool:
     Returns:
         True if meaningful content exists, False otherwise
     """
-    placeholders = ['trait', 'feature', '特征', '特点', 'comparable', 'unique']
-    for key in ['similarities', 'left_differences', 'right_differences']:
+    placeholders = ["trait", "feature", "特征", "特点", "comparable", "unique"]
+    for key in ["similarities", "left_differences", "right_differences"]:
         for item in spec.get(key, []):
             if not any(placeholder in str(item).lower() for placeholder in placeholders):
                 return True

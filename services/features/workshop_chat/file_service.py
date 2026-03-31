@@ -30,7 +30,10 @@ STATIC_ROOT = Path(__file__).parent.parent.parent.parent / "static" / "chat"
 MAX_FILE_SIZE = 10 * 1024 * 1024  # 10 MB
 
 ALLOWED_CONTENT_TYPES = {
-    "image/jpeg", "image/png", "image/gif", "image/webp",
+    "image/jpeg",
+    "image/png",
+    "image/gif",
+    "image/webp",
     "application/pdf",
     "application/msword",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
@@ -74,15 +77,12 @@ class FileService:
         content_type = file.content_type or "application/octet-stream"
         if content_type not in ALLOWED_CONTENT_TYPES:
             raise ValueError(
-                f"Unsupported file type: {content_type}. "
-                f"Allowed: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}"
+                f"Unsupported file type: {content_type}. Allowed: {', '.join(sorted(ALLOWED_CONTENT_TYPES))}"
             )
 
         data = await file.read()
         if len(data) > MAX_FILE_SIZE:
-            raise ValueError(
-                f"File too large ({len(data)} bytes). Max {MAX_FILE_SIZE} bytes."
-            )
+            raise ValueError(f"File too large ({len(data)} bytes). Max {MAX_FILE_SIZE} bytes.")
 
         now = datetime.utcnow()
         sub_dir = STATIC_ROOT / str(now.year) / f"{now.month:02d}"
@@ -111,7 +111,8 @@ class FileService:
 
     @staticmethod
     def get_message_attachments(
-        db: Session, message_id: int,
+        db: Session,
+        message_id: int,
     ) -> List[Dict[str, Any]]:
         """List attachments for a channel/topic message."""
         rows = (
@@ -124,20 +125,17 @@ class FileService:
 
     @staticmethod
     def get_dm_attachments(
-        db: Session, dm_id: int,
+        db: Session,
+        dm_id: int,
     ) -> List[Dict[str, Any]]:
         """List attachments for a direct message."""
-        rows = (
-            db.query(FileAttachment)
-            .filter(FileAttachment.dm_id == dm_id)
-            .order_by(FileAttachment.created_at)
-            .all()
-        )
+        rows = db.query(FileAttachment).filter(FileAttachment.dm_id == dm_id).order_by(FileAttachment.created_at).all()
         return [_format_attachment(a) for a in rows]
 
     @staticmethod
     def get_attachments_batch(
-        db: Session, message_ids: List[int],
+        db: Session,
+        message_ids: List[int],
     ) -> Dict[int, List[Dict[str, Any]]]:
         """Batch-fetch attachments keyed by message_id."""
         if not message_ids:
@@ -151,19 +149,22 @@ class FileService:
         result: Dict[int, List[Dict[str, Any]]] = {}
         for att in rows:
             if att.message_id is not None:
-                result.setdefault(att.message_id, []).append(
-                    _format_attachment(att)
-                )
+                result.setdefault(att.message_id, []).append(_format_attachment(att))
         return result
 
     @staticmethod
     def get_attachment(
-        db: Session, attachment_id: int,
+        db: Session,
+        attachment_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Get a single attachment by ID."""
-        att = db.query(FileAttachment).filter(
-            FileAttachment.id == attachment_id,
-        ).first()
+        att = (
+            db.query(FileAttachment)
+            .filter(
+                FileAttachment.id == attachment_id,
+            )
+            .first()
+        )
         if not att:
             return None
         return _format_attachment(att)

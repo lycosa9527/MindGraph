@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, List, Optional, Any
 import logging
 
@@ -22,9 +23,9 @@ class LLMMessageBuilder:
 
     @staticmethod
     def build_chat_messages(
-        prompt: str = '',
+        prompt: str = "",
         system_message: Optional[str] = None,
-        messages: Optional[List[Dict[str, Any]]] = None
+        messages: Optional[List[Dict[str, Any]]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Build chat messages array from prompt/system_message or use provided messages.
@@ -53,10 +54,7 @@ class LLMMessageBuilder:
         return chat_messages
 
     @staticmethod
-    def extract_query_for_rag(
-        messages: Optional[List[Dict[str, Any]]],
-        prompt: str = ''
-    ) -> str:
+    def extract_query_for_rag(messages: Optional[List[Dict[str, Any]]], prompt: str = "") -> str:
         """
         Extract query text from messages for RAG context retrieval.
 
@@ -74,16 +72,16 @@ class LLMMessageBuilder:
             # Multi-turn conversation: extract from last user message
             last_user_msg = None
             for msg in reversed(messages):
-                if msg.get('role') == 'user':
-                    last_user_msg = msg.get('content', '')
+                if msg.get("role") == "user":
+                    last_user_msg = msg.get("content", "")
                     if isinstance(last_user_msg, list):
                         # Multimodal: extract text content
                         for item in last_user_msg:
-                            if item.get('type') == 'text':
-                                last_user_msg = item.get('text', '')
+                            if item.get("type") == "text":
+                                last_user_msg = item.get("text", "")
                                 break
                         else:
-                            last_user_msg = ''
+                            last_user_msg = ""
                     break
             return last_user_msg if last_user_msg else prompt
 
@@ -95,7 +93,7 @@ class LLMMessageBuilder:
         messages: List[Dict[str, Any]],
         user_id: Optional[int],
         query: str,
-        use_knowledge_base: bool = True
+        use_knowledge_base: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         Inject RAG context into messages if enabled and user has knowledge base.
@@ -122,11 +120,7 @@ class LLMMessageBuilder:
 
                 # Retrieve context
                 context_chunks = rag_service.retrieve_context(
-                    db=db,
-                    user_id=user_id,
-                    query=query,
-                    top_k=5,
-                    method='hybrid'
+                    db=db, user_id=user_id, query=query, top_k=5, method="hybrid"
                 )
 
                 if not context_chunks:
@@ -137,26 +131,26 @@ class LLMMessageBuilder:
                     _user_id=user_id,
                     prompt=query,
                     context_chunks=context_chunks,
-                    max_context_length=2000
+                    max_context_length=2000,
                 )
 
                 # Update the last user message with enhanced prompt
                 for msg in reversed(messages):
-                    if msg.get('role') == 'user':
-                        content = msg.get('content')
+                    if msg.get("role") == "user":
+                        content = msg.get("content")
                         if isinstance(content, str):
-                            msg['content'] = enhanced_prompt
+                            msg["content"] = enhanced_prompt
                         elif isinstance(content, list):
                             # Multimodal: update text content
                             for item in content:
-                                if item.get('type') == 'text':
-                                    item['text'] = enhanced_prompt
+                                if item.get("type") == "text":
+                                    item["text"] = enhanced_prompt
                                     break
                         break
 
                 logger.debug(
                     "[LLMMessageBuilder] Injected RAG context: %s chunks",
-                    len(context_chunks)
+                    len(context_chunks),
                 )
 
             finally:
@@ -164,20 +158,17 @@ class LLMMessageBuilder:
 
         except Exception as e:
             # If RAG fails, continue with original prompt
-            logger.warning(
-                "[LLMMessageBuilder] RAG failed, using original prompt: %s",
-                e
-            )
+            logger.warning("[LLMMessageBuilder] RAG failed, using original prompt: %s", e)
 
         return messages
 
     @staticmethod
     def build_with_rag(
-        prompt: str = '',
+        prompt: str = "",
         system_message: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
         user_id: Optional[int] = None,
-        use_knowledge_base: bool = True
+        use_knowledge_base: bool = True,
     ) -> List[Dict[str, Any]]:
         """
         Build chat messages and inject RAG context if enabled.
@@ -196,9 +187,7 @@ class LLMMessageBuilder:
         """
         # Build messages
         chat_messages = LLMMessageBuilder.build_chat_messages(
-            prompt=prompt,
-            system_message=system_message,
-            messages=messages
+            prompt=prompt, system_message=system_message, messages=messages
         )
 
         # Extract query for RAG
@@ -210,17 +199,13 @@ class LLMMessageBuilder:
                 messages=chat_messages,
                 user_id=user_id,
                 query=query,
-                use_knowledge_base=use_knowledge_base
+                use_knowledge_base=use_knowledge_base,
             )
 
         return chat_messages
 
     @staticmethod
-    def enhance_prompt_for_streaming(
-        prompt: str,
-        user_id: Optional[int],
-        use_knowledge_base: bool = True
-    ) -> str:
+    def enhance_prompt_for_streaming(prompt: str, user_id: Optional[int], use_knowledge_base: bool = True) -> str:
         """
         Enhance prompt with RAG context for streaming requests.
 
@@ -248,11 +233,7 @@ class LLMMessageBuilder:
 
                 # Retrieve context
                 context_chunks = rag_service.retrieve_context(
-                    db=db,
-                    user_id=user_id,
-                    query=prompt,
-                    top_k=5,
-                    method='hybrid'
+                    db=db, user_id=user_id, query=prompt, top_k=5, method="hybrid"
                 )
 
                 if not context_chunks:
@@ -263,13 +244,12 @@ class LLMMessageBuilder:
                     _user_id=user_id,
                     prompt=prompt,
                     context_chunks=context_chunks,
-                    max_context_length=2000
+                    max_context_length=2000,
                 )
 
                 logger.debug(
-                    "[LLMMessageBuilder] Injected RAG context for "
-                    "streaming: %s chunks",
-                    len(context_chunks)
+                    "[LLMMessageBuilder] Injected RAG context for streaming: %s chunks",
+                    len(context_chunks),
                 )
 
                 return enhanced_prompt
@@ -280,8 +260,7 @@ class LLMMessageBuilder:
         except Exception as e:
             # If RAG fails, continue with original prompt
             logger.warning(
-                "[LLMMessageBuilder] RAG failed for streaming, "
-                "using original prompt: %s",
-                e
+                "[LLMMessageBuilder] RAG failed for streaming, using original prompt: %s",
+                e,
             )
             return prompt

@@ -2,6 +2,7 @@
 
 Detects content types: theory, example, exercise, summary, code, formula.
 """
+
 from typing import List, Optional, Any
 import json
 import logging
@@ -24,27 +25,41 @@ class ContentTypeAgent:
 
     CONTENT_TYPE_PATTERNS = {
         "theory": [
-            "concept", "definition", "principle", "theory",
-            "explanation", "introduction", "overview"
+            "concept",
+            "definition",
+            "principle",
+            "theory",
+            "explanation",
+            "introduction",
+            "overview",
         ],
         "example": [
-            "example", "for instance", "consider", "let's look at",
-            "illustration", "case study"
+            "example",
+            "for instance",
+            "consider",
+            "let's look at",
+            "illustration",
+            "case study",
         ],
         "exercise": [
-            "exercise", "problem", "practice", "try it yourself",
-            "assignment", "question", "challenge"
+            "exercise",
+            "problem",
+            "practice",
+            "try it yourself",
+            "assignment",
+            "question",
+            "challenge",
         ],
         "summary": [
-            "summary", "key takeaways", "recap", "conclusion",
-            "main points", "remember"
+            "summary",
+            "key takeaways",
+            "recap",
+            "conclusion",
+            "main points",
+            "remember",
         ],
-        "code": [
-            "```", "def ", "class ", "function", "import "
-        ],
-        "formula": [
-            "$", "$$", "equation", "formula", "="
-        ]
+        "code": ["```", "def ", "class ", "function", "import "],
+        "formula": ["$", "$$", "equation", "formula", "="],
     }
 
     def __init__(self, llm_service: Any = None):
@@ -62,11 +77,7 @@ class ContentTypeAgent:
             else:
                 self.llm_service = default_llm_service
 
-    async def detect_content_type(
-        self,
-        text: str,
-        use_llm: bool = True
-    ) -> str:
+    async def detect_content_type(self, text: str, use_llm: bool = True) -> str:
         """
         Detect content type.
 
@@ -135,16 +146,11 @@ Return JSON:
             return "theory"
 
         try:
-            response = await self.llm_service.chat(
-                prompt=prompt,
-                model='qwen',
-                temperature=0.3,
-                max_tokens=100
-            )
+            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=100)
 
             # Parse JSON
-            json_start = response.find('{')
-            json_end = response.rfind('}') + 1
+            json_start = response.find("{")
+            json_end = response.rfind("}") + 1
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 result = json.loads(json_str)
@@ -154,11 +160,7 @@ Return JSON:
 
         return "theory"  # Default
 
-    async def detect_batch(
-        self,
-        texts: List[str],
-        use_llm: bool = True
-    ) -> List[str]:
+    async def detect_batch(self, texts: List[str], use_llm: bool = True) -> List[str]:
         """
         Detect content types for multiple texts in batch.
 
@@ -174,10 +176,7 @@ Return JSON:
 
         # LLM refinement for unclear cases
         if use_llm and self.llm_service:
-            unclear_indices = [
-                i for i, t in enumerate(types)
-                if t == "mixed" or not t
-            ]
+            unclear_indices = [i for i, t in enumerate(types) if t == "mixed" or not t]
 
             if unclear_indices:
                 unclear_texts = [texts[i] for i in unclear_indices]
@@ -190,10 +189,7 @@ Return JSON:
 
     async def _llm_detect_batch(self, texts: List[str]) -> List[str]:
         """LLM batch detection."""
-        texts_str = "\n\n".join([
-            f"Text {i + 1}:\n{text[:300]}"
-            for i, text in enumerate(texts)
-        ])
+        texts_str = "\n\n".join([f"Text {i + 1}:\n{text[:300]}" for i, text in enumerate(texts)])
 
         prompt = f"""Classify these teaching material contents:
 
@@ -211,16 +207,11 @@ Return JSON array:
             return ["theory"] * len(texts)
 
         try:
-            response = await self.llm_service.chat(
-                prompt=prompt,
-                model='qwen',
-                temperature=0.3,
-                max_tokens=500
-            )
+            response = await self.llm_service.chat(prompt=prompt, model="qwen", temperature=0.3, max_tokens=500)
 
             # Parse JSON
-            json_start = response.find('[')
-            json_end = response.rfind(']') + 1
+            json_start = response.find("[")
+            json_end = response.rfind("]") + 1
             if json_start >= 0 and json_end > json_start:
                 json_str = response[json_start:json_end]
                 results = json.loads(json_str)
@@ -230,7 +221,7 @@ Return JSON array:
                     content_type = result.get("content_type", "theory")
                     types.append(content_type)
 
-                return types[:len(texts)]  # Ensure correct length
+                return types[: len(texts)]  # Ensure correct length
         except Exception as e:
             logger.warning("LLM batch detection failed: %s", e)
 

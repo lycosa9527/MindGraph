@@ -1,7 +1,7 @@
 import { eventBus } from '@/composables/core/useEventBus'
 import { DEFAULT_CENTER_X } from '@/composables/diagrams/layoutConfig'
 import { i18n } from '@/i18n'
-import type { DiagramNode, Position } from '@/types'
+import type { DiagramNode } from '@/types'
 
 import { useInlineRecommendationsStore } from '../inlineRecommendations'
 import {
@@ -69,22 +69,15 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
-    const centerX = DEFAULT_CENTER_X
-    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
-    const baseline = mindMapCurveExtentBaseline.value
-    console.log('[BranchMove] curve length after add branch', extentsAfter)
-    if (baseline) {
-      console.log('[BranchMove] curve length change vs original', {
-        leftDelta: extentsAfter.left - baseline.left,
-        rightDelta: extentsAfter.right - baseline.right,
-      })
-    }
     ctx.pushHistory('Add branch')
     emitEvent('diagram:node_added', { node: null })
     return true
   }
 
-  function addMindMapChild(parentNodeId: string, text = String(i18n.global.t('diagram.newChild'))): boolean {
+  function addMindMapChild(
+    parentNodeId: string,
+    text = String(i18n.global.t('diagram.newChild'))
+  ): boolean {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
@@ -108,16 +101,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
-    const centerX = DEFAULT_CENTER_X
-    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
-    const baseline = mindMapCurveExtentBaseline.value
-    console.log('[BranchMove] curve length after add child', extentsAfter)
-    if (baseline) {
-      console.log('[BranchMove] curve length change vs original', {
-        leftDelta: extentsAfter.left - baseline.left,
-        rightDelta: extentsAfter.right - baseline.right,
-      })
-    }
     ctx.pushHistory('Add child')
     emitEvent('diagram:node_added', { node: null })
     return true
@@ -175,16 +158,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
 
     data.value.nodes = result.nodes
     data.value.connections = result.connections
-    const centerX = DEFAULT_CENTER_X
-    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
-    const baseline = mindMapCurveExtentBaseline.value
-    console.log('[BranchMove] curve length after remove nodes', extentsAfter)
-    if (baseline) {
-      console.log('[BranchMove] curve length change vs original', {
-        leftDelta: extentsAfter.left - baseline.left,
-        rightDelta: extentsAfter.right - baseline.right,
-      })
-    }
     nodeIds.forEach((id) => {
       ctx.clearCustomPosition(id)
       ctx.clearNodeStyle(id)
@@ -224,30 +197,14 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
     if (type.value !== 'mindmap' && type.value !== 'mind_map') return false
     if (!data.value?.nodes || !data.value?.connections) return false
 
-    console.log('[BranchMove] start', { branchNodeId, targetType, targetId })
-
     const centerX = DEFAULT_CENTER_X
     const extentsBefore = getMindMapCurveExtents(data.value.nodes, centerX)
-    console.log('[BranchMove] curve length before', extentsBefore)
 
     if (mindMapCurveExtentBaseline.value == null) {
       mindMapCurveExtentBaseline.value = { ...extentsBefore }
-      console.log(
-        '[BranchMove] baseline captured (first move fallback)',
-        mindMapCurveExtentBaseline.value
-      )
     }
 
     const spec = nodesAndConnectionsToMindMapSpec(data.value.nodes, data.value.connections)
-    console.log('[BranchMove] spec from nodes', {
-      leftCount: spec.leftBranches.length,
-      rightCount: spec.rightBranches.length,
-      left: spec.leftBranches.map((b) => ({ text: b.text, childCount: b.children?.length ?? 0 })),
-      right: spec.rightBranches.map((b) => ({
-        text: b.text,
-        childCount: b.children?.length ?? 0,
-      })),
-    })
     const sourceFound = findBranchByNodeId(spec.rightBranches, spec.leftBranches, branchNodeId)
     if (!sourceFound) return false
 
@@ -304,31 +261,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       return false
     }
 
-    const sourceParent =
-      parentArray === spec.leftBranches
-        ? 'left-top'
-        : parentArray === spec.rightBranches
-          ? 'right-top'
-          : 'child'
-    const targetLabel =
-      targetType === 'topic'
-        ? `topic (${cursorFlowX !== undefined && cursorFlowX < DEFAULT_CENTER_X ? 'left' : 'right'})`
-        : targetType === 'child'
-          ? `child of ${targetId}`
-          : `sibling of ${targetId}`
-    console.log('[BranchMove] node moved', {
-      branchNodeId,
-      from: sourceParent,
-      to: targetLabel,
-    })
-
-    console.log('[BranchMove] spec after move', {
-      left: spec.leftBranches.map((b) => ({ text: b.text, childCount: b.children?.length ?? 0 })),
-      right: spec.rightBranches.map((b) => ({
-        text: b.text,
-        childCount: b.children?.length ?? 0,
-      })),
-    })
     const result = loadMindMapSpec({
       topic: spec.topic,
       leftBranches: spec.leftBranches,
@@ -336,27 +268,6 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       preserveLeftRight: true,
     })
     retainMeasuredDimensions(ctx, result.nodes)
-
-    const extentsAfter = getMindMapCurveExtents(result.nodes, centerX)
-    console.log('[BranchMove] curve length after', extentsAfter)
-    const baseline = mindMapCurveExtentBaseline.value
-    console.log('[BranchMove] curve length change vs previous', {
-      leftDelta: extentsAfter.left - extentsBefore.left,
-      rightDelta: extentsAfter.right - extentsBefore.right,
-    })
-    if (baseline) {
-      console.log('[BranchMove] curve length change vs original', {
-        leftDelta: extentsAfter.left - baseline.left,
-        rightDelta: extentsAfter.right - baseline.right,
-      })
-    }
-
-    const branchPositions = result.nodes
-      .filter((n): n is DiagramNode & { position: Position } =>
-        Boolean(n.type === 'branch' && n.position)
-      )
-      .map((n) => ({ id: n.id, x: n.position.x, y: n.position.y }))
-    console.log('[BranchMove] result positions', { branchPositions })
 
     const current = data.value as Record<string, unknown>
     const { _layout, _customPositions, _node_styles, ...rest } = current

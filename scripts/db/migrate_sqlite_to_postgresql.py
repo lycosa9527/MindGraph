@@ -6,7 +6,7 @@ It can be run independently of the server startup process.
 
 Usage:
     python scripts/db/migrate_sqlite_to_postgresql.py
-    
+
     # With options:
     python scripts/db/migrate_sqlite_to_postgresql.py --force
     python scripts/db/migrate_sqlite_to_postgresql.py --verify-only
@@ -22,10 +22,10 @@ Options:
 Examples:
     # Check migration status
     python scripts/db/migrate_sqlite_to_postgresql.py --check-status
-    
+
     # Run migration
     python scripts/db/migrate_sqlite_to_postgresql.py
-    
+
     # Verify existing migration
     python scripts/db/migrate_sqlite_to_postgresql.py --verify-only
 
@@ -54,7 +54,7 @@ project_root = Path(__file__).parent.parent.parent
 sys.path.insert(0, str(project_root))
 
 # Set up environment
-os.environ.setdefault('PYTHONPATH', str(project_root))
+os.environ.setdefault("PYTHONPATH", str(project_root))
 
 # Load .env file if it exists (before importing migration module)
 try:
@@ -77,21 +77,21 @@ except Exception as e:
 
 # Set default PostgreSQL data directory for Ubuntu when running as root
 # This avoids permission issues with /root/ directories
-if sys.platform != 'win32':
+if sys.platform != "win32":
     try:
         # Check if running as root
-        IS_ROOT = os.geteuid() == 0 if hasattr(os, 'geteuid') else False
+        IS_ROOT = os.geteuid() == 0 if hasattr(os, "geteuid") else False
 
         # Check if POSTGRESQL_DATA_DIR is not already set
-        if IS_ROOT and not os.getenv('POSTGRESQL_DATA_DIR'):
+        if IS_ROOT and not os.getenv("POSTGRESQL_DATA_DIR"):
             # Check if we're on Ubuntu/Linux (not macOS)
             try:
-                with open('/etc/os-release', 'r', encoding='utf-8') as os_file:
+                with open("/etc/os-release", "r", encoding="utf-8") as os_file:
                     os_release = os_file.read()
-                    if 'ubuntu' in os_release.lower() or 'debian' in os_release.lower():
+                    if "ubuntu" in os_release.lower() or "debian" in os_release.lower():
                         # Use /var/lib/postgresql/mindgraph as default on Ubuntu/Debian
-                        DEFAULT_PG_DIR = '/var/lib/postgresql/mindgraph'
-                        os.environ['POSTGRESQL_DATA_DIR'] = DEFAULT_PG_DIR
+                        DEFAULT_PG_DIR = "/var/lib/postgresql/mindgraph"
+                        os.environ["POSTGRESQL_DATA_DIR"] = DEFAULT_PG_DIR
                         print(f"[INFO] Running as root on Ubuntu - using PostgreSQL data directory: {DEFAULT_PG_DIR}")
                         print("[INFO] (Set POSTGRESQL_DATA_DIR environment variable to override)")
             except (FileNotFoundError, OSError, PermissionError):
@@ -104,19 +104,21 @@ if sys.platform != 'win32':
 # Configure logging
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] %(levelname)-8s | %(name)s | %(message)s',
-    datefmt='%Y-%m-%d %H:%M:%S'
+    format="[%(asctime)s] %(levelname)-8s | %(name)s | %(message)s",
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 
 logger = logging.getLogger(__name__)
 
 try:
-    from utils.migration.sqlite_to_postgresql.data_migration import migrate_sqlite_to_postgresql
+    from utils.migration.sqlite_to_postgresql.data_migration import (
+        migrate_sqlite_to_postgresql,
+    )
     from utils.migration.sqlite.migration_utils import (
         get_sqlite_db_path,
         is_migration_completed,
         is_postgresql_empty,
-        MIGRATION_MARKER_FILE
+        MIGRATION_MARKER_FILE,
     )
     from utils.migration.sqlite.migration_verification import verify_migration
 except ImportError as e:
@@ -127,8 +129,11 @@ except ImportError as e:
 
 # Import PostgreSQL startup functions
 try:
-    from services.infrastructure.utils.dependency_checker import check_postgresql_installed
+    from services.infrastructure.utils.dependency_checker import (
+        check_postgresql_installed,
+    )
     from services.infrastructure.process.process_manager import start_postgresql_server
+
     POSTGRESQL_STARTUP_AVAILABLE = True
 except ImportError:
     POSTGRESQL_STARTUP_AVAILABLE = False
@@ -138,7 +143,7 @@ except ImportError:
 def ensure_postgresql_running() -> bool:
     """
     Ensure PostgreSQL is running, starting it if necessary.
-    
+
     Returns:
         bool: True if PostgreSQL is running, False otherwise
     """
@@ -189,12 +194,12 @@ def check_migration_status() -> None:
         print("✓ Migration already completed")
         if MIGRATION_MARKER_FILE.exists():
             try:
-                with open(MIGRATION_MARKER_FILE, 'r', encoding='utf-8') as f:
+                with open(MIGRATION_MARKER_FILE, "r", encoding="utf-8") as f:
                     marker_data = json.load(f)
                 print(f"  Completed at: {marker_data.get('migration_completed_at', 'Unknown')}")
-                if marker_data.get('backup_path'):
+                if marker_data.get("backup_path"):
                     print(f"  Backup location: {marker_data['backup_path']}")
-                stats = marker_data.get('statistics', {})
+                stats = marker_data.get("statistics", {})
                 if stats:
                     print(f"  Tables migrated: {stats.get('tables_migrated', 0)}")
                     print(f"  Total records: {stats.get('total_records', 0)}")
@@ -221,17 +226,17 @@ def check_migration_status() -> None:
         return
 
     # Check PostgreSQL - use defaults from env.example if not set
-    pg_url = os.getenv('DATABASE_URL', '')
+    pg_url = os.getenv("DATABASE_URL", "")
 
     # If DATABASE_URL not set, construct from individual PostgreSQL settings
     # Defaults match env.example values
-    if not pg_url or 'postgresql' not in pg_url.lower():
+    if not pg_url or "postgresql" not in pg_url.lower():
         # Try to construct from individual PostgreSQL environment variables
-        pg_user = os.getenv('POSTGRESQL_USER', 'mindgraph_user')
-        pg_password = os.getenv('POSTGRESQL_PASSWORD', 'mindgraph_password')
-        pg_host = os.getenv('POSTGRESQL_HOST', 'localhost')
-        pg_port = os.getenv('POSTGRESQL_PORT', '5432')
-        pg_database = os.getenv('POSTGRESQL_DATABASE', 'mindgraph')
+        pg_user = os.getenv("POSTGRESQL_USER", "mindgraph_user")
+        pg_password = os.getenv("POSTGRESQL_PASSWORD", "mindgraph_password")
+        pg_host = os.getenv("POSTGRESQL_HOST", "localhost")
+        pg_port = os.getenv("POSTGRESQL_PORT", "5432")
+        pg_database = os.getenv("POSTGRESQL_DATABASE", "mindgraph")
 
         # Construct PostgreSQL URL from components
         pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
@@ -293,22 +298,22 @@ def verify_existing_migration() -> None:
         sys.exit(1)
 
     # Get PostgreSQL URL - use defaults if not set
-    pg_url = os.getenv('DATABASE_URL', '')
+    pg_url = os.getenv("DATABASE_URL", "")
 
     # If DATABASE_URL not set, construct from individual PostgreSQL settings or use defaults
-    if not pg_url or 'postgresql' not in pg_url.lower():
+    if not pg_url or "postgresql" not in pg_url.lower():
         # Try to construct from individual PostgreSQL environment variables
-        pg_user = os.getenv('POSTGRESQL_USER', 'mindgraph_user')
-        pg_password = os.getenv('POSTGRESQL_PASSWORD', 'mindgraph_password')
-        pg_host = os.getenv('POSTGRESQL_HOST', 'localhost')
-        pg_port = os.getenv('POSTGRESQL_PORT', '5432')
-        pg_database = os.getenv('POSTGRESQL_DATABASE', 'mindgraph')
+        pg_user = os.getenv("POSTGRESQL_USER", "mindgraph_user")
+        pg_password = os.getenv("POSTGRESQL_PASSWORD", "mindgraph_password")
+        pg_host = os.getenv("POSTGRESQL_HOST", "localhost")
+        pg_port = os.getenv("POSTGRESQL_PORT", "5432")
+        pg_database = os.getenv("POSTGRESQL_DATABASE", "mindgraph")
 
         # Construct PostgreSQL URL from components
         pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
 
     print(f"SQLite database: {sqlite_path}")
-    print(f"PostgreSQL URL: {pg_url.split('@')[0]}@***" if '@' in pg_url else pg_url)
+    print(f"PostgreSQL URL: {pg_url.split('@')[0]}@***" if "@" in pg_url else pg_url)
     print()
 
     try:
@@ -318,11 +323,11 @@ def verify_existing_migration() -> None:
         print(f"  Tables verified: {stats.get('tables_migrated', 0)}")
         print(f"  Total records: {stats.get('total_records', 0)}")
 
-        mismatches = stats.get('mismatches', [])
+        mismatches = stats.get("mismatches", [])
         if mismatches:
             print("\n  Mismatches found:")
             for mismatch in mismatches:
-                if 'error' in mismatch:
+                if "error" in mismatch:
                     print(f"    - {mismatch.get('table', 'unknown')}: {mismatch['error']}")
                 else:
                     print(
@@ -343,11 +348,14 @@ def verify_existing_migration() -> None:
         sys.exit(1)
 
 
-def run_migration(force: bool = False, sqlite_path_override: Optional[str] = None,
-                  pg_url_override: Optional[str] = None) -> None:
+def run_migration(
+    force: bool = False,
+    sqlite_path_override: Optional[str] = None,
+    pg_url_override: Optional[str] = None,
+) -> None:
     """
     Run the SQLite to PostgreSQL migration.
-    
+
     Args:
         force: If True, allow migration even if PostgreSQL has some tables (for resume)
         sqlite_path_override: Custom SQLite database path
@@ -383,16 +391,12 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
             print(f"[ERROR] Could not validate SQLite database at {sqlite_path_override}: {e}")
             sys.exit(1)
 
-        os.environ['SQLITE_DB_PATH'] = str(sqlite_override_path.resolve())
+        os.environ["SQLITE_DB_PATH"] = str(sqlite_override_path.resolve())
         print(f"[INFO] Using custom SQLite path: {os.environ['SQLITE_DB_PATH']}")
 
     if pg_url_override:
-        os.environ['DATABASE_URL'] = pg_url_override
-        masked_pg_url = (
-            f"{pg_url_override.split('@')[0]}@***"
-            if '@' in pg_url_override
-            else pg_url_override
-        )
+        os.environ["DATABASE_URL"] = pg_url_override
+        masked_pg_url = f"{pg_url_override.split('@')[0]}@***" if "@" in pg_url_override else pg_url_override
         print(f"[INFO] Using custom PostgreSQL URL: {masked_pg_url}")
 
     # Check prerequisites
@@ -419,22 +423,22 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
         sys.exit(1)
 
     # Get PostgreSQL URL - use defaults from env.example if not set
-    pg_url = os.getenv('DATABASE_URL', '')
+    pg_url = os.getenv("DATABASE_URL", "")
 
     # If DATABASE_URL not set or is SQLite, construct from individual PostgreSQL settings
     # Defaults match env.example values
-    if not pg_url or 'postgresql' not in pg_url.lower():
+    if not pg_url or "postgresql" not in pg_url.lower():
         # Try to construct from individual PostgreSQL environment variables
-        pg_user = os.getenv('POSTGRESQL_USER', 'mindgraph_user')
-        pg_password = os.getenv('POSTGRESQL_PASSWORD', 'mindgraph_password')
-        pg_host = os.getenv('POSTGRESQL_HOST', 'localhost')
-        pg_port = os.getenv('POSTGRESQL_PORT', '5432')
-        pg_database = os.getenv('POSTGRESQL_DATABASE', 'mindgraph')
+        pg_user = os.getenv("POSTGRESQL_USER", "mindgraph_user")
+        pg_password = os.getenv("POSTGRESQL_PASSWORD", "mindgraph_password")
+        pg_host = os.getenv("POSTGRESQL_HOST", "localhost")
+        pg_port = os.getenv("POSTGRESQL_PORT", "5432")
+        pg_database = os.getenv("POSTGRESQL_DATABASE", "mindgraph")
 
         # Construct PostgreSQL URL from components
         pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
         # Set DATABASE_URL in environment so migration function uses correct URL
-        os.environ['DATABASE_URL'] = pg_url
+        os.environ["DATABASE_URL"] = pg_url
         print(f"[INFO] Using PostgreSQL defaults from env.example: {pg_user}@{pg_host}:{pg_port}/{pg_database}")
 
     # Check if PostgreSQL is empty (unless forcing)
@@ -452,7 +456,7 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
             sys.exit(1)
 
     print(f"SQLite database: {sqlite_path}")
-    print(f"PostgreSQL URL: {pg_url.split('@')[0]}@***" if '@' in pg_url else pg_url)
+    print(f"PostgreSQL URL: {pg_url.split('@')[0]}@***" if "@" in pg_url else pg_url)
     if force:
         print("⚠️  FORCE MODE: Migration will proceed even if PostgreSQL is not empty")
     print()
@@ -472,7 +476,7 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
             print(f"Total records: {stats.get('total_records', 0)}")
 
             # Display warnings separately from errors (warnings are non-fatal)
-            warnings = stats.get('warnings', [])
+            warnings = stats.get("warnings", [])
             if warnings:
                 print(f"\n⚠️  Warnings ({len(warnings)}):")
                 print("  (These are non-fatal - migration completed with partial issues)")
@@ -482,7 +486,7 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
                     print(f"  ... and {len(warnings) - 10} more")
 
             # Display errors (these are failures)
-            errors = stats.get('errors', [])
+            errors = stats.get("errors", [])
             if errors:
                 print(f"\n❌ Errors ({len(errors)}):")
                 print("  (These indicate failed table migrations)")
@@ -491,18 +495,18 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
                 if len(errors) > 10:
                     print(f"  ... and {len(errors) - 10} more")
 
-            verification = stats.get('verification', {})
+            verification = stats.get("verification", {})
             if verification:
                 print("\nVerification:")
                 print(f"  Tables verified: {verification.get('tables_migrated', 0)}")
                 print(f"  Total records: {verification.get('total_records', 0)}")
-                mismatches = verification.get('mismatches', [])
+                mismatches = verification.get("mismatches", [])
                 if mismatches:
                     print(f"  ⚠️  Mismatches: {len(mismatches)}")
                     for mismatch in mismatches[:5]:
                         print(f"    - {mismatch.get('table', 'unknown')}")
 
-            backup_path = stats.get('backup_path')
+            backup_path = stats.get("backup_path")
             if backup_path:
                 print(f"\nBackup created: {backup_path}")
         else:
@@ -520,7 +524,7 @@ def run_migration(force: bool = False, sqlite_path_override: Optional[str] = Non
 def main() -> None:
     """Main entry point."""
     parser = argparse.ArgumentParser(
-        description='Migrate data from SQLite to PostgreSQL',
+        description="Migrate data from SQLite to PostgreSQL",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
 Examples:
@@ -535,34 +539,26 @@ Examples:
   
   # Force migration (dangerous)
   python scripts/db/migrate_sqlite_to_postgresql.py --force
-        """
+        """,
     )
 
     parser.add_argument(
-        '--force',
-        action='store_true',
-        help='Force migration even if PostgreSQL is not empty (DANGEROUS)'
+        "--force",
+        action="store_true",
+        help="Force migration even if PostgreSQL is not empty (DANGEROUS)",
     )
     parser.add_argument(
-        '--verify-only',
-        action='store_true',
-        help='Only verify migration status without running migration'
+        "--verify-only",
+        action="store_true",
+        help="Only verify migration status without running migration",
     )
     parser.add_argument(
-        '--check-status',
-        action='store_true',
-        help='Check if migration is needed/completed'
+        "--check-status",
+        action="store_true",
+        help="Check if migration is needed/completed",
     )
-    parser.add_argument(
-        '--sqlite-path',
-        type=str,
-        help='Specify custom SQLite database path'
-    )
-    parser.add_argument(
-        '--pg-url',
-        type=str,
-        help='Specify custom PostgreSQL connection URL'
-    )
+    parser.add_argument("--sqlite-path", type=str, help="Specify custom SQLite database path")
+    parser.add_argument("--pg-url", type=str, help="Specify custom PostgreSQL connection URL")
 
     args = parser.parse_args()
 
@@ -575,9 +571,9 @@ Examples:
         run_migration(
             force=args.force,
             sqlite_path_override=args.sqlite_path,
-            pg_url_override=args.pg_url
+            pg_url_override=args.pg_url,
         )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

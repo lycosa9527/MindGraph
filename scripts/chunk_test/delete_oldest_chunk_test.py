@@ -3,6 +3,7 @@ Delete the oldest completed chunk test result that doesn't have session_id.
 
 This script automatically finds and deletes the oldest completed test result.
 """
+
 import importlib
 import logging
 import os
@@ -15,13 +16,13 @@ sys.path.insert(0, _PROJECT_ROOT)
 # Dynamic imports after path modification
 # Import all models first to ensure relationships are resolved
 try:
-    importlib.import_module('models.auth')
-    importlib.import_module('models.knowledge_space')
+    importlib.import_module("models.auth")
+    importlib.import_module("models.knowledge_space")
 except Exception:
     pass  # Models may have circular dependencies, continue anyway
 
-_config_database = importlib.import_module('config.database')
-_models_knowledge_space = importlib.import_module('models.knowledge_space')
+_config_database = importlib.import_module("config.database")
+_models_knowledge_space = importlib.import_module("models.knowledge_space")
 
 SessionLocal = _config_database.SessionLocal
 engine = _config_database.engine
@@ -34,22 +35,22 @@ logger = logging.getLogger(__name__)
 def check_for_session_id_column():
     """Check if session_id column exists in the table."""
     from sqlalchemy import inspect
-    
+
     inspector = inspect(engine)
-    
-    if 'chunk_test_results' not in inspector.get_table_names():
+
+    if "chunk_test_results" not in inspector.get_table_names():
         return False
-    
-    columns = [col['name'] for col in inspector.get_columns('chunk_test_results')]
-    return 'session_id' in columns
+
+    columns = [col["name"] for col in inspector.get_columns("chunk_test_results")]
+    return "session_id" in columns
 
 
 def find_oldest_test_without_session_id(db):
     """Find the oldest test result without session_id."""
     from sqlalchemy import text
-    
+
     has_session_id_column = check_for_session_id_column()
-    
+
     if has_session_id_column:
         # Query for oldest record where session_id is NULL
         query = text("""
@@ -76,7 +77,7 @@ def find_oldest_test_without_session_id(db):
 def get_test_info(db, test_id: int):
     """Get test information using raw SQL."""
     from sqlalchemy import text
-    
+
     query = text("""
         SELECT id, user_id, dataset_name, status, created_at, document_ids,
                semchunk_chunk_count, mindchunk_chunk_count
@@ -91,13 +92,13 @@ def get_test_info(db, test_id: int):
 def delete_test_by_id(db, test_id: int) -> bool:
     """Delete a test result by ID using raw SQL."""
     from sqlalchemy import text
-    
+
     # Get test info first
     test_info = get_test_info(db, test_id)
     if not test_info:
         print(f"Test {test_id} not found")
         return False
-    
+
     try:
         print("\nTest to delete:")
         print(f"  ID: {test_info[0]}")
@@ -107,7 +108,7 @@ def delete_test_by_id(db, test_id: int) -> bool:
         print(f"  Created: {test_info[4]}")
         if test_info[5]:
             print(f"  Document IDs: {test_info[5]}")
-        
+
         # Delete using raw SQL
         delete_query = text("DELETE FROM chunk_test_results WHERE id = :test_id")
         db.execute(delete_query, {"test_id": test_id})
@@ -118,6 +119,7 @@ def delete_test_by_id(db, test_id: int) -> bool:
         db.rollback()
         print(f"[ERROR] Error deleting test {test_id}: {e}")
         import traceback
+
         traceback.print_exc()
         return False
 
@@ -125,25 +127,26 @@ def delete_test_by_id(db, test_id: int) -> bool:
 def main():
     """Main function."""
     db = SessionLocal()
-    
+
     try:
         print("Checking for chunk test results without session_id...")
-        
+
         test_id = find_oldest_test_without_session_id(db)
-        
+
         if not test_id:
             print("No test results found without session_id.")
             return
-        
+
         # Delete the test
         if delete_test_by_id(db, test_id):
             print("Done!")
         else:
             print("Failed to delete test.")
-    
+
     except Exception as e:
         print(f"[ERROR] Error: {e}")
         import traceback
+
         traceback.print_exc()
         db.rollback()
     finally:

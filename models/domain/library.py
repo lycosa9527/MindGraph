@@ -16,7 +16,17 @@ from datetime import datetime
 import uuid
 from typing import Optional, TYPE_CHECKING
 
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index, UniqueConstraint
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    Text,
+    Index,
+    UniqueConstraint,
+)
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -39,6 +49,7 @@ class LibraryDocument(Base):
     Can be either a PDF document or an image-based document (pages exported as images).
     Documents are managed manually (uploaded to storage/library/).
     """
+
     __tablename__ = "library_documents"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True, index=True)
@@ -88,9 +99,9 @@ class LibraryDocument(Base):
 
     # Indexes for efficient queries
     __table_args__ = (
-        Index('ix_library_documents_created', 'created_at'),
-        Index('ix_library_documents_active', 'is_active'),
-        Index('ix_library_documents_pages_dir', 'pages_dir_path'),
+        Index("ix_library_documents_created", "created_at"),
+        Index("ix_library_documents_active", "is_active"),
+        Index("ix_library_documents_pages_dir", "pages_dir_path"),
     )
 
     def __repr__(self):
@@ -105,10 +116,16 @@ class LibraryDanmaku(Base):
     1. Text selection mode: Comments on selected text (for OCRed PDFs)
     2. Position mode: Comments at specific coordinates (fallback)
     """
+
     __tablename__ = "library_danmaku"
 
     id = Column(Integer, primary_key=True, index=True)
-    document_id = Column(Integer, ForeignKey("library_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("library_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Page info
@@ -142,11 +159,12 @@ class LibraryDanmaku(Base):
 
     # Indexes for efficient queries
     __table_args__ = (
-        Index('ix_library_danmaku_document_page', 'document_id', 'page_number'),
-        Index('ix_library_danmaku_created', 'created_at'),
+        Index("ix_library_danmaku_document_page", "document_id", "page_number"),
+        Index("ix_library_danmaku_created", "created_at"),
         Index(
-            'ix_library_danmaku_selected_text', 'selected_text',
-            postgresql_using='hash',
+            "ix_library_danmaku_selected_text",
+            "selected_text",
+            postgresql_using="hash",
         ),
     )
 
@@ -160,10 +178,16 @@ class LibraryDanmakuLike(Base):
 
     One like per user per danmaku.
     """
+
     __tablename__ = "library_danmaku_likes"
 
     id = Column(Integer, primary_key=True, index=True)
-    danmaku_id = Column(Integer, ForeignKey("library_danmaku.id", ondelete="CASCADE"), nullable=False, index=True)
+    danmaku_id = Column(
+        Integer,
+        ForeignKey("library_danmaku.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
 
@@ -172,9 +196,7 @@ class LibraryDanmakuLike(Base):
     user = relationship("User")
 
     # Unique constraint: one like per user per danmaku
-    __table_args__ = (
-        Index('ix_library_danmaku_likes_unique', 'danmaku_id', 'user_id', unique=True),
-    )
+    __table_args__ = (Index("ix_library_danmaku_likes_unique", "danmaku_id", "user_id", unique=True),)
 
     def __repr__(self):
         return f"<LibraryDanmakuLike danmaku_id={self.danmaku_id} user_id={self.user_id}>"
@@ -186,14 +208,22 @@ class LibraryDanmakuReply(Base):
 
     Supports nested replies via parent_reply_id.
     """
+
     __tablename__ = "library_danmaku_replies"
 
     id = Column(Integer, primary_key=True, index=True)
-    danmaku_id = Column(Integer, ForeignKey("library_danmaku.id", ondelete="CASCADE"), nullable=False, index=True)
+    danmaku_id = Column(
+        Integer,
+        ForeignKey("library_danmaku.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     parent_reply_id = Column(
-        Integer, ForeignKey("library_danmaku_replies.id", ondelete="CASCADE"),
-        nullable=True, index=True
+        Integer,
+        ForeignKey("library_danmaku_replies.id", ondelete="CASCADE"),
+        nullable=True,
+        index=True,
     )  # For nested replies
     content = Column(Text, nullable=False)
 
@@ -211,8 +241,8 @@ class LibraryDanmakuReply(Base):
 
     # Indexes for efficient queries
     __table_args__ = (
-        Index('ix_library_danmaku_replies_danmaku', 'danmaku_id', 'created_at'),
-        Index('ix_library_danmaku_replies_parent', 'parent_reply_id'),
+        Index("ix_library_danmaku_replies_danmaku", "danmaku_id", "created_at"),
+        Index("ix_library_danmaku_replies_parent", "parent_reply_id"),
     )
 
     def __repr__(self):
@@ -226,13 +256,19 @@ class LibraryBookmark(Base):
     Users can bookmark specific pages in documents for quick access.
     Uses UUID for secure, non-guessable bookmark identification.
     """
+
     __tablename__ = "library_bookmarks"
 
     id = Column(Integer, primary_key=True, autoincrement=True, index=True)
     # uuid has unique=True which creates a UNIQUE constraint (implemented as UNIQUE INDEX)
     # No need for index=True or explicit Index - unique=True already creates the index
     uuid = Column(String(36), nullable=False, unique=True, default=generate_uuid)  # UUID for tracking/sharing
-    document_id = Column(Integer, ForeignKey("library_documents.id", ondelete="CASCADE"), nullable=False, index=True)
+    document_id = Column(
+        Integer,
+        ForeignKey("library_documents.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
 
     # Page info
@@ -251,9 +287,14 @@ class LibraryBookmark(Base):
 
     # Unique constraint: one bookmark per user per document per page
     __table_args__ = (
-        UniqueConstraint('document_id', 'user_id', 'page_number', name='uq_library_bookmark_doc_user_page'),
-        Index('ix_library_bookmarks_user_created', 'user_id', 'created_at'),
-        Index('ix_library_bookmark_doc_page', 'document_id', 'page_number'),
+        UniqueConstraint(
+            "document_id",
+            "user_id",
+            "page_number",
+            name="uq_library_bookmark_doc_user_page",
+        ),
+        Index("ix_library_bookmarks_user_created", "user_id", "created_at"),
+        Index("ix_library_bookmark_doc_page", "document_id", "page_number"),
         # Removed Index('ix_library_bookmarks_uuid', 'uuid') - redundant with unique=True on uuid column
     )
 

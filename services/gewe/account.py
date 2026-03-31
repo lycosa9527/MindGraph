@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Dict, Any, Optional
 import logging
 
@@ -27,7 +28,7 @@ class AccountServiceMixin(GeweServiceBase):
         device_type: str = "mac",
         proxy_ip: Optional[str] = None,
         ttuid: Optional[str] = None,
-        aid: Optional[str] = None
+        aid: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Get login QR code."""
         client = self._get_gewe_client()
@@ -37,7 +38,7 @@ class AccountServiceMixin(GeweServiceBase):
             device_type=device_type,
             proxy_ip=proxy_ip,
             ttuid=ttuid,
-            aid=aid
+            aid=aid,
         )
 
     async def check_login(
@@ -46,7 +47,7 @@ class AccountServiceMixin(GeweServiceBase):
         uuid: str,
         auto_sliding: bool = False,
         proxy_ip: Optional[str] = None,
-        captch_code: Optional[str] = None
+        captch_code: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Check login status. Saves app_id and wxid on successful login."""
         client = self._get_gewe_client()
@@ -55,27 +56,35 @@ class AccountServiceMixin(GeweServiceBase):
             uuid=uuid,
             auto_sliding=auto_sliding,
             proxy_ip=proxy_ip,
-            captch_code=captch_code
+            captch_code=captch_code,
         )
 
-        if result.get('ret') == 200:
-            data = result.get('data', {})
+        if result.get("ret") == 200:
+            data = result.get("data", {})
             if isinstance(data, dict):
-                status = data.get('status')
+                status = data.get("status")
                 if status == 2:
-                    login_info = data.get('loginInfo', {})
+                    login_info = data.get("loginInfo", {})
                     if isinstance(login_info, dict):
-                        wxid = login_info.get('wxid', '')
-                        login_app_id = data.get('appId') or app_id
+                        wxid = login_info.get("wxid", "")
+                        login_app_id = data.get("appId") or app_id
                         if login_app_id and wxid:
                             self._save_login_info(login_app_id, wxid)
-                            logger.info("Login successful, saved app_id=%s, wxid=%s", login_app_id, wxid)
+                            logger.info(
+                                "Login successful, saved app_id=%s, wxid=%s",
+                                login_app_id,
+                                wxid,
+                            )
                     else:
-                        wxid = data.get('wxid') or data.get('Wxid') or data.get('wxId', '')
-                        login_app_id = data.get('appId') or app_id
+                        wxid = data.get("wxid") or data.get("Wxid") or data.get("wxId", "")
+                        login_app_id = data.get("appId") or app_id
                         if login_app_id and wxid:
                             self._save_login_info(login_app_id, wxid)
-                            logger.info("Login successful (fallback), saved app_id=%s, wxid=%s", login_app_id, wxid)
+                            logger.info(
+                                "Login successful (fallback), saved app_id=%s, wxid=%s",
+                                login_app_id,
+                                wxid,
+                            )
 
         return result
 
@@ -83,11 +92,7 @@ class AccountServiceMixin(GeweServiceBase):
         """Get saved login info."""
         return self._load_login_info()
 
-
-    async def set_callback(
-        self,
-        callback_url: str
-    ) -> Dict[str, Any]:
+    async def set_callback(self, callback_url: str) -> Dict[str, Any]:
         """Set callback URL for receiving messages."""
         client = self._get_gewe_client()
         return await client.set_callback(callback_url=callback_url)
@@ -99,7 +104,7 @@ class AccountServiceMixin(GeweServiceBase):
         password: str,
         region_id: str,
         step: int,
-        proxy_ip: Optional[str] = None
+        proxy_ip: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Login by account and password (2-step process)."""
         client = self._get_gewe_client()
@@ -109,21 +114,15 @@ class AccountServiceMixin(GeweServiceBase):
             password=password,
             region_id=region_id,
             step=step,
-            proxy_ip=proxy_ip
+            proxy_ip=proxy_ip,
         )
 
-    async def check_online(
-        self,
-        app_id: str
-    ) -> Dict[str, Any]:
+    async def check_online(self, app_id: str) -> Dict[str, Any]:
         """Check if account is online."""
         client = self._get_gewe_client()
         return await client.check_online(app_id=app_id)
 
-    async def logout(
-        self,
-        app_id: str
-    ) -> Dict[str, Any]:
+    async def logout(self, app_id: str) -> Dict[str, Any]:
         """Logout."""
         client = self._get_gewe_client()
         return await client.logout(app_id=app_id)

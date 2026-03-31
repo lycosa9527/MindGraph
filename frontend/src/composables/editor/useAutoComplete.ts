@@ -559,8 +559,6 @@ export function useAutoComplete() {
       language,
     })
 
-    console.log(`[AutoComplete] Starting parallel generation with ${modelsToRun.length} models`)
-
     try {
       const abortControllers = modelsToRun.map(() => new AbortController())
       abortControllers.forEach((controller) => llmResultsStore.addAbortController(controller))
@@ -593,19 +591,19 @@ export function useAutoComplete() {
                 model,
                 elapsedTime: result.elapsed,
               })
-
-              console.log(
-                `[AutoComplete] First result from ${model} rendered (${result.elapsed.toFixed(2)}s)`
-              )
             }
           } else {
             llmResultsStore.handleModelError(model, result.error || 'Unknown error', result.elapsed)
-            console.warn(`[AutoComplete] ${model} failed: ${result.error}`)
+            if (import.meta.env.DEV) {
+              console.warn(`[AutoComplete] ${model} failed: ${result.error}`)
+            }
           }
         } catch (err) {
           const reason = err instanceof Error ? err.message : 'Request failed'
           llmResultsStore.handleModelError(model, reason, 0)
-          console.warn(`[AutoComplete] ${model} rejected:`, err)
+          if (import.meta.env.DEV) {
+            console.warn(`[AutoComplete] ${model} rejected:`, err)
+          }
         } finally {
           llmResultsStore.removeAbortController(abortControllers[index])
         }
@@ -617,8 +615,6 @@ export function useAutoComplete() {
 
       const successCount = llmResultsStore.successCount
       const totalCount = modelsToRun.length
-
-      console.log(`[AutoComplete] Completed: ${successCount}/${totalCount} successful`)
 
       eventBus.emit('llm:generation_completed', {
         successCount,

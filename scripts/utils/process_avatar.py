@@ -1,4 +1,4 @@
-﻿"""
+"""
 Script to process avatars for web usage.
 Creates optimized versions at different sizes for all images.
 Source file locations:
@@ -12,6 +12,7 @@ Source file locations:
   - static/avatars/judge-source.png
   - static/avatars/user-source.png
 """
+
 from pathlib import Path
 
 from PIL import Image
@@ -69,22 +70,22 @@ def process_avatars():
     # MindMate avatar sizes (2x for retina displays)
     mindmate_sizes = {
         "mindmate-avatar-lg.png": 256,  # Large size for fullpage welcome (displays at 128px)
-        "mindmate-avatar-md.png": 96,   # Medium size for chat messages (displays at 48px)
-        "mindmate-avatar-sm.png": 64,   # Small size for header/inline (displays at 32px)
+        "mindmate-avatar-md.png": 96,  # Medium size for chat messages (displays at 48px)
+        "mindmate-avatar-sm.png": 64,  # Small size for header/inline (displays at 32px)
     }
 
     # MindGraph logo sizes (2x for retina displays)
     mindgraph_sizes = {
         "mindgraph-logo-lg.png": 256,  # Large size (displays at 128px)
         "mindgraph-logo-md.png": 192,  # Medium size for main display (displays at 96px)
-        "mindgraph-logo-sm.png": 96,   # Small size (displays at 48px)
+        "mindgraph-logo-sm.png": 96,  # Small size (displays at 48px)
     }
 
     # Debateverse avatar sizes (2x for retina displays)
     debateverse_sizes = {
         "debateverse-avatar-lg.png": 256,  # Large size for fullpage welcome (displays at 128px)
-        "debateverse-avatar-md.png": 96,   # Medium size for chat messages (displays at 48px)
-        "debateverse-avatar-sm.png": 64,   # Small size for header/inline (displays at 32px)
+        "debateverse-avatar-md.png": 96,  # Medium size for chat messages (displays at 48px)
+        "debateverse-avatar-sm.png": 64,  # Small size for header/inline (displays at 32px)
     }
 
     # LLM avatar sizes for debate (used in debateverse) - 120px for debate avatars
@@ -107,10 +108,20 @@ def process_avatars():
     process_image(qwen_source, assets_dir, {"qwen-avatar.png": llm_avatar_size}, "Qwen Avatar")
 
     deepseek_source = avatars_dir / "deepseek-source.png"
-    process_image(deepseek_source, assets_dir, {"deepseek-avatar.png": llm_avatar_size}, "DeepSeek Avatar")
+    process_image(
+        deepseek_source,
+        assets_dir,
+        {"deepseek-avatar.png": llm_avatar_size},
+        "DeepSeek Avatar",
+    )
 
     doubao_source = avatars_dir / "doubao-source.png"
-    process_image(doubao_source, assets_dir, {"doubao-avatar.png": llm_avatar_size}, "Doubao Avatar")
+    process_image(
+        doubao_source,
+        assets_dir,
+        {"doubao-avatar.png": llm_avatar_size},
+        "Doubao Avatar",
+    )
 
     kimi_source = avatars_dir / "kimi-source.png"
     process_image(kimi_source, assets_dir, {"kimi-avatar.png": llm_avatar_size}, "Kimi Avatar")

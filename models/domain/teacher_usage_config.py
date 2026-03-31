@@ -53,11 +53,10 @@ class TeacherUsageConfig(Base):
 
     Key 'classification_thresholds' stores JSON matching _default_thresholds().
     """
+
     __tablename__ = "teacher_usage_config"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     config_key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     config_value: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow
-    )
+    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)

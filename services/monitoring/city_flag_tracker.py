@@ -30,7 +30,6 @@ Proprietary License
 """
 
 
-
 logger = logging.getLogger(__name__)
 
 # Key prefix
@@ -57,8 +56,13 @@ class CityFlagTracker:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def record_city_flag(self, city_name: str, province_name: Optional[str] = None,
-                        lat: Optional[float] = None, lng: Optional[float] = None):
+    def record_city_flag(
+        self,
+        city_name: str,
+        province_name: Optional[str] = None,
+        lat: Optional[float] = None,
+        lng: Optional[float] = None,
+    ):
         """
         Record a flag for a city (triggered when user logs in from that city).
 
@@ -76,9 +80,9 @@ class CityFlagTracker:
                 return  # No location data available
 
         flag_data = {
-            'timestamp': datetime.now(timezone.utc).isoformat(),
-            'lat': lat,
-            'lng': lng
+            "timestamp": datetime.now(timezone.utc).isoformat(),
+            "lat": lat,
+            "lng": lng,
         }
 
         if self._use_redis():
@@ -90,9 +94,14 @@ class CityFlagTracker:
                     redis.setex(
                         flag_key,
                         FLAG_DURATION_SECONDS,
-                        json.dumps(flag_data, ensure_ascii=False)
+                        json.dumps(flag_data, ensure_ascii=False),
                     )
-                    logger.debug("[CityFlag] Recorded flag for city: %s (lat: %s, lng: %s)", city_name, lat, lng)
+                    logger.debug(
+                        "[CityFlag] Recorded flag for city: %s (lat: %s, lng: %s)",
+                        city_name,
+                        lat,
+                        lng,
+                    )
                     return
             except Exception as e:
                 logger.error("[CityFlag] Error recording flag in Redis: %s", e)
@@ -108,7 +117,7 @@ class CityFlagTracker:
         expired_cities = []
         for city, flag_data in self._memory_flags.items():
             if isinstance(flag_data, dict):
-                timestamp_str = flag_data.get('timestamp', '')
+                timestamp_str = flag_data.get("timestamp", "")
                 if timestamp_str:
                     try:
                         timestamp = datetime.fromisoformat(timestamp_str)
@@ -144,35 +153,43 @@ class CityFlagTracker:
                         cursor, keys = redis.scan(cursor, match=pattern, count=100)
                         for key in keys:
                             try:
-                                city_name = key.decode('utf-8').replace(CITY_FLAG_PREFIX, '')
+                                city_name = key.decode("utf-8").replace(CITY_FLAG_PREFIX, "")
                                 flag_data_str = redis.get(key)
                                 if flag_data_str:
                                     # Try to parse as JSON (new format with coordinates)
                                     try:
-                                        flag_data = json.loads(flag_data_str.decode('utf-8'))
-                                        timestamp_str = flag_data.get('timestamp', '')
+                                        flag_data = json.loads(flag_data_str.decode("utf-8"))
+                                        timestamp_str = flag_data.get("timestamp", "")
                                         if timestamp_str:
                                             timestamp = datetime.fromisoformat(timestamp_str)
                                             # Check if flag is still valid (within 1 hour)
                                             if (now - timestamp).total_seconds() < FLAG_DURATION_SECONDS:
-                                                flags.append({
-                                                    'city': city_name,
-                                                    'timestamp': timestamp_str,
-                                                    'lat': flag_data.get('lat'),
-                                                    'lng': flag_data.get('lng')
-                                                })
+                                                flags.append(
+                                                    {
+                                                        "city": city_name,
+                                                        "timestamp": timestamp_str,
+                                                        "lat": flag_data.get("lat"),
+                                                        "lng": flag_data.get("lng"),
+                                                    }
+                                                )
                                     except (json.JSONDecodeError, ValueError):
                                         # Fallback: old format (timestamp string only)
-                                        timestamp = datetime.fromisoformat(flag_data_str.decode('utf-8'))
+                                        timestamp = datetime.fromisoformat(flag_data_str.decode("utf-8"))
                                         if (now - timestamp).total_seconds() < FLAG_DURATION_SECONDS:
-                                            flags.append({
-                                                'city': city_name,
-                                                'timestamp': timestamp.isoformat(),
-                                                'lat': None,
-                                                'lng': None
-                                            })
+                                            flags.append(
+                                                {
+                                                    "city": city_name,
+                                                    "timestamp": timestamp.isoformat(),
+                                                    "lat": None,
+                                                    "lng": None,
+                                                }
+                                            )
                             except Exception as e:
-                                logger.debug("[CityFlag] Error processing flag key %s: %s", key, e)
+                                logger.debug(
+                                    "[CityFlag] Error processing flag key %s: %s",
+                                    key,
+                                    e,
+                                )
                                 continue
 
                         if cursor == 0:
@@ -186,20 +203,24 @@ class CityFlagTracker:
         self._cleanup_expired_flags()
         for city, flag_data in self._memory_flags.items():
             if isinstance(flag_data, dict):
-                flags.append({
-                    'city': city,
-                    'timestamp': flag_data.get('timestamp', datetime.now(timezone.utc).isoformat()),
-                    'lat': flag_data.get('lat'),
-                    'lng': flag_data.get('lng')
-                })
+                flags.append(
+                    {
+                        "city": city,
+                        "timestamp": flag_data.get("timestamp", datetime.now(timezone.utc).isoformat()),
+                        "lat": flag_data.get("lat"),
+                        "lng": flag_data.get("lng"),
+                    }
+                )
             else:
                 # Old format
-                flags.append({
-                    'city': city,
-                    'timestamp': flag_data.isoformat() if isinstance(flag_data, datetime) else str(flag_data),
-                    'lat': None,
-                    'lng': None
-                })
+                flags.append(
+                    {
+                        "city": city,
+                        "timestamp": flag_data.isoformat() if isinstance(flag_data, datetime) else str(flag_data),
+                        "lat": None,
+                        "lng": None,
+                    }
+                )
 
         return flags
 
@@ -214,4 +235,3 @@ def get_city_flag_tracker() -> CityFlagTracker:
     if _city_flag_tracker is None:
         _city_flag_tracker = CityFlagTracker()
     return _city_flag_tracker
-

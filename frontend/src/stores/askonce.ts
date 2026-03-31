@@ -268,12 +268,11 @@ export const useAskOnceStore = defineStore('askonce', () => {
         }
       }
 
-      console.debug(
-        `[AskOnceStore] Loaded ${conversations.value.length} conversations from localStorage`
-      )
       return true
     } catch (error) {
-      console.warn('[AskOnceStore] Failed to load from localStorage:', error)
+      if (import.meta.env.DEV) {
+        console.warn('[AskOnceStore] Failed to load from localStorage:', error)
+      }
       localStorage.removeItem(STORAGE_KEY)
       return false
     }
@@ -517,7 +516,6 @@ export const useAskOnceStore = defineStore('askonce', () => {
     (isAuth, wasAuth) => {
       // Clear when user logs out
       if (wasAuth && !isAuth) {
-        console.debug('[AskOnceStore] User logged out, clearing session')
         clearAll()
       }
     }

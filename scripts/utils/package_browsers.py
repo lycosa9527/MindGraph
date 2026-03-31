@@ -1,4 +1,4 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 """
 Package Playwright Browsers for Offline Distribution
 
@@ -31,12 +31,14 @@ import tempfile
 import urllib.request
 from pathlib import Path
 
+
 def get_project_root():
     """Get the project root directory"""
     script_dir = os.path.dirname(os.path.abspath(__file__))
     if os.path.basename(script_dir) == "scripts":
         return os.path.dirname(script_dir)
     return script_dir
+
 
 def download_playwright_browser_for_platform(target_platform):
     """
@@ -54,13 +56,15 @@ def download_playwright_browser_for_platform(target_platform):
     try:
         # Get Chromium revision from current installation
         from playwright.sync_api import sync_playwright
+
         with sync_playwright() as p:
             # Get browser revision
             browser_path = p.chromium.executable_path
             if browser_path:
                 # Extract revision from path (e.g., chromium-1194)
                 import re
-                match = re.search(r'chromium-(\d+)', browser_path)
+
+                match = re.search(r"chromium-(\d+)", browser_path)
                 if match:
                     revision = match.group(1)
                 else:
@@ -70,11 +74,7 @@ def download_playwright_browser_for_platform(target_platform):
                 revision = "1194"
 
         # Map platform names to Playwright CDN platform names
-        platform_map = {
-            "windows": "win64",
-            "linux": "linux",
-            "mac": "mac"
-        }
+        platform_map = {"windows": "win64", "linux": "linux", "mac": "mac"}
 
         cdn_platform = platform_map.get(target_platform)
         if not cdn_platform:
@@ -95,7 +95,11 @@ def download_playwright_browser_for_platform(target_platform):
         def show_progress(block_num, block_size, total_size):
             downloaded = block_num * block_size
             percent = min(downloaded * 100 / total_size, 100) if total_size > 0 else 0
-            print(f"\r    Downloading: {percent:.1f}% ({downloaded/(1024*1024):.1f}MB / {total_size/(1024*1024):.1f}MB)", end='', flush=True)
+            print(
+                f"\r    Downloading: {percent:.1f}% ({downloaded / (1024 * 1024):.1f}MB / {total_size / (1024 * 1024):.1f}MB)",
+                end="",
+                flush=True,
+            )
 
         urllib.request.urlretrieve(zip_url, zip_file, show_progress)
         print()  # New line after progress
@@ -105,7 +109,7 @@ def download_playwright_browser_for_platform(target_platform):
         extract_dir.mkdir(exist_ok=True)
 
         print("[INFO] Extracting zip file...")
-        with zipfile.ZipFile(zip_file, 'r') as zipf:
+        with zipfile.ZipFile(zip_file, "r") as zipf:
             zipf.extractall(extract_dir)
 
         # Find Chromium directory
@@ -128,8 +132,10 @@ def download_playwright_browser_for_platform(target_platform):
     except Exception as e:
         print(f"[WARNING] Failed to download Chromium for {target_platform}: {e}")
         import traceback
+
         traceback.print_exc()
         return None
+
 
 def get_playwright_browser_path(target_platform=None):
     """
@@ -168,6 +174,7 @@ def get_playwright_browser_path(target_platform=None):
 
     return None
 
+
 def get_platform_name():
     """Get platform name for zip file naming"""
     system = platform.system().lower()
@@ -180,15 +187,16 @@ def get_platform_name():
     else:
         return system
 
+
 def package_platform_chromium(zip_path, platform_name, chromium_source_dir):
     """Package a single platform's Chromium into the zip file"""
     # Check if zip already exists and what platforms it contains
     existing_platforms = []
     if zip_path.exists():
-        with zipfile.ZipFile(zip_path, 'r') as existing_zip:
+        with zipfile.ZipFile(zip_path, "r") as existing_zip:
             for name in existing_zip.namelist():
-                if name.startswith('windows/') or name.startswith('linux/') or name.startswith('mac/'):
-                    platform_in_zip = name.split('/')[0]
+                if name.startswith("windows/") or name.startswith("linux/") or name.startswith("mac/"):
+                    platform_in_zip = name.split("/")[0]
                     if platform_in_zip not in existing_platforms:
                         existing_platforms.append(platform_in_zip)
 
@@ -201,23 +209,23 @@ def package_platform_chromium(zip_path, platform_name, chromium_source_dir):
     print(f"    Source: {chromium_source_dir}")
     print("    This may take a few minutes (~150MB per platform)...")
 
-    total_files = sum(1 for _ in chromium_source_dir.rglob('*') if _.is_file())
+    total_files = sum(1 for _ in chromium_source_dir.rglob("*") if _.is_file())
     processed = 0
 
     # Handle existing zip: remove old platform folder if updating
     if zip_path.exists() and platform_name in existing_platforms:
         print(f"[INFO] Removing existing {platform_name} platform from zip...")
-        temp_zip = zip_path.with_suffix('.zip.tmp')
-        with zipfile.ZipFile(temp_zip, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as new_zip:
-            with zipfile.ZipFile(zip_path, 'r') as old_zip:
+        temp_zip = zip_path.with_suffix(".zip.tmp")
+        with zipfile.ZipFile(temp_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as new_zip:
+            with zipfile.ZipFile(zip_path, "r") as old_zip:
                 for item in old_zip.infolist():
-                    if not item.filename.startswith(f'{platform_name}/'):
+                    if not item.filename.startswith(f"{platform_name}/"):
                         new_zip.writestr(item, old_zip.read(item.filename))
         zip_path.unlink()
         temp_zip.rename(zip_path)
-        mode = 'a'
+        mode = "a"
     else:
-        mode = 'a' if zip_path.exists() else 'w'
+        mode = "a" if zip_path.exists() else "w"
 
     # Add/update platform folder in zip
     with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
@@ -229,9 +237,10 @@ def package_platform_chromium(zip_path, platform_name, chromium_source_dir):
                 zipf.write(file_path, arcname)
                 processed += 1
                 if processed % 100 == 0:
-                    print(f"    Progress: {processed}/{total_files} files...", end='\r')
+                    print(f"    Progress: {processed}/{total_files} files...", end="\r")
 
     print(f"\n[SUCCESS] {platform_name} platform added to zip!")
+
 
 def package_chromium():
     """Package Chromium browser into a multi-platform zip file"""
@@ -251,7 +260,7 @@ def package_chromium():
     print()
 
     # Platforms to package
-    platforms_to_package = ['windows', 'linux', 'mac']
+    platforms_to_package = ["windows", "linux", "mac"]
 
     print("[INFO] This will download and package Chromium for all platforms:")
     print("    - Windows")
@@ -262,9 +271,9 @@ def package_chromium():
     print()
 
     for platform_name in platforms_to_package:
-        print(f"\n{'='*60}")
+        print(f"\n{'=' * 60}")
         print(f"Processing {platform_name} platform...")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
 
         # Get Chromium for this platform
         if platform_name == current_platform:
@@ -301,11 +310,11 @@ def package_chromium():
     existing_platforms = []
     if zip_path.exists():
         print(f"[INFO] Existing zip file found, updating with {platform_name} platform...")
-        with zipfile.ZipFile(zip_path, 'r') as existing_zip:
+        with zipfile.ZipFile(zip_path, "r") as existing_zip:
             # Check what platforms are already in the zip
             for name in existing_zip.namelist():
-                if name.startswith('windows/') or name.startswith('linux/') or name.startswith('mac/'):
-                    platform_in_zip = name.split('/')[0]
+                if name.startswith("windows/") or name.startswith("linux/") or name.startswith("mac/"):
+                    platform_in_zip = name.split("/")[0]
                     if platform_in_zip not in existing_platforms:
                         existing_platforms.append(platform_in_zip)
 
@@ -321,25 +330,25 @@ def package_chromium():
     print(f"    Source: {chromium_source_dir}")
     print("    This may take a few minutes (~150MB per platform)...")
 
-    total_files = sum(1 for _ in chromium_source_dir.rglob('*') if _.is_file())
+    total_files = sum(1 for _ in chromium_source_dir.rglob("*") if _.is_file())
     processed = 0
 
     # Handle existing zip: remove old platform folder if updating
     if zip_path.exists() and platform_name in existing_platforms:
         print(f"[INFO] Removing existing {platform_name} platform from zip...")
-        temp_zip = zip_path.with_suffix('.zip.tmp')
-        with zipfile.ZipFile(temp_zip, 'w', zipfile.ZIP_DEFLATED, compresslevel=6) as new_zip:
-            with zipfile.ZipFile(zip_path, 'r') as old_zip:
+        temp_zip = zip_path.with_suffix(".zip.tmp")
+        with zipfile.ZipFile(temp_zip, "w", zipfile.ZIP_DEFLATED, compresslevel=6) as new_zip:
+            with zipfile.ZipFile(zip_path, "r") as old_zip:
                 for item in old_zip.infolist():
-                    if not item.filename.startswith(f'{platform_name}/'):
+                    if not item.filename.startswith(f"{platform_name}/"):
                         new_zip.writestr(item, old_zip.read(item.filename))
         zip_path.unlink()
         temp_zip.rename(zip_path)
         # After removing old platform, use append mode to add new one
-        mode = 'a'
+        mode = "a"
     else:
         # New zip or platform doesn't exist yet
-        mode = 'a' if zip_path.exists() else 'w'
+        mode = "a" if zip_path.exists() else "w"
 
     # Add/update platform folder in zip
     with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
@@ -352,25 +361,25 @@ def package_chromium():
                 zipf.write(file_path, arcname)
                 processed += 1
                 if processed % 100 == 0:
-                    print(f"    Progress: {processed}/{total_files} files...", end='\r')
+                    print(f"    Progress: {processed}/{total_files} files...", end="\r")
 
     # Final summary
     if zip_path.exists():
-        zip_size_mb = zip_path.stat().st_size / (1024*1024)
-        print(f"\n{'='*60}")
+        zip_size_mb = zip_path.stat().st_size / (1024 * 1024)
+        print(f"\n{'=' * 60}")
         print("[SUCCESS] Multi-platform packaging complete!")
-        print(f"{'='*60}")
+        print(f"{'=' * 60}")
         print(f"[INFO] Zip file: {zip_path}")
         print(f"[INFO] Total size: {zip_size_mb:.1f} MB")
         print()
 
         # Check final platforms in zip
         final_platforms = []
-        with zipfile.ZipFile(zip_path, 'r') as final_zip:
+        with zipfile.ZipFile(zip_path, "r") as final_zip:
             for name in final_zip.namelist():
-                if '/' in name:
-                    platform_in_zip = name.split('/')[0]
-                    if platform_in_zip in ['windows', 'linux', 'mac'] and platform_in_zip not in final_platforms:
+                if "/" in name:
+                    platform_in_zip = name.split("/")[0]
+                    if platform_in_zip in ["windows", "linux", "mac"] and platform_in_zip not in final_platforms:
                         final_platforms.append(platform_in_zip)
 
         if final_platforms:
@@ -390,7 +399,7 @@ def package_chromium():
         print("[ERROR] Failed to create zip file")
         return False
 
+
 if __name__ == "__main__":
     success = package_chromium()
     sys.exit(0 if success else 1)
-

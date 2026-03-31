@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from pathlib import Path
 from typing import Optional
 import logging
@@ -28,7 +29,7 @@ from services.library.exceptions import (
     PageNotFoundError,
     PageImageNotFoundError,
     PagesDirectoryNotFoundError,
-    DocumentNotImageBasedError
+    DocumentNotImageBasedError,
 )
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_current_user
@@ -39,7 +40,7 @@ from .models import (
     DocumentListResponse,
     DocumentUpdate,
     BookRegisterRequest,
-    BookRegisterBatchRequest
+    BookRegisterBatchRequest,
 )
 
 
@@ -108,7 +109,8 @@ def _log_mime_mismatch(file_ext: str, declared_mime: str) -> None:
     if declared_mime and expected and declared_mime != expected:
         logger.warning(
             "[Library] MIME type mismatch: extension=%s, content_type=%s",
-            file_ext, declared_mime,
+            file_ext,
+            declared_mime,
         )
 
 
@@ -124,9 +126,7 @@ def _validate_image_magic_bytes(content: bytes, file_ext: str) -> None:
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid PNG file format",
         )
-    if file_ext == ".webp" and (
-        not content.startswith(b"RIFF") or b"WEBP" not in content[:12]
-    ):
+    if file_ext == ".webp" and (not content.startswith(b"RIFF") or b"WEBP" not in content[:12]):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invalid WEBP file format",
@@ -150,9 +150,7 @@ def _find_cover_path(document, covers_dir: Path) -> Optional[Path]:
         if candidate.exists():
             return candidate
 
-    title_safe = "".join(
-        c for c in document.title if c.isalnum() or c in (" ", "-", "_")
-    ).strip()
+    title_safe = "".join(c for c in document.title if c.isalnum() or c in (" ", "-", "_")).strip()
     if title_safe:
         candidate = covers_dir / f"{title_safe}_cover.png"
         if candidate.exists():
@@ -167,7 +165,7 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
     _current_user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     List all library documents.
@@ -184,7 +182,7 @@ async def list_documents(
 async def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Get a single library document.
@@ -200,13 +198,10 @@ async def get_document(
             extra={
                 "error_code": error.error_code,
                 "user_id": current_user.id,
-                **error.context
-            }
+                **error.context,
+            },
         )
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail=error.message
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error.message)
 
     # Structured logging
     logger.info(
@@ -214,8 +209,8 @@ async def get_document(
         extra={
             "document_id": document_id,
             "user_id": current_user.id,
-            "title": document.title
-        }
+            "title": document.title,
+        },
     )
 
     return serialize_document(document)
@@ -227,7 +222,7 @@ async def get_document_page_image(
     document_id: int,
     page_number: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Serve page image for image-based documents.
@@ -239,15 +234,15 @@ async def get_document_page_image(
     # Rate limit: 150 pages per minute per user
     rate_limiter = RedisRateLimiter()
     is_allowed, _, error_msg = rate_limiter.check_and_record(
-        category='library_image_download',
+        category="library_image_download",
         identifier=str(current_user.id),
         max_attempts=150,
-        window_seconds=60
+        window_seconds=60,
     )
     if not is_allowed:
         raise HTTPException(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
-            detail=f"Rate limit exceeded: {error_msg}. Maximum 150 pages per minute."
+            detail=f"Rate limit exceeded: {error_msg}. Maximum 150 pages per minute.",
         )
 
     service = LibraryService(db)
@@ -259,23 +254,26 @@ async def get_document_page_image(
                 service, cached_metadata, document_id, page_number
             )
         else:
-            image_path, document_title = _resolve_page_image_from_db(
-                service, document_id, page_number
-            )
+            image_path, document_title = _resolve_page_image_from_db(service, document_id, page_number)
 
         if not image_path or not image_path.exists():
-            raise PageImageNotFoundError(
-                document_id, page_number, str(image_path) if image_path else None
-            )
+            raise PageImageNotFoundError(document_id, page_number, str(image_path) if image_path else None)
 
     except (
-        DocumentNotFoundError, PageNotFoundError, PageImageNotFoundError,
-        PagesDirectoryNotFoundError, DocumentNotImageBasedError
+        DocumentNotFoundError,
+        PageNotFoundError,
+        PageImageNotFoundError,
+        PagesDirectoryNotFoundError,
+        DocumentNotImageBasedError,
     ) as exc:
         logger.warning(
             "[Library] Error serving page image: %s",
             exc.message,
-            extra={"error_code": exc.error_code, "user_id": current_user.id, **exc.context}
+            extra={
+                "error_code": exc.error_code,
+                "user_id": current_user.id,
+                **exc.context,
+            },
         )
         error_code = exc.error_code or "DOCUMENT_NOT_FOUND"
         raise HTTPException(
@@ -293,7 +291,7 @@ async def get_document_page_image(
             "user_id": current_user.id,
             "image_filename": image_path.name,
             "file_size": image_path.stat().st_size if image_path.exists() else None,
-        }
+        },
     )
 
     return FileResponse(
@@ -308,7 +306,7 @@ async def get_document_page_image(
 async def register_book(
     data: BookRegisterRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Register a book folder as a library document (admin only).
@@ -332,7 +330,7 @@ async def register_book(
     if folder_path.is_absolute():
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Absolute paths are not allowed. Use relative paths from storage/library/"
+            detail="Absolute paths are not allowed. Use relative paths from storage/library/",
         )
 
     # Resolve relative path from storage/library
@@ -343,45 +341,38 @@ async def register_book(
         if not resolved_path.is_relative_to(service.storage_dir.resolve()):
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="Path traversal detected. Folder must be within storage/library/"
+                detail="Path traversal detected. Folder must be within storage/library/",
             )
     except ValueError as exc:
         # Path is not relative to storage_dir
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Path traversal detected. Folder must be within storage/library/"
+            detail="Path traversal detected. Folder must be within storage/library/",
         ) from exc
 
     # Verify folder exists
     if not resolved_path.exists() or not resolved_path.is_dir():
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Folder not found: {data.folder_path}"
+            detail=f"Folder not found: {data.folder_path}",
         )
 
     folder_path = resolved_path
 
     try:
-        document = service.register_book_folder(
-            folder_path=folder_path,
-            title=data.title,
-            description=data.description
-        )
+        document = service.register_book_folder(folder_path=folder_path, title=data.title, description=data.description)
 
         return serialize_document(document)
 
     except ValueError as e:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail=str(e)
-        ) from e
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e)) from e
 
 
 @router.post("/books/register-batch")
 async def register_books_batch(
     data: BookRegisterBatchRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Register multiple book folders at once (admin only).
@@ -391,10 +382,7 @@ async def register_books_batch(
     """
     service = LibraryService(db, user_id=current_user.id)
 
-    results = {
-        "successful": [],
-        "failed": []
-    }
+    results = {"successful": [], "failed": []}
 
     for folder_path_str in data.folder_paths:
         try:
@@ -403,10 +391,12 @@ async def register_books_batch(
 
             # Reject absolute paths - security measure
             if folder_path.is_absolute():
-                results["failed"].append({
-                    "folder_path": folder_path_str,
-                    "error": "Absolute paths are not allowed. Use relative paths from storage/library/"
-                })
+                results["failed"].append(
+                    {
+                        "folder_path": folder_path_str,
+                        "error": "Absolute paths are not allowed. Use relative paths from storage/library/",
+                    }
+                )
                 continue
 
             # Resolve relative path from storage/library
@@ -415,53 +405,60 @@ async def register_books_batch(
             # SECURITY: Ensure resolved path is within storage_dir (prevent path traversal)
             try:
                 if not resolved_path.is_relative_to(service.storage_dir.resolve()):
-                    results["failed"].append({
-                        "folder_path": folder_path_str,
-                        "error": "Path traversal detected. Folder must be within storage/library/"
-                    })
+                    results["failed"].append(
+                        {
+                            "folder_path": folder_path_str,
+                            "error": "Path traversal detected. Folder must be within storage/library/",
+                        }
+                    )
                     continue
             except ValueError:
-                results["failed"].append({
-                    "folder_path": folder_path_str,
-                    "error": "Path traversal detected. Folder must be within storage/library/"
-                })
+                results["failed"].append(
+                    {
+                        "folder_path": folder_path_str,
+                        "error": "Path traversal detected. Folder must be within storage/library/",
+                    }
+                )
                 continue
 
             # Verify folder exists
             if not resolved_path.exists() or not resolved_path.is_dir():
-                results["failed"].append({
-                    "folder_path": folder_path_str,
-                    "error": f"Folder not found: {folder_path_str}"
-                })
+                results["failed"].append(
+                    {
+                        "folder_path": folder_path_str,
+                        "error": f"Folder not found: {folder_path_str}",
+                    }
+                )
                 continue
 
             folder_path = resolved_path
 
             document = service.register_book_folder(folder_path=folder_path)
-            results["successful"].append({
-                "folder_path": folder_path_str,
-                "document_id": document.id,
-                "title": document.title,
-                "total_pages": document.total_pages
-            })
+            results["successful"].append(
+                {
+                    "folder_path": folder_path_str,
+                    "document_id": document.id,
+                    "title": document.title,
+                    "total_pages": document.total_pages,
+                }
+            )
 
         except ValueError as e:
-            results["failed"].append({
-                "folder_path": folder_path_str,
-                "error": str(e)
-            })
+            results["failed"].append({"folder_path": folder_path_str, "error": str(e)})
         except Exception as e:
-            logger.error("[Library] Error registering folder %s: %s", folder_path_str, e, exc_info=True)
-            results["failed"].append({
-                "folder_path": folder_path_str,
-                "error": f"Unexpected error: {str(e)}"
-            })
+            logger.error(
+                "[Library] Error registering folder %s: %s",
+                folder_path_str,
+                e,
+                exc_info=True,
+            )
+            results["failed"].append({"folder_path": folder_path_str, "error": f"Unexpected error: {str(e)}"})
 
     return {
         "total": len(data.folder_paths),
         "successful_count": len(results["successful"]),
         "failed_count": len(results["failed"]),
-        "results": results
+        "results": results,
     }
 
 
@@ -470,29 +467,22 @@ async def update_document(
     document_id: int,
     data: DocumentUpdate,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Update document metadata (admin only, for future admin panel).
     """
     service = LibraryService(db, user_id=current_user.id)
-    document = service.update_document(
-        document_id=document_id,
-        title=data.title,
-        description=data.description
-    )
+    document = service.update_document(document_id=document_id, title=data.title, description=data.description)
 
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     return {
         "id": document.id,
         "title": document.title,
         "description": document.description,
-        "message": "Document updated successfully"
+        "message": "Document updated successfully",
     }
 
 
@@ -501,7 +491,7 @@ async def upload_cover_image(
     document_id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Upload/update cover image (admin only, for future admin panel).
@@ -510,10 +500,7 @@ async def upload_cover_image(
     document = service.get_document(document_id)
 
     if not document:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     file_ext = os.path.splitext(file.filename)[1].lower()
 
@@ -545,16 +532,10 @@ async def upload_cover_image(
         with open(cover_path, "wb") as f:
             f.write(content)
 
-        document = service.update_document(
-            document_id=document_id,
-            cover_image_path=str(cover_path)
-        )
+        document = service.update_document(document_id=document_id, cover_image_path=str(cover_path))
 
         if not document:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Document not found"
-            )
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
         # Invalidate cache since cover image changed
         service.invalidate_document_cache(document_id)
@@ -562,19 +543,22 @@ async def upload_cover_image(
         return {
             "id": document.id,
             "cover_image_path": document.cover_image_path,
-            "message": "Cover image uploaded successfully"
+            "message": "Cover image uploaded successfully",
         }
 
     except Exception as e:
         logger.error("[Library] Cover upload failed: %s", e)
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Cover upload failed") from e
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Cover upload failed",
+        ) from e
 
 
 @router.get("/documents/{document_id}/cover")
 async def get_cover_image(
     document_id: int,
     _current_user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Serve cover image.
@@ -615,7 +599,7 @@ async def get_cover_image(
 async def delete_document(
     document_id: int,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db)
+    db: Session = Depends(get_db),
 ):
     """
     Delete a document (admin only, for future admin panel).
@@ -624,9 +608,6 @@ async def delete_document(
     deleted = service.delete_document(document_id)
 
     if not deleted:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Document not found"
-        )
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
     return {"message": "Document deleted successfully"}

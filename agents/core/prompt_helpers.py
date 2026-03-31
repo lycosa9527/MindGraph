@@ -8,6 +8,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from langchain_core.prompts import PromptTemplate
 
 from agents.core.llm_clients import llm_classification, llm_generation
@@ -33,7 +34,7 @@ Input: "Generate diagram about BMW vs Mercedes" → Output: "BMW and Mercedes"
 Input: "Create comparison between apple and orange" → Output: "apple and orange"
 
 Your output (only the two topics):
-"""
+""",
 )
 
 topic_extraction_prompt_zh = PromptTemplate(
@@ -55,7 +56,7 @@ topic_extraction_prompt_zh = PromptTemplate(
 输入："创建苹果和橙子的比较" → 输出："苹果和橙子"
 
 你的输出（只输出两个主题）：
-"""
+""",
 )
 
 # Characteristics Generation Prompts
@@ -112,7 +113,7 @@ right_differences:
   - "feature3"
   - "feature4"
   - "feature5"
-"""
+""",
 )
 
 characteristics_prompt_zh = PromptTemplate(
@@ -163,11 +164,11 @@ right_differences:
   - "特点3"
   - "特点4"
   - "特点5"
-"""
+""",
 )
 
 
-def create_topic_extraction_chain(language='zh'):
+def create_topic_extraction_chain(language="zh"):
     """
     Create a simple chain for topic extraction
     Args:
@@ -175,7 +176,7 @@ def create_topic_extraction_chain(language='zh'):
     Returns:
         function: Function that can be called with user_prompt
     """
-    prompt = topic_extraction_prompt_zh if language == 'zh' else topic_extraction_prompt_en
+    prompt = topic_extraction_prompt_zh if language == "zh" else topic_extraction_prompt_en
 
     def extract_topics(user_prompt: str) -> str:
         """Extract topics using the classification model"""
@@ -188,7 +189,7 @@ def create_topic_extraction_chain(language='zh'):
     return extract_topics
 
 
-def create_characteristics_chain(language='zh'):
+def create_characteristics_chain(language="zh"):
     """
     Create a simple chain for characteristics generation
     Args:
@@ -196,7 +197,7 @@ def create_characteristics_chain(language='zh'):
     Returns:
         function: Function that can be called with topic1 and topic2
     """
-    prompt = characteristics_prompt_zh if language == 'zh' else characteristics_prompt_en
+    prompt = characteristics_prompt_zh if language == "zh" else characteristics_prompt_en
 
     def generate_characteristics(topic1: str, topic2: str) -> str:
         """Generate characteristics using the generation model"""

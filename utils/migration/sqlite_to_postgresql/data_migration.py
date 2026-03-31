@@ -30,14 +30,19 @@ from models.domain.auth import Base
 # This is critical for table creation during migration
 try:
     from models.domain.diagrams import Diagram
+
     _ = Diagram.__tablename__
 except ImportError:
     pass
 
 try:
     from models.domain.debateverse import (
-        DebateSession, DebateParticipant, DebateMessage, DebateJudgment
+        DebateSession,
+        DebateParticipant,
+        DebateMessage,
+        DebateJudgment,
     )
+
     _ = DebateSession.__tablename__
     _ = DebateParticipant.__tablename__
     _ = DebateMessage.__tablename__
@@ -47,8 +52,11 @@ except ImportError:
 
 try:
     from models.domain.school_zone import (
-        SharedDiagram, SharedDiagramLike, SharedDiagramComment
+        SharedDiagram,
+        SharedDiagramLike,
+        SharedDiagramComment,
     )
+
     _ = SharedDiagram.__tablename__
     _ = SharedDiagramLike.__tablename__
     _ = SharedDiagramComment.__tablename__
@@ -57,8 +65,11 @@ except ImportError:
 
 try:
     from models.domain.community import (
-        CommunityPost, CommunityPostComment, CommunityPostLike
+        CommunityPost,
+        CommunityPostComment,
+        CommunityPostLike,
     )
+
     _ = CommunityPost.__tablename__
     _ = CommunityPostComment.__tablename__
     _ = CommunityPostLike.__tablename__
@@ -67,6 +78,7 @@ except ImportError:
 
 try:
     from models.domain.pinned_conversations import PinnedConversation
+
     _ = PinnedConversation.__tablename__
 except ImportError:
     pass
@@ -79,6 +91,7 @@ try:
         LibraryDanmakuReply,
         LibraryBookmark,
     )
+
     _ = LibraryDocument.__tablename__
     _ = LibraryDanmaku.__tablename__
     _ = LibraryDanmakuLike.__tablename__
@@ -91,6 +104,7 @@ try:
     from models.domain.user_activity_log import UserActivityLog
     from models.domain.user_usage_stats import UserUsageStats
     from models.domain.teacher_usage_config import TeacherUsageConfig
+
     _ = UserActivityLog.__tablename__
     _ = UserUsageStats.__tablename__
     _ = TeacherUsageConfig.__tablename__
@@ -99,6 +113,7 @@ except ImportError:
 
 try:
     from models.domain.dashboard_activity import DashboardActivity
+
     _ = DashboardActivity.__tablename__
 except ImportError:
     pass
@@ -107,6 +122,7 @@ try:
     from models.domain.gewe_message import GeweMessage
     from models.domain.gewe_contact import GeweContact
     from models.domain.gewe_group_member import GeweGroupMember
+
     _ = GeweMessage.__tablename__
     _ = GeweContact.__tablename__
     _ = GeweGroupMember.__tablename__
@@ -115,8 +131,13 @@ except ImportError:
 
 try:
     from models.domain.workshop_chat import (
-        ChatChannel, ChannelMember, ChatTopic, ChatMessage, DirectMessage
+        ChatChannel,
+        ChannelMember,
+        ChatTopic,
+        ChatMessage,
+        DirectMessage,
     )
+
     _ = ChatChannel.__tablename__
     _ = ChannelMember.__tablename__
     _ = ChatTopic.__tablename__
@@ -135,18 +156,18 @@ from utils.migration.sqlite.migration_utils import (
     release_migration_lock,
     is_postgresql_empty,
     check_table_completeness,
-    BACKUP_DIR as MIGRATION_BACKUP_DIR
+    BACKUP_DIR as MIGRATION_BACKUP_DIR,
 )
 from utils.migration.sqlite.migration_backup import (
     backup_sqlite_database,
-    move_sqlite_database_to_backup
+    move_sqlite_database_to_backup,
 )
 from utils.migration.sqlite.migration_table_order import get_table_migration_order
 from utils.migration.sqlite.migration_tables import migrate_table
 from utils.migration.sqlite.migration_verification import (
     verify_migration,
     create_migration_marker,
-    reset_postgresql_sequences
+    reset_postgresql_sequences,
 )
 from utils.migration.sqlite.migration_progress import (
     MigrationProgressTracker,
@@ -160,17 +181,18 @@ from utils.migration.sqlite.migration_progress import (
     STAGE_VERIFY,
     STAGE_MOVE_SQLITE,
     STAGE_CREATE_MARKER,
-    STAGE_COMPLETE
+    STAGE_COMPLETE,
 )
 from utils.migration.sqlite_to_postgresql.table_creation import (
     create_enum_types,
-    ensure_missing_tables_created
+    ensure_missing_tables_created,
 )
 
 logger = logging.getLogger(__name__)
 
 try:
     import psycopg2 as _psycopg2
+
     PSYCOPG2_AVAILABLE = _psycopg2 is not None
 except ImportError:
     PSYCOPG2_AVAILABLE = False
@@ -184,12 +206,14 @@ def _get_init_db_func():
     """Get init_db function, importing lazily to avoid circular dependency."""
     cached = _CONFIG_DATABASE_CACHE[0]
     if cached is None:
-        cached = importlib.import_module('config.database')
+        cached = importlib.import_module("config.database")
         _CONFIG_DATABASE_CACHE[0] = cached
     return cached.init_db
 
 
-def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
+def migrate_sqlite_to_postgresql(
+    force: bool = False,
+) -> Tuple[bool, Optional[str], Optional[Dict[str, Any]]]:
     """
     Migrate all data from SQLite to PostgreSQL.
 
@@ -212,7 +236,11 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
         Tuple of (success, error_message, statistics)
     """
     if not PSYCOPG2_AVAILABLE:
-        return False, "psycopg2 not installed. Install with: pip install psycopg2-binary", None
+        return (
+            False,
+            "psycopg2 not installed. Install with: pip install psycopg2-binary",
+            None,
+        )
 
     # Get SQLite database path first (before checking marker)
     sqlite_path = get_sqlite_db_path()
@@ -234,27 +262,23 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     logger.warning(
                         "[Migration] Marker file exists but SQLite database still in original location: %s. "
                         "Migration will proceed to sync data and move SQLite to backup.",
-                        sqlite_path
+                        sqlite_path,
                     )
                     # Don't return - continue with migration
                 else:
                     logger.info(
                         "[Migration] Migration already completed (marker file exists) "
                         "and SQLite moved to backup: %s. Skipping.",
-                        moved_files[0].name
+                        moved_files[0].name,
                     )
                     return True, None, None
             except Exception:
                 # If we can't check, be safe and skip
-                logger.info(
-                    "[Migration] Migration already completed (marker file exists), skipping"
-                )
+                logger.info("[Migration] Migration already completed (marker file exists), skipping")
                 return True, None, None
         else:
             # No SQLite in original location - migration truly complete
-            logger.info(
-                "[Migration] Migration already completed (marker file exists, SQLite moved), skipping"
-            )
+            logger.info("[Migration] Migration already completed (marker file exists, SQLite moved), skipping")
             return True, None, None
 
     # Get SQLite database path (if not already retrieved above)
@@ -272,13 +296,14 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
     except PermissionError:
         logger.warning(
             "[Migration] Permission denied accessing SQLite database path: %s. Skipping migration.",
-            sqlite_path
+            sqlite_path,
         )
         return True, None, None
     except Exception as e:
         logger.warning(
             "[Migration] Error checking SQLite database path %s: %s. Skipping migration.",
-            sqlite_path, e
+            sqlite_path,
+            e,
         )
         return True, None, None
 
@@ -293,29 +318,33 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                 "[Migration] Note: SQLite database exists at %s and backup file exists: %s. "
                 "Migration will proceed with incremental update - comparing SQLite with PostgreSQL "
                 "and migrating only missing data.",
-                sqlite_path, moved_files[0].name
+                sqlite_path,
+                moved_files[0].name,
             )
 
     # Get PostgreSQL URL - use defaults from env.example if not set
-    pg_url = os.getenv('DATABASE_URL', '')
+    pg_url = os.getenv("DATABASE_URL", "")
 
     # If DATABASE_URL not set, construct from individual PostgreSQL settings
     # These defaults match env.example
-    if not pg_url or 'postgresql' not in pg_url.lower():
+    if not pg_url or "postgresql" not in pg_url.lower():
         # Try to construct from individual PostgreSQL environment variables
         # Defaults match env.example values
-        pg_user = os.getenv('POSTGRESQL_USER', 'mindgraph_user')
-        pg_password = os.getenv('POSTGRESQL_PASSWORD', 'mindgraph_password')
-        pg_host = os.getenv('POSTGRESQL_HOST', 'localhost')
-        pg_port = os.getenv('POSTGRESQL_PORT', '5432')
-        pg_database = os.getenv('POSTGRESQL_DATABASE', 'mindgraph')
+        pg_user = os.getenv("POSTGRESQL_USER", "mindgraph_user")
+        pg_password = os.getenv("POSTGRESQL_PASSWORD", "mindgraph_password")
+        pg_host = os.getenv("POSTGRESQL_HOST", "localhost")
+        pg_port = os.getenv("POSTGRESQL_PORT", "5432")
+        pg_database = os.getenv("POSTGRESQL_DATABASE", "mindgraph")
 
         # Construct PostgreSQL URL from components
         pg_url = f"postgresql://{pg_user}:{pg_password}@{pg_host}:{pg_port}/{pg_database}"
         logger.info("[Migration] Using PostgreSQL configuration from environment variables")
         logger.debug(
             "[Migration] Constructed DATABASE_URL: postgresql://%s:***@%s:%s/%s",
-            pg_user, pg_host, pg_port, pg_database
+            pg_user,
+            pg_host,
+            pg_port,
+            pg_database,
         )
 
     # Check if PostgreSQL is empty (or allow resume with force flag)
@@ -336,11 +365,11 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
     logger.info("[Migration] SQLite database: %s", sqlite_path)
     # Mask password in URL for logging
     masked_url = pg_url
-    if '@' in pg_url:
-        url_parts = pg_url.split('@')
+    if "@" in pg_url:
+        url_parts = pg_url.split("@")
         if len(url_parts) > 0:
-            user_pass = url_parts[0].split('//')[1] if '//' in url_parts[0] else ''
-            masked_url = pg_url.replace(user_pass, '***') if user_pass else pg_url
+            user_pass = url_parts[0].split("//")[1] if "//" in url_parts[0] else ""
+            masked_url = pg_url.replace(user_pass, "***") if user_pass else pg_url
     logger.info("[Migration] PostgreSQL URL: %s", masked_url)
 
     # Initialize progress tracker
@@ -396,7 +425,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                 # init_db() might fail due to duplicate indexes, but tables might still be created
                 logger.debug(
                     "[Migration] init_db() encountered error (may be non-critical): %s",
-                    init_error
+                    init_error,
                 )
 
             # Verify and ensure ALL required tables exist
@@ -409,18 +438,16 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                 logger.info(
                     "[Migration] Creating %d missing table(s) in PostgreSQL: %s",
                     len(missing_tables),
-                    ', '.join(sorted(missing_tables))
+                    ", ".join(sorted(missing_tables)),
                 )
-                success, error_msg = ensure_missing_tables_created(
-                    pg_engine, missing_tables, expected_tables
-                )
+                success, error_msg = ensure_missing_tables_created(pg_engine, missing_tables, expected_tables)
                 if not success:
                     logger.error("[Migration] Cannot proceed with data migration without these tables")
                     return False, error_msg, None
             else:
                 logger.info(
                     "[Migration] ✓ All %d expected tables already exist in PostgreSQL",
-                    len(expected_tables)
+                    len(expected_tables),
                 )
 
             logger.info("[Migration] PostgreSQL tables verified/created successfully")
@@ -432,7 +459,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                 "total_records": 0,
                 "errors": [],
                 "warnings": [],  # Track non-fatal warnings (partial successes)
-                "table_progress": {}  # Track progress per table for resume capability
+                "table_progress": {},  # Track progress per table for resume capability
             }
 
             # Load previous progress if resuming
@@ -443,7 +470,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                 logger.info(
                     "[Migration] Resuming migration: %d table(s) already completed: %s",
                     len(completed_tables),
-                    ', '.join(sorted(completed_tables))
+                    ", ".join(sorted(completed_tables)),
                 )
 
             # Create inspector once and reuse for all tables (performance optimization)
@@ -455,7 +482,9 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     if table_name in completed_tables:
                         logger.info(
                             "[Migration] Skipping table %d/%d: %s (already migrated)",
-                            table_idx, total_tables, table_name
+                            table_idx,
+                            total_tables,
+                            table_name,
                         )
                         # Load previous stats for this table
                         if "table_progress" in previous_progress:
@@ -470,14 +499,17 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     sqlite_cursor = sqlite_conn.cursor()
                     sqlite_cursor.execute(
                         "SELECT name FROM sqlite_master WHERE type='table' AND name=?",
-                        (table_name,)
+                        (table_name,),
                     )
                     if not sqlite_cursor.fetchone():
-                        logger.debug("[Migration] Table %s does not exist in SQLite, skipping", table_name)
+                        logger.debug(
+                            "[Migration] Table %s does not exist in SQLite, skipping",
+                            table_name,
+                        )
                         migration_stats["table_progress"][table_name] = {
                             "status": "skipped",
                             "records_migrated": 0,
-                            "reason": "table does not exist in SQLite"
+                            "reason": "table does not exist in SQLite",
                         }
                         continue
 
@@ -494,7 +526,10 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     if is_complete and pg_count is not None and pg_count > 0:
                         logger.info(
                             "[Migration] Skipping table %d/%d: %s (already has complete data: %d rows)",
-                            table_idx, total_tables, table_name, pg_count
+                            table_idx,
+                            total_tables,
+                            table_name,
+                            pg_count,
                         )
                         completed_tables.add(table_name)
                         migration_stats["tables_migrated"] += 1
@@ -502,7 +537,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                         migration_stats["table_progress"][table_name] = {
                             "status": "completed",
                             "records_migrated": pg_count,
-                            "reason": "already has complete data"
+                            "reason": "already has complete data",
                         }
                         continue
 
@@ -510,21 +545,20 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     progress_tracker.start_table_migration(table_name, table_idx, total_records)
 
                     # Save progress before migrating this table
-                    save_migration_progress({
-                        "completed_tables": list(completed_tables),
-                        "table_progress": migration_stats["table_progress"],
-                        "current_table": table_name
-                    })
+                    save_migration_progress(
+                        {
+                            "completed_tables": list(completed_tables),
+                            "table_progress": migration_stats["table_progress"],
+                            "current_table": table_name,
+                        }
+                    )
 
                     # Pass inspector instance and progress tracker for performance
-                    record_count, error = migrate_table(
-                        sqlite_conn, table_name, pg_engine, inspector, progress_tracker
-                    )
+                    record_count, error = migrate_table(sqlite_conn, table_name, pg_engine, inspector, progress_tracker)
 
                     # Determine if error is a warning (partial success) or failure
                     is_warning = error is not None and (
-                        "batch(es) failed but below failure threshold" in error or
-                        "warning" in error.lower()
+                        "batch(es) failed but below failure threshold" in error or "warning" in error.lower()
                     )
                     is_failure = error is not None and not is_warning
 
@@ -533,7 +567,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                         "status": "completed" if not is_failure else "failed",
                         "records_migrated": record_count,
                         "error": error,
-                        "warning": error if is_warning else None
+                        "warning": error if is_warning else None,
                     }
 
                     if is_failure:
@@ -542,11 +576,13 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                         # Don't fail immediately - continue with other tables
                         logger.error("[Migration] Error migrating %s: %s", table_name, error)
                         # Save progress even on error (for resume)
-                        save_migration_progress({
-                            "completed_tables": list(completed_tables),
-                            "table_progress": migration_stats["table_progress"],
-                            "errors": migration_stats["errors"]
-                        })
+                        save_migration_progress(
+                            {
+                                "completed_tables": list(completed_tables),
+                                "table_progress": migration_stats["table_progress"],
+                                "errors": migration_stats["errors"],
+                            }
+                        )
                     elif is_warning:
                         # Warning: partial success (some batches failed but below threshold)
                         migration_stats.setdefault("warnings", []).append(f"{table_name}: {error}")
@@ -557,13 +593,15 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                         migration_stats["total_records"] += record_count
                         progress_tracker.complete_table(record_count)
                         # Save progress
-                        save_migration_progress({
-                            "completed_tables": list(completed_tables),
-                            "table_progress": migration_stats["table_progress"],
-                            "tables_migrated": migration_stats["tables_migrated"],
-                            "total_records": migration_stats["total_records"],
-                            "warnings": migration_stats.get("warnings", [])
-                        })
+                        save_migration_progress(
+                            {
+                                "completed_tables": list(completed_tables),
+                                "table_progress": migration_stats["table_progress"],
+                                "tables_migrated": migration_stats["tables_migrated"],
+                                "total_records": migration_stats["total_records"],
+                                "warnings": migration_stats.get("warnings", []),
+                            }
+                        )
                     else:
                         # Mark table as completed
                         completed_tables.add(table_name)
@@ -571,12 +609,14 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                         migration_stats["total_records"] += record_count
                         progress_tracker.complete_table(record_count)
                         # Save progress after successful migration
-                        save_migration_progress({
-                            "completed_tables": list(completed_tables),
-                            "table_progress": migration_stats["table_progress"],
-                            "tables_migrated": migration_stats["tables_migrated"],
-                            "total_records": migration_stats["total_records"]
-                        })
+                        save_migration_progress(
+                            {
+                                "completed_tables": list(completed_tables),
+                                "table_progress": migration_stats["table_progress"],
+                                "tables_migrated": migration_stats["tables_migrated"],
+                                "total_records": migration_stats["total_records"],
+                            }
+                        )
 
                 except Exception as e:
                     error_msg = f"Failed to migrate table {table_name}: {str(e)}"
@@ -586,14 +626,16 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
                     migration_stats["table_progress"][table_name] = {
                         "status": "failed",
                         "records_migrated": 0,
-                        "error": error_msg
+                        "error": error_msg,
                     }
                     # Save progress even on exception
-                    save_migration_progress({
-                        "completed_tables": list(completed_tables),
-                        "table_progress": migration_stats["table_progress"],
-                        "errors": migration_stats["errors"]
-                    })
+                    save_migration_progress(
+                        {
+                            "completed_tables": list(completed_tables),
+                            "table_progress": migration_stats["table_progress"],
+                            "errors": migration_stats["errors"],
+                        }
+                    )
 
             # STEP 5: Reset PostgreSQL sequences
             progress_tracker.update_stage(STAGE_RESET_SEQUENCES, "Resetting PostgreSQL sequences...")
@@ -606,10 +648,7 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
             if not is_valid:
                 error_msg = f"Migration verification failed: {verify_stats.get('mismatches', [])}"
                 logger.error("[Migration] %s", error_msg)
-                logger.error(
-                    "[Migration] Migration failed verification - "
-                    "PostgreSQL may be in inconsistent state"
-                )
+                logger.error("[Migration] Migration failed verification - PostgreSQL may be in inconsistent state")
                 logger.error("[Migration] Backup available at: %s", backup_path)
                 progress_tracker.add_error(error_msg)
                 # Clear progress file on verification failure to allow full retry
@@ -623,34 +662,28 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
             progress_tracker.update_stage(STAGE_MOVE_SQLITE, "Moving SQLite to backup...")
             move_success = move_sqlite_database_to_backup(sqlite_path, sqlite_conn)
             if not move_success:
+                logger.error("[Migration] CRITICAL: Failed to move SQLite database after successful migration")
                 logger.error(
-                    "[Migration] CRITICAL: Failed to move SQLite database after successful migration"
+                    "[Migration] Original SQLite database still exists at: %s",
+                    sqlite_path,
                 )
+                logger.error("[Migration] This may cause confusion - SQLite should be moved to backup folder")
                 logger.error(
-                    "[Migration] Original SQLite database still exists at: %s", sqlite_path
-                )
-                logger.error(
-                    "[Migration] This may cause confusion - SQLite should be moved to backup folder"
-                )
-                logger.error(
-                    "[Migration] Please manually move the database to backup folder "
-                    "to prevent accidental reuse"
+                    "[Migration] Please manually move the database to backup folder to prevent accidental reuse"
                 )
                 logger.error(
                     "[Migration] Suggested command: mv %s backup/mindgraph.db.migrated.manual.sqlite",
-                    sqlite_path
+                    sqlite_path,
                 )
                 # Don't fail migration - data is already migrated successfully
                 # But log clearly that manual intervention is needed
 
             # STEP 8: Create migration marker
-            progress_tracker.update_stage(
-                STAGE_CREATE_MARKER, "Creating migration marker..."
-            )
+            progress_tracker.update_stage(STAGE_CREATE_MARKER, "Creating migration marker...")
             final_stats = {
                 **migration_stats,
                 "verification": verify_stats,
-                "backup_path": str(backup_path)
+                "backup_path": str(backup_path),
             }
             create_migration_marker(backup_path, final_stats)
 
@@ -677,7 +710,10 @@ def migrate_sqlite_to_postgresql(force: bool = False) -> Tuple[bool, Optional[st
         logger.error("[Migration] %s", error_msg, exc_info=True)
         logger.error("[Migration] Migration failed - PostgreSQL may be in inconsistent state")
         if backup_path:
-            logger.error("[Migration] Backup available at: %s - you can restore from backup", backup_path)
+            logger.error(
+                "[Migration] Backup available at: %s - you can restore from backup",
+                backup_path,
+            )
         return False, error_msg, None
 
     finally:

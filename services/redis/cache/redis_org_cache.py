@@ -66,18 +66,18 @@ class OrganizationCache:
         Returns:
             Dict with string values for Redis hash
         """
-        created_at_val = getattr(org, 'created_at', None)
-        expires_at_val = getattr(org, 'expires_at', None)
-        is_active_val = getattr(org, 'is_active', True) if hasattr(org, 'is_active') else True
+        created_at_val = getattr(org, "created_at", None)
+        expires_at_val = getattr(org, "expires_at", None)
+        is_active_val = getattr(org, "is_active", True) if hasattr(org, "is_active") else True
         return {
-            'id': str(getattr(org, 'id', 0)),
-            'code': str(getattr(org, 'code', None) or ''),
-            'name': str(getattr(org, 'name', None) or ''),
-            'display_name': str(getattr(org, 'display_name', None) or ''),
-            'invitation_code': str(getattr(org, 'invitation_code', None) or ''),
-            'created_at': created_at_val.isoformat() if created_at_val else '',
-            'expires_at': expires_at_val.isoformat() if expires_at_val else '',
-            'is_active': '1' if is_active_val else '0',
+            "id": str(getattr(org, "id", 0)),
+            "code": str(getattr(org, "code", None) or ""),
+            "name": str(getattr(org, "name", None) or ""),
+            "display_name": str(getattr(org, "display_name", None) or ""),
+            "invitation_code": str(getattr(org, "invitation_code", None) or ""),
+            "created_at": created_at_val.isoformat() if created_at_val else "",
+            "expires_at": expires_at_val.isoformat() if expires_at_val else "",
+            "is_active": "1" if is_active_val else "0",
         }
 
     def _deserialize_org(self, data: Dict[str, str]) -> Organization:
@@ -91,34 +91,34 @@ class OrganizationCache:
             Organization SQLAlchemy model instance (detached from session)
         """
         org = Organization()
-        setattr(org, 'id', int(data.get('id', '0')))
-        setattr(org, 'code', data.get('code') or None)
-        setattr(org, 'name', data.get('name') or None)
-        setattr(org, 'invitation_code', data.get('invitation_code') or None)
-        display_name_val = data.get('display_name') or None
-        if hasattr(Organization, 'display_name'):
-            setattr(org, 'display_name', display_name_val)
+        setattr(org, "id", int(data.get("id", "0")))
+        setattr(org, "code", data.get("code") or None)
+        setattr(org, "name", data.get("name") or None)
+        setattr(org, "invitation_code", data.get("invitation_code") or None)
+        display_name_val = data.get("display_name") or None
+        if hasattr(Organization, "display_name"):
+            setattr(org, "display_name", display_name_val)
 
         # Parse datetime fields
-        if data.get('created_at'):
+        if data.get("created_at"):
             try:
-                setattr(org, 'created_at', datetime.fromisoformat(data['created_at']))
+                setattr(org, "created_at", datetime.fromisoformat(data["created_at"]))
             except (ValueError, TypeError):
-                setattr(org, 'created_at', datetime.utcnow())
+                setattr(org, "created_at", datetime.utcnow())
         else:
-            setattr(org, 'created_at', datetime.utcnow())
+            setattr(org, "created_at", datetime.utcnow())
 
-        if data.get('expires_at'):
+        if data.get("expires_at"):
             try:
-                setattr(org, 'expires_at', datetime.fromisoformat(data['expires_at']))
+                setattr(org, "expires_at", datetime.fromisoformat(data["expires_at"]))
             except (ValueError, TypeError):
-                setattr(org, 'expires_at', None)
+                setattr(org, "expires_at", None)
         else:
-            setattr(org, 'expires_at', None)
+            setattr(org, "expires_at", None)
 
         # Parse boolean
-        if hasattr(Organization, 'is_active'):
-            setattr(org, 'is_active', data.get('is_active', '0') == '1')
+        if hasattr(Organization, "is_active"):
+            setattr(org, "is_active", data.get("is_active", "0") == "1")
 
         return org
 
@@ -126,7 +126,7 @@ class OrganizationCache:
         self,
         org_id: Optional[int] = None,
         code: Optional[str] = None,
-        invite_code: Optional[str] = None
+        invite_code: Optional[str] = None,
     ) -> Optional[Organization]:
         """
         Load organization from database.
@@ -193,17 +193,30 @@ class OrganizationCache:
                     return org
                 except (KeyError, ValueError, TypeError) as e:
                     # Corrupted cache entry
-                    logger.error("[OrgCache] Corrupted cache for org ID %s: %s", org_id, e, exc_info=True)
+                    logger.error(
+                        "[OrgCache] Corrupted cache for org ID %s: %s",
+                        org_id,
+                        e,
+                        exc_info=True,
+                    )
                     # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
                     except Exception as exc:
-                        logger.debug("Corrupted org cache entry deletion failed for org ID %s: %s", org_id, exc)
+                        logger.debug(
+                            "Corrupted org cache entry deletion failed for org ID %s: %s",
+                            org_id,
+                            exc,
+                        )
                     # Fallback to database
                     return self._load_from_database(org_id=org_id)
         except Exception as e:
             # Transient Redis errors - fallback to database
-            logger.warning("[OrgCache] Redis error for org ID %s, falling back to database: %s", org_id, e)
+            logger.warning(
+                "[OrgCache] Redis error for org ID %s, falling back to database: %s",
+                org_id,
+                e,
+            )
             return self._load_from_database(org_id=org_id)
 
         # Cache miss - load from database
@@ -222,7 +235,10 @@ class OrganizationCache:
         """
         # Check Redis availability
         if not is_redis_available():
-            logger.debug("[OrgCache] Redis unavailable, loading org by code %s from database", code)
+            logger.debug(
+                "[OrgCache] Redis unavailable, loading org by code %s from database",
+                code,
+            )
             return self._load_from_database(code=code)
 
         try:
@@ -241,12 +257,20 @@ class OrganizationCache:
                     try:
                         RedisOps.delete(index_key)
                     except Exception as exc:
-                        logger.debug("Corrupted org code index deletion failed for code %s: %s", code, exc)
+                        logger.debug(
+                            "Corrupted org code index deletion failed for code %s: %s",
+                            code,
+                            exc,
+                        )
                     # Fallback to database
                     return self._load_from_database(code=code)
         except Exception as e:
             # Transient Redis errors - fallback to database
-            logger.warning("[OrgCache] Redis error for code %s, falling back to database: %s", code, e)
+            logger.warning(
+                "[OrgCache] Redis error for code %s, falling back to database: %s",
+                code,
+                e,
+            )
             return self._load_from_database(code=code)
 
         # Cache miss - load from database
@@ -266,7 +290,10 @@ class OrganizationCache:
         # Check Redis availability
         if not is_redis_available():
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-            logger.debug("[OrgCache] Redis unavailable, loading org by invitation code %s from database", masked_invite)
+            logger.debug(
+                "[OrgCache] Redis unavailable, loading org by invitation code %s from database",
+                masked_invite,
+            )
             return self._load_from_database(invite_code=invite_code)
 
         try:
@@ -281,7 +308,11 @@ class OrganizationCache:
                     return self.get_by_id(org_id)
                 except (ValueError, TypeError) as e:
                     masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-                    logger.error("[OrgCache] Invalid org ID in invite index for %s: %s", masked_invite, e)
+                    logger.error(
+                        "[OrgCache] Invalid org ID in invite index for %s: %s",
+                        masked_invite,
+                        e,
+                    )
                     # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
@@ -293,16 +324,18 @@ class OrganizationCache:
             # Transient Redis errors - fallback to database
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
             logger.warning(
-                "[OrgCache] Redis error for invitation code %s, "
-                "falling back to database: %s",
+                "[OrgCache] Redis error for invitation code %s, falling back to database: %s",
                 masked_invite,
-                e
+                e,
             )
             return self._load_from_database(invite_code=invite_code)
 
         # Cache miss - load from database
         masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
-        logger.debug("[OrgCache] Cache miss for invitation code %s, loading from database", masked_invite)
+        logger.debug(
+            "[OrgCache] Cache miss for invitation code %s, loading from database",
+            masked_invite,
+        )
         return self._load_from_database(invite_code=invite_code)
 
     def cache_org(self, org: Organization) -> bool:
@@ -330,9 +363,9 @@ class OrganizationCache:
         try:
             org_dict = self._serialize_org(org)
 
-            org_id = int(getattr(org, 'id', 0))
-            org_code = getattr(org, 'code', None)
-            org_invite = getattr(org, 'invitation_code', None)
+            org_id = int(getattr(org, "id", 0))
+            org_code = getattr(org, "code", None)
+            org_invite = getattr(org, "invitation_code", None)
 
             org_key = f"{ORG_KEY_PREFIX}{org_id}"
 
@@ -344,18 +377,27 @@ class OrganizationCache:
             if org_code:
                 pipe.set(f"{ORG_CODE_INDEX_PREFIX}{org_code}", str(org_id), ex=ORG_CACHE_TTL)
             if org_invite:
-                pipe.set(f"{ORG_INVITE_INDEX_PREFIX}{org_invite}", str(org_id), ex=ORG_CACHE_TTL)
+                pipe.set(
+                    f"{ORG_INVITE_INDEX_PREFIX}{org_invite}",
+                    str(org_id),
+                    ex=ORG_CACHE_TTL,
+                )
             pipe.execute()
 
             if org_invite and len(org_invite) >= 8:
                 masked_invite = f"{org_invite[:8]}***"
             else:
                 masked_invite = "***"
-            logger.debug("[OrgCache] Cached org indexes: code %s, invite %s -> ID %s", org_code, masked_invite, org_id)
+            logger.debug(
+                "[OrgCache] Cached org indexes: code %s, invite %s -> ID %s",
+                org_code,
+                masked_invite,
+                org_id,
+            )
 
             return True
         except Exception as exc:
-            logger.warning("[OrgCache] Failed to cache org ID %s: %s", getattr(org, 'id', '?'), exc)
+            logger.warning("[OrgCache] Failed to cache org ID %s: %s", getattr(org, "id", "?"), exc)
             return False
 
     def invalidate(self, org_id: int, code: Optional[str] = None, invite_code: Optional[str] = None) -> bool:
@@ -407,13 +449,13 @@ class OrganizationCache:
         Returns:
             True if cache updated successfully
         """
-        self.invalidate(int(getattr(org, 'id', 0)), old_code, old_invite)
+        self.invalidate(int(getattr(org, "id", 0)), old_code, old_invite)
         return self.cache_org(org)
 
 
 def get_org_cache() -> OrganizationCache:
     """Get or create global OrganizationCache instance."""
-    if not hasattr(get_org_cache, 'cache_instance'):
+    if not hasattr(get_org_cache, "cache_instance"):
         get_org_cache.cache_instance = OrganizationCache()
         logger.info("[OrgCache] Initialized")
     return get_org_cache.cache_instance

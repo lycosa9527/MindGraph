@@ -13,7 +13,8 @@ from agents.node_palette.base_palette_generator import BasePaletteGenerator
 from agents.node_palette.circle_map_palette import CircleMapPaletteGenerator
 from agents.node_palette.double_bubble_palette import DoubleBubblePaletteGenerator
 
-__all__ = ['BasePaletteGenerator', 'CircleMapPaletteGenerator', 'DoubleBubblePaletteGenerator']
-
-
-
+__all__ = [
+    "BasePaletteGenerator",
+    "CircleMapPaletteGenerator",
+    "DoubleBubblePaletteGenerator",
+]

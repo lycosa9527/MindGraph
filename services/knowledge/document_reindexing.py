@@ -2,6 +2,7 @@
 
 Extracted from knowledge_space_service.py to reduce complexity.
 """
+
 import logging
 from typing import List, Dict, Set, Tuple, Any, Optional
 
@@ -19,7 +20,7 @@ def chunk_text_for_reindexing(
     cleaned_text: str,
     document: KnowledgeDocument,
     processing_rules: Optional[dict],
-    page_info: Optional[List[Dict[str, Any]]]
+    page_info: Optional[List[Dict[str, Any]]],
 ) -> List[Any]:
     """
     Chunk text for reindexing based on processing mode.
@@ -52,11 +53,16 @@ def chunk_text_for_reindexing(
 
     # Log chunking configuration for update
     import os
+
     chunking_engine = os.getenv("CHUNKING_ENGINE", "semchunk").lower()
     chunking_method = "mindchunk" if chunking_engine == "mindchunk" else "semchunk"
     logger.info(
         "[RAG] → Chunking (update): doc_id=%s, method=%s, mode=%s, chunk_size=%s, overlap=%s",
-        document.id, chunking_method, mode, chunk_size or 500, chunk_overlap or 50
+        document.id,
+        chunking_method,
+        mode,
+        chunk_size or 500,
+        chunk_overlap or 50,
     )
 
     # Chunk text
@@ -66,7 +72,7 @@ def chunk_text_for_reindexing(
                 hierarchical_chunking = ChunkingService(
                     chunk_size=chunk_size or 500,
                     overlap=chunk_overlap or 50,
-                    mode="hierarchical"
+                    mode="hierarchical",
                 )
                 new_chunks = hierarchical_chunking.chunk_text(
                     cleaned_text,
@@ -74,13 +80,13 @@ def chunk_text_for_reindexing(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
             else:
                 logger.warning(
                     "[RAG] Hierarchical mode not supported with mindchunk, "
                     "falling back to default automatic chunking for doc_id=%s",
-                    document.id
+                    document.id,
                 )
                 new_chunks = chunking_service.chunk_text(
                     cleaned_text,
@@ -88,14 +94,14 @@ def chunk_text_for_reindexing(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
         elif mode == "custom" and (chunk_size or chunk_overlap or separator):
             if chunking_engine == "semchunk":
                 custom_chunking = ChunkingService(
                     chunk_size=chunk_size or 500,
                     overlap=chunk_overlap or 50,
-                    mode="custom"
+                    mode="custom",
                 )
                 new_chunks = custom_chunking.chunk_text(
                     cleaned_text,
@@ -103,13 +109,13 @@ def chunk_text_for_reindexing(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
             else:
                 logger.warning(
                     "[RAG] Custom mode not supported with mindchunk, "
                     "falling back to default automatic chunking for doc_id=%s",
-                    document.id
+                    document.id,
                 )
                 new_chunks = chunking_service.chunk_text(
                     cleaned_text,
@@ -117,7 +123,7 @@ def chunk_text_for_reindexing(
                     separator=separator,
                     extract_structure=True,
                     page_info=page_info,
-                    language=document.language
+                    language=document.language,
                 )
         else:
             # Default chunking (respects CHUNKING_ENGINE)
@@ -127,13 +133,14 @@ def chunk_text_for_reindexing(
                 separator=separator,
                 extract_structure=True,
                 page_info=page_info,
-                language=document.language
+                language=document.language,
             )
     except Exception as chunk_error:
         error_msg = f"文本分块失败: {str(chunk_error)}"
         logger.error(
             "[KnowledgeSpace] Chunking failed for document %s: %s",
-            document.id, chunk_error
+            document.id,
+            chunk_error,
         )
         raise ValueError(error_msg) from chunk_error
 
@@ -141,9 +148,7 @@ def chunk_text_for_reindexing(
 
 
 def compare_chunks(
-    new_chunks: List[Any],
-    existing_chunks: List[DocumentChunk],
-    calculate_chunk_hash
+    new_chunks: List[Any], existing_chunks: List[DocumentChunk], calculate_chunk_hash
 ) -> Tuple[List[Tuple[int, Any, str]], List[Tuple[int, Any, str]], Set[int]]:
     """
     Compare new chunks with existing chunks.
@@ -187,7 +192,9 @@ def compare_chunks(
 
     logger.info(
         "[RAG] ✓ Chunk comparison: added=%s, updated=%s, deleted=%s",
-        len(chunks_to_add), len(chunks_to_update), len(chunks_to_delete)
+        len(chunks_to_add),
+        len(chunks_to_update),
+        len(chunks_to_delete),
     )
 
     return chunks_to_add, chunks_to_update, chunks_to_delete
@@ -196,11 +203,11 @@ def compare_chunks(
 def process_updated_chunks(
     chunks_to_update: List[Tuple[int, Any, str]],
     existing_chunk_map: Dict[int, DocumentChunk],
-    document: KnowledgeDocument,
+    _document: KnowledgeDocument,
     embedding_client,
     kb_rate_limiter,
     user_id: int,
-    db
+    db,
 ) -> Tuple[List[int], List[List[float]], List[Any]]:
     """
     Process updated chunks: generate embeddings and update database.
@@ -208,7 +215,7 @@ def process_updated_chunks(
     Args:
         chunks_to_update: List of (index, chunk, hash) tuples
         existing_chunk_map: Map of existing chunks by index
-        document: KnowledgeDocument instance
+        _document: Reserved for API compatibility (unused in this function).
         embedding_client: Embedding client instance
         kb_rate_limiter: Rate limiter instance
         user_id: User ID
@@ -232,24 +239,22 @@ def process_updated_chunks(
             allowed, _count, _error_msg = kb_rate_limiter.check_embedding_limit(user_id)
             if not allowed:
                 logger.warning(
-                    "[KnowledgeSpace] Embedding rate limit exceeded during update. "
-                    "Skipping remaining chunks."
+                    "[KnowledgeSpace] Embedding rate limit exceeded during update. Skipping remaining chunks."
                 )
                 break
 
             # Generate embedding
             dimensions = config.EMBEDDING_DIMENSIONS
             try:
-                embeddings = embedding_client.embed_texts(
-                    [new_chunk.text], dimensions=dimensions
-                )
+                embeddings = embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
                 if embeddings:
                     cached_embedding = embeddings[0]
                     embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
             except Exception as e:
                 logger.error(
                     "[KnowledgeSpace] Failed to generate embedding for chunk %s: %s",
-                    chunk_index, e
+                    chunk_index,
+                    e,
                 )
                 continue
 
@@ -272,7 +277,7 @@ def process_new_chunks(
     embedding_client,
     kb_rate_limiter,
     user_id: int,
-    db
+    db,
 ) -> Tuple[List[int], List[List[float]], List[Any]]:
     """
     Process new chunks: generate embeddings and create database records.
@@ -301,24 +306,22 @@ def process_new_chunks(
             allowed, _count, _error_msg = kb_rate_limiter.check_embedding_limit(user_id)
             if not allowed:
                 logger.warning(
-                    "[KnowledgeSpace] Embedding rate limit exceeded during update. "
-                    "Skipping remaining chunks."
+                    "[KnowledgeSpace] Embedding rate limit exceeded during update. Skipping remaining chunks."
                 )
                 break
 
             # Generate embedding
             dimensions = config.EMBEDDING_DIMENSIONS
             try:
-                embeddings = embedding_client.embed_texts(
-                    [new_chunk.text], dimensions=dimensions
-                )
+                embeddings = embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
                 if embeddings:
                     cached_embedding = embeddings[0]
                     embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
             except Exception as e:
                 logger.error(
                     "[KnowledgeSpace] Failed to generate embedding for new chunk %s: %s",
-                    chunk_index, e
+                    chunk_index,
+                    e,
                 )
                 continue
 
@@ -329,7 +332,7 @@ def process_new_chunks(
                 chunk_index=chunk_index,
                 text=new_chunk.text,
                 start_char=new_chunk.start_char,
-                end_char=new_chunk.end_char
+                end_char=new_chunk.end_char,
             )
             db.add(db_chunk)
             db.flush()

@@ -11,10 +11,14 @@ def get_workshop_redis_ttl_seconds(diagram_id: str) -> int:
     """TTL to use for ``live_spec`` and related keys (capped, min 1s)."""
     db = SessionLocal()
     try:
-        diagram = db.query(Diagram).filter(
-            Diagram.id == diagram_id,
-            ~Diagram.is_deleted,
-        ).first()
+        diagram = (
+            db.query(Diagram)
+            .filter(
+                Diagram.id == diagram_id,
+                ~Diagram.is_deleted,
+            )
+            .first()
+        )
         if not diagram:
             return _FALLBACK_TTL
         if diagram.workshop_expires_at:

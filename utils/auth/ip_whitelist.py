@@ -23,6 +23,7 @@ _get_bayi_whitelist = None
 
 try:
     from services.redis.redis_bayi_whitelist import get_bayi_whitelist
+
     _REDIS_AVAILABLE = True
     _get_bayi_whitelist = get_bayi_whitelist
 except ImportError:
@@ -55,7 +56,7 @@ def is_ip_whitelisted(client_ip: str) -> bool:
         except Exception as e:
             logger.debug(
                 "[Auth] Redis IP whitelist check failed, falling back to in-memory: %s",
-                e
+                e,
             )
 
     # Fallback to in-memory set (backward compatibility)
@@ -69,9 +70,7 @@ def is_ip_whitelisted(client_ip: str) -> bool:
 
         # O(1) lookup in set
         if ip_str in BAYI_IP_WHITELIST:
-            logger.debug(
-                "IP %s matched whitelist entry (in-memory fallback)", client_ip
-            )
+            logger.debug("IP %s matched whitelist entry (in-memory fallback)", client_ip)
             return True
 
         return False

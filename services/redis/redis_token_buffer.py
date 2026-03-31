@@ -33,9 +33,9 @@ CONSUMER_GROUP = "token_flush_workers"
 CONSUMER_NAME = f"worker_{os.getpid()}"
 
 # Configuration from environment
-BATCH_SIZE = int(os.getenv('TOKEN_TRACKER_BATCH_SIZE', '1000'))
-BATCH_INTERVAL = float(os.getenv('TOKEN_TRACKER_BATCH_INTERVAL', '300'))  # 5 minutes
-MAX_BUFFER_SIZE = int(os.getenv('TOKEN_TRACKER_MAX_BUFFER_SIZE', '10000'))
+BATCH_SIZE = int(os.getenv("TOKEN_TRACKER_BATCH_SIZE", "1000"))
+BATCH_INTERVAL = float(os.getenv("TOKEN_TRACKER_BATCH_INTERVAL", "300"))  # 5 minutes
+MAX_BUFFER_SIZE = int(os.getenv("TOKEN_TRACKER_MAX_BUFFER_SIZE", "10000"))
 WORKER_CHECK_INTERVAL = 30.0  # Check every 30 seconds
 
 
@@ -52,31 +52,31 @@ class RedisTokenBuffer:
 
     # Model pricing (per 1M tokens in CNY)
     MODEL_PRICING = {
-        'qwen': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope'},
-        'qwen-turbo': {'input': 0.3, 'output': 0.6, 'provider': 'dashscope'},
-        'qwen-plus': {'input': 0.4, 'output': 1.2, 'provider': 'dashscope'},
-        'deepseek': {'input': 0.4, 'output': 2.0, 'provider': 'dashscope'},
-        'kimi': {'input': 2.0, 'output': 6.0, 'provider': 'dashscope'},
-        'hunyuan': {'input': 0.45, 'output': 0.5, 'provider': 'tencent'},
-        'doubao': {'input': 0.8, 'output': 2.0, 'provider': 'volcengine'},
+        "qwen": {"input": 0.4, "output": 1.2, "provider": "dashscope"},
+        "qwen-turbo": {"input": 0.3, "output": 0.6, "provider": "dashscope"},
+        "qwen-plus": {"input": 0.4, "output": 1.2, "provider": "dashscope"},
+        "deepseek": {"input": 0.4, "output": 2.0, "provider": "dashscope"},
+        "kimi": {"input": 2.0, "output": 6.0, "provider": "dashscope"},
+        "hunyuan": {"input": 0.45, "output": 0.5, "provider": "tencent"},
+        "doubao": {"input": 0.8, "output": 2.0, "provider": "volcengine"},
         # Dify MindMate - uses Dify's hosted models (pricing estimated based on typical usage)
-        'dify': {'input': 0.5, 'output': 1.5, 'provider': 'dify'},
+        "dify": {"input": 0.5, "output": 1.5, "provider": "dify"},
     }
 
     # Model name mapping
     MODEL_NAME_MAP = {
-        'qwen': 'qwen-plus-latest',
-        'qwen-turbo': 'qwen-turbo-latest',
-        'qwen-plus': 'qwen-plus-latest',
-        'deepseek': 'deepseek-v3.1',
-        'kimi': 'moonshot-v1-32k',
-        'hunyuan': 'hunyuan-turbo',
-        'doubao': 'doubao-1-5-pro-32k',
-        'dify': 'dify-mindmate',
+        "qwen": "qwen-plus-latest",
+        "qwen-turbo": "qwen-turbo-latest",
+        "qwen-plus": "qwen-plus-latest",
+        "deepseek": "deepseek-v3.1",
+        "kimi": "moonshot-v1-32k",
+        "hunyuan": "hunyuan-turbo",
+        "doubao": "doubao-1-5-pro-32k",
+        "dify": "dify-mindmate",
     }
 
     def __init__(self):
-        self._enabled = os.getenv('TOKEN_TRACKER_ENABLED', 'true').lower() == 'true'
+        self._enabled = os.getenv("TOKEN_TRACKER_ENABLED", "true").lower() == "true"
         self._worker_task: Optional[asyncio.Task] = None
         self._initialized = False
         self._shutting_down = False
@@ -94,7 +94,9 @@ class RedisTokenBuffer:
         if self._enabled:
             logger.info(
                 "[TokenBuffer] Initialized: batch_size=%s, interval=%s s, max_buffer=%s",
-                BATCH_SIZE, BATCH_INTERVAL, MAX_BUFFER_SIZE
+                BATCH_SIZE,
+                BATCH_INTERVAL,
+                MAX_BUFFER_SIZE,
             )
         else:
             logger.info("[TokenBuffer] Disabled via TOKEN_TRACKER_ENABLED=false")
@@ -110,7 +112,11 @@ class RedisTokenBuffer:
             return False
         try:
             redis.xgroup_create(STREAM_KEY, CONSUMER_GROUP, id="0", mkstream=True)
-            logger.debug("[TokenBuffer] Consumer group '%s' created on stream '%s'", CONSUMER_GROUP, STREAM_KEY)
+            logger.debug(
+                "[TokenBuffer] Consumer group '%s' created on stream '%s'",
+                CONSUMER_GROUP,
+                STREAM_KEY,
+            )
         except Exception as exc:
             if "BUSYGROUP" not in str(exc):
                 logger.warning("[TokenBuffer] Could not create consumer group: %s", exc)
@@ -234,25 +240,25 @@ class RedisTokenBuffer:
 
                 self._update_stats(record_count)
 
-                total_tokens = sum(r.get('total_tokens', 0) for r in records)
+                total_tokens = sum(r.get("total_tokens", 0) for r in records)
                 write_time_ms = write_time * 1000
                 logger.info(
                     "[TokenBuffer] Wrote %s records (%s tokens) in %.1fms | Total: %s",
-                    record_count, total_tokens, write_time_ms, self._total_written
+                    record_count,
+                    total_tokens,
+                    write_time_ms,
+                    self._total_written,
                 )
 
-                user_ids = {
-                    uid for r in records
-                    for uid in (r.get("user_id"),)
-                    if isinstance(uid, int)
-                }
+                user_ids = {uid for r in records for uid in (r.get("user_id"),) if isinstance(uid, int)}
                 for uid in user_ids:
                     try:
                         compute_and_upsert_user_usage_stats(uid, db)
                     except Exception as stats_err:
                         logger.debug(
                             "[TokenBuffer] Stats compute failed for user %s: %s",
-                            uid, stats_err
+                            uid,
+                            stats_err,
                         )
 
             except Exception as exc:
@@ -285,7 +291,9 @@ class RedisTokenBuffer:
                     # First, try to reclaim any idle pending entries from crashed workers.
                     try:
                         pending = redis.xautoclaim(
-                            STREAM_KEY, CONSUMER_GROUP, CONSUMER_NAME,
+                            STREAM_KEY,
+                            CONSUMER_GROUP,
+                            CONSUMER_NAME,
                             min_idle_time=60000,  # 60 s idle
                             start_id="0-0",
                             count=count,
@@ -298,7 +306,8 @@ class RedisTokenBuffer:
                     if remaining > 0:
                         # Non-blocking read — block=None returns immediately if empty.
                         new_entries = redis.xreadgroup(
-                            CONSUMER_GROUP, CONSUMER_NAME,
+                            CONSUMER_GROUP,
+                            CONSUMER_NAME,
                             {STREAM_KEY: ">"},
                             count=remaining,
                             block=None,
@@ -311,13 +320,14 @@ class RedisTokenBuffer:
                     for entry_id, fields in raw_entries:
                         try:
                             record = json.loads(fields.get("data", "{}"))
-                            if 'created_at' in record and isinstance(record['created_at'], str):
-                                record['created_at'] = datetime.fromisoformat(record['created_at'])
+                            if "created_at" in record and isinstance(record["created_at"], str):
+                                record["created_at"] = datetime.fromisoformat(record["created_at"])
                             records.append((entry_id, record))
                         except Exception as exc:
                             logger.warning(
                                 "[TokenBuffer] Dropping unparseable stream entry %s: %s",
-                                entry_id, exc,
+                                entry_id,
+                                exc,
                             )
                             poison_ids.append(entry_id)
 
@@ -365,7 +375,7 @@ class RedisTokenBuffer:
         input_tokens: int,
         output_tokens: int,
         total_tokens: Optional[int] = None,
-        request_type: str = 'diagram_generation',
+        request_type: str = "diagram_generation",
         diagram_type: Optional[str] = None,
         user_id: Optional[int] = None,
         organization_id: Optional[int] = None,
@@ -397,15 +407,11 @@ class RedisTokenBuffer:
                 total_tokens = input_tokens + output_tokens
 
             # Get pricing info
-            pricing = self.MODEL_PRICING.get(model_alias, {
-                'input': 0.4,
-                'output': 1.2,
-                'provider': 'unknown'
-            })
+            pricing = self.MODEL_PRICING.get(model_alias, {"input": 0.4, "output": 1.2, "provider": "unknown"})
 
             # Calculate cost
-            input_cost = input_tokens * pricing['input'] / 1_000_000
-            output_cost = output_tokens * pricing['output'] / 1_000_000
+            input_cost = input_tokens * pricing["input"] / 1_000_000
+            output_cost = output_tokens * pricing["output"] / 1_000_000
             total_cost = input_cost + output_cost
 
             model_name = self.MODEL_NAME_MAP.get(model_alias, model_alias)
@@ -414,26 +420,26 @@ class RedisTokenBuffer:
             if kwargs:
                 logger.debug("[TokenBuffer] Extra kwargs ignored: %s", list(kwargs.keys()))
             record = {
-                'user_id': user_id,
-                'organization_id': organization_id,
-                'api_key_id': api_key_id,
-                'session_id': session_id or f"session_{os.urandom(8).hex()}",
-                'conversation_id': conversation_id,
-                'model_provider': pricing['provider'],
-                'model_name': model_name,
-                'model_alias': model_alias,
-                'input_tokens': input_tokens,
-                'output_tokens': output_tokens,
-                'total_tokens': total_tokens,
-                'input_cost': round(input_cost, 6),
-                'output_cost': round(output_cost, 6),
-                'total_cost': round(total_cost, 6),
-                'request_type': request_type,
-                'diagram_type': diagram_type,
-                'endpoint_path': endpoint_path,
-                'success': success,
-                'response_time': response_time,
-                'created_at': datetime.utcnow().isoformat()
+                "user_id": user_id,
+                "organization_id": organization_id,
+                "api_key_id": api_key_id,
+                "session_id": session_id or f"session_{os.urandom(8).hex()}",
+                "conversation_id": conversation_id,
+                "model_provider": pricing["provider"],
+                "model_name": model_name,
+                "model_alias": model_alias,
+                "input_tokens": input_tokens,
+                "output_tokens": output_tokens,
+                "total_tokens": total_tokens,
+                "input_cost": round(input_cost, 6),
+                "output_cost": round(output_cost, 6),
+                "total_cost": round(total_cost, 6),
+                "request_type": request_type,
+                "diagram_type": diagram_type,
+                "endpoint_path": endpoint_path,
+                "success": success,
+                "response_time": response_time,
+                "created_at": datetime.utcnow().isoformat(),
             }
 
             # Add to buffer
@@ -492,7 +498,8 @@ class RedisTokenBuffer:
 
         logger.info(
             "[TokenBuffer] Shutdown complete. Total written: %s, dropped: %s",
-            self._total_written, self._total_dropped
+            self._total_written,
+            self._total_dropped,
         )
 
     @staticmethod
@@ -503,17 +510,17 @@ class RedisTokenBuffer:
     def get_stats(self) -> Dict[str, Any]:
         """Get buffer statistics."""
         stats = {
-            'enabled': self._enabled,
-            'buffer_size': self._get_buffer_size(),
-            'total_written': self._total_written,
-            'total_dropped': self._total_dropped,
-            'total_batches': self._total_batches,
-            'storage': 'redis_stream' if self._use_redis() else 'memory',
-            'config': {
-                'batch_size': BATCH_SIZE,
-                'batch_interval': BATCH_INTERVAL,
-                'max_buffer_size': MAX_BUFFER_SIZE,
-            }
+            "enabled": self._enabled,
+            "buffer_size": self._get_buffer_size(),
+            "total_written": self._total_written,
+            "total_dropped": self._total_dropped,
+            "total_batches": self._total_batches,
+            "storage": "redis_stream" if self._use_redis() else "memory",
+            "config": {
+                "batch_size": BATCH_SIZE,
+                "batch_interval": BATCH_INTERVAL,
+                "max_buffer_size": MAX_BUFFER_SIZE,
+            },
         }
 
         # Add Redis global stats
@@ -523,9 +530,9 @@ class RedisTokenBuffer:
                 try:
                     redis_stats = redis.hgetall(STATS_KEY)
                     if redis_stats:
-                        stats['redis_total_written'] = int(redis_stats.get('total_written', 0))
-                        stats['redis_total_batches'] = int(redis_stats.get('total_batches', 0))
-                    stats['stream_length'] = redis.xlen(STREAM_KEY) or 0
+                        stats["redis_total_written"] = int(redis_stats.get("total_written", 0))
+                        stats["redis_total_batches"] = int(redis_stats.get("total_batches", 0))
+                    stats["stream_length"] = redis.xlen(STREAM_KEY) or 0
                 except Exception as exc:
                     logger.debug("Token buffer stats retrieval failed: %s", exc)
 

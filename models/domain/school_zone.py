@@ -12,7 +12,16 @@ Proprietary License
 
 import uuid
 from datetime import datetime
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Boolean, Text, Index
+from sqlalchemy import (
+    Column,
+    Integer,
+    String,
+    DateTime,
+    ForeignKey,
+    Boolean,
+    Text,
+    Index,
+)
 from sqlalchemy.dialects import postgresql as pg
 from sqlalchemy.orm import relationship
 
@@ -32,6 +41,7 @@ class SharedDiagram(Base):
     Only users from the same organization can view shared content.
     Uses UUID for secure, non-guessable IDs.
     """
+
     __tablename__ = "shared_diagrams"
 
     id = Column(String(36), primary_key=True, default=generate_uuid, index=True)
@@ -73,8 +83,8 @@ class SharedDiagram(Base):
 
     # Composite index for efficient organization-scoped queries
     __table_args__ = (
-        Index('ix_shared_diagrams_org_created', 'organization_id', 'created_at'),
-        Index('ix_shared_diagrams_org_category', 'organization_id', 'category'),
+        Index("ix_shared_diagrams_org_created", "organization_id", "created_at"),
+        Index("ix_shared_diagrams_org_category", "organization_id", "category"),
     )
 
 
@@ -83,6 +93,7 @@ class SharedDiagramLike(Base):
     Tracks user likes on shared diagrams.
     One like per user per diagram.
     """
+
     __tablename__ = "shared_diagram_likes"
 
     id = Column(Integer, primary_key=True, index=True)
@@ -95,15 +106,14 @@ class SharedDiagramLike(Base):
     user = relationship("User")
 
     # Unique constraint: one like per user per diagram
-    __table_args__ = (
-        Index('ix_shared_diagram_likes_unique', 'diagram_id', 'user_id', unique=True),
-    )
+    __table_args__ = (Index("ix_shared_diagram_likes_unique", "diagram_id", "user_id", unique=True),)
 
 
 class SharedDiagramComment(Base):
     """
     Comments on shared diagrams.
     """
+
     __tablename__ = "shared_diagram_comments"
 
     id = Column(Integer, primary_key=True, index=True)

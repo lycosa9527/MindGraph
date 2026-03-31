@@ -25,6 +25,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 
 from dotenv import load_dotenv
@@ -51,7 +52,7 @@ class Config(
     RateLimitingConfigMixin,
     KnowledgeConfigMixin,
     VisualizationConfigMixin,
-    FeaturesConfigMixin
+    FeaturesConfigMixin,
 ):
     """
     Centralized configuration management for MindGraph application.

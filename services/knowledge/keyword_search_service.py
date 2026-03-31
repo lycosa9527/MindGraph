@@ -9,6 +9,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import List, Dict, Any, Optional
 import logging
 
@@ -42,6 +43,7 @@ class KeywordSearchService:
         """
         try:
             import jieba3
+
             # Extract keywords using jieba3 (modern Python 3 rewrite)
             tokenizer = jieba3.jieba3()
             words = tokenizer.cut_text(text_content)
@@ -50,7 +52,8 @@ class KeywordSearchService:
         except ImportError:
             # Fallback: simple word splitting for English
             import re
-            words = re.findall(r'\b\w+\b', text_content.lower())
+
+            words = re.findall(r"\b\w+\b", text_content.lower())
             return list(set(words))
 
     def keyword_search(
@@ -60,7 +63,7 @@ class KeywordSearchService:
         query: str,
         top_k: int = 5,
         document_id: Optional[int] = None,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """
         Search for chunks using keyword/full-text search.
@@ -80,8 +83,8 @@ class KeywordSearchService:
             return []
 
         # Extract document_id from metadata_filter if provided
-        if metadata_filter and 'document_id' in metadata_filter:
-            document_id = metadata_filter['document_id']
+        if metadata_filter and "document_id" in metadata_filter:
+            document_id = metadata_filter["document_id"]
 
         try:
             return self._search_postgresql(db, user_id, query, top_k, document_id, metadata_filter)
@@ -97,7 +100,7 @@ class KeywordSearchService:
         query: str,
         top_k: int,
         document_id: Optional[int] = None,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Search using PostgreSQL full-text search."""
         # Extract keywords for PostgreSQL tsquery
@@ -124,15 +127,15 @@ class KeywordSearchService:
             params["document_id"] = document_id
 
         if metadata_filter:
-            if 'document_id' in metadata_filter and not document_id:
+            if "document_id" in metadata_filter and not document_id:
                 sql += " AND dc.document_id = :document_id"
-                params["document_id"] = metadata_filter['document_id']
-            if 'document_type' in metadata_filter:
+                params["document_id"] = metadata_filter["document_id"]
+            if "document_type" in metadata_filter:
                 sql += " AND kd.file_type = :document_type"
-                params["document_type"] = metadata_filter['document_type']
-            if 'category' in metadata_filter:
+                params["document_type"] = metadata_filter["document_type"]
+            if "category" in metadata_filter:
                 sql += " AND kd.category = :category"
-                params["category"] = metadata_filter['category']
+                params["category"] = metadata_filter["category"]
 
         sql += " ORDER BY score DESC LIMIT :top_k"
         params["top_k"] = top_k
@@ -140,12 +143,14 @@ class KeywordSearchService:
         result = db.execute(text(sql), params)
         results = []
         for row in result:
-            results.append({
-                "chunk_id": row.chunk_id,
-                "text": row.text,
-                "document_id": row.document_id,
-                "score": float(row.score) if row.score else 0.0,
-            })
+            results.append(
+                {
+                    "chunk_id": row.chunk_id,
+                    "text": row.text,
+                    "document_id": row.document_id,
+                    "score": float(row.score) if row.score else 0.0,
+                }
+            )
         return results
 
     def _search_like(
@@ -155,7 +160,7 @@ class KeywordSearchService:
         query: str,
         top_k: int,
         document_id: Optional[int] = None,
-        metadata_filter: Optional[Dict[str, Any]] = None
+        metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Fallback search using LIKE queries."""
         # Extract keywords
@@ -189,15 +194,15 @@ class KeywordSearchService:
             params["document_id"] = document_id
 
         if metadata_filter:
-            if 'document_id' in metadata_filter and not document_id:
+            if "document_id" in metadata_filter and not document_id:
                 sql += " AND dc.document_id = :document_id"
-                params["document_id"] = metadata_filter['document_id']
-            if 'document_type' in metadata_filter:
+                params["document_id"] = metadata_filter["document_id"]
+            if "document_type" in metadata_filter:
                 sql += " AND kd.file_type = :document_type"
-                params["document_type"] = metadata_filter['document_type']
-            if 'category' in metadata_filter:
+                params["document_type"] = metadata_filter["document_type"]
+            if "category" in metadata_filter:
                 sql += " AND kd.category = :category"
-                params["category"] = metadata_filter['category']
+                params["category"] = metadata_filter["category"]
 
         sql += " LIMIT :top_k"
         params["top_k"] = top_k
@@ -205,12 +210,14 @@ class KeywordSearchService:
         result = db.execute(text(sql), params)
         results = []
         for row in result:
-            results.append({
-                "chunk_id": row.chunk_id,
-                "text": row.text,
-                "document_id": row.document_id,
-                "score": 0.5,  # Default score for LIKE
-            })
+            results.append(
+                {
+                    "chunk_id": row.chunk_id,
+                    "text": row.text,
+                    "document_id": row.document_id,
+                    "score": 0.5,  # Default score for LIKE
+                }
+            )
         return results
 
     def calculate_tfidf_score(self, query: str, document: str) -> float:

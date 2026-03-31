@@ -8,6 +8,7 @@ Orchestrates the complete chunking workflow:
 4. LLM refinement for unclear boundaries (20% of chunks)
 5. Validate and return chunks
 """
+
 from typing import List, Dict, Any, Optional, Union
 import logging
 import traceback
@@ -53,7 +54,7 @@ class LLMSemanticChunker:
         cache_manager: Optional[CacheManager] = None,
         sample_pages: int = 30,
         batch_size: int = 10,
-        use_embeddings_only: bool = False
+        use_embeddings_only: bool = False,
     ):
         """
         Initialize chunker.
@@ -78,7 +79,7 @@ class LLMSemanticChunker:
             self.structure_agent = StructureAgent(llm_service=llm_service)
             self.boundary_agent = BoundaryAgent(
                 llm_service=llm_service,
-                use_embedding_filter=True  # Enable embedding pre-filtering
+                use_embedding_filter=True,  # Enable embedding pre-filtering
             )
         else:
             self.structure_agent = None
@@ -93,8 +94,7 @@ class LLMSemanticChunker:
             self.embedding_detector = EmbeddingBoundaryDetector()
             if not self.embedding_detector.embedding_service.is_available():
                 logger.warning(
-                    "[LLMSemanticChunker] Embedding service not available, "
-                    "embedding-based chunking will be disabled"
+                    "[LLMSemanticChunker] Embedding service not available, embedding-based chunking will be disabled"
                 )
                 self.embedding_detector = None
         except Exception as e:  # pylint: disable=broad-except
@@ -102,9 +102,7 @@ class LLMSemanticChunker:
             self.embedding_detector = None
 
         if self.use_embeddings_only and not self.embedding_detector:
-            raise ValueError(
-                "use_embeddings_only=True requires embedding service to be available"
-            )
+            raise ValueError("use_embeddings_only=True requires embedding service to be available")
 
     async def chunk(
         self,
@@ -112,7 +110,7 @@ class LLMSemanticChunker:
         document_id: str,
         structure_type: Optional[str] = None,
         pdf_outline: Optional[List[Dict[str, Any]]] = None,
-        **kwargs
+        **kwargs,
     ) -> Union[List[Chunk], List[ParentChunk], List[QAChunk]]:
         """
         Chunk text using LLM-based semantic chunking.
@@ -130,43 +128,40 @@ class LLMSemanticChunker:
         # Validate input
         if not text or not text.strip():
             raise ValueError(
-                f"[LLMSemanticChunker] Empty text provided for doc_id={document_id}. "
-                "Cannot chunk empty text."
+                f"[LLMSemanticChunker] Empty text provided for doc_id={document_id}. Cannot chunk empty text."
             )
 
         logger.info(
             "[LLMSemanticChunker] ===== Starting chunking for doc_id=%s =====",
-            document_id
+            document_id,
         )
         logger.info(
             "[LLMSemanticChunker] Input: text_length=%s, structure_type=%s, use_embeddings_only=%s, has_pdf_outline=%s",
             len(text),
             structure_type,
             self.use_embeddings_only,
-            pdf_outline is not None
+            pdf_outline is not None,
         )
 
         try:
             # Step 1: Get or detect structure
-            logger.info("[LLMSemanticChunker] Step 1: Getting structure for doc_id=%s...", document_id)
-            structure = await self._get_structure(
-                text,
+            logger.info(
+                "[LLMSemanticChunker] Step 1: Getting structure for doc_id=%s...",
                 document_id,
-                structure_type,
-                pdf_outline
             )
+            structure = await self._get_structure(text, document_id, structure_type, pdf_outline)
             logger.info(
                 "[LLMSemanticChunker] ✓ Structure detected: type=%s, doc_type=%s, toc_entries=%s",
                 structure.structure_type,
                 structure.document_type,
-                len(structure.toc)
+                len(structure.toc),
             )
 
             # Step 2: Chunk according to structure
             logger.info(
                 "[LLMSemanticChunker] Step 2: Chunking with structure_type=%s for doc_id=%s...",
                 structure.structure_type,
-                document_id
+                document_id,
             )
             if structure.structure_type == "general":
                 chunks = await self._chunk_general(text, structure, **kwargs)
@@ -178,14 +173,14 @@ class LLMSemanticChunker:
                 logger.error(
                     "[LLMSemanticChunker] ✗ Unknown structure type: %s for doc_id=%s",
                     structure.structure_type,
-                    document_id
+                    document_id,
                 )
                 raise ValueError(f"Unknown structure type: {structure.structure_type}")
 
             logger.info(
                 "[LLMSemanticChunker] Step 2 complete: doc_id=%s, chunks_count=%s",
                 document_id,
-                len(chunks) if chunks else 0
+                len(chunks) if chunks else 0,
             )
 
             # Validate chunks
@@ -199,7 +194,7 @@ class LLMSemanticChunker:
             logger.info(
                 "[LLMSemanticChunker] ===== Chunking complete: doc_id=%s, created %s chunks =====",
                 document_id,
-                len(chunks)
+                len(chunks),
             )
 
             return chunks
@@ -208,7 +203,7 @@ class LLMSemanticChunker:
             logger.error(
                 "[LLMSemanticChunker] ✗ Error during chunking for doc_id=%s: %s",
                 document_id,
-                e
+                e,
             )
             logger.error("[LLMSemanticChunker] Full traceback:")
             logger.error(traceback.format_exc())
@@ -222,7 +217,7 @@ class LLMSemanticChunker:
         text: str,
         document_id: str,
         structure_type: Optional[str],
-        pdf_outline: Optional[List[Dict[str, Any]]]
+        pdf_outline: Optional[List[Dict[str, Any]]],
     ) -> DocumentStructure:
         """Get or detect document structure."""
         # If embeddings_only mode, use simple general structure
@@ -232,7 +227,7 @@ class LLMSemanticChunker:
                 structure_type=structure_type or "general",
                 toc=[],
                 chunking_rules={},
-                document_type=None
+                document_type=None,
             )
 
         # Check cache first
@@ -245,14 +240,14 @@ class LLMSemanticChunker:
         logger.info(
             "[LLMSemanticChunker] No cached structure, detecting from sample for doc_id=%s, text_length=%s",
             document_id,
-            len(text)
+            len(text),
         )
         sample = self.sampler.sample(text)
         logger.info(
             "[LLMSemanticChunker] Sampled %s chars from %s total for doc_id=%s",
             len(sample),
             len(text),
-            document_id
+            document_id,
         )
 
         if not self.structure_agent:
@@ -261,17 +256,16 @@ class LLMSemanticChunker:
                 "Cannot detect structure without LLM service."
             )
 
-        logger.info("[LLMSemanticChunker] Calling structure_agent.analyze_structure() for doc_id=%s...", document_id)
-        structure = await self.structure_agent.analyze_structure(
-            sample,
+        logger.info(
+            "[LLMSemanticChunker] Calling structure_agent.analyze_structure() for doc_id=%s...",
             document_id,
-            pdf_outline
         )
+        structure = await self.structure_agent.analyze_structure(sample, document_id, pdf_outline)
         logger.info(
             "[LLMSemanticChunker] ✓ Structure detected: type=%s, doc_type=%s for doc_id=%s",
             structure.structure_type,
             structure.document_type,
-            document_id
+            document_id,
         )
 
         # Cache structure
@@ -279,7 +273,7 @@ class LLMSemanticChunker:
         logger.info(
             "[LLMSemanticChunker] ✓ Structure cached for doc_id=%s, type=%s",
             document_id,
-            structure.structure_type
+            structure.structure_type,
         )
 
         return structure
@@ -290,18 +284,12 @@ class LLMSemanticChunker:
         structure: DocumentStructure,
         chunk_size: int = 500,
         overlap: int = 50,
-        **kwargs
+        **kwargs,
     ) -> List[Chunk]:
         """Chunk using general (flat) structure."""
         # If embeddings_only mode, use embedding-based chunking
         if self.use_embeddings_only and self.embedding_detector:
-            return await self._chunk_general_embeddings_only(
-                text,
-                structure,
-                chunk_size,
-                overlap,
-                **kwargs
-            )
+            return await self._chunk_general_embeddings_only(text, structure, chunk_size, overlap, **kwargs)
 
         # Step 1: Pattern-based chunking (fast, 80% of chunks)
         logger.info(
@@ -309,19 +297,19 @@ class LLMSemanticChunker:
             structure.document_id,
             chunk_size,
             overlap,
-            len(text)
+            len(text),
         )
         # Pass token_counter for length caching
         boundaries = self.pattern_matcher.find_boundaries(
             text,
             max_tokens=chunk_size,
             prefer_paragraphs=True,
-            token_counter=self.token_counter.get_counter()
+            token_counter=self.token_counter.get_counter(),
         )
         logger.info(
             "[LLMSemanticChunker] ✓ Found %s pattern-based boundaries for doc_id=%s",
             len(boundaries),
-            structure.document_id
+            structure.document_id,
         )
 
         if not boundaries:
@@ -348,7 +336,7 @@ class LLMSemanticChunker:
             "[LLMSemanticChunker] Boundary analysis: %s clear, %s unclear for doc_id=%s",
             len(clear_chunks),
             len(unclear_boundaries),
-            structure.document_id
+            structure.document_id,
         )
 
         # Step 3: LLM refinement for unclear boundaries (batched)
@@ -356,19 +344,15 @@ class LLMSemanticChunker:
             logger.info(
                 "[LLMSemanticChunker] Sending %s unclear boundaries to LLM for refinement for doc_id=%s...",
                 len(unclear_boundaries),
-                structure.document_id
+                structure.document_id,
             )
-            unclear_segments = [
-                text[start:end] for start, end, _ in unclear_boundaries
-            ]
+            unclear_segments = [text[start:end] for start, end, _ in unclear_boundaries]
 
-            refined_boundaries = await self.boundary_agent.detect_boundaries_batch(
-                unclear_segments
-            )
+            refined_boundaries = await self.boundary_agent.detect_boundaries_batch(unclear_segments)
             logger.info(
                 "[LLMSemanticChunker] ✓ LLM refined %s boundary sets for doc_id=%s",
                 len(refined_boundaries),
-                structure.document_id
+                structure.document_id,
             )
 
             # Merge refined boundaries (recompute token counts for refined boundaries)
@@ -382,7 +366,7 @@ class LLMSemanticChunker:
             logger.info(
                 "[LLMSemanticChunker] ✓ Added %s LLM-refined chunks for doc_id=%s",
                 refined_count,
-                structure.document_id
+                structure.document_id,
             )
         else:
             if unclear_boundaries:
@@ -390,12 +374,12 @@ class LLMSemanticChunker:
                     "[LLMSemanticChunker] ⚠ %s unclear boundaries but no LLM service "
                     "for doc_id=%s, using pattern boundaries only",
                     len(unclear_boundaries),
-                    structure.document_id
+                    structure.document_id,
                 )
             else:
                 logger.info(
                     "[LLMSemanticChunker] All boundaries clear, using pattern boundaries only for doc_id=%s",
-                    structure.document_id
+                    structure.document_id,
                 )
             clear_chunks.extend(unclear_boundaries)
 
@@ -404,7 +388,7 @@ class LLMSemanticChunker:
             "[LLMSemanticChunker] Step 4: Creating chunks with overlap=%s for doc_id=%s, total_boundaries=%s...",
             overlap,
             structure.document_id,
-            len(clear_chunks)
+            len(clear_chunks),
         )
         chunks = []
         # Sort by start position
@@ -412,7 +396,7 @@ class LLMSemanticChunker:
         logger.info(
             "[LLMSemanticChunker] Sorted %s boundaries for doc_id=%s",
             len(sorted_chunks),
-            structure.document_id
+            structure.document_id,
         )
 
         # Phase 3: Smart overlap handling (from Dify)
@@ -453,7 +437,7 @@ class LLMSemanticChunker:
                             metadata={
                                 "structure_type": "general",
                                 "document_id": structure.document_id,
-                            }
+                            },
                         )
                         if self.validator.validate_chunk(chunk, current_length):
                             chunks.append(chunk)
@@ -479,7 +463,7 @@ class LLMSemanticChunker:
                     metadata={
                         "structure_type": "general",
                         "document_id": structure.document_id,
-                    }
+                    },
                 )
                 if self.validator.validate_chunk(chunk, current_length):
                     chunks.append(chunk)
@@ -497,7 +481,7 @@ class LLMSemanticChunker:
                     metadata={
                         "structure_type": "general",
                         "document_id": structure.document_id,
-                    }
+                    },
                 )
 
                 if self.validator.validate_chunk(chunk, token_count):
@@ -511,13 +495,13 @@ class LLMSemanticChunker:
             structure.document_id,
             avg_tokens,
             len(sorted_chunks),
-            len(chunks)
+            len(chunks),
         )
         if chunks:
             logger.info(
                 "[LLMSemanticChunker] Chunk metadata: structure_type=%s, document_id=%s",
-                chunks[0].metadata.get('structure_type'),
-                chunks[0].metadata.get('document_id')
+                chunks[0].metadata.get("structure_type"),
+                chunks[0].metadata.get("document_id"),
             )
         else:
             raise RuntimeError(
@@ -533,7 +517,7 @@ class LLMSemanticChunker:
         structure: DocumentStructure,
         chunk_size: int = 500,
         overlap: int = 50,
-        **kwargs
+        **kwargs,
     ) -> List[Chunk]:
         """
         Chunk using embedding-based semantic similarity only (no LLM calls).
@@ -546,17 +530,8 @@ class LLMSemanticChunker:
         """
         if not self.embedding_detector:
             # Fallback to pattern matching if embeddings unavailable
-            logger.warning(
-                "[LLMSemanticChunker] Embedding detector not available, "
-                "falling back to pattern matching"
-            )
-            return await self._chunk_general(
-                text,
-                structure,
-                chunk_size,
-                overlap,
-                **kwargs
-            )
+            logger.warning("[LLMSemanticChunker] Embedding detector not available, falling back to pattern matching")
+            return await self._chunk_general(text, structure, chunk_size, overlap, **kwargs)
 
         # Use embedding-based boundary detection
         boundaries = self.embedding_detector.find_boundaries(text, max_tokens=chunk_size)
@@ -573,8 +548,8 @@ class LLMSemanticChunker:
                 metadata={
                     "structure_type": "general",
                     "document_id": structure.document_id,
-                    "chunking_method": "embedding_only"
-                }
+                    "chunking_method": "embedding_only",
+                },
             )
             if self.validator.validate_chunk(chunk, token_count):
                 return [chunk]
@@ -625,8 +600,8 @@ class LLMSemanticChunker:
                             metadata={
                                 "structure_type": "general",
                                 "document_id": structure.document_id,
-                                "chunking_method": "embedding_only"
-                            }
+                                "chunking_method": "embedding_only",
+                            },
                         )
                         if self.validator.validate_chunk(chunk, current_length):
                             chunks.append(chunk)
@@ -652,8 +627,8 @@ class LLMSemanticChunker:
                     metadata={
                         "structure_type": "general",
                         "document_id": structure.document_id,
-                        "chunking_method": "embedding_only"
-                    }
+                        "chunking_method": "embedding_only",
+                    },
                 )
                 if self.validator.validate_chunk(chunk, current_length):
                     chunks.append(chunk)
@@ -671,8 +646,8 @@ class LLMSemanticChunker:
                     metadata={
                         "structure_type": "general",
                         "document_id": structure.document_id,
-                        "chunking_method": "embedding_only"
-                    }
+                        "chunking_method": "embedding_only",
+                    },
                 )
 
                 if self.validator.validate_chunk(chunk, token_count):
@@ -687,7 +662,7 @@ class LLMSemanticChunker:
         structure: DocumentStructure,
         parent_max_tokens: int = 2000,
         child_max_tokens: int = 500,
-        **kwargs
+        **kwargs,
     ) -> List[ParentChunk]:
         """Chunk using parent-child structure."""
         del parent_max_tokens, kwargs  # Unused parameters
@@ -711,7 +686,7 @@ class LLMSemanticChunker:
                         "structure_type": "parent_child",
                         "title": section["title"],
                         "level": section["level"],
-                    }
+                    },
                 )
 
                 # Create child chunks (sentences or paragraphs)
@@ -719,7 +694,7 @@ class LLMSemanticChunker:
                     section_text,
                     max_tokens=child_max_tokens,
                     prefer_paragraphs=False,  # Use sentences for children
-                    token_counter=self.token_counter.get_counter()
+                    token_counter=self.token_counter.get_counter(),
                 )
 
                 # Phase 1: Pre-compute token counts for all child boundaries (length caching)
@@ -791,12 +766,7 @@ class LLMSemanticChunker:
         logger.info("Created %s parent chunks with children", len(parent_chunks))
         return parent_chunks
 
-    async def _chunk_qa(
-        self,
-        text: str,
-        structure: DocumentStructure,
-        **kwargs
-    ) -> List[QAChunk]:
+    async def _chunk_qa(self, text: str, structure: DocumentStructure, **kwargs) -> List[QAChunk]:
         """Chunk using Q&A structure."""
         del structure, kwargs  # Unused parameters
         question_detector = QuestionDetector()
@@ -819,7 +789,7 @@ class LLMSemanticChunker:
                 metadata={
                     "structure_type": "qa",
                     "question_type": question_data.get("type", "short_answer"),
-                }
+                },
             )
 
             qa_chunks.append(qa_chunk)

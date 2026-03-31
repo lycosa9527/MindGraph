@@ -141,12 +141,15 @@ function handlePhoneChangeSuccess() {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+                    for="account-info-name"
                   >
                     姓名
                   </label>
                   <input
+                    id="account-info-name"
                     :value="userName || '未设置'"
                     type="text"
+                    name="account-info-name"
                     disabled
                     class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
                   />
@@ -155,13 +158,16 @@ function handlePhoneChangeSuccess() {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+                    for="account-info-phone"
                   >
                     手机号
                   </label>
                   <div class="flex flex-wrap items-center gap-2">
                     <input
+                      id="account-info-phone"
                       :value="userPhone || '未设置'"
                       type="text"
+                      name="account-info-phone"
                       disabled
                       class="min-w-0 flex-1 px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
                     />
@@ -189,12 +195,15 @@ function handlePhoneChangeSuccess() {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+                    for="account-info-org"
                   >
                     组织
                   </label>
                   <input
+                    id="account-info-org"
                     :value="userOrg || '未设置组织'"
                     type="text"
+                    name="account-info-org"
                     disabled
                     class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
                   />

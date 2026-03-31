@@ -10,6 +10,7 @@ Usage (from project root):
 Uses DATABASE_URL from environment.
 Creates user_activity_log and user_usage_stats tables if they do not exist.
 """
+
 import sys
 from pathlib import Path
 from typing import cast

@@ -39,7 +39,7 @@ def is_https(request: Request) -> bool:
         return True
 
     # Check if URL scheme is https
-    if hasattr(request.url, 'scheme') and request.url.scheme == "https":
+    if hasattr(request.url, "scheme") and request.url.scheme == "https":
         return True
 
     # Check environment variable for production mode (force secure cookies)
@@ -75,9 +75,7 @@ def get_client_ip(request: Request) -> str:
         # X-Forwarded-For can contain multiple IPs: "client, proxy1, proxy2"
         # The leftmost is the original client IP
         client_ip = forwarded_for.split(",")[0].strip()
-        logger.debug(
-            "Client IP from X-Forwarded-For: %s (full: %s)", client_ip, forwarded_for
-        )
+        logger.debug("Client IP from X-Forwarded-For: %s (full: %s)", client_ip, forwarded_for)
         return client_ip
 
     # Check X-Real-IP header (nginx-specific)

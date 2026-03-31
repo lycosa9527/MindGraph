@@ -229,7 +229,9 @@ onMounted(() => {
     class="mindgraph-container flex flex-col h-full"
   >
     <!-- Header — title centered; actions anchored right -->
-    <header class="relative h-14 px-4 flex items-center justify-center bg-white border-b border-gray-200">
+    <header
+      class="relative h-14 px-4 flex items-center justify-center bg-white border-b border-gray-200"
+    >
       <h1 class="text-sm font-semibold text-gray-800">MindGraph</h1>
       <div class="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
         <ElButton
@@ -317,48 +319,56 @@ onMounted(() => {
       width="400px"
     >
       <div class="join-workshop-dialog">
-        <p class="mb-4 text-gray-600">
-          {{ t('mindgraphLanding.sharedCodeHint') }}
-        </p>
-        <div class="code-input-container">
-          <div class="code-input-boxes">
-            <input
-              v-for="(digit, index) in joinCode.slice(0, 3)"
-              :key="index"
-              :ref="
-                (el) => {
-                  codeInputRefs[index] = el as HTMLInputElement | null
-                }
-              "
-              v-model="joinCode[index]"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              class="code-input-box"
-              @input="handleDigitInput(index, $event)"
-              @keydown="handleKeyDown(index, $event)"
-              @paste="handlePaste"
-            />
-            <span class="code-dash">-</span>
-            <input
-              v-for="(digit, index) in joinCode.slice(3, 6)"
-              :key="index + 3"
-              :ref="
-                (el) => {
-                  codeInputRefs[index + 3] = el as HTMLInputElement | null
-                }
-              "
-              v-model="joinCode[index + 3]"
-              type="text"
-              inputmode="numeric"
-              maxlength="1"
-              class="code-input-box"
-              @input="handleDigitInput(index + 3, $event)"
-              @keydown="handleKeyDown(index + 3, $event)"
-              @paste="handlePaste"
-            />
+        <fieldset class="code-input-fieldset border-0 p-0 m-0 min-w-0">
+          <legend class="mb-4 text-gray-600 px-0">
+            {{ t('mindgraphLanding.sharedCodeHint') }}
+          </legend>
+          <div class="code-input-container">
+            <div class="code-input-boxes">
+              <input
+                v-for="(digit, index) in joinCode.slice(0, 3)"
+                :key="index"
+                :ref="
+                  (el) => {
+                    codeInputRefs[index] = el as HTMLInputElement | null
+                  }
+                "
+                :id="`join-workshop-code-${index}`"
+                v-model="joinCode[index]"
+                type="text"
+                :name="`join-workshop-code-${index}`"
+                :aria-label="`${index + 1} / 6`"
+                inputmode="numeric"
+                maxlength="1"
+                class="code-input-box"
+                @input="handleDigitInput(index, $event)"
+                @keydown="handleKeyDown(index, $event)"
+                @paste="handlePaste"
+              />
+              <span class="code-dash">-</span>
+              <input
+                v-for="(digit, index) in joinCode.slice(3, 6)"
+                :key="index + 3"
+                :ref="
+                  (el) => {
+                    codeInputRefs[index + 3] = el as HTMLInputElement | null
+                  }
+                "
+                :id="`join-workshop-code-${index + 3}`"
+                v-model="joinCode[index + 3]"
+                type="text"
+                :name="`join-workshop-code-${index + 3}`"
+                :aria-label="`${index + 4} / 6`"
+                inputmode="numeric"
+                maxlength="1"
+                class="code-input-box"
+                @input="handleDigitInput(index + 3, $event)"
+                @keydown="handleKeyDown(index + 3, $event)"
+                @paste="handlePaste"
+              />
+            </div>
           </div>
-        </div>
+        </fieldset>
         <div class="mt-4 flex justify-end gap-2">
           <ElButton @click="showSharedCodeDialog = false">
             {{ t('mindgraphLanding.cancel') }}

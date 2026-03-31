@@ -17,12 +17,12 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 from typing import Optional, Dict, Tuple
 import logging
 import time
 
 from services.redis.redis_client import RedisOps
-
 
 
 logger = logging.getLogger(__name__)
@@ -50,9 +50,17 @@ class CaptchaStorage:
         success = RedisOps.set_with_ttl(key, code_upper, expires_in_seconds)
         captcha_preview = captcha_id[:8] + "..."
         if success:
-            logger.debug("[Captcha] Stored: %s (code: %s, TTL: %ss)", captcha_preview, code_upper, expires_in_seconds)
+            logger.debug(
+                "[Captcha] Stored: %s (code: %s, TTL: %ss)",
+                captcha_preview,
+                code_upper,
+                expires_in_seconds,
+            )
         else:
-            logger.error("[Captcha] Failed to store: %s (Redis may be unavailable)", captcha_preview)
+            logger.error(
+                "[Captcha] Failed to store: %s (Redis may be unavailable)",
+                captcha_preview,
+            )
         return success
 
     def get(self, captcha_id: str) -> Optional[Dict]:
@@ -66,16 +74,9 @@ class CaptchaStorage:
         ttl = RedisOps.get_ttl(key)
         expires_at = time.time() + ttl if ttl > 0 else time.time()
 
-        return {
-            "code": code,
-            "expires": expires_at
-        }
+        return {"code": code, "expires": expires_at}
 
-    def verify_and_remove(
-        self,
-        captcha_id: str,
-        user_code: str
-    ) -> Tuple[bool, Optional[str]]:
+    def verify_and_remove(self, captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
         """
         Verify captcha code and remove it (one-time use).
 
@@ -97,7 +98,11 @@ class CaptchaStorage:
 
         # Ensure stored_code is a string (should be with decode_responses=True)
         if not isinstance(stored_code, str):
-            logger.error("[Captcha] Invalid stored code type: %s for %s", type(stored_code), captcha_preview)
+            logger.error(
+                "[Captcha] Invalid stored code type: %s for %s",
+                type(stored_code),
+                captcha_preview,
+            )
             return False, "error"
 
         # Verify code (case-insensitive)
@@ -112,7 +117,9 @@ class CaptchaStorage:
         else:
             logger.warning(
                 "[Captcha] Incorrect: %s (expected: %s, got: %s)",
-                captcha_preview, stored_upper, user_upper
+                captcha_preview,
+                stored_upper,
+                user_upper,
             )
             return False, "incorrect"
 

@@ -28,6 +28,7 @@ from typing import Dict, Optional, Any
 
 try:
     from services.redis.redis_client import get_redis, is_redis_available
+
     _REDIS_AVAILABLE = True
 except ImportError:
     get_redis = None
@@ -36,6 +37,7 @@ except ImportError:
 
 try:
     from services.infrastructure.monitoring.critical_alert import CriticalAlertService
+
     _CRITICAL_ALERT_AVAILABLE = True
 except ImportError:
     CriticalAlertService = None
@@ -43,13 +45,17 @@ except ImportError:
 
 try:
     from services.infrastructure.monitoring.process_monitor import get_process_monitor
+
     _PROCESS_MONITOR_AVAILABLE = True
 except ImportError:
     get_process_monitor = None
     _PROCESS_MONITOR_AVAILABLE = False
 
 try:
-    from services.infrastructure.recovery.database_check_state import get_database_check_state_manager
+    from services.infrastructure.recovery.database_check_state import (
+        get_database_check_state_manager,
+    )
+
     _DATABASE_CHECK_STATE_AVAILABLE = True
 except ImportError:
     get_database_check_state_manager = None
@@ -61,7 +67,11 @@ logger = logging.getLogger(__name__)
 # Configuration
 # ============================================================================
 
-HEALTH_MONITOR_ENABLED = os.getenv("HEALTH_MONITOR_ENABLED", "true").lower() in ("true", "1", "yes")
+HEALTH_MONITOR_ENABLED = os.getenv("HEALTH_MONITOR_ENABLED", "true").lower() in (
+    "true",
+    "1",
+    "yes",
+)
 HEALTH_MONITOR_INTERVAL_SECONDS = int(os.getenv("HEALTH_MONITOR_INTERVAL_SECONDS", "900"))
 HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS = int(os.getenv("HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS", "1800"))
 HEALTH_MONITOR_FAILURE_THRESHOLD = int(os.getenv("HEALTH_MONITOR_FAILURE_THRESHOLD", "1"))
@@ -77,9 +87,11 @@ SMS_ALERT_COOLDOWN_KEY = "health_monitor:sms_cooldown"
 # Health Status Dataclass
 # ============================================================================
 
+
 @dataclass
 class HealthStatus:
     """Health check status and metrics"""
+
     status: str
     last_check_time: Optional[float] = None
     last_success_time: Optional[float] = None
@@ -108,6 +120,7 @@ class HealthStatus:
 # ============================================================================
 # Health Monitor Class
 # ============================================================================
+
 
 class HealthMonitor:
     """
@@ -151,7 +164,7 @@ class HealthMonitor:
                 MONITOR_LOCK_KEY,
                 f"{os.getpid()}:{time.time()}",
                 ex=MONITOR_LOCK_TTL,
-                nx=True
+                nx=True,
             )
 
             return bool(lock_acquired)
@@ -179,15 +192,11 @@ class HealthMonitor:
             lock_value = await asyncio.to_thread(redis_client.get, MONITOR_LOCK_KEY)
             if lock_value:
                 if isinstance(lock_value, bytes):
-                    lock_pid = lock_value.decode('utf-8').split(':', maxsplit=1)[0]
+                    lock_pid = lock_value.decode("utf-8").split(":", maxsplit=1)[0]
                 else:
-                    lock_pid = str(lock_value).split(':', maxsplit=1)[0]
+                    lock_pid = str(lock_value).split(":", maxsplit=1)[0]
                 if lock_pid == str(os.getpid()):
-                    await asyncio.to_thread(
-                        redis_client.expire,
-                        MONITOR_LOCK_KEY,
-                        MONITOR_LOCK_TTL
-                    )
+                    await asyncio.to_thread(redis_client.expire, MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
                     return True
             return False
         except Exception as e:
@@ -232,7 +241,7 @@ class HealthMonitor:
                 redis_client.setex,
                 SMS_ALERT_COOLDOWN_KEY,
                 HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
-                str(time.time())
+                str(time.time()),
             )
         except Exception as e:
             logger.warning("[HealthMonitor] Failed to set SMS cooldown: %s", e)
@@ -255,7 +264,7 @@ class HealthMonitor:
                 component="Server",
                 error_message=reason,
                 details="Health monitor detected server health issues. "
-                        "Check /health/all endpoint and logs for details."
+                "Check /health/all endpoint and logs for details.",
             )
             self.status.last_alert_time = time.time()
             if critical:
@@ -264,7 +273,7 @@ class HealthMonitor:
             logger.error(
                 "[HealthMonitor] Error sending SMS alert via critical alert service: %s",
                 e,
-                exc_info=True
+                exc_info=True,
             )
 
     async def _check_process_monitor_status(self) -> Optional[Dict[str, Any]]:
@@ -287,7 +296,7 @@ class HealthMonitor:
     def _is_process_monitor_handling_issue(
         self,
         health_response: Dict[str, Any],
-        process_monitor_status: Optional[Dict[str, Any]]
+        process_monitor_status: Optional[Dict[str, Any]],
     ) -> tuple[bool, Optional[str]]:
         """
         Check if process monitor is actively handling the health issue.
@@ -327,7 +336,10 @@ class HealthMonitor:
                     process_monitor_handled_components.append(check_name)
 
         if not process_monitor_handled_components:
-            return False, "Issue not handled by process monitor (database, LLM, etc.) - alerting"
+            return (
+                False,
+                "Issue not handled by process monitor (database, LLM, etc.) - alerting",
+            )
 
         for service_name in process_monitor_handled_components:
             service_status = process_monitor_status.get(service_name)
@@ -342,16 +354,20 @@ class HealthMonitor:
             if circuit_breaker_open:
                 return (
                     False,
-                    f"Process monitor circuit breaker open for {service_name} "
-                    "(restart attempts failed) - alerting"
+                    f"Process monitor circuit breaker open for {service_name} (restart attempts failed) - alerting",
                 )
 
             if status == "unhealthy" and consecutive_failures > 0 and restart_count > 0:
-                return True, f"Process monitor is attempting to restart {service_name} - suppressing alert"
+                return (
+                    True,
+                    f"Process monitor is attempting to restart {service_name} - suppressing alert",
+                )
 
         return False, None
 
-    async def _check_health(self) -> tuple[str, Optional[str], Optional[Dict[str, Any]]]:
+    async def _check_health(
+        self,
+    ) -> tuple[str, Optional[str], Optional[Dict[str, Any]]]:
         """
         Check server health by directly calling internal health check functions.
 
@@ -393,19 +409,28 @@ class HealthMonitor:
                 if isinstance(result, Exception):
                     logger.error(
                         "[HealthMonitor] %s check raised exception: %s",
-                        check_name, result, exc_info=True,
+                        check_name,
+                        result,
+                        exc_info=True,
                     )
                     checks[check_name] = {"status": "error", "error": str(result)}
                     overall_status, overall_status_code = _update_overall_status(
-                        overall_status, overall_status_code, "error",
+                        overall_status,
+                        overall_status_code,
+                        "error",
                     )
                     errors.append(f"{check_name} check failed: {result}")
                     continue
 
                 if not isinstance(result, dict) or "status" not in result:
-                    checks[check_name] = {"status": "error", "error": "Invalid result structure"}
+                    checks[check_name] = {
+                        "status": "error",
+                        "error": "Invalid result structure",
+                    }
                     overall_status, overall_status_code = _update_overall_status(
-                        overall_status, overall_status_code, "error",
+                        overall_status,
+                        overall_status_code,
+                        "error",
                     )
                     errors.append(f"{check_name} returned invalid result")
                     continue
@@ -413,7 +438,9 @@ class HealthMonitor:
                 checks[check_name] = result
                 check_status = result.get("status", "unknown")
                 overall_status, overall_status_code = _update_overall_status(
-                    overall_status, overall_status_code, check_status,
+                    overall_status,
+                    overall_status_code,
+                    check_status,
                 )
                 if check_status not in ("healthy", "skipped"):
                     error_msg = result.get("error") or result.get("message", "Unknown error")
@@ -454,7 +481,10 @@ class HealthMonitor:
 
     async def _monitor_loop(self) -> None:
         """Main monitoring loop - runs periodically"""
-        logger.info("[HealthMonitor] Starting monitoring loop (interval: %ds)", HEALTH_MONITOR_INTERVAL_SECONDS)
+        logger.info(
+            "[HealthMonitor] Starting monitoring loop (interval: %ds)",
+            HEALTH_MONITOR_INTERVAL_SECONDS,
+        )
 
         while not self._shutdown_event.is_set():
             try:
@@ -486,20 +516,17 @@ class HealthMonitor:
                         self.status.status = "unhealthy"
                         logger.warning(
                             "[HealthMonitor] Health check failed (unhealthy): %s",
-                            error_msg
+                            error_msg,
                         )
                     elif health_status == "degraded":
                         self.status.status = "degraded"
                         logger.warning(
                             "[HealthMonitor] Health check failed (degraded): %s",
-                            error_msg
+                            error_msg,
                         )
                     else:
                         self.status.status = "error"
-                        logger.error(
-                            "[HealthMonitor] Health check error: %s",
-                            error_msg
-                        )
+                        logger.error("[HealthMonitor] Health check error: %s", error_msg)
 
                     if self.status.consecutive_failures >= HEALTH_MONITOR_FAILURE_THRESHOLD:
                         should_alert = True
@@ -530,14 +557,9 @@ class HealthMonitor:
                                                 "[HealthMonitor] Database check is in progress "
                                                 "(long-running operation), skipping alert"
                                             )
-                                            unhealthy_components = [
-                                                c for c in unhealthy_components
-                                                if c != "database"
-                                            ]
+                                            unhealthy_components = [c for c in unhealthy_components if c != "database"]
                                             if unhealthy_components:
-                                                alert_reason = (
-                                                    f"Server health check failed: {health_status}"
-                                                )
+                                                alert_reason = f"Server health check failed: {health_status}"
                                                 if error_msg:
                                                     alert_reason += f" - {error_msg}"
                                                 alert_reason += f" (Components: {', '.join(unhealthy_components)})"
@@ -551,21 +573,19 @@ class HealthMonitor:
                                     except Exception as e:
                                         logger.debug(
                                             "[HealthMonitor] Failed to check database state: %s",
-                                            e
+                                            e,
                                         )
 
                             process_monitor_status = await self._check_process_monitor_status()
                             if process_monitor_status:
                                 is_handling, handling_reason = self._is_process_monitor_handling_issue(
-                                    response_data,
-                                    process_monitor_status
+                                    response_data, process_monitor_status
                                 )
                                 if is_handling:
                                     should_alert = False
                                     logger.info(
-                                        "[HealthMonitor] Process monitor is handling the issue, "
-                                        "skipping alert: %s",
-                                        handling_reason
+                                        "[HealthMonitor] Process monitor is handling the issue, skipping alert: %s",
+                                        handling_reason,
                                     )
                                 elif handling_reason:
                                     alert_reason += f" - {handling_reason}"
@@ -574,9 +594,7 @@ class HealthMonitor:
                             is_critical = health_status == "unhealthy"
                             await self._send_sms_alert(alert_reason, critical=is_critical)
                         else:
-                            logger.debug(
-                                "[HealthMonitor] Alert suppressed - process monitor is handling the issue"
-                            )
+                            logger.debug("[HealthMonitor] Alert suppressed - process monitor is handling the issue")
 
                 await asyncio.sleep(HEALTH_MONITOR_INTERVAL_SECONDS)
 
@@ -620,7 +638,7 @@ class HealthMonitor:
         if HEALTH_MONITOR_STARTUP_DELAY_SECONDS > 0:
             logger.info(
                 "[HealthMonitor] Waiting %d seconds for server to be ready before starting health checks",
-                HEALTH_MONITOR_STARTUP_DELAY_SECONDS
+                HEALTH_MONITOR_STARTUP_DELAY_SECONDS,
             )
             try:
                 await asyncio.sleep(HEALTH_MONITOR_STARTUP_DELAY_SECONDS)
@@ -658,6 +676,7 @@ class HealthMonitor:
 # Global HealthMonitor instance (singleton pattern)
 class _HealthMonitorSingleton:
     """Singleton holder for HealthMonitor instance"""
+
     _instance: Optional[HealthMonitor] = None
 
     @classmethod

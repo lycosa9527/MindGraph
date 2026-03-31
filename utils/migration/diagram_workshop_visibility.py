@@ -54,32 +54,18 @@ def ensure_diagram_workshop_visibility_column(engine: Engine) -> None:
 
         with engine.begin() as conn:
             if dialect == "sqlite":
-                conn.execute(
-                    text(
-                        f"ALTER TABLE {_TABLE} ADD COLUMN {_COLUMN} VARCHAR(32)"
-                    )
-                )
+                conn.execute(text(f"ALTER TABLE {_TABLE} ADD COLUMN {_COLUMN} VARCHAR(32)"))
             else:
-                conn.execute(
-                    text(
-                        f"ALTER TABLE {quoted_table} ADD COLUMN {quoted_col} "
-                        f"VARCHAR(32) NULL"
-                    )
-                )
+                conn.execute(text(f"ALTER TABLE {quoted_table} ADD COLUMN {quoted_col} VARCHAR(32) NULL"))
 
             idx_sql = (
                 f"CREATE INDEX IF NOT EXISTS {_INDEX} ON {_TABLE} ({_COLUMN})"
                 if dialect == "sqlite"
-                else (
-                    f"CREATE INDEX IF NOT EXISTS {_INDEX} ON {quoted_table} "
-                    f"({quoted_col})"
-                )
+                else (f"CREATE INDEX IF NOT EXISTS {_INDEX} ON {quoted_table} ({quoted_col})")
             )
             conn.execute(text(idx_sql))
 
-        logger.info(
-            "[DBMigration] Added %s.%s (+ index)", _TABLE, _COLUMN
-        )
+        logger.info("[DBMigration] Added %s.%s (+ index)", _TABLE, _COLUMN)
     except (OperationalError, ProgrammingError, SQLAlchemyError) as exc:
         logger.warning(
             "[DBMigration] Could not ensure %s.%s: %s",

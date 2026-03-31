@@ -14,11 +14,11 @@
  */
 import { computed, onMounted, onUnmounted, provide, ref, toRef, unref } from 'vue'
 
-import { storeToRefs } from 'pinia'
-
 import { Background } from '@vue-flow/background'
 import { type GraphNode, VueFlow, useVueFlow } from '@vue-flow/core'
 import { MiniMap } from '@vue-flow/minimap'
+
+import { storeToRefs } from 'pinia'
 
 import { ExportToCommunityModal } from '@/components/canvas'
 import { useBranchMoveDrag, useLanguage } from '@/composables'

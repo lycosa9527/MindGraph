@@ -57,9 +57,7 @@ def _ensure_public_schema_for_project_db(mods: Dict[str, Any]) -> bool:
     """
     prep = importlib.import_module("services.utils.pg_restore_prep")
     ensure_fn = getattr(prep, "ensure_public_schema_exists")
-    return bool(
-        ensure_fn(mods["DATABASE_URL"], mods["engine"])
-    )
+    return bool(ensure_fn(mods["DATABASE_URL"], mods["engine"]))
 
 
 def _resolve_env_path() -> Path:
@@ -140,7 +138,7 @@ def _log_database_connection_failure(logger: logging.Logger, exc: Exception) -> 
             "Set the password in .env (or MINDGRAPH_ENV_FILE) to match the "
             "role on your server, or reset the role: "
             "ALTER ROLE mindgraph_user WITH PASSWORD 'your_secret'; "
-            "Test with: psql \"postgresql://mindgraph_user:...@localhost:5432/mindgraph\" -c \"SELECT 1\""
+            'Test with: psql "postgresql://mindgraph_user:...@localhost:5432/mindgraph" -c "SELECT 1"'
         )
         return
     if "connection refused" in msg_lower:
@@ -149,9 +147,7 @@ def _log_database_connection_failure(logger: logging.Logger, exc: Exception) -> 
             "Start PostgreSQL and confirm DATABASE_URL host and port."
         )
         return
-    logger.error(
-        "Check DATABASE_URL, PostgreSQL service, and network/firewall settings."
-    )
+    logger.error("Check DATABASE_URL, PostgreSQL service, and network/firewall settings.")
 
 
 def _configure_logging(debug: bool) -> None:
@@ -206,9 +202,7 @@ def _check_status(
 
     if missing_columns:
         missing_columns_count = sum(len(cols) for cols in missing_columns.values())
-        logger.warning(
-            "Found %d missing column(s) across tables:", missing_columns_count
-        )
+        logger.warning("Found %d missing column(s) across tables:", missing_columns_count)
         for table_name, missing_cols in missing_columns.items():
             logger.warning(
                 "  - Table '%s': %s",
@@ -231,9 +225,7 @@ def _verify_results(
     logger.info("VERIFY — migration results")
     logger.info("%s", "=" * 60)
 
-    verification_passed, verification_details = verify_migration_results_fn(
-        db_engine, base, expected_tables
-    )
+    verification_passed, verification_details = verify_migration_results_fn(db_engine, base, expected_tables)
 
     if verification_details["tables_missing"]:
         logger.error(
@@ -332,10 +324,7 @@ def _prompt_primary_mode() -> str:
     print()
     print("What do you want to do?")
     print("  1) Create missing tables (init_db — same as app startup)")
-    print(
-        "  2) Import backup into PostgreSQL "
-        "(mindgraph.postgresql.*.dump + .manifest.json in BACKUP_DIR)"
-    )
+    print("  2) Import backup into PostgreSQL (mindgraph.postgresql.*.dump + .manifest.json in BACKUP_DIR)")
     print("  3) Quit")
     while True:
         choice = input("Enter 1, 2, or 3: ").strip()
@@ -351,9 +340,7 @@ def _prompt_primary_mode() -> str:
 def _load_database_modules() -> Dict[str, Any]:
     """Import DB stack after .env has been applied."""
     cfg = importlib.import_module("config.database")
-    sm = importlib.import_module(
-        "utils.migration.postgresql.schema_migration"
-    )
+    sm = importlib.import_module("utils.migration.postgresql.schema_migration")
     return {
         "Base": cfg.Base,
         "DATABASE_URL": cfg.DATABASE_URL,
@@ -395,9 +382,7 @@ def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
 
     if mods["engine"].dialect.name == "postgresql":
         if not _ensure_public_schema_for_project_db(mods):
-            logger.error(
-                "Could not ensure schema public exists; fix the database and retry."
-            )
+            logger.error("Could not ensure schema public exists; fix the database and retry.")
             return 1
 
     logger.info("%s", "=" * 60)
@@ -415,9 +400,7 @@ def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
         return 0
 
     expected = set(base.metadata.tables.keys())
-    ok = _verify_results(
-        mods["engine"], base, expected, mods["verify_migration_results"]
-    )
+    ok = _verify_results(mods["engine"], base, expected, mods["verify_migration_results"])
     return 0 if ok else 1
 
 
@@ -446,21 +429,14 @@ def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
         logger.warning("  ... and %d more", len(missing) - 25)
 
     if not live:
-        logger.info(
-            "[DRY RUN] On execute, init_db() would run first to create missing tables."
-        )
+        logger.info("[DRY RUN] On execute, init_db() would run first to create missing tables.")
         return True
 
     if not _ensure_public_schema_for_project_db(mods):
-        logger.error(
-            "Could not ensure schema public exists; fix the database and retry."
-        )
+        logger.error("Could not ensure schema public exists; fix the database and retry.")
         return False
 
-    logger.info(
-        "Creating missing schema (init_db, seed_organizations=False) before "
-        "pg_restore..."
-    )
+    logger.info("Creating missing schema (init_db, seed_organizations=False) before pg_restore...")
     try:
         mods["init_db"](seed_organizations=False)
     except Exception as exc:
@@ -485,8 +461,7 @@ def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
     logger = logging.getLogger(__name__)
     if mods["engine"].dialect.name != "postgresql":
         logger.error(
-            "PostgreSQL dump import needs DATABASE_URL to be PostgreSQL. "
-            "Current dialect: %s",
+            "PostgreSQL dump import needs DATABASE_URL to be PostgreSQL. Current dialect: %s",
             mods["engine"].dialect.name,
         )
         return 1
@@ -545,7 +520,9 @@ def main() -> int:
     _apply_env_file(env_path)
 
     debug = os.getenv("MINDGRAPH_MIGRATION_DEBUG", "").lower() in (
-        "1", "true", "yes",
+        "1",
+        "true",
+        "yes",
     )
     _configure_logging(debug)
 

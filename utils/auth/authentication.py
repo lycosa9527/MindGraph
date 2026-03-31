@@ -39,9 +39,13 @@ _user_cache = None
 _org_cache = None
 
 try:
-    from services.redis.session.redis_session_manager import get_session_manager, _hash_token as redis_hash_token
+    from services.redis.session.redis_session_manager import (
+        get_session_manager,
+        _hash_token as redis_hash_token,
+    )
     from services.redis.cache.redis_user_cache import user_cache
     from services.redis.cache.redis_org_cache import org_cache
+
     _REDIS_AVAILABLE = True
     _get_session_manager = get_session_manager
     _hash_token = redis_hash_token
@@ -51,10 +55,7 @@ except ImportError:
     pass
 
 
-def get_current_user(
-    request: Request,
-    credentials: HTTPAuthorizationCredentials = Depends(security)
-) -> User:
+def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
     """
     Get current authenticated user from JWT token (Authorization header or cookie)
 
@@ -98,7 +99,7 @@ def get_current_user(
     if not token:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="JWT token required for this endpoint"
+            detail="JWT token required for this endpoint",
         )
 
     payload = decode_access_token(token)
@@ -106,26 +107,23 @@ def get_current_user(
     user_id = payload.get("sub")
     token_exp = payload.get("exp", 0)
     if not user_id:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid token payload"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     # Session validation: Check if session exists in Redis
     if not _REDIS_AVAILABLE:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Redis is required for session validation"
+            detail="Redis is required for session validation",
         )
     if _get_session_manager is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Session manager not available"
+            detail="Session manager not available",
         )
     if _hash_token is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="Token hashing not available"
+            detail="Token hashing not available",
         )
 
     session_manager = _get_session_manager()
@@ -136,17 +134,20 @@ def get_current_user(
     exp_info = f"exp={token_exp}, expired_ago={(now - token_exp) if token_exp > 0 else 'unknown'}s"
     logger.debug(
         "[Auth] get_current_user session check: user=%s, token=%s..., %s",
-        user_id, token_hash[:8], exp_info
+        user_id,
+        token_hash[:8],
+        exp_info,
     )
 
     if not session_manager.is_session_valid(int(user_id), token):
         logger.info(
             "[Auth] get_current_user FAILED: user=%s, token=%s... - session invalid",
-            user_id, token_hash[:8]
+            user_id,
+            token_hash[:8],
         )
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Session expired or invalidated. Please login again."
+            detail="Session expired or invalidated. Please login again.",
         )
 
     logger.debug("[Auth] get_current_user session VALID: user=%s", user_id)
@@ -157,10 +158,7 @@ def get_current_user(
         user = _user_cache.get_by_id(int(user_id))
 
     if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="User not found"
-        )
+        raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
     # Check organization status (locked or expired) using cache
     if user.organization_id:
@@ -169,19 +167,19 @@ def get_current_user(
             org = _org_cache.get_by_id(user.organization_id)
         if org:
             # Check if organization is locked
-            is_active = org.is_active if hasattr(org, 'is_active') else True
+            is_active = org.is_active if hasattr(org, "is_active") else True
             if not is_active:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Organization account is locked. Please contact support."
+                    detail="Organization account is locked. Please contact support.",
                 )
 
             # Check if organization subscription has expired
-            if hasattr(org, 'expires_at') and org.expires_at:
+            if hasattr(org, "expires_at") and org.expires_at:
                 if org.expires_at < datetime.utcnow():
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Organization subscription has expired. Please contact support."
+                        detail="Organization subscription has expired. Please contact support.",
                     )
 
     return user
@@ -251,7 +249,7 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
 def get_current_user_or_api_key(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
-    api_key: str = Depends(api_key_header)
+    api_key: str = Depends(api_key_header),
 ) -> Optional[User]:
     """
     Get current user from JWT token OR validate API key
@@ -305,11 +303,15 @@ def get_current_user_or_api_key(
                         user = None
 
                 if user:
-                    worker_id = os.getenv('UVICORN_WORKER_ID', 'main')
-                    endpoint = request.url.path if request else 'unknown'
+                    worker_id = os.getenv("UVICORN_WORKER_ID", "main")
+                    endpoint = request.url.path if request else "unknown"
                     logger.debug(
                         "Authenticated teacher: %s (ID: %d, Phone: %s) [Worker: %s] [%s]",
-                        user.name, user.id, user.phone, worker_id, endpoint
+                        user.name,
+                        user.id,
+                        user.phone,
+                        worker_id,
+                        endpoint,
                     )
                     return user  # Authenticated teacher - full access
         except HTTPException:
@@ -325,28 +327,26 @@ def get_current_user_or_api_key(
                 key_record = db.query(APIKey).filter(APIKey.key == api_key).first()
 
                 if key_record:
-                    if request and hasattr(request, 'state'):
+                    if request and hasattr(request, "state"):
                         request.state.api_key_id = key_record.id
                         request.state.api_key_name = key_record.name
                         logger.debug(
                             "[Auth] Stored API key ID %d in request state",
-                            key_record.id
+                            key_record.id,
                         )
                     else:
-                        logger.warning(
-                            "[Auth] Request state not available, cannot store api_key_id"
-                        )
+                        logger.warning("[Auth] Request state not available, cannot store api_key_id")
 
                     track_api_key_usage(api_key, db)
-                    endpoint = request.url.path if request else 'unknown'
+                    endpoint = request.url.path if request else "unknown"
                     logger.info(
                         "[Auth] Valid API key access: %s (ID: %d) [%s]",
-                        key_record.name, key_record.id, endpoint
+                        key_record.name,
+                        key_record.id,
+                        endpoint,
                     )
                 else:
-                    logger.warning(
-                        "[Auth] API key validated but record not found in database"
-                    )
+                    logger.warning("[Auth] API key validated but record not found in database")
                     track_api_key_usage(api_key, db)
                     logger.info("[Auth] Valid API key access (record lookup failed)")
 
@@ -357,6 +357,5 @@ def get_current_user_or_api_key(
     # No valid authentication
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail="Authentication required: provide JWT token (Authorization: Bearer) "
-               "or API key (X-API-Key header)"
+        detail="Authentication required: provide JWT token (Authorization: Bearer) or API key (X-API-Key header)",
     )

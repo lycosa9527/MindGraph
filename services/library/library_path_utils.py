@@ -11,6 +11,7 @@ Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao
 All Rights Reserved
 Proprietary License
 """
+
 import logging
 from pathlib import Path
 from typing import Optional
@@ -49,7 +50,7 @@ def normalize_library_path(file_path: Path, storage_dir: Path, project_root: Opt
             # Construct path: storage/library/filename
             normalized = storage_dir_resolved.relative_to(project_root_resolved) / relative_from_storage
             # Convert to string and normalize separators (always use /)
-            return str(normalized).replace('\\', '/')
+            return str(normalized).replace("\\", "/")
     except ValueError:
         pass
 
@@ -57,14 +58,14 @@ def normalize_library_path(file_path: Path, storage_dir: Path, project_root: Opt
     try:
         if file_path_resolved.is_relative_to(project_root_resolved):
             normalized = file_path_resolved.relative_to(project_root_resolved)
-            return str(normalized).replace('\\', '/')
+            return str(normalized).replace("\\", "/")
     except ValueError:
         pass
 
     # Fallback: if file is just a filename, assume it's in storage_dir
-    if not file_path_resolved.is_absolute() and '/' not in str(file_path) and '\\' not in str(file_path):
+    if not file_path_resolved.is_absolute() and "/" not in str(file_path) and "\\" not in str(file_path):
         normalized = storage_dir_resolved.relative_to(project_root_resolved) / file_path.name
-        return str(normalized).replace('\\', '/')
+        return str(normalized).replace("\\", "/")
 
     # Last resort: use filename only (will be resolved later)
     return file_path.name
@@ -93,16 +94,16 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
     stored_path_obj = Path(stored_path)
 
     # Strategy 1: If stored path is relative and contains 'storage/library', resolve from project root
-    if not stored_path_obj.is_absolute() and 'storage/library' in stored_path.replace('\\', '/'):
+    if not stored_path_obj.is_absolute() and "storage/library" in stored_path.replace("\\", "/"):
         try:
-            resolved = project_root / stored_path.replace('\\', '/')
+            resolved = project_root / stored_path.replace("\\", "/")
             if resolved.exists():
                 return resolved.resolve()
         except Exception as exc:
             logger.debug("Library path resolve from project root failed: %s", exc)
 
     # Strategy 2: If stored path is just filename, try storage_dir + filename
-    if '/' not in stored_path and '\\' not in stored_path:
+    if "/" not in stored_path and "\\" not in stored_path:
         try:
             resolved = storage_dir / stored_path
             if resolved.exists():
@@ -120,7 +121,7 @@ def resolve_library_path(stored_path: str, storage_dir: Path, project_root: Opti
 
     # Strategy 4: Try relative to current working directory
     try:
-        resolved = Path.cwd() / stored_path.replace('\\', '/')
+        resolved = Path.cwd() / stored_path.replace("\\", "/")
         if resolved.exists():
             return resolved.resolve()
     except Exception as exc:

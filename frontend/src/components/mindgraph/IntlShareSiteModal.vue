@@ -53,7 +53,9 @@ function close() {
       <div class="intl-share-site-header">
         <div class="intl-share-site-header-center">
           <span class="intl-share-site-kicker">MindGraph</span>
-          <h2 class="intl-share-site-title">{{ t('landing.international.shareSiteModalTitle') }}</h2>
+          <h2 class="intl-share-site-title">
+            {{ t('landing.international.shareSiteModalTitle') }}
+          </h2>
         </div>
         <ElButton
           class="intl-share-site-close"
@@ -219,13 +221,7 @@ function close() {
   width: 100%;
   box-sizing: border-box;
   font-family:
-    ui-monospace,
-    SFMono-Regular,
-    Menlo,
-    Monaco,
-    Consolas,
-    'Liberation Mono',
-    'Courier New',
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New',
     monospace;
   font-size: 12px;
   line-height: 1.55;
