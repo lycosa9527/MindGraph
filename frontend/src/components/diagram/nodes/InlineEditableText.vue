@@ -13,7 +13,11 @@
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { eventBus } from '@/composables/core/useEventBus'
+import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
+import { useDiagramStore } from '@/stores'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 
 const props = withDefaults(
@@ -57,6 +61,12 @@ const props = withDefaults(
     textDecoration?: 'none' | 'underline' | 'line-through' | 'underline line-through'
     /** When text equals prefix+suffix, display suffix with muted color (e.g. concept map focus placeholder) */
     mutedTailSplit?: { prefix: string; suffix: string } | null
+    /**
+     * When true, display mode renders Markdown + KaTeX (sanitized). Ignored when mutedTailSplit
+     * is active or truncate is true. noWrap does not disable rendering so inline math works in
+     * circle/bubble-style nodes.
+     */
+    renderMarkdown?: boolean
   }>(),
   {
     isEditing: false,
@@ -75,6 +85,7 @@ const props = withDefaults(
     readonly: false,
     textDecoration: 'none',
     mutedTailSplit: null,
+    renderMarkdown: false,
   }
 )
 
@@ -91,6 +102,7 @@ const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean 
 )
 const notifyCollab = useNotifications()
 const { t } = useLanguage()
+const diagramStore = useDiagramStore()
 
 const resolvedPlaceholder = computed(() => {
   if (props.placeholder != null && props.placeholder !== '') {
@@ -104,7 +116,7 @@ const localIsEditing = ref(false)
 const editText = ref(props.text)
 const originalText = ref(props.text)
 const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
-const displayRef = ref<HTMLSpanElement | null>(null)
+const displayRef = ref<HTMLElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
 const inputWidth = ref<string | undefined>(undefined)
 const measureRef = ref<HTMLSpanElement | null>(null) // Hidden span for measuring text width
@@ -229,6 +241,15 @@ const showMutedTailSplit = computed(() => {
   if (!s) return false
   return props.text === s.prefix + s.suffix
 })
+
+const markdownDisplayEnabled = computed(
+  () => props.renderMarkdown === true && !showMutedTailSplit.value && !props.truncate
+)
+
+const displayMarkdownHtml = useDiagramNodeMarkdownDisplay(
+  computed(() => props.text),
+  markdownDisplayEnabled
+)
 
 // Computed styles - textDecoration must be explicit (CSS does not inherit to input/textarea)
 const inputStyle = computed(() => ({
@@ -460,10 +481,58 @@ const unsubRecommendationApplied = eventBus.on(
   handleRecommendationApplied
 )
 
+function insertSnippetAtCaret(snippet: string): boolean {
+  const el = inputRef.value
+  if (!el || props.readonly) return false
+  if (
+    diagramStore.type &&
+    shouldReplaceLabelWithMathInsert(diagramStore.type, props.nodeId, editText.value)
+  ) {
+    editText.value = snippet
+    nextTick(() => {
+      el.focus()
+      const len = editText.value.length
+      el.setSelectionRange(len, len)
+      updateInputWidth()
+    })
+    return true
+  }
+  const start = el.selectionStart ?? 0
+  const end = el.selectionEnd ?? 0
+  const before = editText.value.slice(0, start)
+  const after = editText.value.slice(end)
+  const middle = joinLabelAndMathSnippet(before, snippet)
+  let merged = middle + after
+  if (merged.length > props.maxLength) {
+    merged = merged.slice(0, props.maxLength)
+  }
+  editText.value = merged
+  const newPos = Math.min(start + (middle.length - before.length), editText.value.length)
+  nextTick(() => {
+    el.focus()
+    el.setSelectionRange(newPos, newPos)
+    updateInputWidth()
+  })
+  return true
+}
+
+function handleNodeEditorInsertText(payload: { nodeId?: string; snippet?: string }): void {
+  if (payload?.nodeId !== props.nodeId || !payload.snippet) return
+  if (!localIsEditing.value) return
+  if (props.readonly) return
+  const ok = insertSnippetAtCaret(payload.snippet)
+  if (ok) {
+    eventBus.emit('node_editor:insert_text_consumed', { nodeId: props.nodeId })
+  }
+}
+
+const unsubInsertText = eventBus.on('node_editor:insert_text', handleNodeEditorInsertText)
+
 // Cleanup on unmount
 onUnmounted(() => {
   unsubEditRequested()
   unsubRecommendationApplied()
+  unsubInsertText()
 })
 </script>
 
@@ -543,8 +612,8 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Display mode: show text (optional muted suffix, e.g. 焦点问题:请输入) -->
-    <span
+    <!-- Display mode: use div so markdown `<p>` + KaTeX stay inside `.diagram-node-md` (invalid inside span). -->
+    <div
       v-else
       ref="displayRef"
       dir="auto"
@@ -572,10 +641,16 @@ onUnmounted(() => {
         <span>{{ mutedTailSplit.prefix }}</span>
         <span class="inline-edit-muted-suffix">{{ mutedTailSplit.suffix }}</span>
       </template>
+      <!-- eslint-disable vue/no-v-html -- Sanitized via useMarkdown + DOMPurify (KaTeX HTML allowlist) -->
+      <div
+        v-else-if="markdownDisplayEnabled"
+        class="diagram-node-md inline-block min-w-0 max-w-full text-inherit"
+        v-html="displayMarkdownHtml"
+      />
       <template v-else>
         {{ text }}
       </template>
-    </span>
+    </div>
   </div>
 </template>
 
@@ -648,6 +723,10 @@ onUnmounted(() => {
 }
 
 .inline-edit-display {
+  display: inline-block;
+  max-width: 100%;
+  box-sizing: border-box;
+  vertical-align: middle;
   cursor: text;
   user-select: none;
   text-decoration: inherit;

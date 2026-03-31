@@ -22,6 +22,7 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
 
     if (width === null && height === null) {
       if (!(nodeId in ctx.nodeDimensions.value)) return
+      console.log(`[NodeLayout:Pinia] CLEAR id="${nodeId}"`)
       delete ctx.nodeDimensions.value[nodeId]
       if (!wasBatch) ctx.layoutRecalcTrigger.value++
       return
@@ -38,14 +39,21 @@ export function useNodeDimensionSlice(ctx: DiagramContext) {
 
     if (!unchanged) {
       ctx.nodeDimensions.value[nodeId] = { width: newW, height: newH }
+      console.log(
+        `[NodeLayout:Pinia] SET id="${nodeId}" w=${newW} h=${newH}` +
+          (existing ? ` (was w=${existing.width} h=${existing.height})` : ' (new)') +
+          ` batch=${wasBatch} pending=${pendingNodeCount}`
+      )
     }
 
     if (wasBatch) {
       if (pendingNodeCount <= 0) {
         pendingNodeCount = 0
+        console.log('[NodeLayout:Pinia] Batch complete → trigger++')
         ctx.layoutRecalcTrigger.value++
       }
     } else if (!unchanged) {
+      console.log(`[NodeLayout:Pinia] Live change → trigger++ (now ${ctx.layoutRecalcTrigger.value + 1})`)
       ctx.layoutRecalcTrigger.value++
     }
   }

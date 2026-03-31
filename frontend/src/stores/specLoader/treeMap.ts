@@ -225,3 +225,221 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     },
   }
 }
+
+function resolveTreeMapBox(
+  nodeId: string,
+  nodeDimensions: Record<string, { width: number; height: number }>,
+  measure: () => { width: number; height: number }
+): { width: number; height: number } {
+  const m = nodeDimensions[nodeId]
+  if (m && m.width > 0 && m.height > 0) {
+    return { width: m.width, height: m.height }
+  }
+  return measure()
+}
+
+interface TreeMapGroupDims {
+  categoryWidth: number
+  categoryHeight: number
+  leafWidths: number[]
+  leafHeights: number[]
+  maxWidth: number
+}
+
+/**
+ * Recompute tree map node positions and sizes from current nodes + Pinia DOM measurements.
+ * Prefers `nodeDimensions` (after KaTeX/markdown) over text measurement when available.
+ */
+export function recalculateTreeMapLayout(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
+): DiagramNode[] {
+  if (!Array.isArray(nodes) || nodes.length === 0) {
+    return nodes
+  }
+
+  const topicIdx = nodes.findIndex((n) => n.id === 'tree-topic' && n.type === 'topic')
+  if (topicIdx === -1) {
+    return nodes
+  }
+
+  const topicNode = nodes[topicIdx]
+  const topicText = topicNode.text ?? ''
+
+  const topicDims = resolveTreeMapBox('tree-topic', nodeDimensions, () =>
+    measureTreeMapTopicDimensions(topicText)
+  )
+
+  const topicY = topicNode.position?.y ?? DEFAULT_PADDING
+  const topicPos = treeMapTopicPositionFromLayout(topicDims.width, topicY)
+
+  const catIds = nodes
+    .map((n) => n.id)
+    .filter((id): id is string => !!id && /^tree-cat-\d+$/.test(id))
+    .sort((a, b) => {
+      const ia = parseInt(a.replace('tree-cat-', ''), 10)
+      const ib = parseInt(b.replace('tree-cat-', ''), 10)
+      return ia - ib
+    })
+
+  const groupDimsList: TreeMapGroupDims[] = []
+
+  catIds.forEach((catId) => {
+    const catIndex = parseInt(catId.replace('tree-cat-', ''), 10)
+    const catNode = nodes.find((n) => n.id === catId)
+    const catText = catNode?.text ?? ''
+
+    const catBox = resolveTreeMapBox(catId, nodeDimensions, () => {
+      const catDims = measureTextDimensions(catText, TREE_MAP_BRANCH_FONT_SIZE, {
+        paddingX: TREE_MAP_NODE_PADDING_X / 2,
+        paddingY: TREE_MAP_NODE_PADDING_Y,
+        maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+      })
+      const catWidth = Math.max(
+        catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
+        NODE_MIN_DIMENSIONS.branch.minWidth
+      )
+      const catHeight = Math.max(catDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+      return { width: catWidth, height: catHeight }
+    })
+
+    const leafNodes = nodes
+      .filter((n) => {
+        const id = n.id ?? ''
+        const m = id.match(new RegExp(`^tree-leaf-${catIndex}-(\\d+)$`))
+        return Boolean(m)
+      })
+      .sort((a, b) => {
+        const ma = a.id?.match(/^tree-leaf-\d+-(\d+)$/)
+        const mb = b.id?.match(/^tree-leaf-\d+-(\d+)$/)
+        return parseInt(ma?.[1] ?? '0', 10) - parseInt(mb?.[1] ?? '0', 10)
+      })
+
+    const leafWidths: number[] = []
+    const leafHeights: number[] = []
+    let maxW = catBox.width
+
+    leafNodes.forEach((leaf) => {
+      const leafId = leaf.id ?? ''
+      const leafText = leaf.text ?? ''
+      const leafBox = resolveTreeMapBox(leafId, nodeDimensions, () => {
+        const leafDims = measureTextDimensions(leafText, TREE_MAP_BRANCH_FONT_SIZE, {
+          paddingX: TREE_MAP_NODE_PADDING_X / 2,
+          paddingY: TREE_MAP_NODE_PADDING_Y,
+          maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+        })
+        const leafW = Math.max(
+          leafDims.width + 2 * TREE_MAP_LEAF_BORDER,
+          NODE_MIN_DIMENSIONS.branch.minWidth
+        )
+        const leafH = Math.max(leafDims.height, NODE_MIN_DIMENSIONS.branch.minHeight)
+        return { width: leafW, height: leafH }
+      })
+      leafWidths.push(leafBox.width)
+      leafHeights.push(leafBox.height)
+      maxW = Math.max(maxW, leafBox.width)
+    })
+
+    groupDimsList.push({
+      categoryWidth: catBox.width,
+      categoryHeight: catBox.height,
+      leafWidths,
+      leafHeights,
+      maxWidth: maxW,
+    })
+  })
+
+  const byId = new Map<string, DiagramNode>()
+  for (const n of nodes) {
+    if (n.id) {
+      byId.set(n.id, { ...n })
+    }
+  }
+
+  const topicMerged = byId.get('tree-topic')
+  if (topicMerged) {
+    byId.set('tree-topic', {
+      ...topicMerged,
+      position: topicPos,
+      style: {
+        ...topicMerged.style,
+        width: topicDims.width,
+        height: topicDims.height,
+      },
+    })
+  }
+
+  const categoryY = topicY + topicDims.height + TREE_MAP_TOPIC_TO_CATEGORY_GAP
+  const numCategories = catIds.length
+  const totalCategoriesWidth =
+    groupDimsList.reduce((a, g) => a + g.maxWidth, 0) +
+    Math.max(0, numCategories - 1) * TREE_MAP_CATEGORY_SPACING
+  let columnLeft = DEFAULT_CENTER_X - totalCategoriesWidth / 2
+
+  catIds.forEach((catId, catIndex) => {
+    const dims = groupDimsList[catIndex]
+    const groupCenterX = columnLeft + dims.maxWidth / 2
+    const categoryX = groupCenterX - dims.categoryWidth / 2
+    const catNode = byId.get(catId)
+    if (catNode) {
+      byId.set(catId, {
+        ...catNode,
+        position: { x: categoryX, y: categoryY },
+        style: { ...catNode.style, width: dims.categoryWidth },
+      })
+    }
+
+    const leafNodes = nodes
+      .filter((n) => {
+        const id = n.id ?? ''
+        const m = id.match(new RegExp(`^tree-leaf-${parseInt(catId.replace('tree-cat-', ''), 10)}-(\\d+)$`))
+        return Boolean(m)
+      })
+      .sort((a, b) => {
+        const ma = a.id?.match(/^tree-leaf-\d+-(\d+)$/)
+        const mb = b.id?.match(/^tree-leaf-\d+-(\d+)$/)
+        return parseInt(ma?.[1] ?? '0', 10) - parseInt(mb?.[1] ?? '0', 10)
+      })
+
+    let leafY = categoryY + dims.categoryHeight + TREE_MAP_CATEGORY_TO_LEAF_GAP
+
+    leafNodes.forEach((leaf, leafIndex) => {
+      const leafId = leaf.id
+      if (!leafId) return
+      const leafWidth = dims.leafWidths[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minWidth
+      const leafHeight = dims.leafHeights[leafIndex] ?? NODE_MIN_DIMENSIONS.branch.minHeight
+      const leafX = groupCenterX - leafWidth / 2
+      const leafNode = byId.get(leafId)
+      if (leafNode) {
+        byId.set(leafId, {
+          ...leafNode,
+          position: { x: leafX, y: leafY },
+          style: { ...leafNode.style, width: leafWidth },
+        })
+      }
+      leafY += leafHeight + TREE_MAP_LEAF_SPACING
+    })
+
+    columnLeft += dims.maxWidth + TREE_MAP_CATEGORY_SPACING
+  })
+
+  const dimLabel = byId.get('dimension-label')
+  if (dimLabel) {
+    const labelWidth = resolveTreeMapBox('dimension-label', nodeDimensions, () => ({
+      width: NODE_MIN_DIMENSIONS.label.minWidth,
+      height: NODE_MIN_DIMENSIONS.label.minHeight,
+    })).width
+    byId.set('dimension-label', {
+      ...dimLabel,
+      position: {
+        x: DEFAULT_CENTER_X - labelWidth / 2,
+        y: topicY + topicDims.height + 20,
+      },
+    })
+  }
+
+  return nodes.map((n) => {
+    if (!n.id) return n
+    return byId.get(n.id) ?? n
+  })
+}

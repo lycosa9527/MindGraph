@@ -13,10 +13,12 @@ import {
 
 import {
   recalculateBraceMapLayout,
+  recalculateBridgeMapLayout,
   recalculateBubbleMapLayout,
   recalculateCircleMapLayout,
   recalculateFlowMapLayout,
   recalculateMultiFlowMapLayout,
+  recalculateTreeMapLayout,
 } from '../specLoader'
 import { getEdgeTypeForDiagram } from './events'
 import { recalculateMindMapColumnPositions } from './mindMapLayout'
@@ -31,7 +33,8 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
 
   const braceMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'brace_map' || !ctx.data.value?.nodes) return []
-    void ctx.layoutRecalcTrigger.value
+    const trigger = ctx.layoutRecalcTrigger.value
+    console.log(`[NodeLayout:VueFlow] braceMapLayoutNodes computed, trigger=${trigger}, nodeDimKeys=`, Object.keys(ctx.nodeDimensions.value))
     return recalculateBraceMapLayout(
       ctx.data.value.nodes,
       ctx.data.value.connections ?? [],
@@ -51,16 +54,30 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     return recalculateFlowMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
   })
 
+  const treeMapLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'tree_map' || !ctx.data.value?.nodes) return []
+    void ctx.layoutRecalcTrigger.value
+    return recalculateTreeMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
+  })
+
   const multiFlowMapLayoutNodes = computed(() => {
     if (ctx.type.value !== 'multi_flow_map' || !ctx.data.value?.nodes) return []
-    void ctx.layoutRecalcTrigger.value
+    const trigger = ctx.layoutRecalcTrigger.value
     void ctx.multiFlowMapRecalcTrigger.value
+    console.log(`[NodeLayout:VueFlow] multiFlowMapLayoutNodes computed, trigger=${trigger}, nodeDimKeys=`, Object.keys(ctx.nodeDimensions.value))
     return recalculateMultiFlowMapLayout(
       ctx.data.value.nodes,
       ctx.topicNodeWidth.value,
       ctx.nodeWidths.value,
       ctx.nodeDimensions.value
     )
+  })
+
+  const bridgeMapLayoutNodes = computed(() => {
+    if (ctx.type.value !== 'bridge_map' || !ctx.data.value?.nodes) return []
+    const trigger = ctx.layoutRecalcTrigger.value
+    console.log(`[NodeLayout:VueFlow] bridgeMapLayoutNodes computed, trigger=${trigger}, nodeDimKeys=`, Object.keys(ctx.nodeDimensions.value))
+    return recalculateBridgeMapLayout(ctx.data.value.nodes, ctx.nodeDimensions.value)
   })
 
   const vueFlowNodes = computed<MindGraphNode[]>(() => {
@@ -166,7 +183,18 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
     }
 
     if (diagramType === 'tree_map') {
-      return ctx.data.value.nodes.map((node) => {
+      const layoutNodes = treeMapLayoutNodes.value
+      return layoutNodes.map((node) => {
+        const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
+        vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
+        vueFlowNode.draggable = false
+        return vueFlowNode
+      })
+    }
+
+    if (diagramType === 'bridge_map') {
+      const layoutNodes = bridgeMapLayoutNodes.value
+      return layoutNodes.map((node) => {
         const vueFlowNode = diagramNodeToVueFlowNode(node, diagramType)
         vueFlowNode.selected = ctx.selectedNodes.value.includes(node.id)
         vueFlowNode.draggable = false

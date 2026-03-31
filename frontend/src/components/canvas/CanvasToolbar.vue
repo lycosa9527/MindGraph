@@ -2,18 +2,22 @@
 /**
  * CanvasToolbar - Floating toolbar for canvas editing
  */
-import { computed } from 'vue'
+import { computed, ref } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
 import { ArrowDownUp, Brush } from 'lucide-vue-next'
 
 import { useCanvasToolbarApps, useCanvasToolbarFormatting } from '@/composables/canvasToolbar'
+import { eventBus } from '@/composables/core/useEventBus'
+import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimiter'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { useNodeActions } from '@/composables/editor/useNodeActions'
+import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
 import { useDiagramStore, useUIStore } from '@/stores'
 
+import CanvasMathInsertDialog from './CanvasMathInsertDialog.vue'
 import CanvasToolbarAddDelete from './CanvasToolbarAddDelete.vue'
 import CanvasToolbarAiSection from './CanvasToolbarAiSection.vue'
 import CanvasToolbarBackgroundDropdown from './CanvasToolbarBackgroundDropdown.vue'
@@ -89,6 +93,43 @@ const {
 const isMultiFlowMap = computed(() => diagramStore.type === 'multi_flow_map')
 const isBridgeMap = computed(() => diagramStore.type === 'bridge_map')
 const isFlowMap = computed(() => diagramStore.type === 'flow_map')
+
+const mathInsertDialogOpen = ref(false)
+
+const insertEquationEnabled = computed(() => diagramStore.selectedNodes.length > 0)
+
+function handleOpenMathInsert(): void {
+  if (diagramStore.selectedNodes.length === 0) {
+    notify.warning(t('canvas.toolbar.insertEquationSelectNode'))
+    return
+  }
+  mathInsertDialogOpen.value = true
+}
+
+function handleMathInsertConfirm(latex: string): void {
+  const trimmed = latex.trim()
+  if (!trimmed) return
+  const nodeId = diagramStore.selectedNodes[0]
+  if (!nodeId) return
+  const snippet = `$${trimmed}$`
+  let consumed = false
+  const unsub = eventBus.on('node_editor:insert_text_consumed', ({ nodeId: id }) => {
+    if (id === nodeId) consumed = true
+  })
+  eventBus.emit('node_editor:insert_text', { nodeId, snippet })
+  unsub()
+  if (!consumed) {
+    const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)
+    const base = String(
+      node?.text ?? (node?.data as { label?: string } | undefined)?.label ?? ''
+    )
+    const nextText =
+      diagramStore.type && shouldReplaceLabelWithMathInsert(diagramStore.type, nodeId, base)
+        ? snippet
+        : joinLabelAndMathSnippet(base, snippet)
+    eventBus.emit('node:text_updated', { nodeId, text: nextText })
+  }
+}
 
 function handleUndo() {
   diagramStore.undo()
@@ -202,6 +243,9 @@ function handleToggleOrientation() {
           :font-group-chinese="t('canvas.toolbar.fontGroupChinese')"
           :font-group-english="t('canvas.toolbar.fontGroupEnglish')"
           :color-label="t('canvas.toolbar.colorLabel')"
+          :insert-equation-label="t('canvas.toolbar.insertEquation')"
+          :insert-equation-tooltip="t('canvas.toolbar.insertEquationTooltip')"
+          :insert-equation-enabled="insertEquationEnabled"
           :font-family="fontFamily"
           :font-size="fontSize"
           :font-weight="fontWeight"
@@ -218,6 +262,7 @@ function handleToggleOrientation() {
           @font-family-change="handleFontFamilyChange"
           @font-size-input="handleFontSizeInput"
           @text-color-pick="handleTextColorPick"
+          @open-math-insert="handleOpenMathInsert"
         />
 
         <CanvasToolbarBackgroundDropdown
@@ -265,6 +310,11 @@ function handleToggleOrientation() {
         />
       </div>
     </div>
+
+    <CanvasMathInsertDialog
+      v-model="mathInsertDialogOpen"
+      @confirm="handleMathInsertConfirm"
+    />
   </div>
 </template>
 

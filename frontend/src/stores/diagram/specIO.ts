@@ -12,6 +12,7 @@ import {
   getDefaultTemplate,
   loadSpecForDiagramType,
   recalculateBubbleMapLayout,
+  recalculateTreeMapLayout,
 } from '../specLoader'
 import { useUIStore } from '../ui'
 import { getMindMapCurveExtents } from './events'
@@ -166,6 +167,12 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const rightDifferences = rightDiffIndices.map((i) =>
       String(nodes.find((n) => n.id === `right-diff-${i}`)?.text ?? '').trim()
     )
+    const radiusFromDom = (nodeId: string): number | undefined => {
+      const d = ctx.nodeDimensions.value[nodeId]
+      if (!d || d.width <= 0 || d.height <= 0) return undefined
+      return Math.max(d.width, d.height) / 2
+    }
+
     const getRadius = (n: { style?: { size?: number; width?: number; height?: number } }) => {
       const s = n.style?.size
       if (s != null && s > 0) return s / 2
@@ -174,29 +181,39 @@ export function useSpecIOSlice(ctx: DiagramContext) {
       if (w != null && h != null) return Math.min(w, h) / 2
       return undefined
     }
+
+    const mergedRadius = (nodeId: string, n: (typeof nodes)[0] | undefined): number | undefined => {
+      const domR = radiusFromDom(nodeId)
+      if (domR != null && domR > 0) return domR
+      return n != null ? getRadius(n) : undefined
+    }
+
     const _doubleBubbleMapNodeSizes: Record<string, unknown> = {}
     if (leftNode) {
-      const r = getRadius(leftNode)
+      const r = mergedRadius('left-topic', leftNode)
       if (r != null) _doubleBubbleMapNodeSizes['leftTopicR'] = r
     }
     if (rightNode) {
-      const r = getRadius(rightNode)
+      const r = mergedRadius('right-topic', rightNode)
       if (r != null) _doubleBubbleMapNodeSizes['rightTopicR'] = r
     }
     const simRadii = simIndices.map((i) => {
-      const nd = nodes.find((n) => n.id === `similarity-${i}`)
-      return nd != null ? getRadius(nd) : undefined
+      const id = `similarity-${i}`
+      const nd = nodes.find((n) => n.id === id)
+      return mergedRadius(id, nd)
     })
     if (simRadii.some((r) => r != null)) _doubleBubbleMapNodeSizes['simRadii'] = simRadii
     const leftDiffRadii = leftDiffIndices.map((i) => {
-      const nd = nodes.find((n) => n.id === `left-diff-${i}`)
-      return nd != null ? getRadius(nd) : undefined
+      const id = `left-diff-${i}`
+      const nd = nodes.find((n) => n.id === id)
+      return mergedRadius(id, nd)
     })
     if (leftDiffRadii.some((r) => r != null))
       _doubleBubbleMapNodeSizes['leftDiffRadii'] = leftDiffRadii
     const rightDiffRadii = rightDiffIndices.map((i) => {
-      const nd = nodes.find((n) => n.id === `right-diff-${i}`)
-      return nd != null ? getRadius(nd) : undefined
+      const id = `right-diff-${i}`
+      const nd = nodes.find((n) => n.id === id)
+      return mergedRadius(id, nd)
     })
     if (rightDiffRadii.some((r) => r != null))
       _doubleBubbleMapNodeSizes['rightDiffRadii'] = rightDiffRadii
@@ -215,7 +232,10 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     if (!ctx.data.value) return null
     let nodes = ctx.data.value.nodes
     if (ctx.type.value === 'bubble_map' && nodes.length > 0) {
-      nodes = recalculateBubbleMapLayout(nodes)
+      nodes = recalculateBubbleMapLayout(nodes, ctx.nodeDimensions.value)
+    }
+    if (ctx.type.value === 'tree_map' && nodes.length > 0) {
+      nodes = recalculateTreeMapLayout(nodes, ctx.nodeDimensions.value)
     }
     const spec: Record<string, unknown> = {
       type: ctx.type.value,

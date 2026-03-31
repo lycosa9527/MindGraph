@@ -239,6 +239,10 @@ export type EventTypes = {
   'node_editor:opening': { nodeId: string }
   'node_editor:closed': { nodeId: string }
   'node_editor:tab_pressed': { nodeId: string; draftText?: string }
+  /** Insert snippet into active label editor at caret, or toolbar falls back to appending to node text */
+  'node_editor:insert_text': { nodeId: string; snippet: string }
+  /** Fired when InlineEditableText applied insert at caret (toolbar skips store append) */
+  'node_editor:insert_text_consumed': { nodeId: string }
 
   // Workshop Events
   'workshop:code-changed': { code: string | null }

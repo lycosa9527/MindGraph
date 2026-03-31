@@ -31,7 +31,7 @@ const vendorChunkGroups = [
   {
     name: 'vendor-utils',
     test:
-      /node_modules[\\/](?:axios|mitt|dompurify|markdown-it|@vueuse[\\/]core)[\\/]/,
+      /node_modules[\\/](?:axios|mitt|dompurify|markdown-it|katex|mathlive|@vscode[\\/]markdown-it-katex|@vueuse[\\/]core)[\\/]/,
   },
 ]
 
@@ -49,8 +49,24 @@ const elementPlusResolver = ElementPlusResolver({
 })
 
 export default defineConfig({
+  optimizeDeps: {
+    include: [
+      'markdown-it',
+      '@vscode/markdown-it-katex',
+      'katex',
+      'katex/contrib/mhchem',
+      'dompurify',
+      'mathlive',
+    ],
+  },
   plugins: [
-    vue(),
+    vue({
+      template: {
+        compilerOptions: {
+          isCustomElement: (tag) => tag === 'math-field',
+        },
+      },
+    }),
     tailwindcss(),
     AutoImport({
       dts: 'src/auto-imports.d.ts',
@@ -69,6 +85,8 @@ export default defineConfig({
     // tsconfig `paths` for TS/JS; explicit `@` alias still required for CSS @import in SFCs
     // (Tailwind generate / enhanced-resolve does not resolve tsconfigPaths for those).
     tsconfigPaths: true,
+    // One KaTeX instance so `katex/contrib/mhchem` registers `\ce` on the same copy used by @vscode/markdown-it-katex.
+    dedupe: ['katex'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@data': resolve(__dirname, '../data'),

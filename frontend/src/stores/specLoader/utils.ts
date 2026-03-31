@@ -205,6 +205,17 @@ const CIRCLE_MAP_MIN_CHILDREN_RADIUS = 130
 const CIRCLE_MAP_SNAP_GRID = 10
 
 /**
+ * Optional radii from DOM (Pinia nodeDimensions) or precomputed values.
+ * When omitted, calculateCircleMapLayout derives radii from topic/context text.
+ */
+export interface CircleMapLayoutRadiusOverrides {
+  /** Topic circle radius (px), e.g. max(measured width, height) / 2 */
+  topicR?: number
+  /** Uniform context circle radius (px), max over context nodes */
+  uniformContextR?: number
+}
+
+/**
  * Calculate circle map layout: fixed font, circles from text, ring no-overlap.
  * Center = canvas center; context nodes evenly spaced on a ring (360/n deg).
  * Order: topic first → uniformContextR from texts → childrenRadius → outer circle.
@@ -213,24 +224,36 @@ const CIRCLE_MAP_SNAP_GRID = 10
  * @param nodeCount - Number of context nodes
  * @param contextTexts - Array of context node texts for adaptive sizing
  * @param topicText - Topic text for radius calculation
+ * @param overrides - When set (e.g. from ResizeObserver / Pinia), prefer real DOM radii over text metrics
  * @returns Layout calculation result with positions and radii
  */
 export function calculateCircleMapLayout(
   nodeCount: number,
   contextTexts: string[] = [],
-  topicText: string = ''
+  topicText: string = '',
+  overrides?: CircleMapLayoutRadiusOverrides | null
 ): CircleMapLayoutResult {
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
 
-  // (g) Topic: text-adaptive radius = text bounding box diagonal/2 + inner padding, min only (no max)
-  const topicRFromText = computeTopicRadiusForCircleMap(topicText || ' ')
-  const topicR = Math.max(DEFAULT_TOPIC_RADIUS, topicRFromText)
+  // (g) Topic: DOM overrides win; else text-adaptive radius
+  const topicR =
+    overrides?.topicR != null &&
+    Number.isFinite(overrides.topicR) &&
+    overrides.topicR > 0
+      ? Math.max(DEFAULT_TOPIC_RADIUS, overrides.topicR)
+      : Math.max(DEFAULT_TOPIC_RADIUS, computeTopicRadiusForCircleMap(topicText || ' '))
 
-  // (b) Uniform context R: fixed CONTEXT_FONT_SIZE → min diameter per text → max → radius
+  // (b) Uniform context R: overrides win; else min diameter per text → max → radius
   let uniformContextR: number
   if (contextTexts.length === 0) {
     uniformContextR = DEFAULT_CONTEXT_RADIUS
+  } else if (
+    overrides?.uniformContextR != null &&
+    Number.isFinite(overrides.uniformContextR) &&
+    overrides.uniformContextR > 0
+  ) {
+    uniformContextR = Math.max(DEFAULT_CONTEXT_RADIUS, overrides.uniformContextR)
   } else {
     let maxRadius = DEFAULT_CONTEXT_RADIUS
     for (const t of contextTexts) {

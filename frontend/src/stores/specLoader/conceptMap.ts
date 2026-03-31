@@ -6,7 +6,6 @@
 import {
   DEFAULT_CENTER_X,
   DEFAULT_CENTER_Y,
-  DEFAULT_NODE_HEIGHT,
   DEFAULT_NODE_WIDTH,
   DEFAULT_PADDING,
 } from '@/composables/diagrams/layoutConfig'
@@ -18,6 +17,7 @@ import type { SpecLoaderResult } from './types'
 const CONCEPT_RING_RADIUS = 150
 const HIERARCHY_VERTICAL_GAP = 120
 const HIERARCHY_HORIZONTAL_GAP = 200
+const GRANDCHILD_VERTICAL_SPACING = 90
 
 interface ConceptMapRelationship {
   from: string
@@ -77,7 +77,7 @@ function computeHierarchicalPositions(
     for (let g = 0; g < grandChildren.length; g++) {
       positions.set(grandChildren[g], {
         x: leftX,
-        y: level2Y + g * (DEFAULT_NODE_HEIGHT + 40),
+        y: level2Y + g * GRANDCHILD_VERTICAL_SPACING,
       })
     }
     leftX -= HIERARCHY_HORIZONTAL_GAP
@@ -89,7 +89,7 @@ function computeHierarchicalPositions(
     for (let g = 0; g < grandChildren.length; g++) {
       positions.set(grandChildren[g], {
         x: rightX,
-        y: level2Y + HIERARCHY_VERTICAL_GAP + g * (DEFAULT_NODE_HEIGHT + 40),
+        y: level2Y + HIERARCHY_VERTICAL_GAP + g * GRANDCHILD_VERTICAL_SPACING,
       })
     }
     rightX += HIERARCHY_HORIZONTAL_GAP
@@ -135,7 +135,7 @@ export function loadConceptMapSpec(spec: Record<string, unknown>): SpecLoaderRes
 
   const conceptCount = conceptsArr.length
   const halfWidth = DEFAULT_NODE_WIDTH / 2
-  const halfHeight = DEFAULT_NODE_HEIGHT / 2
+  const halfHeight = 25
 
   conceptsArr.forEach((text, index) => {
     const id = `concept-${index}`

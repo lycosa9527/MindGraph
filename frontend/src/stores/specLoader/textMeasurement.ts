@@ -2,7 +2,11 @@
  * DOM-based text measurement for circle map nodes
  * Finds fontSize so text fits inside a circle (no truncation).
  * Wrap vs no-wrap uses prefersNoWrapWidthFitForCircleMap (Latin/Cyrillic vs CJK/Arabic/Thai…).
+ *
+ * Multi-flow / diagram labels with `$...$` math: use {@link measureRenderedDiagramLabelWidth}
+ * so width matches KaTeX output (plain `measureTextWidth` measures LaTeX source as text).
  */
+import { renderMarkdownForDiagramLabelMeasure } from '@/composables/core/useMarkdown'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
@@ -30,6 +34,8 @@ const MIN_TOPIC_RADIUS_CIRCLE_MAP = 60
 const TOPIC_CIRCLE_INNER_PADDING = 10
 
 let measureEl: HTMLDivElement | null = null
+/** Separate from {@link measureEl} so KaTeX innerHTML does not break plain-text measurement. */
+let diagramLabelHtmlMeasureEl: HTMLDivElement | null = null
 
 function applyMeasureFontFamily(el: HTMLDivElement, fontFamily?: string): void {
   el.style.fontFamily = fontFamily ?? MEASURE_FONT_FAMILY
@@ -184,6 +190,138 @@ export function measureTextWidth(
   el.style.fontWeight = options?.fontWeight ?? 'normal'
   el.textContent = t
   return el.offsetWidth
+}
+
+function getDiagramLabelHtmlMeasureEl(fontFamily?: string): HTMLDivElement {
+  if (diagramLabelHtmlMeasureEl && document.body.contains(diagramLabelHtmlMeasureEl)) {
+    applyMeasureFontFamily(diagramLabelHtmlMeasureEl, fontFamily)
+    return diagramLabelHtmlMeasureEl
+  }
+  diagramLabelHtmlMeasureEl = document.createElement('div')
+  diagramLabelHtmlMeasureEl.setAttribute('aria-hidden', 'true')
+  diagramLabelHtmlMeasureEl.style.cssText = [
+    'position:absolute',
+    'left:-9999px',
+    'top:0',
+    'visibility:hidden',
+    'pointer-events:none',
+    'box-sizing:content-box',
+  ].join(';')
+  applyMeasureFontFamily(diagramLabelHtmlMeasureEl, fontFamily)
+  document.body.appendChild(diagramLabelHtmlMeasureEl)
+  return diagramLabelHtmlMeasureEl
+}
+
+/** Strip a single outer `<p>...</p>` from markdown-it so width is inline-sized like diagram labels. */
+function unwrapSingleParagraphHtml(html: string): string {
+  const t = html.trim()
+  const m = /^<p>([\s\S]*)<\/p>\s*$/i.exec(t)
+  return m ? m[1] : t
+}
+
+/**
+ * True when label likely contains markdown or KaTeX (needs rendered DOM width, not source string width).
+ */
+export function diagramLabelLikelyNeedsRenderedMeasure(text: string): boolean {
+  const t = text || ''
+  return (
+    /\$/.test(t) ||
+    /`/.test(t) ||
+    /\\[a-zA-Z]/.test(t) ||
+    /\*\*[^*]/.test(t) ||
+    /__[^_\s]/.test(t)
+  )
+}
+
+/**
+ * Measure label width after the same markdown + KaTeX pipeline as diagram nodes.
+ * Use for multi-flow map column width when DOM dimensions are not yet available.
+ */
+export function measureRenderedDiagramLabelWidth(
+  text: string,
+  fontSizePx: number,
+  options?: MeasureTextWidthOptions
+): number {
+  if (typeof document === 'undefined') {
+    return estimateTextWidthFallbackPx(text || ' ', fontSizePx)
+  }
+  const t = (text || '').trim() || ' '
+  const el = getDiagramLabelHtmlMeasureEl(options?.fontFamily)
+  el.style.width = 'max-content'
+  el.style.maxWidth = 'none'
+  el.style.whiteSpace = 'nowrap'
+  el.style.padding = '0'
+  el.style.margin = '0'
+  el.style.fontSize = `${fontSizePx}px`
+  el.style.fontWeight = options?.fontWeight ?? 'normal'
+  el.style.display = 'inline-block'
+  el.style.lineHeight = '1.4'
+  try {
+    let html: string
+    try {
+      html = unwrapSingleParagraphHtml(renderMarkdownForDiagramLabelMeasure(t))
+    } catch {
+      el.textContent = t
+      void el.offsetWidth
+      return el.offsetWidth
+    }
+    el.innerHTML = html
+    void el.offsetWidth
+    const w = el.getBoundingClientRect().width || el.offsetWidth
+    return Math.max(0, Math.ceil(w))
+  } finally {
+    el.innerHTML = ''
+    el.textContent = ''
+  }
+}
+
+/**
+ * Measure label height after the same markdown + KaTeX pipeline as diagram nodes.
+ * The hidden element gets the `diagram-node-md` class so global KaTeX overrides
+ * (inline-flex centering, line-height) apply, matching actual node rendering.
+ *
+ * @param maxTextWidthPx  max-width for the text content (triggers wrapping).
+ */
+export function measureRenderedDiagramLabelHeight(
+  text: string,
+  fontSizePx: number,
+  maxTextWidthPx: number,
+  options?: MeasureTextWidthOptions
+): number {
+  if (typeof document === 'undefined') {
+    return fontSizePx * 1.5
+  }
+  const t = (text || '').trim() || ' '
+  const el = getDiagramLabelHtmlMeasureEl(options?.fontFamily)
+  el.style.width = 'max-content'
+  el.style.maxWidth = `${maxTextWidthPx}px`
+  el.style.whiteSpace = 'normal'
+  el.style.padding = '0'
+  el.style.margin = '0'
+  el.style.fontSize = `${fontSizePx}px`
+  el.style.fontWeight = options?.fontWeight ?? 'normal'
+  el.style.display = 'inline-block'
+  el.style.lineHeight = '1.35'
+  el.className = 'diagram-node-md'
+  try {
+    let html: string
+    try {
+      html = renderMarkdownForDiagramLabelMeasure(t)
+    } catch {
+      el.textContent = t
+      void el.offsetHeight
+      return el.offsetHeight
+    }
+    el.innerHTML = html
+    void el.offsetHeight
+    const measured = Math.max(0, el.getBoundingClientRect().height || el.offsetHeight)
+    console.log(`[NodeLayout:MeasureH] text="${t.slice(0, 40)}" fontSize=${fontSizePx} maxW=${maxTextWidthPx} → contentH=${measured}`)
+    return measured
+  } finally {
+    el.innerHTML = ''
+    el.textContent = ''
+    el.className = ''
+  }
 }
 
 export interface MeasureTextDimensionsOptions {

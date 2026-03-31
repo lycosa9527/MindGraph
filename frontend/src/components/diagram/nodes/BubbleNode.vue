@@ -78,6 +78,7 @@ function handleEditCancel() {
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       text-class="px-3 py-2"
+      render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

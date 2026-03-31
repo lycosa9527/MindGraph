@@ -57,6 +57,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
   const isExporting = ref(false)
 
+  /** Ensures UI + KaTeX webfonts are ready before rasterizing the canvas (node labels may include math). */
   async function waitForExportFonts(): Promise<void> {
     await ensureFontsForLanguageCode(uiStore.promptLanguage)
     if (typeof document !== 'undefined' && document.fonts?.ready) {
@@ -74,10 +75,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const blob = await toBlob(
-        container,
-        getDiagramCanvasHtmlToImageOptions()
-      )
+      const blob = await toBlob(container, getDiagramCanvasHtmlToImageOptions())
       if (!blob) {
         throw new Error('PNG export produced empty image')
       }
@@ -106,10 +104,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const dataUrl = await toSvg(
-        container,
-        getDiagramCanvasHtmlToImageOptions()
-      )
+      const dataUrl = await toSvg(container, getDiagramCanvasHtmlToImageOptions())
 
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
@@ -135,10 +130,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     isExporting.value = true
     try {
       await waitForExportFonts()
-      const dataUrl = await toPng(
-        container,
-        getDiagramCanvasHtmlToImageOptions({ pixelRatio: 1 })
-      )
+      const dataUrl = await toPng(container, getDiagramCanvasHtmlToImageOptions({ pixelRatio: 1 }))
 
       const img = new Image()
       await new Promise<void>((resolve, reject) => {

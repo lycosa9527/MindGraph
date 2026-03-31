@@ -13,8 +13,13 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
+import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
-import { measureTextWidth } from './textMeasurement'
+import {
+  diagramLabelLikelyNeedsRenderedMeasure,
+  measureRenderedDiagramLabelWidth,
+  measureTextWidth,
+} from './textMeasurement'
 import { estimateTextWidthFallbackPx } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
@@ -31,7 +36,13 @@ function computeFlowNodeWidth(text: string): number {
   const trimmed = (text || '').trim() || ' '
   const textW =
     typeof document !== 'undefined'
-      ? measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE)
+      ? diagramLabelLikelyNeedsRenderedMeasure(trimmed)
+        ? measureRenderedDiagramLabelWidth(trimmed, FLOW_NODE_FONT_SIZE, {
+            fontFamily: DIAGRAM_NODE_FONT_STACK,
+          })
+        : measureTextWidth(trimmed, FLOW_NODE_FONT_SIZE, {
+            fontFamily: DIAGRAM_NODE_FONT_STACK,
+          })
       : estimateTextWidthFallbackPx(trimmed, FLOW_NODE_FONT_SIZE)
   return Math.max(DEFAULT_NODE_WIDTH, Math.ceil(textW + FLOW_NODE_PADDING_X))
 }
@@ -81,9 +92,16 @@ export function recalculateMultiFlowMapLayout(
   const centerX = DEFAULT_CENTER_X
   const centerY = DEFAULT_CENTER_Y
   const sideSpacing = DEFAULT_SIDE_SPACING
-  const verticalSpacing = DEFAULT_VERTICAL_SPACING + 10 // 70px
   const nodeWidth = DEFAULT_NODE_WIDTH
-  const nodeHeight = DEFAULT_NODE_HEIGHT
+  const verticalGap = DEFAULT_VERTICAL_SPACING - 40 // 20px gap between nodes
+
+  const getH = (id: string): number => {
+    const pinia = nodeDimensions[id]?.height
+    const h = pinia ?? DEFAULT_NODE_HEIGHT
+    const src = pinia != null ? 'pinia' : 'DEFAULT'
+    console.log(`[NodeLayout:getH] id="${id}" h=${h} src=${src} (pinia=${pinia})`)
+    return h
+  }
 
   // Use actual DOM-measured topic width, then explicit topicNodeWidth, then default
   const measuredTopicW = nodeDimensions['event']?.width
@@ -131,6 +149,33 @@ export function recalculateMultiFlowMapLayout(
   const topicLeftEdge = centerX - actualTopicWidth / 2
   const topicRightEdge = centerX + actualTopicWidth / 2
 
+  // Stack a column of node IDs vertically, centered at centerY, using actual heights.
+  function stackColumnYPositions(ids: string[]): number[] {
+    const heights = ids.map((id) => getH(id))
+    const totalHeight = heights.reduce((a, h) => a + h, 0) + (ids.length - 1) * verticalGap
+    let y = centerY - totalHeight / 2
+    return heights.map((h) => {
+      const top = y
+      y += h + verticalGap
+      return top
+    })
+  }
+
+  console.log('[NodeLayout:MultiFlow] recalculateMultiFlowMapLayout called', {
+    nodeCount: nodes.length,
+    causeCount: causes.length,
+    effectCount: effects.length,
+    nodeDimensionKeys: Object.keys(nodeDimensions),
+  })
+
+  const causeIds = causes.map((_, i) => `cause-${i}`)
+  const effectIds = effects.map((_, i) => `effect-${i}`)
+  const causeYPositions = stackColumnYPositions(causeIds)
+  const effectYPositions = stackColumnYPositions(effectIds)
+
+  console.log('[NodeLayout:MultiFlow] causeYPositions', causeYPositions)
+  console.log('[NodeLayout:MultiFlow] effectYPositions', effectYPositions)
+
   const result: DiagramNode[] = []
 
   // Event node - preserve style from original
@@ -139,12 +184,11 @@ export function recalculateMultiFlowMapLayout(
     id: 'event',
     text: event,
     type: 'topic',
-    position: { x: topicLeftEdge, y: centerY - nodeHeight / 2 },
+    position: { x: topicLeftEdge, y: centerY - getH('event') / 2 },
     ...(eventStyle && { style: eventStyle }),
   })
 
   // Causes - re-index with sequential IDs (cause-0, cause-1, etc.)
-  const causeStartY = centerY - ((causes.length - 1) * verticalSpacing) / 2
   causeNodes.forEach((node, index) => {
     const color = getMindmapBranchColor(index)
     const causeStyle = {
@@ -160,7 +204,7 @@ export function recalculateMultiFlowMapLayout(
       type: 'flow',
       position: {
         x: topicLeftEdge - leftArrowSpacing - uniformColumnWidth,
-        y: causeStartY + index * verticalSpacing - nodeHeight / 2,
+        y: causeYPositions[index],
       },
       data: { ...node.data, groupIndex: index },
       style: causeStyle,
@@ -168,7 +212,6 @@ export function recalculateMultiFlowMapLayout(
   })
 
   // Effects - re-index with sequential IDs (effect-0, effect-1, etc.)
-  const effectStartY = centerY - ((effects.length - 1) * verticalSpacing) / 2
   effectNodes.forEach((node, index) => {
     const color = getMindmapBranchColor(index)
     const effectStyle = {
@@ -184,7 +227,7 @@ export function recalculateMultiFlowMapLayout(
       type: 'flow',
       position: {
         x: topicRightEdge + rightArrowSpacing,
-        y: effectStartY + index * verticalSpacing - nodeHeight / 2,
+        y: effectYPositions[index],
       },
       data: { ...node.data, groupIndex: index },
       style: effectStyle,

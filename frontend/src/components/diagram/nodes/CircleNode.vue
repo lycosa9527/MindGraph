@@ -6,6 +6,11 @@
  * Supports inline text editing on double-click
  * Adapts size based on text length
  * Uses mindmap branch color palette for context nodes (like double bubble map)
+ *
+ * Layout radii prefer Pinia nodeDimensions. The root circle has fixed width/height from the last
+ * layout pass, so measuring only the outer box does not reflect KaTeX/markdown intrinsic size.
+ * For circle_map / bubble_map / double-bubble topics we measure `.diagram-node-md` after fonts
+ * and paint, and observe it so late font/layout updates still flow into layout.
  */
 import { computed, inject, nextTick, onMounted, onUnmounted, ref, watch } from 'vue'
 
@@ -27,8 +32,96 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 const diagramStore = useDiagramStore()
 
+const topicBorderPx = 3
+const contextBorderPx = 2
+
+/** Pinia layout sizes from `.diagram-node-md` (post–KaTeX) instead of the fixed-size root circle. */
+const useIntrinsicMdMeasure =
+  props.data.diagramType === 'circle_map' ||
+  props.data.diagramType === 'bubble_map' ||
+  (props.data.diagramType === 'double_bubble_map' && props.data.nodeType === 'topic')
+
 const circleNodeRef = ref<HTMLElement | null>(null)
-useNodeDimensions(circleNodeRef, props.id)
+const { reportDimensions } = useNodeDimensions(circleNodeRef, props.id, {
+  observeRoot: !useIntrinsicMdMeasure,
+})
+
+let markdownResizeObserver: ResizeObserver | null = null
+
+function measureRenderedMarkdownAndReport(): void {
+  if (!useIntrinsicMdMeasure) {
+    reportDimensions()
+    return
+  }
+  const root = circleNodeRef.value
+  if (!root) return
+  const md = root.querySelector('.diagram-node-md') as HTMLElement | null
+  if (!md) {
+    reportDimensions()
+    return
+  }
+  const w = Math.max(md.scrollWidth, md.clientWidth)
+  const h = Math.max(md.scrollHeight, md.clientHeight)
+  const content = Math.max(w, h)
+  const borderTotal = isTopicNode.value ? topicBorderPx * 2 : contextBorderPx * 2
+  const innerSlack = isTopicNode.value ? 28 : 20
+  const d = Math.ceil(Math.max(40, content + borderTotal + innerSlack))
+  diagramStore.setNodeDimensions(props.id, d, d)
+}
+
+async function flushRenderedMarkdownDimensions(): Promise<void> {
+  if (!useIntrinsicMdMeasure) return
+  await nextTick()
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    await document.fonts.ready
+  }
+  await nextTick()
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
+  measureRenderedMarkdownAndReport()
+}
+
+function teardownMarkdownObserver(): void {
+  if (markdownResizeObserver) {
+    markdownResizeObserver.disconnect()
+    markdownResizeObserver = null
+  }
+}
+
+function setupMarkdownObserver(): void {
+  teardownMarkdownObserver()
+  if (!useIntrinsicMdMeasure || typeof ResizeObserver === 'undefined') return
+  const root = circleNodeRef.value
+  if (!root) return
+  const md = root.querySelector('.diagram-node-md')
+  if (!md) return
+  markdownResizeObserver = new ResizeObserver(() => {
+    measureRenderedMarkdownAndReport()
+  })
+  markdownResizeObserver.observe(md)
+}
+
+watch(
+  () => props.data.label,
+  () => {
+    if (!useIntrinsicMdMeasure) return
+    void flushRenderedMarkdownDimensions().then(() => {
+      nextTick(() => setupMarkdownObserver())
+    })
+  }
+)
+
+onMounted(() => {
+  if (!useIntrinsicMdMeasure) return
+  void flushRenderedMarkdownDimensions().then(() => {
+    nextTick(() => setupMarkdownObserver())
+  })
+})
+
+onUnmounted(() => {
+  teardownMarkdownObserver()
+})
 
 // Get theme defaults
 const { getNodeStyle } = useTheme({
@@ -68,9 +161,7 @@ const groupColor = computed(() => {
   return isContext && !isTopicNode.value ? getMindmapBranchColor(idx) : null
 })
 
-// Get the circle size from data or calculate adaptively based on text length
-// Topic node (circle_map / bubble_map): single-line, size from text measurement (same as layout)
-// Context node: adaptive size from character bands
+// Prefer style.size from layout (driven by Pinia nodeDimensions on circle/bubble maps); fallback text estimate
 const circleSize = computed(() => {
   if (props.data.style?.size) {
     return props.data.style.size
@@ -84,45 +175,7 @@ const circleSize = computed(() => {
   return calculateAdaptiveCircleSize(text, isTopicNode.value)
 })
 
-// Watch for text changes and update node size in store (topic nodes in circle_map / bubble_map)
-watch(
-  () => props.data.label,
-  (newText) => {
-    const isRadialTopic =
-      (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') &&
-      isTopicNode.value
-    if (isRadialTopic) {
-      const adaptiveSize = getTopicCircleDiameter(newText || '')
-      nextTick(() => {
-        diagramStore.saveNodeStyle(props.id, { size: adaptiveSize })
-      })
-    }
-  }
-)
-
-// Listen for text_updated event to recalculate size (topic/context in circle_map / bubble_map)
-function handleTextUpdated(payload: { nodeId: string; text: string }) {
-  const isRadial = diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map'
-  if (payload.nodeId !== props.id || !isRadial) return
-  const adaptiveSize = isTopicNode.value
-    ? getTopicCircleDiameter(payload.text)
-    : calculateAdaptiveCircleSize(payload.text, false)
-  nextTick(() => {
-    diagramStore.saveNodeStyle(payload.nodeId, { size: adaptiveSize })
-  })
-}
-
-onMounted(() => {
-  eventBus.on('node:text_updated', handleTextUpdated)
-})
-
-onUnmounted(() => {
-  eventBus.off('node:text_updated', handleTextUpdated)
-})
-
 // Symmetric inner width for text: circleSize or capsule width minus both borders (topic 3px, context 2px)
-const topicBorderPx = 3
-const contextBorderPx = 2
 const textMaxWidth = computed(() => {
   const size = isCapsuleNode.value ? capsuleWidth.value : circleSize.value
   return size - 2 * (isTopicNode.value ? topicBorderPx : contextBorderPx)
@@ -177,11 +230,6 @@ const isEditing = ref(false)
 
 function handleTextSave(newText: string) {
   isEditing.value = false
-  const isRadialTopic =
-    (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') && isTopicNode.value
-  if (isRadialTopic) {
-    diagramStore.saveNodeStyle(props.id, { size: getTopicCircleDiameter(newText) })
-  }
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
@@ -303,6 +351,7 @@ function handleBranchMovePointerUp(): void {
           !!data.style?.noWrap
         "
         :truncate="false"
+        render-markdown
         @save="handleTextSave"
         @cancel="handleEditCancel"
         @edit-start="isEditing = true"

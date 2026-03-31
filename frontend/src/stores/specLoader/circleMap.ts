@@ -5,20 +5,26 @@
  * Fixed font size; circles grown from text (one line, no wrap, no truncate).
  * Uses mindmap branch color palette for each context (like double bubble map).
  */
+import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
-import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
+import {
+  CONTEXT_FONT_SIZE,
+  TOPIC_FONT_SIZE,
+  computeMinDiameterForNoWrap,
+} from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 import { calculateCircleMapLayout } from './utils'
 
 /**
  * Recalculate circle map layout from existing nodes.
- * Fixed font; circles from text; topic and context noWrap.
+ * Uses Pinia nodeDimensions (DOM) when available so KaTeX/markdown matches real size;
+ * otherwise falls back to text metrics (same as initial load).
  */
 export function recalculateCircleMapLayout(
   nodes: DiagramNode[],
-  _nodeDimensions: Record<string, { width: number; height: number }> = {}
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
     return []
@@ -36,7 +42,32 @@ export function recalculateCircleMapLayout(
   const contextTexts = contextNodes.map((n) => n.text)
   const topicText = topicNode?.text ?? ''
 
-  const layout = calculateCircleMapLayout(nodeCount, contextTexts, topicText)
+  let topicROverride: number | undefined
+  if (topicNode) {
+    const m = nodeDimensions[topicNode.id]
+    if (m && m.width > 0 && m.height > 0) {
+      topicROverride = Math.max(m.width, m.height) / 2
+    }
+  }
+
+  let uniformContextROverride: number | undefined
+  if (contextNodes.length > 0) {
+    let maxR = DEFAULT_CONTEXT_RADIUS
+    for (const node of contextNodes) {
+      const measured = nodeDimensions[node.id]
+      const r =
+        measured && measured.width > 0 && measured.height > 0
+          ? Math.max(measured.width, measured.height) / 2
+          : computeMinDiameterForNoWrap(node.text || ' ', CONTEXT_FONT_SIZE, false) / 2
+      maxR = Math.max(maxR, r)
+    }
+    uniformContextROverride = maxR
+  }
+
+  const layout = calculateCircleMapLayout(nodeCount, contextTexts, topicText, {
+    topicR: topicROverride,
+    uniformContextR: uniformContextROverride,
+  })
   const uniformContextDiameter = layout.uniformContextR * 2
   const topicSize = layout.topicR * 2
 

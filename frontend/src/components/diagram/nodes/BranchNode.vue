@@ -51,6 +51,9 @@ const textMaxWidth = computed(() => {
     const px = Number(props.data.style.width)
     return `${Math.max(60, px - 32)}px`
   }
+  if (props.data.diagramType === 'bridge_map') {
+    return 'min(420px, 88vw)'
+  }
   return '200px'
 })
 
@@ -226,6 +229,7 @@ function handleEditCancel() {
       :max-width="textMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
+      render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

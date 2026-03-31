@@ -45,7 +45,7 @@ async function recalculatePosition() {
   if (!labelNode) return
 
   const labelElement = labelRef.value
-  const maxWidth = 180 // Max width from CSS (max-width: 180px)
+  const maxWidth = 560 // Fallback if offsetWidth missing; CSS allows up to min(560px,92vw)
   // Measure actual height (changes when text wraps)
   const actualHeight = labelElement.offsetHeight || 40 // Fallback to estimate
   // Measure actual width instead of using maxWidth for overlap detection
@@ -410,10 +410,11 @@ function handleEditCancel() {
           :text="bridgeMapDisplay.value"
           :node-id="id"
           :is-editing="isEditing"
-          max-width="180px"
+          max-width="min(520px, 90vw)"
           text-align="right"
           :text-decoration="data.style?.textDecoration || 'none'"
           :text-class="bridgeMapDisplay.isPlaceholder ? 'opacity-60' : ''"
+          render-markdown
           @save="handleTextSave"
           @cancel="handleEditCancel"
           @edit-start="isEditing = true"
@@ -431,6 +432,7 @@ function handleEditCancel() {
         text-align="center"
         :text-decoration="data.style?.textDecoration || 'none'"
         text-class="whitespace-nowrap"
+        render-markdown
         @save="handleTextSave"
         @cancel="handleEditCancel"
         @edit-start="isEditing = true"
@@ -446,11 +448,10 @@ function handleEditCancel() {
   transition: opacity 0.2s ease;
 }
 
-/* Bridge map dimension labels: adaptive width and wrapping */
+/* Bridge map dimension labels: grow with KaTeX; cap for canvas */
 .label-node[data-bridge-dimension] {
-  max-width: 180px;
-  /* When wrapping is needed, text will wrap and align left */
-  /* When no overlap, text stays right-aligned */
+  width: fit-content;
+  max-width: min(560px, 92vw);
 }
 
 .label-node:hover {

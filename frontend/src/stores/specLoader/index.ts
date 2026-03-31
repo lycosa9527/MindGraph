@@ -27,10 +27,12 @@ export { getDefaultTemplate } from './defaultTemplates'
 
 // Re-export public APIs
 export { recalculateBraceMapLayout } from './braceMap'
+export { recalculateBridgeMapLayout } from './bridgeMap'
 export { recalculateCircleMapLayout } from './circleMap'
 export { recalculateBubbleMapLayout } from './bubbleMap'
 export { recalculateFlowMapLayout } from './flowMap'
 export { recalculateMultiFlowMapLayout } from './multiFlowMap'
+export { recalculateTreeMapLayout } from './treeMap'
 export {
   distributeBranchesClockwise,
   findBranchByNodeId,

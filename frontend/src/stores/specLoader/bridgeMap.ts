@@ -11,6 +11,75 @@ import type { Connection, DiagramNode } from '@/types'
 
 import type { SpecLoaderResult } from './types'
 
+const BRIDGE_VERTICAL_GAP = 5
+const BRIDGE_GAP_BETWEEN_PAIRS = 50
+
+/**
+ * Post-render layout correction for bridge maps.
+ * Uses actual DOM-measured heights from Pinia so each pair node sits the
+ * correct distance above/below the bridge centre line.
+ */
+export function recalculateBridgeMapLayout(
+  nodes: DiagramNode[],
+  nodeDimensions: Record<string, { width: number; height: number }> = {}
+): DiagramNode[] {
+  if (!Array.isArray(nodes) || nodes.length === 0) return nodes
+
+  const centerY = DEFAULT_CENTER_Y
+
+  const getH = (id: string): number => {
+    const pinia = nodeDimensions[id]?.height
+    const h = pinia ?? BRANCH_NODE_HEIGHT
+    console.log(`[NodeLayout:getH] id="${id}" h=${h} src=${pinia != null ? 'pinia' : 'DEFAULT'}`)
+    return h
+  }
+
+  const getW = (id: string): number =>
+    nodeDimensions[id]?.width ?? DEFAULT_NODE_WIDTH
+
+  const pairNodes = nodes.filter((n) => n.id?.startsWith('pair-'))
+  const otherNodes = nodes.filter((n) => !n.id?.startsWith('pair-'))
+
+  if (pairNodes.length === 0) return nodes
+
+  const maxPairIndex = pairNodes.reduce((max, n) => {
+    const idx = Number(n.data?.pairIndex ?? -1)
+    return idx > max ? idx : max
+  }, -1)
+
+  const result = otherNodes.map((n) => ({ ...n }))
+
+  let currentX = nodes.find((n) => n.id === 'pair-0-left')?.position?.x ?? DEFAULT_PADDING + 110
+
+  for (let i = 0; i <= maxPairIndex; i++) {
+    const leftId = `pair-${i}-left`
+    const rightId = `pair-${i}-right`
+    const leftNode = pairNodes.find((n) => n.id === leftId)
+    const rightNode = pairNodes.find((n) => n.id === rightId)
+    if (!leftNode || !rightNode) continue
+
+    const leftH = getH(leftId)
+    const rightH = getH(rightId)
+    const pairWidth = Math.max(getW(leftId), getW(rightId))
+
+    const leftY = centerY - BRIDGE_VERTICAL_GAP - leftH
+    const rightY = centerY + BRIDGE_VERTICAL_GAP
+    console.log(`[NodeLayout:BridgeMap] pair-${i}: leftH=${leftH} rightH=${rightH} leftY=${leftY} rightY=${rightY} centerY=${centerY}`)
+    result.push({
+      ...leftNode,
+      position: { x: currentX, y: leftY },
+    })
+    result.push({
+      ...rightNode,
+      position: { x: currentX, y: rightY },
+    })
+
+    currentX += pairWidth + BRIDGE_GAP_BETWEEN_PAIRS
+  }
+
+  return result
+}
+
 /**
  * Load bridge map spec into diagram nodes and connections
  *

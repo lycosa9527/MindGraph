@@ -26,7 +26,7 @@ import InlineEditableText from './InlineEditableText.vue'
 const props = defineProps<MindGraphNodeProps>()
 
 const flowNodeRef = ref<HTMLElement | null>(null)
-useNodeDimensions(flowNodeRef, props.id)
+const { reportDimensions } = useNodeDimensions(flowNodeRef, props.id)
 
 const { t } = useLanguage()
 
@@ -134,29 +134,44 @@ const layoutWidth = computed(() => {
   return typeof w === 'number' ? w : null
 })
 
+/**
+ * After display mode shows markdown/KaTeX, flush DOM size into Pinia and sync
+ * multi-flow stored widths (same path as bubble/circle maps via nodeDimensions).
+ */
+async function flushMultiFlowCauseEffectWidthFromPinia(): Promise<void> {
+  await nextTick()
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    await document.fonts.ready
+  }
+  await nextTick()
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
+  reportDimensions()
+  const fromStore = diagramStore.getNodeDimension(props.id)?.width
+  const fallback = flowNodeRef.value?.offsetWidth
+  const w = fromStore ?? fallback
+  if (w == null || w <= 0) {
+    return
+  }
+  diagramStore.setNodeWidth(props.id, w)
+  eventBus.emit('multi_flow_map:node_width_changed', {
+    nodeId: props.id,
+    width: w,
+  })
+}
+
 function handleTextSave(newText: string) {
   isEditing.value = false
-  const savedWidth = dynamicWidth.value
   dynamicWidth.value = null // Reset width after saving
-
-  // Store the width for visual balance calculation
-  if (isMultiFlowMap.value && savedWidth !== null) {
-    diagramStore.setNodeWidth(props.id, savedWidth)
-  }
 
   eventBus.emit('node:text_updated', {
     nodeId: props.id,
     text: newText,
   })
 
-  // Trigger layout recalculation for multi-flow map to update visual balance
   if (isMultiFlowMap.value) {
-    nextTick(() => {
-      eventBus.emit('multi_flow_map:node_width_changed', {
-        nodeId: props.id,
-        width: savedWidth,
-      })
-    })
+    void flushMultiFlowCauseEffectWidthFromPinia()
   }
 }
 
@@ -257,6 +272,7 @@ function handleBranchMovePointerUp(): void {
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isPillShape"
+      render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

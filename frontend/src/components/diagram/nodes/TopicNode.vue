@@ -215,13 +215,36 @@ const topicNodeRef = ref<HTMLDivElement | null>(null)
 
 const diagramStore = useDiagramStore()
 
-useNodeDimensions(topicNodeRef, props.id, {
+const { reportDimensions } = useNodeDimensions(topicNodeRef, props.id, {
   onResize(w, h) {
     if (!isMindMap.value) return
     diagramStore.setMindMapTopicWidth(w)
     diagramStore.setMindMapNodeDimensions(props.id, null, h)
   },
 })
+
+/**
+ * After display mode shows markdown/KaTeX, flush DOM size into Pinia and emit
+ * topic width for multi-flow layout (uses getNodeDimension like other nodes).
+ */
+async function flushMultiFlowTopicWidthFromPinia(): Promise<void> {
+  await nextTick()
+  if (typeof document !== 'undefined' && document.fonts?.ready) {
+    await document.fonts.ready
+  }
+  await nextTick()
+  await new Promise<void>((resolve) => {
+    requestAnimationFrame(() => resolve())
+  })
+  reportDimensions()
+  const fromStore = diagramStore.getNodeDimension(props.id)?.width
+  const fallback = topicNodeRef.value?.offsetWidth ?? null
+  const w = fromStore ?? fallback
+  eventBus.emit('multi_flow_map:topic_width_changed', {
+    nodeId: props.id,
+    width: w,
+  })
+}
 
 function handleTextSave(newText: string) {
   isEditing.value = false
@@ -233,12 +256,7 @@ function handleTextSave(newText: string) {
   })
 
   if (isMultiFlowMap.value) {
-    nextTick(() => {
-      eventBus.emit('multi_flow_map:topic_width_changed', {
-        nodeId: props.id,
-        width: topicNodeRef.value?.offsetWidth || null,
-      })
-    })
+    void flushMultiFlowTopicWidthFromPinia()
   }
 }
 
@@ -253,19 +271,25 @@ function handleWidthChange(width: number) {
     // Add padding to account for node padding (px-6 = 24px on each side = 48px total)
     dynamicWidth.value = width + 48
 
-    // Emit width change event to trigger layout recalculation (both causes and effects reposition)
-    // Use nextTick + setTimeout to ensure DOM has fully updated before measuring
-    nextTick(() => {
-      setTimeout(() => {
-        if (topicNodeRef.value) {
-          const actualWidth = topicNodeRef.value.offsetWidth
-          eventBus.emit('multi_flow_map:topic_width_changed', {
-            nodeId: props.id,
-            width: actualWidth,
-          })
-        }
-      }, 100)
-    })
+    void (async () => {
+      await nextTick()
+      if (typeof document !== 'undefined' && document.fonts?.ready) {
+        await document.fonts.ready
+      }
+      await nextTick()
+      await new Promise<void>((resolve) => {
+        requestAnimationFrame(() => resolve())
+      })
+      reportDimensions()
+      const fromStore = diagramStore.getNodeDimension(props.id)?.width
+      const actualWidth = fromStore ?? topicNodeRef.value?.offsetWidth ?? null
+      if (topicNodeRef.value && actualWidth != null) {
+        eventBus.emit('multi_flow_map:topic_width_changed', {
+          nodeId: props.id,
+          width: actualWidth,
+        })
+      }
+    })()
   }
 }
 </script>
@@ -292,6 +316,7 @@ function handleWidthChange(width: number) {
       :max-width="isFlowMap ? 'none' : '300px'"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
+      render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

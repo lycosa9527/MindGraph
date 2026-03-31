@@ -1,7 +1,3 @@
-/**
- * Vue I18n bootstrap: one merged message bundle per UI locale code.
- * Locales materialized from English share the same keys until translated (see `scripts/materialize-locale-bundles-from-en.ts`).
- */
 import { createI18n } from 'vue-i18n'
 
 import afMessages from '@/locales/messages/af'

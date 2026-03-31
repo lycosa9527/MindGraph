@@ -15,7 +15,11 @@ import {
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
-import { measureTextDimensions } from './textMeasurement'
+import {
+  diagramLabelLikelyNeedsRenderedMeasure,
+  measureRenderedDiagramLabelHeight,
+  measureTextDimensions,
+} from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
 interface MindMapBranch {
@@ -55,11 +59,20 @@ const BRANCH_PADDING_Y = 16
  * Uses measureTextDimensions with CSS params matching BranchNode + InlineEditableText:
  * font 16px normal, text wraps at maxWidth 150px (content-box on the span),
  * then add BranchNode py-2 (16px) and border 3px x 2 (6px). Enforce min-height 36px.
+ * For KaTeX labels the rendered DOM height is measured directly.
  */
 function measureBranchNodeHeight(text: string): number {
   if (!text) return BRANCH_NODE_HEIGHT
-  const { height: textHeight } = measureTextDimensions(text, 16, {
-    maxWidth: 150,
+  const branchFontSize = 16
+  const maxTextWidth = 150
+
+  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
+    const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
+    return Math.max(BRANCH_NODE_HEIGHT, Math.ceil(contentH + BRANCH_PADDING_Y + BRANCH_BORDER_Y))
+  }
+
+  const { height: textHeight } = measureTextDimensions(text, branchFontSize, {
+    maxWidth: maxTextWidth,
     paddingX: 0,
     paddingY: 0,
   })
@@ -105,22 +118,32 @@ export function estimateTopicNodeWidth(text: string): number {
 
 /**
  * Estimate rendered TopicNode height from text content.
- * TopicNode: CSS min-height ~50px (DEFAULT_NODE_HEIGHT), py-2 = 8px each side (16px total),
+ * TopicNode: CSS min-height ~50px (DEFAULT_NODE_HEIGHT), py-4 = 16px each side (32px total),
  * border 3px each side (6px total), 18px bold font with Tailwind line-height 1.5 = 27px/line.
  * Text wraps at InlineEditableText max-width 300px.
+ * For KaTeX labels the rendered DOM height is measured directly.
  */
 export function estimateTopicNodeHeight(text: string): number {
   if (!text) return DEFAULT_NODE_HEIGHT
+  const topicFontSize = 18
+  const maxTextWidth = 300
+  const paddingY = 32
+  const borderY = 6
+
+  if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
+    const contentH = measureRenderedDiagramLabelHeight(text, topicFontSize, maxTextWidth, {
+      fontWeight: 'bold',
+    })
+    return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(contentH + paddingY + borderY))
+  }
+
   const cjkMatches = text.match(TOPIC_CJK_REGEX)
   const cjkCount = cjkMatches ? cjkMatches.length : 0
   const otherCount = text.length - cjkCount
   const cjkCharWidth = 19
   const latinCharWidth = 11
   const rawTextWidth = cjkCount * cjkCharWidth + otherCount * latinCharWidth
-  const maxTextWidth = 300
   const lineHeight = 27
-  const paddingY = 16
-  const borderY = 6
   const numLines = Math.max(1, Math.ceil(rawTextWidth / maxTextWidth))
   return Math.max(DEFAULT_NODE_HEIGHT, numLines * lineHeight + paddingY + borderY)
 }

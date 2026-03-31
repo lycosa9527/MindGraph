@@ -2,6 +2,8 @@
  * MindGraph Global Styles
  */
 
+@import 'katex/dist/katex.min.css';
+
 @import 'tailwindcss/theme' layer(theme);
 @import 'tailwindcss/utilities' layer(utilities);
 
@@ -358,4 +360,107 @@ body {
 
 .dark-alert-notification.el-notification--info .el-notification__icon {
   color: #60a5fa;
+}
+
+/* Diagram node labels: compact markdown + KaTeX inside Vue Flow nodes */
+.diagram-node-md {
+  font-size: inherit;
+  line-height: 1.35;
+  word-break: break-word;
+  overflow-wrap: break-word;
+}
+
+/*
+ * When KaTeX is present, switch to inline-flex so the container's height
+ * matches its content exactly.  As an inline-block BFC, trailing whitespace
+ * from markdown-it output (e.g. "\n" after </p>) becomes visible anonymous
+ * blocks when white-space:pre-wrap is inherited from .inline-edit-display--wrap,
+ * bloating .diagram-node-md well beyond the <p> height.  In flex layout,
+ * whitespace-only anonymous flex items are removed per CSS spec, eliminating
+ * the height bloat and letting the parent flex containers center the formula.
+ */
+.diagram-node-md:has(.katex) {
+  display: inline-flex;
+  flex-direction: column;
+}
+
+/*
+ * KaTeX sets vertical-align: -<depth>em on .katex-html (inline style) and on internal
+ * .strut elements.  These shifts extend the line box asymmetrically downward, which
+ * makes formulas appear off-center inside flex-aligned diagram nodes (items-center).
+ *
+ * Making .katex an inline-flex container turns .katex-html into a flex item, where
+ * vertical-align is ignored.  align-items:center then symmetrically centers the
+ * rendered formula, and the outer vertical-align:middle keeps the box aligned with
+ * surrounding text.
+ */
+.diagram-node-md .katex {
+  vertical-align: middle;
+  display: inline-flex;
+  align-items: center;
+}
+
+.diagram-node-md :first-child {
+  margin-top: 0;
+}
+
+.diagram-node-md :last-child {
+  margin-bottom: 0;
+}
+
+/* Zero vertical margins so flex `items-center` on the node isn’t fighting CommonMark `<p>` bands */
+.diagram-node-md p {
+  margin: 0;
+}
+
+/*
+ * When a <p> contains KaTeX, the inline formatting context creates line-box
+ * height bloat: the strut + vertical-align:middle positioning makes the <p>
+ * ~2x taller than the formula, with the formula pinned to the top.
+ *
+ * Switching to flex eliminates the line-box model entirely.  The .katex
+ * element becomes a flex item centered by align-items:center, and the <p>
+ * shrinks to exactly the formula height.
+ */
+.diagram-node-md p:has(.katex) {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.diagram-node-md ul,
+.diagram-node-md ol {
+  margin: 0.2em 0;
+  padding-left: 1.1em;
+}
+
+.diagram-node-md h1,
+.diagram-node-md h2,
+.diagram-node-md h3,
+.diagram-node-md h4 {
+  margin: 0.15em 0;
+  font-size: inherit;
+  font-weight: 600;
+}
+
+.diagram-node-md pre {
+  margin: 0.25em 0;
+  padding: 0.25em 0.35em;
+  font-size: 0.85em;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+.diagram-node-md .katex-display {
+  margin: 0.15em 0;
+  overflow-x: auto;
+  max-width: 100%;
+}
+
+/*
+ * MathLive portals the virtual keyboard to <body>. Element Plus dialog overlays use z-index ~2000+,
+ * so the keyboard would sit underneath and clicks hit the overlay instead.
+ */
+body {
+  --keyboard-zindex: 10000;
 }

@@ -1,6 +1,9 @@
 /**
  * Shared html-to-image settings for diagram canvas export (PNG/SVG/PDF thumbnails).
  * Keeps rasterization consistent and excludes UI chrome that should not appear in files.
+ *
+ * Diagram nodes may show Markdown + KaTeX; KaTeX fonts load via global CSS. Export uses
+ * waitForExportFonts() + document.fonts.ready so formulas rasterize reliably.
  */
 import { toBlob } from 'html-to-image'
 

@@ -55,6 +55,11 @@ const focusQuestionMutedTailSplit = computed(() => {
   return focusQuestionMutedParts(label)
 })
 
+/** Wide caps so Markdown/KaTeX can size the pill to real content (still bounded for canvas) */
+const conceptMapInlineMaxWidth = computed(() =>
+  isTopic.value ? 'min(560px, 94vw)' : 'min(480px, 92vw)'
+)
+
 const nodeStyle = computed(() => {
   const pillRadius = '9999px'
   if (isTopic.value) {
@@ -318,11 +323,12 @@ function handleLinkDrop(event: DragEvent) {
         :readonly="data.hidden === true"
         :node-id="id"
         :is-editing="isEditing"
-        :max-width="isTopic ? '300px' : '150px'"
+        :max-width="conceptMapInlineMaxWidth"
         :text-align="data.style?.textAlign || 'center'"
         :text-decoration="data.style?.textDecoration || 'none'"
         :muted-tail-split="focusQuestionMutedTailSplit"
         :sync-baseline-on-tab="conceptMapSyncBaselineOnTab"
+        render-markdown
         @save="handleTextSave"
         @cancel="handleEditCancel"
         @edit-start="isEditing = true"

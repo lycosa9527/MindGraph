@@ -9,7 +9,12 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import type { DiagramNode } from '@/types'
 
-import { measureTextDimensions } from './textMeasurement'
+import {
+  diagramLabelLikelyNeedsRenderedMeasure,
+  measureRenderedDiagramLabelHeight,
+  measureRenderedDiagramLabelWidth,
+  measureTextDimensions,
+} from './textMeasurement'
 
 /** Matches TopicNode InlineEditableText max-width for topic */
 export const TREE_MAP_TOPIC_TEXT_MAX_WIDTH = 300
@@ -22,13 +27,30 @@ export const TREE_MAP_TOPIC_PADDING_Y = 16
 export const TREE_MAP_TOPIC_BORDER_WIDTH = 3
 
 export function measureTreeMapTopicDimensions(text: string): { width: number; height: number } {
-  const dims = measureTextDimensions((text || '').trim() || ' ', TREE_MAP_TOPIC_FONT_SIZE, {
+  const t = (text || '').trim() || ' '
+  const b = TREE_MAP_TOPIC_BORDER_WIDTH
+  const measureOpts = { fontWeight: 'bold' as const }
+
+  if (diagramLabelLikelyNeedsRenderedMeasure(t)) {
+    const contentW = measureRenderedDiagramLabelWidth(t, TREE_MAP_TOPIC_FONT_SIZE, measureOpts)
+    const contentH = measureRenderedDiagramLabelHeight(
+      t,
+      TREE_MAP_TOPIC_FONT_SIZE,
+      TREE_MAP_TOPIC_TEXT_MAX_WIDTH,
+      measureOpts
+    )
+    return {
+      width: Math.max(contentW + 2 * TREE_MAP_TOPIC_PADDING_X + 2 * b, NODE_MIN_DIMENSIONS.topic.minWidth),
+      height: Math.max(Math.ceil(contentH) + 2 * TREE_MAP_TOPIC_PADDING_Y + 2 * b, NODE_MIN_DIMENSIONS.topic.minHeight),
+    }
+  }
+
+  const dims = measureTextDimensions(t, TREE_MAP_TOPIC_FONT_SIZE, {
     fontWeight: 'bold',
     paddingX: TREE_MAP_TOPIC_PADDING_X,
     paddingY: TREE_MAP_TOPIC_PADDING_Y,
     maxWidth: TREE_MAP_TOPIC_TEXT_MAX_WIDTH,
   })
-  const b = TREE_MAP_TOPIC_BORDER_WIDTH
   return {
     width: Math.max(dims.width + 2 * b, NODE_MIN_DIMENSIONS.topic.minWidth),
     height: Math.max(dims.height + 2 * b, NODE_MIN_DIMENSIONS.topic.minHeight),

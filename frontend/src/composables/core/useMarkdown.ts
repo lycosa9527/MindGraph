@@ -1,15 +1,43 @@
 /**
  * Markdown rendering composable.
  *
- * Uses markdown-it (already installed) + DOMPurify for XSS-safe HTML
+ * Uses markdown-it + @vscode/markdown-it-katex + KaTeX for math, DOMPurify for XSS-safe HTML.
+ * `katex` is passed into the plugin so it is the same instance extended by `katex/contrib/mhchem` (`\\ce`).
  * and highlight.js for fenced-code syntax highlighting.
  *
  * Uses highlight.js/lib/common for a curated set of popular languages
  * (bash, css, js, json, python, sql, ts, xml, etc.) to keep bundle size small.
  */
+import katex from 'katex'
+import 'katex/contrib/mhchem'
+import markdownItKatexImport from '@vscode/markdown-it-katex'
 import DOMPurify from 'dompurify'
 import hljs from 'highlight.js'
 import MarkdownIt from 'markdown-it'
+
+import {
+  normalizeKatexDelimitersForMarkdownIt,
+  replaceMathLivePlaceholdersForKatex,
+} from '@/composables/core/markdownKatexDelimiter'
+import { markdownKatexDomPurifyConfig } from '@/composables/core/markdownKatexSanitize'
+
+type MarkdownItInstance = InstanceType<typeof MarkdownIt>
+
+/** CJS/ESM interop: Vite may expose the plugin as `{ default: fn }` instead of `fn`. */
+function resolveMarkdownItKatexPlugin(): (
+  md: MarkdownItInstance,
+  options?: { throwOnError?: boolean }
+) => MarkdownItInstance {
+  const mod = markdownItKatexImport as unknown
+  if (typeof mod === 'function') {
+    return mod as (md: MarkdownItInstance, options?: { throwOnError?: boolean }) => MarkdownItInstance
+  }
+  const inner = (mod as { default?: unknown }).default
+  if (typeof inner === 'function') {
+    return inner as (md: MarkdownItInstance, options?: { throwOnError?: boolean }) => MarkdownItInstance
+  }
+  throw new Error('@vscode/markdown-it-katex: expected a markdown-it plugin function')
+}
 
 const md = new MarkdownIt({
   html: false,
@@ -32,13 +60,23 @@ const md = new MarkdownIt({
   },
 })
 
+md.use(resolveMarkdownItKatexPlugin(), { throwOnError: false, katex })
+
+/**
+ * Same pipeline as {@link useMarkdown}'s render — exported for layout measurement
+ * (multi-flow map, etc.) so node width matches KaTeX + markdown output on the canvas.
+ */
+export function renderMarkdownForDiagramLabelMeasure(content: string): string {
+  const prepared = normalizeKatexDelimitersForMarkdownIt(
+    replaceMathLivePlaceholdersForKatex(content)
+  )
+  const raw = md.render(prepared)
+  return DOMPurify.sanitize(raw, markdownKatexDomPurifyConfig)
+}
+
 export function useMarkdown() {
   function render(content: string): string {
-    const raw = md.render(content)
-    return DOMPurify.sanitize(raw, {
-      ADD_TAGS: ['pre', 'code'],
-      ADD_ATTR: ['class'],
-    })
+    return renderMarkdownForDiagramLabelMeasure(content)
   }
 
   return { render }

@@ -1,6 +1,6 @@
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { i18n } from '@/i18n'
-import type { Connection, DiagramNode } from '@/types'
+import type { Connection, DiagramNode, DiagramType } from '@/types'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
@@ -8,6 +8,54 @@ import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
+
+/**
+ * Layouts that mix Pinia nodeDimensions with text metrics must drop cached DOM size when label
+ * text changes; otherwise the next layout pass keeps the pre–KaTeX box (same issue as circle map).
+ */
+function shouldInvalidateNodeDimensionsOnTextEdit(
+  diagramType: DiagramType,
+  nodeId: string
+): boolean {
+  switch (diagramType) {
+    case 'multi_flow_map':
+      return nodeId === 'event' || nodeId.startsWith('cause-') || nodeId.startsWith('effect-')
+    case 'circle_map':
+      return nodeId === 'topic' || nodeId.startsWith('context-')
+    case 'bubble_map':
+      return nodeId === 'topic' || nodeId.startsWith('bubble-')
+    case 'tree_map':
+      return (
+        nodeId === 'tree-topic' ||
+        nodeId === 'dimension-label' ||
+        nodeId.startsWith('tree-cat-') ||
+        nodeId.startsWith('tree-leaf-')
+      )
+    case 'flow_map':
+      return (
+        nodeId === 'flow-topic' ||
+        nodeId.startsWith('flow-step-') ||
+        nodeId.startsWith('flow-substep-')
+      )
+    case 'brace_map':
+      return (
+        nodeId === 'brace-whole' ||
+        nodeId === 'dimension-label' ||
+        nodeId.startsWith('brace-part-') ||
+        nodeId.startsWith('brace-subpart-')
+      )
+    case 'double_bubble_map':
+      return (
+        nodeId === 'left-topic' ||
+        nodeId === 'right-topic' ||
+        nodeId.startsWith('similarity-') ||
+        nodeId.startsWith('left-diff-') ||
+        nodeId.startsWith('right-diff-')
+      )
+    default:
+      return false
+  }
+}
 
 export function useNodeManagementSlice(ctx: DiagramContext) {
   function updateNode(nodeId: string, updates: Partial<DiagramNode>): boolean {
@@ -51,9 +99,9 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
     }
 
     if (
-      ctx.type.value === 'multi_flow_map' &&
+      ctx.type.value &&
       'text' in updates &&
-      (nodeId === 'event' || nodeId.startsWith('cause-') || nodeId.startsWith('effect-'))
+      shouldInvalidateNodeDimensionsOnTextEdit(ctx.type.value, nodeId)
     ) {
       delete ctx.nodeDimensions.value[nodeId]
     }
@@ -77,10 +125,7 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       ;(ctx.data.value as Record<string, unknown>).focus_question = ''
     }
 
-    if (
-      ctx.type.value === 'multi_flow_map' &&
-      (nodeId === 'event' || nodeId.startsWith('cause-') || nodeId.startsWith('effect-'))
-    ) {
+    if (ctx.type.value && shouldInvalidateNodeDimensionsOnTextEdit(ctx.type.value, nodeId)) {
       delete ctx.nodeDimensions.value[nodeId]
     }
 

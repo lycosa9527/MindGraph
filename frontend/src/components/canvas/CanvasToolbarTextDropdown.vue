@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { ElButton, ElDropdown, ElDropdownMenu } from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownMenu, ElTooltip } from 'element-plus'
 
-import { AlignCenter, AlignLeft, AlignRight, Type } from 'lucide-vue-next'
+import { AlignCenter, AlignLeft, AlignRight, Sigma, Type } from 'lucide-vue-next'
 
 defineProps<{
   textStyleMenuLabel: string
@@ -11,6 +11,9 @@ defineProps<{
   fontGroupChinese: string
   fontGroupEnglish: string
   colorLabel: string
+  insertEquationLabel: string
+  insertEquationTooltip: string
+  insertEquationEnabled: boolean
   fontFamily: string
   fontSize: number
   fontWeight: 'normal' | 'bold'
@@ -30,6 +33,7 @@ const emit = defineEmits<{
   fontFamilyChange: [ev: Event]
   fontSizeInput: [ev: Event]
   textColorPick: [color: string]
+  openMathInsert: []
 }>()
 </script>
 
@@ -101,6 +105,30 @@ const emit = defineEmits<{
               >
                 S
               </button>
+            </div>
+            <div class="mt-2">
+              <ElTooltip
+                :content="insertEquationTooltip"
+                placement="right"
+                :disabled="!insertEquationEnabled"
+              >
+                <span class="block w-full">
+                  <button
+                    type="button"
+                    class="format-btn w-full h-8 rounded border text-xs flex items-center justify-center gap-1 transition-all"
+                    :class="[
+                      insertEquationEnabled
+                        ? 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-300 hover:bg-gray-100'
+                        : 'border-gray-100 bg-gray-50/50 text-gray-400 cursor-not-allowed',
+                    ]"
+                    :disabled="!insertEquationEnabled"
+                    @click="emit('openMathInsert')"
+                  >
+                    <Sigma :size="14" />
+                    {{ insertEquationLabel }}
+                  </button>
+                </span>
+              </ElTooltip>
             </div>
             <div class="text-[10px] font-medium text-gray-500 uppercase tracking-wide mt-2 mb-1.5">
               {{ alignLabel }}

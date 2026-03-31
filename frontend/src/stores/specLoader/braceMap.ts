@@ -20,7 +20,11 @@ import {
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
-import { measureTextWidth } from './textMeasurement'
+import {
+  diagramLabelLikelyNeedsRenderedMeasure,
+  measureRenderedDiagramLabelHeight,
+  measureTextWidth,
+} from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
 interface BraceNode {
@@ -65,24 +69,40 @@ function estimateBraceNodeWidth(text: string, depth: number): number {
 }
 
 /**
- * Estimate node height accounting for text wrapping.
+ * Estimate node height accounting for text wrapping and KaTeX formulas.
  * InlineEditableText max-width is 240px (brace) / 300px (topic).
  * When measured text exceeds that, lines wrap and height grows.
+ * For KaTeX labels the rendered DOM height is measured directly so the
+ * layout doesn't rely on inaccurate plain-text heuristics.
  */
 function estimateBraceNodeHeight(text: string, depth: number): number {
   const trimmed = (text || '').trim()
   if (!trimmed || typeof document === 'undefined') return DEFAULT_NODE_HEIGHT
 
   const fontSize = getBraceFontSize(depth)
-  const textWidth = measureTextWidth(trimmed, fontSize)
   const maxTextWidth = depth === 0 ? BRACE_TOPIC_MAX_TEXT_WIDTH : BRACE_NODE_MAX_TEXT_WIDTH
+  const paddingY = depth === 0 ? 32 : 16
 
-  if (textWidth <= maxTextWidth) return DEFAULT_NODE_HEIGHT
+  if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {
+    const contentH = measureRenderedDiagramLabelHeight(trimmed, fontSize, maxTextWidth, {
+      fontWeight: depth === 0 ? 'bold' : 'normal',
+    })
+    const h = Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(contentH + paddingY))
+    console.log(`[NodeLayout:Estimate] BraceNode text="${trimmed.slice(0, 40)}" depth=${depth} contentH=${contentH} paddingY=${paddingY} → h=${h} (KaTeX)`)
+    return h
+  }
+
+  const textWidth = measureTextWidth(trimmed, fontSize)
+  if (textWidth <= maxTextWidth) {
+    console.log(`[NodeLayout:Estimate] BraceNode text="${trimmed.slice(0, 40)}" depth=${depth} → h=${DEFAULT_NODE_HEIGHT} (single-line)`)
+    return DEFAULT_NODE_HEIGHT
+  }
 
   const lineHeight = fontSize * 1.5
   const numLines = Math.ceil(textWidth / maxTextWidth)
-  const paddingY = depth === 0 ? 32 : 16
-  return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(numLines * lineHeight + paddingY))
+  const h = Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(numLines * lineHeight + paddingY))
+  console.log(`[NodeLayout:Estimate] BraceNode text="${trimmed.slice(0, 40)}" depth=${depth} numLines=${numLines} → h=${h} (wrapped)`)
+  return h
 }
 
 // ---------------------------------------------------------------------------
@@ -149,8 +169,14 @@ function computeColumnLayout(
 
   const getW = (id: string): number =>
     nodeDimensions[id]?.width ?? nodeMap.get(id)?.width ?? DEFAULT_NODE_WIDTH
-  const getH = (id: string): number =>
-    nodeDimensions[id]?.height ?? nodeMap.get(id)?.height ?? DEFAULT_NODE_HEIGHT
+  const getH = (id: string): number => {
+    const pinia = nodeDimensions[id]?.height
+    const est = nodeMap.get(id)?.height
+    const h = pinia ?? est ?? DEFAULT_NODE_HEIGHT
+    const src = pinia != null ? 'pinia' : est != null ? 'estimate' : 'DEFAULT'
+    console.log(`[NodeLayout:getH] id="${id}" h=${h} src=${src} (pinia=${pinia} est=${est})`)
+    return h
+  }
 
   // --- X: column positions (left-aligned per depth) ---
   const maxDepth = flatNodes.reduce((m, n) => Math.max(m, n.depth), 0)
@@ -436,6 +462,15 @@ export function recalculateBraceMapLayout(
   const edges: { source: string; target: string }[] = []
   flattenTree(wholeNode, 0, null, flatNodes, edges, { value: 0 })
 
+  console.log('[NodeLayout:BraceMap] recalculateBraceMapLayout called', {
+    nodeCount: treeNodes.length,
+    nodeDimensionKeys: Object.keys(nodeDimensions),
+    nodeDimensions: { ...nodeDimensions },
+  })
+  for (const fn of flatNodes) {
+    console.log(`[NodeLayout:BraceMap] flatNode id="${fn.id}" text="${fn.text}" depth=${fn.depth} estW=${fn.width} estH=${fn.height}`)
+  }
+
   const layout = computeColumnLayout(flatNodes, edges, nodeDimensions)
   const groupIndexMap = computeGroupIndices(flatNodes, edges)
 
@@ -444,6 +479,7 @@ export function recalculateBraceMapLayout(
     const pos = layout.positions.get(fn.id)
     const node = nodeMap.get(fn.id)
     if (node && pos) {
+      console.log(`[NodeLayout:BraceMap] FINAL id="${fn.id}" pos=(${pos.x}, ${pos.y}) piniaH=${nodeDimensions[fn.id]?.height} estH=${fn.height}`)
       node.position = pos
       const groupIndex = groupIndexMap.get(fn.id)
       if (groupIndex !== undefined) {

@@ -37,6 +37,7 @@ declare module 'vue' {
     BrowserLocaleHintDialog: typeof import('./components/settings/BrowserLocaleHintDialog.vue')['default']
     BubbleNode: typeof import('./components/diagram/nodes/BubbleNode.vue')['default']
     CanvasChrome: typeof import('./components/canvas/CanvasChrome.vue')['default']
+    CanvasMathInsertDialog: typeof import('./components/canvas/CanvasMathInsertDialog.vue')['default']
     CanvasToolbar: typeof import('./components/canvas/CanvasToolbar.vue')['default']
     CanvasToolbarAddDelete: typeof import('./components/canvas/CanvasToolbarAddDelete.vue')['default']
     CanvasToolbarAiSection: typeof import('./components/canvas/CanvasToolbarAiSection.vue')['default']

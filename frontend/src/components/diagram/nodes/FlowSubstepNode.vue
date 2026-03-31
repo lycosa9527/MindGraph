@@ -135,6 +135,7 @@ function handleBranchMovePointerUp(): void {
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isFlowMap"
+      render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

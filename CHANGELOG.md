@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.66.0] - 2026-03-31
+
+### Added
+- **Tree Map** (`stores/specLoader/treeMap.ts`): New diagram type with center-aligned vertical group layout — topic pill at top, categories spread horizontally, leaves stacked vertically below each category; adaptive column widths via DOM text measurement; post-render re-layout via `recalculateTreeMapLayout` that prefers Pinia DOM dimensions over text estimates (KaTeX-aware).
+- **Bridge Map** (`stores/specLoader/bridgeMap.ts`): New diagram type with horizontal analogy-pair layout — left/right branch nodes above/below a centre line, dimension label on the far left; supports both old `pairs` (top/bottom) and new `analogies` (left/right) spec formats; post-render layout correction via `recalculateBridgeMapLayout`.
+- **KaTeX / math rendering**: Added `katex`, `@vscode/markdown-it-katex`, and `mathlive` dependencies; `useMarkdown.ts` integrates the KaTeX plugin (same `katex` instance extended by `katex/contrib/mhchem` for `\ce` chemistry notation); exposes `renderMarkdownForDiagramLabelMeasure` used by layout measurement so node width matches actual canvas output. Vite configured with `optimizeDeps`, `dedupe: ['katex']`, and `<math-field>` custom-element support.
+- **Text measurement** (`stores/specLoader/textMeasurement.ts`): DOM-based measurement utilities including `measureRenderedDiagramLabelWidth` and `measureRenderedDiagramLabelHeight` that run the full markdown + KaTeX pipeline in a hidden element; used by tree map, multi-flow map, and circle map for accurate initial layout before the canvas renders.
+- **Diagram default labels** (`stores/diagram/diagramDefaultLabels.ts`): Centralised default label text definitions for all diagram types (336 lines).
+
+### Changed
+- **`TopicNode.vue`**: After editing, flushes DOM dimensions to Pinia and awaits `document.fonts.ready` + RAF before emitting `multi_flow_map:topic_width_changed`, ensuring multi-flow column widths are computed from post-KaTeX rendered sizes rather than the raw element offset.
+- **`InlineEditableText.vue`**: Substantial refactor of inline node editing behaviour (87 lines changed).
+- **`CircleNode.vue`**: Major rework (143 lines) — circle sizing and text-fit logic updated.
+- **`CanvasToolbar.vue` / `CanvasToolbarTextDropdown.vue`**: Canvas toolbar layout and text-style dropdown updates.
+- **`useNodeDimensions.ts`**: Now returns `{ reportDimensions }` so callers can manually flush observed dimensions into Pinia after async rendering steps (fonts, KaTeX).
+- **`nodeDimensionSlice.ts`**: Extended the diagram node-dimension Pinia slice.
+- **`nodeManagement.ts`, `specIO.ts`, `vueFlowIntegration.ts`**: Diagram store updates aligned with new diagram types and dimension tracking.
+- **`specLoader` (braceMap, circleMap, conceptMap, mindMap, multiFlowMap, treeMapTopicLayout, utils, index)**: Layout and spec-loading improvements; `index.ts` now exports `recalculateBridgeMapLayout` and `recalculateTreeMapLayout`.
+- **`useMarkdown.ts`**: Integrates KaTeX + mhchem into the markdown-it pipeline; DOMPurify config updated for KaTeX output.
+- **`useEventBus.ts`**: New event types added for diagram layout coordination.
+- **`styles/index.css`**: 105 lines of new CSS for KaTeX display and new diagram node types.
+- **`diagramHtmlToImage.ts`**: Minor utility update.
+- **i18n**: Canvas and sidebar message updates propagated across all tier-2 locale bundles.
+
 ## [5.65.0] - 2026-03-30
 
 ### Added

@@ -102,7 +102,7 @@ export default {
   'publicDashboard.networkError': 'Network error, failed to load dashboard',
   'settings.language.interface': 'Interface language',
   'settings.language.matchPrompt': 'Keep prompt language in sync with interface',
-  'settings.language.prompt': 'AI / prompt language',
+  'settings.language.prompt': 'AI assistant language',
   'settings.language.promptSelectPlaceholder': 'Search languages…',
   'settings.language.supportsCount': 'Supports {n} languages',
   'settings.language.title': 'Language & prompts',
@@ -118,7 +118,8 @@ export default {
   'landing.international.mindmateCard.desc': 'Your virtual teaching and research partner',
   'landing.international.shareSite': 'Share site',
   'landing.international.shareSiteModalTitle': 'Share site',
-  'landing.international.shareSiteModalHint': 'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteModalHint':
+    'Scan with a phone or tablet camera to open this page for your class.',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
 } as const
