@@ -36,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'لم يُعثر على رابط المفهوم الجذري',
   'notification.saved': 'تم حفظ التغييرات بنجاح',
   'notification.selectNodeToClear': 'يُرجى تحديد عقدة لمسحها',
-  'notification.sessionInvalidated':
-    'تم تسجيل خروجك لأنّك تجاوزت الحد الأقصى لعدد الأجهزة',
+  'notification.sessionInvalidated': 'تم تسجيل خروجك لأنّك تجاوزت الحد الأقصى لعدد الأجهزة',
   'notification.signInToUse': 'سجّل الدخول لاستخدام هذه الميزة',
   'notification.signInToValidateFocus': 'سجّل الدخول للتحقق من سؤال التركيز',
 } as const

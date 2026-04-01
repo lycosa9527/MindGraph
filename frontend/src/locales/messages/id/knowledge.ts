@@ -1,7 +1,6 @@
 /** id UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Hapus uji ini? Tindakan ini tidak dapat dibatalkan.',
+  'chunkTest.history.confirmDeleteBody': 'Hapus uji ini? Tindakan ini tidak dapat dibatalkan.',
   'chunkTest.history.confirmDeleteTitle': 'Hapus uji',
   'chunkTest.history.delete': 'Hapus',
   'chunkTest.history.deleteFailed': 'Gagal menghapus uji',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Metrik IR standar',
   'chunkTestResults.storageEff': 'Ef. penyimpanan',
   'chunkTestResults.testFailed': 'Uji gagal',
-  'chunkTestResults.testFailedHint':
-    'Terjadi kesalahan saat uji. Coba lagi.',
+  'chunkTestResults.testFailedHint': 'Terjadi kesalahan saat uji. Coba lagi.',
   'chunkTestResults.testingInProgress': 'Uji sedang berlangsung...',
   'chunkTestResults.totalChunks': 'Total {n} potongan',
   'chunkTestResults.viewChunks': 'Lihat potongan',
@@ -82,8 +80,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Uji semua dataset',
   'knowledge.chunkHeader.testUpload': 'Uji dokumen unggahan',
   'knowledge.chunkHeader.title': 'Uji potongan RAG',
-  'knowledge.chunkHeader.waitForProcessing':
-    'Tunggu dokumen selesai diproses sebelum menguji',
+  'knowledge.chunkHeader.waitForProcessing': 'Tunggu dokumen selesai diproses sebelum menguji',
   'knowledge.chunkPreview.empty': 'Tidak ada potongan',
   'knowledge.chunkPreview.pageLabel': 'Halaman {n}',
   'knowledge.chunkPreview.title': 'Potongan dokumen — {fileName}',
@@ -196,13 +193,11 @@ export default {
   'knowledge.upload.click': 'Klik untuk mengunggah',
   'knowledge.upload.drag': 'atau seret berkas ke sini',
   'knowledge.upload.fileTooLarge': 'Ukuran berkas tidak boleh melebihi 10MB',
-  'knowledge.upload.hintFormats':
-    'Mendukung PDF, DOCX, TXT, MD, gambar (maks. 10MB)',
+  'knowledge.upload.hintFormats': 'Mendukung PDF, DOCX, TXT, MD, gambar (maks. 10MB)',
   'knowledge.upload.maxDocs': 'Batas dokumen maksimum tercapai (5)',
   'knowledge.upload.title': 'Unggah dokumen',
   'knowledge.upload.unsupportedType': 'Jenis berkas tidak didukung',
-  'knowledgeSpace.confirmDeleteBody':
-    'Hapus dokumen ini? Tindakan ini tidak dapat dibatalkan.',
+  'knowledgeSpace.confirmDeleteBody': 'Hapus dokumen ini? Tindakan ini tidak dapat dibatalkan.',
   'knowledgeSpace.confirmDeleteTitle': 'Konfirmasi hapus',
   'knowledgeSpace.deleteFailed': 'Hapus gagal',
   'knowledgeSpace.documentDeleted': 'Dokumen dihapus',

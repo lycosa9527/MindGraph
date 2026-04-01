@@ -2,7 +2,6 @@
  * DOMPurify options for markdown-it output that includes KaTeX HTML (spans, SVG)
  * plus standard CommonMark elements (headings, lists, links, code).
  */
-
 import DOMPurify from 'dompurify'
 
 /** Tags produced by markdown-it + highlight.js + @vscode/markdown-it-katex (KaTeX HTML). */

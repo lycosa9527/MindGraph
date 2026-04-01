@@ -20,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': 'जनरेशन रोकें',
   'askOnce.panel.thinking': 'सोच रहा है…',
   'askOnce.panel.thoughtProcess': 'सोच की प्रक्रिया',
-  'askOnce.placeholder':
-    'अपना प्रॉम्प्ट दर्ज करें… Ctrl+Enter दबाएँ या भेजें पर क्लिक करें',
+  'askOnce.placeholder': 'अपना प्रॉम्प्ट दर्ज करें… Ctrl+Enter दबाएँ या भेजें पर क्लिक करें',
   'askOnce.promptContent': 'प्रॉम्प्ट सामग्री',
   'askOnce.promptEditPlaceholder': 'संपादन के लिए टेम्पलेट दर्ज करें या चुनें…',
   'askOnce.promptTemplatesTitle': 'प्रॉम्प्ट टेम्पलेट',
@@ -61,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'सभी मॉडल विफल, कृपया फिर कोशिश करें',
   'diagramTemplate.generated': 'आरेख बनाया गया ({model})',
   'diagramTemplate.generationFailed': 'जनरेशन विफल',
-  'diagramTemplate.promptTooLong':
-    'प्रॉम्प्ट बहुत लंबा ({length} अक्षर)। अधिकतम {max} अक्षर।',
+  'diagramTemplate.promptTooLong': 'प्रॉम्प्ट बहुत लंबा ({length} अक्षर)। अधिकतम {max} अक्षर।',
   'diagramTemplates.brace_map': '【subject】 को brace map से तोड़ें।',
   'diagramTemplates.bridge_map': 'संबंध 【relation】 के लिए bridge map बनाएँ।',
   'diagramTemplates.bubble_map': '【topic】 का वर्णन bubble map से करें।',
@@ -111,10 +109,8 @@ export default {
   'settings.version.title': 'UI संस्करण',
   'settings.version.chinese': 'चीनी संस्करण',
   'settings.version.international': 'अंतर्राष्ट्रीय संस्करण',
-  'landing.international.subtitle':
-    'ब्रह्मांड में सबसे शक्तिशाली AI सोच आरेख सॉफ़्टवेयर',
-  'landing.international.promptPlaceholder':
-    'अपना आरेख बताएँ, या नीचे से प्रकार चुनें…',
+  'landing.international.subtitle': 'ब्रह्मांड में सबसे शक्तिशाली AI सोच आरेख सॉफ़्टवेयर',
+  'landing.international.promptPlaceholder': 'अपना आरेख बताएँ, या नीचे से प्रकार चुनें…',
   'landing.international.sectionTitle': 'आरेख प्रकार चुनें',
   'landing.international.modules': 'मॉड्यूल',
   'landing.international.mindmateCard.title': 'MindMate',

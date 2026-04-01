@@ -13,8 +13,7 @@ export default {
   'canvas.export.svgError': 'فشل تصدير SVG، يُرجى المحاولة مرة أخرى',
   'canvas.export.svgSuccess': 'تم تصدير SVG بنجاح',
   'canvas.export.unknownFormat': 'تنسيق تصدير غير معروف: {format}',
-  'canvas.import.invalidFile':
-    'ملف مخطط غير صالح. يُرجى اختيار ملف JSON مُصدَّر من MindGraph.',
+  'canvas.import.invalidFile': 'ملف مخطط غير صالح. يُرجى اختيار ملف JSON مُصدَّر من MindGraph.',
   'canvas.import.parseError': 'فشل تحليل ملف JSON، يُرجى المحاولة مرة أخرى',
   'canvas.reset.confirmBody':
     'هل أنت متأكد؟ سيُفقد كل المحتوى الحالي، بما فيه المخطط ولوحة العقد. لا يمكن التراجع عن ذلك.',
@@ -78,8 +77,7 @@ export default {
   'canvas.toolbar.exit': 'خروج',
   'canvas.toolbar.exitFullscreen': 'الخروج من ملء الشاشة',
   'canvas.toolbar.highlighter': 'تمييز',
-  'canvas.toolbar.highlighterTooltip':
-    'ارسم على اللوحة كالتمييز؛ يُمسح عند الخروج من العرض',
+  'canvas.toolbar.highlighterTooltip': 'ارسم على اللوحة كالتمييز؛ يُمسح عند الخروج من العرض',
   'canvas.toolbar.highlighterChooseColor': 'لون التمييز',
   'canvas.toolbar.highlighterPaletteAria': 'اختر لون التمييز',
   'canvas.toolbar.insertEquation': 'إدراج معادلة',
@@ -201,8 +199,7 @@ export default {
   'canvas.toolbar.fontGroupChinese': 'صيني',
   'canvas.toolbar.fontGroupEnglish': 'إنجليزي',
   'canvas.toolbar.fontLabel': 'الخط',
-  'canvas.toolbar.formatBrushActivated':
-    'نُسخ النمط — حدّد العقد المستهدفة وانقر مجددًا للتطبيق',
+  'canvas.toolbar.formatBrushActivated': 'نُسخ النمط — حدّد العقد المستهدفة وانقر مجددًا للتطبيق',
   'canvas.toolbar.formatBrushApplied': 'طُبّق التنسيق على {count} عقدة/عقد',
   'canvas.toolbar.formatBrushCancelled': 'أُلغي ناسخ التنسيق',
   'canvas.toolbar.formatBrushDev': 'ناسخ التنسيق قيد التطوير',
@@ -251,8 +248,7 @@ export default {
   'canvas.toolbar.selectPartThenEnter': 'حدّد جزءًا ثم اضغط Enter لإضافة جزء فرعي',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'يُرجى تحديد عقد تشابه أو اختلاف (لا يمكن حذف عقد الموضوع)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'يُرجى تحديد عقدة تشابه أو اختلاف أولًا',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'يُرجى تحديد عقدة تشابه أو اختلاف أولًا',
   'canvas.toolbar.selectStepForSubstep': 'يُرجى تحديد خطوة لإضافة خطوة فرعية إليها',
   'canvas.toolbar.similarityWithIndex': 'Similarity {n}',
   'canvas.toolbar.stepAdded': 'أُضيفت خطوة',
@@ -298,16 +294,14 @@ export default {
   'canvas.topBar.teachingDesign': 'تصميم تدريسي',
   'canvas.topBar.snapshotRecallTooltip': 'استعادة اللقطة {n}',
   'canvas.topBar.snapshotRecallTitle': 'استعادة لقطة',
-  'canvas.topBar.snapshotRecallConfirm':
-    'استعادة اللقطة {n}؟ ستُستبدل تغييراتك الحالية.',
+  'canvas.topBar.snapshotRecallConfirm': 'استعادة اللقطة {n}؟ ستُستبدل تغييراتك الحالية.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'استعادة',
   'canvas.topBar.snapshotRecallCancelBtn': 'إلغاء',
   'canvas.topBar.snapshotRecallHistory': 'قبل استعادة اللقطة {n}',
   'canvas.topBar.snapshotRecallFailed': 'فشلت استعادة اللقطة، يُرجى المحاولة مرة أخرى',
   'canvas.topBar.snapshotDeleted': 'حُذفت اللقطة {n}',
   'canvas.topBar.snapshotDeleteFailed': 'فشل حذف اللقطة، يُرجى المحاولة مرة أخرى',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'انقر لاستعادة اللقطة {n} · Ctrl+نقرة للحذف',
+  'canvas.topBar.snapshotBadgeTooltip': 'انقر لاستعادة اللقطة {n} · Ctrl+نقرة للحذف',
   'canvas.zoomControls.exitFullscreen': 'الخروج من ملء الشاشة',
   'canvas.zoomControls.fitCanvas': 'ملاءمة اللوحة',
   'canvas.zoomControls.fullscreen': 'ملء الشاشة',
@@ -338,12 +332,9 @@ export default {
   'conceptMap.focus.noResult': 'لا نتيجة',
   'conceptMap.focus.validationRequestFailed': 'فشل طلب التحقق',
   'diagram.aiGenerating': 'AI...',
-  'diagram.alternativeDimensions.braceTitle':
-    'أبعاد تفكيك أخرى ممكنة لهذا الموضوع:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'أنماط تشبيه أخرى ممكنة لهذا الموضوع:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'أبعاد تصنيف أخرى ممكنة لهذا الموضوع:',
+  'diagram.alternativeDimensions.braceTitle': 'أبعاد تفكيك أخرى ممكنة لهذا الموضوع:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'أنماط تشبيه أخرى ممكنة لهذا الموضوع:',
+  'diagram.alternativeDimensions.treeMapTitle': 'أبعاد تصنيف أخرى ممكنة لهذا الموضوع:',
   'diagram.bridgeMap.alternativesEmpty': '[ستظهر البدائل هنا]',
   'diagram.conceptMap.focusQuestionPrefix': 'سؤال التركيز: ',
   'diagram.conceptMap.focusQuestionSuffix': 'إدخال',
@@ -366,8 +357,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'ميزة إضافة العقدة قريبًا',
   'diagram.contextMenu.paste': 'لصق',
   'diagram.contextMenu.warningCreateDiagramFirst': 'يُرجى إنشاء مخطط أولًا',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'يُرجى تحديد عقدة تشابه أو اختلاف أولًا',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'يُرجى تحديد عقدة تشابه أو اختلاف أولًا',
   'diagram.defaultNewConcept': 'مفهوم جديد',
   'diagram.dimension.classificationAz': 'تصنيف حسب',
   'diagram.dimension.classificationEn': 'Classification by',
@@ -456,8 +446,7 @@ export default {
   'editor.redo': 'إعادة',
   'editor.saveDiagram': 'حفظ المخطط',
   'editor.selectDiagramType': 'اختر نوع المخطط',
-  'editor.slotsFull':
-    'المساحة ممتلئة، الحفظ التلقائي غير متاح حاليًا. احذف مخططات لتحرير مساحة.',
+  'editor.slotsFull': 'المساحة ممتلئة، الحفظ التلقائي غير متاح حاليًا. احذف مخططات لتحرير مساحة.',
   'editor.undo': 'تراجع',
   'editor.zoomIn': 'تكبير',
   'editor.zoomOut': 'تصغير',
@@ -526,6 +515,5 @@ export default {
   'mindgraphLanding.schoolCollab': 'تعاون مدرسي',
   'mindgraphLanding.sharedCodeHint': 'أدخل رمز الدعوة (xxx-xxx) للانضمام إلى جلستهم.',
   'mindgraphLanding.sharedCollab': 'تعاون مشترك',
-  'mindgraphLanding.welcome':
-    'مرحبًا {username}، أنا مساعدك البصري للتفكير بالذكاء الاصطناعي',
+  'mindgraphLanding.welcome': 'مرحبًا {username}، أنا مساعدك البصري للتفكير بالذكاء الاصطناعي',
 } as const

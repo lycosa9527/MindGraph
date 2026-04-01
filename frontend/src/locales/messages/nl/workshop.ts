@@ -1,8 +1,7 @@
 /** nl UI — workshop */
 export default {
   'collab.codeCopied': 'Code gekopieerd',
-  'collab.codeGenerated':
-    'Samenwerkingscode gegenereerd — deel om samen te bewerken.',
+  'collab.codeGenerated': 'Samenwerkingscode gegenereerd — deel om samen te bewerken.',
   'collab.copy': 'Kopiëren',
   'collab.copyFailed': 'Kopiëren mislukt',
   'collab.copyLink': 'Link kopiëren',
@@ -17,8 +16,7 @@ export default {
   'collab.endFailed': 'Samenwerking beëindigen mislukt',
   'collab.ended': 'Samenwerking beëindigd',
   'collab.galleryFull': 'Galerij is vol. Verwijder eerst een diagram',
-  'collab.hintNetworkInactive':
-    'Genereer een code zodat anderen kunnen meedoen en met u bewerken.',
+  'collab.hintNetworkInactive': 'Genereer een code zodat anderen kunnen meedoen en met u bewerken.',
   'collab.hintSchoolInactive':
     'Na het starten kunnen collega’s van dezelfde school meedoen via de startpagina.',
   'collab.invalidDiagramData': 'Ongeldige diagramgegevens',
@@ -51,8 +49,7 @@ export default {
   'workshop.addReaction': 'Reactie toevoegen',
   'workshop.allSchools': 'Alle scholen',
   'workshop.announceChannels': 'Aankondigingen',
-  'workshop.announceReadOnlyHint':
-    'Alleen beheerders kunnen posten in dit aankondigingskanaal.',
+  'workshop.announceReadOnlyHint': 'Alleen beheerders kunnen posten in dit aankondigingskanaal.',
   'workshop.archiveLessonStudy': 'Lesstudie archiveren',
   'workshop.archiveLessonStudyConfirm':
     'Deze lesstudie archiveren? Leden zien deze niet meer in de lijst.',
@@ -98,8 +95,7 @@ export default {
   'workshop.contactsOnlineNow': 'Online',
   'workshop.contactsRecentlyOnline': 'Recent online',
   'workshop.conversationTitle': 'Gesprekstitel',
-  'workshop.conversationTitlePlaceholder':
-    'bijv. Lesplanbespreking, Lesreflectie',
+  'workshop.conversationTitlePlaceholder': 'bijv. Lesplanbespreking, Lesreflectie',
   'workshop.conversations': 'Gesprekken',
   'workshop.copyLink': 'Link kopiëren',
   'workshop.copyMentionSyntax': 'Mentionsyntax kopiëren',
@@ -119,8 +115,7 @@ export default {
   'workshop.deadlineDialogTitle': 'Deadline lesstudie',
   'workshop.defaultChannel': 'Standaardkanaal',
   'workshop.deleteTopic': 'Gesprek verwijderen',
-  'workshop.deleteTopicConfirm':
-    'Weet u zeker dat u dit gesprek wilt verwijderen?',
+  'workshop.deleteTopicConfirm': 'Weet u zeker dat u dit gesprek wilt verwijderen?',
   'workshop.desktopNotifications': 'Bureaubladmeldingen',
   'workshop.diagram': 'Diagram',
   'workshop.directMessage': 'Privébericht',
@@ -134,8 +129,7 @@ export default {
   'workshop.edited': '(bewerkt)',
   'workshop.emailNotifications': 'E-mailmeldingen',
   'workshop.emoji': 'Emoji',
-  'workshop.expandCollapseGroup':
-    'Leslijst in zijbalk uit- of inklappen',
+  'workshop.expandCollapseGroup': 'Leslijst in zijbalk uit- of inklappen',
   'workshop.filterSidebar': 'Onderzoeksgroepen en PB’s filteren',
   'workshop.filterUsers': 'Gebruikers filteren',
   'workshop.followTopic': 'Gesprek volgen',
@@ -175,8 +169,7 @@ export default {
   'workshop.markAsRead': 'Als gelezen markeren',
   'workshop.markStudyResolved': 'Studie als afgerond markeren',
   'workshop.members': 'leden',
-  'workshop.mentionAmbiguous':
-    'Dubbelzinnige namen — kies iemand met een unieke weergavenaam: {0}',
+  'workshop.mentionAmbiguous': 'Dubbelzinnige namen — kies iemand met een unieke weergavenaam: {0}',
   'workshop.mentionUnknown':
     'Onbekende vermeldingen (alleen gebruikers en medewerkers van dezelfde organisatie): {0}',
   'workshop.mentionedInChannel': 'U bent vermeld in #{0}',
@@ -266,8 +259,7 @@ export default {
   'workshop.starMessage': 'Bericht sterren',
   'workshop.starred': 'Met ster',
   'workshop.startConversation': 'Start het gesprek!',
-  'workshop.startConversationHint':
-    'Start een gesprek om met collega’s te overleggen',
+  'workshop.startConversationHint': 'Start een gesprek om met collega’s te overleggen',
   'workshop.startDM': 'Bericht verzenden',
   'workshop.startNewConversation': 'Nieuw gesprek starten',
   'workshop.statusArchived': 'Gearchiveerd',
@@ -281,8 +273,7 @@ export default {
     'Lesstudies en gesprekken in deze onderzoeksgroep. Kies een rij om het kanaal of een thread te openen.',
   'workshop.teachingGroupMembers': 'Leden',
   'workshop.teachingGroupNameRequired': 'Voer een naam voor de onderzoeksgroep in.',
-  'workshop.teachingGroupNoLessons':
-    'Nog geen lesstudies in deze groep.',
+  'workshop.teachingGroupNoLessons': 'Nog geen lesstudies in deze groep.',
   'workshop.thisChannel': 'DIT KANAAL',
   'workshop.thisConversation': 'DIT GESPREK',
   'workshop.title': 'Workshop',
@@ -292,8 +283,7 @@ export default {
   'workshop.topicDescriptionPlaceholder': 'Beschrijf het gespreksonderwerp...',
   'workshop.topicSettings': 'Gespreksinstellingen',
   'workshop.topicTitle': 'Titel',
-  'workshop.topicTitlePlaceholder':
-    'bijv. Denkdiagram voor hoofdstuk 3',
+  'workshop.topicTitlePlaceholder': 'bijv. Denkdiagram voor hoofdstuk 3',
   'workshop.topics': 'Gesprekken',
   'workshop.typeMessagePlaceholder':
     'Typ een bericht... (Enter om te verzenden, Shift+Enter voor nieuwe regel)',
@@ -327,16 +317,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Werkblad en handleiding ontwerpen',
   'workshop.welcomeExampleLSEng1C2': 'Taken na het lezen en transfer',
   'workshop.welcomeExampleLSEng1C3': 'Feedback van observatie en reflectie',
-  'workshop.welcomeExampleLSEng2':
-    'Lesstudie: schrijven — dezelfde les, verschillende docenten',
+  'workshop.welcomeExampleLSEng2': 'Lesstudie: schrijven — dezelfde les, verschillende docenten',
   'workshop.welcomeExampleLSEng2C1': 'Rubric pilot en herziening',
-  'workshop.welcomeExampleLSMath1':
-    'Lesstudie: week “functiebegrip” aanscherpen',
+  'workshop.welcomeExampleLSMath1': 'Lesstudie: week “functiebegrip” aanscherpen',
   'workshop.welcomeExampleLSMath1C1': 'Doelen en activiteitsontwerp',
   'workshop.welcomeExampleLSMath1C2': 'Vragen stellen en bordgebruik',
   'workshop.welcomeExampleLSMath1C3': 'Reflectie na de les en vervolgstappen',
-  'workshop.welcomeExampleLSMath2':
-    'Lesstudie: eindexamen — afgeleiden',
+  'workshop.welcomeExampleLSMath2': 'Lesstudie: eindexamen — afgeleiden',
   'workshop.welcomeExampleLSMath2C1': 'Gelaagde opdrachten en toetsing',
   'workshop.welcomeExampleMsgLabel': 'Berichten staan in elk gesprek',
   'workshop.welcomeExampleOrg': 'Middelbare school Chenxi',
@@ -355,16 +342,13 @@ export default {
   'workshop.youAnd': 'U en',
   'workshopCanvas.connectFailed': 'Verbinding met samenwerking mislukt',
   'workshopCanvas.connectionClosed': 'Verbinding gesloten',
-  'workshopCanvas.connectionClosedReason':
-    'Samenwerkingsverbinding gesloten: {reason}',
+  'workshopCanvas.connectionClosedReason': 'Samenwerkingsverbinding gesloten: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bewerkt dit knooppunt',
   'workshopCanvas.errorGeneric': 'Samenwerkingsfout',
   'workshopCanvas.reconnectFailed':
     'Opnieuw verbinden met samenwerking mislukt; vernieuw de pagina',
-  'workshopCanvas.returnedHomeIdle':
-    'Terug naar start — 30 minuten geen diagrambewerkingen.',
+  'workshopCanvas.returnedHomeIdle': 'Terug naar start — 30 minuten geen diagrambewerkingen.',
   'workshopCanvas.userJoined': 'Gebruiker {userId} neemt deel',
   'workshopCanvas.userLeft': 'Gebruiker {userId} heeft verlaten',
-  'workshopCanvas.wsError':
-    'Samenwerkingsverbindingsfout; controleer uw netwerk',
+  'workshopCanvas.wsError': 'Samenwerkingsverbindingsfout; controleer uw netwerk',
 } as const

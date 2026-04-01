@@ -71,8 +71,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standart IR ölçütleri',
   'chunkTestResults.storageEff': 'Depolama ver.',
   'chunkTestResults.testFailed': 'Test başarısız',
-  'chunkTestResults.testFailedHint':
-    'Test çalışırken bir hata oluştu. Lütfen tekrar deneyin.',
+  'chunkTestResults.testFailedHint': 'Test çalışırken bir hata oluştu. Lütfen tekrar deneyin.',
   'chunkTestResults.testingInProgress': 'Test devam ediyor…',
   'chunkTestResults.totalChunks': 'Toplam {n} parça',
   'chunkTestResults.viewChunks': 'Parçaları görüntüle',

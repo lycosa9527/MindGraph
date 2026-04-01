@@ -56,8 +56,7 @@ export default {
   'canvas.toolbar.cannotGenerate': 'Không thể tạo',
   'canvas.toolbar.causeAdded': 'Đã thêm nút nguyên nhân',
   'canvas.toolbar.childAdded': 'Đã thêm nút con',
-  'canvas.toolbar.collabAiBlocked':
-    'Chỉ chủ sở hữu sơ đồ mới dùng được tạo AI khi cộng tác',
+  'canvas.toolbar.collabAiBlocked': 'Chỉ chủ sở hữu sơ đồ mới dùng được tạo AI khi cộng tác',
   'canvas.toolbar.colorLabel': 'Màu',
   'canvas.toolbar.conceptGeneration': 'Tạo khái niệm',
   'canvas.toolbar.conceptMapModesDev': 'Chế độ sơ đồ khái niệm đang phát triển',
@@ -78,8 +77,7 @@ export default {
   'canvas.toolbar.exit': 'Thoát',
   'canvas.toolbar.exitFullscreen': 'Thoát toàn màn hình',
   'canvas.toolbar.highlighter': 'Bút nhấn',
-  'canvas.toolbar.highlighterTooltip':
-    'Vẽ trên canvas như bút nhấn; xóa khi thoát trình chiếu',
+  'canvas.toolbar.highlighterTooltip': 'Vẽ trên canvas như bút nhấn; xóa khi thoát trình chiếu',
   'canvas.toolbar.highlighterChooseColor': 'Màu bút nhấn',
   'canvas.toolbar.highlighterPaletteAria': 'Chọn màu bút nhấn',
   'canvas.toolbar.insertEquation': 'Chèn phương trình',
@@ -201,8 +199,7 @@ export default {
   'canvas.toolbar.fontGroupChinese': 'Tiếng Trung',
   'canvas.toolbar.fontGroupEnglish': 'Tiếng Anh',
   'canvas.toolbar.fontLabel': 'Phông chữ',
-  'canvas.toolbar.formatBrushActivated':
-    'Đã sao chép kiểu — chọn nút đích và nhấn lại để áp dụng',
+  'canvas.toolbar.formatBrushActivated': 'Đã sao chép kiểu — chọn nút đích và nhấn lại để áp dụng',
   'canvas.toolbar.formatBrushApplied': 'Đã áp dụng định dạng cho {count} nút',
   'canvas.toolbar.formatBrushCancelled': 'Đã hủy cọ định dạng',
   'canvas.toolbar.formatBrushDev': 'Cọ định dạng đang phát triển',
@@ -216,8 +213,7 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'Phiếu học',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Ô trống ngẫu nhiên để học và ôn',
   'canvas.toolbar.moreAppWaterfall': 'Thác ý',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'Chọn nhiều nút; làm rõ tư duy phân kỳ và hội tụ',
+  'canvas.toolbar.moreAppWaterfallDesc': 'Chọn nhiều nút; làm rõ tư duy phân kỳ và hội tụ',
   'canvas.toolbar.moreApps': 'Thêm ứng dụng',
   'canvas.toolbar.moreAppSnapshot': 'Ảnh chụp',
   'canvas.toolbar.moreAppSnapshotDesc': 'Lưu một phiên bản sơ đồ này (tối đa 10)',
@@ -251,8 +247,7 @@ export default {
   'canvas.toolbar.selectPartThenEnter': 'Chọn nút phần, rồi nhấn Enter để thêm tiểu phần',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'Chọn nút giống hoặc khác (không xóa được nút chủ đề)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'Chọn nút giống hoặc khác trước',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Chọn nút giống hoặc khác trước',
   'canvas.toolbar.selectStepForSubstep': 'Chọn bước để thêm tiểu bước',
   'canvas.toolbar.similarityWithIndex': 'Điểm giống {n}',
   'canvas.toolbar.stepAdded': 'Đã thêm bước',
@@ -306,8 +301,7 @@ export default {
   'canvas.topBar.snapshotRecallFailed': 'Khôi phục ảnh chụp thất bại, vui lòng thử lại',
   'canvas.topBar.snapshotDeleted': 'Đã xóa ảnh chụp {n}',
   'canvas.topBar.snapshotDeleteFailed': 'Xóa ảnh chụp thất bại, vui lòng thử lại',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'Nhấn để khôi phục ảnh chụp {n} · Ctrl+Nhấn để xóa',
+  'canvas.topBar.snapshotBadgeTooltip': 'Nhấn để khôi phục ảnh chụp {n} · Ctrl+Nhấn để xóa',
   'canvas.zoomControls.exitFullscreen': 'Thoát toàn màn hình',
   'canvas.zoomControls.fitCanvas': 'Vừa khung',
   'canvas.zoomControls.fullscreen': 'Toàn màn hình',
@@ -338,12 +332,10 @@ export default {
   'conceptMap.focus.noResult': 'Không có kết quả',
   'conceptMap.focus.validationRequestFailed': 'Yêu cầu kiểm tra thất bại',
   'diagram.aiGenerating': 'AI...',
-  'diagram.alternativeDimensions.braceTitle':
-    'Các chiều phân rã khác có thể cho chủ đề này:',
+  'diagram.alternativeDimensions.braceTitle': 'Các chiều phân rã khác có thể cho chủ đề này:',
   'diagram.alternativeDimensions.bridgeAnalogiesTitle':
     'Các kiểu tương tự khác có thể cho chủ đề này:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'Các chiều phân loại khác có thể cho chủ đề này:',
+  'diagram.alternativeDimensions.treeMapTitle': 'Các chiều phân loại khác có thể cho chủ đề này:',
   'diagram.bridgeMap.alternativesEmpty': '[Phương án thay thế sẽ hiện tại đây]',
   'diagram.conceptMap.focusQuestionPrefix': 'Câu hỏi trọng tâm: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Enter',
@@ -366,8 +358,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'Chức năng thêm nút sắp có',
   'diagram.contextMenu.paste': 'Dán',
   'diagram.contextMenu.warningCreateDiagramFirst': 'Vui lòng tạo sơ đồ trước',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'Chọn nút giống hoặc khác trước',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'Chọn nút giống hoặc khác trước',
   'diagram.defaultNewConcept': 'Khái niệm mới',
   'diagram.dimension.classificationAz': 'Phân loại theo',
   'diagram.dimension.classificationEn': 'Phân loại theo',
@@ -526,6 +517,5 @@ export default {
   'mindgraphLanding.schoolCollab': 'Cộng tác trường',
   'mindgraphLanding.sharedCodeHint': 'Nhập mã mời (xxx-xxx) để tham gia phiên của họ.',
   'mindgraphLanding.sharedCollab': 'Cộng tác chia sẻ',
-  'mindgraphLanding.welcome':
-    'Chào {username}, tôi là trợ lý tư duy trực quan AI của bạn',
+  'mindgraphLanding.welcome': 'Chào {username}, tôi là trợ lý tư duy trực quan AI của bạn',
 } as const

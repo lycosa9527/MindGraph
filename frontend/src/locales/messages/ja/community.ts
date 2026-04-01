@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'この投稿を削除しますか？取り消せません。',
   'community.deleteConfirmTitle': '投稿を削除しますか？',
   'community.deleted': '削除しました',
-  'community.emptyNoPosts':
-    '投稿が見つかりません。フィルターや検索を変えてみてください。',
+  'community.emptyNoPosts': '投稿が見つかりません。フィルターや検索を変えてみてください。',
   'community.filter.all': 'すべて',
   'community.filter.mine': '自分',
   'community.filterCategory': 'カテゴリ',
@@ -84,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': 'コイントスを実行',
   'debateverse.generatingPositions': '立場を生成中…',
   'debateverse.input.spectator': '観覧者としてこのディベートを見ています',
-  'debateverse.input.speechPlaceholder':
-    '発言を入力…（Ctrl+Enter で送信）',
+  'debateverse.input.speechPlaceholder': '発言を入力…（Ctrl+Enter で送信）',
   'debateverse.input.waitTurn': '発言の順番を待っています…',
   'debateverse.message.hideThinking': '思考を隠す',
   'debateverse.message.judge': '審判',
@@ -105,24 +103,18 @@ export default {
   'debateverse.roleLabel.debater': 'ディベーターとして参加',
   'debateverse.roleLabel.judgeRole': '審判として参加',
   'debateverse.roleLabel.viewer': '観覧者として参加',
-  'debateverse.setup.greeting':
-    '{username}、真の知恵は見解の衝突から生まれます。',
+  'debateverse.setup.greeting': '{username}、真の知恵は見解の衝突から生まれます。',
   'debateverse.setup.roleDebater': 'ディベーターとして参加',
   'debateverse.setup.roleJudge': '審判として参加',
   'debateverse.setup.roleViewer': '観覧者として参加',
   'debateverse.setup.suggestion1': 'AIに法的な人格を認めるべきか？',
-  'debateverse.setup.suggestion2':
-    'ゲームは若者にとってプラスかマイナスか？',
+  'debateverse.setup.suggestion2': 'ゲームは若者にとってプラスかマイナスか？',
   'debateverse.setup.suggestion3': '大学入試は廃止すべきか？',
-  'debateverse.setup.suggestion4':
-    'SNSはコンテンツのモデレーションをより厳しくすべきか？',
+  'debateverse.setup.suggestion4': 'SNSはコンテンツのモデレーションをより厳しくすべきか？',
   'debateverse.setup.suggestion5': 'リモートワークを主流にすべきか？',
-  'debateverse.setup.suggestion6':
-    'AI生成コンテンツは著作権で保護すべきか？',
-  'debateverse.setup.suggestion7':
-    '教育は知識とスキル、どちらを重視すべきか？',
-  'debateverse.setup.suggestion8':
-    'ヒトの胚への遺伝子編集は許されるべきか？',
+  'debateverse.setup.suggestion6': 'AI生成コンテンツは著作権で保護すべきか？',
+  'debateverse.setup.suggestion7': '教育は知識とスキル、どちらを重視すべきか？',
+  'debateverse.setup.suggestion8': 'ヒトの胚への遺伝子編集は許されるべきか？',
   'debateverse.setup.topicPlaceholder': 'ディベートのテーマを入力…',
   'debateverse.side.affirmative': '肯定',
   'debateverse.side.judge': '審判',

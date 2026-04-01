@@ -17,8 +17,7 @@ export default {
   'collab.ended': '共同編集を終了しました',
   'collab.galleryFull': 'ギャラリーが満杯です。先に図を削除してください',
   'collab.hintNetworkInactive': 'コードを発行すると他の人が参加して編集できます。',
-  'collab.hintSchoolInactive':
-    '開始後、同じ学校の同僚はホームから参加できます。',
+  'collab.hintSchoolInactive': '開始後、同じ学校の同僚はホームから参加できます。',
   'collab.invalidDiagramData': '図データが無効です',
   'collab.linkCopied': 'リンクをコピーしました',
   'collab.networkError': 'ネットワークエラー',
@@ -31,14 +30,12 @@ export default {
   'collab.scanToJoin': 'スキャンして参加',
   'collab.schoolDescActive':
     '校内共同編集が有効です。同僚はホームの「共同編集 → 学校」からこの図を選べます。コードは不要です。',
-  'collab.schoolStarted':
-    '校内共同編集が有効です — 同僚は「共同編集 → 学校」から参加できます。',
+  'collab.schoolStarted': '校内共同編集が有効です — 同僚は「共同編集 → 学校」から参加できます。',
   'collab.sectionNetwork': '共有共同編集（コード）',
   'collab.sectionSchool': '校内共同編集',
   'collab.sessionDuration': 'セッション時間',
   'collab.sessionRemaining': '終了まで',
-  'collab.shareDescNetwork':
-    'コードまたはリンクを共有 — 相手は「共同編集 → 共有」から入力。',
+  'collab.shareDescNetwork': 'コードまたはリンクを共有 — 相手は「共同編集 → 共有」から入力。',
   'collab.start': '開始',
   'collab.startFailed': '開始に失敗しました：{msg}',
   'collab.title': 'オンライン共同編集',
@@ -168,8 +165,7 @@ export default {
   'workshop.markAsRead': '既読にする',
   'workshop.markStudyResolved': '研究を完了にする',
   'workshop.members': '名',
-  'workshop.mentionAmbiguous':
-    '名前が曖昧です — 表示名が一意の相手を選んでください：{0}',
+  'workshop.mentionAmbiguous': '名前が曖昧です — 表示名が一意の相手を選んでください：{0}',
   'workshop.mentionUnknown': '不明なメンション（同一組織のユーザーとスタッフのみ）：{0}',
   'workshop.mentionedInChannel': '#{0} でメンションされました',
   'workshop.mentionedInTopic': '{0} でメンションされました',
@@ -209,8 +205,7 @@ export default {
   'workshop.others': 'その他',
   'workshop.permissions': '権限',
   'workshop.personalMenu': '個人メニュー',
-  'workshop.phase2RoadmapGroupsAlerts':
-    '今後：@グループメンション、アラート語、編集履歴ポリシー。',
+  'workshop.phase2RoadmapGroupsAlerts': '今後：@グループメンション、アラート語、編集履歴ポリシー。',
   'workshop.phase2RoadmapMovePreview':
     '今後：単一メッセージの移動、URLプレビュー、チャンネル横断の活動表示。',
   'workshop.phase2RoadmapPlatform':
@@ -284,8 +279,7 @@ export default {
   'workshop.topicTitle': 'タイトル',
   'workshop.topicTitlePlaceholder': '例：第3章のデザイン思考マップ',
   'workshop.topics': '会話',
-  'workshop.typeMessagePlaceholder':
-    'メッセージを入力…（Enterで送信、Shift+Enterで改行）',
+  'workshop.typeMessagePlaceholder': 'メッセージを入力…（Enterで送信、Shift+Enterで改行）',
   'workshop.unfollowTopic': '会話のフォローを解除',
   'workshop.unknown': '不明',
   'workshop.unmuteChannel': 'チャンネルのミュートを解除',

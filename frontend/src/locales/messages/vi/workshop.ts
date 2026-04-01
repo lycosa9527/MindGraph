@@ -37,8 +37,7 @@ export default {
   'collab.sectionSchool': 'Cộng tác trường',
   'collab.sessionDuration': 'Thời lượng phiên',
   'collab.sessionRemaining': 'Phiên kết thúc sau',
-  'collab.shareDescNetwork':
-    'Chia sẻ mã hoặc liên kết — người khác nhập tại Cộng tác → Chia sẻ.',
+  'collab.shareDescNetwork': 'Chia sẻ mã hoặc liên kết — người khác nhập tại Cộng tác → Chia sẻ.',
   'collab.start': 'Bắt đầu',
   'collab.startFailed': 'Bắt đầu thất bại: {msg}',
   'collab.title': 'Cộng tác trực tuyến',
@@ -94,8 +93,7 @@ export default {
   'workshop.contactsOnlineNow': 'Trực tuyến',
   'workshop.contactsRecentlyOnline': 'Gần đây trực tuyến',
   'workshop.conversationTitle': 'Tiêu đề cuộc trò chuyện',
-  'workshop.conversationTitlePlaceholder':
-    'ví dụ: Thảo luận giáo án, Phản ánh giảng dạy',
+  'workshop.conversationTitlePlaceholder': 'ví dụ: Thảo luận giáo án, Phản ánh giảng dạy',
   'workshop.conversations': 'Cuộc trò chuyện',
   'workshop.copyLink': 'Sao chép liên kết',
   'workshop.copyMentionSyntax': 'Sao chép cú pháp nhắc',
@@ -169,10 +167,8 @@ export default {
   'workshop.markAsRead': 'Đánh dấu đã đọc',
   'workshop.markStudyResolved': 'Đánh dấu nghiên cứu đã xong',
   'workshop.members': 'thành viên',
-  'workshop.mentionAmbiguous':
-    'Tên trùng — chọn người có tên hiển thị duy nhất: {0}',
-  'workshop.mentionUnknown':
-    'Nhắc không xác định (chỉ người cùng tổ chức và nhân viên): {0}',
+  'workshop.mentionAmbiguous': 'Tên trùng — chọn người có tên hiển thị duy nhất: {0}',
+  'workshop.mentionUnknown': 'Nhắc không xác định (chỉ người cùng tổ chức và nhân viên): {0}',
   'workshop.mentionedInChannel': 'Bạn được nhắc trong #{0}',
   'workshop.mentionedInTopic': 'Bạn được nhắc trong {0}',
   'workshop.mentions': 'Nhắc tới',
@@ -286,8 +282,7 @@ export default {
   'workshop.topicTitle': 'Tiêu đề',
   'workshop.topicTitlePlaceholder': 'ví dụ: Sơ đồ tư duy chương 3',
   'workshop.topics': 'Cuộc trò chuyện',
-  'workshop.typeMessagePlaceholder':
-    'Nhập tin… (Enter gửi, Shift+Enter xuống dòng)',
+  'workshop.typeMessagePlaceholder': 'Nhập tin… (Enter gửi, Shift+Enter xuống dòng)',
   'workshop.unfollowTopic': 'Bỏ theo dõi cuộc trò chuyện',
   'workshop.unknown': 'Không xác định',
   'workshop.unmuteChannel': 'Bật tiếng kênh',
@@ -346,8 +341,7 @@ export default {
   'workshopCanvas.connectionClosedReason': 'Kết nối cộng tác đã đóng: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} đang chỉnh sửa nút này',
   'workshopCanvas.errorGeneric': 'Lỗi cộng tác',
-  'workshopCanvas.reconnectFailed':
-    'Không kết nối lại được cộng tác, vui lòng làm mới trang',
+  'workshopCanvas.reconnectFailed': 'Không kết nối lại được cộng tác, vui lòng làm mới trang',
   'workshopCanvas.returnedHomeIdle': 'Đã về trang chủ — không chỉnh sơ đồ trong 30 phút.',
   'workshopCanvas.userJoined': 'Người dùng {userId} đã tham gia',
   'workshopCanvas.userLeft': 'Người dùng {userId} đã rời',

@@ -4,8 +4,7 @@ export default {
   'notification.cannotResetSelectDiagramType':
     'Nie można zresetować: najpierw wybierz typ diagramu',
   'notification.canvasClearNodes': 'Wyczyszczono {count} węzeł/węzły',
-  'notification.canvasClearNodesLearning':
-    'Opróżniono {count} węzeł/węzły, dodano do odpowiedzi',
+  'notification.canvasClearNodesLearning': 'Opróżniono {count} węzeł/węzły, dodano do odpowiedzi',
   'notification.canvasSomeoneEditingNode': 'Ktoś inny edytuje ten węzeł',
   'notification.collabDeleteBlocked':
     'Nie można usunąć, gdy inny użytkownik edytuje zaznaczony węzeł',

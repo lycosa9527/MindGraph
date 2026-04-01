@@ -1,12 +1,9 @@
 /** uk UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter':
-    'Неможливо очистити вузли теми чи центру',
-  'notification.cannotResetSelectDiagramType':
-    'Скидання неможливе: спочатку виберіть тип діаграми',
+  'notification.cannotClearTopicOrCenter': 'Неможливо очистити вузли теми чи центру',
+  'notification.cannotResetSelectDiagramType': 'Скидання неможливе: спочатку виберіть тип діаграми',
   'notification.canvasClearNodes': 'Очищено вузлів: {count}',
-  'notification.canvasClearNodesLearning':
-    'Спорожнено вузлів: {count}, додано до відповідей',
+  'notification.canvasClearNodesLearning': 'Спорожнено вузлів: {count}, додано до відповідей',
   'notification.canvasSomeoneEditingNode': 'Інший користувач редагує цей вузол',
   'notification.collabDeleteBlocked':
     'Неможливо видалити, поки інший користувач редагує вибраний вузол',
@@ -19,8 +16,7 @@ export default {
   'notification.deleted': 'Елемент видалено',
   'notification.feedbackCancelled': 'Відгук знято',
   'notification.feedbackThanks': 'Дякуємо за відгук',
-  'notification.feedbackThanksDislike':
-    'Дякуємо за відгук — ми покращимо сервіс',
+  'notification.feedbackThanksDislike': 'Дякуємо за відгук — ми покращимо сервіс',
   'notification.focusQuestionTooShort': 'Спочатку введіть довший фокус-питання',
   'notification.fullscreenFailed': 'Не вдалося перейти в повноекранний режим',
   'notification.generationCancelled': 'Генерацію скасовано',

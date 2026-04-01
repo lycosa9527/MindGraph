@@ -56,8 +56,7 @@ export default {
   'canvas.toolbar.cannotGenerate': '生成できません',
   'canvas.toolbar.causeAdded': '原因ノードを追加しました',
   'canvas.toolbar.childAdded': '子を追加しました',
-  'canvas.toolbar.collabAiBlocked':
-    '共同編集中のAI生成は図の所有者のみが利用できます',
+  'canvas.toolbar.collabAiBlocked': '共同編集中のAI生成は図の所有者のみが利用できます',
   'canvas.toolbar.colorLabel': '色',
   'canvas.toolbar.conceptGeneration': '概念の生成',
   'canvas.toolbar.conceptMapModesDev': 'コンセプトマップのモードは開発中です',
@@ -216,8 +215,7 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': '学習シート',
   'canvas.toolbar.moreAppLearningSheetDesc': '学習・復習用のランダムな穴埋め',
   'canvas.toolbar.moreAppWaterfall': 'ウォーターフォール',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    '複数ノードをまたいで選択し、発散と収束の思考を可視化',
+  'canvas.toolbar.moreAppWaterfallDesc': '複数ノードをまたいで選択し、発散と収束の思考を可視化',
   'canvas.toolbar.moreApps': 'その他のアプリ',
   'canvas.toolbar.moreAppSnapshot': 'スナップショット',
   'canvas.toolbar.moreAppSnapshotDesc': 'この図のバージョンを保存（最大10）',
@@ -303,10 +301,13 @@ export default {
   'canvas.topBar.snapshotRecallConfirmBtn': '復元',
   'canvas.topBar.snapshotRecallCancelBtn': 'キャンセル',
   'canvas.topBar.snapshotRecallHistory': 'スナップショット {n} 復元の前',
-  'canvas.topBar.snapshotRecallFailed': 'スナップショットの復元に失敗しました。もう一度お試しください',
+  'canvas.topBar.snapshotRecallFailed':
+    'スナップショットの復元に失敗しました。もう一度お試しください',
   'canvas.topBar.snapshotDeleted': 'スナップショット {n} を削除しました',
-  'canvas.topBar.snapshotDeleteFailed': 'スナップショットの削除に失敗しました。もう一度お試しください',
-  'canvas.topBar.snapshotBadgeTooltip': 'クリックでスナップショット {n} を復元 · Ctrl+クリックで削除',
+  'canvas.topBar.snapshotDeleteFailed':
+    'スナップショットの削除に失敗しました。もう一度お試しください',
+  'canvas.topBar.snapshotBadgeTooltip':
+    'クリックでスナップショット {n} を復元 · Ctrl+クリックで削除',
   'canvas.zoomControls.exitFullscreen': '全画面を終了',
   'canvas.zoomControls.fitCanvas': 'キャンバスに合わせる',
   'canvas.zoomControls.fullscreen': '全画面',
@@ -337,12 +338,10 @@ export default {
   'conceptMap.focus.noResult': '結果なし',
   'conceptMap.focus.validationRequestFailed': '検証リクエストに失敗しました',
   'diagram.aiGenerating': 'AI…',
-  'diagram.alternativeDimensions.braceTitle':
-    'このトピックに考えられるほかの分解の次元：',
+  'diagram.alternativeDimensions.braceTitle': 'このトピックに考えられるほかの分解の次元：',
   'diagram.alternativeDimensions.bridgeAnalogiesTitle':
     'このトピックに考えられるほかの類推パターン：',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'このトピックに考えられるほかの分類の次元：',
+  'diagram.alternativeDimensions.treeMapTitle': 'このトピックに考えられるほかの分類の次元：',
   'diagram.bridgeMap.alternativesEmpty': '[候補はここに表示されます]',
   'diagram.conceptMap.focusQuestionPrefix': '焦点の質問：',
   'diagram.conceptMap.focusQuestionSuffix': 'Enter',
@@ -455,8 +454,7 @@ export default {
   'editor.redo': 'やり直し',
   'editor.saveDiagram': '図を保存',
   'editor.selectDiagramType': '図の種類を選択',
-  'editor.slotsFull':
-    '容量が満杯のため自動保存できません。図を削除して空きを作ってください。',
+  'editor.slotsFull': '容量が満杯のため自動保存できません。図を削除して空きを作ってください。',
   'editor.undo': '元に戻す',
   'editor.zoomIn': '拡大',
   'editor.zoomOut': '縮小',

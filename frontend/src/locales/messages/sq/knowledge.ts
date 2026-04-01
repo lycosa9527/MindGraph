@@ -71,7 +71,8 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Metrika standarde IR',
   'chunkTestResults.storageEff': 'Ef. ruajtje',
   'chunkTestResults.testFailed': 'Testi dështoi',
-  'chunkTestResults.testFailedHint': 'Ndodhi një gabim gjatë ekzekutimit të testit. Ju lutemi provoni përsëri.',
+  'chunkTestResults.testFailedHint':
+    'Ndodhi një gabim gjatë ekzekutimit të testit. Ju lutemi provoni përsëri.',
   'chunkTestResults.testingInProgress': 'Testi në vazhdim…',
   'chunkTestResults.totalChunks': 'Gjithsej {n} copëza',
   'chunkTestResults.viewChunks': 'Shiko copëzat',

@@ -3,7 +3,8 @@ export default {
   'app.aiDisclaimer': 'Kandungan dijana AI; sila semak dengan teliti.',
   'app.brandName': 'Platform Mind',
   'app.guestMainLoginPrompt': 'Log masuk untuk menggunakan kawasan ini',
-  'app.browserLocale.body': 'Pelayar anda lebih suka {name}. Tukar antara muka aplikasi agar sepadan?',
+  'app.browserLocale.body':
+    'Pelayar anda lebih suka {name}. Tukar antara muka aplikasi agar sepadan?',
   'app.browserLocale.dontAsk': 'Jangan tanya lagi',
   'app.browserLocale.keepChinese': 'Kekalkan Cina',
   'app.browserLocale.switch': 'Tukar',
@@ -20,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Henti menjana',
   'askOnce.panel.thinking': 'Berfikir…',
   'askOnce.panel.thoughtProcess': 'Proses pemikiran',
-  'askOnce.placeholder':
-    'Masukkan arahan anda… Tekan Ctrl+Enter atau klik Hantar',
+  'askOnce.placeholder': 'Masukkan arahan anda… Tekan Ctrl+Enter atau klik Hantar',
   'askOnce.promptContent': 'Kandungan arahan',
   'askOnce.promptEditPlaceholder': 'Masukkan atau pilih templat untuk disunting…',
   'askOnce.promptTemplatesTitle': 'Templat arahan',
@@ -111,10 +111,8 @@ export default {
   'settings.version.title': 'Versi UI',
   'settings.version.chinese': 'Versi Cina',
   'settings.version.international': 'Versi antarabangsa',
-  'landing.international.subtitle':
-    'Perisian diagram pemikiran AI paling berkuasa di alam semesta',
-  'landing.international.promptPlaceholder':
-    'Terangkan diagram anda, atau pilih jenis di bawah…',
+  'landing.international.subtitle': 'Perisian diagram pemikiran AI paling berkuasa di alam semesta',
+  'landing.international.promptPlaceholder': 'Terangkan diagram anda, atau pilih jenis di bawah…',
   'landing.international.sectionTitle': 'Pilih jenis diagram',
   'landing.international.modules': 'Modul',
   'landing.international.mindmateCard.title': 'MindMate',

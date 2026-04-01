@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Usunąć ten wpis? Tej operacji nie można cofnąć.',
   'community.deleteConfirmTitle': 'Usunąć wpis?',
   'community.deleted': 'Usunięto',
-  'community.emptyNoPosts':
-    'Brak wpisów. Spróbuj zmienić filtry lub wyszukiwanie.',
+  'community.emptyNoPosts': 'Brak wpisów. Spróbuj zmienić filtry lub wyszukiwanie.',
   'community.filter.all': 'Wszystkie',
   'community.filter.mine': 'Moje',
   'community.filterCategory': 'Kategoria',
@@ -114,8 +113,10 @@ export default {
   'debateverse.setup.suggestion4':
     'Czy platformy społecznościowe powinny mieć surowszą moderację treści?',
   'debateverse.setup.suggestion5': 'Czy praca zdalna powinna stać się dominująca?',
-  'debateverse.setup.suggestion6': 'Czy treści generowane przez AI powinny podlegać prawu autorskiemu?',
-  'debateverse.setup.suggestion7': 'Czy edukacja powinna bardziej skupiać się na wiedzy czy umiejętnościach?',
+  'debateverse.setup.suggestion6':
+    'Czy treści generowane przez AI powinny podlegać prawu autorskiemu?',
+  'debateverse.setup.suggestion7':
+    'Czy edukacja powinna bardziej skupiać się na wiedzy czy umiejętnościach?',
   'debateverse.setup.suggestion8': 'Czy edycja genów ludzkich zarodków powinna być dozwolona?',
   'debateverse.setup.topicPlaceholder': 'Wpisz temat debaty...',
   'debateverse.side.affirmative': 'Afirmatywna',
@@ -138,8 +139,7 @@ export default {
   'library.loading': 'Ładowanie…',
   'library.other': 'Inne',
   'library.premiumCollection': 'Wybrana kolekcja',
-  'library.slotFull.body':
-    'Masz {max} zapisanych diagramów. Usuń jeden, aby zapisać nowy.',
+  'library.slotFull.body': 'Masz {max} zapisanych diagramów. Usuń jeden, aby zapisać nowy.',
   'library.slotFull.cancel': 'Anuluj',
   'library.slotFull.deleteAndSave': 'Usuń i zapisz',
   'library.slotFull.networkError': 'Błąd sieci, operacja nie powiodła się',

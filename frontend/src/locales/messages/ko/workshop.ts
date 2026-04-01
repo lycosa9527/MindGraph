@@ -17,8 +17,7 @@ export default {
   'collab.ended': '협업이 종료되었습니다',
   'collab.galleryFull': '갤러리가 가득 찼습니다. 먼저 다이어그램을 삭제하세요',
   'collab.hintNetworkInactive': '코드를 만들면 다른 사람이 참가해 함께 편집할 수 있습니다.',
-  'collab.hintSchoolInactive':
-    '시작한 뒤에는 같은 학교 동료가 홈에서 참가할 수 있습니다.',
+  'collab.hintSchoolInactive': '시작한 뒤에는 같은 학교 동료가 홈에서 참가할 수 있습니다.',
   'collab.invalidDiagramData': '다이어그램 데이터가 올바르지 않습니다',
   'collab.linkCopied': '링크를 복사했습니다',
   'collab.networkError': '네트워크 오류',
@@ -31,14 +30,12 @@ export default {
   'collab.scanToJoin': '스캔하여 참가',
   'collab.schoolDescActive':
     '학교 협업이 켜져 있습니다. 동료는 홈에서 협업 → 학교로 들어가 이 다이어그램을 선택하면 됩니다. 코드는 필요 없습니다.',
-  'collab.schoolStarted':
-    '학교 협업이 켜져 있습니다 — 동료는 협업 → 학교에서 참가할 수 있습니다.',
+  'collab.schoolStarted': '학교 협업이 켜져 있습니다 — 동료는 협업 → 학교에서 참가할 수 있습니다.',
   'collab.sectionNetwork': '공유 협업(코드)',
   'collab.sectionSchool': '학교 협업',
   'collab.sessionDuration': '세션 시간',
   'collab.sessionRemaining': '종료까지',
-  'collab.shareDescNetwork':
-    '코드나 링크를 공유하세요 — 상대는 협업 → 공유에서 입력합니다.',
+  'collab.shareDescNetwork': '코드나 링크를 공유하세요 — 상대는 협업 → 공유에서 입력합니다.',
   'collab.start': '시작',
   'collab.startFailed': '시작하지 못했습니다: {msg}',
   'collab.title': '온라인 협업',
@@ -168,8 +165,7 @@ export default {
   'workshop.markAsRead': '읽음으로 표시',
   'workshop.markStudyResolved': '연구 완료로 표시',
   'workshop.members': '명',
-  'workshop.mentionAmbiguous':
-    '이름이 모호합니다 — 표시 이름이 유일한 사람을 선택하세요: {0}',
+  'workshop.mentionAmbiguous': '이름이 모호합니다 — 표시 이름이 유일한 사람을 선택하세요: {0}',
   'workshop.mentionUnknown': '알 수 없는 멘션(같은 조직 사용자·스태프만): {0}',
   'workshop.mentionedInChannel': '#{0}에서 멘션됨',
   'workshop.mentionedInTopic': '{0}에서 멘션됨',
@@ -209,8 +205,7 @@ export default {
   'workshop.others': '기타',
   'workshop.permissions': '권한',
   'workshop.personalMenu': '개인 메뉴',
-  'workshop.phase2RoadmapGroupsAlerts':
-    '예정: @그룹 멘션, 알림 키워드, 메시지 편집 이력 정책.',
+  'workshop.phase2RoadmapGroupsAlerts': '예정: @그룹 멘션, 알림 키워드, 메시지 편집 이력 정책.',
   'workshop.phase2RoadmapMovePreview':
     '예정: 단일 메시지 이동, URL 미리보기, 채널 간 활동 표시 강화.',
   'workshop.phase2RoadmapPlatform':
@@ -284,8 +279,7 @@ export default {
   'workshop.topicTitle': '제목',
   'workshop.topicTitlePlaceholder': '예: 3장 디자인 씽킹 맵',
   'workshop.topics': '대화',
-  'workshop.typeMessagePlaceholder':
-    '메시지 입력…(Enter로 전송, Shift+Enter로 줄 바꿈)',
+  'workshop.typeMessagePlaceholder': '메시지 입력…(Enter로 전송, Shift+Enter로 줄 바꿈)',
   'workshop.unfollowTopic': '대화 팔로우 해제',
   'workshop.unknown': '알 수 없음',
   'workshop.unmuteChannel': '채널 음소거 해제',
@@ -344,8 +338,7 @@ export default {
   'workshopCanvas.connectionClosedReason': '협업 연결이 닫혔습니다: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} 님이 이 노드를 편집 중입니다',
   'workshopCanvas.errorGeneric': '협업 오류',
-  'workshopCanvas.reconnectFailed':
-    '협업에 다시 연결하지 못했습니다. 페이지를 새로고침하세요',
+  'workshopCanvas.reconnectFailed': '협업에 다시 연결하지 못했습니다. 페이지를 새로고침하세요',
   'workshopCanvas.returnedHomeIdle':
     '홈으로 돌아왔습니다 — 30분 동안 다이어그램을 편집하지 않았습니다.',
   'workshopCanvas.userJoined': '사용자 {userId} 님이 참가했습니다',

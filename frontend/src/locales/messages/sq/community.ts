@@ -108,12 +108,14 @@ export default {
   'debateverse.setup.roleJudge': 'Luaj si gjyqtar',
   'debateverse.setup.roleViewer': 'Luaj si shikues',
   'debateverse.setup.suggestion1': 'A duhet t’i jepet IA-së personalitet juridik?',
-  'debateverse.setup.suggestion2': 'A i ndihmojnë apo dëmtojnë më shumë lojërat video adoleshentët?',
+  'debateverse.setup.suggestion2':
+    'A i ndihmojnë apo dëmtojnë më shumë lojërat video adoleshentët?',
   'debateverse.setup.suggestion3': 'A duhet të shfuqizohen provimet e pranimit në universitet?',
   'debateverse.setup.suggestion4':
     'A duhet të ketë platformat e mediave sociale moderim më të rreptë të përmbajtjes?',
   'debateverse.setup.suggestion5': 'A duhet puna nga distanca të bëhet mainstream?',
-  'debateverse.setup.suggestion6': 'A duhet të mbrohet me të drejtë autor përmbajtja e gjeneruar nga IA?',
+  'debateverse.setup.suggestion6':
+    'A duhet të mbrohet me të drejtë autor përmbajtja e gjeneruar nga IA?',
   'debateverse.setup.suggestion7': 'A duhet arsimi të fokusohet më shumë në dituri apo në aftësi?',
   'debateverse.setup.suggestion8': 'A duhet të lejohet redaktimi i gjenit për embrionet njerëzore?',
   'debateverse.setup.topicPlaceholder': 'Shkruani temën e debatit…',

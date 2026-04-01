@@ -78,8 +78,7 @@ export default {
   'canvas.toolbar.exit': '종료',
   'canvas.toolbar.exitFullscreen': '전체 화면 종료',
   'canvas.toolbar.highlighter': '형광펜',
-  'canvas.toolbar.highlighterTooltip':
-    '형광펜처럼 캔버스에 그립니다. 발표를 종료하면 지워집니다',
+  'canvas.toolbar.highlighterTooltip': '형광펜처럼 캔버스에 그립니다. 발표를 종료하면 지워집니다',
   'canvas.toolbar.highlighterChooseColor': '형광펜 색',
   'canvas.toolbar.highlighterPaletteAria': '형광펜 색 선택',
   'canvas.toolbar.insertEquation': '수식 삽입',
@@ -251,8 +250,7 @@ export default {
   'canvas.toolbar.selectPartThenEnter': '부분 노드를 선택한 뒤 Enter로 하위 부분을 추가하세요',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     '공통점 또는 차이 노드를 선택하세요(주제 노드는 삭제할 수 없습니다)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    '먼저 공통점 또는 차이 노드를 선택하세요',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': '먼저 공통점 또는 차이 노드를 선택하세요',
   'canvas.toolbar.selectStepForSubstep': '하위 단계를 넣을 단계를 선택하세요',
   'canvas.toolbar.similarityWithIndex': '공통점 {n}',
   'canvas.toolbar.stepAdded': '단계를 추가했습니다',
@@ -306,8 +304,7 @@ export default {
   'canvas.topBar.snapshotRecallFailed': '스냅샷 복원에 실패했습니다. 다시 시도해 주세요',
   'canvas.topBar.snapshotDeleted': '스냅샷 {n}을(를) 삭제했습니다',
   'canvas.topBar.snapshotDeleteFailed': '스냅샷 삭제에 실패했습니다. 다시 시도해 주세요',
-  'canvas.topBar.snapshotBadgeTooltip':
-    '클릭하여 스냅샷 {n} 복원 · Ctrl+클릭으로 삭제',
+  'canvas.topBar.snapshotBadgeTooltip': '클릭하여 스냅샷 {n} 복원 · Ctrl+클릭으로 삭제',
   'canvas.zoomControls.exitFullscreen': '전체 화면 종료',
   'canvas.zoomControls.fitCanvas': '캔버스에 맞추기',
   'canvas.zoomControls.fullscreen': '전체 화면',
@@ -338,12 +335,9 @@ export default {
   'conceptMap.focus.noResult': '결과 없음',
   'conceptMap.focus.validationRequestFailed': '검증 요청에 실패했습니다',
   'diagram.aiGenerating': 'AI…',
-  'diagram.alternativeDimensions.braceTitle':
-    '이 주제에 대한 다른 분해 차원:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    '이 주제에 대한 다른 유추 패턴:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    '이 주제에 대한 다른 분류 차원:',
+  'diagram.alternativeDimensions.braceTitle': '이 주제에 대한 다른 분해 차원:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': '이 주제에 대한 다른 유추 패턴:',
+  'diagram.alternativeDimensions.treeMapTitle': '이 주제에 대한 다른 분류 차원:',
   'diagram.bridgeMap.alternativesEmpty': '[대안이 여기에 표시됩니다]',
   'diagram.conceptMap.focusQuestionPrefix': '초점 질문: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Enter',
@@ -366,8 +360,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': '노드 추가 기능은 곧 제공됩니다',
   'diagram.contextMenu.paste': '붙여넣기',
   'diagram.contextMenu.warningCreateDiagramFirst': '먼저 다이어그램을 만드세요',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    '먼저 공통점 또는 차이 노드를 선택하세요',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': '먼저 공통점 또는 차이 노드를 선택하세요',
   'diagram.defaultNewConcept': '새 개념',
   'diagram.dimension.classificationAz': '분류 기준',
   'diagram.dimension.classificationEn': '분류 기준',
@@ -495,8 +488,7 @@ export default {
   'landing.diagramGrid.sectionTitle': '캔버스에서 만들기',
   'landing.diagramGrid.tree_map.desc': '분류와 묶기',
   'landing.diagramGrid.tree_map.title': '트리 맵',
-  'landing.template.freePlaceholder':
-    '다이어그램을 설명하거나 아래에서 템플릿을 선택하세요…',
+  'landing.template.freePlaceholder': '다이어그램을 설명하거나 아래에서 템플릿을 선택하세요…',
   'landing.template.slot.criterion': '분류',
   'landing.template.slot.event': '사건',
   'landing.template.slot.itemA': '항목 A',
@@ -507,8 +499,7 @@ export default {
   'landing.template.slot.theme': '테마',
   'landing.template.slot.topic': '중심 주제',
   'mindgraphLanding.cancel': '취소',
-  'mindgraphLanding.codeFormatInvalid':
-    '발표 코드 형식이 올바르지 않습니다(xxx-xxx여야 합니다)',
+  'mindgraphLanding.codeFormatInvalid': '발표 코드 형식이 올바르지 않습니다(xxx-xxx여야 합니다)',
   'mindgraphLanding.codeIncomplete': '발표 코드를 모두 입력하세요',
   'mindgraphLanding.collaborate': '공동 작업',
   'mindgraphLanding.dialogSchoolTitle': '학교 공동 작업',
@@ -526,9 +517,7 @@ export default {
     '지금은 학교 세션이 없습니다. 동료가 캔버스에서 「학교 공동 작업」을 시작해야 합니다.',
   'mindgraphLanding.participantsOnline': '온라인 {n}명',
   'mindgraphLanding.schoolCollab': '학교 공동 작업',
-  'mindgraphLanding.sharedCodeHint':
-    '초대 코드(xxx-xxx)를 입력하면 해당 세션에 참가합니다.',
+  'mindgraphLanding.sharedCodeHint': '초대 코드(xxx-xxx)를 입력하면 해당 세션에 참가합니다.',
   'mindgraphLanding.sharedCollab': '공유 공동 작업',
-  'mindgraphLanding.welcome':
-    '안녕하세요, {username}님. 시각적 사고를 돕는 AI 어시스턴트입니다',
+  'mindgraphLanding.welcome': '안녕하세요, {username}님. 시각적 사고를 돕는 AI 어시스턴트입니다',
 } as const

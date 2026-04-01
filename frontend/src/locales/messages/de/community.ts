@@ -7,11 +7,11 @@ export default {
   'community.category.studyNotes': 'Lernnotizen',
   'community.category.teachingDesign': 'Unterrichtsentwurf',
   'community.category.workSummary': 'Arbeitszusammenfassung',
-  'community.deleteConfirmBody': 'Diesen Beitrag löschen? Das kann nicht rückgängig gemacht werden.',
+  'community.deleteConfirmBody':
+    'Diesen Beitrag löschen? Das kann nicht rückgängig gemacht werden.',
   'community.deleteConfirmTitle': 'Beitrag löschen?',
   'community.deleted': 'Gelöscht',
-  'community.emptyNoPosts':
-    'Keine Beiträge. Filter oder Suche anpassen.',
+  'community.emptyNoPosts': 'Keine Beiträge. Filter oder Suche anpassen.',
   'community.filter.all': 'Alle',
   'community.filter.mine': 'Meine',
   'community.filterCategory': 'Kategorie',
@@ -104,7 +104,8 @@ export default {
   'debateverse.roleLabel.debater': 'Als Debattant',
   'debateverse.roleLabel.judgeRole': 'Als Jury',
   'debateverse.roleLabel.viewer': 'Als Zuschauer',
-  'debateverse.setup.greeting': '{username}, wahre Weisheit entsteht aus dem Zusammenprall der Standpunkte.',
+  'debateverse.setup.greeting':
+    '{username}, wahre Weisheit entsteht aus dem Zusammenprall der Standpunkte.',
   'debateverse.setup.roleDebater': 'Als Debattant',
   'debateverse.setup.roleJudge': 'Als Jury',
   'debateverse.setup.roleViewer': 'Als Zuschauer',

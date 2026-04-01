@@ -582,8 +582,8 @@ onUnmounted(() => {
       <div class="inline-edit-container">
         <textarea
           v-if="multiline"
-          ref="inputRef"
           :id="fieldHtmlId"
+          ref="inputRef"
           v-model="editText"
           dir="auto"
           class="inline-edit-input"
@@ -601,8 +601,8 @@ onUnmounted(() => {
         />
         <template v-else>
           <input
-            ref="inputRef"
             :id="fieldHtmlId"
+            ref="inputRef"
             v-model="editText"
             dir="auto"
             type="text"

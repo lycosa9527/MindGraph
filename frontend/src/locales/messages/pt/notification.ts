@@ -9,8 +9,10 @@ export default {
   'notification.canvasSomeoneEditingNode': 'Outra pessoa está a editar este nó',
   'notification.collabDeleteBlocked':
     'Não é possível eliminar enquanto outro utilizador edita um nó selecionado',
-  'notification.collabRedoBlocked': 'Não é possível refazer enquanto outro utilizador está a editar',
-  'notification.collabUndoBlocked': 'Não é possível desfazer enquanto outro utilizador está a editar',
+  'notification.collabRedoBlocked':
+    'Não é possível refazer enquanto outro utilizador está a editar',
+  'notification.collabUndoBlocked':
+    'Não é possível desfazer enquanto outro utilizador está a editar',
   'notification.conversationDeleted': 'Conversação eliminada',
   'notification.copied': 'Copiado para a área de transferência',
   'notification.copyFailed': 'Falha ao copiar',

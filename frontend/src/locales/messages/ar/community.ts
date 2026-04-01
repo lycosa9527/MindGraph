@@ -110,8 +110,7 @@ export default {
   'debateverse.setup.suggestion1': 'هل يجب منح الذكاء الاصطناعي شخصية قانونية؟',
   'debateverse.setup.suggestion2': 'هل تفيد ألعاب الفيديو المراهقين أم تضرّهم أكثر؟',
   'debateverse.setup.suggestion3': 'هل يجب إلغاء امتحانات القبول الجامعي؟',
-  'debateverse.setup.suggestion4':
-    'هل ينبغي تشديد إشراف منصّات التواصل على المحتوى؟',
+  'debateverse.setup.suggestion4': 'هل ينبغي تشديد إشراف منصّات التواصل على المحتوى؟',
   'debateverse.setup.suggestion5': 'هل يجب أن يصبح العمل عن بُعد هو الغالب؟',
   'debateverse.setup.suggestion6': 'هل يجب حماية حقوق النشر للمحتوى المُولَّد بالذكاء الاصطناعي؟',
   'debateverse.setup.suggestion7': 'هل ينبغي أن يركّز التعليم على المعرفة أم المهارات؟',
@@ -137,8 +136,7 @@ export default {
   'library.loading': 'جارٍ التحميل…',
   'library.other': 'أخرى',
   'library.premiumCollection': 'مجموعة مميّزة',
-  'library.slotFull.body':
-    'لديك {max} مخططًا محفوظًا. احذف واحدًا لحفظ مخطط جديد.',
+  'library.slotFull.body': 'لديك {max} مخططًا محفوظًا. احذف واحدًا لحفظ مخطط جديد.',
   'library.slotFull.cancel': 'إلغاء',
   'library.slotFull.deleteAndSave': 'حذف وحفظ',
   'library.slotFull.networkError': 'خطأ في الشبكة، فشلت العملية',

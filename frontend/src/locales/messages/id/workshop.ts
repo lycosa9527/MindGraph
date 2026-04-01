@@ -66,8 +66,7 @@ export default {
   'workshop.channelAvatarEmoji': 'Ikon (opsional)',
   'workshop.channelAvatarPlaceholder': 'Emoji atau label singkat',
   'workshop.channelColor': 'Warna saluran',
-  'workshop.channelInviteReceived':
-    'Anda ditambahkan ke “{name}”. Buka Workshop untuk melihatnya.',
+  'workshop.channelInviteReceived': 'Anda ditambahkan ke “{name}”. Buka Workshop untuk melihatnya.',
   'workshop.channelKindGroup': 'Grup pengajaran (tingkat atas, mis. 教研组)',
   'workshop.channelKindLessonStudy': 'Studi lesson di bawah grup (课例)',
   'workshop.channelNameLabel': 'Nama',
@@ -96,8 +95,7 @@ export default {
   'workshop.contactsOnlineNow': 'Daring',
   'workshop.contactsRecentlyOnline': 'Baru saja daring',
   'workshop.conversationTitle': 'Judul percakapan',
-  'workshop.conversationTitlePlaceholder':
-    'mis. Diskusi RPP, Refleksi mengajar',
+  'workshop.conversationTitlePlaceholder': 'mis. Diskusi RPP, Refleksi mengajar',
   'workshop.conversations': 'Percakapan',
   'workshop.copyLink': 'Salin tautan',
   'workshop.copyMentionSyntax': 'Salin sintaks sebut',
@@ -171,10 +169,8 @@ export default {
   'workshop.markAsRead': 'Tandai dibaca',
   'workshop.markStudyResolved': 'Tandai studi selesai',
   'workshop.members': 'anggota',
-  'workshop.mentionAmbiguous':
-    'Nama ambigu — pilih seseorang dengan nama tampilan unik: {0}',
-  'workshop.mentionUnknown':
-    'Sebutan tidak dikenal (hanya pengguna organisasi sama dan staf): {0}',
+  'workshop.mentionAmbiguous': 'Nama ambigu — pilih seseorang dengan nama tampilan unik: {0}',
+  'workshop.mentionUnknown': 'Sebutan tidak dikenal (hanya pengguna organisasi sama dan staf): {0}',
   'workshop.mentionedInChannel': 'Anda disebut di #{0}',
   'workshop.mentionedInTopic': 'Anda disebut di {0}',
   'workshop.mentions': 'Sebutan',
@@ -288,8 +284,7 @@ export default {
   'workshop.topicTitle': 'Judul',
   'workshop.topicTitlePlaceholder': 'mis. Peta design thinking Bab 3',
   'workshop.topics': 'Percakapan',
-  'workshop.typeMessagePlaceholder':
-    'Ketik pesan... (Enter kirim, Shift+Enter baris baru)',
+  'workshop.typeMessagePlaceholder': 'Ketik pesan... (Enter kirim, Shift+Enter baris baru)',
   'workshop.unfollowTopic': 'Berhenti ikuti percakapan',
   'workshop.unknown': 'Tidak diketahui',
   'workshop.unmuteChannel': 'Bunyikan saluran',
@@ -320,8 +315,7 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Lembar panduan & desain LK',
   'workshop.welcomeExampleLSEng1C2': 'Tugas pasca-baca & transfer',
   'workshop.welcomeExampleLSEng1C3': 'Umpan balik observasi & refleksi',
-  'workshop.welcomeExampleLSEng2':
-    'Studi lesson: Menulis — pelajaran sama, guru berbeda',
+  'workshop.welcomeExampleLSEng2': 'Studi lesson: Menulis — pelajaran sama, guru berbeda',
   'workshop.welcomeExampleLSEng2C1': 'Pilot rubrik & revisi',
   'workshop.welcomeExampleLSMath1': 'Studi lesson: minggu poles “Konsep fungsi”',
   'workshop.welcomeExampleLSMath1C1': 'Tujuan & desain aktivitas',
@@ -349,12 +343,9 @@ export default {
   'workshopCanvas.connectionClosedReason': 'Koneksi kolaborasi ditutup: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} sedang mengedit simpul ini',
   'workshopCanvas.errorGeneric': 'Kesalahan kolaborasi',
-  'workshopCanvas.reconnectFailed':
-    'Gagal menyambung kembali ke kolaborasi, segarkan halaman',
-  'workshopCanvas.returnedHomeIdle':
-    'Kembali ke beranda — tidak ada edit diagram selama 30 menit.',
+  'workshopCanvas.reconnectFailed': 'Gagal menyambung kembali ke kolaborasi, segarkan halaman',
+  'workshopCanvas.returnedHomeIdle': 'Kembali ke beranda — tidak ada edit diagram selama 30 menit.',
   'workshopCanvas.userJoined': 'Pengguna {userId} bergabung',
   'workshopCanvas.userLeft': 'Pengguna {userId} keluar',
-  'workshopCanvas.wsError':
-    'Kesalahan koneksi kolaborasi, periksa jaringan Anda',
+  'workshopCanvas.wsError': 'Kesalahan koneksi kolaborasi, periksa jaringan Anda',
 } as const

@@ -1,19 +1,15 @@
 /** ko UI — mindmate */
 export default {
-  'aiModel.conceptAiOff':
-    '클릭하면 AI 관계 레이블을 켤 수 있습니다(멀티 모델)',
+  'aiModel.conceptAiOff': '클릭하면 AI 관계 레이블을 켤 수 있습니다(멀티 모델)',
   'aiModel.conceptAiOn': '켜짐: 링크를 드래그해 관계 레이블 생성',
   'aiModel.enableAi': 'AI 사용',
-  'aiModel.inlineRecTooltip':
-    '노드 편집 중 Tab을 눌러 AI 추천을 표시',
+  'aiModel.inlineRecTooltip': '노드 편집 중 Tab을 눌러 AI 추천을 표시',
   'aiModel.label': 'AI 모델',
   'aiModel.readyCount': '{count}개 준비됨',
   'aiModel.relationshipsBadge': '관계',
-  'aiModel.relationshipsTooltip':
-    '개념을 드래그해 연결하면 AI가 관계를 생성합니다',
+  'aiModel.relationshipsTooltip': '개념을 드래그해 연결하면 AI가 관계를 생성합니다',
   'aiModel.tabFocusBadge': 'Tab 초점',
-  'aiModel.tabFocusTooltip':
-    '초점 질문 편집 중 Tab으로 검증한 뒤, 막대에서 대안 선택(− / =)',
+  'aiModel.tabFocusTooltip': '초점 질문 편집 중 Tab으로 검증한 뒤, 막대에서 대안 선택(− / =)',
   'aiModel.tabRecBadge': 'Tab 추천',
   'aiModel.tooltip.clickDeselect': '클릭하여 {name} 선택 해제',
   'aiModel.tooltip.clickSelect': '클릭하여 {name} 선택',
@@ -21,12 +17,10 @@ export default {
   'aiModel.tooltip.generating': '{name} 생성 중…',
   'aiModel.tooltip.modelFailed': '{name} 생성 실패',
   'aiModel.tooltip.showingResult': '현재 {name} 결과 표시 중',
-  'autoComplete.collabOwnerOnly':
-    '협업 중 AI 생성은 다이어그램 소유자만 사용할 수 있습니다',
+  'autoComplete.collabOwnerOnly': '협업 중 AI 생성은 다이어그램 소유자만 사용할 수 있습니다',
   'autoComplete.conceptMapRealtime':
     '개념도는 실시간 관계 제안을 사용합니다. 링크를 만들어 생성하세요',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    '생성하기 전에 왼쪽과 오른쪽 주제를 모두 입력하세요',
+  'autoComplete.doubleBubbleNeedBothTopics': '생성하기 전에 왼쪽과 오른쪽 주제를 모두 입력하세요',
   'autoComplete.doubleBubbleTopicPair': '{left} 대 {right}',
   'autoComplete.enterTopicFirst': '먼저 주제 내용을 입력하세요',
   'autoComplete.generationFailedRetry': '생성에 실패했습니다. 다시 시도하세요',
@@ -36,10 +30,8 @@ export default {
   'autoComplete.selectDiagramType': '다이어그램 유형을 선택하세요',
   'conceptMapPicker.currentFocusQuestion': '현재 초점 질문',
   'conceptMapPicker.currentRootConcept': '현재 루트 개념',
-  'conceptMapPicker.focusAlternativesHint':
-    '대안(페이지당 {pageSize}개, 높이 자동 조절)',
-  'conceptMapPicker.rootAlternativesHint':
-    '루트 대안(페이지당 {pageSize}개, 높이 자동 조절)',
+  'conceptMapPicker.focusAlternativesHint': '대안(페이지당 {pageSize}개, 높이 자동 조절)',
+  'conceptMapPicker.rootAlternativesHint': '루트 대안(페이지당 {pageSize}개, 높이 자동 조절)',
   'conceptMapPicker.suggestionsEmpty': '아직 제안이 없습니다. = 키로 더 보기.',
   'focusQuestion.alternativesAria': '초점 질문 대안',
   'focusQuestion.cannotReadStream': '제안 스트림을 읽을 수 없습니다',
@@ -61,18 +53,15 @@ export default {
   'focusQuestion.suggestionsHint':
     '대안(페이지당 5개: − 이전, = 다음; 마지막 페이지에서 = 더 불러오기)',
   'focusQuestion.suggestionsRequestFailed': '제안 요청에 실패했습니다',
-  'focusQuestion.title':
-    '표준 모드 · 이 개념도가 답해야 할 초점 질문은 무엇인가요?',
+  'focusQuestion.title': '표준 모드 · 이 개념도가 답해야 할 초점 질문은 무엇인가요?',
   'focusQuestion.tooShort': '짧은 초점 질문을 입력하세요',
   'focusQuestion.validate': 'AI 검사',
   'focusQuestion.validationRequestFailed': '검증 요청에 실패했습니다',
   'focusQuestion.weakLabel': '약함',
-  'mindmate.defaultSuggestion1':
-    '평행사변형 수업에서 어떤 인지적 갈등을 설계할 수 있을까요?',
+  'mindmate.defaultSuggestion1': '평행사변형 수업에서 어떤 인지적 갈등을 설계할 수 있을까요?',
   'mindmate.defaultSuggestion10': '역사 수업에서 상황 학습을 어떻게 활용할까요?',
   'mindmate.defaultSuggestion11': '물리 실험에서 주의해야 할 안전 문제는 무엇인가요?',
-  'mindmate.defaultSuggestion12':
-    '학생 인지 수준에 맞는 숙제를 어떻게 설계할까요?',
+  'mindmate.defaultSuggestion12': '학생 인지 수준에 맞는 숙제를 어떻게 설계할까요?',
   'mindmate.defaultSuggestion2': '세포 호흡 수업 계획을 만들어 주세요.',
   'mindmate.defaultSuggestion3': '학생들은 중력에 대해 어떤 오개념을 가지고 있나요?',
   'mindmate.defaultSuggestion4': '효과적인 모둠 학습 활동을 어떻게 설계할까요?',
@@ -107,8 +96,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': '가지를 생성할 수 없습니다',
   'nodePalette.error.createDiagramFirst': '먼저 다이어그램을 만드세요',
   'nodePalette.error.enterTopicText': '주제 노드에 텍스트를 입력하세요',
-  'nodePalette.error.replacePlaceholder':
-    '실제 주제를 입력하고 기본 자리 표시자를 바꾸세요',
+  'nodePalette.error.replacePlaceholder': '실제 주제를 입력하고 기본 자리 표시자를 바꾸세요',
   'nodePalette.fallbackTopicA': '주제 A',
   'nodePalette.fallbackTopicB': '주제 B',
   'nodePalette.finish': '완료',

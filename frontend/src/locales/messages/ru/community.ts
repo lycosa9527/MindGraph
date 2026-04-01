@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Удалить пост? Это нельзя отменить.',
   'community.deleteConfirmTitle': 'Удалить пост?',
   'community.deleted': 'Удалено',
-  'community.emptyNoPosts':
-    'Постов нет. Измените фильтры или поиск.',
+  'community.emptyNoPosts': 'Постов нет. Измените фильтры или поиск.',
   'community.filter.all': 'Все',
   'community.filter.mine': 'Мои',
   'community.filterCategory': 'Категория',
@@ -84,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': 'Бросить жребий',
   'debateverse.generatingPositions': 'Формируем позиции…',
   'debateverse.input.spectator': 'Вы смотрите дебаты как зритель',
-  'debateverse.input.speechPlaceholder':
-    'Введите речь… (Ctrl+Enter — отправить)',
+  'debateverse.input.speechPlaceholder': 'Введите речь… (Ctrl+Enter — отправить)',
   'debateverse.input.waitTurn': 'Ожидайте своей очереди…',
   'debateverse.message.hideThinking': 'Скрыть рассуждения',
   'debateverse.message.judge': 'Судья',
@@ -111,16 +109,12 @@ export default {
   'debateverse.setup.roleJudge': 'Играть за судью',
   'debateverse.setup.roleViewer': 'Играть за зрителя',
   'debateverse.setup.suggestion1': 'Следует ли признавать ИИ юридическим лицом?',
-  'debateverse.setup.suggestion2':
-    'Видеоигры больше помогают или вредят подросткам?',
+  'debateverse.setup.suggestion2': 'Видеоигры больше помогают или вредят подросткам?',
   'debateverse.setup.suggestion3': 'Следует ли отменить вступительные экзамены в вузы?',
-  'debateverse.setup.suggestion4':
-    'Нужна ли соцсетям более строгая модерация контента?',
+  'debateverse.setup.suggestion4': 'Нужна ли соцсетям более строгая модерация контента?',
   'debateverse.setup.suggestion5': 'Должна ли удалённая работа стать нормой?',
-  'debateverse.setup.suggestion6':
-    'Должен ли контент, созданный ИИ, охраняться авторским правом?',
-  'debateverse.setup.suggestion7':
-    'Образование должно больше опираться на знания или навыки?',
+  'debateverse.setup.suggestion6': 'Должен ли контент, созданный ИИ, охраняться авторским правом?',
+  'debateverse.setup.suggestion7': 'Образование должно больше опираться на знания или навыки?',
   'debateverse.setup.suggestion8':
     'Следует ли разрешить редактирование генома человеческих эмбрионов?',
   'debateverse.setup.topicPlaceholder': 'Введите тему дебатов…',
@@ -144,8 +138,7 @@ export default {
   'library.loading': 'Загрузка…',
   'library.other': 'Другое',
   'library.premiumCollection': 'Избранная подборка',
-  'library.slotFull.body':
-    'У вас сохранено {max} диаграмм. Удалите одну, чтобы сохранить новую.',
+  'library.slotFull.body': 'У вас сохранено {max} диаграмм. Удалите одну, чтобы сохранить новую.',
   'library.slotFull.cancel': 'Отмена',
   'library.slotFull.deleteAndSave': 'Удалить и сохранить',
   'library.slotFull.networkError': 'Сетевая ошибка, операция не выполнена',

@@ -4,8 +4,7 @@ export default {
   'notification.cannotResetSelectDiagramType':
     'Tidak dapat mereset: pilih jenis diagram terlebih dahulu',
   'notification.canvasClearNodes': '{count} simpul dibersihkan',
-  'notification.canvasClearNodesLearning':
-    '{count} simpul dikosongkan, ditambahkan ke jawaban',
+  'notification.canvasClearNodesLearning': '{count} simpul dikosongkan, ditambahkan ke jawaban',
   'notification.canvasSomeoneEditingNode': 'Orang lain sedang mengedit simpul ini',
   'notification.collabDeleteBlocked':
     'Tidak dapat menghapus saat pengguna lain mengedit simpul terpilih',
@@ -18,8 +17,7 @@ export default {
   'notification.deleted': 'Item berhasil dihapus',
   'notification.feedbackCancelled': 'Umpan balik dihapus',
   'notification.feedbackThanks': 'Terima kasih atas umpan balik Anda',
-  'notification.feedbackThanksDislike':
-    'Terima kasih atas umpan balik — kami akan memperbaiki',
+  'notification.feedbackThanksDislike': 'Terima kasih atas umpan balik — kami akan memperbaiki',
   'notification.focusQuestionTooShort': 'Masukkan pertanyaan fokus yang lebih panjang',
   'notification.fullscreenFailed': 'Tidak dapat masuk layar penuh',
   'notification.generationCancelled': 'Pembuatan dibatalkan',
@@ -41,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Tautan konsep akar tidak ditemukan',
   'notification.saved': 'Perubahan berhasil disimpan',
   'notification.selectNodeToClear': 'Pilih simpul untuk dibersihkan',
-  'notification.sessionInvalidated':
-    'Anda telah keluar karena melebihi jumlah perangkat maksimum',
+  'notification.sessionInvalidated': 'Anda telah keluar karena melebihi jumlah perangkat maksimum',
   'notification.signInToUse': 'Masuk untuk menggunakan ini',
   'notification.signInToValidateFocus': 'Masuk untuk memvalidasi pertanyaan fokus',
 } as const

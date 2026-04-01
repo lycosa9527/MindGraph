@@ -21,8 +21,7 @@ export default {
   'sidebar.bookmarks.title': 'Penanda buku terkini',
   'sidebar.bookmarks.unknownDoc': 'Dokumen tidak diketahui',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'Padam perbualan ini? Tindakan ini tidak boleh dibuat asal.',
+  'sidebar.chatHistory.deleteConfirm': 'Padam perbualan ini? Tindakan ini tidak boleh dibuat asal.',
   'sidebar.chatHistory.deleteTitle': 'Padam perbualan',
   'sidebar.chatHistory.empty': 'Belum ada perbualan',
   'sidebar.chatHistory.loginPrompt': 'Log masuk untuk melihat sejarah',
@@ -33,8 +32,7 @@ export default {
   'sidebar.collapseSidebar': 'Lipat bar sisi',
   'sidebar.community': 'Komuniti',
   'sidebar.courses': 'Kursus berfikir',
-  'sidebar.debateHistory.deleteConfirm':
-    'Padam debat ini? Tindakan ini tidak boleh dibuat asal.',
+  'sidebar.debateHistory.deleteConfirm': 'Padam debat ini? Tindakan ini tidak boleh dibuat asal.',
   'sidebar.debateHistory.empty': 'Belum ada debat',
   'sidebar.debateHistory.loginPrompt': 'Log masuk untuk melihat debat',
   'sidebar.debateHistory.renamePrompt': 'Masukkan topik baharu untuk debat ini',

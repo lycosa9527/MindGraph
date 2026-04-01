@@ -71,8 +71,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Métricas RI standard',
   'chunkTestResults.storageEff': 'Efic. de armazenamento',
   'chunkTestResults.testFailed': 'Teste falhou',
-  'chunkTestResults.testFailedHint':
-    'Ocorreu um erro durante o teste. Tente novamente.',
+  'chunkTestResults.testFailedHint': 'Ocorreu um erro durante o teste. Tente novamente.',
   'chunkTestResults.testingInProgress': 'Teste em curso…',
   'chunkTestResults.totalChunks': 'Total {n} fragmentos',
   'chunkTestResults.viewChunks': 'Ver fragmentos',

@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Parar geração',
   'askOnce.panel.thinking': 'A pensar…',
   'askOnce.panel.thoughtProcess': 'Processo de raciocínio',
-  'askOnce.placeholder':
-    'Escreva o seu prompt… Prima Ctrl+Enter ou clique em Enviar',
+  'askOnce.placeholder': 'Escreva o seu prompt… Prima Ctrl+Enter ou clique em Enviar',
   'askOnce.promptContent': 'Conteúdo do prompt',
   'askOnce.promptEditPlaceholder': 'Introduza ou selecione um modelo para editar…',
   'askOnce.promptTemplatesTitle': 'Modelos de prompt',
@@ -62,8 +61,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Todos os modelos falharam; tente novamente',
   'diagramTemplate.generated': 'Diagrama gerado ({model})',
   'diagramTemplate.generationFailed': 'Falha ao gerar',
-  'diagramTemplate.promptTooLong':
-    'Prompt demasiado longo ({length} car.). O máximo é {max} car.',
+  'diagramTemplate.promptTooLong': 'Prompt demasiado longo ({length} car.). O máximo é {max} car.',
   'diagramTemplates.brace_map': 'Decomponha 【subject】 com um mapa de chaves.',
   'diagramTemplates.bridge_map': 'Desenhe um mapa ponte para a relação 【relation】.',
   'diagramTemplates.bubble_map': 'Use um mapa de bolhas para descrever 【topic】.',
@@ -104,8 +102,7 @@ export default {
   'meta.pageTitle.workshopChat': 'Chat do workshop',
   'publicDashboard.networkError': 'Erro de rede; não foi possível carregar o painel',
   'settings.language.interface': 'Idioma da interface',
-  'settings.language.matchPrompt':
-    'Manter o idioma do prompt alinhado com a interface',
+  'settings.language.matchPrompt': 'Manter o idioma do prompt alinhado com a interface',
   'settings.language.prompt': 'Idioma do assistente de IA',
   'settings.language.promptSelectPlaceholder': 'Pesquisar idiomas…',
   'settings.language.supportsCount': 'Suporta {n} idiomas',
@@ -115,8 +112,7 @@ export default {
   'settings.version.international': 'Versão internacional',
   'landing.international.subtitle':
     'O software de diagramas de pensamento com IA mais poderoso do universo',
-  'landing.international.promptPlaceholder':
-    'Descreva o seu diagrama ou escolha um tipo abaixo…',
+  'landing.international.promptPlaceholder': 'Descreva o seu diagrama ou escolha um tipo abaixo…',
   'landing.international.sectionTitle': 'Escolha um tipo de diagrama',
   'landing.international.modules': 'Módulos',
   'landing.international.mindmateCard.title': 'MindMate',

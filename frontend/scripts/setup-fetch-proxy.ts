@@ -8,7 +8,6 @@
  * 3. On Windows only: current-user "LAN" proxy from the registry (Internet Settings)
  */
 import { execSync } from 'node:child_process'
-
 import { ProxyAgent, setGlobalDispatcher } from 'undici'
 
 function normalizeProxyUrl(raw: string): string {
@@ -91,7 +90,9 @@ export function setupFetchProxy(argv: readonly string[] = process.argv): string 
   const url = fromCli ?? fromEnv ?? fromWin
 
   if (!url) {
-    console.log('[proxy] none (direct). Set HTTPS_PROXY or use Windows system proxy, or pass --proxy=')
+    console.log(
+      '[proxy] none (direct). Set HTTPS_PROXY or use Windows system proxy, or pass --proxy='
+    )
     return null
   }
 

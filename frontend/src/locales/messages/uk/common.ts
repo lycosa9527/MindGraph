@@ -3,8 +3,7 @@ export default {
   'app.aiDisclaimer': 'Контент згенеровано ШІ; перевіряйте його уважно.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Увійдіть, щоб користуватися цим розділом',
-  'app.browserLocale.body':
-    'Ваш браузер надає перевагу {name}. Перемкнути інтерфейс застосунку?',
+  'app.browserLocale.body': 'Ваш браузер надає перевагу {name}. Перемкнути інтерфейс застосунку?',
   'app.browserLocale.dontAsk': 'Більше не питати',
   'app.browserLocale.keepChinese': 'Залишити китайську',
   'app.browserLocale.switch': 'Перемкнути',
@@ -21,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Зупинити генерацію',
   'askOnce.panel.thinking': 'Думаю…',
   'askOnce.panel.thoughtProcess': 'Хід міркувань',
-  'askOnce.placeholder':
-    'Введіть запит… Ctrl+Enter або кнопка «Надіслати»',
+  'askOnce.placeholder': 'Введіть запит… Ctrl+Enter або кнопка «Надіслати»',
   'askOnce.promptContent': 'Текст запиту',
   'askOnce.promptEditPlaceholder': 'Введіть або виберіть шаблон для редагування…',
   'askOnce.promptTemplatesTitle': 'Шаблони запитів',
@@ -62,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Усі моделі недоступні, спробуйте ще раз',
   'diagramTemplate.generated': 'Діаграму створено ({model})',
   'diagramTemplate.generationFailed': 'Не вдалося згенерувати',
-  'diagramTemplate.promptTooLong':
-    'Запит надто довгий ({length} симв.). Максимум {max} симв.',
+  'diagramTemplate.promptTooLong': 'Запит надто довгий ({length} симв.). Максимум {max} симв.',
   'diagramTemplates.brace_map': 'Розкладіть 【subject】 за допомогою brace map.',
   'diagramTemplates.bridge_map': 'Намалюйте bridge map для зв’язку 【relation】.',
   'diagramTemplates.bubble_map': 'Опишіть 【topic】 за допомогою bubble map.',
@@ -112,10 +109,8 @@ export default {
   'settings.version.title': 'Версія інтерфейсу',
   'settings.version.chinese': 'Китайська версія',
   'settings.version.international': 'Міжнародна версія',
-  'landing.international.subtitle':
-    'Найпотужніше у всесвіті ПЗ для мисленнєвих діаграм зі ШІ',
-  'landing.international.promptPlaceholder':
-    'Опишіть діаграму або виберіть тип нижче…',
+  'landing.international.subtitle': 'Найпотужніше у всесвіті ПЗ для мисленнєвих діаграм зі ШІ',
+  'landing.international.promptPlaceholder': 'Опишіть діаграму або виберіть тип нижче…',
   'landing.international.sectionTitle': 'Виберіть тип діаграми',
   'landing.international.modules': 'Модулі',
   'landing.international.mindmateCard.title': 'MindMate',

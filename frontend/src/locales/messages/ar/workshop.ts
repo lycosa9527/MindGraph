@@ -17,8 +17,7 @@ export default {
   'collab.ended': 'انتهى التعاون',
   'collab.galleryFull': 'المعرض ممتلئ. يُرجى حذف مخطط أولًا',
   'collab.hintNetworkInactive': 'أنشئ رمزًا ليتمكن الآخرون من الانضمام والتحرير معك.',
-  'collab.hintSchoolInactive':
-    'بعد البدء، يمكن لزملاء المدرسة الانضمام من الصفحة الرئيسية.',
+  'collab.hintSchoolInactive': 'بعد البدء، يمكن لزملاء المدرسة الانضمام من الصفحة الرئيسية.',
   'collab.invalidDiagramData': 'بيانات مخطط غير صالحة',
   'collab.linkCopied': 'تم نسخ الرابط',
   'collab.networkError': 'خطأ في الشبكة',
@@ -31,14 +30,12 @@ export default {
   'collab.scanToJoin': 'امسح للانضمام',
   'collab.schoolDescActive':
     'تعاون المدرسة مفعّل. للزملاء: استخدموا «تعاون ← مدرسة» في الصفحة الرئيسية واختروا هذا المخطط — دون رمز.',
-  'collab.schoolStarted':
-    'تعاون المدرسة مفعّل — يمكن للزملاء الانضمام من «تعاون ← مدرسة».',
+  'collab.schoolStarted': 'تعاون المدرسة مفعّل — يمكن للزملاء الانضمام من «تعاون ← مدرسة».',
   'collab.sectionNetwork': 'تعاون مشترك (رمز)',
   'collab.sectionSchool': 'تعاون المدرسة',
   'collab.sessionDuration': 'مدة الجلسة',
   'collab.sessionRemaining': 'تنتهي الجلسة خلال',
-  'collab.shareDescNetwork':
-    'شارك الرمز أو الرابط — يدخله الآخرون تحت «تعاون ← مشترك».',
+  'collab.shareDescNetwork': 'شارك الرمز أو الرابط — يدخله الآخرون تحت «تعاون ← مشترك».',
   'collab.start': 'بدء',
   'collab.startFailed': 'فشل البدء: {msg}',
   'collab.title': 'تعاون عبر الإنترنت',
@@ -51,11 +48,9 @@ export default {
   'workshop.announceChannels': 'إعلانات',
   'workshop.announceReadOnlyHint': 'المسؤولون فقط يمكنهم النشر في قناة الإعلانات.',
   'workshop.archiveLessonStudy': 'أرشفة الدرس النموذجي',
-  'workshop.archiveLessonStudyConfirm':
-    'أرشفة هذا الدرس النموذجي؟ لن يراه الأعضاء في القائمة.',
+  'workshop.archiveLessonStudyConfirm': 'أرشفة هذا الدرس النموذجي؟ لن يراه الأعضاء في القائمة.',
   'workshop.archiveTeachingGroup': 'أرشفة مجموعة التدريس',
-  'workshop.archiveTeachingGroupConfirm':
-    'أرشفة مجموعة التدريس هذه؟ ستختفي من قائمة المجموعات.',
+  'workshop.archiveTeachingGroupConfirm': 'أرشفة مجموعة التدريس هذه؟ ستختفي من قائمة المجموعات.',
   'workshop.backToConversations': '← المحادثات',
   'workshop.bold': 'غامق',
   'workshop.browseChannels': 'تصفّح مجموعات التدريس',
@@ -101,8 +96,7 @@ export default {
   'workshop.create': 'إنشاء',
   'workshop.createChannelFailed': 'تعذّر إنشاء القناة',
   'workshop.createChannelNeedParent': 'اختر مجموعة تدريس أم أولًا.',
-  'workshop.createChannelNoGroupsYet':
-    'أنشئ مجموعة تدريس أولًا، ثم أضف دروسًا نموذجية تحتها.',
+  'workshop.createChannelNoGroupsYet': 'أنشئ مجموعة تدريس أولًا، ثم أضف دروسًا نموذجية تحتها.',
   'workshop.createChannelSuccess': 'تم إنشاء القناة',
   'workshop.createStudyCaseHint': 'ابدأ محادثة للبدء',
   'workshop.cycleStudyStatus': 'حالة الدرس الدوري',
@@ -168,10 +162,8 @@ export default {
   'workshop.markAsRead': 'تعليم كمقروء',
   'workshop.markStudyResolved': 'تعليم الدرس كمنجز',
   'workshop.members': 'أعضاء',
-  'workshop.mentionAmbiguous':
-    'أسماء غامضة — اختر شخصًا باسم عرض فريد: {0}',
-  'workshop.mentionUnknown':
-    'إشارات غير معروفة (مستخدمو المؤسسة والموظفون فقط): {0}',
+  'workshop.mentionAmbiguous': 'أسماء غامضة — اختر شخصًا باسم عرض فريد: {0}',
+  'workshop.mentionUnknown': 'إشارات غير معروفة (مستخدمو المؤسسة والموظفون فقط): {0}',
   'workshop.mentionedInChannel': 'أُشير إليك في #{0}',
   'workshop.mentionedInTopic': 'أُشير إليك في {0}',
   'workshop.mentions': 'الإشارات',
@@ -285,8 +277,7 @@ export default {
   'workshop.topicTitle': 'العنوان',
   'workshop.topicTitlePlaceholder': 'مثال: خريطة تفكير تصميمي للفصل 3',
   'workshop.topics': 'محادثات',
-  'workshop.typeMessagePlaceholder':
-    'اكتب رسالة… (Enter للإرسال، Shift+Enter سطر جديد)',
+  'workshop.typeMessagePlaceholder': 'اكتب رسالة… (Enter للإرسال، Shift+Enter سطر جديد)',
   'workshop.unfollowTopic': 'إلغاء متابعة المحادثة',
   'workshop.unknown': 'غير معروف',
   'workshop.unmuteChannel': 'إلغاء كتم القناة',
@@ -345,10 +336,8 @@ export default {
   'workshopCanvas.connectionClosedReason': 'أُغلق اتصال التعاون: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} يحرّر هذه العقدة',
   'workshopCanvas.errorGeneric': 'خطأ في التعاون',
-  'workshopCanvas.reconnectFailed':
-    'فشل إعادة الاتصال بالتعاون، يُرجى تحديث الصفحة',
-  'workshopCanvas.returnedHomeIdle':
-    'عُدتَ للرئيسية — لا تعديلات على المخطط منذ 30 دقيقة.',
+  'workshopCanvas.reconnectFailed': 'فشل إعادة الاتصال بالتعاون، يُرجى تحديث الصفحة',
+  'workshopCanvas.returnedHomeIdle': 'عُدتَ للرئيسية — لا تعديلات على المخطط منذ 30 دقيقة.',
   'workshopCanvas.userJoined': 'انضم المستخدم {userId}',
   'workshopCanvas.userLeft': 'غادر المستخدم {userId}',
   'workshopCanvas.wsError': 'خطأ في اتصال التعاون، يُرجى التحقق من الشبكة',

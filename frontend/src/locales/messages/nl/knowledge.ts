@@ -22,16 +22,12 @@ export default {
   'chunkTest.page.datasetsUpdated': 'Datasets succesvol bijgewerkt',
   'chunkTest.page.myDocuments': 'Mijn documenten',
   'chunkTest.page.noDatasets': 'Geen datasets beschikbaar',
-  'chunkTest.page.noDocsToTest':
-    'Geen voltooide documenten beschikbaar voor testen',
-  'chunkTest.page.selectCompletedDocs':
-    'Selecteer voltooide documenten voor de test',
+  'chunkTest.page.noDocsToTest': 'Geen voltooide documenten beschikbaar voor testen',
+  'chunkTest.page.selectCompletedDocs': 'Selecteer voltooide documenten voor de test',
   'chunkTest.page.startingDatasetTest': 'Test starten voor dataset: {name}...',
-  'chunkTest.page.startingUserDocTest':
-    'Test starten voor geüploade documenten...',
+  'chunkTest.page.startingUserDocTest': 'Test starten voor geüploade documenten...',
   'chunkTest.page.testFailed': 'Test mislukt',
-  'chunkTest.page.testStartNoId':
-    'Test starten mislukt: geen test-ID ontvangen',
+  'chunkTest.page.testStartNoId': 'Test starten mislukt: geen test-ID ontvangen',
   'chunkTest.page.updateDatasets': 'Datasets bijwerken',
   'chunkTest.stage.chunking': 'Chunking',
   'chunkTest.stage.completed': 'Voltooid',
@@ -75,8 +71,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standaard IR-metrieken',
   'chunkTestResults.storageEff': 'Opslageff.',
   'chunkTestResults.testFailed': 'Test mislukt',
-  'chunkTestResults.testFailedHint':
-    'Er trad een fout op tijdens de test. Probeer het opnieuw.',
+  'chunkTestResults.testFailedHint': 'Er trad een fout op tijdens de test. Probeer het opnieuw.',
   'chunkTestResults.testingInProgress': 'Test bezig...',
   'chunkTestResults.totalChunks': 'Totaal {n} chunks',
   'chunkTestResults.viewChunks': 'Chunks bekijken',
@@ -200,8 +195,7 @@ export default {
   'knowledge.upload.click': 'Klik om te uploaden',
   'knowledge.upload.drag': 'of sleep het bestand hierheen',
   'knowledge.upload.fileTooLarge': 'Bestandsgrootte mag niet groter zijn dan 10 MB',
-  'knowledge.upload.hintFormats':
-    'Ondersteunt PDF, DOCX, TXT, MD, afbeeldingen (max. 10 MB)',
+  'knowledge.upload.hintFormats': 'Ondersteunt PDF, DOCX, TXT, MD, afbeeldingen (max. 10 MB)',
   'knowledge.upload.maxDocs': 'Maximumaantal documenten bereikt (5)',
   'knowledge.upload.title': 'Document uploaden',
   'knowledge.upload.unsupportedType': 'Niet-ondersteund bestandstype',
@@ -215,8 +209,7 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'Starten verwerking mislukt',
   'knowledgeSpace.uploadFailed': 'Documentupload mislukt',
   'knowledgeSpace.uploadSuccess': 'Document succesvol geüpload',
-  'knowledgeSpace.uploadSuccessProcessing':
-    'Document succesvol geüpload, bezig met verwerken...',
+  'knowledgeSpace.uploadSuccessProcessing': 'Document succesvol geüpload, bezig met verwerken...',
   'rag.retrievalTest.failed': 'Retrievaltest mislukt',
   'rag.retrievalTest.success': 'Retrievaltest voltooid',
 } as const

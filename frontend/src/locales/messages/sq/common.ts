@@ -3,7 +3,8 @@ export default {
   'app.aiDisclaimer': 'Përmbajtja është e gjeneruar nga IA; ju lutemi verifikoni me kujdes.',
   'app.brandName': 'Platforma Mind',
   'app.guestMainLoginPrompt': 'Hyni për të përdorur këtë zonë',
-  'app.browserLocale.body': 'Shfletuesi juaj preferon {name}. Të ndërrohet ndërfaqja e aplikacionit për t’u përputhur?',
+  'app.browserLocale.body':
+    'Shfletuesi juaj preferon {name}. Të ndërrohet ndërfaqja e aplikacionit për t’u përputhur?',
   'app.browserLocale.dontAsk': 'Mos pyet më',
   'app.browserLocale.keepChinese': 'Mbaj kinezisht',
   'app.browserLocale.switch': 'Ndërro',
@@ -20,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Ndalo gjenerimin',
   'askOnce.panel.thinking': 'Duke menduar…',
   'askOnce.panel.thoughtProcess': 'Procesi i mendimit',
-  'askOnce.placeholder':
-    'Shkruani kërkesën tuaj… Shtypni Ctrl+Enter ose klikoni Dërgo',
+  'askOnce.placeholder': 'Shkruani kërkesën tuaj… Shtypni Ctrl+Enter ose klikoni Dërgo',
   'askOnce.promptContent': 'Përmbajtja e kërkesës',
   'askOnce.promptEditPlaceholder': 'Shkruani ose zgjidhni një shabllon për ta redaktuar…',
   'askOnce.promptTemplatesTitle': 'Shabllonet e kërkesave',

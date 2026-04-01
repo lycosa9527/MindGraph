@@ -6,8 +6,7 @@ export default {
   'sidebar.actions.showLess': 'कम दिखाएँ',
   'sidebar.actions.showMore': 'और दिखाएँ ({n})',
   'sidebar.actions.unpin': 'अनपिन',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'क्या यह बातचीत हटाएँ? यह पूर्ववत नहीं हो सकता।',
+  'sidebar.askOnceHistory.deleteConfirm': 'क्या यह बातचीत हटाएँ? यह पूर्ववत नहीं हो सकता।',
   'sidebar.askOnceHistory.empty': 'अभी कोई बातचीत नहीं',
   'sidebar.askOnceHistory.renamePrompt': 'इस बातचीत का नया नाम दर्ज करें',
   'sidebar.askOnceHistory.renameTitle': 'बातचीत का नाम बदलें',
@@ -21,8 +20,7 @@ export default {
   'sidebar.bookmarks.title': 'हाल के बुकमार्क',
   'sidebar.bookmarks.unknownDoc': 'अज्ञात दस्तावेज़',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'क्या यह बातचीत हटाएँ? यह पूर्ववत नहीं हो सकता।',
+  'sidebar.chatHistory.deleteConfirm': 'क्या यह बातचीत हटाएँ? यह पूर्ववत नहीं हो सकता।',
   'sidebar.chatHistory.deleteTitle': 'बातचीत हटाएँ',
   'sidebar.chatHistory.empty': 'अभी कोई बातचीत नहीं',
   'sidebar.chatHistory.loginPrompt': 'इतिहास देखने के लिए लॉगिन करें',
@@ -33,8 +31,7 @@ export default {
   'sidebar.collapseSidebar': 'साइडबार संकुचित करें',
   'sidebar.community': 'कम्युनिटी',
   'sidebar.courses': 'सोच वाले कोर्स',
-  'sidebar.debateHistory.deleteConfirm':
-    'क्या यह वाद-विवाद हटाएँ? यह पूर्ववत नहीं हो सकता।',
+  'sidebar.debateHistory.deleteConfirm': 'क्या यह वाद-विवाद हटाएँ? यह पूर्ववत नहीं हो सकता।',
   'sidebar.debateHistory.empty': 'अभी कोई वाद-विवाद नहीं',
   'sidebar.debateHistory.loginPrompt': 'वाद-विवाद देखने के लिए लॉगिन करें',
   'sidebar.debateHistory.renamePrompt': 'इस वाद-विवाद का नया विषय दर्ज करें',

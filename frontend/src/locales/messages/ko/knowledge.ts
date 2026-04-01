@@ -1,7 +1,6 @@
 /** ko UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    '이 테스트를 삭제하시겠습니까? 되돌릴 수 없습니다.',
+  'chunkTest.history.confirmDeleteBody': '이 테스트를 삭제하시겠습니까? 되돌릴 수 없습니다.',
   'chunkTest.history.confirmDeleteTitle': '테스트 삭제',
   'chunkTest.history.delete': '삭제',
   'chunkTest.history.deleteFailed': '테스트 삭제에 실패했습니다',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': '표준 IR 지표',
   'chunkTestResults.storageEff': '저장소 효율',
   'chunkTestResults.testFailed': '테스트 실패',
-  'chunkTestResults.testFailedHint':
-    '테스트 실행 중 오류가 발생했습니다. 다시 시도해 주세요.',
+  'chunkTestResults.testFailedHint': '테스트 실행 중 오류가 발생했습니다. 다시 시도해 주세요.',
   'chunkTestResults.testingInProgress': '테스트 진행 중...',
   'chunkTestResults.totalChunks': '총 {n}개 청크',
   'chunkTestResults.viewChunks': '청크 보기',
@@ -144,8 +142,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': '청크 품질 평가',
   'knowledge.manualEval.resultsTitle': '평가 결과',
   'knowledge.manualEval.selectAll': '전체 선택',
-  'knowledge.manualEval.selectChunksHeading':
-    '평가할 청크 선택(비우면 전체 평가)',
+  'knowledge.manualEval.selectChunksHeading': '평가할 청크 선택(비우면 전체 평가)',
   'knowledge.manualEval.showingFirst20': '총 {total}개 청크 중 처음 20개 표시',
   'knowledge.manualEval.startEvaluation': '평가 시작',
   'knowledge.processing.chunking': '청킹',
@@ -196,13 +193,11 @@ export default {
   'knowledge.upload.click': '클릭하여 업로드',
   'knowledge.upload.drag': '또는 파일을 여기로 끌어다 놓기',
   'knowledge.upload.fileTooLarge': '파일 크기는 10MB를 초과할 수 없습니다',
-  'knowledge.upload.hintFormats':
-    'PDF, DOCX, TXT, MD, 이미지 지원(최대 10MB)',
+  'knowledge.upload.hintFormats': 'PDF, DOCX, TXT, MD, 이미지 지원(최대 10MB)',
   'knowledge.upload.maxDocs': '문서 최대 개수(5개)에 도달했습니다',
   'knowledge.upload.title': '문서 업로드',
   'knowledge.upload.unsupportedType': '지원하지 않는 파일 형식입니다',
-  'knowledgeSpace.confirmDeleteBody':
-    '이 문서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
+  'knowledgeSpace.confirmDeleteBody': '이 문서를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.',
   'knowledgeSpace.confirmDeleteTitle': '삭제 확인',
   'knowledgeSpace.deleteFailed': '삭제에 실패했습니다',
   'knowledgeSpace.documentDeleted': '문서가 삭제되었습니다',

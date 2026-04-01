@@ -298,16 +298,14 @@ export default {
   'canvas.topBar.teachingDesign': 'Desain pengajaran',
   'canvas.topBar.snapshotRecallTooltip': 'Pulihkan cuplikan {n}',
   'canvas.topBar.snapshotRecallTitle': 'Pulihkan cuplikan',
-  'canvas.topBar.snapshotRecallConfirm':
-    'Pulihkan cuplikan {n}? Perubahan saat ini akan diganti.',
+  'canvas.topBar.snapshotRecallConfirm': 'Pulihkan cuplikan {n}? Perubahan saat ini akan diganti.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Pulihkan',
   'canvas.topBar.snapshotRecallCancelBtn': 'Batal',
   'canvas.topBar.snapshotRecallHistory': 'Sebelum pemulihan cuplikan {n}',
   'canvas.topBar.snapshotRecallFailed': 'Gagal memulihkan cuplikan, coba lagi',
   'canvas.topBar.snapshotDeleted': 'Cuplikan {n} dihapus',
   'canvas.topBar.snapshotDeleteFailed': 'Gagal menghapus cuplikan, coba lagi',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'Klik pulihkan cuplikan {n} · Ctrl+Klik untuk hapus',
+  'canvas.topBar.snapshotBadgeTooltip': 'Klik pulihkan cuplikan {n} · Ctrl+Klik untuk hapus',
   'canvas.zoomControls.exitFullscreen': 'Keluar layar penuh',
   'canvas.zoomControls.fitCanvas': 'Sesuaikan kanvas',
   'canvas.zoomControls.fullscreen': 'Layar penuh',
@@ -495,8 +493,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Buat di kanvas',
   'landing.diagramGrid.tree_map.desc': 'Klasifikasi & kelompok',
   'landing.diagramGrid.tree_map.title': 'Peta pohon',
-  'landing.template.freePlaceholder':
-    'Jelaskan diagram Anda, atau pilih templat di bawah…',
+  'landing.template.freePlaceholder': 'Jelaskan diagram Anda, atau pilih templat di bawah…',
   'landing.template.slot.criterion': 'Klasifikasi',
   'landing.template.slot.event': 'Peristiwa',
   'landing.template.slot.itemA': 'Item A',
@@ -507,8 +504,7 @@ export default {
   'landing.template.slot.theme': 'Tema',
   'landing.template.slot.topic': 'Topik pusat',
   'mindgraphLanding.cancel': 'Batal',
-  'mindgraphLanding.codeFormatInvalid':
-    'Format kode presentasi tidak valid (harus xxx-xxx)',
+  'mindgraphLanding.codeFormatInvalid': 'Format kode presentasi tidak valid (harus xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Masukkan kode presentasi lengkap',
   'mindgraphLanding.collaborate': 'Kolaborasi',
   'mindgraphLanding.dialogSchoolTitle': 'Kolaborasi sekolah',
@@ -529,6 +525,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Masukkan kode undangan (xxx-xxx) untuk bergabung ke sesi mereka.',
   'mindgraphLanding.sharedCollab': 'Kolaborasi bersama',
-  'mindgraphLanding.welcome':
-    'Halo {username}, saya asisten berpikir visual AI Anda',
+  'mindgraphLanding.welcome': 'Halo {username}, saya asisten berpikir visual AI Anda',
 } as const

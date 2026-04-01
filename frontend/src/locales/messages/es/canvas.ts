@@ -248,7 +248,8 @@ export default {
   'canvas.toolbar.selectNodesFirst': 'Seleccione primero uno o varios nodos',
   'canvas.toolbar.selectNodesToDelete': 'Seleccione los nodos a eliminar',
   'canvas.toolbar.selectPartForSubpart': 'Seleccione una parte a la que añadir subparte',
-  'canvas.toolbar.selectPartThenEnter': 'Seleccione un nodo de parte y pulse Intro para añadir subparte',
+  'canvas.toolbar.selectPartThenEnter':
+    'Seleccione un nodo de parte y pulse Intro para añadir subparte',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'Seleccione nodos de similitud o diferencia (los nodos de tema no se pueden eliminar)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst':
@@ -495,8 +496,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Crear en el lienzo',
   'landing.diagramGrid.tree_map.desc': 'Clasificar y agrupar',
   'landing.diagramGrid.tree_map.title': 'Mapa en árbol',
-  'landing.template.freePlaceholder':
-    'Describa su diagrama o elija una plantilla abajo…',
+  'landing.template.freePlaceholder': 'Describa su diagrama o elija una plantilla abajo…',
   'landing.template.slot.criterion': 'Clasificación',
   'landing.template.slot.event': 'Evento',
   'landing.template.slot.itemA': 'Elemento A',
@@ -529,6 +529,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Introduzca el código de invitación (xxx-xxx) para unirse a su sesión.',
   'mindgraphLanding.sharedCollab': 'Colaboración compartida',
-  'mindgraphLanding.welcome':
-    'Hola {username}, soy tu asistente de pensamiento visual con IA',
+  'mindgraphLanding.welcome': 'Hola {username}, soy tu asistente de pensamiento visual con IA',
 } as const

@@ -1,8 +1,7 @@
 /** tr UI — workshop */
 export default {
   'collab.codeCopied': 'Kod kopyalandı',
-  'collab.codeGenerated':
-    'İşbirliği kodu oluşturuldu — birlikte düzenlemek için paylaşın.',
+  'collab.codeGenerated': 'İşbirliği kodu oluşturuldu — birlikte düzenlemek için paylaşın.',
   'collab.copy': 'Kopyala',
   'collab.copyFailed': 'Kopyalanamadı',
   'collab.copyLink': 'Bağlantıyı kopyala',
@@ -17,8 +16,7 @@ export default {
   'collab.endFailed': 'İşbirliği bitirilemedi',
   'collab.ended': 'İşbirliği sona erdi',
   'collab.galleryFull': 'Galeri dolu. Önce bir diyagram silin',
-  'collab.hintNetworkInactive':
-    'Başkalarının katılıp sizinle düzenlemesi için bir kod oluşturun.',
+  'collab.hintNetworkInactive': 'Başkalarının katılıp sizinle düzenlemesi için bir kod oluşturun.',
   'collab.hintSchoolInactive':
     'Başlattıktan sonra aynı okuldan meslektaşlar ana sayfadan katılabilir.',
   'collab.invalidDiagramData': 'Geçersiz diyagram verisi',
@@ -33,8 +31,7 @@ export default {
   'collab.scanToJoin': 'Katılmak için tarayın',
   'collab.schoolDescActive':
     'Okul işbirliği açık. Meslektaşlar: ana sayfada İşbirliği → Okul’u kullanıp bu diyagramı seçin — kod gerekmez.',
-  'collab.schoolStarted':
-    'Okul işbirliği açık — meslektaşlar İşbirliği → Okul’dan katılabilir.',
+  'collab.schoolStarted': 'Okul işbirliği açık — meslektaşlar İşbirliği → Okul’dan katılabilir.',
   'collab.sectionNetwork': 'Paylaşımlı işbirliği (kod)',
   'collab.sectionSchool': 'Okul işbirliği',
   'collab.sessionDuration': 'Oturum süresi',
@@ -51,8 +48,7 @@ export default {
   'workshop.addReaction': 'Tepki ekle',
   'workshop.allSchools': 'Tüm okullar',
   'workshop.announceChannels': 'Duyurular',
-  'workshop.announceReadOnlyHint':
-    'Bu duyuru kanalında yalnızca yöneticiler gönderi yapabilir.',
+  'workshop.announceReadOnlyHint': 'Bu duyuru kanalında yalnızca yöneticiler gönderi yapabilir.',
   'workshop.archiveLessonStudy': 'Ders çalışmasını arşivle',
   'workshop.archiveLessonStudyConfirm':
     'Bu ders çalışması arşivlensin mi? Üyeler listede artık görmeyecek.',
@@ -68,8 +64,7 @@ export default {
   'workshop.channelAvatarEmoji': 'Simge (isteğe bağlı)',
   'workshop.channelAvatarPlaceholder': 'Emoji veya kısa etiket',
   'workshop.channelColor': 'Kanal rengi',
-  'workshop.channelInviteReceived':
-    '“{name}” grubuna eklendiniz. Görmek için Atölye’yi açın.',
+  'workshop.channelInviteReceived': '“{name}” grubuna eklendiniz. Görmek için Atölye’yi açın.',
   'workshop.channelKindGroup': 'Öğretim grubu (üst düzey, örn. 教研组)',
   'workshop.channelKindLessonStudy': 'Grup altında ders çalışması (课例)',
   'workshop.channelNameLabel': 'Ad',
@@ -98,8 +93,7 @@ export default {
   'workshop.contactsOnlineNow': 'Çevrimiçi',
   'workshop.contactsRecentlyOnline': 'Son zamanlarda çevrimiçi',
   'workshop.conversationTitle': 'Konuşma başlığı',
-  'workshop.conversationTitlePlaceholder':
-    'örn. Ders planı tartışması, Öğretim yansıması',
+  'workshop.conversationTitlePlaceholder': 'örn. Ders planı tartışması, Öğretim yansıması',
   'workshop.conversations': 'Konuşmalar',
   'workshop.copyLink': 'Bağlantıyı kopyala',
   'workshop.copyMentionSyntax': 'Bahsetme sözdizimini kopyala',
@@ -133,8 +127,7 @@ export default {
   'workshop.edited': '(düzenlendi)',
   'workshop.emailNotifications': 'E-posta bildirimleri',
   'workshop.emoji': 'Emoji',
-  'workshop.expandCollapseGroup':
-    'Kenar çubuğunda ders listesini genişlet veya daralt',
+  'workshop.expandCollapseGroup': 'Kenar çubuğunda ders listesini genişlet veya daralt',
   'workshop.filterSidebar': 'Öğretim gruplarını, DM’leri filtrele',
   'workshop.filterUsers': 'Kullanıcıları filtrele',
   'workshop.followTopic': 'Konuşmayı takip et',
@@ -174,8 +167,7 @@ export default {
   'workshop.markAsRead': 'Okundu işaretle',
   'workshop.markStudyResolved': 'Çalışmayı çözüldü işaretle',
   'workshop.members': 'üye',
-  'workshop.mentionAmbiguous':
-    'Belirsiz adlar — benzersiz görünen adı olan birini seçin: {0}',
+  'workshop.mentionAmbiguous': 'Belirsiz adlar — benzersiz görünen adı olan birini seçin: {0}',
   'workshop.mentionUnknown':
     'Bilinmeyen bahsetmeler (yalnızca aynı kurum kullanıcıları ve personel): {0}',
   'workshop.mentionedInChannel': '#{0} kanalında anıldınız',
@@ -265,8 +257,7 @@ export default {
   'workshop.starMessage': 'İletiyi yıldızla',
   'workshop.starred': 'Yıldızlı',
   'workshop.startConversation': 'Konuşmayı başlatın!',
-  'workshop.startConversationHint':
-    'Meslektaşlarınızla tartışmak için bir konuşma başlatın',
+  'workshop.startConversationHint': 'Meslektaşlarınızla tartışmak için bir konuşma başlatın',
   'workshop.startDM': 'Mesaj gönder',
   'workshop.startNewConversation': 'Yeni konuşma başlat',
   'workshop.statusArchived': 'Arşivlendi',
@@ -324,16 +315,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Rehber sayfası ve çalışma kağıdı tasarımı',
   'workshop.welcomeExampleLSEng1C2': 'Okuma sonrası görevler ve transfer',
   'workshop.welcomeExampleLSEng1C3': 'Gözlem geri bildirimi ve yansıma',
-  'workshop.welcomeExampleLSEng2':
-    'Ders çalışması: Yazma — aynı ders, farklı öğretmenler',
+  'workshop.welcomeExampleLSEng2': 'Ders çalışması: Yazma — aynı ders, farklı öğretmenler',
   'workshop.welcomeExampleLSEng2C1': 'Dereceli puanlama pilotu ve revizyon',
-  'workshop.welcomeExampleLSMath1':
-    'Ders çalışması: “Fonksiyon kavramı” cilalama haftası',
+  'workshop.welcomeExampleLSMath1': 'Ders çalışması: “Fonksiyon kavramı” cilalama haftası',
   'workshop.welcomeExampleLSMath1C1': 'Hedefler ve etkinlik tasarımı',
   'workshop.welcomeExampleLSMath1C2': 'Sorgulama ve tahta çalışması',
   'workshop.welcomeExampleLSMath1C3': 'Ders sonrası yansıma ve sonraki adımlar',
-  'workshop.welcomeExampleLSMath2':
-    'Ders çalışması: Mezuniyet tekrarı — türevler',
+  'workshop.welcomeExampleLSMath2': 'Ders çalışması: Mezuniyet tekrarı — türevler',
   'workshop.welcomeExampleLSMath2C1': 'Kademeli görevler ve değerlendirme',
   'workshop.welcomeExampleMsgLabel': 'İletiler her konuşmanın içinde',
   'workshop.welcomeExampleOrg': 'Chenxi Ortaokulu',
@@ -355,10 +343,8 @@ export default {
   'workshopCanvas.connectionClosedReason': 'İşbirliği bağlantısı kapandı: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bu düğümü düzenliyor',
   'workshopCanvas.errorGeneric': 'İşbirliği hatası',
-  'workshopCanvas.reconnectFailed':
-    'İşbirliğine yeniden bağlanılamadı, lütfen sayfayı yenileyin',
-  'workshopCanvas.returnedHomeIdle':
-    'Ana sayfaya dönüldü — 30 dakikadır diyagram düzenlemesi yok.',
+  'workshopCanvas.reconnectFailed': 'İşbirliğine yeniden bağlanılamadı, lütfen sayfayı yenileyin',
+  'workshopCanvas.returnedHomeIdle': 'Ana sayfaya dönüldü — 30 dakikadır diyagram düzenlemesi yok.',
   'workshopCanvas.userJoined': 'Kullanıcı {userId} katıldı',
   'workshopCanvas.userLeft': 'Kullanıcı {userId} ayrıldı',
   'workshopCanvas.wsError': 'İşbirliği bağlantı hatası, ağınızı kontrol edin',

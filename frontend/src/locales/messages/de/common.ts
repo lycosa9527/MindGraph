@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Generierung stoppen',
   'askOnce.panel.thinking': 'Denkt nach…',
   'askOnce.panel.thoughtProcess': 'Denkprozess',
-  'askOnce.placeholder':
-    'Eingabeaufforderung eingeben… Strg+Eingabe oder Senden klicken',
+  'askOnce.placeholder': 'Eingabeaufforderung eingeben… Strg+Eingabe oder Senden klicken',
   'askOnce.promptContent': 'Prompt-Inhalt',
   'askOnce.promptEditPlaceholder': 'Vorlage eingeben oder auswählen…',
   'askOnce.promptTemplatesTitle': 'Prompt-Vorlagen',
@@ -62,8 +61,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Alle Modelle fehlgeschlagen, bitte erneut versuchen',
   'diagramTemplate.generated': 'Diagramm erzeugt ({model})',
   'diagramTemplate.generationFailed': 'Erzeugung fehlgeschlagen',
-  'diagramTemplate.promptTooLong':
-    'Eingabe zu lang ({length} Zeichen). Maximal {max} Zeichen.',
+  'diagramTemplate.promptTooLong': 'Eingabe zu lang ({length} Zeichen). Maximal {max} Zeichen.',
   'diagramTemplates.brace_map': '【Thema】 mit einer Klammergrafik zerlegen.',
   'diagramTemplates.bridge_map': 'Brückenkarte für die Beziehung 【relation】.',
   'diagramTemplates.bubble_map': 'Blasendiagramm zur Beschreibung von 【topic】.',
@@ -112,10 +110,8 @@ export default {
   'settings.version.title': 'UI-Version',
   'settings.version.chinese': 'Chinesische Version',
   'settings.version.international': 'Internationale Version',
-  'landing.international.subtitle':
-    'Die leistungsstärkste KI-Denkdiagramm-Software',
-  'landing.international.promptPlaceholder':
-    'Diagramm beschreiben oder unten einen Typ wählen…',
+  'landing.international.subtitle': 'Die leistungsstärkste KI-Denkdiagramm-Software',
+  'landing.international.promptPlaceholder': 'Diagramm beschreiben oder unten einen Typ wählen…',
   'landing.international.sectionTitle': 'Diagrammtyp wählen',
   'landing.international.modules': 'Module',
   'landing.international.mindmateCard.title': 'MindMate',

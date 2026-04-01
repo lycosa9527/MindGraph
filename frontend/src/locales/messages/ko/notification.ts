@@ -4,15 +4,12 @@ export default {
   'notification.cannotResetSelectDiagramType':
     '초기화할 수 없습니다. 먼저 다이어그램 유형을 선택하세요',
   'notification.canvasClearNodes': '노드 {count}개를 지웠습니다',
-  'notification.canvasClearNodesLearning':
-    '노드 {count}개를 비우고 답안에 추가했습니다',
+  'notification.canvasClearNodesLearning': '노드 {count}개를 비우고 답안에 추가했습니다',
   'notification.canvasSomeoneEditingNode': '다른 사용자가 이 노드를 편집 중입니다',
   'notification.collabDeleteBlocked':
     '다른 사용자가 선택한 노드를 편집 중이어서 삭제할 수 없습니다',
-  'notification.collabRedoBlocked':
-    '다른 사용자가 편집 중이어서 다시 실행할 수 없습니다',
-  'notification.collabUndoBlocked':
-    '다른 사용자가 편집 중이어서 실행 취소할 수 없습니다',
+  'notification.collabRedoBlocked': '다른 사용자가 편집 중이어서 다시 실행할 수 없습니다',
+  'notification.collabUndoBlocked': '다른 사용자가 편집 중이어서 실행 취소할 수 없습니다',
   'notification.conversationDeleted': '대화를 삭제했습니다',
   'notification.copied': '클립보드에 복사했습니다',
   'notification.copyFailed': '복사에 실패했습니다',
@@ -20,8 +17,7 @@ export default {
   'notification.deleted': '항목을 삭제했습니다',
   'notification.feedbackCancelled': '피드백을 취소했습니다',
   'notification.feedbackThanks': '피드백 감사합니다',
-  'notification.feedbackThanksDislike':
-    '피드백 감사합니다. 개선하겠습니다',
+  'notification.feedbackThanksDislike': '피드백 감사합니다. 개선하겠습니다',
   'notification.focusQuestionTooShort': '먼저 더 긴 초점 질문을 입력하세요',
   'notification.fullscreenFailed': '전체 화면으로 전환할 수 없습니다',
   'notification.generationCancelled': '생성을 취소했습니다',
@@ -43,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': '루트 개념 링크를 찾을 수 없습니다',
   'notification.saved': '변경 사항을 저장했습니다',
   'notification.selectNodeToClear': '지울 노드를 선택하세요',
-  'notification.sessionInvalidated':
-    '등록된 기기 수 한도를 초과하여 로그아웃되었습니다',
+  'notification.sessionInvalidated': '등록된 기기 수 한도를 초과하여 로그아웃되었습니다',
   'notification.signInToUse': '이 기능을 사용하려면 로그인하세요',
   'notification.signInToValidateFocus': '초점 질문을 검증하려면 로그인하세요',
 } as const

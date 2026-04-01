@@ -48,7 +48,7 @@ export default {
   'canvas.toolbar.borderWidthLabel': 'Kenglik',
   'canvas.toolbar.branchAdded': 'Tarmoq qo‘shildi',
   'canvas.toolbar.cannotAddChild': 'Farzand qo‘shib bo‘lmadi',
-  'canvas.toolbar.cannotDeleteDimension': "O‘lchov yorlig‘ini o‘chirib bo‘lmadi",
+  'canvas.toolbar.cannotDeleteDimension': 'O‘lchov yorlig‘ini o‘chirib bo‘lmadi',
   'canvas.toolbar.cannotDeleteEvent': 'Hodisa tugunini o‘chirib bo‘lmadi',
   'canvas.toolbar.cannotDeleteSelected': 'Tanlangan tugun(lar)ni o‘chirib bo‘lmadi',
   'canvas.toolbar.cannotDeleteTopic': 'Mavzu tugunini o‘chirib bo‘lmadi',
@@ -214,7 +214,7 @@ export default {
   'canvas.toolbar.moreAppConceptMapModes': 'Tushuncha xaritasi rejimlari',
   'canvas.toolbar.moreAppConceptMapModesDesc': 'Hozir standart rejim; boshqa rejimlar tez orada',
   'canvas.toolbar.moreAppLearningSheet': "O‘rganish varag'i",
-  'canvas.toolbar.moreAppLearningSheetDesc': "O‘qish va takrorlash uchun tasodifiy bo‘sh joylar",
+  'canvas.toolbar.moreAppLearningSheetDesc': 'O‘qish va takrorlash uchun tasodifiy bo‘sh joylar',
   'canvas.toolbar.moreAppWaterfall': 'Sharshara',
   'canvas.toolbar.moreAppWaterfallDesc':
     'Partiyali tugunlarni tanlang; divergent va konvergent fikrlashni ko‘rinadigan qiling',
@@ -508,8 +508,7 @@ export default {
   'landing.template.slot.theme': 'Mavzu',
   'landing.template.slot.topic': 'Markaziy mavzu',
   'mindgraphLanding.cancel': 'Bekor qilish',
-  'mindgraphLanding.codeFormatInvalid':
-    'Taqdimot kodi formati noto‘g‘ri (xxx-xxx bo‘lishi kerak)',
+  'mindgraphLanding.codeFormatInvalid': 'Taqdimot kodi formati noto‘g‘ri (xxx-xxx bo‘lishi kerak)',
   'mindgraphLanding.codeIncomplete': 'To‘liq taqdimot kodini kiriting',
   'mindgraphLanding.collaborate': 'Hamkorlik',
   'mindgraphLanding.dialogSchoolTitle': 'Maktab hamkorligi',
@@ -530,6 +529,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Ular sessiyasiga qo‘shilish uchun taklif kodini (xxx-xxx) kiriting.',
   'mindgraphLanding.sharedCollab': 'Umumiy hamkorlik',
-  'mindgraphLanding.welcome':
-    'Salom {username}, men sizning AI vizual fikrlash yordamchingizman',
+  'mindgraphLanding.welcome': 'Salom {username}, men sizning AI vizual fikrlash yordamchingizman',
 } as const

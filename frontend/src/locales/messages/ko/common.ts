@@ -3,8 +3,7 @@ export default {
   'app.aiDisclaimer': '콘텐츠는 AI가 생성했습니다. 내용을 반드시 확인하세요.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': '이 영역을 사용하려면 로그인하세요',
-  'app.browserLocale.body':
-    '브라우저가 {name}을(를) 선호합니다. 앱 인터페이스 언어를 맞출까요?',
+  'app.browserLocale.body': '브라우저가 {name}을(를) 선호합니다. 앱 인터페이스 언어를 맞출까요?',
   'app.browserLocale.dontAsk': '다시 묻지 않기',
   'app.browserLocale.keepChinese': '중국어 유지',
   'app.browserLocale.switch': '전환',
@@ -21,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': '생성 중지',
   'askOnce.panel.thinking': '생각 중…',
   'askOnce.panel.thoughtProcess': '사고 과정',
-  'askOnce.placeholder':
-    '프롬프트를 입력하세요… Ctrl+Enter 또는 보내기를 누르세요',
+  'askOnce.placeholder': '프롬프트를 입력하세요… Ctrl+Enter 또는 보내기를 누르세요',
   'askOnce.promptContent': '프롬프트 내용',
   'askOnce.promptEditPlaceholder': '편집할 템플릿을 입력하거나 선택하세요…',
   'askOnce.promptTemplatesTitle': '프롬프트 템플릿',
@@ -62,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': '모든 모델이 실패했습니다. 다시 시도하세요',
   'diagramTemplate.generated': '다이어그램 생성됨 ({model})',
   'diagramTemplate.generationFailed': '생성에 실패했습니다',
-  'diagramTemplate.promptTooLong':
-    '프롬프트가 너무 깁니다({length}자). 최대 {max}자입니다.',
+  'diagramTemplate.promptTooLong': '프롬프트가 너무 깁니다({length}자). 최대 {max}자입니다.',
   'diagramTemplates.brace_map': '【subject】을(를) 브레이스 맵으로 나눕니다.',
   'diagramTemplates.bridge_map': '【relation】 관계를 위한 브리지 맵을 그립니다.',
   'diagramTemplates.bubble_map': '버블 맵으로 【topic】을(를) 설명합니다.',
@@ -113,8 +110,7 @@ export default {
   'settings.version.chinese': '중국어 버전',
   'settings.version.international': '국제 버전',
   'landing.international.subtitle': '우주에서 가장 강력한 AI 사고 다이어그램 소프트웨어',
-  'landing.international.promptPlaceholder':
-    '다이어그램을 설명하거나 아래에서 유형을 선택하세요…',
+  'landing.international.promptPlaceholder': '다이어그램을 설명하거나 아래에서 유형을 선택하세요…',
   'landing.international.sectionTitle': '다이어그램 유형 선택',
   'landing.international.modules': '모듈',
   'landing.international.mindmateCard.title': 'MindMate',

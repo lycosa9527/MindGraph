@@ -7,12 +7,10 @@ export default {
   'community.category.studyNotes': 'Nota belajar',
   'community.category.teachingDesign': 'Reka bentuk pengajaran',
   'community.category.workSummary': 'Ringkasan kerja',
-  'community.deleteConfirmBody':
-    'Padam siaran ini? Tindakan ini tidak boleh dibuat asal.',
+  'community.deleteConfirmBody': 'Padam siaran ini? Tindakan ini tidak boleh dibuat asal.',
   'community.deleteConfirmTitle': 'Padam siaran?',
   'community.deleted': 'Dipadam',
-  'community.emptyNoPosts':
-    'Tiada siaran dijumpai. Cuba laraskan penapis atau carian.',
+  'community.emptyNoPosts': 'Tiada siaran dijumpai. Cuba laraskan penapis atau carian.',
   'community.filter.all': 'Semua',
   'community.filter.mine': 'Saya',
   'community.filterCategory': 'Kategori',
@@ -71,8 +69,7 @@ export default {
   'debateverse.advanceStage': 'Peringkat seterusnya',
   'debateverse.affirmativePositionLabel': 'Pihak afirmatif: ',
   'debateverse.avatar.viewer': 'Penonton',
-  'debateverse.clickNextHint':
-    'Sila klik butang seterusnya supaya perubahan berkuat kuasa',
+  'debateverse.clickNextHint': 'Sila klik butang seterusnya supaya perubahan berkuat kuasa',
   'debateverse.coinTossAffirmativeFirst': 'Pihak afirmatif berucap dahulu',
   'debateverse.coinTossGotIt': 'Faham',
   'debateverse.coinTossModalBody':
@@ -86,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': 'Jalankan lambung syiling',
   'debateverse.generatingPositions': 'Menjana kedudukan…',
   'debateverse.input.spectator': 'Anda menonton debat ini sebagai penonton',
-  'debateverse.input.speechPlaceholder':
-    'Masukkan ucapan anda… (Ctrl+Enter untuk hantar)',
+  'debateverse.input.speechPlaceholder': 'Masukkan ucapan anda… (Ctrl+Enter untuk hantar)',
   'debateverse.input.waitTurn': 'Menunggu giliran untuk berucap…',
   'debateverse.message.hideThinking': 'Sembunyikan pemikiran',
   'debateverse.message.judge': 'Hakim',
@@ -112,22 +108,17 @@ export default {
   'debateverse.setup.roleDebater': 'Main sebagai pendebat',
   'debateverse.setup.roleJudge': 'Main sebagai hakim',
   'debateverse.setup.roleViewer': 'Main sebagai penonton',
-  'debateverse.setup.suggestion1':
-    'Patutkah AI diiktiraf sebagai subjek undang-undang?',
+  'debateverse.setup.suggestion1': 'Patutkah AI diiktiraf sebagai subjek undang-undang?',
   'debateverse.setup.suggestion2':
     'Adakah permainan video lebih memberi manfaat atau mudarat kepada remaja?',
-  'debateverse.setup.suggestion3':
-    'Patutkah peperiksaan kemasukan universiti dimansuhkan?',
+  'debateverse.setup.suggestion3': 'Patutkah peperiksaan kemasukan universiti dimansuhkan?',
   'debateverse.setup.suggestion4':
     'Patutkah platform media sosial menguatkuasakan penyederhanaan kandungan dengan lebih ketat?',
-  'debateverse.setup.suggestion5':
-    'Patutkah kerja jarak jauh menjadi norma utama?',
-  'debateverse.setup.suggestion6':
-    'Patutkah kandungan dijana AI dilindungi hak cipta?',
+  'debateverse.setup.suggestion5': 'Patutkah kerja jarak jauh menjadi norma utama?',
+  'debateverse.setup.suggestion6': 'Patutkah kandungan dijana AI dilindungi hak cipta?',
   'debateverse.setup.suggestion7':
     'Patutkah pendidikan menumpukan lebih kepada pengetahuan atau kemahiran?',
-  'debateverse.setup.suggestion8':
-    'Patutkah penyuntingan gen untuk embrio manusia dibenarkan?',
+  'debateverse.setup.suggestion8': 'Patutkah penyuntingan gen untuk embrio manusia dibenarkan?',
   'debateverse.setup.topicPlaceholder': 'Masukkan topik debat…',
   'debateverse.side.affirmative': 'Afirmatif',
   'debateverse.side.judge': 'Hakim',

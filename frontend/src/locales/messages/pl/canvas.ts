@@ -338,8 +338,7 @@ export default {
   'conceptMap.focus.noResult': 'Brak wyniku',
   'conceptMap.focus.validationRequestFailed': 'Żądanie walidacji nie powiodło się',
   'diagram.aiGenerating': 'AI…',
-  'diagram.alternativeDimensions.braceTitle':
-    'Inne możliwe wymiary dekompozycji dla tego tematu:',
+  'diagram.alternativeDimensions.braceTitle': 'Inne możliwe wymiary dekompozycji dla tego tematu:',
   'diagram.alternativeDimensions.bridgeAnalogiesTitle':
     'Inne możliwe wzorce analogii dla tego tematu:',
   'diagram.alternativeDimensions.treeMapTitle':
@@ -525,9 +524,7 @@ export default {
     'Brak sesji szkolnych. Kolega musi uruchomić „Współpracę szkolną” na płótnie.',
   'mindgraphLanding.participantsOnline': '{n} online',
   'mindgraphLanding.schoolCollab': 'Współpraca szkolna',
-  'mindgraphLanding.sharedCodeHint':
-    'Wpisz kod zaproszenia (xxx-xxx), aby dołączyć do sesji.',
+  'mindgraphLanding.sharedCodeHint': 'Wpisz kod zaproszenia (xxx-xxx), aby dołączyć do sesji.',
   'mindgraphLanding.sharedCollab': 'Współpraca udostępniona',
-  'mindgraphLanding.welcome':
-    'Cześć {username}, jestem twoim asystentem AI do myślenia wizualnego',
+  'mindgraphLanding.welcome': 'Cześć {username}, jestem twoim asystentem AI do myślenia wizualnego',
 } as const

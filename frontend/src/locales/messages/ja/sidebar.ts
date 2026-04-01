@@ -6,8 +6,7 @@ export default {
   'sidebar.actions.showLess': '折りたたむ',
   'sidebar.actions.showMore': 'さらに表示（{n}）',
   'sidebar.actions.unpin': '固定を解除',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'この会話を削除しますか？この操作は取り消せません。',
+  'sidebar.askOnceHistory.deleteConfirm': 'この会話を削除しますか？この操作は取り消せません。',
   'sidebar.askOnceHistory.empty': 'まだ会話はありません',
   'sidebar.askOnceHistory.renamePrompt': 'この会話の新しい名前を入力',
   'sidebar.askOnceHistory.renameTitle': '会話の名前を変更',
@@ -21,8 +20,7 @@ export default {
   'sidebar.bookmarks.title': '最近のブックマーク',
   'sidebar.bookmarks.unknownDoc': '不明なドキュメント',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'この会話を削除しますか？この操作は取り消せません。',
+  'sidebar.chatHistory.deleteConfirm': 'この会話を削除しますか？この操作は取り消せません。',
   'sidebar.chatHistory.deleteTitle': '会話を削除',
   'sidebar.chatHistory.empty': 'まだ会話はありません',
   'sidebar.chatHistory.loginPrompt': '履歴を表示するにはログイン',
@@ -33,8 +31,7 @@ export default {
   'sidebar.collapseSidebar': 'サイドバーを折りたたむ',
   'sidebar.community': 'コミュニティ',
   'sidebar.courses': '思考コース',
-  'sidebar.debateHistory.deleteConfirm':
-    'このディベートを削除しますか？この操作は取り消せません。',
+  'sidebar.debateHistory.deleteConfirm': 'このディベートを削除しますか？この操作は取り消せません。',
   'sidebar.debateHistory.empty': 'まだディベートはありません',
   'sidebar.debateHistory.loginPrompt': 'ディベートを表示するにはログイン',
   'sidebar.debateHistory.renamePrompt': 'このディベートの新しいトピックを入力',

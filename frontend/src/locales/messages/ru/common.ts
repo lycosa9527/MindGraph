@@ -3,8 +3,7 @@ export default {
   'app.aiDisclaimer': 'Контент создан ИИ; проверяйте его внимательно.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Войдите, чтобы использовать этот раздел',
-  'app.browserLocale.body':
-    'Ваш браузер предпочитает {name}. Переключить интерфейс приложения?',
+  'app.browserLocale.body': 'Ваш браузер предпочитает {name}. Переключить интерфейс приложения?',
   'app.browserLocale.dontAsk': 'Больше не спрашивать',
   'app.browserLocale.keepChinese': 'Оставить китайский',
   'app.browserLocale.switch': 'Переключить',
@@ -21,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Остановить генерацию',
   'askOnce.panel.thinking': 'Думаю…',
   'askOnce.panel.thoughtProcess': 'Ход рассуждений',
-  'askOnce.placeholder':
-    'Введите запрос… Ctrl+Enter или кнопка «Отправить»',
+  'askOnce.placeholder': 'Введите запрос… Ctrl+Enter или кнопка «Отправить»',
   'askOnce.promptContent': 'Текст запроса',
   'askOnce.promptEditPlaceholder': 'Введите или выберите шаблон для правки…',
   'askOnce.promptTemplatesTitle': 'Шаблоны запросов',
@@ -62,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Все модели недоступны, попробуйте снова',
   'diagramTemplate.generated': 'Диаграмма создана ({model})',
   'diagramTemplate.generationFailed': 'Не удалось сгенерировать',
-  'diagramTemplate.promptTooLong':
-    'Запрос слишком длинный ({length} симв.). Максимум {max} симв.',
+  'diagramTemplate.promptTooLong': 'Запрос слишком длинный ({length} симв.). Максимум {max} симв.',
   'diagramTemplates.brace_map': 'Разложите 【subject】 с помощью brace map.',
   'diagramTemplates.bridge_map': 'Нарисуйте bridge map для связи 【relation】.',
   'diagramTemplates.bubble_map': 'Опишите 【topic】 с помощью bubble map.',
@@ -112,10 +109,8 @@ export default {
   'settings.version.title': 'Версия интерфейса',
   'settings.version.chinese': 'Китайская версия',
   'settings.version.international': 'Международная версия',
-  'landing.international.subtitle':
-    'Самое мощное в мире ПО для мыслительных диаграмм с ИИ',
-  'landing.international.promptPlaceholder':
-    'Опишите диаграмму или выберите тип ниже…',
+  'landing.international.subtitle': 'Самое мощное в мире ПО для мыслительных диаграмм с ИИ',
+  'landing.international.promptPlaceholder': 'Опишите диаграмму или выберите тип ниже…',
   'landing.international.sectionTitle': 'Выберите тип диаграммы',
   'landing.international.modules': 'Модули',
   'landing.international.mindmateCard.title': 'MindMate',

@@ -1,16 +1,13 @@
 /** it UI — mindmate */
 export default {
-  'aiModel.conceptAiOff':
-    'Clicca per attivare le etichette relazionali IA (multi-modello)',
+  'aiModel.conceptAiOff': 'Clicca per attivare le etichette relazionali IA (multi-modello)',
   'aiModel.conceptAiOn': 'Attivo: trascina i collegamenti per generare etichette',
   'aiModel.enableAi': 'Attiva IA',
-  'aiModel.inlineRecTooltip':
-    'Premi Tab durante la modifica del nodo per raccomandazioni IA',
+  'aiModel.inlineRecTooltip': 'Premi Tab durante la modifica del nodo per raccomandazioni IA',
   'aiModel.label': 'Modello IA',
   'aiModel.readyCount': '{count} pronti',
   'aiModel.relationshipsBadge': 'Relazioni',
-  'aiModel.relationshipsTooltip':
-    'Trascina per collegare i concetti — l’IA genererà le relazioni',
+  'aiModel.relationshipsTooltip': 'Trascina per collegare i concetti — l’IA genererà le relazioni',
   'aiModel.tabFocusBadge': 'Tab focus',
   'aiModel.tabFocusTooltip':
     'Premi Tab mentre modifichi la domanda focale per convalidare; poi scegli alternative nella barra (− / =)',
@@ -36,8 +33,7 @@ export default {
   'autoComplete.selectDiagramType': 'Seleziona il tipo di diagramma',
   'conceptMapPicker.currentFocusQuestion': 'Domanda focale attuale',
   'conceptMapPicker.currentRootConcept': 'Concetto radice attuale',
-  'conceptMapPicker.focusAlternativesHint':
-    'Alternative ({pageSize} per pagina, altezza adattiva)',
+  'conceptMapPicker.focusAlternativesHint': 'Alternative ({pageSize} per pagina, altezza adattiva)',
   'conceptMapPicker.rootAlternativesHint':
     'Alternative radice ({pageSize} per pagina, altezza adattiva)',
   'conceptMapPicker.suggestionsEmpty': 'Nessun suggerimento. Premi = per altro.',
@@ -57,8 +53,7 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Scrivi la tua domanda focale…',
   'focusQuestion.skip': 'Salta',
-  'focusQuestion.suggestionsEmpty':
-    'Nessun suggerimento. Premi = per caricare un altro gruppo.',
+  'focusQuestion.suggestionsEmpty': 'Nessun suggerimento. Premi = per caricare un altro gruppo.',
   'focusQuestion.suggestionsHint':
     'Alternative (5 per pagina: − prec, = succ; all’ultima pagina = carica altro)',
   'focusQuestion.suggestionsRequestFailed': 'Richiesta suggerimenti non riuscita',
@@ -71,8 +66,7 @@ export default {
   'mindmate.defaultSuggestion1':
     'Quali conflitti cognitivi posso progettare per una lezione sul parallelogramma?',
   'mindmate.defaultSuggestion10': 'Come usare l’insegnamento situazionale in storia?',
-  'mindmate.defaultSuggestion11':
-    'Quali problemi di sicurezza notare negli esperimenti di fisica?',
+  'mindmate.defaultSuggestion11': 'Quali problemi di sicurezza notare negli esperimenti di fisica?',
   'mindmate.defaultSuggestion12':
     'Come progettare compiti adeguati al livello cognitivo degli studenti?',
   'mindmate.defaultSuggestion2': 'Aiutami a creare una lezione sulla respirazione cellulare.',

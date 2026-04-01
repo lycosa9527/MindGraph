@@ -1,7 +1,6 @@
 /** nl UI — mindmate */
 export default {
-  'aiModel.conceptAiOff':
-    'Klik om AI-relatielabels in te schakelen (meerdere modellen)',
+  'aiModel.conceptAiOff': 'Klik om AI-relatielabels in te schakelen (meerdere modellen)',
   'aiModel.conceptAiOn': 'Aan: sleep koppelingen om relatielabels te genereren',
   'aiModel.enableAi': 'AI inschakelen',
   'aiModel.inlineRecTooltip':
@@ -9,8 +8,7 @@ export default {
   'aiModel.label': 'AI-model',
   'aiModel.readyCount': '{count} gereed',
   'aiModel.relationshipsBadge': 'Relaties',
-  'aiModel.relationshipsTooltip':
-    'Sleep om concepten te koppelen — AI genereert relaties',
+  'aiModel.relationshipsTooltip': 'Sleep om concepten te koppelen — AI genereert relaties',
   'aiModel.tabFocusBadge': 'Tab-focus',
   'aiModel.tabFocusTooltip':
     'Druk op Tab tijdens het bewerken van de focusvraag om te valideren; kies alternatieven in de balk (− / =)',
@@ -40,8 +38,7 @@ export default {
     'Alternatieven ({pageSize} per pagina, adaptieve hoogte)',
   'conceptMapPicker.rootAlternativesHint':
     'Root-alternatieven ({pageSize} per pagina, adaptieve hoogte)',
-  'conceptMapPicker.suggestionsEmpty':
-    'Nog geen suggesties. Druk op = voor meer.',
+  'conceptMapPicker.suggestionsEmpty': 'Nog geen suggesties. Druk op = voor meer.',
   'focusQuestion.alternativesAria': 'Alternatieve focusvragen',
   'focusQuestion.cannotReadStream': 'Kon suggestiestream niet lezen',
   'focusQuestion.confirm': 'Bevestigen en canvas openen',
@@ -58,41 +55,31 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Typ uw focusvraag…',
   'focusQuestion.skip': 'Overslaan',
-  'focusQuestion.suggestionsEmpty':
-    'Nog geen suggesties. Druk op = voor een nieuwe batch.',
+  'focusQuestion.suggestionsEmpty': 'Nog geen suggesties. Druk op = voor een nieuwe batch.',
   'focusQuestion.suggestionsHint':
     'Alternatieven (5 per pagina: − vorige, = volgende; op de laatste pagina laadt = meer)',
   'focusQuestion.suggestionsRequestFailed': 'Aanvraag suggesties mislukt',
-  'focusQuestion.title':
-    'Standaardmodus · Welke focusvraag moet deze conceptmap beantwoorden?',
+  'focusQuestion.title': 'Standaardmodus · Welke focusvraag moet deze conceptmap beantwoorden?',
   'focusQuestion.tooShort': 'Voer een korte focusvraag in',
   'focusQuestion.validate': 'AI-controle',
   'focusQuestion.validationRequestFailed': 'Validatieaanvraag mislukt',
   'focusQuestion.weakLabel': 'Zwak',
   'mindmate.defaultSuggestion1':
     'Welke cognitieve conflicten kan ik ontwerpen voor een les over parallellogrammen?',
-  'mindmate.defaultSuggestion10':
-    'Hoe kan ik situationeel onderwijs in geschiedenisles gebruiken?',
+  'mindmate.defaultSuggestion10': 'Hoe kan ik situationeel onderwijs in geschiedenisles gebruiken?',
   'mindmate.defaultSuggestion11':
     'Welke veiligheidskwesties moet ik bij natuurkundeexperimenten opmerken?',
   'mindmate.defaultSuggestion12':
     'Hoe ontwerp ik huiswerk dat past bij het cognitieve niveau van leerlingen?',
-  'mindmate.defaultSuggestion2':
-    'Help me een lesplan voor cellulaire ademhaling te maken.',
-  'mindmate.defaultSuggestion3':
-    'Welke misconcepties hebben leerlingen over zwaartekracht?',
-  'mindmate.defaultSuggestion4':
-    'Hoe ontwerp ik een effectieve sessie groepsleren?',
+  'mindmate.defaultSuggestion2': 'Help me een lesplan voor cellulaire ademhaling te maken.',
+  'mindmate.defaultSuggestion3': 'Welke misconcepties hebben leerlingen over zwaartekracht?',
+  'mindmate.defaultSuggestion4': 'Hoe ontwerp ik een effectieve sessie groepsleren?',
   'mindmate.defaultSuggestion5':
     'Hoe verbeter ik de wetenschappelijke onderzoeksvaardigheden van leerlingen?',
-  'mindmate.defaultSuggestion6':
-    'Wat zijn innovatieve methoden voor leesonderwijs?',
-  'mindmate.defaultSuggestion7':
-    'Hoe verbind ik wiskundige concepten met het echte leven?',
-  'mindmate.defaultSuggestion8':
-    'Hoe ontwikkel ik kritisch denkvermogen?',
-  'mindmate.defaultSuggestion9':
-    'Wat zijn effectieve strategieën voor luisteronderwijs?',
+  'mindmate.defaultSuggestion6': 'Wat zijn innovatieve methoden voor leesonderwijs?',
+  'mindmate.defaultSuggestion7': 'Hoe verbind ik wiskundige concepten met het echte leven?',
+  'mindmate.defaultSuggestion8': 'Hoe ontwikkel ik kritisch denkvermogen?',
+  'mindmate.defaultSuggestion9': 'Wat zijn effectieve strategieën voor luisteronderwijs?',
   'mindmate.historyTitle': 'Gespreksgeschiedenis',
   'mindmate.imagePreview': 'Afbeeldingsvoorbeeld',
   'mindmate.input.attachFile': 'Bestand bijvoegen',
@@ -108,8 +95,7 @@ export default {
   'mindmate.tooltip.regenerate': 'Opnieuw genereren',
   'mindmate.tooltip.share': 'Delen',
   'mindmate.untitled': 'Zonder titel',
-  'mindmate.welcome':
-    'Hallo {username}, ik ben uw virtuele partner voor onderwijs en onderzoek',
+  'mindmate.welcome': 'Hallo {username}, ik ben uw virtuele partner voor onderwijs en onderzoek',
   'nodePalette.bridgeAnalogy': 'Analogie',
   'nodePalette.bridgeSource': 'Bron',
   'nodePalette.cancel': 'Annuleren',
@@ -127,8 +113,7 @@ export default {
   'nodePalette.finish': 'Voltooien',
   'nodePalette.generatingIdeas': 'Ideeën genereren...',
   'nodePalette.generatingProgress': 'Genereren... {count} ontvangen',
-  'nodePalette.helpDimension':
-    'Selecteer precies 1 dimensie en klik op Volgende om door te gaan.',
+  'nodePalette.helpDimension': 'Selecteer precies 1 dimensie en klik op Volgende om door te gaan.',
   'nodePalette.helpFinish':
     'Klik om knooppunten te selecteren en klik op Voltooien om ze aan het diagram toe te voegen.',
   'nodePalette.helpNext':
@@ -155,8 +140,7 @@ export default {
   'panels.property.nodeTextPlaceholder': 'Knooppunttext',
   'panels.property.nodesSelected': 'knooppunten geselecteerd',
   'panels.property.selectNode': 'Selecteer een knooppunt om eigenschappen te bewerken',
-  'panels.property.selectSingle':
-    'Selecteer één knooppunt om eigenschappen te bewerken',
+  'panels.property.selectSingle': 'Selecteer één knooppunt om eigenschappen te bewerken',
   'panels.property.text': 'Tekst',
   'panels.property.textColor': 'Tekstkleur',
   'panels.share.clickToggle': 'Klik op berichten om selectie te wisselen',
@@ -173,8 +157,7 @@ export default {
   'rootConceptModal.addBranchTooltip': 'Tak toevoegen (dubbele vermijden)',
   'rootConceptModal.helpFooter':
     'Elk tabblad is één kennisvertakking; concepten kunnen naar de root linken en later kruislings. Sleep naar het canvas om automatisch met de root te koppelen.',
-  'rootConceptModal.splittingLoading':
-    'Vertakkingen splitsen en concepten genereren…',
+  'rootConceptModal.splittingLoading': 'Vertakkingen splitsen en concepten genereren…',
   'rootConceptModal.tabTitleRoot': 'Rootconcept: {text}',
   'rootConceptModal.title': 'Rootconcept',
 } as const

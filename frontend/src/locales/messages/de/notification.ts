@@ -1,12 +1,10 @@
 /** de UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter':
-    'Themen- oder Zentralknoten können nicht geleert werden',
+  'notification.cannotClearTopicOrCenter': 'Themen- oder Zentralknoten können nicht geleert werden',
   'notification.cannotResetSelectDiagramType':
     'Zurücksetzen nicht möglich: zuerst einen Diagrammtyp wählen',
   'notification.canvasClearNodes': '{count} Knoten geleert',
-  'notification.canvasClearNodesLearning':
-    '{count} Knoten geleert, zu Antworten hinzugefügt',
+  'notification.canvasClearNodesLearning': '{count} Knoten geleert, zu Antworten hinzugefügt',
   'notification.canvasSomeoneEditingNode': 'Jemand anderes bearbeitet diesen Knoten',
   'notification.collabDeleteBlocked':
     'Löschen nicht möglich, solange ein anderer Nutzer einen ausgewählten Knoten bearbeitet',
@@ -21,10 +19,8 @@ export default {
   'notification.deleted': 'Eintrag erfolgreich gelöscht',
   'notification.feedbackCancelled': 'Feedback entfernt',
   'notification.feedbackThanks': 'Vielen Dank für Ihr Feedback',
-  'notification.feedbackThanksDislike':
-    'Vielen Dank für Ihr Feedback — wir werden uns verbessern',
-  'notification.focusQuestionTooShort':
-    'Bitte zuerst eine längere Fokusfrage eingeben',
+  'notification.feedbackThanksDislike': 'Vielen Dank für Ihr Feedback — wir werden uns verbessern',
+  'notification.focusQuestionTooShort': 'Bitte zuerst eine längere Fokusfrage eingeben',
   'notification.fullscreenFailed': 'Vollbild konnte nicht aktiviert werden',
   'notification.generationCancelled': 'Erzeugung abgebrochen',
   'notification.historyClearNodes': 'Knotentext leeren',

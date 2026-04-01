@@ -7,7 +7,8 @@ export default {
   'aiModel.label': 'Modeli IA',
   'aiModel.readyCount': '{count} gati',
   'aiModel.relationshipsBadge': 'Marrëdhëniet',
-  'aiModel.relationshipsTooltip': 'Tërhiqni për të lidhur konceptet—IA do të gjenerojë marrëdhëniet',
+  'aiModel.relationshipsTooltip':
+    'Tërhiqni për të lidhur konceptet—IA do të gjenerojë marrëdhëniet',
   'aiModel.tabFocusBadge': 'Fokus Tab',
   'aiModel.tabFocusTooltip':
     'Shtypni Tab gjatë redaktimit të pyetjes së fokusit për validim; pastaj zgjidhni alternativat në shirit (− / =)',
@@ -57,7 +58,8 @@ export default {
   'focusQuestion.suggestionsHint':
     'Alternativa (5 për faqe: − mëparshme, = tjetra; në faqen e fundit = ngarkon më shumë)',
   'focusQuestion.suggestionsRequestFailed': 'Kërkesa e sugjerimeve dështoi',
-  'focusQuestion.title': 'Modaliteti standard · Cilën pyetje fokusi duhet të përgjigjet kjo hartë konceptesh?',
+  'focusQuestion.title':
+    'Modaliteti standard · Cilën pyetje fokusi duhet të përgjigjet kjo hartë konceptesh?',
   'focusQuestion.tooShort': 'Ju lutemi shkruani një pyetje të shkurtër fokusi',
   'focusQuestion.validate': 'Kontroll IA',
   'focusQuestion.validationRequestFailed': 'Kërkesa e validimit dështoi',
@@ -66,7 +68,8 @@ export default {
     'Çfarë konfliktesh njohëse mund të projektoj për një mësim paralelogrami?',
   'mindmate.defaultSuggestion10': 'Si të përdoret mësimi situacional në histori?',
   'mindmate.defaultSuggestion11': 'Çështje sigurie duhen theksuar në eksperimentet e fizikës?',
-  'mindmate.defaultSuggestion12': 'Si të projektohet detyrë që përputhet me nivelin njohës të nxënësve?',
+  'mindmate.defaultSuggestion12':
+    'Si të projektohet detyrë që përputhet me nivelin njohës të nxënësve?',
   'mindmate.defaultSuggestion2': 'Më ndihmo të krijoj një plan mësimi për frymëmarrjen qelizore.',
   'mindmate.defaultSuggestion3': 'Çfarë keqkuptimesh kanë nxënësit rreth gravitetit?',
   'mindmate.defaultSuggestion4': 'Si të projektohet një seancë efektive mësimi në grup?',
@@ -108,9 +111,12 @@ export default {
   'nodePalette.finish': 'Përfundo',
   'nodePalette.generatingIdeas': 'Duke gjeneruar ide…',
   'nodePalette.generatingProgress': 'Duke gjeneruar… {count} të marra',
-  'nodePalette.helpDimension': 'Zgjidhni saktësisht 1 dimension, pastaj klikoni Tjetër për të vazhduar.',
-  'nodePalette.helpFinish': 'Klikoni për të zgjedhur nyje, pastaj Përfundo për t’i shtuar në diagram.',
-  'nodePalette.helpNext': 'Zgjidhni nyje, pastaj klikoni Tjetër për të gjeneruar nyjet e fazës së dytë.',
+  'nodePalette.helpDimension':
+    'Zgjidhni saktësisht 1 dimension, pastaj klikoni Tjetër për të vazhduar.',
+  'nodePalette.helpFinish':
+    'Klikoni për të zgjedhur nyje, pastaj Përfundo për t’i shtuar në diagram.',
+  'nodePalette.helpNext':
+    'Zgjidhni nyje, pastaj klikoni Tjetër për të gjeneruar nyjet e fazës së dytë.',
   'nodePalette.history.replaceAddNodes': 'Zëvendëso/shto nyje',
   'nodePalette.loadMore': 'Ngarko më shumë',
   'nodePalette.next': 'Tjetër',

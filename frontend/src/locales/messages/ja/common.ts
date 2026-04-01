@@ -3,8 +3,7 @@ export default {
   'app.aiDisclaimer': 'コンテンツはAI生成です。内容をご確認ください。',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'このエリアを使うにはログインしてください',
-  'app.browserLocale.body':
-    'ブラウザの優先言語は {name} です。アプリの表示言語を合わせますか？',
+  'app.browserLocale.body': 'ブラウザの優先言語は {name} です。アプリの表示言語を合わせますか？',
   'app.browserLocale.dontAsk': '次回から表示しない',
   'app.browserLocale.keepChinese': '中国語のまま',
   'app.browserLocale.switch': '切り替える',
@@ -21,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': '生成を停止',
   'askOnce.panel.thinking': '考えています…',
   'askOnce.panel.thoughtProcess': '思考プロセス',
-  'askOnce.placeholder':
-    'プロンプトを入力… Ctrl+Enter または送信をクリック',
+  'askOnce.placeholder': 'プロンプトを入力… Ctrl+Enter または送信をクリック',
   'askOnce.promptContent': 'プロンプト内容',
   'askOnce.promptEditPlaceholder': 'テンプレートを入力または選択して編集…',
   'askOnce.promptTemplatesTitle': 'プロンプトテンプレート',
@@ -62,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'すべてのモデルが失敗しました。もう一度お試しください',
   'diagramTemplate.generated': '図を生成しました（{model}）',
   'diagramTemplate.generationFailed': '生成に失敗しました',
-  'diagramTemplate.promptTooLong':
-    'プロンプトが長すぎます（{length} 文字）。最大 {max} 文字です。',
+  'diagramTemplate.promptTooLong': 'プロンプトが長すぎます（{length} 文字）。最大 {max} 文字です。',
   'diagramTemplates.brace_map': '【subject】をブレースマップで分解する。',
   'diagramTemplates.bridge_map': '関係【relation】のブリッジマップを描く。',
   'diagramTemplates.bubble_map': 'バブルマップで【topic】を説明する。',
@@ -112,10 +109,8 @@ export default {
   'settings.version.title': 'UIバージョン',
   'settings.version.chinese': '中国語版',
   'settings.version.international': '国際版',
-  'landing.international.subtitle':
-    '宇宙最強のAI思考図ソフトウェア',
-  'landing.international.promptPlaceholder':
-    '図について説明するか、下から種類を選んでください…',
+  'landing.international.subtitle': '宇宙最強のAI思考図ソフトウェア',
+  'landing.international.promptPlaceholder': '図について説明するか、下から種類を選んでください…',
   'landing.international.sectionTitle': '図の種類を選ぶ',
   'landing.international.modules': 'モジュール',
   'landing.international.mindmateCard.title': 'MindMate',

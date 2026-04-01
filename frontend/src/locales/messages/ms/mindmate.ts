@@ -54,13 +54,11 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Taip soalan fokus anda…',
   'focusQuestion.skip': 'Langkau',
-  'focusQuestion.suggestionsEmpty':
-    'Belum ada cadangan. Tekan = untuk ambil kumpulan lain.',
+  'focusQuestion.suggestionsEmpty': 'Belum ada cadangan. Tekan = untuk ambil kumpulan lain.',
   'focusQuestion.suggestionsHint':
     'Alternatif (5 setiap halaman: − sebelum, = seterusnya; di halaman terakhir = memuatkan lagi)',
   'focusQuestion.suggestionsRequestFailed': 'Permintaan cadangan gagal',
-  'focusQuestion.title':
-    'Mod standard · Soalan fokus apakah yang patut dijawab peta konsep ini?',
+  'focusQuestion.title': 'Mod standard · Soalan fokus apakah yang patut dijawab peta konsep ini?',
   'focusQuestion.tooShort': 'Sila masukkan soalan fokus yang ringkas',
   'focusQuestion.validate': 'Semakan AI',
   'focusQuestion.validationRequestFailed': 'Permintaan pengesahan gagal',
@@ -73,12 +71,12 @@ export default {
   'mindmate.defaultSuggestion12':
     'Bagaimana merancang kerja rumah yang sepadan dengan tahap kognitif murid?',
   'mindmate.defaultSuggestion2': 'Bantu saya cipta rancangan pengajaran untuk respirasi sel.',
-  'mindmate.defaultSuggestion3':
-    'Salah tanggap apakah yang murid ada tentang graviti?',
+  'mindmate.defaultSuggestion3': 'Salah tanggap apakah yang murid ada tentang graviti?',
   'mindmate.defaultSuggestion4': 'Bagaimana merekaka sesi pembelajaran kumpulan yang berkesan?',
   'mindmate.defaultSuggestion5': 'Bagaimana meningkatkan kemahiran inkuiri saintifik murid?',
   'mindmate.defaultSuggestion6': 'Apakah kaedah inovatif untuk pengajaran membaca?',
-  'mindmate.defaultSuggestion7': 'Bagaimana menghubungkan konsep matematik dengan kehidupan sebenar?',
+  'mindmate.defaultSuggestion7':
+    'Bagaimana menghubungkan konsep matematik dengan kehidupan sebenar?',
   'mindmate.defaultSuggestion8': 'Bagaimana membangunkan kemahiran berfikir kritis?',
   'mindmate.defaultSuggestion9': 'Apakah strategi berkesan untuk pengajaran mendengar?',
   'mindmate.historyTitle': 'Sejarah perbualan',
@@ -107,8 +105,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Tidak dapat menjana cabang',
   'nodePalette.error.createDiagramFirst': 'Sila cipta diagram dahulu',
   'nodePalette.error.enterTopicText': 'Sila masukkan teks untuk nod topik',
-  'nodePalette.error.replacePlaceholder':
-    'Sila masukkan topik sebenar, gantikan penempat lalai',
+  'nodePalette.error.replacePlaceholder': 'Sila masukkan topik sebenar, gantikan penempat lalai',
   'nodePalette.fallbackTopicA': 'Topik A',
   'nodePalette.fallbackTopicB': 'Topik B',
   'nodePalette.finish': 'Selesai',
@@ -117,8 +114,7 @@ export default {
   'nodePalette.helpDimension':
     'Pilih tepat 1 dimensi sahaja, kemudian klik Seterusnya untuk teruskan.',
   'nodePalette.helpFinish': 'Klik untuk pilih nod, kemudian klik Selesai untuk tambah ke diagram.',
-  'nodePalette.helpNext':
-    'Pilih nod, kemudian klik Seterusnya untuk menjana nod peringkat kedua.',
+  'nodePalette.helpNext': 'Pilih nod, kemudian klik Seterusnya untuk menjana nod peringkat kedua.',
   'nodePalette.history.replaceAddNodes': 'Ganti/tambah nod',
   'nodePalette.loadMore': 'Muatkan lagi',
   'nodePalette.next': 'Seterusnya',

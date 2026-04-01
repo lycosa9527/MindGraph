@@ -73,7 +73,8 @@ export default {
   'admin.featureSaveFailed': 'Einstellungen konnten nicht gespeichert werden',
   'admin.featuresIntro':
     'Module ein- oder ausschalten. Werte werden in .env geschrieben und der laufende Server neu geladen, sodass Oberfläche und die meisten API-Prüfungen sofort aktualisiert werden. Ein Modul, das beim Start nie geladen wurde, kann trotzdem einen vollständigen Neustart benötigen, um Routen zu registrieren.',
-  'admin.featuresReloadFailed': 'In .env gespeichert, Laufzeit-Neuladen fehlgeschlagen. Server neu starten.',
+  'admin.featuresReloadFailed':
+    'In .env gespeichert, Laufzeit-Neuladen fehlgeschlagen. Server neu starten.',
   'admin.featuresSave': 'Speichern und Laufzeit neu laden',
   'admin.featuresSaved': 'Einstellungen gespeichert und Laufzeitkonfiguration neu geladen.',
   'admin.featuresTab': 'Funktionen',
@@ -249,14 +250,16 @@ export default {
   'admin.trendChartErrors.deleteOrgFailed': 'Organisation konnte nicht gelöscht werden',
   'admin.trendChartErrors.deleteRecordFailed': 'Löschen fehlgeschlagen',
   'admin.trendChartErrors.refreshFailed': 'Aktualisierung fehlgeschlagen',
-  'admin.trendChartErrors.refreshInvitationCodeFailed': 'Einladungscode konnte nicht erneuert werden',
+  'admin.trendChartErrors.refreshInvitationCodeFailed':
+    'Einladungscode konnte nicht erneuert werden',
   'admin.trendChartErrors.removeManagerFailed': 'Manager konnte nicht entfernt werden',
   'admin.trendChartErrors.saveDisplayNameFailed': 'Anzeigename konnte nicht gespeichert werden',
   'admin.trendChartErrors.saveExpirationFailed': 'Ablaufdatum konnte nicht gespeichert werden',
   'admin.trendChartErrors.saveFailed': 'Speichern fehlgeschlagen',
   'admin.trendChartErrors.setManagerFailed': 'Manager konnte nicht gesetzt werden',
   'admin.trendChartErrors.updateFailed': 'Aktualisierung fehlgeschlagen',
-  'admin.trendChartErrors.updateOrgStatusFailed': 'Organisationsstatus konnte nicht aktualisiert werden',
+  'admin.trendChartErrors.updateOrgStatusFailed':
+    'Organisationsstatus konnte nicht aktualisiert werden',
   'admin.trendOrgTokens': 'Token-Nutzung nach Schule',
   'admin.trendOrganizations': 'Trend Organisationen',
   'admin.trendRegistrations': 'Trend tägliche Registrierungen',
@@ -319,10 +322,12 @@ export default {
   'teacher.analytics.modalTitle.unused': 'Unbenutzt',
   'teacher.analytics.nonContinuous': 'Nicht durchgehende Nutzung',
   'teacher.analytics.notify.configSaved': 'Konfiguration gespeichert',
-  'teacher.analytics.notify.loadDataFailed': 'Nutzungsdaten Lehrkräfte konnten nicht geladen werden',
+  'teacher.analytics.notify.loadDataFailed':
+    'Nutzungsdaten Lehrkräfte konnten nicht geladen werden',
   'teacher.analytics.notify.loadFailed': 'Laden fehlgeschlagen',
   'teacher.analytics.notify.loadUsersFailed': 'Benutzer konnten nicht geladen werden',
-  'teacher.analytics.notify.networkError': 'Netzwerkfehler, Nutzung Lehrkräfte konnte nicht geladen werden',
+  'teacher.analytics.notify.networkError':
+    'Netzwerkfehler, Nutzung Lehrkräfte konnte nicht geladen werden',
   'teacher.analytics.notify.recomputeFailed': 'Neuberechnung fehlgeschlagen',
   'teacher.analytics.notify.saveFailed': 'Speichern fehlgeschlagen',
   'teacher.analytics.notify.savedRecomputed': 'Gespeichert und {n} Lehrkräfte neu berechnet',

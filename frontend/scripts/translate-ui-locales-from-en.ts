@@ -11,15 +11,13 @@
  * Proxy (VPN): uses system proxy on Windows (registry) or `HTTPS_PROXY` / `HTTP_PROXY`.
  * Override: `--proxy=http://127.0.0.1:7890`
  */
+import translate from 'google-translate-api-x'
 import { mkdirSync, writeFileSync } from 'node:fs'
 import { dirname, join } from 'node:path'
 import { fileURLToPath } from 'node:url'
 
-import translate from 'google-translate-api-x'
-
 import type { LocaleCode } from '../src/i18n/locales'
 import { SUPPORTED_UI_LOCALES } from '../src/i18n/supportedUiLocales'
-
 import adminEn from '../src/locales/messages/en/admin'
 import authEn from '../src/locales/messages/en/auth'
 import canvasEn from '../src/locales/messages/en/canvas'
@@ -30,7 +28,6 @@ import mindmateEn from '../src/locales/messages/en/mindmate'
 import notificationEn from '../src/locales/messages/en/notification'
 import sidebarEn from '../src/locales/messages/en/sidebar'
 import workshopEn from '../src/locales/messages/en/workshop'
-
 import { setupFetchProxy } from './setup-fetch-proxy'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
@@ -101,11 +98,7 @@ async function sleep(ms: number): Promise<void> {
   await new Promise((r) => setTimeout(r, ms))
 }
 
-async function translateBatch(
-  texts: string[],
-  to: string,
-  dryRun: boolean
-): Promise<string[]> {
+async function translateBatch(texts: string[], to: string, dryRun: boolean): Promise<string[]> {
   if (texts.length === 0) return []
   if (dryRun) return [...texts]
 

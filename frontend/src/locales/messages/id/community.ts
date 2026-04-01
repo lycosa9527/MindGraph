@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Hapus posting ini? Tindakan ini tidak dapat dibatalkan.',
   'community.deleteConfirmTitle': 'Hapus posting?',
   'community.deleted': 'Dihapus',
-  'community.emptyNoPosts':
-    'Tidak ada posting. Coba ubah filter atau pencarian.',
+  'community.emptyNoPosts': 'Tidak ada posting. Coba ubah filter atau pencarian.',
   'community.filter.all': 'Semua',
   'community.filter.mine': 'Milik saya',
   'community.filterCategory': 'Kategori',
@@ -104,14 +103,12 @@ export default {
   'debateverse.roleLabel.debater': 'Main sebagai debater',
   'debateverse.roleLabel.judgeRole': 'Main sebagai hakim',
   'debateverse.roleLabel.viewer': 'Main sebagai penonton',
-  'debateverse.setup.greeting':
-    '{username}, kebijaksanaan sejati lahir dari benturan pandangan.',
+  'debateverse.setup.greeting': '{username}, kebijaksanaan sejati lahir dari benturan pandangan.',
   'debateverse.setup.roleDebater': 'Main sebagai debater',
   'debateverse.setup.roleJudge': 'Main sebagai hakim',
   'debateverse.setup.roleViewer': 'Main sebagai penonton',
   'debateverse.setup.suggestion1': 'Apakah AI harus diberi status badan hukum?',
-  'debateverse.setup.suggestion2':
-    'Apakah video game lebih bermanfaat atau merugikan remaja?',
+  'debateverse.setup.suggestion2': 'Apakah video game lebih bermanfaat atau merugikan remaja?',
   'debateverse.setup.suggestion3': 'Apakah ujian masuk perguruan tinggi harus dihapus?',
   'debateverse.setup.suggestion4':
     'Apakah platform media sosial perlu moderasi konten lebih ketat?',
@@ -119,8 +116,7 @@ export default {
   'debateverse.setup.suggestion6': 'Apakah konten buatan AI harus dilindungi hak cipta?',
   'debateverse.setup.suggestion7':
     'Apakah pendidikan harus lebih fokus pengetahuan atau keterampilan?',
-  'debateverse.setup.suggestion8':
-    'Apakah penyuntingan gen untuk embrio manusia boleh diizinkan?',
+  'debateverse.setup.suggestion8': 'Apakah penyuntingan gen untuk embrio manusia boleh diizinkan?',
   'debateverse.setup.topicPlaceholder': 'Masukkan topik debat...',
   'debateverse.side.affirmative': 'Afirmatif',
   'debateverse.side.judge': 'Hakim',

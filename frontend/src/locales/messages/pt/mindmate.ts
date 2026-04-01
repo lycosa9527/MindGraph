@@ -67,8 +67,10 @@ export default {
   'mindmate.defaultSuggestion1':
     'Que conflitos cognitivos posso desenhar numa aula sobre paralelogramos?',
   'mindmate.defaultSuggestion10': 'Como usar o ensino situado numa aula de história?',
-  'mindmate.defaultSuggestion11': 'Que aspetos de segurança há a ter em conta em práticas de física?',
-  'mindmate.defaultSuggestion12': 'Como desenhar trabalhos de casa adequados ao nível cognitivo dos alunos?',
+  'mindmate.defaultSuggestion11':
+    'Que aspetos de segurança há a ter em conta em práticas de física?',
+  'mindmate.defaultSuggestion12':
+    'Como desenhar trabalhos de casa adequados ao nível cognitivo dos alunos?',
   'mindmate.defaultSuggestion2': 'Ajude-me a criar um plano para a respiração celular.',
   'mindmate.defaultSuggestion3': 'Que ideias erradas têm os alunos sobre a gravidade?',
   'mindmate.defaultSuggestion4': 'Como desenhar uma sessão de aprendizagem em grupo eficaz?',

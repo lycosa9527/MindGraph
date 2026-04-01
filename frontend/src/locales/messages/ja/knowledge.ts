@@ -1,7 +1,6 @@
 /** ja UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'このテストを削除しますか？取り消せません。',
+  'chunkTest.history.confirmDeleteBody': 'このテストを削除しますか？取り消せません。',
   'chunkTest.history.confirmDeleteTitle': 'テストを削除',
   'chunkTest.history.delete': '削除',
   'chunkTest.history.deleteFailed': 'テストの削除に失敗しました',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': '標準IR指標',
   'chunkTestResults.storageEff': 'ストレージ効率',
   'chunkTestResults.testFailed': 'テスト失敗',
-  'chunkTestResults.testFailedHint':
-    'テスト実行中にエラーが発生しました。もう一度お試しください。',
+  'chunkTestResults.testFailedHint': 'テスト実行中にエラーが発生しました。もう一度お試しください。',
   'chunkTestResults.testingInProgress': 'テスト実行中…',
   'chunkTestResults.totalChunks': '合計 {n} チャンク',
   'chunkTestResults.viewChunks': 'チャンクを表示',
@@ -121,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'すべて解除',
   'knowledge.manualEval.dialogTitle': '手動評価 — {method}',
   'knowledge.manualEval.groundTruthLabel': '正解（任意）',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    '回答の関連性評価用に正解を入力…',
+  'knowledge.manualEval.groundTruthPlaceholder': '回答の関連性評価用に正解を入力…',
   'knowledge.manualEval.metric.answer_coverage': '回答カバレッジ',
   'knowledge.manualEval.metric.answer_faithfulness': '回答の忠実度',
   'knowledge.manualEval.metric.clarity': '明瞭さ',
@@ -144,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'チャンク品質の評価',
   'knowledge.manualEval.resultsTitle': '評価結果',
   'knowledge.manualEval.selectAll': 'すべて選択',
-  'knowledge.manualEval.selectChunksHeading':
-    '評価するチャンクを選択（空ならすべて評価）',
+  'knowledge.manualEval.selectChunksHeading': '評価するチャンクを選択（空ならすべて評価）',
   'knowledge.manualEval.showingFirst20': '{total} チャンク中 先頭20件を表示',
   'knowledge.manualEval.startEvaluation': '評価を開始',
   'knowledge.processing.chunking': 'チャンク分割',
@@ -196,13 +192,11 @@ export default {
   'knowledge.upload.click': 'クリックしてアップロード',
   'knowledge.upload.drag': 'またはファイルをここにドラッグ',
   'knowledge.upload.fileTooLarge': 'ファイルサイズは10MB以下にしてください',
-  'knowledge.upload.hintFormats':
-    'PDF、DOCX、TXT、MD、画像（最大10MB）',
+  'knowledge.upload.hintFormats': 'PDF、DOCX、TXT、MD、画像（最大10MB）',
   'knowledge.upload.maxDocs': 'ドキュメント数の上限（5件）に達しました',
   'knowledge.upload.title': 'ドキュメントをアップロード',
   'knowledge.upload.unsupportedType': '未対応のファイル形式です',
-  'knowledgeSpace.confirmDeleteBody':
-    'このドキュメントを削除しますか？取り消せません。',
+  'knowledgeSpace.confirmDeleteBody': 'このドキュメントを削除しますか？取り消せません。',
   'knowledgeSpace.confirmDeleteTitle': '削除の確認',
   'knowledgeSpace.deleteFailed': '削除に失敗しました',
   'knowledgeSpace.documentDeleted': 'ドキュメントを削除しました',

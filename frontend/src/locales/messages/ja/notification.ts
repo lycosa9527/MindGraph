@@ -1,18 +1,13 @@
 /** ja UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'トピックまたは中央のノードはクリアできません',
-  'notification.cannotResetSelectDiagramType':
-    'リセットできません。先に図の種類を選んでください',
+  'notification.cannotResetSelectDiagramType': 'リセットできません。先に図の種類を選んでください',
   'notification.canvasClearNodes': '{count} 個のノードをクリアしました',
-  'notification.canvasClearNodesLearning':
-    '{count} 個のノードを空にし、解答に追加しました',
+  'notification.canvasClearNodesLearning': '{count} 個のノードを空にし、解答に追加しました',
   'notification.canvasSomeoneEditingNode': '他のユーザーがこのノードを編集中です',
-  'notification.collabDeleteBlocked':
-    '他のユーザーが選択中のノードを編集中のため削除できません',
-  'notification.collabRedoBlocked':
-    '他のユーザーが編集中のためやり直しできません',
-  'notification.collabUndoBlocked':
-    '他のユーザーが編集中のため元に戻せません',
+  'notification.collabDeleteBlocked': '他のユーザーが選択中のノードを編集中のため削除できません',
+  'notification.collabRedoBlocked': '他のユーザーが編集中のためやり直しできません',
+  'notification.collabUndoBlocked': '他のユーザーが編集中のため元に戻せません',
   'notification.conversationDeleted': '会話を削除しました',
   'notification.copied': 'クリップボードにコピーしました',
   'notification.copyFailed': 'コピーに失敗しました',
@@ -20,8 +15,7 @@ export default {
   'notification.deleted': '項目を削除しました',
   'notification.feedbackCancelled': 'フィードバックを取り消しました',
   'notification.feedbackThanks': 'フィードバックありがとうございます',
-  'notification.feedbackThanksDislike':
-    'フィードバックありがとうございます。改善に努めます',
+  'notification.feedbackThanksDislike': 'フィードバックありがとうございます。改善に努めます',
   'notification.focusQuestionTooShort': '先により長い焦点の質問を入力してください',
   'notification.fullscreenFailed': '全画面表示にできませんでした',
   'notification.generationCancelled': '生成をキャンセルしました',
@@ -43,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'ルート概念のリンクが見つかりません',
   'notification.saved': '変更を保存しました',
   'notification.selectNodeToClear': 'クリアするノードを選択してください',
-  'notification.sessionInvalidated':
-    '登録端末数の上限を超えたためログアウトしました',
+  'notification.sessionInvalidated': '登録端末数の上限を超えたためログアウトしました',
   'notification.signInToUse': 'ご利用にはログインしてください',
   'notification.signInToValidateFocus': '焦点の質問を検証するにはログインしてください',
 } as const

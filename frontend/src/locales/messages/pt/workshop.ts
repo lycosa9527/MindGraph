@@ -1,8 +1,7 @@
 /** pt UI — workshop (Brazilian/European neutral UI Portuguese) */
 export default {
   'collab.codeCopied': 'Código copiado',
-  'collab.codeGenerated':
-    'Código de colaboração gerado — partilhe para editar em conjunto.',
+  'collab.codeGenerated': 'Código de colaboração gerado — partilhe para editar em conjunto.',
   'collab.copy': 'Copiar',
   'collab.copyFailed': 'Não foi possível copiar',
   'collab.copyLink': 'Copiar ligação',
@@ -16,10 +15,8 @@ export default {
   'collab.end': 'Terminar colaboração',
   'collab.endFailed': 'Não foi possível terminar a colaboração',
   'collab.ended': 'Colaboração terminada',
-  'collab.galleryFull':
-    'A galeria está cheia. Elimine primeiro um diagrama',
-  'collab.hintNetworkInactive':
-    'Gere um código para que outros se juntem e editem consigo.',
+  'collab.galleryFull': 'A galeria está cheia. Elimine primeiro um diagrama',
+  'collab.hintNetworkInactive': 'Gere um código para que outros se juntem e editem consigo.',
   'collab.hintSchoolInactive':
     'Após iniciar, colegas da mesma escola podem juntar-se a partir da página inicial.',
   'collab.invalidDiagramData': 'Dados do diagrama inválidos',
@@ -69,10 +66,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Ícone (opcional)',
   'workshop.channelAvatarPlaceholder': 'Emoji ou etiqueta breve',
   'workshop.channelColor': 'Cor do canal',
-  'workshop.channelInviteReceived':
-    'Foi adicionado a «{name}». Abra o Workshop para ver.',
-  'workshop.channelKindGroup':
-    'Grupo de professores (nível superior, p. ex. 教研组)',
+  'workshop.channelInviteReceived': 'Foi adicionado a «{name}». Abra o Workshop para ver.',
+  'workshop.channelKindGroup': 'Grupo de professores (nível superior, p. ex. 教研组)',
   'workshop.channelKindLessonStudy': 'Estudo de aula sob um grupo (课例)',
   'workshop.channelNameLabel': 'Nome',
   'workshop.channelNamePlaceholder': 'p. ex. grupo STEM',
@@ -100,8 +95,7 @@ export default {
   'workshop.contactsOnlineNow': 'Em linha',
   'workshop.contactsRecentlyOnline': 'Recentemente em linha',
   'workshop.conversationTitle': 'Título da conversa',
-  'workshop.conversationTitlePlaceholder':
-    'p. ex. debate sobre planeamento, reflexão docente',
+  'workshop.conversationTitlePlaceholder': 'p. ex. debate sobre planeamento, reflexão docente',
   'workshop.conversations': 'Conversas',
   'workshop.copyLink': 'Copiar ligação',
   'workshop.copyMentionSyntax': 'Copiar sintaxe de menção',
@@ -121,8 +115,7 @@ export default {
   'workshop.deadlineDialogTitle': 'Prazo do estudo de aula',
   'workshop.defaultChannel': 'Canal predefinido',
   'workshop.deleteTopic': 'Eliminar conversa',
-  'workshop.deleteTopicConfirm':
-    'Tem a certeza de que pretende eliminar esta conversa?',
+  'workshop.deleteTopicConfirm': 'Tem a certeza de que pretende eliminar esta conversa?',
   'workshop.desktopNotifications': 'Notificações no ambiente de trabalho',
   'workshop.diagram': 'Diagrama',
   'workshop.directMessage': 'Mensagem direta',
@@ -136,8 +129,7 @@ export default {
   'workshop.edited': '(editado)',
   'workshop.emailNotifications': 'Notificações por e-mail',
   'workshop.emoji': 'Emoji',
-  'workshop.expandCollapseGroup':
-    'Expandir ou recolher a lista de estudos na barra lateral',
+  'workshop.expandCollapseGroup': 'Expandir ou recolher a lista de estudos na barra lateral',
   'workshop.filterSidebar': 'Filtrar grupos de professores e MD',
   'workshop.filterUsers': 'Filtrar utilizadores',
   'workshop.followTopic': 'Seguir conversa',
@@ -177,8 +169,7 @@ export default {
   'workshop.markAsRead': 'Marcar como lida',
   'workshop.markStudyResolved': 'Marcar estudo como resolvido',
   'workshop.members': 'membros',
-  'workshop.mentionAmbiguous':
-    'Nomes ambíguos — escolha alguém com um nome visível único: {0}',
+  'workshop.mentionAmbiguous': 'Nomes ambíguos — escolha alguém com um nome visível único: {0}',
   'workshop.mentionUnknown':
     'Menções desconhecidas (apenas utilizadores da mesma organização e pessoal): {0}',
   'workshop.mentionedInChannel': 'Foi mencionado em #{0}',
@@ -268,8 +259,7 @@ export default {
   'workshop.starMessage': 'Destacar mensagem',
   'workshop.starred': 'Destacados',
   'workshop.startConversation': 'Inicie a conversa!',
-  'workshop.startConversationHint':
-    'Inicie uma conversa para debater com os seus colegas',
+  'workshop.startConversationHint': 'Inicie uma conversa para debater com os seus colegas',
   'workshop.startDM': 'Enviar mensagem',
   'workshop.startNewConversation': 'Iniciar nova conversa',
   'workshop.statusArchived': 'Arquivado',
@@ -293,8 +283,7 @@ export default {
   'workshop.topicDescriptionPlaceholder': 'Descreva o tema da conversa…',
   'workshop.topicSettings': 'Definições da conversa',
   'workshop.topicTitle': 'Título',
-  'workshop.topicTitlePlaceholder':
-    'p. ex. mapa mental de desenho para o capítulo 3',
+  'workshop.topicTitlePlaceholder': 'p. ex. mapa mental de desenho para o capítulo 3',
   'workshop.topics': 'Conversas',
   'workshop.typeMessagePlaceholder':
     'Escreva uma mensagem… (Enter para enviar, Shift+Enter para nova linha)',
@@ -328,11 +317,9 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Guia e desenho de folha de trabalho',
   'workshop.welcomeExampleLSEng1C2': 'Tarefas pós-leitura e transferência',
   'workshop.welcomeExampleLSEng1C3': 'Feedback de observação e reflexão',
-  'workshop.welcomeExampleLSEng2':
-    'Estudo de aula: escrita — mesma aula, professores diferentes',
+  'workshop.welcomeExampleLSEng2': 'Estudo de aula: escrita — mesma aula, professores diferentes',
   'workshop.welcomeExampleLSEng2C1': 'Rúbrica piloto e revisão',
-  'workshop.welcomeExampleLSMath1':
-    'Estudo de aula: semana de afinação do «conceito de função»',
+  'workshop.welcomeExampleLSMath1': 'Estudo de aula: semana de afinação do «conceito de função»',
   'workshop.welcomeExampleLSMath1C1': 'Objetivos e desenho de atividades',
   'workshop.welcomeExampleLSMath1C2': 'Perguntas e quadro',
   'workshop.welcomeExampleLSMath1C3': 'Reflexão pós-aula e próximos passos',
@@ -355,8 +342,7 @@ export default {
   'workshop.youAnd': 'Você e',
   'workshopCanvas.connectFailed': 'Não foi possível ligar à colaboração',
   'workshopCanvas.connectionClosed': 'Ligação fechada',
-  'workshopCanvas.connectionClosedReason':
-    'Ligação de colaboração fechada: {reason}',
+  'workshopCanvas.connectionClosedReason': 'Ligação de colaboração fechada: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} está a editar este nó',
   'workshopCanvas.errorGeneric': 'Erro de colaboração',
   'workshopCanvas.reconnectFailed':
@@ -365,6 +351,5 @@ export default {
     'Regressou ao início — sem edições no diagrama durante 30 minutos.',
   'workshopCanvas.userJoined': 'O utilizador {userId} juntou-se',
   'workshopCanvas.userLeft': 'O utilizador {userId} saiu',
-  'workshopCanvas.wsError':
-    'Erro de ligação de colaboração; verifique a sua rede',
+  'workshopCanvas.wsError': 'Erro de ligação de colaboração; verifique a sua rede',
 } as const

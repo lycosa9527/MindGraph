@@ -81,8 +81,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Kiểm tra tất cả bộ dữ liệu',
   'knowledge.chunkHeader.testUpload': 'Kiểm tra tài liệu tải lên',
   'knowledge.chunkHeader.title': 'Kiểm tra chunk RAG',
-  'knowledge.chunkHeader.waitForProcessing':
-    'Vui lòng đợi tài liệu xử lý xong trước khi kiểm tra',
+  'knowledge.chunkHeader.waitForProcessing': 'Vui lòng đợi tài liệu xử lý xong trước khi kiểm tra',
   'knowledge.chunkPreview.empty': 'Không tìm thấy chunk',
   'knowledge.chunkPreview.pageLabel': 'Trang {n}',
   'knowledge.chunkPreview.title': 'Chunk tài liệu — {fileName}',
@@ -101,8 +100,7 @@ export default {
   'knowledge.doc.colStatus': 'Trạng thái',
   'knowledge.doc.colType': 'Loại',
   'knowledge.doc.colUploaded': 'Ngày tải lên',
-  'knowledge.doc.emptyDescription':
-    'Chưa có tài liệu. Tải lên để xây cơ sở tri thức.',
+  'knowledge.doc.emptyDescription': 'Chưa có tài liệu. Tải lên để xây cơ sở tri thức.',
   'knowledge.doc.errorPrefix': 'Lỗi: ',
   'knowledge.doc.noData': 'Không có dữ liệu',
   'knowledge.doc.statusCompleted': 'Hoàn thành',
@@ -199,8 +197,7 @@ export default {
   'knowledge.upload.maxDocs': 'Đã đạt giới hạn tài liệu (5)',
   'knowledge.upload.title': 'Tải lên tài liệu',
   'knowledge.upload.unsupportedType': 'Loại tệp không được hỗ trợ',
-  'knowledgeSpace.confirmDeleteBody':
-    'Bạn có chắc muốn xóa tài liệu này? Không thể hoàn tác.',
+  'knowledgeSpace.confirmDeleteBody': 'Bạn có chắc muốn xóa tài liệu này? Không thể hoàn tác.',
   'knowledgeSpace.confirmDeleteTitle': 'Xác nhận xóa',
   'knowledgeSpace.deleteFailed': 'Xóa thất bại',
   'knowledgeSpace.documentDeleted': 'Đã xóa tài liệu',

@@ -58,8 +58,7 @@ export default {
   'focusQuestion.suggestionsHint':
     'Alternativas (5 por página: − ant., = sig.; en la última página = carga más)',
   'focusQuestion.suggestionsRequestFailed': 'Error en la solicitud de sugerencias',
-  'focusQuestion.title':
-    'Modo estándar · ¿Qué pregunta focal debe responder este mapa conceptual?',
+  'focusQuestion.title': 'Modo estándar · ¿Qué pregunta focal debe responder este mapa conceptual?',
   'focusQuestion.tooShort': 'Introduzca una pregunta focal breve',
   'focusQuestion.validate': 'Comprobación IA',
   'focusQuestion.validationRequestFailed': 'Error en la solicitud de validación',
@@ -67,7 +66,8 @@ export default {
   'mindmate.defaultSuggestion1':
     '¿Qué conflictos cognitivos puedo diseñar en una clase sobre paralelogramos?',
   'mindmate.defaultSuggestion10': '¿Cómo usar la enseñanza situada en clase de historia?',
-  'mindmate.defaultSuggestion11': '¿Qué aspectos de seguridad hay que tener en cuenta en prácticas de física?',
+  'mindmate.defaultSuggestion11':
+    '¿Qué aspectos de seguridad hay que tener en cuenta en prácticas de física?',
   'mindmate.defaultSuggestion12': '¿Cómo diseñar deberes acordes al nivel cognitivo del alumnado?',
   'mindmate.defaultSuggestion2': 'Ayúdame a crear una planificación para la respiración celular.',
   'mindmate.defaultSuggestion3': '¿Qué ideas erróneas tienen los estudiantes sobre la gravedad?',

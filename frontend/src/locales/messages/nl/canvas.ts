@@ -212,23 +212,18 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Lay-outrichting gewisseld',
   'canvas.toolbar.learningSheetRestored': 'Studieblad hersteld',
   'canvas.toolbar.moreAppConceptMapModes': 'Conceptmapmodi',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'Nu standaardmodus; meer modi volgen binnenkort',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'Nu standaardmodus; meer modi volgen binnenkort',
   'canvas.toolbar.moreAppLearningSheet': 'Studieblad',
-  'canvas.toolbar.moreAppLearningSheetDesc':
-    'Willekeurige blanco’s om te studeren en te herhalen',
+  'canvas.toolbar.moreAppLearningSheetDesc': 'Willekeurige blanco’s om te studeren en te herhalen',
   'canvas.toolbar.moreAppWaterfall': 'Waterfall',
   'canvas.toolbar.moreAppWaterfallDesc':
     'Selecteer batchknooppunten; maak divergent en convergent denken zichtbaar',
   'canvas.toolbar.moreApps': 'Meer apps',
   'canvas.toolbar.moreAppSnapshot': 'Momentopname',
-  'canvas.toolbar.moreAppSnapshotDesc':
-    'Bewaar een versie van dit diagram (max. 10)',
-  'canvas.toolbar.snapshotSaveFirst':
-    'Sla het diagram eerst op voordat u een momentopname maakt',
+  'canvas.toolbar.moreAppSnapshotDesc': 'Bewaar een versie van dit diagram (max. 10)',
+  'canvas.toolbar.snapshotSaveFirst': 'Sla het diagram eerst op voordat u een momentopname maakt',
   'canvas.toolbar.snapshotTaken': 'Momentopname {n} opgeslagen',
-  'canvas.toolbar.snapshotFailed':
-    'Momentopname opslaan mislukt, probeer het opnieuw',
+  'canvas.toolbar.snapshotFailed': 'Momentopname opslaan mislukt, probeer het opnieuw',
   'canvas.toolbar.newAssociation': 'Nieuwe associatie',
   'canvas.toolbar.newAttribute': 'Nieuw attribuut',
   'canvas.toolbar.newBranch': 'Nieuwe tak',
@@ -252,16 +247,14 @@ export default {
     'Selecteer categorie- of bladknooppunten (onderwerpknooppunt kan niet worden verwijderd)',
   'canvas.toolbar.selectNodesFirst': 'Selecteer eerst knooppunt(en)',
   'canvas.toolbar.selectNodesToDelete': 'Selecteer knooppunt(en) om te verwijderen',
-  'canvas.toolbar.selectPartForSubpart':
-    'Selecteer een deel om een subdeel aan toe te voegen',
+  'canvas.toolbar.selectPartForSubpart': 'Selecteer een deel om een subdeel aan toe te voegen',
   'canvas.toolbar.selectPartThenEnter':
     'Selecteer een deelknooppunt en druk op Enter om een subdeel toe te voegen',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'Selecteer gelijkenis- of verschilknooppunten (onderwerpknooppunten kunnen niet worden verwijderd)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst':
     'Selecteer eerst een gelijkenis- of verschilknooppunt',
-  'canvas.toolbar.selectStepForSubstep':
-    'Selecteer een stap om een substap aan toe te voegen',
+  'canvas.toolbar.selectStepForSubstep': 'Selecteer een stap om een substap aan toe te voegen',
   'canvas.toolbar.similarityWithIndex': 'Gelijkenis {n}',
   'canvas.toolbar.stepAdded': 'Stap toegevoegd',
   'canvas.toolbar.styleApplied': 'Stijl toegepast',
@@ -311,11 +304,9 @@ export default {
   'canvas.topBar.snapshotRecallConfirmBtn': 'Herstellen',
   'canvas.topBar.snapshotRecallCancelBtn': 'Annuleren',
   'canvas.topBar.snapshotRecallHistory': 'Vóór herstel momentopname {n}',
-  'canvas.topBar.snapshotRecallFailed':
-    'Momentopname herstellen mislukt, probeer het opnieuw',
+  'canvas.topBar.snapshotRecallFailed': 'Momentopname herstellen mislukt, probeer het opnieuw',
   'canvas.topBar.snapshotDeleted': 'Momentopname {n} verwijderd',
-  'canvas.topBar.snapshotDeleteFailed':
-    'Momentopname verwijderen mislukt, probeer het opnieuw',
+  'canvas.topBar.snapshotDeleteFailed': 'Momentopname verwijderen mislukt, probeer het opnieuw',
   'canvas.topBar.snapshotBadgeTooltip':
     'Klik om momentopname {n} te herstellen · Ctrl+klik om te verwijderen',
   'canvas.zoomControls.exitFullscreen': 'Volledig scherm verlaten',
@@ -505,8 +496,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Maken op canvas',
   'landing.diagramGrid.tree_map.desc': 'Classificeren en groeperen',
   'landing.diagramGrid.tree_map.title': 'Tree Map',
-  'landing.template.freePlaceholder':
-    'Beschrijf uw diagram of kies hieronder een sjabloon…',
+  'landing.template.freePlaceholder': 'Beschrijf uw diagram of kies hieronder een sjabloon…',
   'landing.template.slot.criterion': 'Classificatie',
   'landing.template.slot.event': 'Gebeurtenis',
   'landing.template.slot.itemA': 'Item A',
@@ -517,8 +507,7 @@ export default {
   'landing.template.slot.theme': 'Thema',
   'landing.template.slot.topic': 'Centraal onderwerp',
   'mindgraphLanding.cancel': 'Annuleren',
-  'mindgraphLanding.codeFormatInvalid':
-    'Ongeldig presentatiecodeformaat (moet xxx-xxx zijn)',
+  'mindgraphLanding.codeFormatInvalid': 'Ongeldig presentatiecodeformaat (moet xxx-xxx zijn)',
   'mindgraphLanding.codeIncomplete': 'Voer de volledige presentatiecode in',
   'mindgraphLanding.collaborate': 'Samenwerken',
   'mindgraphLanding.dialogSchoolTitle': 'Schoolsamenwerking',
@@ -539,6 +528,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Voer de uitnodigingscode (xxx-xxx) in om aan hun sessie deel te nemen.',
   'mindgraphLanding.sharedCollab': 'Gedeelde samenwerking',
-  'mindgraphLanding.welcome':
-    'Hallo {username}, ik ben uw AI-assistent voor visueel denken',
+  'mindgraphLanding.welcome': 'Hallo {username}, ik ben uw AI-assistent voor visueel denken',
 } as const

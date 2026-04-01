@@ -1,16 +1,13 @@
 /** ru UI — mindmate */
 export default {
-  'aiModel.conceptAiOff':
-    'Включить ИИ-подписи связей (несколько моделей)',
+  'aiModel.conceptAiOff': 'Включить ИИ-подписи связей (несколько моделей)',
   'aiModel.conceptAiOn': 'Вкл.: перетаскивайте связи для генерации подписей',
   'aiModel.enableAi': 'Включить ИИ',
-  'aiModel.inlineRecTooltip':
-    'При правке узла нажмите Tab для ИИ-рекомендаций',
+  'aiModel.inlineRecTooltip': 'При правке узла нажмите Tab для ИИ-рекомендаций',
   'aiModel.label': 'Модель ИИ',
   'aiModel.readyCount': 'Готово: {count}',
   'aiModel.relationshipsBadge': 'Связи',
-  'aiModel.relationshipsTooltip':
-    'Тяните связи между концепциями — ИИ сформирует подписи',
+  'aiModel.relationshipsTooltip': 'Тяните связи между концепциями — ИИ сформирует подписи',
   'aiModel.tabFocusBadge': 'Tab — фокус',
   'aiModel.tabFocusTooltip':
     'При правке фокус-вопроса нажмите Tab для проверки; затем выберите варианты в панели (− / =)',
@@ -25,8 +22,7 @@ export default {
     'В совместной работе ИИ может использовать только владелец диаграммы',
   'autoComplete.conceptMapRealtime':
     'В концепт-картах подсказки связей в реальном времени; создавайте связи для генерации',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Заполните левую и правую темы перед генерацией',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Заполните левую и правую темы перед генерацией',
   'autoComplete.doubleBubbleTopicPair': '{left} и {right}',
   'autoComplete.enterTopicFirst': 'Сначала введите тему',
   'autoComplete.generationFailedRetry': 'Генерация не удалась, попробуйте снова',
@@ -36,8 +32,7 @@ export default {
   'autoComplete.selectDiagramType': 'Выберите тип диаграммы',
   'conceptMapPicker.currentFocusQuestion': 'Текущий фокус-вопрос',
   'conceptMapPicker.currentRootConcept': 'Текущий корневой концепт',
-  'conceptMapPicker.focusAlternativesHint':
-    'Варианты ({pageSize} на страницу, адаптивная высота)',
+  'conceptMapPicker.focusAlternativesHint': 'Варианты ({pageSize} на страницу, адаптивная высота)',
   'conceptMapPicker.rootAlternativesHint':
     'Варианты корня ({pageSize} на страницу, адаптивная высота)',
   'conceptMapPicker.suggestionsEmpty': 'Пока нет подсказок. Нажмите = для ещё.',
@@ -57,8 +52,7 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Введите фокус-вопрос…',
   'focusQuestion.skip': 'Пропустить',
-  'focusQuestion.suggestionsEmpty':
-    'Пока нет подсказок. Нажмите = для следующей порции.',
+  'focusQuestion.suggestionsEmpty': 'Пока нет подсказок. Нажмите = для следующей порции.',
   'focusQuestion.suggestionsHint':
     'Варианты (5 на стр.: − назад, = вперёд; на последней = подгрузит ещё)',
   'focusQuestion.suggestionsRequestFailed': 'Запрос подсказок не удался',
@@ -68,11 +62,9 @@ export default {
   'focusQuestion.validate': 'Проверка ИИ',
   'focusQuestion.validationRequestFailed': 'Запрос проверки не удался',
   'focusQuestion.weakLabel': 'Слабо',
-  'mindmate.defaultSuggestion1':
-    'Какие когнитивные конфликты заложить в урок по параллелограмму?',
+  'mindmate.defaultSuggestion1': 'Какие когнитивные конфликты заложить в урок по параллелограмму?',
   'mindmate.defaultSuggestion10': 'Как использовать ситуативное обучение на уроке истории?',
-  'mindmate.defaultSuggestion11':
-    'На что обратить внимание по безопасности в физических опытах?',
+  'mindmate.defaultSuggestion11': 'На что обратить внимание по безопасности в физических опытах?',
   'mindmate.defaultSuggestion12':
     'Как спроектировать домашнее задание под уровень познания учеников?',
   'mindmate.defaultSuggestion2': 'Помоги составить план урока по клеточному дыханию.',
@@ -109,19 +101,15 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Не удалось сгенерировать ветви',
   'nodePalette.error.createDiagramFirst': 'Сначала создайте диаграмму',
   'nodePalette.error.enterTopicText': 'Введите текст для узла темы',
-  'nodePalette.error.replacePlaceholder':
-    'Введите реальную тему вместо заполнителя по умолчанию',
+  'nodePalette.error.replacePlaceholder': 'Введите реальную тему вместо заполнителя по умолчанию',
   'nodePalette.fallbackTopicA': 'Тема A',
   'nodePalette.fallbackTopicB': 'Тема B',
   'nodePalette.finish': 'Готово',
   'nodePalette.generatingIdeas': 'Генерация идей…',
   'nodePalette.generatingProgress': 'Генерация… получено {count}',
-  'nodePalette.helpDimension':
-    'Выберите ровно 1 измерение, затем нажмите «Далее».',
-  'nodePalette.helpFinish':
-    'Выберите узлы и нажмите «Готово», чтобы добавить на диаграмму.',
-  'nodePalette.helpNext':
-    'Выберите узлы и нажмите «Далее» для узлов второго уровня.',
+  'nodePalette.helpDimension': 'Выберите ровно 1 измерение, затем нажмите «Далее».',
+  'nodePalette.helpFinish': 'Выберите узлы и нажмите «Готово», чтобы добавить на диаграмму.',
+  'nodePalette.helpNext': 'Выберите узлы и нажмите «Далее» для узлов второго уровня.',
   'nodePalette.history.replaceAddNodes': 'Заменить / добавить узлы',
   'nodePalette.loadMore': 'Ещё',
   'nodePalette.next': 'Далее',

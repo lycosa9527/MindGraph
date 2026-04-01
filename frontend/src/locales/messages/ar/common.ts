@@ -20,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': 'إيقاف التوليد',
   'askOnce.panel.thinking': 'جارٍ التفكير…',
   'askOnce.panel.thoughtProcess': 'مسار التفكير',
-  'askOnce.placeholder':
-    'أدخل طلبك… اضغط Ctrl+Enter أو انقر إرسال',
+  'askOnce.placeholder': 'أدخل طلبك… اضغط Ctrl+Enter أو انقر إرسال',
   'askOnce.promptContent': 'محتوى الطلب',
   'askOnce.promptEditPlaceholder': 'أدخل قالبًا أو اختر قالبًا للتحرير…',
   'askOnce.promptTemplatesTitle': 'قوالب الطلبات',
@@ -61,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'فشلت جميع النماذج، يُرجى المحاولة مرة أخرى',
   'diagramTemplate.generated': 'تم توليد المخطط ({model})',
   'diagramTemplate.generationFailed': 'فشل التوليد',
-  'diagramTemplate.promptTooLong':
-    'الطلب طويل جدًا ({length} حرفًا). الحد الأقصى {max} حرفًا.',
+  'diagramTemplate.promptTooLong': 'الطلب طويل جدًا ({length} حرفًا). الحد الأقصى {max} حرفًا.',
   'diagramTemplates.brace_map': 'قسّم 【subject】 بخريطة الأقواس.',
   'diagramTemplates.bridge_map': 'ارسم خريطة جسر للعلاقة 【relation】.',
   'diagramTemplates.bubble_map': 'استخدم خريطة الفقاعات لوصف 【topic】.',
@@ -111,10 +109,8 @@ export default {
   'settings.version.title': 'إصدار الواجهة',
   'settings.version.chinese': 'النسخة الصينية',
   'settings.version.international': 'النسخة الدولية',
-  'landing.international.subtitle':
-    'أقوى برنامج لرسوم التفكير بالذكاء الاصطناعي',
-  'landing.international.promptPlaceholder':
-    'صف مخططك، أو اختر نوعًا أدناه…',
+  'landing.international.subtitle': 'أقوى برنامج لرسوم التفكير بالذكاء الاصطناعي',
+  'landing.international.promptPlaceholder': 'صف مخططك، أو اختر نوعًا أدناه…',
   'landing.international.sectionTitle': 'اختر نوع المخطط',
   'landing.international.modules': 'الوحدات',
   'landing.international.mindmateCard.title': 'MindMate',

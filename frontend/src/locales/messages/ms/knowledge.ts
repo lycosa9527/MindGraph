@@ -1,7 +1,6 @@
 /** ms UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Padam ujian ini? Tindakan ini tidak boleh dibuat asal.',
+  'chunkTest.history.confirmDeleteBody': 'Padam ujian ini? Tindakan ini tidak boleh dibuat asal.',
   'chunkTest.history.confirmDeleteTitle': 'Padam ujian',
   'chunkTest.history.delete': 'Padam',
   'chunkTest.history.deleteFailed': 'Gagal memadam ujian',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Metrik IR standard',
   'chunkTestResults.storageEff': 'Kecekapan storan',
   'chunkTestResults.testFailed': 'Ujian gagal',
-  'chunkTestResults.testFailedHint':
-    'Ralat berlaku semasa ujian dijalankan. Sila cuba lagi.',
+  'chunkTestResults.testFailedHint': 'Ralat berlaku semasa ujian dijalankan. Sila cuba lagi.',
   'chunkTestResults.testingInProgress': 'Ujian sedang dijalankan…',
   'chunkTestResults.totalChunks': 'Jumlah {n} chunk',
   'chunkTestResults.viewChunks': 'Lihat chunk',
@@ -82,8 +80,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'Uji semua set data',
   'knowledge.chunkHeader.testUpload': 'Uji dokumen muat naik',
   'knowledge.chunkHeader.title': 'Ujian chunk RAG',
-  'knowledge.chunkHeader.waitForProcessing':
-    'Sila tunggu dokumen selesai diproses sebelum menguji',
+  'knowledge.chunkHeader.waitForProcessing': 'Sila tunggu dokumen selesai diproses sebelum menguji',
   'knowledge.chunkPreview.empty': 'Tiada chunk dijumpai',
   'knowledge.chunkPreview.pageLabel': 'Halaman {n}',
   'knowledge.chunkPreview.title': 'Chunk dokumen — {fileName}',
@@ -200,8 +197,7 @@ export default {
   'knowledge.upload.maxDocs': 'Had maksimum dokumen dicapai (5)',
   'knowledge.upload.title': 'Muat naik dokumen',
   'knowledge.upload.unsupportedType': 'Jenis fail tidak disokong',
-  'knowledgeSpace.confirmDeleteBody':
-    'Padam dokumen ini? Tindakan ini tidak boleh dibuat asal.',
+  'knowledgeSpace.confirmDeleteBody': 'Padam dokumen ini? Tindakan ini tidak boleh dibuat asal.',
   'knowledgeSpace.confirmDeleteTitle': 'Sahkan padam',
   'knowledgeSpace.deleteFailed': 'Padam gagal',
   'knowledgeSpace.documentDeleted': 'Dokumen dipadam',

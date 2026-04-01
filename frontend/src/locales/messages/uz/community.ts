@@ -115,7 +115,8 @@ export default {
     'Ijtimoiy tarmoqlarda kontent moderatsiyasi qattiqroq bo‘lishi kerakmi?',
   'debateverse.setup.suggestion5': 'Masofaviy ishq asosiy bo‘lishi kerakmi?',
   'debateverse.setup.suggestion6': 'AI kontentiga mualliflik huquqi berilishi kerakmi?',
-  'debateverse.setup.suggestion7': 'Ta’lim bilimga yoki ko‘nikmalarga ko‘proq e’tibor berishi kerakmi?',
+  'debateverse.setup.suggestion7':
+    'Ta’lim bilimga yoki ko‘nikmalarga ko‘proq e’tibor berishi kerakmi?',
   'debateverse.setup.suggestion8': 'Inson embrionlarida gen tahriri ruxsat etilishi kerakmi?',
   'debateverse.setup.topicPlaceholder': 'Munozara mavzusini kiriting...',
   'debateverse.side.affirmative': 'Ijobiy',
@@ -138,7 +139,8 @@ export default {
   'library.loading': 'Yuklanmoqda…',
   'library.other': 'Boshqa',
   'library.premiumCollection': 'Tanlangan to‘plam',
-  'library.slotFull.body': 'Sizda {max} ta saqlangan diagramma bor. Yangisini saqlash uchun bittasini o‘chiring.',
+  'library.slotFull.body':
+    'Sizda {max} ta saqlangan diagramma bor. Yangisini saqlash uchun bittasini o‘chiring.',
   'library.slotFull.cancel': 'Bekor qilish',
   'library.slotFull.deleteAndSave': 'O‘chirish va saqlash',
   'library.slotFull.networkError': 'Tarmoq xatosi, amaliyot muvaffaqiyatsiz',

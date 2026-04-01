@@ -36,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Ildiz tushuncha havolasi topilmadi',
   'notification.saved': 'O‘zgarishlar saqlandi',
   'notification.selectNodeToClear': 'Tozalash uchun tugunni tanlang',
-  'notification.sessionInvalidated':
-    'Qurilmalar soni chegarasidan oshgani uchun chiqarildingiz',
+  'notification.sessionInvalidated': 'Qurilmalar soni chegarasidan oshgani uchun chiqarildingiz',
   'notification.signInToUse': 'Foydalanish uchun kiring',
   'notification.signInToValidateFocus': 'Fokus savolini tekshirish uchun kiring',
 } as const

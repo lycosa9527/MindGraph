@@ -1,7 +1,6 @@
 /** hi UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'क्या यह टेस्ट हटाएँ? यह पूर्ववत नहीं हो सकता।',
+  'chunkTest.history.confirmDeleteBody': 'क्या यह टेस्ट हटाएँ? यह पूर्ववत नहीं हो सकता।',
   'chunkTest.history.confirmDeleteTitle': 'टेस्ट हटाएँ',
   'chunkTest.history.delete': 'हटाएँ',
   'chunkTest.history.deleteFailed': 'टेस्ट हटाना विफल',
@@ -40,8 +39,7 @@ export default {
   'chunkTestResults.answerQuality': 'Answer quality',
   'chunkTestResults.avgLatency': 'औसत विलंब',
   'chunkTestResults.back': 'वापस',
-  'chunkTestResults.cancelConfirmBody':
-    'क्या यह टेस्ट रद्द करें? अगले चेकपॉइंट पर रुकेगा।',
+  'chunkTestResults.cancelConfirmBody': 'क्या यह टेस्ट रद्द करें? अगले चेकपॉइंट पर रुकेगा।',
   'chunkTestResults.cancelFailed': 'टेस्ट रद्द विफल',
   'chunkTestResults.cancelRequested': 'टेस्ट रद्द अनुरोध भेजा गया',
   'chunkTestResults.cancelTest': 'टेस्ट रद्द करें',
@@ -71,8 +69,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'मानक IR मीट्रिक',
   'chunkTestResults.storageEff': 'Storage eff.',
   'chunkTestResults.testFailed': 'टेस्ट विफल',
-  'chunkTestResults.testFailedHint':
-    'टेस्ट के दौरान त्रुटि। कृपया फिर कोशिश करें।',
+  'chunkTestResults.testFailedHint': 'टेस्ट के दौरान त्रुटि। कृपया फिर कोशिश करें।',
   'chunkTestResults.testingInProgress': 'टेस्ट चल रहा है…',
   'chunkTestResults.totalChunks': 'कुल {n} chunks',
   'chunkTestResults.viewChunks': 'Chunks देखें',
@@ -82,8 +79,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'सभी डेटासेट टेस्ट करें',
   'knowledge.chunkHeader.testUpload': 'अपलोड दस्तावेज़ टेस्ट करें',
   'knowledge.chunkHeader.title': 'RAG chunk test',
-  'knowledge.chunkHeader.waitForProcessing':
-    'टेस्ट से पहले दस्तावेज़ प्रक्रिया पूरी होने दें',
+  'knowledge.chunkHeader.waitForProcessing': 'टेस्ट से पहले दस्तावेज़ प्रक्रिया पूरी होने दें',
   'knowledge.chunkPreview.empty': 'कोई chunk नहीं',
   'knowledge.chunkPreview.pageLabel': 'पृष्ठ {n}',
   'knowledge.chunkPreview.title': 'दस्तावेज़ chunks — {fileName}',
@@ -102,8 +98,7 @@ export default {
   'knowledge.doc.colStatus': 'स्थिति',
   'knowledge.doc.colType': 'प्रकार',
   'knowledge.doc.colUploaded': 'अपलोड तिथि',
-  'knowledge.doc.emptyDescription':
-    'अभी कोई दस्तावेज़ नहीं। नॉलेज बेस बनाने के लिए अपलोड करें।',
+  'knowledge.doc.emptyDescription': 'अभी कोई दस्तावेज़ नहीं। नॉलेज बेस बनाने के लिए अपलोड करें।',
   'knowledge.doc.errorPrefix': 'त्रुटि: ',
   'knowledge.doc.noData': 'कोई डेटा नहीं',
   'knowledge.doc.statusCompleted': 'पूर्ण',
@@ -196,13 +191,11 @@ export default {
   'knowledge.upload.click': 'अपलोड के लिए क्लिक करें',
   'knowledge.upload.drag': 'या फ़ाइल यहाँ खींचें',
   'knowledge.upload.fileTooLarge': 'फ़ाइल 10MB से अधिक नहीं हो सकती',
-  'knowledge.upload.hintFormats':
-    'PDF, DOCX, TXT, MD, छवियाँ समर्थित (अधिकतम 10MB)',
+  'knowledge.upload.hintFormats': 'PDF, DOCX, TXT, MD, छवियाँ समर्थित (अधिकतम 10MB)',
   'knowledge.upload.maxDocs': 'अधिकतम दस्तावेज़ सीमा पूरी (5)',
   'knowledge.upload.title': 'दस्तावेज़ अपलोड',
   'knowledge.upload.unsupportedType': 'असमर्थित फ़ाइल प्रकार',
-  'knowledgeSpace.confirmDeleteBody':
-    'क्या यह दस्तावेज़ हटाएँ? यह पूर्ववत नहीं हो सकता।',
+  'knowledgeSpace.confirmDeleteBody': 'क्या यह दस्तावेज़ हटाएँ? यह पूर्ववत नहीं हो सकता।',
   'knowledgeSpace.confirmDeleteTitle': 'हटाने की पुष्टि',
   'knowledgeSpace.deleteFailed': 'हटाना विफल',
   'knowledgeSpace.documentDeleted': 'दस्तावेज़ हटाया गया',

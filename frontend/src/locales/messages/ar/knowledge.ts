@@ -81,8 +81,7 @@ export default {
   'knowledge.chunkHeader.testAllDatasets': 'اختبار كل المجموعات',
   'knowledge.chunkHeader.testUpload': 'اختبار المستندات المرفوعة',
   'knowledge.chunkHeader.title': 'اختبار مقاطع RAG',
-  'knowledge.chunkHeader.waitForProcessing':
-    'يُرجى انتظار انتهاء معالجة المستندات قبل الاختبار',
+  'knowledge.chunkHeader.waitForProcessing': 'يُرجى انتظار انتهاء معالجة المستندات قبل الاختبار',
   'knowledge.chunkPreview.empty': 'لا مقاطع',
   'knowledge.chunkPreview.pageLabel': 'صفحة {n}',
   'knowledge.chunkPreview.title': 'مقاطع المستند — {fileName}',
@@ -101,8 +100,7 @@ export default {
   'knowledge.doc.colStatus': 'الحالة',
   'knowledge.doc.colType': 'النوع',
   'knowledge.doc.colUploaded': 'تاريخ الرفع',
-  'knowledge.doc.emptyDescription':
-    'لا مستندات بعد. ارفع مستندات لبناء قاعدة المعرفة.',
+  'knowledge.doc.emptyDescription': 'لا مستندات بعد. ارفع مستندات لبناء قاعدة المعرفة.',
   'knowledge.doc.errorPrefix': 'خطأ: ',
   'knowledge.doc.noData': 'لا بيانات',
   'knowledge.doc.statusCompleted': 'مكتمل',
@@ -120,8 +118,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'إلغاء تحديد الكل',
   'knowledge.manualEval.dialogTitle': 'تقييم يدوي — {method}',
   'knowledge.manualEval.groundTruthLabel': 'إجابة الحقيقة المرجعية (اختياري)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'أدخل إجابة الحقيقة المرجعية لتقييم صلة الإجابة…',
+  'knowledge.manualEval.groundTruthPlaceholder': 'أدخل إجابة الحقيقة المرجعية لتقييم صلة الإجابة…',
   'knowledge.manualEval.metric.answer_coverage': 'تغطية الإجابة',
   'knowledge.manualEval.metric.answer_faithfulness': 'وفاء الإجابة',
   'knowledge.manualEval.metric.clarity': 'الوضوح',
@@ -143,8 +140,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'تقييم جودة المقطع',
   'knowledge.manualEval.resultsTitle': 'نتائج التقييم',
   'knowledge.manualEval.selectAll': 'تحديد الكل',
-  'knowledge.manualEval.selectChunksHeading':
-    'حدّد المقاطع للتقييم (اتركه فارغًا لتقييم الكل)',
+  'knowledge.manualEval.selectChunksHeading': 'حدّد المقاطع للتقييم (اتركه فارغًا لتقييم الكل)',
   'knowledge.manualEval.showingFirst20': 'عرض أول 20 من {total} مقطعًا',
   'knowledge.manualEval.startEvaluation': 'بدء التقييم',
   'knowledge.processing.chunking': 'تقطيع',
@@ -199,8 +195,7 @@ export default {
   'knowledge.upload.maxDocs': 'بلغت الحد الأقصى للمستندات (5)',
   'knowledge.upload.title': 'رفع مستند',
   'knowledge.upload.unsupportedType': 'نوع ملف غير مدعوم',
-  'knowledgeSpace.confirmDeleteBody':
-    'هل تريد حذف هذا المستند بالتأكيد؟ لا يمكن التراجع عن ذلك.',
+  'knowledgeSpace.confirmDeleteBody': 'هل تريد حذف هذا المستند بالتأكيد؟ لا يمكن التراجع عن ذلك.',
   'knowledgeSpace.confirmDeleteTitle': 'تأكيد الحذف',
   'knowledgeSpace.deleteFailed': 'فشل الحذف',
   'knowledgeSpace.documentDeleted': 'تم حذف المستند',

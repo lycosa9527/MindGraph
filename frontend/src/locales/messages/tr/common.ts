@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Üretmeyi durdur',
   'askOnce.panel.thinking': 'Düşünüyor…',
   'askOnce.panel.thoughtProcess': 'Düşünce süreci',
-  'askOnce.placeholder':
-    'İsteminizi yazın… Göndermek için Ctrl+Enter veya Gönder’e tıklayın',
+  'askOnce.placeholder': 'İsteminizi yazın… Göndermek için Ctrl+Enter veya Gönder’e tıklayın',
   'askOnce.promptContent': 'İstem içeriği',
   'askOnce.promptEditPlaceholder': 'Düzenlemek için şablon girin veya seçin…',
   'askOnce.promptTemplatesTitle': 'İstem şablonları',
@@ -62,12 +61,12 @@ export default {
   'diagramTemplate.allModelsFailed': 'Tüm modeller başarısız oldu, lütfen tekrar deneyin',
   'diagramTemplate.generated': 'Diyagram oluşturuldu ({model})',
   'diagramTemplate.generationFailed': 'Oluşturma başarısız',
-  'diagramTemplate.promptTooLong':
-    'İstem çok uzun ({length} karakter). En fazla {max} karakter.',
+  'diagramTemplate.promptTooLong': 'İstem çok uzun ({length} karakter). En fazla {max} karakter.',
   'diagramTemplates.brace_map': '【subject】 konusunu bir süslü harita ile parçalara ayırın.',
   'diagramTemplates.bridge_map': '【relation】 ilişkisi için bir köprü haritası çizin.',
   'diagramTemplates.bubble_map': '【topic】 konusunu bir balon haritası ile tanımlayın.',
-  'diagramTemplates.circle_map': '【topic】 etrafında beyin fırtınası için daire haritası kullanın.',
+  'diagramTemplates.circle_map':
+    '【topic】 etrafında beyin fırtınası için daire haritası kullanın.',
   'diagramTemplates.double_bubble_map': '【itemA】 ve 【itemB】 öğelerini karşılaştırın.',
   'diagramTemplates.flow_map': '【process】 sürecinin adımlarını özetleyin.',
   'diagramTemplates.mindmap': '【theme】 merkezli bir zihin haritası oluşturun.',
@@ -112,8 +111,7 @@ export default {
   'settings.version.title': 'Arayüz sürümü',
   'settings.version.chinese': 'Çince sürüm',
   'settings.version.international': 'Uluslararası sürüm',
-  'landing.international.subtitle':
-    'Evrendeki en güçlü yapay zekâ düşünme diyagramı yazılımı',
+  'landing.international.subtitle': 'Evrendeki en güçlü yapay zekâ düşünme diyagramı yazılımı',
   'landing.international.promptPlaceholder':
     'Diyagramınızı tarif edin veya aşağıdan bir tür seçin…',
   'landing.international.sectionTitle': 'Diyagram türü seçin',

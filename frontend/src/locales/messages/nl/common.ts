@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Genereren stoppen',
   'askOnce.panel.thinking': 'Bezig met denken...',
   'askOnce.panel.thoughtProcess': 'Denkproces',
-  'askOnce.placeholder':
-    'Voer uw prompt in... Druk op Ctrl+Enter of klik op Verzenden',
+  'askOnce.placeholder': 'Voer uw prompt in... Druk op Ctrl+Enter of klik op Verzenden',
   'askOnce.promptContent': 'Promptinhoud',
   'askOnce.promptEditPlaceholder': 'Voer een sjabloon in of selecteer er een om te bewerken...',
   'askOnce.promptTemplatesTitle': 'Promptsjablonen',
@@ -62,8 +61,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Alle modellen mislukt, probeer het opnieuw',
   'diagramTemplate.generated': 'Diagram gegenereerd ({model})',
   'diagramTemplate.generationFailed': 'Generatie mislukt',
-  'diagramTemplate.promptTooLong':
-    'Prompt te lang ({length} tekens). Maximum is {max} tekens.',
+  'diagramTemplate.promptTooLong': 'Prompt te lang ({length} tekens). Maximum is {max} tekens.',
   'diagramTemplates.brace_map': 'Splits 【subject】 op met een brace map.',
   'diagramTemplates.bridge_map': 'Teken een bridge map voor de relatie 【relation】.',
   'diagramTemplates.bubble_map': 'Gebruik een bubble map om 【topic】 te beschrijven.',
@@ -104,8 +102,7 @@ export default {
   'meta.pageTitle.workshopChat': 'Workshopchat',
   'publicDashboard.networkError': 'Netwerkfout: dashboard laden mislukt',
   'settings.language.interface': 'Interfacetaal',
-  'settings.language.matchPrompt':
-    'Prompttaal synchroniseren met de interface',
+  'settings.language.matchPrompt': 'Prompttaal synchroniseren met de interface',
   'settings.language.prompt': 'Taal AI-assistent',
   'settings.language.promptSelectPlaceholder': 'Talen zoeken…',
   'settings.language.supportsCount': 'Ondersteunt {n} talen',
@@ -113,15 +110,12 @@ export default {
   'settings.version.title': 'UI-versie',
   'settings.version.chinese': 'Chinese versie',
   'settings.version.international': 'Internationale versie',
-  'landing.international.subtitle':
-    'De krachtigste AI-denkdiagramsoftware in het universum',
-  'landing.international.promptPlaceholder':
-    'Beschrijf uw diagram of kies hieronder een type...',
+  'landing.international.subtitle': 'De krachtigste AI-denkdiagramsoftware in het universum',
+  'landing.international.promptPlaceholder': 'Beschrijf uw diagram of kies hieronder een type...',
   'landing.international.sectionTitle': 'Kies een diagramtype',
   'landing.international.modules': 'Modules',
   'landing.international.mindmateCard.title': 'MindMate',
-  'landing.international.mindmateCard.desc':
-    'Uw virtuele partner voor onderwijs en onderzoek',
+  'landing.international.mindmateCard.desc': 'Uw virtuele partner voor onderwijs en onderzoek',
   'landing.international.shareSite': 'Site delen',
   'landing.international.shareSiteModalTitle': 'Site delen',
   'landing.international.shareSiteModalHint':

@@ -6,8 +6,7 @@ export default {
   'sidebar.actions.showLess': 'Згорнути',
   'sidebar.actions.showMore': 'Показати ще ({n})',
   'sidebar.actions.unpin': 'Відкріпити',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Видалити цей діалог? Цю дію не можна скасувати.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Видалити цей діалог? Цю дію не можна скасувати.',
   'sidebar.askOnceHistory.empty': 'Поки немає діалогів',
   'sidebar.askOnceHistory.renamePrompt': 'Введіть нову назву для цього діалогу',
   'sidebar.askOnceHistory.renameTitle': 'Перейменувати діалог',
@@ -21,8 +20,7 @@ export default {
   'sidebar.bookmarks.title': 'Недавні закладки',
   'sidebar.bookmarks.unknownDoc': 'Невідомий документ',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'Видалити цей діалог? Цю дію не можна скасувати.',
+  'sidebar.chatHistory.deleteConfirm': 'Видалити цей діалог? Цю дію не можна скасувати.',
   'sidebar.chatHistory.deleteTitle': 'Видалити діалог',
   'sidebar.chatHistory.empty': 'Поки немає діалогів',
   'sidebar.chatHistory.loginPrompt': 'Увійдіть, щоб бачити історію',
@@ -33,8 +31,7 @@ export default {
   'sidebar.collapseSidebar': 'Згорнути бічну панель',
   'sidebar.community': 'Спільнота',
   'sidebar.courses': 'Курси мислення',
-  'sidebar.debateHistory.deleteConfirm':
-    'Видалити цю дискусію? Цю дію не можна скасувати.',
+  'sidebar.debateHistory.deleteConfirm': 'Видалити цю дискусію? Цю дію не можна скасувати.',
   'sidebar.debateHistory.empty': 'Поки немає дискусій',
   'sidebar.debateHistory.loginPrompt': 'Увійдіть, щоб бачити дискусії',
   'sidebar.debateHistory.renamePrompt': 'Введіть нову тему дискусії',

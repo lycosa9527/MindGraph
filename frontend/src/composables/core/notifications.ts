@@ -23,8 +23,7 @@ export function getDefaultElNotificationOptions(): {
   offset: number
   showClose: boolean
 } {
-  const rtl =
-    typeof document !== 'undefined' && document.documentElement.dir === 'rtl'
+  const rtl = typeof document !== 'undefined' && document.documentElement.dir === 'rtl'
   return {
     customClass: 'dark-alert-notification',
     position: rtl ? 'top-left' : 'top-right',

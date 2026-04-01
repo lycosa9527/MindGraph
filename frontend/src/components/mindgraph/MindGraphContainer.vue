@@ -327,13 +327,13 @@ onMounted(() => {
             <div class="code-input-boxes">
               <input
                 v-for="(digit, index) in joinCode.slice(0, 3)"
+                :id="`join-workshop-code-${index}`"
                 :key="index"
                 :ref="
                   (el) => {
                     codeInputRefs[index] = el as HTMLInputElement | null
                   }
                 "
-                :id="`join-workshop-code-${index}`"
                 v-model="joinCode[index]"
                 type="text"
                 :name="`join-workshop-code-${index}`"
@@ -348,13 +348,13 @@ onMounted(() => {
               <span class="code-dash">-</span>
               <input
                 v-for="(digit, index) in joinCode.slice(3, 6)"
+                :id="`join-workshop-code-${index + 3}`"
                 :key="index + 3"
                 :ref="
                   (el) => {
                     codeInputRefs[index + 3] = el as HTMLInputElement | null
                   }
                 "
-                :id="`join-workshop-code-${index + 3}`"
                 v-model="joinCode[index + 3]"
                 type="text"
                 :name="`join-workshop-code-${index + 3}`"

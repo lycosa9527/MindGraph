@@ -8,7 +8,8 @@ export default {
   'notification.canvasSomeoneEditingNode': 'Dikush tjetër po e redakton këtë nyje',
   'notification.collabDeleteBlocked':
     'Nuk mund të fshihet ndërsa një përdorues tjetër po redakton një nyje të zgjedhur',
-  'notification.collabRedoBlocked': 'Nuk mund të rifillohet ndërsa një përdorues tjetër po redakton',
+  'notification.collabRedoBlocked':
+    'Nuk mund të rifillohet ndërsa një përdorues tjetër po redakton',
   'notification.collabUndoBlocked': 'Nuk mund të zhbëhet ndërsa një përdorues tjetër po redakton',
   'notification.conversationDeleted': 'Biseda u fshi',
   'notification.copied': 'U kopjua në clipboard',

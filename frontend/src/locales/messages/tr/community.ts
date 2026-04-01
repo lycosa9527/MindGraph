@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Bu gönderiyi silmek istiyor musunuz? Bu işlem geri alınamaz.',
   'community.deleteConfirmTitle': 'Gönderi silinsin mi?',
   'community.deleted': 'Silindi',
-  'community.emptyNoPosts':
-    'Gönderi bulunamadı. Filtreleri veya aramayı değiştirmeyi deneyin.',
+  'community.emptyNoPosts': 'Gönderi bulunamadı. Filtreleri veya aramayı değiştirmeyi deneyin.',
   'community.filter.all': 'Tümü',
   'community.filter.mine': 'Benimkiler',
   'community.filterCategory': 'Kategori',
@@ -84,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': 'Yazı turayı yap',
   'debateverse.generatingPositions': 'Pozisyonlar oluşturuluyor…',
   'debateverse.input.spectator': 'Bu tartışmayı izleyici olarak izliyorsunuz',
-  'debateverse.input.speechPlaceholder':
-    'Konuşmanızı yazın… (Göndermek için Ctrl+Enter)',
+  'debateverse.input.speechPlaceholder': 'Konuşmanızı yazın… (Göndermek için Ctrl+Enter)',
   'debateverse.input.waitTurn': 'Konuşma sıranızı bekliyorsunuz…',
   'debateverse.message.hideThinking': 'Düşünmeyi gizle',
   'debateverse.message.judge': 'Hakem',
@@ -105,24 +103,19 @@ export default {
   'debateverse.roleLabel.debater': 'Tartışmacı olarak oyna',
   'debateverse.roleLabel.judgeRole': 'Hakem olarak oyna',
   'debateverse.roleLabel.viewer': 'İzleyici olarak oyna',
-  'debateverse.setup.greeting':
-    '{username}, gerçek bilgelik bakış açılarının çatışmasından doğar.',
+  'debateverse.setup.greeting': '{username}, gerçek bilgelik bakış açılarının çatışmasından doğar.',
   'debateverse.setup.roleDebater': 'Tartışmacı olarak oyna',
   'debateverse.setup.roleJudge': 'Hakem olarak oyna',
   'debateverse.setup.roleViewer': 'İzleyici olarak oyna',
   'debateverse.setup.suggestion1': 'Yapay zekâya hukuki kişilik tanınmalı mı?',
-  'debateverse.setup.suggestion2':
-    'Video oyunları gençlere daha çok fayda mı zarar mı verir?',
+  'debateverse.setup.suggestion2': 'Video oyunları gençlere daha çok fayda mı zarar mı verir?',
   'debateverse.setup.suggestion3': 'Üniversite giriş sınavları kaldırılmalı mı?',
   'debateverse.setup.suggestion4':
     'Sosyal medya platformlarında içerik denetimi daha sıkı olmalı mı?',
   'debateverse.setup.suggestion5': 'Uzaktan çalışma ana akım olmalı mı?',
-  'debateverse.setup.suggestion6':
-    'Yapay zekâ tarafından üretilen içerik telifle korunmalı mı?',
-  'debateverse.setup.suggestion7':
-    'Eğitim bilgiye mi beceriye mi daha çok odaklanmalı?',
-  'debateverse.setup.suggestion8':
-    'İnsan embriyolarında gen düzenlemesine izin verilmeli mi?',
+  'debateverse.setup.suggestion6': 'Yapay zekâ tarafından üretilen içerik telifle korunmalı mı?',
+  'debateverse.setup.suggestion7': 'Eğitim bilgiye mi beceriye mi daha çok odaklanmalı?',
+  'debateverse.setup.suggestion8': 'İnsan embriyolarında gen düzenlemesine izin verilmeli mi?',
   'debateverse.setup.topicPlaceholder': 'Tartışma konusunu girin…',
   'debateverse.side.affirmative': 'Olumlu',
   'debateverse.side.judge': 'Hakem',
@@ -144,8 +137,7 @@ export default {
   'library.loading': 'Yükleniyor…',
   'library.other': 'Diğer',
   'library.premiumCollection': 'Öne çıkan koleksiyon',
-  'library.slotFull.body':
-    '{max} kayıtlı diyagramınız var. Yeni kaydetmek için birini silin.',
+  'library.slotFull.body': '{max} kayıtlı diyagramınız var. Yeni kaydetmek için birini silin.',
   'library.slotFull.cancel': 'İptal',
   'library.slotFull.deleteAndSave': 'Sil ve kaydet',
   'library.slotFull.networkError': 'Ağ hatası, işlem başarısız',

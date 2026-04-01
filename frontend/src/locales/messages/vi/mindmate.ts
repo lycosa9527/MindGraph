@@ -18,12 +18,10 @@ export default {
   'aiModel.tooltip.generating': '{name} đang tạo…',
   'aiModel.tooltip.modelFailed': 'Tạo {name} thất bại',
   'aiModel.tooltip.showingResult': 'Đang hiển thị kết quả {name}',
-  'autoComplete.collabOwnerOnly':
-    'Chỉ chủ sở hữu sơ đồ mới dùng được tạo AI khi cộng tác',
+  'autoComplete.collabOwnerOnly': 'Chỉ chủ sở hữu sơ đồ mới dùng được tạo AI khi cộng tác',
   'autoComplete.conceptMapRealtime':
     'Sơ đồ khái niệm dùng gợi ý quan hệ thời gian thực; tạo liên kết để sinh nội dung',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Vui lòng điền cả chủ đề trái và phải trước khi tạo',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Vui lòng điền cả chủ đề trái và phải trước khi tạo',
   'autoComplete.doubleBubbleTopicPair': '{left} so với {right}',
   'autoComplete.enterTopicFirst': 'Vui lòng nhập nội dung chủ đề trước',
   'autoComplete.generationFailedRetry': 'Tạo thất bại, vui lòng thử lại',
@@ -66,7 +64,8 @@ export default {
     'Tôi có thể thiết kế xung đột nhận thức nào cho tiết hình bình hành?',
   'mindmate.defaultSuggestion10': 'Cách dùng dạy học theo tình huống trong lịch sử?',
   'mindmate.defaultSuggestion11': 'Thí nghiệm vật lý cần lưu ý vấn đề an toàn gì?',
-  'mindmate.defaultSuggestion12': 'Cách thiết kế bài tập về nhà phù hợp trình độ nhận thức học sinh?',
+  'mindmate.defaultSuggestion12':
+    'Cách thiết kế bài tập về nhà phù hợp trình độ nhận thức học sinh?',
   'mindmate.defaultSuggestion2': 'Giúp tôi lập giáo án cho hô hấp tế bào.',
   'mindmate.defaultSuggestion3': 'Học sinh hiểu lầm gì về trọng lực?',
   'mindmate.defaultSuggestion4': 'Cách thiết kế buổi học nhóm hiệu quả?',
@@ -101,8 +100,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Không tạo được nhánh',
   'nodePalette.error.createDiagramFirst': 'Vui lòng tạo sơ đồ trước',
   'nodePalette.error.enterTopicText': 'Vui lòng nhập văn bản cho nút chủ đề',
-  'nodePalette.error.replacePlaceholder':
-    'Vui lòng nhập chủ đề thật, thay chỗ giữ chỗ mặc định',
+  'nodePalette.error.replacePlaceholder': 'Vui lòng nhập chủ đề thật, thay chỗ giữ chỗ mặc định',
   'nodePalette.fallbackTopicA': 'Chủ đề A',
   'nodePalette.fallbackTopicB': 'Chủ đề B',
   'nodePalette.finish': 'Hoàn tất',

@@ -109,13 +109,15 @@ export default {
   'debateverse.setup.roleJudge': 'Jugar como juez',
   'debateverse.setup.roleViewer': 'Jugar como espectador',
   'debateverse.setup.suggestion1': '¿Debería concederse personalidad jurídica a la IA?',
-  'debateverse.setup.suggestion2': '¿Los videojuegos benefician más a los adolescentes o les perjudican?',
+  'debateverse.setup.suggestion2':
+    '¿Los videojuegos benefician más a los adolescentes o les perjudican?',
   'debateverse.setup.suggestion3': '¿Deberían abolirse los exámenes de acceso a la universidad?',
   'debateverse.setup.suggestion4':
     '¿Deberían las redes sociales tener una moderación de contenidos más estricta?',
   'debateverse.setup.suggestion5': '¿El teletrabajo debería ser la norma?',
   'debateverse.setup.suggestion6': '¿El contenido generado por IA debería tener copyright?',
-  'debateverse.setup.suggestion7': '¿La educación debe centrarse más en conocimientos o en competencias?',
+  'debateverse.setup.suggestion7':
+    '¿La educación debe centrarse más en conocimientos o en competencias?',
   'debateverse.setup.suggestion8': '¿Debería permitirse la edición genética en embriones humanos?',
   'debateverse.setup.topicPlaceholder': 'Introduzca el tema del debate…',
   'debateverse.side.affirmative': 'Afirmativa',
@@ -138,8 +140,7 @@ export default {
   'library.loading': 'Cargando…',
   'library.other': 'Otro',
   'library.premiumCollection': 'Colección destacada',
-  'library.slotFull.body':
-    'Tiene {max} diagramas guardados. Elimine uno para guardar uno nuevo.',
+  'library.slotFull.body': 'Tiene {max} diagramas guardados. Elimine uno para guardar uno nuevo.',
   'library.slotFull.cancel': 'Cancelar',
   'library.slotFull.deleteAndSave': 'Eliminar y guardar',
   'library.slotFull.networkError': 'Error de red; la operación falló',

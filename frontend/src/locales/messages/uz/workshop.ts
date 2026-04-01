@@ -96,8 +96,7 @@ export default {
   'workshop.contactsOnlineNow': 'Onlayn',
   'workshop.contactsRecentlyOnline': 'Yaqinda onlayn edi',
   'workshop.conversationTitle': 'Suhbat sarlavhasi',
-  'workshop.conversationTitlePlaceholder':
-    'masalan, dars rejasi muhokamasi, o‘qitish refleksiyasi',
+  'workshop.conversationTitlePlaceholder': 'masalan, dars rejasi muhokamasi, o‘qitish refleksiyasi',
   'workshop.conversations': 'Suhbatlar',
   'workshop.copyLink': 'Havolani nusxalash',
   'workshop.copyMentionSyntax': 'Eslatma sintaksisini nusxalash',
@@ -171,8 +170,7 @@ export default {
   'workshop.markAsRead': 'O‘qilgan deb belgilash',
   'workshop.markStudyResolved': 'Tadqiqotni hal qilingan deb belgilash',
   'workshop.members': 'a’zolar',
-  'workshop.mentionAmbiguous':
-    'Nomlar noaniq — noyob ko‘rinadigan ism bilan kimnidir tanlang: {0}',
+  'workshop.mentionAmbiguous': 'Nomlar noaniq — noyob ko‘rinadigan ism bilan kimnidir tanlang: {0}',
   'workshop.mentionUnknown':
     'Noma’lum eslatmalar (faqat bir tashkilotdagi foydalanuvchilar va xodimlar): {0}',
   'workshop.mentionedInChannel': 'Sizni #{0} kanalida eslatishdi',
@@ -320,8 +318,7 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Yo‘riqnoma va ish varaqasi dizayni',
   'workshop.welcomeExampleLSEng1C2': 'O‘qishdan keyingi vazifalar va o‘tkazish',
   'workshop.welcomeExampleLSEng1C3': 'Kuzatuv fikri va refleksiya',
-  'workshop.welcomeExampleLSEng2':
-    'Dars tadqiqoti: Yozish — bir xil dars, turli o‘qituvchilar',
+  'workshop.welcomeExampleLSEng2': 'Dars tadqiqoti: Yozish — bir xil dars, turli o‘qituvchilar',
   'workshop.welcomeExampleLSEng2C1': 'Rubrika piloti va qayta ko‘rib chiqish',
   'workshop.welcomeExampleLSMath1': 'Dars tadqiqoti: “Funksiya tushunchasi” haftasi',
   'workshop.welcomeExampleLSMath1C1': 'Maqsadlar va faoliyat dizayni',
@@ -349,8 +346,7 @@ export default {
   'workshopCanvas.connectionClosedReason': 'Hamkorlik ulanishi yopildi: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bu tugunni tahrirlayapti',
   'workshopCanvas.errorGeneric': 'Hamkorlik xatosi',
-  'workshopCanvas.reconnectFailed':
-    'Hamkorlikka qayta ulanib bo‘lmadi, sahifani yangilang',
+  'workshopCanvas.reconnectFailed': 'Hamkorlikka qayta ulanib bo‘lmadi, sahifani yangilang',
   'workshopCanvas.returnedHomeIdle': 'Bosh sahifaga qaytdi — 30 daqiqa diagramma tahriri yo‘q.',
   'workshopCanvas.userJoined': 'Foydalanuvchi {userId} qo‘shildi',
   'workshopCanvas.userLeft': 'Foydalanuvchi {userId} chiqdi',

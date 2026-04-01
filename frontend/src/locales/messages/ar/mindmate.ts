@@ -22,8 +22,7 @@ export default {
     'مالك المخطط فقط يمكنه استخدام توليد الذكاء الاصطناعي أثناء التعاون',
   'autoComplete.conceptMapRealtime':
     'خرائط المفاهيم تستخدم اقتراحات علاقات فورية؛ أنشئ روابطًا للتوليد',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'يُرجى تعبئة الموضوعين الأيسر والأيمن قبل التوليد',
+  'autoComplete.doubleBubbleNeedBothTopics': 'يُرجى تعبئة الموضوعين الأيسر والأيمن قبل التوليد',
   'autoComplete.doubleBubbleTopicPair': '{left} مقابل {right}',
   'autoComplete.enterTopicFirst': 'يُرجى إدخال محتوى الموضوع أولًا',
   'autoComplete.generationFailedRetry': 'فشل التوليد، يُرجى المحاولة مرة أخرى',
@@ -34,8 +33,7 @@ export default {
   'conceptMapPicker.currentFocusQuestion': 'سؤال التركيز الحالي',
   'conceptMapPicker.currentRootConcept': 'المفهوم الجذري الحالي',
   'conceptMapPicker.focusAlternativesHint': 'بدائل ({pageSize} لكل صفحة، ارتفاع تكيّفي)',
-  'conceptMapPicker.rootAlternativesHint':
-    'بدائل الجذر ({pageSize} لكل صفحة، ارتفاع تكيّفي)',
+  'conceptMapPicker.rootAlternativesHint': 'بدائل الجذر ({pageSize} لكل صفحة، ارتفاع تكيّفي)',
   'conceptMapPicker.suggestionsEmpty': 'لا اقتراحات بعد. اضغط = للمزيد.',
   'focusQuestion.alternativesAria': 'بدائل سؤال التركيز',
   'focusQuestion.cannotReadStream': 'تعذّر قراءة دفق الاقتراحات',
@@ -62,8 +60,7 @@ export default {
   'focusQuestion.validate': 'تحقق بالذكاء الاصطناعي',
   'focusQuestion.validationRequestFailed': 'فشل طلب التحقق',
   'focusQuestion.weakLabel': 'ضعيف',
-  'mindmate.defaultSuggestion1':
-    'ما التعارضات المعرفية التي يمكنني تصميمها لدرس متوازي الأضلاع؟',
+  'mindmate.defaultSuggestion1': 'ما التعارضات المعرفية التي يمكنني تصميمها لدرس متوازي الأضلاع؟',
   'mindmate.defaultSuggestion10': 'كيف أستخدم التدريس الموضوعي في تاريخ؟',
   'mindmate.defaultSuggestion11': 'ما مسائل السلامة في تجارب الفيزياء؟',
   'mindmate.defaultSuggestion12': 'كيف أصمّم واجبات تناسب مستوى الطلاب المعرفي؟',
@@ -101,8 +98,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'تعذّر توليد الفروع',
   'nodePalette.error.createDiagramFirst': 'يُرجى إنشاء مخطط أولًا',
   'nodePalette.error.enterTopicText': 'يُرجى إدخال نص عقدة الموضوع',
-  'nodePalette.error.replacePlaceholder':
-    'يُرجى إدخال موضوع حقيقي بدل النص الافتراضي',
+  'nodePalette.error.replacePlaceholder': 'يُرجى إدخال موضوع حقيقي بدل النص الافتراضي',
   'nodePalette.fallbackTopicA': 'الموضوع أ',
   'nodePalette.fallbackTopicB': 'الموضوع ب',
   'nodePalette.finish': 'إنهاء',

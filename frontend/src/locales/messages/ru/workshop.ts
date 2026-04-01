@@ -49,8 +49,7 @@ export default {
   'workshop.addReaction': 'Добавить реакцию',
   'workshop.allSchools': 'Все школы',
   'workshop.announceChannels': 'Объявления',
-  'workshop.announceReadOnlyHint':
-    'Писать в канал объявлений могут только администраторы.',
+  'workshop.announceReadOnlyHint': 'Писать в канал объявлений могут только администраторы.',
   'workshop.archiveLessonStudy': 'Архивировать урок-исследование',
   'workshop.archiveLessonStudyConfirm':
     'Архивировать этот урок-исследование? Участники больше не увидят его в списке.',
@@ -66,8 +65,7 @@ export default {
   'workshop.channelAvatarEmoji': 'Иконка (необязательно)',
   'workshop.channelAvatarPlaceholder': 'Эмодзи или короткая метка',
   'workshop.channelColor': 'Цвет канала',
-  'workshop.channelInviteReceived':
-    'Вас добавили в «{name}». Откройте Workshop, чтобы посмотреть.',
+  'workshop.channelInviteReceived': 'Вас добавили в «{name}». Откройте Workshop, чтобы посмотреть.',
   'workshop.channelKindGroup': 'Методгруппа (верхний уровень, напр. 教研组)',
   'workshop.channelKindLessonStudy': 'Урок-исследование в группе (课例)',
   'workshop.channelNameLabel': 'Название',
@@ -96,8 +94,7 @@ export default {
   'workshop.contactsOnlineNow': 'В сети',
   'workshop.contactsRecentlyOnline': 'Недавно в сети',
   'workshop.conversationTitle': 'Название беседы',
-  'workshop.conversationTitlePlaceholder':
-    'напр. обсуждение плана урока, рефлексия',
+  'workshop.conversationTitlePlaceholder': 'напр. обсуждение плана урока, рефлексия',
   'workshop.conversations': 'Беседы',
   'workshop.copyLink': 'Копировать ссылку',
   'workshop.copyMentionSyntax': 'Копировать синтаксис упоминания',
@@ -320,16 +317,13 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Лист-гид и дизайн рабочих листов',
   'workshop.welcomeExampleLSEng1C2': 'Задания после чтения и перенос',
   'workshop.welcomeExampleLSEng1C3': 'Обратная связь наблюдения и рефлексия',
-  'workshop.welcomeExampleLSEng2':
-    'Урок-исследование: письмо — один урок, разные учителя',
+  'workshop.welcomeExampleLSEng2': 'Урок-исследование: письмо — один урок, разные учителя',
   'workshop.welcomeExampleLSEng2C1': 'Пилот рубрики и доработка',
-  'workshop.welcomeExampleLSMath1':
-    'Урок-исследование: неделя полировки «Понятие функции»',
+  'workshop.welcomeExampleLSMath1': 'Урок-исследование: неделя полировки «Понятие функции»',
   'workshop.welcomeExampleLSMath1C1': 'Цели и дизайн активностей',
   'workshop.welcomeExampleLSMath1C2': 'Вопросы и работа у доски',
   'workshop.welcomeExampleLSMath1C3': 'Рефлексия после урока и шаги дальше',
-  'workshop.welcomeExampleLSMath2':
-    'Урок-исследование: старшие классы — производные',
+  'workshop.welcomeExampleLSMath2': 'Урок-исследование: старшие классы — производные',
   'workshop.welcomeExampleLSMath2C1': 'Дифференцированные задания и оценка',
   'workshop.welcomeExampleMsgLabel': 'Сообщения внутри каждой беседы',
   'workshop.welcomeExampleOrg': 'Средняя школа Чэньси',
@@ -348,16 +342,13 @@ export default {
   'workshop.youAnd': 'Вы и',
   'workshopCanvas.connectFailed': 'Не удалось подключиться к совместной работе',
   'workshopCanvas.connectionClosed': 'Соединение закрыто',
-  'workshopCanvas.connectionClosedReason':
-    'Совместная работа: соединение закрыто: {reason}',
+  'workshopCanvas.connectionClosedReason': 'Совместная работа: соединение закрыто: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} правит этот узел',
   'workshopCanvas.errorGeneric': 'Ошибка совместной работы',
   'workshopCanvas.reconnectFailed':
     'Не удалось переподключиться к совместной работе, обновите страницу',
-  'workshopCanvas.returnedHomeIdle':
-    'Возврат на главную — нет правок диаграммы 30 минут.',
+  'workshopCanvas.returnedHomeIdle': 'Возврат на главную — нет правок диаграммы 30 минут.',
   'workshopCanvas.userJoined': 'Пользователь {userId} присоединился',
   'workshopCanvas.userLeft': 'Пользователь {userId} вышел',
-  'workshopCanvas.wsError':
-    'Ошибка соединения совместной работы, проверьте сеть',
+  'workshopCanvas.wsError': 'Ошибка соединения совместной работы, проверьте сеть',
 } as const

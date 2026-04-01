@@ -221,8 +221,7 @@ export default {
   'canvas.toolbar.moreApps': 'Daha fazla uygulama',
   'canvas.toolbar.moreAppSnapshot': 'Anlık görüntü',
   'canvas.toolbar.moreAppSnapshotDesc': 'Bu diyagramın bir sürümünü kaydedin (en fazla 10)',
-  'canvas.toolbar.snapshotSaveFirst':
-    'Anlık görüntü almadan önce lütfen diyagramı kaydedin',
+  'canvas.toolbar.snapshotSaveFirst': 'Anlık görüntü almadan önce lütfen diyagramı kaydedin',
   'canvas.toolbar.snapshotTaken': 'Anlık görüntü {n} kaydedildi',
   'canvas.toolbar.snapshotFailed': 'Anlık görüntü kaydedilemedi, lütfen tekrar deneyin',
   'canvas.toolbar.newAssociation': 'Yeni ilişkilendirme',
@@ -340,12 +339,10 @@ export default {
   'conceptMap.focus.noResult': 'Sonuç yok',
   'conceptMap.focus.validationRequestFailed': 'Doğrulama isteği başarısız',
   'diagram.aiGenerating': 'YZ…',
-  'diagram.alternativeDimensions.braceTitle':
-    'Bu konu için diğer olası parçalama boyutları:',
+  'diagram.alternativeDimensions.braceTitle': 'Bu konu için diğer olası parçalama boyutları:',
   'diagram.alternativeDimensions.bridgeAnalogiesTitle':
     'Bu konu için diğer olası benzerlik örüntüleri:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'Bu konu için diğer olası sınıflandırma boyutları:',
+  'diagram.alternativeDimensions.treeMapTitle': 'Bu konu için diğer olası sınıflandırma boyutları:',
   'diagram.bridgeMap.alternativesEmpty': '[Alternatifler burada görünecek]',
   'diagram.conceptMap.focusQuestionPrefix': 'Odak sorusu: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Gir',
@@ -497,8 +494,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Tuvalde oluştur',
   'landing.diagramGrid.tree_map.desc': 'Sınıflandır ve grupla',
   'landing.diagramGrid.tree_map.title': 'Ağaç haritası',
-  'landing.template.freePlaceholder':
-    'Diyagramınızı tarif edin veya aşağıdan bir şablon seçin…',
+  'landing.template.freePlaceholder': 'Diyagramınızı tarif edin veya aşağıdan bir şablon seçin…',
   'landing.template.slot.criterion': 'Sınıflandırma',
   'landing.template.slot.event': 'Olay',
   'landing.template.slot.itemA': 'Öğe A',
@@ -509,8 +505,7 @@ export default {
   'landing.template.slot.theme': 'Tema',
   'landing.template.slot.topic': 'Merkez konu',
   'mindgraphLanding.cancel': 'İptal',
-  'mindgraphLanding.codeFormatInvalid':
-    'Geçersiz sunum kodu biçimi (xxx-xxx olmalı)',
+  'mindgraphLanding.codeFormatInvalid': 'Geçersiz sunum kodu biçimi (xxx-xxx olmalı)',
   'mindgraphLanding.codeIncomplete': 'Lütfen tam sunum kodunu girin',
   'mindgraphLanding.collaborate': 'İşbirliği',
   'mindgraphLanding.dialogSchoolTitle': 'Okul işbirliği',
@@ -528,8 +523,7 @@ export default {
     'Şu an okul oturumu yok. Bir meslektaşın tuvalde “Okul işbirliği” başlatması gerekir.',
   'mindgraphLanding.participantsOnline': '{n} çevrimiçi',
   'mindgraphLanding.schoolCollab': 'Okul işbirliği',
-  'mindgraphLanding.sharedCodeHint':
-    'Oturumlarına katılmak için davet kodunu (xxx-xxx) girin.',
+  'mindgraphLanding.sharedCodeHint': 'Oturumlarına katılmak için davet kodunu (xxx-xxx) girin.',
   'mindgraphLanding.sharedCollab': 'Paylaşımlı işbirliği',
   'mindgraphLanding.welcome':
     'Merhaba {username}, yapay zekâ destekli görsel düşünme asistanınızım',

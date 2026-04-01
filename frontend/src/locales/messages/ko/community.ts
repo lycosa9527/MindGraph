@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': '이 게시물을 삭제할까요? 되돌릴 수 없습니다.',
   'community.deleteConfirmTitle': '게시물을 삭제할까요?',
   'community.deleted': '삭제했습니다',
-  'community.emptyNoPosts':
-    '게시물이 없습니다. 필터나 검색을 바꿔 보세요.',
+  'community.emptyNoPosts': '게시물이 없습니다. 필터나 검색을 바꿔 보세요.',
   'community.filter.all': '전체',
   'community.filter.mine': '내 것',
   'community.filterCategory': '카테고리',
@@ -84,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': '동전 던지기 실행',
   'debateverse.generatingPositions': '입장 생성 중…',
   'debateverse.input.spectator': '관전자로 이 토론을 보고 있습니다',
-  'debateverse.input.speechPlaceholder':
-    '발언 입력… (Ctrl+Enter로 전송)',
+  'debateverse.input.speechPlaceholder': '발언 입력… (Ctrl+Enter로 전송)',
   'debateverse.input.waitTurn': '발언 차례를 기다리는 중…',
   'debateverse.message.hideThinking': '사고 숨기기',
   'debateverse.message.judge': '심판',
@@ -105,24 +103,18 @@ export default {
   'debateverse.roleLabel.debater': '토론자로 참가',
   'debateverse.roleLabel.judgeRole': '심판으로 참가',
   'debateverse.roleLabel.viewer': '관전자로 참가',
-  'debateverse.setup.greeting':
-    '{username}님, 진정한 지혜는 관점의 충돌에서 생깁니다.',
+  'debateverse.setup.greeting': '{username}님, 진정한 지혜는 관점의 충돌에서 생깁니다.',
   'debateverse.setup.roleDebater': '토론자로 참가',
   'debateverse.setup.roleJudge': '심판으로 참가',
   'debateverse.setup.roleViewer': '관전자로 참가',
   'debateverse.setup.suggestion1': 'AI에게 법적 인격을 인정해야 할까요?',
-  'debateverse.setup.suggestion2':
-    '게임은 청소년에게 이로운가 해로운가?',
+  'debateverse.setup.suggestion2': '게임은 청소년에게 이로운가 해로운가?',
   'debateverse.setup.suggestion3': '대학 입시를 폐지해야 할까요?',
-  'debateverse.setup.suggestion4':
-    'SNS는 콘텐츠 검열을 더 엄격히 해야 할까요?',
+  'debateverse.setup.suggestion4': 'SNS는 콘텐츠 검열을 더 엄격히 해야 할까요?',
   'debateverse.setup.suggestion5': '원격 근무를 주류로 만들어야 할까요?',
-  'debateverse.setup.suggestion6':
-    'AI 생성 콘텐츠는 저작권으로 보호해야 할까요?',
-  'debateverse.setup.suggestion7':
-    '교육은 지식과 기술 중 무엇을 더 중시해야 할까요?',
-  'debateverse.setup.suggestion8':
-    '인간 배아에 대한 유전자 편집을 허용해야 할까요?',
+  'debateverse.setup.suggestion6': 'AI 생성 콘텐츠는 저작권으로 보호해야 할까요?',
+  'debateverse.setup.suggestion7': '교육은 지식과 기술 중 무엇을 더 중시해야 할까요?',
+  'debateverse.setup.suggestion8': '인간 배아에 대한 유전자 편집을 허용해야 할까요?',
   'debateverse.setup.topicPlaceholder': '토론 주제 입력…',
   'debateverse.side.affirmative': '긍정',
   'debateverse.side.judge': '심판',

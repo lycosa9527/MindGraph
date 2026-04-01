@@ -1,7 +1,6 @@
 /** pl UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Na pewno usunąć ten test? Tej operacji nie można cofnąć.',
+  'chunkTest.history.confirmDeleteBody': 'Na pewno usunąć ten test? Tej operacji nie można cofnąć.',
   'chunkTest.history.confirmDeleteTitle': 'Usuń test',
   'chunkTest.history.delete': 'Usuń',
   'chunkTest.history.deleteFailed': 'Nie udało się usunąć testu',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Standardowe metryki IR',
   'chunkTestResults.storageEff': 'Efektywność magazynu',
   'chunkTestResults.testFailed': 'Test nie powiódł się',
-  'chunkTestResults.testFailedHint':
-    'Wystąpił błąd podczas wykonywania testu. Spróbuj ponownie.',
+  'chunkTestResults.testFailedHint': 'Wystąpił błąd podczas wykonywania testu. Spróbuj ponownie.',
   'chunkTestResults.testingInProgress': 'Test w toku...',
   'chunkTestResults.totalChunks': 'Łącznie {n} fragmentów',
   'chunkTestResults.viewChunks': 'Zobacz fragmenty',

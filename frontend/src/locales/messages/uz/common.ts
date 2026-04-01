@@ -3,7 +3,8 @@ export default {
   'app.aiDisclaimer': 'Kontent AI tomonidan yaratilgan; diqqat bilan tekshiring.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Ushbu boʻlimdan foydalanish uchun kiring',
-  'app.browserLocale.body': 'Brauzeringiz {name}ni afzal koʻradi. Interfeys tilini moslashtirasizmi?',
+  'app.browserLocale.body':
+    'Brauzeringiz {name}ni afzal koʻradi. Interfeys tilini moslashtirasizmi?',
   'app.browserLocale.dontAsk': 'Boshqa soʻramaslik',
   'app.browserLocale.keepChinese': 'Xitoychani saqlash',
   'app.browserLocale.switch': 'Almashtirish',
@@ -20,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Generatsiyani to‘xtatish',
   'askOnce.panel.thinking': 'O‘ylanyapti...',
   'askOnce.panel.thoughtProcess': 'Fikrlash jarayoni',
-  'askOnce.placeholder':
-    'Promptingizni kiriting... Ctrl+Enter yoki Yuborish',
+  'askOnce.placeholder': 'Promptingizni kiriting... Ctrl+Enter yoki Yuborish',
   'askOnce.promptContent': 'Prompt mazmuni',
   'askOnce.promptEditPlaceholder': 'Tahrirlash uchun shablon kiriting yoki tanlang...',
   'askOnce.promptTemplatesTitle': 'Prompt shablonlari',
@@ -61,8 +61,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Barcha modellar muvaffaqiyatsiz, qayta urinib ko‘ring',
   'diagramTemplate.generated': 'Diagramma yaratildi ({model})',
   'diagramTemplate.generationFailed': 'Generatsiya muvaffaqiyatsiz',
-  'diagramTemplate.promptTooLong':
-    'Prompt juda uzun ({length} belgi). Maksimal {max} belgi.',
+  'diagramTemplate.promptTooLong': 'Prompt juda uzun ({length} belgi). Maksimal {max} belgi.',
   'diagramTemplates.brace_map': '【subject】ni brace map bilan ajrating.',
   'diagramTemplates.bridge_map': '【relation】 munosabati uchun bridge map chizing.',
   'diagramTemplates.bubble_map': '【topic】ni tasvirlash uchun bubble map ishlating.',
@@ -111,8 +110,7 @@ export default {
   'settings.version.title': 'UI versiyasi',
   'settings.version.chinese': 'Xitoy versiyasi',
   'settings.version.international': 'Xalqaro versiya',
-  'landing.international.subtitle':
-    'Koinotdagi eng kuchli AI fikrlash diagramma dasturi',
+  'landing.international.subtitle': 'Koinotdagi eng kuchli AI fikrlash diagramma dasturi',
   'landing.international.promptPlaceholder':
     'Diagrammangizni tasvirlang yoki pastdan turini tanlang...',
   'landing.international.sectionTitle': 'Diagramma turini tanlang',

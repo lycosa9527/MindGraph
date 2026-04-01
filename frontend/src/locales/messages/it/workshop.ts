@@ -66,8 +66,7 @@ export default {
   'workshop.channelAvatarEmoji': 'Icona (facoltativa)',
   'workshop.channelAvatarPlaceholder': 'Emoji o etichetta breve',
   'workshop.channelColor': 'Colore canale',
-  'workshop.channelInviteReceived':
-    'Sei stato aggiunto a «{name}». Apri Workshop per vederlo.',
+  'workshop.channelInviteReceived': 'Sei stato aggiunto a «{name}». Apri Workshop per vederlo.',
   'workshop.channelKindGroup': 'Gruppo docenti (livello superiore, es. 教研组)',
   'workshop.channelKindLessonStudy': 'Studio lezione sotto un gruppo (课例)',
   'workshop.channelNameLabel': 'Nome',
@@ -96,8 +95,7 @@ export default {
   'workshop.contactsOnlineNow': 'In linea',
   'workshop.contactsRecentlyOnline': 'Di recente in linea',
   'workshop.conversationTitle': 'Titolo conversazione',
-  'workshop.conversationTitlePlaceholder':
-    'es. Discussione piano lezione, Riflessione didattica',
+  'workshop.conversationTitlePlaceholder': 'es. Discussione piano lezione, Riflessione didattica',
   'workshop.conversations': 'Conversazioni',
   'workshop.copyLink': 'Copia link',
   'workshop.copyMentionSyntax': 'Copia sintassi menzione',
@@ -320,8 +318,7 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Scheda guida e progettazione worksheet',
   'workshop.welcomeExampleLSEng1C2': 'Compiti post-lettura e trasferimento',
   'workshop.welcomeExampleLSEng1C3': 'Feedback osservazione e riflessione',
-  'workshop.welcomeExampleLSEng2':
-    'Studio lezione: Scrittura — stessa lezione, insegnanti diversi',
+  'workshop.welcomeExampleLSEng2': 'Studio lezione: Scrittura — stessa lezione, insegnanti diversi',
   'workshop.welcomeExampleLSEng2C1': 'Pilota rubrica e revisione',
   'workshop.welcomeExampleLSMath1': 'Studio lezione: settimana rifinitura «Concetto di funzione»',
   'workshop.welcomeExampleLSMath1C1': 'Obiettivi e progettazione attività',
@@ -349,8 +346,7 @@ export default {
   'workshopCanvas.connectionClosedReason': 'Connessione collaborazione chiusa: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} sta modificando questo nodo',
   'workshopCanvas.errorGeneric': 'Errore di collaborazione',
-  'workshopCanvas.reconnectFailed':
-    'Riconnessione collaborazione non riuscita, aggiorna la pagina',
+  'workshopCanvas.reconnectFailed': 'Riconnessione collaborazione non riuscita, aggiorna la pagina',
   'workshopCanvas.returnedHomeIdle':
     'Tornato alla home — nessuna modifica al diagramma da 30 minuti.',
   'workshopCanvas.userJoined': 'Utente {userId} è entrato',

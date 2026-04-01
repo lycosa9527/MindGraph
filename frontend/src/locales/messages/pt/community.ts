@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Eliminar esta publicação? Esta ação não pode ser anulada.',
   'community.deleteConfirmTitle': 'Eliminar publicação?',
   'community.deleted': 'Eliminada',
-  'community.emptyNoPosts':
-    'Não há publicações. Tente ajustar filtros ou a pesquisa.',
+  'community.emptyNoPosts': 'Não há publicações. Tente ajustar filtros ou a pesquisa.',
   'community.filter.all': 'Tudo',
   'community.filter.mine': 'Minhas',
   'community.filterCategory': 'Categoria',
@@ -119,8 +118,7 @@ export default {
   'debateverse.setup.suggestion6': 'O conteúdo gerado por IA deve ter direitos de autor?',
   'debateverse.setup.suggestion7':
     'A educação deve focar-se mais em conhecimentos ou em competências?',
-  'debateverse.setup.suggestion8':
-    'Deve ser permitida a edição genética em embriões humanos?',
+  'debateverse.setup.suggestion8': 'Deve ser permitida a edição genética em embriões humanos?',
   'debateverse.setup.topicPlaceholder': 'Introduza o tema do debate…',
   'debateverse.side.affirmative': 'Afirmativa',
   'debateverse.side.judge': 'Juiz',
@@ -142,8 +140,7 @@ export default {
   'library.loading': 'A carregar…',
   'library.other': 'Outro',
   'library.premiumCollection': 'Coleção em destaque',
-  'library.slotFull.body':
-    'Tem {max} diagramas guardados. Elimine um para guardar um novo.',
+  'library.slotFull.body': 'Tem {max} diagramas guardados. Elimine um para guardar um novo.',
   'library.slotFull.cancel': 'Cancelar',
   'library.slotFull.deleteAndSave': 'Eliminar e guardar',
   'library.slotFull.networkError': 'Erro de rede; a operação falhou',

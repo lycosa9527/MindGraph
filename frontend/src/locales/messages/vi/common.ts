@@ -20,8 +20,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Dừng tạo',
   'askOnce.panel.thinking': 'Đang suy nghĩ…',
   'askOnce.panel.thoughtProcess': 'Quá trình suy nghĩ',
-  'askOnce.placeholder':
-    'Nhập yêu cầu… Nhấn Ctrl+Enter hoặc Gửi',
+  'askOnce.placeholder': 'Nhập yêu cầu… Nhấn Ctrl+Enter hoặc Gửi',
   'askOnce.promptContent': 'Nội dung yêu cầu',
   'askOnce.promptEditPlaceholder': 'Nhập hoặc chọn mẫu để chỉnh sửa…',
   'askOnce.promptTemplatesTitle': 'Mẫu yêu cầu',
@@ -61,8 +60,7 @@ export default {
   'diagramTemplate.allModelsFailed': 'Tất cả mô hình đều thất bại, vui lòng thử lại',
   'diagramTemplate.generated': 'Đã tạo sơ đồ ({model})',
   'diagramTemplate.generationFailed': 'Tạo sơ đồ thất bại',
-  'diagramTemplate.promptTooLong':
-    'Yêu cầu quá dài ({length} ký tự). Tối đa {max} ký tự.',
+  'diagramTemplate.promptTooLong': 'Yêu cầu quá dài ({length} ký tự). Tối đa {max} ký tự.',
   'diagramTemplates.brace_map': 'Phân tích 【subject】 bằng sơ đồ ngoặc.',
   'diagramTemplates.bridge_map': 'Vẽ sơ đồ cầu cho quan hệ 【relation】.',
   'diagramTemplates.bubble_map': 'Dùng sơ đồ bong bóng để mô tả 【topic】.',
@@ -111,10 +109,8 @@ export default {
   'settings.version.title': 'Phiên bản giao diện',
   'settings.version.chinese': 'Phiên bản tiếng Trung',
   'settings.version.international': 'Phiên bản quốc tế',
-  'landing.international.subtitle':
-    'Phần mềm sơ đồ tư duy AI mạnh nhất vũ trụ',
-  'landing.international.promptPlaceholder':
-    'Mô tả sơ đồ của bạn, hoặc chọn loại bên dưới…',
+  'landing.international.subtitle': 'Phần mềm sơ đồ tư duy AI mạnh nhất vũ trụ',
+  'landing.international.promptPlaceholder': 'Mô tả sơ đồ của bạn, hoặc chọn loại bên dưới…',
   'landing.international.sectionTitle': 'Chọn loại sơ đồ',
   'landing.international.modules': 'Mô-đun',
   'landing.international.mindmateCard.title': 'MindMate',

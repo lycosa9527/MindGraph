@@ -17,8 +17,7 @@ export default {
   'collab.ended': 'सहयोग समाप्त',
   'collab.galleryFull': 'गैलरी भरी है। पहले एक आरेख हटाएँ',
   'collab.hintNetworkInactive': 'कोड बनाएँ ताकि अन्य जुड़कर आपके साथ संपादन कर सकें।',
-  'collab.hintSchoolInactive':
-    'शुरू करने के बाद, एक ही स्कूल के सहकर्मी होम पेज से जुड़ सकते हैं।',
+  'collab.hintSchoolInactive': 'शुरू करने के बाद, एक ही स्कूल के सहकर्मी होम पेज से जुड़ सकते हैं।',
   'collab.invalidDiagramData': 'अमान्य आरेख डेटा',
   'collab.linkCopied': 'लिंक कॉपी हो गया',
   'collab.networkError': 'नेटवर्क त्रुटि',
@@ -31,14 +30,12 @@ export default {
   'collab.scanToJoin': 'जुड़ने के लिए स्कैन करें',
   'collab.schoolDescActive':
     'स्कूल सहयोग चालू। सहकर्मी: होम पर सहयोग → स्कूल से यह आरेख चुनें — कोड ज़रूरी नहीं।',
-  'collab.schoolStarted':
-    'स्कूल सहयोग चालू — सहकर्मी सहयोग → स्कूल से जुड़ सकते हैं।',
+  'collab.schoolStarted': 'स्कूल सहयोग चालू — सहकर्मी सहयोग → स्कूल से जुड़ सकते हैं।',
   'collab.sectionNetwork': 'साझा सहयोग (कोड)',
   'collab.sectionSchool': 'स्कूल सहयोग',
   'collab.sessionDuration': 'सत्र अवधि',
   'collab.sessionRemaining': 'सत्र समाप्ति में',
-  'collab.shareDescNetwork':
-    'कोड या लिंक साझा करें — अन्य सहयोग → साझा में दर्ज करें।',
+  'collab.shareDescNetwork': 'कोड या लिंक साझा करें — अन्य सहयोग → साझा में दर्ज करें।',
   'collab.start': 'शुरू करें',
   'collab.startFailed': 'शुरू विफल: {msg}',
   'collab.title': 'ऑनलाइन सहयोग',
@@ -49,14 +46,12 @@ export default {
   'workshop.addReaction': 'प्रतिक्रिया जोड़ें',
   'workshop.allSchools': 'सभी स्कूल',
   'workshop.announceChannels': 'घोषणाएँ',
-  'workshop.announceReadOnlyHint':
-    'इस घोषणा चैनल में केवल प्रशासक पोस्ट कर सकते हैं।',
+  'workshop.announceReadOnlyHint': 'इस घोषणा चैनल में केवल प्रशासक पोस्ट कर सकते हैं।',
   'workshop.archiveLessonStudy': 'पाठ अध्ययन संग्रहीत करें',
   'workshop.archiveLessonStudyConfirm':
     'यह पाठ अध्ययन संग्रहीत करें? सदस्य सूची में अब नहीं दिखेगा।',
   'workshop.archiveTeachingGroup': 'शिक्षण समूह संग्रहीत करें',
-  'workshop.archiveTeachingGroupConfirm':
-    'यह शिक्षण समूह संग्रहीत करें? सूची से गायब हो जाएगा।',
+  'workshop.archiveTeachingGroupConfirm': 'यह शिक्षण समूह संग्रहीत करें? सूची से गायब हो जाएगा।',
   'workshop.backToConversations': '← बातचीत',
   'workshop.bold': 'मोटा',
   'workshop.browseChannels': 'शिक्षण समूह ब्राउज़ करें',
@@ -66,8 +61,7 @@ export default {
   'workshop.channelAvatarEmoji': 'आइकन (वैकल्पिक)',
   'workshop.channelAvatarPlaceholder': 'Emoji या छोटा लेबल',
   'workshop.channelColor': 'चैनल रंग',
-  'workshop.channelInviteReceived':
-    'आपको “{name}” में जोड़ा गया। देखने के लिए Workshop खोलें।',
+  'workshop.channelInviteReceived': 'आपको “{name}” में जोड़ा गया। देखने के लिए Workshop खोलें।',
   'workshop.channelKindGroup': 'शिक्षण समूह (शीर्ष स्तर, जैसे 教研组)',
   'workshop.channelKindLessonStudy': 'समूह के अंतर्गत पाठ अध्ययन (课例)',
   'workshop.channelNameLabel': 'नाम',
@@ -96,8 +90,7 @@ export default {
   'workshop.contactsOnlineNow': 'ऑनलाइन',
   'workshop.contactsRecentlyOnline': 'हाल ही में ऑनलाइन',
   'workshop.conversationTitle': 'बातचीत शीर्षक',
-  'workshop.conversationTitlePlaceholder':
-    'जैसे पाठ योजना चर्चा, शिक्षण चिंतन',
+  'workshop.conversationTitlePlaceholder': 'जैसे पाठ योजना चर्चा, शिक्षण चिंतन',
   'workshop.conversations': 'बातचीत',
   'workshop.copyLink': 'लिंक कॉपी करें',
   'workshop.copyMentionSyntax': 'उल्लेख सिंटैक्स कॉपी करें',
@@ -171,10 +164,8 @@ export default {
   'workshop.markAsRead': 'पढ़ा चिह्नित करें',
   'workshop.markStudyResolved': 'अध्ययन हल चिह्नित',
   'workshop.members': 'सदस्य',
-  'workshop.mentionAmbiguous':
-    'अस्पष्ट नाम — अद्वितीय प्रदर्शन नाम वाला कोई चुनें: {0}',
-  'workshop.mentionUnknown':
-    'अज्ञात उल्लेख (केवल एक ही संगठन के उपयोगकर्ता और स्टाफ): {0}',
+  'workshop.mentionAmbiguous': 'अस्पष्ट नाम — अद्वितीय प्रदर्शन नाम वाला कोई चुनें: {0}',
+  'workshop.mentionUnknown': 'अज्ञात उल्लेख (केवल एक ही संगठन के उपयोगकर्ता और स्टाफ): {0}',
   'workshop.mentionedInChannel': 'आपका #{0} में उल्लेख',
   'workshop.mentionedInTopic': 'आपका {0} में उल्लेख',
   'workshop.mentions': 'उल्लेख',
@@ -213,8 +204,7 @@ export default {
   'workshop.others': 'अन्य',
   'workshop.permissions': 'अनुमतियाँ',
   'workshop.personalMenu': 'व्यक्तिगत मेनू',
-  'workshop.phase2RoadmapGroupsAlerts':
-    'आगे: @group उल्लेख, अलर्ट शब्द, संदेश संपादन इतिहास नीति।',
+  'workshop.phase2RoadmapGroupsAlerts': 'आगे: @group उल्लेख, अलर्ट शब्द, संदेश संपादन इतिहास नीति।',
   'workshop.phase2RoadmapMovePreview':
     'आगे: एकल संदेश स्थानांतरण, URL लिंक पूर्वावलोकन, समृद्ध क्रॉस-चैनल गतिविधि।',
   'workshop.phase2RoadmapPlatform':
@@ -262,8 +252,7 @@ export default {
   'workshop.starMessage': 'संदेश स्टार',
   'workshop.starred': 'स्टार किए',
   'workshop.startConversation': 'बातचीत शुरू करें!',
-  'workshop.startConversationHint':
-    'सहकर्मियों से चर्चा के लिए बातचीत शुरू करें',
+  'workshop.startConversationHint': 'सहकर्मियों से चर्चा के लिए बातचीत शुरू करें',
   'workshop.startDM': 'संदेश भेजें',
   'workshop.startNewConversation': 'नई बातचीत शुरू',
   'workshop.statusArchived': 'संग्रहीत',
@@ -321,11 +310,9 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'गाइड शीट और वर्कशीट डिज़ाइन',
   'workshop.welcomeExampleLSEng1C2': 'पठनोत्तर कार्य और स्थानांतरण',
   'workshop.welcomeExampleLSEng1C3': 'अवलोकन प्रतिक्रिया और चिंतन',
-  'workshop.welcomeExampleLSEng2':
-    'पाठ अध्ययन: लेखन — एक पाठ, भिन्न शिक्षक',
+  'workshop.welcomeExampleLSEng2': 'पाठ अध्ययन: लेखन — एक पाठ, भिन्न शिक्षक',
   'workshop.welcomeExampleLSEng2C1': 'रूब्रिक पायलट और संशोधन',
-  'workshop.welcomeExampleLSMath1':
-    'पाठ अध्ययन: “फलन की अवधारणा” पॉलिश सप्ताह',
+  'workshop.welcomeExampleLSMath1': 'पाठ अध्ययन: “फलन की अवधारणा” पॉलिश सप्ताह',
   'workshop.welcomeExampleLSMath1C1': 'लक्ष्य और गतिविधि डिज़ाइन',
   'workshop.welcomeExampleLSMath1C2': 'प्रश्नोत्तर और बोर्ड कार्य',
   'workshop.welcomeExampleLSMath1C3': 'पाठोत्तर चिंतन और अगले कदम',
@@ -351,12 +338,9 @@ export default {
   'workshopCanvas.connectionClosedReason': 'सहयोग कनेक्शन बंद: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} इस नोड को संपादित कर रहा है',
   'workshopCanvas.errorGeneric': 'सहयोग त्रुटि',
-  'workshopCanvas.reconnectFailed':
-    'सहयोग पुन:कनेक्ट विफल, कृपया पृष्ठ रीफ़्रेश करें',
-  'workshopCanvas.returnedHomeIdle':
-    'होम लौटे — 30 मिनट तक कोई आरेख संपादन नहीं।',
+  'workshopCanvas.reconnectFailed': 'सहयोग पुन:कनेक्ट विफल, कृपया पृष्ठ रीफ़्रेश करें',
+  'workshopCanvas.returnedHomeIdle': 'होम लौटे — 30 मिनट तक कोई आरेख संपादन नहीं।',
   'workshopCanvas.userJoined': 'उपयोगकर्ता {userId} जुड़ा',
   'workshopCanvas.userLeft': 'उपयोगकर्ता {userId} गया',
-  'workshopCanvas.wsError':
-    'सहयोग कनेक्शन त्रुटि, कृपया नेटवर्क जाँचें',
+  'workshopCanvas.wsError': 'सहयोग कनेक्शन त्रुटि, कृपया नेटवर्क जाँचें',
 } as const

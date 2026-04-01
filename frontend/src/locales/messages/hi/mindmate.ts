@@ -18,12 +18,10 @@ export default {
   'aiModel.tooltip.generating': '{name} जनरेट कर रहा है…',
   'aiModel.tooltip.modelFailed': '{name} जनरेशन विफल',
   'aiModel.tooltip.showingResult': 'अभी {name} परिणाम दिख रहा है',
-  'autoComplete.collabOwnerOnly':
-    'सहयोग के दौरान केवल आरेख मालिक AI जनरेशन उपयोग कर सकता है',
+  'autoComplete.collabOwnerOnly': 'सहयोग के दौरान केवल आरेख मालिक AI जनरेशन उपयोग कर सकता है',
   'autoComplete.conceptMapRealtime':
     'कॉन्सेप्ट मैप वास्तविक समय सुझावों का उपयोग करते हैं; जनरेट करने के लिए लिंक बनाएँ',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'जनरेट करने से पहले बाएँ और दाएँ दोनों विषय भरें',
+  'autoComplete.doubleBubbleNeedBothTopics': 'जनरेट करने से पहले बाएँ और दाएँ दोनों विषय भरें',
   'autoComplete.doubleBubbleTopicPair': '{left} बनाम {right}',
   'autoComplete.enterTopicFirst': 'पहले विषय सामग्री दर्ज करें',
   'autoComplete.generationFailedRetry': 'जनरेशन विफल, कृपया फिर कोशिश करें',
@@ -34,8 +32,7 @@ export default {
   'conceptMapPicker.currentFocusQuestion': 'वर्तमान फ़ोकस प्रश्न',
   'conceptMapPicker.currentRootConcept': 'वर्तमान रूट कॉन्सेप्ट',
   'conceptMapPicker.focusAlternativesHint': 'विकल्प (प्रति पृष्ठ {pageSize}, अनुकूल ऊँचाई)',
-  'conceptMapPicker.rootAlternativesHint':
-    'रूट विकल्प (प्रति पृष्ठ {pageSize}, अनुकूल ऊँचाई)',
+  'conceptMapPicker.rootAlternativesHint': 'रूट विकल्प (प्रति पृष्ठ {pageSize}, अनुकूल ऊँचाई)',
   'conceptMapPicker.suggestionsEmpty': 'अभी कोई सुझाव नहीं। और के लिए = दबाएँ।',
   'focusQuestion.alternativesAria': 'वैकल्पिक फ़ोकस प्रश्न',
   'focusQuestion.cannotReadStream': 'सुझाव स्ट्रीम नहीं पढ़ सके',
@@ -57,8 +54,7 @@ export default {
   'focusQuestion.suggestionsHint':
     'विकल्प (प्रति पृष्ठ 5: − पिछला, = अगला; अंतिम पृष्ठ पर = और लोड करता है)',
   'focusQuestion.suggestionsRequestFailed': 'सुझाव अनुरोध विफल',
-  'focusQuestion.title':
-    'मानक मोड · इस कॉन्सेप्ट मैप को किस फ़ोकस प्रश्न का उत्तर देना चाहिए?',
+  'focusQuestion.title': 'मानक मोड · इस कॉन्सेप्ट मैप को किस फ़ोकस प्रश्न का उत्तर देना चाहिए?',
   'focusQuestion.tooShort': 'कृपया संक्षिप्त फ़ोकस प्रश्न दर्ज करें',
   'focusQuestion.validate': 'AI जाँच',
   'focusQuestion.validationRequestFailed': 'सत्यापन अनुरोध विफल',
@@ -103,8 +99,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'शाखाएँ नहीं बना सके',
   'nodePalette.error.createDiagramFirst': 'पहले आरेख बनाएँ',
   'nodePalette.error.enterTopicText': 'विषय नोड के लिए टेक्स्ट दर्ज करें',
-  'nodePalette.error.replacePlaceholder':
-    'वास्तविक विषय दर्ज करें, डिफ़ॉल्ट प्लेसहोल्डर बदलें',
+  'nodePalette.error.replacePlaceholder': 'वास्तविक विषय दर्ज करें, डिफ़ॉल्ट प्लेसहोल्डर बदलें',
   'nodePalette.fallbackTopicA': 'विषय A',
   'nodePalette.fallbackTopicB': 'विषय B',
   'nodePalette.finish': 'समाप्त',
@@ -112,8 +107,7 @@ export default {
   'nodePalette.generatingProgress': 'जनरेट हो रहा है… {count} मिले',
   'nodePalette.helpDimension': 'केवल ठीक 1 आयाम चुनें, फिर आगे के लिए अगला पर क्लिक करें।',
   'nodePalette.helpFinish': 'नोड चुनें, फिर आरेख में जोड़ने के लिए समाप्त पर क्लिक करें।',
-  'nodePalette.helpNext':
-    'नोड चुनें, फिर दूसरे चरण के नोड जनरेट करने के लिए अगला पर क्लिक करें।',
+  'nodePalette.helpNext': 'नोड चुनें, फिर दूसरे चरण के नोड जनरेट करने के लिए अगला पर क्लिक करें।',
   'nodePalette.history.replaceAddNodes': 'नोड बदलें/जोड़ें',
   'nodePalette.loadMore': 'और लोड करें',
   'nodePalette.next': 'अगला',

@@ -212,8 +212,7 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Arah susun atur ditogol',
   'canvas.toolbar.learningSheetRestored': 'Lembar belajar dipulihkan',
   'canvas.toolbar.moreAppConceptMapModes': 'Mode peta konsep',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'Mod standard buat masa ini; mod lain akan menyusul',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'Mod standard buat masa ini; mod lain akan menyusul',
   'canvas.toolbar.moreAppLearningSheet': 'Lembar belajar',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Kosong acak untuk belajar dan ulasan',
   'canvas.toolbar.moreAppWaterfall': 'Air terjun',
@@ -299,16 +298,14 @@ export default {
   'canvas.topBar.teachingDesign': 'Reka bentuk pengajaran',
   'canvas.topBar.snapshotRecallTooltip': 'Pulihkan cetakan {n}',
   'canvas.topBar.snapshotRecallTitle': 'Pulihkan cetakan',
-  'canvas.topBar.snapshotRecallConfirm':
-    'Pulihkan cetakan {n}? Perubahan semasa akan diganti.',
+  'canvas.topBar.snapshotRecallConfirm': 'Pulihkan cetakan {n}? Perubahan semasa akan diganti.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Pulihkan',
   'canvas.topBar.snapshotRecallCancelBtn': 'Batal',
   'canvas.topBar.snapshotRecallHistory': 'Sebelum pemulihan cetakan {n}',
   'canvas.topBar.snapshotRecallFailed': 'Gagal memulihkan cetakan, cuba lagi',
   'canvas.topBar.snapshotDeleted': 'Cetakan {n} dipadam',
   'canvas.topBar.snapshotDeleteFailed': 'Gagal memadam cetakan, cuba lagi',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'Klik pulihkan cetakan {n} · Ctrl+Klik untuk padam',
+  'canvas.topBar.snapshotBadgeTooltip': 'Klik pulihkan cetakan {n} · Ctrl+Klik untuk padam',
   'canvas.zoomControls.exitFullscreen': 'Keluar skrin penuh',
   'canvas.zoomControls.fitCanvas': 'Sesuaikan kanvas',
   'canvas.zoomControls.fullscreen': 'Skrin penuh',
@@ -496,8 +493,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Buat di kanvas',
   'landing.diagramGrid.tree_map.desc': 'Pengelasan & kumpulan',
   'landing.diagramGrid.tree_map.title': 'Peta pokok',
-  'landing.template.freePlaceholder':
-    'Terangkan diagram anda, atau pilih templat di bawah…',
+  'landing.template.freePlaceholder': 'Terangkan diagram anda, atau pilih templat di bawah…',
   'landing.template.slot.criterion': 'Klasifikasi',
   'landing.template.slot.event': 'Peristiwa',
   'landing.template.slot.itemA': 'Item A',
@@ -508,8 +504,7 @@ export default {
   'landing.template.slot.theme': 'Tema',
   'landing.template.slot.topic': 'Topik pusat',
   'mindgraphLanding.cancel': 'Batal',
-  'mindgraphLanding.codeFormatInvalid':
-    'Format kod persembahan tidak sah (mestilah xxx-xxx)',
+  'mindgraphLanding.codeFormatInvalid': 'Format kod persembahan tidak sah (mestilah xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Sila masukkan kod persembahan lengkap',
   'mindgraphLanding.collaborate': 'Kolaborasi',
   'mindgraphLanding.dialogSchoolTitle': 'Kolaborasi sekolah',
@@ -527,9 +522,7 @@ export default {
     'Tiada sesi sekolah buat masa ini. Rakan sekerja mesti memulakan “Kerjasama sekolah” pada kanvas.',
   'mindgraphLanding.participantsOnline': '{n} dalam talian',
   'mindgraphLanding.schoolCollab': 'Kolaborasi sekolah',
-  'mindgraphLanding.sharedCodeHint':
-    'Masukkan kod jemputan (xxx-xxx) untuk menyertai sesi mereka.',
+  'mindgraphLanding.sharedCodeHint': 'Masukkan kod jemputan (xxx-xxx) untuk menyertai sesi mereka.',
   'mindgraphLanding.sharedCollab': 'Kolaborasi bersama',
-  'mindgraphLanding.welcome':
-    'Helo {username}, saya pembantu AI pemikiran visual anda',
+  'mindgraphLanding.welcome': 'Helo {username}, saya pembantu AI pemikiran visual anda',
 } as const

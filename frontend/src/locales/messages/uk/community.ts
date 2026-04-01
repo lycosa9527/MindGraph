@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Видалити цей допис?',
   'community.deleteConfirmTitle': 'Підтвердження видалення',
   'community.deleted': 'Видалено',
-  'community.emptyNoPosts':
-    'Нічого не знайдено. Спробуйте змінити фільтри або пошук.',
+  'community.emptyNoPosts': 'Нічого не знайдено. Спробуйте змінити фільтри або пошук.',
   'community.filter.all': 'Усі',
   'community.filter.mine': 'Мої',
   'community.filterCategory': 'Категорія',
@@ -84,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': 'Підкинути монету',
   'debateverse.generatingPositions': 'Генеруються позиції «за» та «проти»…',
   'debateverse.input.spectator': 'Ви переглядаєте дебати як глядач',
-  'debateverse.input.speechPlaceholder':
-    'Введіть промову… (Ctrl+Enter — надіслати)',
+  'debateverse.input.speechPlaceholder': 'Введіть промову… (Ctrl+Enter — надіслати)',
   'debateverse.input.waitTurn': 'Очікуйте своєї черги…',
   'debateverse.message.hideThinking': 'Приховати хід думок',
   'debateverse.message.judge': 'Суддя',
@@ -105,26 +103,18 @@ export default {
   'debateverse.roleLabel.debater': 'Брати участь як дебатер',
   'debateverse.roleLabel.judgeRole': 'Оцінювати як суддя',
   'debateverse.roleLabel.viewer': 'Дивитися як глядач',
-  'debateverse.setup.greeting':
-    '{username}, справжня мудрість народжується в зіткненні думок.',
+  'debateverse.setup.greeting': '{username}, справжня мудрість народжується в зіткненні думок.',
   'debateverse.setup.roleDebater': 'Брати участь як дебатер',
   'debateverse.setup.roleJudge': 'Оцінювати як суддя',
   'debateverse.setup.roleViewer': 'Дивитися як глядач',
-  'debateverse.setup.suggestion1':
-    'Чи слід наділяти штучний інтелект правосуб’єктністю?',
-  'debateverse.setup.suggestion2':
-    'Онлайн-ігри для підлітків: більше користи чи шкоди?',
+  'debateverse.setup.suggestion1': 'Чи слід наділяти штучний інтелект правосуб’єктністю?',
+  'debateverse.setup.suggestion2': 'Онлайн-ігри для підлітків: більше користи чи шкоди?',
   'debateverse.setup.suggestion3': 'Скасувати ЄНТ чи залишити?',
-  'debateverse.setup.suggestion4':
-    'Чи потрібні жорсткіші правила модерації контенту в соцмережах?',
-  'debateverse.setup.suggestion5':
-    'Чи має віддалена робота стати основним форматом?',
-  'debateverse.setup.suggestion6':
-    'Чи варто захищати авторське право на контент, згенерований ШІ?',
-  'debateverse.setup.suggestion7':
-    'Освіта: більше акценту на знання чи на навички?',
-  'debateverse.setup.suggestion8':
-    'Чи дозволяти редагування геному людських ембріонів?',
+  'debateverse.setup.suggestion4': 'Чи потрібні жорсткіші правила модерації контенту в соцмережах?',
+  'debateverse.setup.suggestion5': 'Чи має віддалена робота стати основним форматом?',
+  'debateverse.setup.suggestion6': 'Чи варто захищати авторське право на контент, згенерований ШІ?',
+  'debateverse.setup.suggestion7': 'Освіта: більше акценту на знання чи на навички?',
+  'debateverse.setup.suggestion8': 'Чи дозволяти редагування геному людських ембріонів?',
   'debateverse.setup.topicPlaceholder': 'Введіть тему дебатів…',
   'debateverse.side.affirmative': 'За',
   'debateverse.side.judge': 'Суддя',
@@ -146,8 +136,7 @@ export default {
   'library.loading': 'Завантаження…',
   'library.other': 'Інше',
   'library.premiumCollection': 'Добірка прикладів',
-  'library.slotFull.body':
-    'Збережено максимум {max} діаграм. Видаліть одну, щоб зберегти нову.',
+  'library.slotFull.body': 'Збережено максимум {max} діаграм. Видаліть одну, щоб зберегти нову.',
   'library.slotFull.cancel': 'Скасувати',
   'library.slotFull.deleteAndSave': 'Видалити й зберегти',
   'library.slotFull.networkError': 'Мережева помилка, операція не вдалася',

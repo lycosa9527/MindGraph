@@ -1,7 +1,6 @@
 /** uk UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Видалити цей тест? Цю дію не можна скасувати.',
+  'chunkTest.history.confirmDeleteBody': 'Видалити цей тест? Цю дію не можна скасувати.',
   'chunkTest.history.confirmDeleteTitle': 'Видалити тест',
   'chunkTest.history.delete': 'Видалити',
   'chunkTest.history.deleteFailed': 'Не вдалося видалити тест',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Стандартні IR-метрики',
   'chunkTestResults.storageEff': 'Еф. зберігання',
   'chunkTestResults.testFailed': 'Тест не вдався',
-  'chunkTestResults.testFailedHint':
-    'Під час виконання тесту сталася помилка. Спробуйте ще раз.',
+  'chunkTestResults.testFailedHint': 'Під час виконання тесту сталася помилка. Спробуйте ще раз.',
   'chunkTestResults.testingInProgress': 'Тест триває…',
   'chunkTestResults.totalChunks': 'Усього {n} чанків',
   'chunkTestResults.viewChunks': 'Переглянути чанки',
@@ -144,8 +142,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Оцінка якості чанків',
   'knowledge.manualEval.resultsTitle': 'Результати оцінювання',
   'knowledge.manualEval.selectAll': 'Вибрати все',
-  'knowledge.manualEval.selectChunksHeading':
-    'Виберіть чанки для оцінки (порожньо = усі)',
+  'knowledge.manualEval.selectChunksHeading': 'Виберіть чанки для оцінки (порожньо = усі)',
   'knowledge.manualEval.showingFirst20': 'Показано перші 20 з {total} чанків',
   'knowledge.manualEval.startEvaluation': 'Почати оцінювання',
   'knowledge.processing.chunking': 'Розбиття на чанки',
@@ -196,13 +193,11 @@ export default {
   'knowledge.upload.click': 'Натисніть, щоб завантажити',
   'knowledge.upload.drag': 'або перетягніть файл сюди',
   'knowledge.upload.fileTooLarge': 'Розмір файлу не більше 10 МБ',
-  'knowledge.upload.hintFormats':
-    'PDF, DOCX, TXT, MD, зображення (до 10 МБ)',
+  'knowledge.upload.hintFormats': 'PDF, DOCX, TXT, MD, зображення (до 10 МБ)',
   'knowledge.upload.maxDocs': 'Досягнуто ліміту документів (5)',
   'knowledge.upload.title': 'Завантажити документ',
   'knowledge.upload.unsupportedType': 'Непідтримуваний тип файлу',
-  'knowledgeSpace.confirmDeleteBody':
-    'Видалити цей документ? Цю дію не можна скасувати.',
+  'knowledgeSpace.confirmDeleteBody': 'Видалити цей документ? Цю дію не можна скасувати.',
   'knowledgeSpace.confirmDeleteTitle': 'Підтвердження видалення',
   'knowledgeSpace.deleteFailed': 'Не вдалося видалити',
   'knowledgeSpace.documentDeleted': 'Документ видалено',
@@ -211,8 +206,7 @@ export default {
   'knowledgeSpace.startProcessingFailed': 'Не вдалося почати обробку',
   'knowledgeSpace.uploadFailed': 'Не вдалося завантажити документ',
   'knowledgeSpace.uploadSuccess': 'Документ успішно завантажено',
-  'knowledgeSpace.uploadSuccessProcessing':
-    'Документ завантажено, йде обробка…',
+  'knowledgeSpace.uploadSuccessProcessing': 'Документ завантажено, йде обробка…',
   'rag.retrievalTest.failed': 'Тест пошуку не вдався',
   'rag.retrievalTest.success': 'Тест пошуку завершено',
 } as const

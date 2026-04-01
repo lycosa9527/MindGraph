@@ -33,7 +33,8 @@ export default {
   'autoComplete.selectDiagramType': 'Diagramma turini tanlang',
   'conceptMapPicker.currentFocusQuestion': 'Joriy fokus savoli',
   'conceptMapPicker.currentRootConcept': 'Joriy ildiz tushunchasi',
-  'conceptMapPicker.focusAlternativesHint': 'Alternativlar (sahifada {pageSize}, moslashuvchan balandlik)',
+  'conceptMapPicker.focusAlternativesHint':
+    'Alternativlar (sahifada {pageSize}, moslashuvchan balandlik)',
   'conceptMapPicker.rootAlternativesHint':
     'Ildiz alternativalari (sahifada {pageSize}, moslashuvchan balandlik)',
   'conceptMapPicker.suggestionsEmpty': 'Hali tavsiyalar yo‘q. Ko‘proq uchun = bosing.',
@@ -65,12 +66,16 @@ export default {
   'mindmate.defaultSuggestion1':
     'Parallelogram darsi uchun qanday kognitiv ziddiyatlar yaratish mumkin?',
   'mindmate.defaultSuggestion10': 'Tarix darsida situatsion o‘qitishni qanday qo‘llash kerak?',
-  'mindmate.defaultSuggestion11': 'Fizika tajribalarida qaysi xavfsizlik masalalarini eslatish kerak?',
-  'mindmate.defaultSuggestion12': 'Uy vazifasini o‘quvchi kognitiv darajasiga mos qanday loyihalash kerak?',
+  'mindmate.defaultSuggestion11':
+    'Fizika tajribalarida qaysi xavfsizlik masalalarini eslatish kerak?',
+  'mindmate.defaultSuggestion12':
+    'Uy vazifasini o‘quvchi kognitiv darajasiga mos qanday loyihalash kerak?',
   'mindmate.defaultSuggestion2': 'Hujayra nafas olishi uchun dars rejasi yaratishda yordam bering.',
-  'mindmate.defaultSuggestion3': 'O‘quvchilar gravitatsiya haqida qanday noto‘g‘ri tasavvurlarga ega?',
+  'mindmate.defaultSuggestion3':
+    'O‘quvchilar gravitatsiya haqida qanday noto‘g‘ri tasavvurlarga ega?',
   'mindmate.defaultSuggestion4': 'Samarali guruh o‘qitish sessiyasini qanday loyihalash kerak?',
-  'mindmate.defaultSuggestion5': 'O‘quvchilarning ilmiy so‘roq ko‘nikmalarini qanday yaxshilash mumkin?',
+  'mindmate.defaultSuggestion5':
+    'O‘quvchilarning ilmiy so‘roq ko‘nikmalarini qanday yaxshilash mumkin?',
   'mindmate.defaultSuggestion6': 'O‘qish o‘qitishida innovatsion usullar qanday?',
   'mindmate.defaultSuggestion7': 'Matematik tushunchalarni real hayotga qanday bog‘lash mumkin?',
   'mindmate.defaultSuggestion8': 'Tanqidiy fikrlashni qanday rivojlantirish mumkin?',
@@ -109,8 +114,10 @@ export default {
   'nodePalette.generatingIdeas': 'G‘oyalar yaratilmoqda...',
   'nodePalette.generatingProgress': 'Yaratilmoqda... {count} qabul qilindi',
   'nodePalette.helpDimension': 'Faqat 1 ta o‘lchamni tanlang, keyin Davom etishni bosing.',
-  'nodePalette.helpFinish': 'Tugunlarni tanlash uchun bosing, keyin diagrammaga qo‘shish uchun Tugatishni bosing.',
-  'nodePalette.helpNext': 'Tugunlarni tanlang, keyin ikkinchi bosqich tugunlarini yaratish uchun Davom etishni bosing.',
+  'nodePalette.helpFinish':
+    'Tugunlarni tanlash uchun bosing, keyin diagrammaga qo‘shish uchun Tugatishni bosing.',
+  'nodePalette.helpNext':
+    'Tugunlarni tanlang, keyin ikkinchi bosqich tugunlarini yaratish uchun Davom etishni bosing.',
   'nodePalette.history.replaceAddNodes': 'Tugunlarni almashtirish/qo‘shish',
   'nodePalette.loadMore': 'Yana yuklash',
   'nodePalette.next': 'Keyingi',

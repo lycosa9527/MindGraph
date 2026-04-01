@@ -1,19 +1,15 @@
 /** ja UI — mindmate */
 export default {
-  'aiModel.conceptAiOff':
-    'クリックでAIによる関係ラベルを有効化（マルチモデル）',
+  'aiModel.conceptAiOff': 'クリックでAIによる関係ラベルを有効化（マルチモデル）',
   'aiModel.conceptAiOn': 'オン：リンクをドラッグして関係ラベルを生成',
   'aiModel.enableAi': 'AIを有効にする',
-  'aiModel.inlineRecTooltip':
-    'ノード編集中にTabでAIのおすすめを表示',
+  'aiModel.inlineRecTooltip': 'ノード編集中にTabでAIのおすすめを表示',
   'aiModel.label': 'AIモデル',
   'aiModel.readyCount': '{count} 件準備済み',
   'aiModel.relationshipsBadge': '関係',
-  'aiModel.relationshipsTooltip':
-    '概念をドラッグしてリンク—AIが関係を生成します',
+  'aiModel.relationshipsTooltip': '概念をドラッグしてリンク—AIが関係を生成します',
   'aiModel.tabFocusBadge': 'Tab 焦点',
-  'aiModel.tabFocusTooltip':
-    '焦点の質問を編集中にTabで検証し、バーで候補を選（− / =）',
+  'aiModel.tabFocusTooltip': '焦点の質問を編集中にTabで検証し、バーで候補を選（− / =）',
   'aiModel.tabRecBadge': 'Tab おすすめ',
   'aiModel.tooltip.clickDeselect': 'クリックで {name} の選択を解除',
   'aiModel.tooltip.clickSelect': 'クリックで {name} を選択',
@@ -21,12 +17,10 @@ export default {
   'aiModel.tooltip.generating': '{name} 生成中…',
   'aiModel.tooltip.modelFailed': '{name} の生成に失敗しました',
   'aiModel.tooltip.showingResult': '現在 {name} の結果を表示中',
-  'autoComplete.collabOwnerOnly':
-    '共同編集中のAI生成は図の所有者のみが利用できます',
+  'autoComplete.collabOwnerOnly': '共同編集中のAI生成は図の所有者のみが利用できます',
   'autoComplete.conceptMapRealtime':
     'コンセプトマップはリアルタイムの関係提案を使います。リンクを作成して生成',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    '生成する前に左右のトピックの両方を入力してください',
+  'autoComplete.doubleBubbleNeedBothTopics': '生成する前に左右のトピックの両方を入力してください',
   'autoComplete.doubleBubbleTopicPair': '{left} 対 {right}',
   'autoComplete.enterTopicFirst': '先にトピックの内容を入力してください',
   'autoComplete.generationFailedRetry': '生成に失敗しました。もう一度お試しください',
@@ -36,10 +30,8 @@ export default {
   'autoComplete.selectDiagramType': '図の種類を選択してください',
   'conceptMapPicker.currentFocusQuestion': '現在の焦点の質問',
   'conceptMapPicker.currentRootConcept': '現在のルート概念',
-  'conceptMapPicker.focusAlternativesHint':
-    '候補（1ページ {pageSize} 件、高さは自動調整）',
-  'conceptMapPicker.rootAlternativesHint':
-    'ルートの候補（1ページ {pageSize} 件、高さは自動調整）',
+  'conceptMapPicker.focusAlternativesHint': '候補（1ページ {pageSize} 件、高さは自動調整）',
+  'conceptMapPicker.rootAlternativesHint': 'ルートの候補（1ページ {pageSize} 件、高さは自動調整）',
   'conceptMapPicker.suggestionsEmpty': 'まだ候補はありません。= で続きを表示。',
   'focusQuestion.alternativesAria': '焦点の質問の候補',
   'focusQuestion.cannotReadStream': '提案ストリームを読み取れませんでした',
@@ -61,18 +53,15 @@ export default {
   'focusQuestion.suggestionsHint':
     '候補（1ページ5件：− 前へ、= 次へ；最後のページで = でさらに読み込み）',
   'focusQuestion.suggestionsRequestFailed': '候補の取得に失敗しました',
-  'focusQuestion.title':
-    '標準モード · このコンセプトマップはどんな焦点の質問に答えるべきですか？',
+  'focusQuestion.title': '標準モード · このコンセプトマップはどんな焦点の質問に答えるべきですか？',
   'focusQuestion.tooShort': '短い焦点の質問を入力してください',
   'focusQuestion.validate': 'AIチェック',
   'focusQuestion.validationRequestFailed': '検証リクエストに失敗しました',
   'focusQuestion.weakLabel': '弱い',
-  'mindmate.defaultSuggestion1':
-    '平行四辺形の授業でどんな認知的衝突を設計できますか？',
+  'mindmate.defaultSuggestion1': '平行四辺形の授業でどんな認知的衝突を設計できますか？',
   'mindmate.defaultSuggestion10': '歴史の授業で場面学習をどう活かす？',
   'mindmate.defaultSuggestion11': '物理実験で注意すべき安全上の問題は？',
-  'mindmate.defaultSuggestion12':
-    '生徒の認知レベルに合った宿題をどう設計する？',
+  'mindmate.defaultSuggestion12': '生徒の認知レベルに合った宿題をどう設計する？',
   'mindmate.defaultSuggestion2': '細胞呼吸の授業計画を作成して手伝って。',
   'mindmate.defaultSuggestion3': '重力について生徒がどんな誤解を持っている？',
   'mindmate.defaultSuggestion4': '効果的なグループ学習のセッションをどう設計する？',

@@ -5,7 +5,8 @@ export default {
   'notification.canvasClearNodes': '{count} नोड साफ़ किए गए',
   'notification.canvasClearNodesLearning': '{count} नोड खाली किए, उत्तरों में जोड़ा गया',
   'notification.canvasSomeoneEditingNode': 'कोई और इस नोड को संपादित कर रहा है',
-  'notification.collabDeleteBlocked': 'जब कोई चुने हुए नोड को संपादित कर रहा हो तो हटाया नहीं जा सकता',
+  'notification.collabDeleteBlocked':
+    'जब कोई चुने हुए नोड को संपादित कर रहा हो तो हटाया नहीं जा सकता',
   'notification.collabRedoBlocked': 'जब कोई और संपादित कर रहा हो तो रीडू नहीं हो सकता',
   'notification.collabUndoBlocked': 'जब कोई और संपादित कर रहा हो तो अनडू नहीं हो सकता',
   'notification.conversationDeleted': 'बातचीत हटा दी गई',
@@ -36,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'रूट कॉन्सेप्ट लिंक नहीं मिला',
   'notification.saved': 'बदलाव सफलतापूर्वक सहेजे गए',
   'notification.selectNodeToClear': 'साफ़ करने के लिए एक नोड चुनें',
-  'notification.sessionInvalidated':
-    'अधिकतम डिवाइस सीमा पार होने के कारण आप लॉग आउट कर दिए गए',
+  'notification.sessionInvalidated': 'अधिकतम डिवाइस सीमा पार होने के कारण आप लॉग आउट कर दिए गए',
   'notification.signInToUse': 'इसका उपयोग करने के लिए साइन इन करें',
   'notification.signInToValidateFocus': 'फ़ोकस प्रश्न सत्यापित करने के लिए साइन इन करें',
 } as const

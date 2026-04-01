@@ -16,7 +16,8 @@ export default {
   'collab.endFailed': 'Përfundimi i bashkëpunimit dështoi',
   'collab.ended': 'Bashkëpunimi përfundoi',
   'collab.galleryFull': 'Galeria është plot. Ju lutemi fshini një diagram së pari',
-  'collab.hintNetworkInactive': 'Gjeneroni një kod që të tjerët të bashkohen dhe të redaktojnë me ju.',
+  'collab.hintNetworkInactive':
+    'Gjeneroni një kod që të tjerët të bashkohen dhe të redaktojnë me ju.',
   'collab.hintSchoolInactive':
     'Pas nisjes, kolegët e së njëjtës shkollë mund të bashkohen nga faqja kryesore.',
   'collab.invalidDiagramData': 'Të dhëna të pavlefshme diagrami',
@@ -95,8 +96,7 @@ export default {
   'workshop.contactsOnlineNow': 'Në linjë',
   'workshop.contactsRecentlyOnline': 'Së fundmi në linjë',
   'workshop.conversationTitle': 'Titulli i bisedës',
-  'workshop.conversationTitlePlaceholder':
-    'p.sh. diskutim për planin mësimor, reflektim mësimor',
+  'workshop.conversationTitlePlaceholder': 'p.sh. diskutim për planin mësimor, reflektim mësimor',
   'workshop.conversations': 'Bisedat',
   'workshop.copyLink': 'Kopjo lidhjen',
   'workshop.copyMentionSyntax': 'Kopjo sintaksën e përmendjes',
@@ -170,8 +170,7 @@ export default {
   'workshop.markAsRead': 'Shëno si të lexuar',
   'workshop.markStudyResolved': 'Shëno studimin si të zgjidhur',
   'workshop.members': 'anëtarë',
-  'workshop.mentionAmbiguous':
-    'Emra të paqartë — zgjidhni dikë me emër të shfaqur unik: {0}',
+  'workshop.mentionAmbiguous': 'Emra të paqartë — zgjidhni dikë me emër të shfaqur unik: {0}',
   'workshop.mentionUnknown':
     'Përmendje të panjohura (vetëm përdorues dhe staf i së njëjtës organizatë): {0}',
   'workshop.mentionedInChannel': 'Ju u përmendët në #{0}',
@@ -319,8 +318,7 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Fleta udhëzuese dhe dizajni i fletëpunimeve',
   'workshop.welcomeExampleLSEng1C2': 'Detyrat pas leximit dhe transferimi',
   'workshop.welcomeExampleLSEng1C3': 'Feedback vëzhgimi dhe reflektim',
-  'workshop.welcomeExampleLSEng2':
-    'Studim mësimi: Shkrim — e njëjta mësim, mësues të ndryshëm',
+  'workshop.welcomeExampleLSEng2': 'Studim mësimi: Shkrim — e njëjta mësim, mësues të ndryshëm',
   'workshop.welcomeExampleLSEng2C1': 'Pilot rubrike dhe rishikim',
   'workshop.welcomeExampleLSMath1': 'Studim mësimi: «Koncepti i funksioneve» — java përmirësuese',
   'workshop.welcomeExampleLSMath1C1': 'Qëllimet dhe dizajni i aktivitetit',
@@ -348,10 +346,8 @@ export default {
   'workshopCanvas.connectionClosedReason': 'Lidhja e bashkëpunimit u mbyll: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} po e redakton këtë nyje',
   'workshopCanvas.errorGeneric': 'Gabim bashkëpunimi',
-  'workshopCanvas.reconnectFailed':
-    'Rilidhja me bashkëpunimin dështoi, ju lutemi rifreskoni faqen',
-  'workshopCanvas.returnedHomeIdle':
-    'U kthye në shtëpi — pa ndryshime diagrami për 30 minuta.',
+  'workshopCanvas.reconnectFailed': 'Rilidhja me bashkëpunimin dështoi, ju lutemi rifreskoni faqen',
+  'workshopCanvas.returnedHomeIdle': 'U kthye në shtëpi — pa ndryshime diagrami për 30 minuta.',
   'workshopCanvas.userJoined': 'Përdoruesi {userId} u bashkua',
   'workshopCanvas.userLeft': 'Përdoruesi {userId} doli',
   'workshopCanvas.wsError': 'Gabim lidhjeje bashkëpunimi, kontrolloni rrjetin',

@@ -7,12 +7,10 @@ export default {
   'community.category.studyNotes': 'Studienotities',
   'community.category.teachingDesign': 'Lesontwerp',
   'community.category.workSummary': 'Werkoverzicht',
-  'community.deleteConfirmBody':
-    'Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.',
+  'community.deleteConfirmBody': 'Dit bericht verwijderen? Dit kan niet ongedaan worden gemaakt.',
   'community.deleteConfirmTitle': 'Bericht verwijderen?',
   'community.deleted': 'Verwijderd',
-  'community.emptyNoPosts':
-    'Geen berichten gevonden. Pas filters of zoekopdracht aan.',
+  'community.emptyNoPosts': 'Geen berichten gevonden. Pas filters of zoekopdracht aan.',
   'community.filter.all': 'Alles',
   'community.filter.mine': 'Van mij',
   'community.filterCategory': 'Categorie',
@@ -27,8 +25,7 @@ export default {
   'community.post.diagramLoadFailed': 'Diagramgegevens ophalen mislukt',
   'community.post.importAction': 'Importeren',
   'community.post.importFail': 'Importeren mislukt',
-  'community.post.importFull':
-    'Importeren mislukt. Bibliotheek is mogelijk vol.',
+  'community.post.importFull': 'Importeren mislukt. Bibliotheek is mogelijk vol.',
   'community.post.importOk': 'Geïmporteerd naar bibliotheek',
   'community.post.like': 'Vind ik leuk',
   'community.post.likesListed': '{names} vond(en) dit leuk',
@@ -72,8 +69,7 @@ export default {
   'debateverse.advanceStage': 'Fase vooruit',
   'debateverse.affirmativePositionLabel': 'Standpunt bevestigende partij: ',
   'debateverse.avatar.viewer': 'Toeschouwer',
-  'debateverse.clickNextHint':
-    'Klik op de knop Volgende om wijzigingen door te voeren',
+  'debateverse.clickNextHint': 'Klik op de knop Volgende om wijzigingen door te voeren',
   'debateverse.coinTossAffirmativeFirst': 'Bevestigende partij spreekt eerst',
   'debateverse.coinTossGotIt': 'Begrepen',
   'debateverse.coinTossModalBody':
@@ -87,8 +83,7 @@ export default {
   'debateverse.executeCoinToss': 'Muntwerp uitvoeren',
   'debateverse.generatingPositions': 'Standpunten genereren...',
   'debateverse.input.spectator': 'U bekijkt dit debat als toeschouwer',
-  'debateverse.input.speechPlaceholder':
-    'Voer uw bijdrage in... (Ctrl+Enter om te verzenden)',
+  'debateverse.input.speechPlaceholder': 'Voer uw bijdrage in... (Ctrl+Enter om te verzenden)',
   'debateverse.input.waitTurn': 'Wachten tot u aan de beurt bent...',
   'debateverse.message.hideThinking': 'Denken verbergen',
   'debateverse.message.judge': 'Jury',
@@ -113,22 +108,15 @@ export default {
   'debateverse.setup.roleDebater': 'Spelen als debater',
   'debateverse.setup.roleJudge': 'Spelen als jury',
   'debateverse.setup.roleViewer': 'Spelen als toeschouwer',
-  'debateverse.setup.suggestion1':
-    'Moet AI juridische persoonlijkheid krijgen?',
-  'debateverse.setup.suggestion2':
-    'Hebben videogames meer voor- of nadelen voor tieners?',
-  'debateverse.setup.suggestion3':
-    'Moeten eindexamens worden afgeschaft?',
-  'debateverse.setup.suggestion4':
-    'Moeten sociale platforms strengere inhoudsmoderatie hebben?',
-  'debateverse.setup.suggestion5':
-    'Moet thuiswerken de norm worden?',
+  'debateverse.setup.suggestion1': 'Moet AI juridische persoonlijkheid krijgen?',
+  'debateverse.setup.suggestion2': 'Hebben videogames meer voor- of nadelen voor tieners?',
+  'debateverse.setup.suggestion3': 'Moeten eindexamens worden afgeschaft?',
+  'debateverse.setup.suggestion4': 'Moeten sociale platforms strengere inhoudsmoderatie hebben?',
+  'debateverse.setup.suggestion5': 'Moet thuiswerken de norm worden?',
   'debateverse.setup.suggestion6':
     'Moet door AI gegenereerde inhoud auteursrechtelijk beschermd zijn?',
-  'debateverse.setup.suggestion7':
-    'Moet onderwijs meer op kennis of vaardigheden richten?',
-  'debateverse.setup.suggestion8':
-    'Moet genbewerking van menselijke embryo’s zijn toegestaan?',
+  'debateverse.setup.suggestion7': 'Moet onderwijs meer op kennis of vaardigheden richten?',
+  'debateverse.setup.suggestion8': 'Moet genbewerking van menselijke embryo’s zijn toegestaan?',
   'debateverse.setup.topicPlaceholder': 'Voer debatonderwerp in...',
   'debateverse.side.affirmative': 'Bevestigend',
   'debateverse.side.judge': 'Jury',

@@ -1,7 +1,6 @@
 /** it UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter':
-    'Impossibile cancellare i nodi argomento o centrale',
+  'notification.cannotClearTopicOrCenter': 'Impossibile cancellare i nodi argomento o centrale',
   'notification.cannotResetSelectDiagramType':
     'Impossibile reimpostare: seleziona prima un tipo di diagramma',
   'notification.canvasClearNodes': 'Cancellati {count} nodo/i',
@@ -30,7 +29,8 @@ export default {
   'notification.importSlotsFull':
     'Biblioteca piena; diagramma importato ma non salvato in biblioteca',
   'notification.importSuccess': 'Diagramma importato e salvato in biblioteca',
-  'notification.importUnsupportedType': 'Importazione non riuscita: tipo di diagramma non supportato',
+  'notification.importUnsupportedType':
+    'Importazione non riuscita: tipo di diagramma non supportato',
   'notification.loadMoreFailed': 'Impossibile caricare altro',
   'notification.networkError': 'Errore di rete',
   'notification.newVersionAvailable': 'Nuova versione disponibile. Clicca per aggiornare.',

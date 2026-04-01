@@ -21,8 +21,7 @@ export default {
   'sidebar.bookmarks.title': 'Markah terbaru',
   'sidebar.bookmarks.unknownDoc': 'Dokumen tidak dikenal',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'Hapus percakapan ini? Tindakan ini tidak dapat dibatalkan.',
+  'sidebar.chatHistory.deleteConfirm': 'Hapus percakapan ini? Tindakan ini tidak dapat dibatalkan.',
   'sidebar.chatHistory.deleteTitle': 'Hapus percakapan',
   'sidebar.chatHistory.empty': 'Belum ada percakapan',
   'sidebar.chatHistory.loginPrompt': 'Masuk untuk melihat riwayat',
@@ -33,8 +32,7 @@ export default {
   'sidebar.collapseSidebar': 'Ciutkan bilah sisi',
   'sidebar.community': 'Komunitas',
   'sidebar.courses': 'Kursus berpikir',
-  'sidebar.debateHistory.deleteConfirm':
-    'Hapus debat ini? Tindakan ini tidak dapat dibatalkan.',
+  'sidebar.debateHistory.deleteConfirm': 'Hapus debat ini? Tindakan ini tidak dapat dibatalkan.',
   'sidebar.debateHistory.empty': 'Belum ada debat',
   'sidebar.debateHistory.loginPrompt': 'Masuk untuk melihat debat',
   'sidebar.debateHistory.renamePrompt': 'Masukkan topik baru untuk debat ini',

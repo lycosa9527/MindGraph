@@ -21,8 +21,7 @@ export default {
   'sidebar.bookmarks.title': 'الإشارات المرجعية الأخيرة',
   'sidebar.bookmarks.unknownDoc': 'مستند غير معروف',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'هل أنت متأكد من حذف هذه المحادثة؟ لا يمكن التراجع عن ذلك.',
+  'sidebar.chatHistory.deleteConfirm': 'هل أنت متأكد من حذف هذه المحادثة؟ لا يمكن التراجع عن ذلك.',
   'sidebar.chatHistory.deleteTitle': 'حذف المحادثة',
   'sidebar.chatHistory.empty': 'لا محادثات بعد',
   'sidebar.chatHistory.loginPrompt': 'سجّل الدخول لعرض السجل',

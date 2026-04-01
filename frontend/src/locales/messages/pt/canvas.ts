@@ -296,11 +296,9 @@ export default {
   'canvas.topBar.snapshotRecallConfirmBtn': 'Restaurar',
   'canvas.topBar.snapshotRecallCancelBtn': 'Cancelar',
   'canvas.topBar.snapshotRecallHistory': 'Antes de restaurar o instantâneo {n}',
-  'canvas.topBar.snapshotRecallFailed':
-    'Não foi possível restaurar o instantâneo; tente novamente',
+  'canvas.topBar.snapshotRecallFailed': 'Não foi possível restaurar o instantâneo; tente novamente',
   'canvas.topBar.snapshotDeleted': 'Instantâneo {n} eliminado',
-  'canvas.topBar.snapshotDeleteFailed':
-    'Não foi possível eliminar o instantâneo; tente novamente',
+  'canvas.topBar.snapshotDeleteFailed': 'Não foi possível eliminar o instantâneo; tente novamente',
   'canvas.topBar.snapshotBadgeTooltip':
     'Clique para restaurar o instantâneo {n} · Ctrl+clique para eliminar',
   'canvas.zoomControls.exitFullscreen': 'Sair de ecrã inteiro',

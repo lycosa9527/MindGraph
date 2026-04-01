@@ -37,11 +37,11 @@ import {
   useNodeActions,
   useNotifications,
 } from '@/composables'
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
+import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
   useAuthStore,

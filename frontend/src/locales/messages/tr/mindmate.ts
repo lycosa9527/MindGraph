@@ -4,8 +4,7 @@ export default {
     'Yapay zekâ ilişki etiketlerini etkinleştirmek için tıklayın (çoklu model)',
   'aiModel.conceptAiOn': 'Açık: bağlantıları sürükleyerek ilişki etiketleri oluşturun',
   'aiModel.enableAi': 'Yapay zekâyı etkinleştir',
-  'aiModel.inlineRecTooltip':
-    'Yapay zekâ önerileri için düğümü düzenlerken Sekme’ye basın',
+  'aiModel.inlineRecTooltip': 'Yapay zekâ önerileri için düğümü düzenlerken Sekme’ye basın',
   'aiModel.label': 'Yapay zekâ modeli',
   'aiModel.readyCount': '{count} hazır',
   'aiModel.relationshipsBadge': 'İlişkiler',
@@ -25,8 +24,7 @@ export default {
     'İşbirliği sırasında yalnızca diyagram sahibi yapay zekâ üretimini kullanabilir',
   'autoComplete.conceptMapRealtime':
     'Kavram haritaları gerçek zamanlı ilişki önerileri kullanır; üretmek için bağlantı oluşturun',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Üretmeden önce hem sol hem sağ konuları doldurun',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Üretmeden önce hem sol hem sağ konuları doldurun',
   'autoComplete.doubleBubbleTopicPair': '{left} ve {right}',
   'autoComplete.enterTopicFirst': 'Önce konu içeriğini girin',
   'autoComplete.generationFailedRetry': 'Üretim başarısız, lütfen tekrar deneyin',
@@ -40,8 +38,7 @@ export default {
     'Alternatifler (sayfa başına {pageSize}, uyarlanabilir yükseklik)',
   'conceptMapPicker.rootAlternativesHint':
     'Kök alternatifleri (sayfa başına {pageSize}, uyarlanabilir yükseklik)',
-  'conceptMapPicker.suggestionsEmpty':
-    'Henüz öneri yok. Daha fazlası için = tuşuna basın.',
+  'conceptMapPicker.suggestionsEmpty': 'Henüz öneri yok. Daha fazlası için = tuşuna basın.',
   'focusQuestion.alternativesAria': 'Alternatif odak soruları',
   'focusQuestion.cannotReadStream': 'Öneri akışı okunamadı',
   'focusQuestion.confirm': 'Onayla ve tuvali aç',
@@ -58,13 +55,11 @@ export default {
   'focusQuestion.passLabel': 'Tamam',
   'focusQuestion.placeholder': 'Odak sorunuzu yazın…',
   'focusQuestion.skip': 'Atla',
-  'focusQuestion.suggestionsEmpty':
-    'Henüz öneri yok. Başka bir grup için = tuşuna basın.',
+  'focusQuestion.suggestionsEmpty': 'Henüz öneri yok. Başka bir grup için = tuşuna basın.',
   'focusQuestion.suggestionsHint':
     'Alternatifler (sayfa başına 5: − önceki, = sonraki; son sayfada = daha fazla yükler)',
   'focusQuestion.suggestionsRequestFailed': 'Öneri isteği başarısız',
-  'focusQuestion.title':
-    'Standart mod · Bu kavram haritası hangi odak sorusunu yanıtlamalı?',
+  'focusQuestion.title': 'Standart mod · Bu kavram haritası hangi odak sorusunu yanıtlamalı?',
   'focusQuestion.tooShort': 'Lütfen kısa bir odak sorusu girin',
   'focusQuestion.validate': 'Yapay zekâ kontrolü',
   'focusQuestion.validationRequestFailed': 'Doğrulama isteği başarısız',
@@ -72,10 +67,8 @@ export default {
   'mindmate.defaultSuggestion1':
     'Paralelkenar dersi için hangi bilişsel çatışmaları tasarlayabilirim?',
   'mindmate.defaultSuggestion10': 'Tarih dersinde durumsal öğretimi nasıl kullanırım?',
-  'mindmate.defaultSuggestion11':
-    'Fizik deneylerinde hangi güvenlik konularına dikkat edilmeli?',
-  'mindmate.defaultSuggestion12':
-    'Öğrenci bilişsel düzeyine uygun ödevi nasıl tasarlarım?',
+  'mindmate.defaultSuggestion11': 'Fizik deneylerinde hangi güvenlik konularına dikkat edilmeli?',
+  'mindmate.defaultSuggestion12': 'Öğrenci bilişsel düzeyine uygun ödevi nasıl tasarlarım?',
   'mindmate.defaultSuggestion2': 'Hücresel solunum için ders planı oluşturmama yardım et.',
   'mindmate.defaultSuggestion3': 'Öğrencilerin yer çekimi konusunda hangi kavram yanılgıları var?',
   'mindmate.defaultSuggestion4': 'Etkili bir grup öğrenimi oturumunu nasıl tasarlarım?',
@@ -121,8 +114,7 @@ export default {
     'Yalnızca tam 1 boyut seçin, ardından devam etmek için İleri’ye tıklayın.',
   'nodePalette.helpFinish':
     'Düğümleri seçmek için tıklayın, diyagrama eklemek için Bitir’e tıklayın.',
-  'nodePalette.helpNext':
-    'Düğümleri seçin, ikinci aşama düğümleri için İleri’ye tıklayın.',
+  'nodePalette.helpNext': 'Düğümleri seçin, ikinci aşama düğümleri için İleri’ye tıklayın.',
   'nodePalette.history.replaceAddNodes': 'Düğümleri değiştir/ekle',
   'nodePalette.loadMore': 'Daha fazla yükle',
   'nodePalette.next': 'İleri',

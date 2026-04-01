@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Detener generación',
   'askOnce.panel.thinking': 'Pensando…',
   'askOnce.panel.thoughtProcess': 'Proceso de razonamiento',
-  'askOnce.placeholder':
-    'Escriba su indicación… Pulse Ctrl+Entrar o haga clic en Enviar',
+  'askOnce.placeholder': 'Escriba su indicación… Pulse Ctrl+Entrar o haga clic en Enviar',
   'askOnce.promptContent': 'Contenido del prompt',
   'askOnce.promptEditPlaceholder': 'Introduzca o seleccione una plantilla para editar…',
   'askOnce.promptTemplatesTitle': 'Plantillas de prompt',
@@ -104,8 +103,7 @@ export default {
   'meta.pageTitle.workshopChat': 'Chat del taller',
   'publicDashboard.networkError': 'Error de red; no se pudo cargar el panel',
   'settings.language.interface': 'Idioma de la interfaz',
-  'settings.language.matchPrompt':
-    'Mantener el idioma del prompt alineado con la interfaz',
+  'settings.language.matchPrompt': 'Mantener el idioma del prompt alineado con la interfaz',
   'settings.language.prompt': 'Idioma del asistente de IA',
   'settings.language.promptSelectPlaceholder': 'Buscar idiomas…',
   'settings.language.supportsCount': 'Admite {n} idiomas',
@@ -115,8 +113,7 @@ export default {
   'settings.version.international': 'Versión internacional',
   'landing.international.subtitle':
     'El software de diagramas de pensamiento con IA más potente del universo',
-  'landing.international.promptPlaceholder':
-    'Describa su diagrama o elija un tipo abajo…',
+  'landing.international.promptPlaceholder': 'Describa su diagrama o elija un tipo abajo…',
   'landing.international.sectionTitle': 'Elija un tipo de diagrama',
   'landing.international.modules': 'Módulos',
   'landing.international.mindmateCard.title': 'MindMate',

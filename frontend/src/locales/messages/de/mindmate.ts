@@ -22,8 +22,7 @@ export default {
     'Nur der Diagrammbesitzer kann bei der Zusammenarbeit KI-Generierung nutzen',
   'autoComplete.conceptMapRealtime':
     'Konzeptkarten nutzen Echtzeit-Beziehungsvorschläge; Verbindungen anlegen zum Generieren',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Bitte zuerst linkes und rechtes Thema ausfüllen',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Bitte zuerst linkes und rechtes Thema ausfüllen',
   'autoComplete.doubleBubbleTopicPair': '{left} vs. {right}',
   'autoComplete.enterTopicFirst': 'Bitte zuerst Themeninhalt eingeben',
   'autoComplete.generationFailedRetry': 'Generierung fehlgeschlagen, bitte erneut versuchen',
@@ -33,8 +32,7 @@ export default {
   'autoComplete.selectDiagramType': 'Bitte Diagrammtyp wählen',
   'conceptMapPicker.currentFocusQuestion': 'Aktuelle Fokusfrage',
   'conceptMapPicker.currentRootConcept': 'Aktuelles Wurzelkonzept',
-  'conceptMapPicker.focusAlternativesHint':
-    'Alternativen ({pageSize} pro Seite, adaptive Höhe)',
+  'conceptMapPicker.focusAlternativesHint': 'Alternativen ({pageSize} pro Seite, adaptive Höhe)',
   'conceptMapPicker.rootAlternativesHint':
     'Wurzel-Alternativen ({pageSize} pro Seite, adaptive Höhe)',
   'conceptMapPicker.suggestionsEmpty': 'Noch keine Vorschläge. = für mehr.',
@@ -54,20 +52,19 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Fokusfrage eingeben…',
   'focusQuestion.skip': 'Überspringen',
-  'focusQuestion.suggestionsEmpty':
-    'Noch keine Vorschläge. = für weitere Charge.',
+  'focusQuestion.suggestionsEmpty': 'Noch keine Vorschläge. = für weitere Charge.',
   'focusQuestion.suggestionsHint':
     'Alternativen (5 pro Seite: − zurück, = weiter; auf letzter Seite = lädt mehr)',
   'focusQuestion.suggestionsRequestFailed': 'Vorschlagsanfrage fehlgeschlagen',
-  'focusQuestion.title':
-    'Standardmodus · Welche Fokusfrage soll diese Konzeptkarte beantworten?',
+  'focusQuestion.title': 'Standardmodus · Welche Fokusfrage soll diese Konzeptkarte beantworten?',
   'focusQuestion.tooShort': 'Bitte eine kurze Fokusfrage eingeben',
   'focusQuestion.validate': 'KI-Prüfung',
   'focusQuestion.validationRequestFailed': 'Validierungsanfrage fehlgeschlagen',
   'focusQuestion.weakLabel': 'Schwach',
   'mindmate.defaultSuggestion1':
     'Welche kognitiven Konflikte kann ich in einer Parallelogramm-Stunde anlegen?',
-  'mindmate.defaultSuggestion10': 'Wie setze ich szenischen Unterricht im Geschichtsunterricht ein?',
+  'mindmate.defaultSuggestion10':
+    'Wie setze ich szenischen Unterricht im Geschichtsunterricht ein?',
   'mindmate.defaultSuggestion11':
     'Welche Sicherheitsaspekte sind bei Physikexperimenten zu beachten?',
   'mindmate.defaultSuggestion12':
@@ -113,8 +110,7 @@ export default {
   'nodePalette.finish': 'Fertig',
   'nodePalette.generatingIdeas': 'Ideen werden erzeugt…',
   'nodePalette.generatingProgress': 'Generierung… {count} erhalten',
-  'nodePalette.helpDimension':
-    'Genau eine Dimension wählen, dann Weiter zum Fortfahren.',
+  'nodePalette.helpDimension': 'Genau eine Dimension wählen, dann Weiter zum Fortfahren.',
   'nodePalette.helpFinish': 'Knoten wählen, dann Fertig zum Hinzufügen ins Diagramm.',
   'nodePalette.helpNext': 'Knoten wählen, dann Weiter für Knoten der zweiten Stufe.',
   'nodePalette.history.replaceAddNodes': 'Knoten ersetzen/hinzufügen',

@@ -13,8 +13,7 @@ export default {
   'canvas.export.svgError': 'SVG निर्यात विफल, कृपया फिर कोशिश करें',
   'canvas.export.svgSuccess': 'SVG सफलतापूर्वक निर्यात',
   'canvas.export.unknownFormat': 'अज्ञात निर्यात प्रारूप: {format}',
-  'canvas.import.invalidFile':
-    'अमान्य आरेख फ़ाइल। कृपया MindGraph से निर्यात JSON चुनें।',
+  'canvas.import.invalidFile': 'अमान्य आरेख फ़ाइल। कृपया MindGraph से निर्यात JSON चुनें।',
   'canvas.import.parseError': 'JSON पार्स विफल, कृपया फिर कोशिश करें',
   'canvas.reset.confirmBody':
     'क्या आप निश्चित हैं? वर्तमान सारी सामग्री खो जाएगी, आरेख और नोड पैलेट सहित। पूर्ववत नहीं।',
@@ -56,8 +55,7 @@ export default {
   'canvas.toolbar.cannotGenerate': 'जनरेट नहीं कर सकते',
   'canvas.toolbar.causeAdded': 'कारण नोड जोड़ा गया',
   'canvas.toolbar.childAdded': 'संतान जोड़ा गया',
-  'canvas.toolbar.collabAiBlocked':
-    'सहयोग के दौरान केवल आरेख मालिक AI जनरेशन उपयोग कर सकता है',
+  'canvas.toolbar.collabAiBlocked': 'सहयोग के दौरान केवल आरेख मालिक AI जनरेशन उपयोग कर सकता है',
   'canvas.toolbar.colorLabel': 'रंग',
   'canvas.toolbar.conceptGeneration': 'कॉन्सेप्ट जनरेशन',
   'canvas.toolbar.conceptMapModesDev': 'कॉन्सेप्ट मैप मोड विकास में हैं',
@@ -78,8 +76,7 @@ export default {
   'canvas.toolbar.exit': 'बाहर',
   'canvas.toolbar.exitFullscreen': 'फ़ुलस्क्रीन से बाहर',
   'canvas.toolbar.highlighter': 'हाइलाइटर',
-  'canvas.toolbar.highlighterTooltip':
-    'हाइलाइटर की तरह कैनवास पर बनाएँ; प्रस्तुति छोड़ने पर साफ़',
+  'canvas.toolbar.highlighterTooltip': 'हाइलाइटर की तरह कैनवास पर बनाएँ; प्रस्तुति छोड़ने पर साफ़',
   'canvas.toolbar.highlighterChooseColor': 'हाइलाइटर रंग',
   'canvas.toolbar.highlighterPaletteAria': 'हाइलाइटर रंग चुनें',
   'canvas.toolbar.insertEquation': 'समीकरण डालें',
@@ -216,8 +213,7 @@ export default {
   'canvas.toolbar.moreAppLearningSheet': 'लर्निंग शीट',
   'canvas.toolbar.moreAppLearningSheetDesc': 'अध्ययन और समीक्षा के लिए यादृच्छिक रिक्त',
   'canvas.toolbar.moreAppWaterfall': 'Waterfall',
-  'canvas.toolbar.moreAppWaterfallDesc':
-    'बैच नोड चुनें; विचलित और अभिसारी सोच दिखाएँ',
+  'canvas.toolbar.moreAppWaterfallDesc': 'बैच नोड चुनें; विचलित और अभिसारी सोच दिखाएँ',
   'canvas.toolbar.moreApps': 'और ऐप',
   'canvas.toolbar.moreAppSnapshot': 'स्नैपशॉट',
   'canvas.toolbar.moreAppSnapshotDesc': 'इस आरेख का संस्करण सहेजें (अधिकतम 10)',
@@ -243,16 +239,14 @@ export default {
   'canvas.toolbar.presetsLabel': 'प्रीसेट',
   'canvas.toolbar.redo': 'रीडू',
   'canvas.toolbar.selectBranchOrChild': 'शाखा या संतान नोड चुनें',
-  'canvas.toolbar.selectCategoryOrLeafDelete':
-    'श्रेणी या पत्ती नोड चुनें (विषय नोड नहीं हट सकता)',
+  'canvas.toolbar.selectCategoryOrLeafDelete': 'श्रेणी या पत्ती नोड चुनें (विषय नोड नहीं हट सकता)',
   'canvas.toolbar.selectNodesFirst': 'पहले नोड चुनें',
   'canvas.toolbar.selectNodesToDelete': 'हटाने के लिए नोड चुनें',
   'canvas.toolbar.selectPartForSubpart': 'उपखंड जोड़ने के लिए भाग चुनें',
   'canvas.toolbar.selectPartThenEnter': 'भाग नोड चुनें, उपखंड के लिए Enter',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'समानता या अंतर नोड चुनें (विषय नोड नहीं हट सकते)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'पहले समानता या अंतर नोड चुनें',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'पहले समानता या अंतर नोड चुनें',
   'canvas.toolbar.selectStepForSubstep': 'उपचरण जोड़ने के लिए चरण चुनें',
   'canvas.toolbar.similarityWithIndex': 'समानता {n}',
   'canvas.toolbar.stepAdded': 'चरण जोड़ा गया',
@@ -298,16 +292,14 @@ export default {
   'canvas.topBar.teachingDesign': 'शिक्षण डिज़ाइन',
   'canvas.topBar.snapshotRecallTooltip': 'स्नैपशॉट {n} पुनर्स्थापित',
   'canvas.topBar.snapshotRecallTitle': 'स्नैपशॉट पुनर्स्थापित',
-  'canvas.topBar.snapshotRecallConfirm':
-    'स्नैपशॉट {n} पुनर्स्थापित? वर्तमान बदलाव बदल जाएँगे।',
+  'canvas.topBar.snapshotRecallConfirm': 'स्नैपशॉट {n} पुनर्स्थापित? वर्तमान बदलाव बदल जाएँगे।',
   'canvas.topBar.snapshotRecallConfirmBtn': 'पुनर्स्थापित',
   'canvas.topBar.snapshotRecallCancelBtn': 'रद्द करें',
   'canvas.topBar.snapshotRecallHistory': 'स्नैपशॉट {n} पुनर्स्थापन से पहले',
   'canvas.topBar.snapshotRecallFailed': 'स्नैपशॉट पुनर्स्थापन विफल, फिर कोशिश करें',
   'canvas.topBar.snapshotDeleted': 'स्नैपशॉट {n} हटाया गया',
   'canvas.topBar.snapshotDeleteFailed': 'स्नैपशॉट हटाना विफल, फिर कोशिश करें',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'स्नैपशॉट {n} पुनर्स्थापित · हटाने के लिए Ctrl+क्लिक',
+  'canvas.topBar.snapshotBadgeTooltip': 'स्नैपशॉट {n} पुनर्स्थापित · हटाने के लिए Ctrl+क्लिक',
   'canvas.zoomControls.exitFullscreen': 'फ़ुलस्क्रीन से बाहर',
   'canvas.zoomControls.fitCanvas': 'कैनवास फिट',
   'canvas.zoomControls.fullscreen': 'फ़ुलस्क्रीन',
@@ -338,12 +330,9 @@ export default {
   'conceptMap.focus.noResult': 'कोई परिणाम नहीं',
   'conceptMap.focus.validationRequestFailed': 'सत्यापन अनुरोध विफल',
   'diagram.aiGenerating': 'AI…',
-  'diagram.alternativeDimensions.braceTitle':
-    'इस विषय के लिए अन्य संभावित विघटन आयाम:',
-  'diagram.alternativeDimensions.bridgeAnalogiesTitle':
-    'इस विषय के लिए अन्य संभावित रूपक पैटर्न:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'इस विषय के लिए अन्य संभावित वर्गीकरण आयाम:',
+  'diagram.alternativeDimensions.braceTitle': 'इस विषय के लिए अन्य संभावित विघटन आयाम:',
+  'diagram.alternativeDimensions.bridgeAnalogiesTitle': 'इस विषय के लिए अन्य संभावित रूपक पैटर्न:',
+  'diagram.alternativeDimensions.treeMapTitle': 'इस विषय के लिए अन्य संभावित वर्गीकरण आयाम:',
   'diagram.bridgeMap.alternativesEmpty': '[विकल्प यहाँ दिखेंगे]',
   'diagram.conceptMap.focusQuestionPrefix': 'फ़ोकस प्रश्न: ',
   'diagram.conceptMap.focusQuestionSuffix': 'दर्ज करें',
@@ -366,8 +355,7 @@ export default {
   'diagram.contextMenu.infoAddNodeSoon': 'नोड जोड़ने की सुविधा जल्द',
   'diagram.contextMenu.paste': 'पेस्ट',
   'diagram.contextMenu.warningCreateDiagramFirst': 'पहले आरेख बनाएँ',
-  'diagram.contextMenu.warningSelectSimilarityOrDiff':
-    'पहले समानता या अंतर नोड चुनें',
+  'diagram.contextMenu.warningSelectSimilarityOrDiff': 'पहले समानता या अंतर नोड चुनें',
   'diagram.defaultNewConcept': 'नया कॉन्सेप्ट',
   'diagram.dimension.classificationAz': 'Classification by',
   'diagram.dimension.classificationEn': 'Classification by',
@@ -456,8 +444,7 @@ export default {
   'editor.redo': 'रीडू',
   'editor.saveDiagram': 'आरेख सहेजें',
   'editor.selectDiagramType': 'आरेख प्रकार चुनें',
-  'editor.slotsFull':
-    'स्थान भरा, ऑटो-सेव अभी उपलब्ध नहीं। जगह के लिए मौजूदा आरेख हटाएँ।',
+  'editor.slotsFull': 'स्थान भरा, ऑटो-सेव अभी उपलब्ध नहीं। जगह के लिए मौजूदा आरेख हटाएँ।',
   'editor.undo': 'अनडू',
   'editor.zoomIn': 'ज़ूम इन',
   'editor.zoomOut': 'ज़ूम आउट',
@@ -495,8 +482,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'कैनवास पर बनाएँ',
   'landing.diagramGrid.tree_map.desc': 'वर्गीकृत और समूह',
   'landing.diagramGrid.tree_map.title': 'Tree Map',
-  'landing.template.freePlaceholder':
-    'अपना आरेख बताएँ, या नीचे टेम्पलेट चुनें…',
+  'landing.template.freePlaceholder': 'अपना आरेख बताएँ, या नीचे टेम्पलेट चुनें…',
   'landing.template.slot.criterion': 'Classification',
   'landing.template.slot.event': 'Event',
   'landing.template.slot.itemA': 'Item A',
@@ -507,8 +493,7 @@ export default {
   'landing.template.slot.theme': 'Theme',
   'landing.template.slot.topic': 'Center topic',
   'mindgraphLanding.cancel': 'रद्द करें',
-  'mindgraphLanding.codeFormatInvalid':
-    'अमान्य प्रस्तुति कोड प्रारूप (xxx-xxx होना चाहिए)',
+  'mindgraphLanding.codeFormatInvalid': 'अमान्य प्रस्तुति कोड प्रारूप (xxx-xxx होना चाहिए)',
   'mindgraphLanding.codeIncomplete': 'पूरा प्रस्तुति कोड दर्ज करें',
   'mindgraphLanding.collaborate': 'सहयोग',
   'mindgraphLanding.dialogSchoolTitle': 'स्कूल सहयोग',
@@ -526,9 +511,7 @@ export default {
     'अभी कोई स्कूल सत्र नहीं। सहकर्मी को कैनवास पर “स्कूल सहयोग” शुरू करना होगा।',
   'mindgraphLanding.participantsOnline': '{n} ऑनलाइन',
   'mindgraphLanding.schoolCollab': 'स्कूल सहयोग',
-  'mindgraphLanding.sharedCodeHint':
-    'उनके सत्र में जुड़ने के लिए आमंत्रण कोड (xxx-xxx) दर्ज करें।',
+  'mindgraphLanding.sharedCodeHint': 'उनके सत्र में जुड़ने के लिए आमंत्रण कोड (xxx-xxx) दर्ज करें।',
   'mindgraphLanding.sharedCollab': 'साझा सहयोग',
-  'mindgraphLanding.welcome':
-    'नमस्ते {username}, मैं आपका AI दृश्य सोच सहायक हूँ',
+  'mindgraphLanding.welcome': 'नमस्ते {username}, मैं आपका AI दृश्य सोच सहायक हूँ',
 } as const

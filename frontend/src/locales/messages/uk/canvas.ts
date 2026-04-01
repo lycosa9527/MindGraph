@@ -13,8 +13,7 @@ export default {
   'canvas.export.svgError': 'Експорт SVG не вдався, спробуйте ще раз',
   'canvas.export.svgSuccess': 'SVG експортовано',
   'canvas.export.unknownFormat': 'Невідомий формат експорту: {format}',
-  'canvas.import.invalidFile':
-    'Невірний файл діаграми. Виберіть JSON, експортований з MindGraph.',
+  'canvas.import.invalidFile': 'Невірний файл діаграми. Виберіть JSON, експортований з MindGraph.',
   'canvas.import.parseError': 'Не вдалося розібрати JSON, спробуйте ще раз',
   'canvas.reset.confirmBody':
     'Справді? Увесь поточний вміст буде втрачено, зокрема діаграму та палітру вузлів. Скасувати неможливо.',
@@ -212,8 +211,7 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Напрямок макета перемкнено',
   'canvas.toolbar.learningSheetRestored': 'Робочий аркуш відновлено',
   'canvas.toolbar.moreAppConceptMapModes': 'Режими концепт-карти',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'Зараз стандартний режим; незабаром з’являться інші',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'Зараз стандартний режим; незабаром з’являться інші',
   'canvas.toolbar.moreAppLearningSheet': 'Робочий аркуш',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Випадкові пропуски для занять і повторення',
   'canvas.toolbar.moreAppWaterfall': 'Waterfall',
@@ -249,8 +247,7 @@ export default {
   'canvas.toolbar.selectNodesFirst': 'Спочатку виберіть вузол(и)',
   'canvas.toolbar.selectNodesToDelete': 'Виберіть вузол(и) для видалення',
   'canvas.toolbar.selectPartForSubpart': 'Виберіть частину для додавання підчастини',
-  'canvas.toolbar.selectPartThenEnter':
-    'Виберіть вузол частини, потім Enter для підчастини',
+  'canvas.toolbar.selectPartThenEnter': 'Виберіть вузол частини, потім Enter для підчастини',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'Виберіть вузли подібності або відмінності (теми видалити не можна)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst':
@@ -300,16 +297,14 @@ export default {
   'canvas.topBar.teachingDesign': 'Методичний дизайн',
   'canvas.topBar.snapshotRecallTooltip': 'Відновити знімок {n}',
   'canvas.topBar.snapshotRecallTitle': 'Відновити знімок',
-  'canvas.topBar.snapshotRecallConfirm':
-    'Відновити знімок {n}? Поточні зміни буде замінено.',
+  'canvas.topBar.snapshotRecallConfirm': 'Відновити знімок {n}? Поточні зміни буде замінено.',
   'canvas.topBar.snapshotRecallConfirmBtn': 'Відновити',
   'canvas.topBar.snapshotRecallCancelBtn': 'Скасувати',
   'canvas.topBar.snapshotRecallHistory': 'Перед відновленням знімка {n}',
   'canvas.topBar.snapshotRecallFailed': 'Не вдалося відновити знімок, спробуйте ще раз',
   'canvas.topBar.snapshotDeleted': 'Знімок {n} видалено',
   'canvas.topBar.snapshotDeleteFailed': 'Не вдалося видалити знімок',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'Клік — відновити знімок {n} · Ctrl+клік — видалити',
+  'canvas.topBar.snapshotBadgeTooltip': 'Клік — відновити знімок {n} · Ctrl+клік — видалити',
   'canvas.zoomControls.exitFullscreen': 'Вийти з повноекранного режиму',
   'canvas.zoomControls.fitCanvas': 'За розміром полотна',
   'canvas.zoomControls.fullscreen': 'Повний екран',
@@ -340,12 +335,10 @@ export default {
   'conceptMap.focus.noResult': 'Немає результату',
   'conceptMap.focus.validationRequestFailed': 'Запит перевірки не вдався',
   'diagram.aiGenerating': 'ШІ…',
-  'diagram.alternativeDimensions.braceTitle':
-    'Інші можливі виміри декомпозиції для цієї теми:',
+  'diagram.alternativeDimensions.braceTitle': 'Інші можливі виміри декомпозиції для цієї теми:',
   'diagram.alternativeDimensions.bridgeAnalogiesTitle':
     'Інші можливі схеми аналогій для цієї теми:',
-  'diagram.alternativeDimensions.treeMapTitle':
-    'Інші можливі виміри класифікації для цієї теми:',
+  'diagram.alternativeDimensions.treeMapTitle': 'Інші можливі виміри класифікації для цієї теми:',
   'diagram.bridgeMap.alternativesEmpty': '[Тут з’являться варіанти]',
   'diagram.conceptMap.focusQuestionPrefix': 'Фокус-питання: ',
   'diagram.conceptMap.focusQuestionSuffix': 'Enter',
@@ -497,8 +490,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Створити на полотні',
   'landing.diagramGrid.tree_map.desc': 'Класифікувати й групувати',
   'landing.diagramGrid.tree_map.title': 'Tree Map',
-  'landing.template.freePlaceholder':
-    'Опишіть діаграму або виберіть шаблон нижче…',
+  'landing.template.freePlaceholder': 'Опишіть діаграму або виберіть шаблон нижче…',
   'landing.template.slot.criterion': 'Класифікація',
   'landing.template.slot.event': 'Подія',
   'landing.template.slot.itemA': 'Елемент A',
@@ -509,8 +501,7 @@ export default {
   'landing.template.slot.theme': 'Тема',
   'landing.template.slot.topic': 'Центральна тема',
   'mindgraphLanding.cancel': 'Скасувати',
-  'mindgraphLanding.codeFormatInvalid':
-    'Невірний формат коду презентації (очікується xxx-xxx)',
+  'mindgraphLanding.codeFormatInvalid': 'Невірний формат коду презентації (очікується xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Введіть повний код презентації',
   'mindgraphLanding.collaborate': 'Спільна робота',
   'mindgraphLanding.dialogSchoolTitle': 'Шкільна спільна робота',
@@ -528,9 +519,7 @@ export default {
     'Шкільних сесій зараз немає. Колега має запустити «Шкільну спільну роботу» на полотні.',
   'mindgraphLanding.participantsOnline': 'У мережі: {n}',
   'mindgraphLanding.schoolCollab': 'Шкільна спільна робота',
-  'mindgraphLanding.sharedCodeHint':
-    'Введіть код запрошення (xxx-xxx), щоб приєднатися до сесії.',
+  'mindgraphLanding.sharedCodeHint': 'Введіть код запрошення (xxx-xxx), щоб приєднатися до сесії.',
   'mindgraphLanding.sharedCollab': 'Спільна спільна робота',
-  'mindgraphLanding.welcome':
-    'Вітаю, {username}, я ваш ШІ-помічник з візуального мислення',
+  'mindgraphLanding.welcome': 'Вітаю, {username}, я ваш ШІ-помічник з візуального мислення',
 } as const

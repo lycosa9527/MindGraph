@@ -21,8 +21,7 @@ export default {
   'sidebar.bookmarks.title': 'Ostatnie zakładki',
   'sidebar.bookmarks.unknownDoc': 'Nieznany dokument',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'Na pewno usunąć tę rozmowę? Tej operacji nie można cofnąć.',
+  'sidebar.chatHistory.deleteConfirm': 'Na pewno usunąć tę rozmowę? Tej operacji nie można cofnąć.',
   'sidebar.chatHistory.deleteTitle': 'Usuń rozmowę',
   'sidebar.chatHistory.empty': 'Brak rozmów',
   'sidebar.chatHistory.loginPrompt': 'Zaloguj się, aby zobaczyć historię',

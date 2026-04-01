@@ -1,8 +1,7 @@
 /** es UI — workshop */
 export default {
   'collab.codeCopied': 'Código copiado',
-  'collab.codeGenerated':
-    'Código de colaboración generado — compártelo para editar juntos.',
+  'collab.codeGenerated': 'Código de colaboración generado — compártelo para editar juntos.',
   'collab.copy': 'Copiar',
   'collab.copyFailed': 'No se pudo copiar',
   'collab.copyLink': 'Copiar enlace',
@@ -16,10 +15,8 @@ export default {
   'collab.end': 'Finalizar colaboración',
   'collab.endFailed': 'No se pudo finalizar la colaboración',
   'collab.ended': 'Colaboración finalizada',
-  'collab.galleryFull':
-    'La galería está llena. Elimine primero un diagrama',
-  'collab.hintNetworkInactive':
-    'Genere un código para que otros se unan y editen con usted.',
+  'collab.galleryFull': 'La galería está llena. Elimine primero un diagrama',
+  'collab.hintNetworkInactive': 'Genere un código para que otros se unan y editen con usted.',
   'collab.hintSchoolInactive':
     'Al iniciar, los compañeros de la misma escuela pueden unirse desde la página de inicio.',
   'collab.invalidDiagramData': 'Datos del diagrama no válidos',
@@ -69,10 +66,8 @@ export default {
   'workshop.channelAvatarEmoji': 'Icono (opcional)',
   'workshop.channelAvatarPlaceholder': 'Emoji o etiqueta breve',
   'workshop.channelColor': 'Color del canal',
-  'workshop.channelInviteReceived':
-    'Se le ha añadido a «{name}». Abra Workshop para verlo.',
-  'workshop.channelKindGroup':
-    'Grupo docente (nivel superior, p. ej. 教研组)',
+  'workshop.channelInviteReceived': 'Se le ha añadido a «{name}». Abra Workshop para verlo.',
+  'workshop.channelKindGroup': 'Grupo docente (nivel superior, p. ej. 教研组)',
   'workshop.channelKindLessonStudy': 'Estudio de lección bajo un grupo (课例)',
   'workshop.channelNameLabel': 'Nombre',
   'workshop.channelNamePlaceholder': 'p. ej. grupo STEM',
@@ -100,8 +95,7 @@ export default {
   'workshop.contactsOnlineNow': 'En línea',
   'workshop.contactsRecentlyOnline': 'Recientemente en línea',
   'workshop.conversationTitle': 'Título de la conversación',
-  'workshop.conversationTitlePlaceholder':
-    'p. ej. debate sobre planificación, reflexión docente',
+  'workshop.conversationTitlePlaceholder': 'p. ej. debate sobre planificación, reflexión docente',
   'workshop.conversations': 'Conversaciones',
   'workshop.copyLink': 'Copiar enlace',
   'workshop.copyMentionSyntax': 'Copiar sintaxis de mención',
@@ -121,8 +115,7 @@ export default {
   'workshop.deadlineDialogTitle': 'Fecha límite del estudio de lección',
   'workshop.defaultChannel': 'Canal predeterminado',
   'workshop.deleteTopic': 'Eliminar conversación',
-  'workshop.deleteTopicConfirm':
-    '¿Seguro que desea eliminar esta conversación?',
+  'workshop.deleteTopicConfirm': '¿Seguro que desea eliminar esta conversación?',
   'workshop.desktopNotifications': 'Notificaciones de escritorio',
   'workshop.diagram': 'Diagrama',
   'workshop.directMessage': 'Mensaje directo',
@@ -136,8 +129,7 @@ export default {
   'workshop.edited': '(editado)',
   'workshop.emailNotifications': 'Notificaciones por correo',
   'workshop.emoji': 'Emoji',
-  'workshop.expandCollapseGroup':
-    'Expandir o contraer la lista de estudios en la barra lateral',
+  'workshop.expandCollapseGroup': 'Expandir o contraer la lista de estudios en la barra lateral',
   'workshop.filterSidebar': 'Filtrar grupos docentes y MD',
   'workshop.filterUsers': 'Filtrar usuarios',
   'workshop.followTopic': 'Seguir conversación',
@@ -268,8 +260,7 @@ export default {
   'workshop.starMessage': 'Destacar mensaje',
   'workshop.starred': 'Destacados',
   'workshop.startConversation': '¡Inicie la conversación!',
-  'workshop.startConversationHint':
-    'Inicie una conversación para debatir con sus colegas',
+  'workshop.startConversationHint': 'Inicie una conversación para debatir con sus colegas',
   'workshop.startDM': 'Enviar mensaje',
   'workshop.startNewConversation': 'Iniciar nueva conversación',
   'workshop.statusArchived': 'Archivado',
@@ -293,8 +284,7 @@ export default {
   'workshop.topicDescriptionPlaceholder': 'Describa el tema de la conversación…',
   'workshop.topicSettings': 'Ajustes de la conversación',
   'workshop.topicTitle': 'Título',
-  'workshop.topicTitlePlaceholder':
-    'p. ej. mapa de pensamiento de diseño para el capítulo 3',
+  'workshop.topicTitlePlaceholder': 'p. ej. mapa de pensamiento de diseño para el capítulo 3',
   'workshop.topics': 'Conversaciones',
   'workshop.typeMessagePlaceholder':
     'Escriba un mensaje… (Intro para enviar, Mayús+Intro para nueva línea)',
@@ -355,8 +345,7 @@ export default {
   'workshop.youAnd': 'Usted y',
   'workshopCanvas.connectFailed': 'No se pudo conectar a la colaboración',
   'workshopCanvas.connectionClosed': 'Conexión cerrada',
-  'workshopCanvas.connectionClosedReason':
-    'Conexión de colaboración cerrada: {reason}',
+  'workshopCanvas.connectionClosedReason': 'Conexión de colaboración cerrada: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} está editando este nodo',
   'workshopCanvas.errorGeneric': 'Error de colaboración',
   'workshopCanvas.reconnectFailed':
@@ -365,6 +354,5 @@ export default {
     'Se volvió al inicio — sin ediciones en el diagrama durante 30 minutos.',
   'workshopCanvas.userJoined': 'El usuario {userId} se unió',
   'workshopCanvas.userLeft': 'El usuario {userId} salió',
-  'workshopCanvas.wsError':
-    'Error de conexión de colaboración; compruebe su red',
+  'workshopCanvas.wsError': 'Error de conexión de colaboración; compruebe su red',
 } as const

@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Zatrzymaj generowanie',
   'askOnce.panel.thinking': 'Myślę...',
   'askOnce.panel.thoughtProcess': 'Proces myślowy',
-  'askOnce.placeholder':
-    'Wpisz polecenie... Naciśnij Ctrl+Enter lub kliknij Wyślij',
+  'askOnce.placeholder': 'Wpisz polecenie... Naciśnij Ctrl+Enter lub kliknij Wyślij',
   'askOnce.promptContent': 'Treść polecenia',
   'askOnce.promptEditPlaceholder': 'Wpisz lub wybierz szablon do edycji...',
   'askOnce.promptTemplatesTitle': 'Szablony poleceń',
@@ -114,8 +113,7 @@ export default {
   'settings.version.international': 'Wersja międzynarodowa',
   'landing.international.subtitle':
     'Najpotężniejsze na świecie oprogramowanie do diagramów myślowych z AI',
-  'landing.international.promptPlaceholder':
-    'Opisz swój diagram lub wybierz typ poniżej...',
+  'landing.international.promptPlaceholder': 'Opisz swój diagram lub wybierz typ poniżej...',
   'landing.international.sectionTitle': 'Wybierz typ diagramu',
   'landing.international.modules': 'Moduły',
   'landing.international.mindmateCard.title': 'MindMate',

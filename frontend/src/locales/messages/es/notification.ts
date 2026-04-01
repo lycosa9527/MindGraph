@@ -1,11 +1,13 @@
 /** es UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'No se pueden borrar el tema ni los nodos centrales',
-  'notification.cannotResetSelectDiagramType': 'No se puede restablecer: primero seleccione un tipo de diagrama',
+  'notification.cannotResetSelectDiagramType':
+    'No se puede restablecer: primero seleccione un tipo de diagrama',
   'notification.canvasClearNodes': 'Se borraron {count} nodo(s)',
   'notification.canvasClearNodesLearning': 'Se vaciaron {count} nodo(s); añadidos a respuestas',
   'notification.canvasSomeoneEditingNode': 'Otra persona está editando este nodo',
-  'notification.collabDeleteBlocked': 'No se puede eliminar mientras otro usuario edita un nodo seleccionado',
+  'notification.collabDeleteBlocked':
+    'No se puede eliminar mientras otro usuario edita un nodo seleccionado',
   'notification.collabRedoBlocked': 'No se puede rehacer mientras otro usuario está editando',
   'notification.collabUndoBlocked': 'No se puede deshacer mientras otro usuario está editando',
   'notification.conversationDeleted': 'Conversación eliminada',

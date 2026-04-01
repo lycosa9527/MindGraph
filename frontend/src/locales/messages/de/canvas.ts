@@ -221,9 +221,11 @@ export default {
   'canvas.toolbar.moreApps': 'Weitere Apps',
   'canvas.toolbar.moreAppSnapshot': 'Momentaufnahme',
   'canvas.toolbar.moreAppSnapshotDesc': 'Eine Version dieses Diagramms speichern (max. 10)',
-  'canvas.toolbar.snapshotSaveFirst': 'Bitte das Diagramm zuerst speichern, bevor eine Momentaufnahme erstellt wird',
+  'canvas.toolbar.snapshotSaveFirst':
+    'Bitte das Diagramm zuerst speichern, bevor eine Momentaufnahme erstellt wird',
   'canvas.toolbar.snapshotTaken': 'Momentaufnahme {n} gespeichert',
-  'canvas.toolbar.snapshotFailed': 'Momentaufnahme konnte nicht gespeichert werden, bitte erneut versuchen',
+  'canvas.toolbar.snapshotFailed':
+    'Momentaufnahme konnte nicht gespeichert werden, bitte erneut versuchen',
   'canvas.toolbar.newAssociation': 'Neue Zuordnung',
   'canvas.toolbar.newAttribute': 'Neues Attribut',
   'canvas.toolbar.newBranch': 'Neuer Zweig',
@@ -247,13 +249,16 @@ export default {
     'Bitte Kategorie- oder Blattknoten auswählen (Themenknoten kann nicht gelöscht werden)',
   'canvas.toolbar.selectNodesFirst': 'Bitte zuerst einen oder mehrere Knoten auswählen',
   'canvas.toolbar.selectNodesToDelete': 'Bitte die zu löschenden Knoten auswählen',
-  'canvas.toolbar.selectPartForSubpart': 'Bitte einen Teil auswählen, dem ein Unterteil hinzugefügt werden soll',
-  'canvas.toolbar.selectPartThenEnter': 'Teilknoten auswählen, dann Eingabe drücken, um Unterteil hinzuzufügen',
+  'canvas.toolbar.selectPartForSubpart':
+    'Bitte einen Teil auswählen, dem ein Unterteil hinzugefügt werden soll',
+  'canvas.toolbar.selectPartThenEnter':
+    'Teilknoten auswählen, dann Eingabe drücken, um Unterteil hinzuzufügen',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'Bitte Ähnlichkeits- oder Unterschiedsknoten auswählen (Themenknoten können nicht gelöscht werden)',
   'canvas.toolbar.selectSimilarityOrDifferenceFirst':
     'Bitte zuerst einen Ähnlichkeits- oder Unterschiedsknoten auswählen',
-  'canvas.toolbar.selectStepForSubstep': 'Bitte einen Schritt auswählen, dem ein Unterschritt hinzugefügt werden soll',
+  'canvas.toolbar.selectStepForSubstep':
+    'Bitte einen Schritt auswählen, dem ein Unterschritt hinzugefügt werden soll',
   'canvas.toolbar.similarityWithIndex': 'Ähnlichkeit {n}',
   'canvas.toolbar.stepAdded': 'Schritt hinzugefügt',
   'canvas.toolbar.styleApplied': 'Stil angewendet',
@@ -303,9 +308,11 @@ export default {
   'canvas.topBar.snapshotRecallConfirmBtn': 'Wiederherstellen',
   'canvas.topBar.snapshotRecallCancelBtn': 'Abbrechen',
   'canvas.topBar.snapshotRecallHistory': 'Vor Wiederherstellung der Momentaufnahme {n}',
-  'canvas.topBar.snapshotRecallFailed': 'Momentaufnahme konnte nicht wiederhergestellt werden, bitte erneut versuchen',
+  'canvas.topBar.snapshotRecallFailed':
+    'Momentaufnahme konnte nicht wiederhergestellt werden, bitte erneut versuchen',
   'canvas.topBar.snapshotDeleted': 'Momentaufnahme {n} gelöscht',
-  'canvas.topBar.snapshotDeleteFailed': 'Momentaufnahme konnte nicht gelöscht werden, bitte erneut versuchen',
+  'canvas.topBar.snapshotDeleteFailed':
+    'Momentaufnahme konnte nicht gelöscht werden, bitte erneut versuchen',
   'canvas.topBar.snapshotBadgeTooltip':
     'Klicken, um Momentaufnahme {n} wiederherzustellen · Strg+Klick zum Löschen',
   'canvas.zoomControls.exitFullscreen': 'Vollbild beenden',
@@ -495,7 +502,8 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Auf der Leinwand erstellen',
   'landing.diagramGrid.tree_map.desc': 'Klassifizieren und gruppieren',
   'landing.diagramGrid.tree_map.title': 'Baumkarte',
-  'landing.template.freePlaceholder': 'Beschreiben Sie Ihr Diagramm oder wählen Sie unten eine Vorlage…',
+  'landing.template.freePlaceholder':
+    'Beschreiben Sie Ihr Diagramm oder wählen Sie unten eine Vorlage…',
   'landing.template.slot.criterion': 'Klassifikation',
   'landing.template.slot.event': 'Ereignis',
   'landing.template.slot.itemA': 'Element A',
@@ -506,8 +514,7 @@ export default {
   'landing.template.slot.theme': 'Thema',
   'landing.template.slot.topic': 'Zentrales Thema',
   'mindgraphLanding.cancel': 'Abbrechen',
-  'mindgraphLanding.codeFormatInvalid':
-    'Ungültiges Präsentationscode-Format (sollte xxx-xxx sein)',
+  'mindgraphLanding.codeFormatInvalid': 'Ungültiges Präsentationscode-Format (sollte xxx-xxx sein)',
   'mindgraphLanding.codeIncomplete': 'Bitte den vollständigen Präsentationscode eingeben',
   'mindgraphLanding.collaborate': 'Zusammenarbeiten',
   'mindgraphLanding.dialogSchoolTitle': 'Schul-Zusammenarbeit',
@@ -528,6 +535,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Geben Sie den Einladungscode (xxx-xxx) ein, um der Sitzung beizutreten.',
   'mindgraphLanding.sharedCollab': 'Geteilte Zusammenarbeit',
-  'mindgraphLanding.welcome':
-    'Hallo {username}, ich bin Ihr KI-Assistent für visuelles Denken',
+  'mindgraphLanding.welcome': 'Hallo {username}, ich bin Ihr KI-Assistent für visuelles Denken',
 } as const

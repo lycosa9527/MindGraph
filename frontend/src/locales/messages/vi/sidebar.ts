@@ -33,8 +33,7 @@ export default {
   'sidebar.collapseSidebar': 'Thu gọn thanh bên',
   'sidebar.community': 'Cộng đồng',
   'sidebar.courses': 'Khóa học tư duy',
-  'sidebar.debateHistory.deleteConfirm':
-    'Bạn có chắc muốn xóa tranh luận này? Không thể hoàn tác.',
+  'sidebar.debateHistory.deleteConfirm': 'Bạn có chắc muốn xóa tranh luận này? Không thể hoàn tác.',
   'sidebar.debateHistory.empty': 'Chưa có tranh luận',
   'sidebar.debateHistory.loginPrompt': 'Đăng nhập để xem tranh luận',
   'sidebar.debateHistory.renamePrompt': 'Nhập chủ đề mới cho tranh luận này',

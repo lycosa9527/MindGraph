@@ -33,7 +33,8 @@ export default {
   'autoComplete.selectDiagramType': 'Wybierz typ diagramu',
   'conceptMapPicker.currentFocusQuestion': 'Bieżące pytanie fokusowe',
   'conceptMapPicker.currentRootConcept': 'Bieżące pojęcie główne',
-  'conceptMapPicker.focusAlternativesHint': 'Alternatywy ({pageSize} na stronę, adaptacyjna wysokość)',
+  'conceptMapPicker.focusAlternativesHint':
+    'Alternatywy ({pageSize} na stronę, adaptacyjna wysokość)',
   'conceptMapPicker.rootAlternativesHint':
     'Alternatywy główne ({pageSize} na stronę, adaptacyjna wysokość)',
   'conceptMapPicker.suggestionsEmpty': 'Brak sugestii. Naciśnij =, aby zobaczyć więcej.',
@@ -101,8 +102,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Nie udało się wygenerować gałęzi',
   'nodePalette.error.createDiagramFirst': 'Najpierw utwórz diagram',
   'nodePalette.error.enterTopicText': 'Wpisz tekst węzła tematu',
-  'nodePalette.error.replacePlaceholder':
-    'Wpisz prawdziwy temat, zastąp domyślny placeholder',
+  'nodePalette.error.replacePlaceholder': 'Wpisz prawdziwy temat, zastąp domyślny placeholder',
   'nodePalette.fallbackTopicA': 'Temat A',
   'nodePalette.fallbackTopicB': 'Temat B',
   'nodePalette.finish': 'Zakończ',

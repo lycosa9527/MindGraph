@@ -6,8 +6,7 @@ export default {
   'sidebar.actions.showLess': 'Свернуть',
   'sidebar.actions.showMore': 'Показать ещё ({n})',
   'sidebar.actions.unpin': 'Открепить',
-  'sidebar.askOnceHistory.deleteConfirm':
-    'Удалить этот диалог? Это действие нельзя отменить.',
+  'sidebar.askOnceHistory.deleteConfirm': 'Удалить этот диалог? Это действие нельзя отменить.',
   'sidebar.askOnceHistory.empty': 'Пока нет диалогов',
   'sidebar.askOnceHistory.renamePrompt': 'Введите новое имя для этого диалога',
   'sidebar.askOnceHistory.renameTitle': 'Переименовать диалог',
@@ -21,8 +20,7 @@ export default {
   'sidebar.bookmarks.title': 'Недавние закладки',
   'sidebar.bookmarks.unknownDoc': 'Неизвестный документ',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    'Удалить этот диалог? Это действие нельзя отменить.',
+  'sidebar.chatHistory.deleteConfirm': 'Удалить этот диалог? Это действие нельзя отменить.',
   'sidebar.chatHistory.deleteTitle': 'Удалить диалог',
   'sidebar.chatHistory.empty': 'Пока нет диалогов',
   'sidebar.chatHistory.loginPrompt': 'Войдите, чтобы видеть историю',
@@ -33,8 +31,7 @@ export default {
   'sidebar.collapseSidebar': 'Свернуть боковую панель',
   'sidebar.community': 'Сообщество',
   'sidebar.courses': 'Курсы мышления',
-  'sidebar.debateHistory.deleteConfirm':
-    'Удалить эту дискуссию? Это действие нельзя отменить.',
+  'sidebar.debateHistory.deleteConfirm': 'Удалить эту дискуссию? Это действие нельзя отменить.',
   'sidebar.debateHistory.empty': 'Пока нет дискуссий',
   'sidebar.debateHistory.loginPrompt': 'Войдите, чтобы видеть дискуссии',
   'sidebar.debateHistory.renamePrompt': 'Введите новую тему дискуссии',

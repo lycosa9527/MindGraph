@@ -1,8 +1,7 @@
 /** de UI — workshop */
 export default {
   'collab.codeCopied': 'Code kopiert',
-  'collab.codeGenerated':
-    'Kooperationscode erzeugt — zum gemeinsamen Bearbeiten teilen.',
+  'collab.codeGenerated': 'Kooperationscode erzeugt — zum gemeinsamen Bearbeiten teilen.',
   'collab.copy': 'Kopieren',
   'collab.copyFailed': 'Kopieren fehlgeschlagen',
   'collab.copyLink': 'Link kopieren',
@@ -16,10 +15,8 @@ export default {
   'collab.end': 'Kooperation beenden',
   'collab.endFailed': 'Kooperation konnte nicht beendet werden',
   'collab.ended': 'Kooperation beendet',
-  'collab.galleryFull':
-    'Galerie ist voll. Bitte zuerst ein Diagramm löschen',
-  'collab.hintNetworkInactive':
-    'Code erzeugen, damit andere beitreten und mitbearbeiten können.',
+  'collab.galleryFull': 'Galerie ist voll. Bitte zuerst ein Diagramm löschen',
+  'collab.hintNetworkInactive': 'Code erzeugen, damit andere beitreten und mitbearbeiten können.',
   'collab.hintSchoolInactive':
     'Nach dem Start können Kolleginnen und Kollegen derselben Schule von der Startseite aus beitreten.',
   'collab.invalidDiagramData': 'Ungültige Diagrammdaten',
@@ -99,8 +96,7 @@ export default {
   'workshop.contactsOnlineNow': 'Online',
   'workshop.contactsRecentlyOnline': 'Kürzlich online',
   'workshop.conversationTitle': 'Titel der Unterhaltung',
-  'workshop.conversationTitlePlaceholder':
-    'z. B. Unterrichtsplanung, Reflexion',
+  'workshop.conversationTitlePlaceholder': 'z. B. Unterrichtsplanung, Reflexion',
   'workshop.conversations': 'Unterhaltungen',
   'workshop.copyLink': 'Link kopieren',
   'workshop.copyMentionSyntax': 'Erwähnungssyntax kopieren',
@@ -120,8 +116,7 @@ export default {
   'workshop.deadlineDialogTitle': 'Frist Unterrichtsstudie',
   'workshop.defaultChannel': 'Standardkanal',
   'workshop.deleteTopic': 'Unterhaltung löschen',
-  'workshop.deleteTopicConfirm':
-    'Diese Unterhaltung wirklich löschen?',
+  'workshop.deleteTopicConfirm': 'Diese Unterhaltung wirklich löschen?',
   'workshop.desktopNotifications': 'Desktop-Benachrichtigungen',
   'workshop.diagram': 'Diagramm',
   'workshop.directMessage': 'Direktnachricht',
@@ -135,8 +130,7 @@ export default {
   'workshop.edited': '(bearbeitet)',
   'workshop.emailNotifications': 'E-Mail-Benachrichtigungen',
   'workshop.emoji': 'Emoji',
-  'workshop.expandCollapseGroup':
-    'Studienliste in der Seitenleiste ein- oder ausklappen',
+  'workshop.expandCollapseGroup': 'Studienliste in der Seitenleiste ein- oder ausklappen',
   'workshop.filterSidebar': 'Lehrgruppen und DN filtern',
   'workshop.filterUsers': 'Nutzer filtern',
   'workshop.followTopic': 'Unterhaltung folgen',
@@ -292,8 +286,7 @@ export default {
   'workshop.topicDescriptionPlaceholder': 'Thema der Unterhaltung beschreiben…',
   'workshop.topicSettings': 'Einstellungen Unterhaltung',
   'workshop.topicTitle': 'Titel',
-  'workshop.topicTitlePlaceholder':
-    'z. B. Design-Thinking-Karte zu Kapitel 3',
+  'workshop.topicTitlePlaceholder': 'z. B. Design-Thinking-Karte zu Kapitel 3',
   'workshop.topics': 'Unterhaltungen',
   'workshop.typeMessagePlaceholder':
     'Nachricht eingeben… (Eingabe zum Senden, Umschalt+Eingabe für neue Zeile)',
@@ -327,11 +320,9 @@ export default {
   'workshop.welcomeExampleLSEng1C1': 'Arbeitsblatt und Aufgaben',
   'workshop.welcomeExampleLSEng1C2': 'Aufgaben nach dem Lesen',
   'workshop.welcomeExampleLSEng1C3': 'Beobachtung und Reflexion',
-  'workshop.welcomeExampleLSEng2':
-    'Studie: Schreiben — gleiche Stunde, verschiedene Lehrkräfte',
+  'workshop.welcomeExampleLSEng2': 'Studie: Schreiben — gleiche Stunde, verschiedene Lehrkräfte',
   'workshop.welcomeExampleLSEng2C1': 'Rubrik-Pilot und Überarbeitung',
-  'workshop.welcomeExampleLSMath1':
-    'Studie: Woche „Funktionsbegriff“ vertiefen',
+  'workshop.welcomeExampleLSMath1': 'Studie: Woche „Funktionsbegriff“ vertiefen',
   'workshop.welcomeExampleLSMath1C1': 'Ziele und Aktivitäten',
   'workshop.welcomeExampleLSMath1C2': 'Fragen und Tafelbild',
   'workshop.welcomeExampleLSMath1C3': 'Reflexion nach der Stunde',
@@ -354,8 +345,7 @@ export default {
   'workshop.youAnd': 'Sie und',
   'workshopCanvas.connectFailed': 'Verbindung zur Kooperation fehlgeschlagen',
   'workshopCanvas.connectionClosed': 'Verbindung geschlossen',
-  'workshopCanvas.connectionClosedReason':
-    'Kooperationsverbindung geschlossen: {reason}',
+  'workshopCanvas.connectionClosedReason': 'Kooperationsverbindung geschlossen: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bearbeitet diesen Knoten',
   'workshopCanvas.errorGeneric': 'Kooperationsfehler',
   'workshopCanvas.reconnectFailed':
@@ -364,6 +354,5 @@ export default {
     'Zurück zur Startseite — 30 Minuten keine Diagramm-Bearbeitung.',
   'workshopCanvas.userJoined': 'Nutzer {userId} ist beigetreten',
   'workshopCanvas.userLeft': 'Nutzer {userId} hat verlassen',
-  'workshopCanvas.wsError':
-    'Kooperationsverbindungsfehler — Netzwerk prüfen',
+  'workshopCanvas.wsError': 'Kooperationsverbindungsfehler — Netzwerk prüfen',
 } as const

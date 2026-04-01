@@ -212,8 +212,7 @@ export default {
   'canvas.toolbar.layoutDirectionToggled': 'Направление макета переключено',
   'canvas.toolbar.learningSheetRestored': 'Рабочий лист восстановлен',
   'canvas.toolbar.moreAppConceptMapModes': 'Режимы концепт-карты',
-  'canvas.toolbar.moreAppConceptMapModesDesc':
-    'Сейчас стандартный режим; скоро появятся другие',
+  'canvas.toolbar.moreAppConceptMapModesDesc': 'Сейчас стандартный режим; скоро появятся другие',
   'canvas.toolbar.moreAppLearningSheet': 'Рабочий лист',
   'canvas.toolbar.moreAppLearningSheetDesc': 'Случайные пропуски для занятий и повторения',
   'canvas.toolbar.moreAppWaterfall': 'Waterfall',
@@ -249,12 +248,10 @@ export default {
   'canvas.toolbar.selectNodesFirst': 'Сначала выберите узел(ы)',
   'canvas.toolbar.selectNodesToDelete': 'Выберите узел(ы) для удаления',
   'canvas.toolbar.selectPartForSubpart': 'Выберите часть для добавления подчасти',
-  'canvas.toolbar.selectPartThenEnter':
-    'Выберите узел части, затем Enter для подчасти',
+  'canvas.toolbar.selectPartThenEnter': 'Выберите узел части, затем Enter для подчасти',
   'canvas.toolbar.selectSimilarityOrDifferenceDelete':
     'Выберите узлы сходства или различия (темы удалить нельзя)',
-  'canvas.toolbar.selectSimilarityOrDifferenceFirst':
-    'Сначала выберите узел сходства или различия',
+  'canvas.toolbar.selectSimilarityOrDifferenceFirst': 'Сначала выберите узел сходства или различия',
   'canvas.toolbar.selectStepForSubstep': 'Выберите шаг для подшага',
   'canvas.toolbar.similarityWithIndex': 'Сходство {n}',
   'canvas.toolbar.stepAdded': 'Шаг добавлен',
@@ -308,8 +305,7 @@ export default {
   'canvas.topBar.snapshotRecallFailed': 'Не удалось восстановить снимок',
   'canvas.topBar.snapshotDeleted': 'Снимок {n} удалён',
   'canvas.topBar.snapshotDeleteFailed': 'Не удалось удалить снимок',
-  'canvas.topBar.snapshotBadgeTooltip':
-    'Клик — восстановить снимок {n} · Ctrl+клик — удалить',
+  'canvas.topBar.snapshotBadgeTooltip': 'Клик — восстановить снимок {n} · Ctrl+клик — удалить',
   'canvas.zoomControls.exitFullscreen': 'Выйти из полноэкранного режима',
   'canvas.zoomControls.fitCanvas': 'По размеру холста',
   'canvas.zoomControls.fullscreen': 'Полный экран',
@@ -497,8 +493,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Создать на холсте',
   'landing.diagramGrid.tree_map.desc': 'Классификация и группы',
   'landing.diagramGrid.tree_map.title': 'Tree Map',
-  'landing.template.freePlaceholder':
-    'Опишите диаграмму или выберите шаблон ниже…',
+  'landing.template.freePlaceholder': 'Опишите диаграмму или выберите шаблон ниже…',
   'landing.template.slot.criterion': 'Классификация',
   'landing.template.slot.event': 'Событие',
   'landing.template.slot.itemA': 'Элемент A',
@@ -509,8 +504,7 @@ export default {
   'landing.template.slot.theme': 'Тема',
   'landing.template.slot.topic': 'Центральная тема',
   'mindgraphLanding.cancel': 'Отмена',
-  'mindgraphLanding.codeFormatInvalid':
-    'Неверный формат кода презентации (ожидается xxx-xxx)',
+  'mindgraphLanding.codeFormatInvalid': 'Неверный формат кода презентации (ожидается xxx-xxx)',
   'mindgraphLanding.codeIncomplete': 'Введите полный код презентации',
   'mindgraphLanding.collaborate': 'Совместная работа',
   'mindgraphLanding.dialogSchoolTitle': 'Школьная совместная работа',
@@ -531,6 +525,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Введите код приглашения (xxx-xxx), чтобы присоединиться к сессии.',
   'mindgraphLanding.sharedCollab': 'Общая совместная работа',
-  'mindgraphLanding.welcome':
-    'Здравствуйте, {username}, я ваш ИИ-помощник по визуальному мышлению',
+  'mindgraphLanding.welcome': 'Здравствуйте, {username}, я ваш ИИ-помощник по визуальному мышлению',
 } as const

@@ -3,7 +3,8 @@ export default {
   'app.aiDisclaimer': 'Il contenuto è generato dall’IA; verificalo con attenzione.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Accedi per usare quest’area',
-  'app.browserLocale.body': 'Il browser preferisce {name}. Impostare l’interfaccia dell’app di conseguenza?',
+  'app.browserLocale.body':
+    'Il browser preferisce {name}. Impostare l’interfaccia dell’app di conseguenza?',
   'app.browserLocale.dontAsk': 'Non chiedere più',
   'app.browserLocale.keepChinese': 'Mantieni cinese',
   'app.browserLocale.switch': 'Cambia',

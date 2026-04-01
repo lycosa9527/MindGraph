@@ -1,7 +1,6 @@
 /** ru UI — knowledge */
 export default {
-  'chunkTest.history.confirmDeleteBody':
-    'Удалить этот тест? Это нельзя отменить.',
+  'chunkTest.history.confirmDeleteBody': 'Удалить этот тест? Это нельзя отменить.',
   'chunkTest.history.confirmDeleteTitle': 'Удалить тест',
   'chunkTest.history.delete': 'Удалить',
   'chunkTest.history.deleteFailed': 'Не удалось удалить тест',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Стандартные IR-метрики',
   'chunkTestResults.storageEff': 'Эфф. хранения',
   'chunkTestResults.testFailed': 'Тест не удался',
-  'chunkTestResults.testFailedHint':
-    'При выполнении теста произошла ошибка. Попробуйте снова.',
+  'chunkTestResults.testFailedHint': 'При выполнении теста произошла ошибка. Попробуйте снова.',
   'chunkTestResults.testingInProgress': 'Тест выполняется…',
   'chunkTestResults.totalChunks': 'Всего чанков: {n}',
   'chunkTestResults.viewChunks': 'Просмотр чанков',
@@ -121,8 +119,7 @@ export default {
   'knowledge.manualEval.deselectAll': 'Снять выделение',
   'knowledge.manualEval.dialogTitle': 'Ручная оценка — {method}',
   'knowledge.manualEval.groundTruthLabel': 'Эталонный ответ (необязательно)',
-  'knowledge.manualEval.groundTruthPlaceholder':
-    'Введите эталон для оценки релевантности ответа…',
+  'knowledge.manualEval.groundTruthPlaceholder': 'Введите эталон для оценки релевантности ответа…',
   'knowledge.manualEval.metric.answer_coverage': 'Покрытие ответа',
   'knowledge.manualEval.metric.answer_faithfulness': 'Достоверность ответа',
   'knowledge.manualEval.metric.clarity': 'Ясность',
@@ -144,8 +141,7 @@ export default {
   'knowledge.manualEval.result.chunkQuality': 'Оценка качества чанков',
   'knowledge.manualEval.resultsTitle': 'Результаты оценки',
   'knowledge.manualEval.selectAll': 'Выбрать все',
-  'knowledge.manualEval.selectChunksHeading':
-    'Выберите чанки для оценки (пусто — оценить все)',
+  'knowledge.manualEval.selectChunksHeading': 'Выберите чанки для оценки (пусто — оценить все)',
   'knowledge.manualEval.showingFirst20': 'Показаны первые 20 из {total} чанков',
   'knowledge.manualEval.startEvaluation': 'Начать оценку',
   'knowledge.processing.chunking': 'Разбиение',
@@ -196,13 +192,11 @@ export default {
   'knowledge.upload.click': 'Нажмите для загрузки',
   'knowledge.upload.drag': 'или перетащите файл сюда',
   'knowledge.upload.fileTooLarge': 'Размер файла не более 10 МБ',
-  'knowledge.upload.hintFormats':
-    'PDF, DOCX, TXT, MD, изображения (макс. 10 МБ)',
+  'knowledge.upload.hintFormats': 'PDF, DOCX, TXT, MD, изображения (макс. 10 МБ)',
   'knowledge.upload.maxDocs': 'Достигнут лимит документов (5)',
   'knowledge.upload.title': 'Загрузка документа',
   'knowledge.upload.unsupportedType': 'Неподдерживаемый тип файла',
-  'knowledgeSpace.confirmDeleteBody':
-    'Удалить этот документ? Действие нельзя отменить.',
+  'knowledgeSpace.confirmDeleteBody': 'Удалить этот документ? Действие нельзя отменить.',
   'knowledgeSpace.confirmDeleteTitle': 'Подтвердить удаление',
   'knowledgeSpace.deleteFailed': 'Удаление не удалось',
   'knowledgeSpace.documentDeleted': 'Документ удалён',

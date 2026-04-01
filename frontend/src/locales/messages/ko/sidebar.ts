@@ -6,8 +6,7 @@ export default {
   'sidebar.actions.showLess': '접기',
   'sidebar.actions.showMore': '더 보기 ({n})',
   'sidebar.actions.unpin': '고정 해제',
-  'sidebar.askOnceHistory.deleteConfirm':
-    '이 대화를 삭제할까요? 이 작업은 취소할 수 없습니다.',
+  'sidebar.askOnceHistory.deleteConfirm': '이 대화를 삭제할까요? 이 작업은 취소할 수 없습니다.',
   'sidebar.askOnceHistory.empty': '아직 대화가 없습니다',
   'sidebar.askOnceHistory.renamePrompt': '이 대화의 새 이름을 입력하세요',
   'sidebar.askOnceHistory.renameTitle': '대화 이름 바꾸기',
@@ -21,8 +20,7 @@ export default {
   'sidebar.bookmarks.title': '최근 북마크',
   'sidebar.bookmarks.unknownDoc': '알 수 없는 문서',
   'sidebar.brandTitle': '迈特教研',
-  'sidebar.chatHistory.deleteConfirm':
-    '이 대화를 삭제할까요? 이 작업은 취소할 수 없습니다.',
+  'sidebar.chatHistory.deleteConfirm': '이 대화를 삭제할까요? 이 작업은 취소할 수 없습니다.',
   'sidebar.chatHistory.deleteTitle': '대화 삭제',
   'sidebar.chatHistory.empty': '아직 대화가 없습니다',
   'sidebar.chatHistory.loginPrompt': '기록을 보려면 로그인하세요',
@@ -33,8 +31,7 @@ export default {
   'sidebar.collapseSidebar': '사이드바 접기',
   'sidebar.community': '커뮤니티',
   'sidebar.courses': '사고 코스',
-  'sidebar.debateHistory.deleteConfirm':
-    '이 토론을 삭제할까요? 이 작업은 취소할 수 없습니다.',
+  'sidebar.debateHistory.deleteConfirm': '이 토론을 삭제할까요? 이 작업은 취소할 수 없습니다.',
   'sidebar.debateHistory.empty': '아직 토론이 없습니다',
   'sidebar.debateHistory.loginPrompt': '토론을 보려면 로그인하세요',
   'sidebar.debateHistory.renamePrompt': '이 토론의 새 주제를 입력하세요',

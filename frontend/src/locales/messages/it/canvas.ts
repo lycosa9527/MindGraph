@@ -496,8 +496,7 @@ export default {
   'landing.diagramGrid.sectionTitle': 'Crea sulla tela',
   'landing.diagramGrid.tree_map.desc': 'Classifica e raggruppa',
   'landing.diagramGrid.tree_map.title': 'Mappa ad albero',
-  'landing.template.freePlaceholder':
-    'Descrivi il tuo diagramma o scegli un modello qui sotto…',
+  'landing.template.freePlaceholder': 'Descrivi il tuo diagramma o scegli un modello qui sotto…',
   'landing.template.slot.criterion': 'Classificazione',
   'landing.template.slot.event': 'Evento',
   'landing.template.slot.itemA': 'Elemento A',
@@ -530,6 +529,5 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Inserisci il codice invito (xxx-xxx) per unirti alla sessione.',
   'mindgraphLanding.sharedCollab': 'Collaborazione condivisa',
-  'mindgraphLanding.welcome':
-    'Ciao {username}, sono il tuo assistente IA per il pensiero visivo',
+  'mindgraphLanding.welcome': 'Ciao {username}, sono il tuo assistente IA per il pensiero visivo',
 } as const

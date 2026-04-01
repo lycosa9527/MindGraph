@@ -21,8 +21,7 @@ export default {
   'askOnce.panel.stopGenerating': 'Hentikan pembuatan',
   'askOnce.panel.thinking': 'Berpikir...',
   'askOnce.panel.thoughtProcess': 'Alur berpikir',
-  'askOnce.placeholder':
-    'Masukkan perintah Anda... Tekan Ctrl+Enter atau klik Kirim',
+  'askOnce.placeholder': 'Masukkan perintah Anda... Tekan Ctrl+Enter atau klik Kirim',
   'askOnce.promptContent': 'Isi perintah',
   'askOnce.promptEditPlaceholder': 'Masukkan atau pilih templat untuk diedit...',
   'askOnce.promptTemplatesTitle': 'Templat perintah',
@@ -114,8 +113,7 @@ export default {
   'settings.version.international': 'Versi internasional',
   'landing.international.subtitle':
     'Perangkat lunak diagram berpikir AI paling canggih di jagat raya',
-  'landing.international.promptPlaceholder':
-    'Jelaskan diagram Anda, atau pilih jenis di bawah...',
+  'landing.international.promptPlaceholder': 'Jelaskan diagram Anda, atau pilih jenis di bawah...',
   'landing.international.sectionTitle': 'Pilih jenis diagram',
   'landing.international.modules': 'Modul',
   'landing.international.mindmateCard.title': 'MindMate',

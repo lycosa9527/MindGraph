@@ -1,12 +1,9 @@
 /** ru UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter':
-    'Нельзя очистить узлы темы или центра',
-  'notification.cannotResetSelectDiagramType':
-    'Сброс невозможен: сначала выберите тип диаграммы',
+  'notification.cannotClearTopicOrCenter': 'Нельзя очистить узлы темы или центра',
+  'notification.cannotResetSelectDiagramType': 'Сброс невозможен: сначала выберите тип диаграммы',
   'notification.canvasClearNodes': 'Очищено узлов: {count}',
-  'notification.canvasClearNodesLearning':
-    'Опустошено узлов: {count}, добавлено в ответы',
+  'notification.canvasClearNodesLearning': 'Опустошено узлов: {count}, добавлено в ответы',
   'notification.canvasSomeoneEditingNode': 'Другой пользователь правит этот узел',
   'notification.collabDeleteBlocked':
     'Нельзя удалить, пока другой пользователь правит выбранный узел',
@@ -19,8 +16,7 @@ export default {
   'notification.deleted': 'Элемент удалён',
   'notification.feedbackCancelled': 'Отзыв снят',
   'notification.feedbackThanks': 'Спасибо за отзыв',
-  'notification.feedbackThanksDislike':
-    'Спасибо за отзыв — мы улучшим сервис',
+  'notification.feedbackThanksDislike': 'Спасибо за отзыв — мы улучшим сервис',
   'notification.focusQuestionTooShort': 'Сначала введите более длинный фокус-вопрос',
   'notification.fullscreenFailed': 'Не удалось войти в полноэкранный режим',
   'notification.generationCancelled': 'Генерация отменена',
@@ -42,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Связь корневой концепции не найдена',
   'notification.saved': 'Изменения сохранены',
   'notification.selectNodeToClear': 'Выберите узел для очистки',
-  'notification.sessionInvalidated':
-    'Вы вышли из системы: превышено максимальное число устройств',
+  'notification.sessionInvalidated': 'Вы вышли из системы: превышено максимальное число устройств',
   'notification.signInToUse': 'Войдите, чтобы использовать',
   'notification.signInToValidateFocus': 'Войдите, чтобы проверить фокус-вопрос',
 } as const

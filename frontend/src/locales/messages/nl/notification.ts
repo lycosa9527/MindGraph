@@ -1,8 +1,7 @@
 /** nl UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan onderwerp- of centrumknooppunten niet wissen',
-  'notification.cannotResetSelectDiagramType':
-    'Kan niet resetten: selecteer eerst een diagramtype',
+  'notification.cannotResetSelectDiagramType': 'Kan niet resetten: selecteer eerst een diagramtype',
   'notification.canvasClearNodes': '{count} knooppunt(en) gewist',
   'notification.canvasClearNodesLearning':
     '{count} knooppunt(en) geleegd, toegevoegd aan antwoorden',
@@ -20,8 +19,7 @@ export default {
   'notification.deleted': 'Item succesvol verwijderd',
   'notification.feedbackCancelled': 'Feedback verwijderd',
   'notification.feedbackThanks': 'Bedankt voor uw feedback',
-  'notification.feedbackThanksDislike':
-    'Bedankt voor uw feedback — we gaan verbeteren',
+  'notification.feedbackThanksDislike': 'Bedankt voor uw feedback — we gaan verbeteren',
   'notification.focusQuestionTooShort': 'Voer eerst een langere focusvraag in',
   'notification.fullscreenFailed': 'Kan niet naar volledig scherm',
   'notification.generationCancelled': 'Generatie geannuleerd',

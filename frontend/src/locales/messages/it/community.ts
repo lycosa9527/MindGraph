@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'Eliminare questo post? L’azione non può essere annullata.',
   'community.deleteConfirmTitle': 'Eliminare il post?',
   'community.deleted': 'Eliminato',
-  'community.emptyNoPosts':
-    'Nessun post trovato. Prova a modificare filtri o ricerca.',
+  'community.emptyNoPosts': 'Nessun post trovato. Prova a modificare filtri o ricerca.',
   'community.filter.all': 'Tutti',
   'community.filter.mine': 'I miei',
   'community.filterCategory': 'Categoria',
@@ -117,8 +116,7 @@ export default {
   'debateverse.setup.suggestion5': 'Il lavoro da remoto dovrebbe diventare la norma?',
   'debateverse.setup.suggestion6':
     'I contenuti generati dall’IA dovrebbero essere protetti dal copyright?',
-  'debateverse.setup.suggestion7':
-    "L'istruzione dovrebbe privilegiare conoscenze o competenze?",
+  'debateverse.setup.suggestion7': "L'istruzione dovrebbe privilegiare conoscenze o competenze?",
   'debateverse.setup.suggestion8':
     'Dovrebbe essere consentita l’editing genetico sugli embrioni umani?',
   'debateverse.setup.topicPlaceholder': 'Inserisci l’argomento del dibattito…',
@@ -142,8 +140,7 @@ export default {
   'library.loading': 'Caricamento…',
   'library.other': 'Altro',
   'library.premiumCollection': 'Collezione in evidenza',
-  'library.slotFull.body':
-    'Hai {max} diagrammi salvati. Elimina uno per salvarne uno nuovo.',
+  'library.slotFull.body': 'Hai {max} diagrammi salvati. Elimina uno per salvarne uno nuovo.',
   'library.slotFull.cancel': 'Annulla',
   'library.slotFull.deleteAndSave': 'Elimina e salva',
   'library.slotFull.networkError': 'Errore di rete, operazione non riuscita',

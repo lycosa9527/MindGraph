@@ -1,7 +1,6 @@
 /**
  * UI locale definitions — `SUPPORTED_UI_LOCALES` (imported by `locales.ts`).
  */
-
 import { SUPPORTED_UI_LOCALES_EXTRA } from './supportedUiLocalesExtra'
 
 export const SUPPORTED_UI_LOCALES = [

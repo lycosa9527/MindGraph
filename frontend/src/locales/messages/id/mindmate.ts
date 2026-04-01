@@ -22,8 +22,7 @@ export default {
     'Hanya pemilik diagram yang dapat memakai pembuatan AI saat kolaborasi',
   'autoComplete.conceptMapRealtime':
     'Peta konsep memakai saran relasi real time; buat tautan untuk menghasilkan',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Isi topik kiri dan kanan sebelum membuat',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Isi topik kiri dan kanan sebelum membuat',
   'autoComplete.doubleBubbleTopicPair': '{left} vs {right}',
   'autoComplete.enterTopicFirst': 'Masukkan isi topik terlebih dahulu',
   'autoComplete.generationFailedRetry': 'Pembuatan gagal, coba lagi',
@@ -33,8 +32,7 @@ export default {
   'autoComplete.selectDiagramType': 'Pilih jenis diagram',
   'conceptMapPicker.currentFocusQuestion': 'Pertanyaan fokus saat ini',
   'conceptMapPicker.currentRootConcept': 'Konsep akar saat ini',
-  'conceptMapPicker.focusAlternativesHint':
-    'Alternatif ({pageSize} per halaman, tinggi adaptif)',
+  'conceptMapPicker.focusAlternativesHint': 'Alternatif ({pageSize} per halaman, tinggi adaptif)',
   'conceptMapPicker.rootAlternativesHint':
     'Alternatif akar ({pageSize} per halaman, tinggi adaptif)',
   'conceptMapPicker.suggestionsEmpty': 'Belum ada saran. Tekan = untuk lebih banyak.',
@@ -54,13 +52,11 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Ketik pertanyaan fokus Anda…',
   'focusQuestion.skip': 'Lewati',
-  'focusQuestion.suggestionsEmpty':
-    'Belum ada saran. Tekan = untuk mengambil batch lain.',
+  'focusQuestion.suggestionsEmpty': 'Belum ada saran. Tekan = untuk mengambil batch lain.',
   'focusQuestion.suggestionsHint':
     'Alternatif (5 per halaman: − sebelumnya, = berikutnya; di halaman terakhir = memuat lebih banyak)',
   'focusQuestion.suggestionsRequestFailed': 'Permintaan saran gagal',
-  'focusQuestion.title':
-    'Mode standar · Pertanyaan fokus apa yang harus dijawab peta konsep ini?',
+  'focusQuestion.title': 'Mode standar · Pertanyaan fokus apa yang harus dijawab peta konsep ini?',
   'focusQuestion.tooShort': 'Masukkan pertanyaan fokus yang singkat',
   'focusQuestion.validate': 'Pemeriksaan AI',
   'focusQuestion.validationRequestFailed': 'Permintaan validasi gagal',
@@ -70,8 +66,7 @@ export default {
   'mindmate.defaultSuggestion10': 'Bagaimana memakai pengajaran situasional di kelas sejarah?',
   'mindmate.defaultSuggestion11':
     'Masalah keselamatan apa yang perlu diperhatikan dalam percobaan fisika?',
-  'mindmate.defaultSuggestion12':
-    'Bagaimana merancang PR yang sesuai tingkat kognitif siswa?',
+  'mindmate.defaultSuggestion12': 'Bagaimana merancang PR yang sesuai tingkat kognitif siswa?',
   'mindmate.defaultSuggestion2': 'Bantu saya buat rencana pelajaran respirasi sel.',
   'mindmate.defaultSuggestion3': 'Kesalahpahaman siswa tentang gravitasi apa saja?',
   'mindmate.defaultSuggestion4': 'Bagaimana merancang sesi belajar kelompok yang efektif?',
@@ -106,8 +101,7 @@ export default {
   'nodePalette.error.couldNotGenerateBranches': 'Tidak dapat membuat cabang',
   'nodePalette.error.createDiagramFirst': 'Buat diagram terlebih dahulu',
   'nodePalette.error.enterTopicText': 'Masukkan teks untuk simpul topik',
-  'nodePalette.error.replacePlaceholder':
-    'Masukkan topik nyata, ganti placeholder bawaan',
+  'nodePalette.error.replacePlaceholder': 'Masukkan topik nyata, ganti placeholder bawaan',
   'nodePalette.fallbackTopicA': 'Topik A',
   'nodePalette.fallbackTopicB': 'Topik B',
   'nodePalette.finish': 'Selesai',

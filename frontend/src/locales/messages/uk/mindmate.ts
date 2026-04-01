@@ -1,16 +1,13 @@
 /** uk UI — mindmate */
 export default {
-  'aiModel.conceptAiOff':
-    'Увімкнути ШІ-підписи зв’язків (кілька моделей)',
+  'aiModel.conceptAiOff': 'Увімкнути ШІ-підписи зв’язків (кілька моделей)',
   'aiModel.conceptAiOn': 'Увімкн.: перетягуйте зв’язки для генерації підписів',
   'aiModel.enableAi': 'Увімкнути ШІ',
-  'aiModel.inlineRecTooltip':
-    'Під час редагування вузла натисніть Tab для ШІ-рекомендацій',
+  'aiModel.inlineRecTooltip': 'Під час редагування вузла натисніть Tab для ШІ-рекомендацій',
   'aiModel.label': 'Модель ШІ',
   'aiModel.readyCount': 'Готово: {count}',
   'aiModel.relationshipsBadge': 'Зв’язки',
-  'aiModel.relationshipsTooltip':
-    'Тягніть зв’язки між концептами — ШІ сформує підписи',
+  'aiModel.relationshipsTooltip': 'Тягніть зв’язки між концептами — ШІ сформує підписи',
   'aiModel.tabFocusBadge': 'Tab — фокус',
   'aiModel.tabFocusTooltip':
     'Під час редагування фокус-питання натисніть Tab для перевірки; потім виберіть варіанти в панелі (− / =)',
@@ -21,12 +18,10 @@ export default {
   'aiModel.tooltip.generating': '{name} генерує…',
   'aiModel.tooltip.modelFailed': 'Збій генерації {name}',
   'aiModel.tooltip.showingResult': 'Зараз показано результат {name}',
-  'autoComplete.collabOwnerOnly':
-    'У спільній роботі ШІ може використовувати лише власник діаграми',
+  'autoComplete.collabOwnerOnly': 'У спільній роботі ШІ може використовувати лише власник діаграми',
   'autoComplete.conceptMapRealtime':
     'У концепт-картах підказки зв’язків у реальному часі; створюйте зв’язки для генерації',
-  'autoComplete.doubleBubbleNeedBothTopics':
-    'Заповніть ліву та праву теми перед генерацією',
+  'autoComplete.doubleBubbleNeedBothTopics': 'Заповніть ліву та праву теми перед генерацією',
   'autoComplete.doubleBubbleTopicPair': '{left} і {right}',
   'autoComplete.enterTopicFirst': 'Спочатку введіть тему',
   'autoComplete.generationFailedRetry': 'Генерація не вдалася, спробуйте ще раз',
@@ -36,8 +31,7 @@ export default {
   'autoComplete.selectDiagramType': 'Виберіть тип діаграми',
   'conceptMapPicker.currentFocusQuestion': 'Поточне фокус-питання',
   'conceptMapPicker.currentRootConcept': 'Поточний кореневий концепт',
-  'conceptMapPicker.focusAlternativesHint':
-    'Варіанти ({pageSize} на сторінку, адаптивна висота)',
+  'conceptMapPicker.focusAlternativesHint': 'Варіанти ({pageSize} на сторінку, адаптивна висота)',
   'conceptMapPicker.rootAlternativesHint':
     'Варіанти кореня ({pageSize} на сторінку, адаптивна висота)',
   'conceptMapPicker.suggestionsEmpty': 'Поки немає підказок. Натисніть = для ще.',
@@ -57,24 +51,19 @@ export default {
   'focusQuestion.passLabel': 'OK',
   'focusQuestion.placeholder': 'Введіть фокус-питання…',
   'focusQuestion.skip': 'Пропустити',
-  'focusQuestion.suggestionsEmpty':
-    'Поки немає підказок. Натисніть = для наступної порції.',
+  'focusQuestion.suggestionsEmpty': 'Поки немає підказок. Натисніть = для наступної порції.',
   'focusQuestion.suggestionsHint':
     'Варіанти (5 на стор.: − назад, = вперед; на останній = підвантажить ще)',
   'focusQuestion.suggestionsRequestFailed': 'Запит підказок не вдався',
-  'focusQuestion.title':
-    'Стандартний режим · Яке фокус-питання має відповідати ця концепт-карта?',
+  'focusQuestion.title': 'Стандартний режим · Яке фокус-питання має відповідати ця концепт-карта?',
   'focusQuestion.tooShort': 'Введіть коротше фокус-питання',
   'focusQuestion.validate': 'Перевірка ШІ',
   'focusQuestion.validationRequestFailed': 'Запит перевірки не вдався',
   'focusQuestion.weakLabel': 'Слабко',
-  'mindmate.defaultSuggestion1':
-    'Які когнітивні конфлікти закласти на урок з паралелограмом?',
+  'mindmate.defaultSuggestion1': 'Які когнітивні конфлікти закласти на урок з паралелограмом?',
   'mindmate.defaultSuggestion10': 'Як використати ситуативне навчання на урок історії?',
-  'mindmate.defaultSuggestion11':
-    'На що звернути увагу з безпеки під час фізичних дослідів?',
-  'mindmate.defaultSuggestion12':
-    'Як спроєктувати домашнє завдання під рівень пізнання учнів?',
+  'mindmate.defaultSuggestion11': 'На що звернути увагу з безпеки під час фізичних дослідів?',
+  'mindmate.defaultSuggestion12': 'Як спроєктувати домашнє завдання під рівень пізнання учнів?',
   'mindmate.defaultSuggestion2': 'Допоможи скласти план уроку з клітинного дихання.',
   'mindmate.defaultSuggestion3': 'Які хибні уявлення в учнів про силу тяжіння?',
   'mindmate.defaultSuggestion4': 'Як організувати ефективну групову роботу?',
@@ -116,12 +105,9 @@ export default {
   'nodePalette.finish': 'Готово',
   'nodePalette.generatingIdeas': 'Генерація ідей…',
   'nodePalette.generatingProgress': 'Генерація… отримано {count}',
-  'nodePalette.helpDimension':
-    'Виберіть рівно 1 вимір, потім натисніть «Далі».',
-  'nodePalette.helpFinish':
-    'Виберіть вузли й натисніть «Готово», щоб додати на діаграму.',
-  'nodePalette.helpNext':
-    'Виберіть вузли й натисніть «Далі» для вузлів другого рівня.',
+  'nodePalette.helpDimension': 'Виберіть рівно 1 вимір, потім натисніть «Далі».',
+  'nodePalette.helpFinish': 'Виберіть вузли й натисніть «Готово», щоб додати на діаграму.',
+  'nodePalette.helpNext': 'Виберіть вузли й натисніть «Далі» для вузлів другого рівня.',
   'nodePalette.history.replaceAddNodes': 'Замінити / додати вузли',
   'nodePalette.loadMore': 'Ще',
   'nodePalette.next': 'Далі',

@@ -10,8 +10,7 @@ export default {
   'community.deleteConfirmBody': 'यह पोस्ट हटाएँ? यह पूर्ववत नहीं हो सकता।',
   'community.deleteConfirmTitle': 'पोस्ट हटाएँ?',
   'community.deleted': 'हटाया गया',
-  'community.emptyNoPosts':
-    'कोई पोस्ट नहीं। फ़िल्टर या खोज बदलकर देखें।',
+  'community.emptyNoPosts': 'कोई पोस्ट नहीं। फ़िल्टर या खोज बदलकर देखें।',
   'community.filter.all': 'सभी',
   'community.filter.mine': 'मेरे',
   'community.filterCategory': 'श्रेणी',
@@ -109,18 +108,13 @@ export default {
   'debateverse.setup.roleJudge': 'न्यायाधीश के रूप में',
   'debateverse.setup.roleViewer': 'दर्शक के रूप में',
   'debateverse.setup.suggestion1': 'क्या AI को कानूनी व्यक्तित्व दिया जाना चाहिए?',
-  'debateverse.setup.suggestion2':
-    'वीडियो गेम किशोरों के लिए अधिक लाभकारी हैं या हानिकारक?',
+  'debateverse.setup.suggestion2': 'वीडियो गेम किशोरों के लिए अधिक लाभकारी हैं या हानिकारक?',
   'debateverse.setup.suggestion3': 'क्या कॉलेज प्रवेश परीक्षाएँ समाप्त होनी चाहिए?',
-  'debateverse.setup.suggestion4':
-    'क्या सोशल मीडिया पर सामग्री मॉडरेशन सख्त होनी चाहिए?',
+  'debateverse.setup.suggestion4': 'क्या सोशल मीडिया पर सामग्री मॉडरेशन सख्त होनी चाहिए?',
   'debateverse.setup.suggestion5': 'क्या दूरस्थ कार्य मुख्यधारा बनना चाहिए?',
-  'debateverse.setup.suggestion6':
-    'क्या AI-जनित सामग्री पर कॉपीराइट सुरक्षा होनी चाहिए?',
-  'debateverse.setup.suggestion7':
-    'क्या शिक्षा में ज्ञान या कौशल पर अधिक ज़ोर होना चाहिए?',
-  'debateverse.setup.suggestion8':
-    'क्या मानव भ्रूण पर जीन संपादन की अनुमति होनी चाहिए?',
+  'debateverse.setup.suggestion6': 'क्या AI-जनित सामग्री पर कॉपीराइट सुरक्षा होनी चाहिए?',
+  'debateverse.setup.suggestion7': 'क्या शिक्षा में ज्ञान या कौशल पर अधिक ज़ोर होना चाहिए?',
+  'debateverse.setup.suggestion8': 'क्या मानव भ्रूण पर जीन संपादन की अनुमति होनी चाहिए?',
   'debateverse.setup.topicPlaceholder': 'वाद विषय दर्ज करें…',
   'debateverse.side.affirmative': 'सकारात्मक',
   'debateverse.side.judge': 'न्यायाधीश',
@@ -142,8 +136,7 @@ export default {
   'library.loading': 'लोड हो रहा है…',
   'library.other': 'अन्य',
   'library.premiumCollection': 'विशेष संग्रह',
-  'library.slotFull.body':
-    'आपके पास {max} सहेजे आरेख हैं। नया सहेजने के लिए एक हटाएँ।',
+  'library.slotFull.body': 'आपके पास {max} सहेजे आरेख हैं। नया सहेजने के लिए एक हटाएँ।',
   'library.slotFull.cancel': 'रद्द करें',
   'library.slotFull.deleteAndSave': 'हटाएँ और सहेजें',
   'library.slotFull.networkError': 'नेटवर्क त्रुटि, कार्रवाई विफल',

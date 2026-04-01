@@ -110,8 +110,7 @@ export default {
   'debateverse.setup.suggestion1': 'AI có nên được công nhận là pháp nhân?',
   'debateverse.setup.suggestion2': 'Trò chơi điện tử lợi hay hại thanh thiếu niên hơn?',
   'debateverse.setup.suggestion3': 'Có nên bãi bỏ kỳ thi đại học?',
-  'debateverse.setup.suggestion4':
-    'Mạng xã hội có nên kiểm duyệt nội dung nghiêm ngặt hơn?',
+  'debateverse.setup.suggestion4': 'Mạng xã hội có nên kiểm duyệt nội dung nghiêm ngặt hơn?',
   'debateverse.setup.suggestion5': 'Làm việc từ xa có nên trở thành xu hướng chính?',
   'debateverse.setup.suggestion6': 'Nội dung do AI tạo có nên được bảo hộ bản quyền?',
   'debateverse.setup.suggestion7': 'Giáo dục nên ưu tiên kiến thức hay kỹ năng?',

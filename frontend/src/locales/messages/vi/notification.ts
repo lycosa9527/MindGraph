@@ -25,8 +25,7 @@ export default {
   'notification.importInvalidData': 'Nhập thất bại: dữ liệu sơ đồ không hợp lệ',
   'notification.importLoadFailed': 'Nhập thất bại: không tải được sơ đồ',
   'notification.importSavePartial': 'Đã nhập, nhưng lưu vào thư viện thất bại',
-  'notification.importSlotsFull':
-    'Thư viện đầy; sơ đồ đã nhập nhưng chưa lưu vào thư viện',
+  'notification.importSlotsFull': 'Thư viện đầy; sơ đồ đã nhập nhưng chưa lưu vào thư viện',
   'notification.importSuccess': 'Đã nhập và lưu sơ đồ vào thư viện',
   'notification.importUnsupportedType': 'Nhập thất bại: loại sơ đồ không được hỗ trợ',
   'notification.loadMoreFailed': 'Không tải thêm được',
@@ -38,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Không tìm thấy liên kết khái niệm gốc',
   'notification.saved': 'Đã lưu thay đổi thành công',
   'notification.selectNodeToClear': 'Vui lòng chọn một nút để xóa nội dung',
-  'notification.sessionInvalidated':
-    'Bạn đã bị đăng xuất vì vượt quá số thiết bị tối đa',
+  'notification.sessionInvalidated': 'Bạn đã bị đăng xuất vì vượt quá số thiết bị tối đa',
   'notification.signInToUse': 'Đăng nhập để sử dụng',
   'notification.signInToValidateFocus': 'Đăng nhập để kiểm tra câu hỏi trọng tâm',
 } as const

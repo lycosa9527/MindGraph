@@ -40,8 +40,7 @@ export default {
   'chunkTestResults.answerQuality': 'Qualità risposta',
   'chunkTestResults.avgLatency': 'Latenza media',
   'chunkTestResults.back': 'Indietro',
-  'chunkTestResults.cancelConfirmBody':
-    'Annullare questo test? Si fermerà al prossimo checkpoint.',
+  'chunkTestResults.cancelConfirmBody': 'Annullare questo test? Si fermerà al prossimo checkpoint.',
   'chunkTestResults.cancelFailed': 'Annullamento test non riuscito',
   'chunkTestResults.cancelRequested': 'Annullamento test richiesto',
   'chunkTestResults.cancelTest': 'Annulla test',
@@ -71,8 +70,7 @@ export default {
   'chunkTestResults.standardIrMetrics': 'Metriche IR standard',
   'chunkTestResults.storageEff': 'Eff. archiviazione',
   'chunkTestResults.testFailed': 'Test non riuscito',
-  'chunkTestResults.testFailedHint':
-    'Si è verificato un errore durante l’esecuzione. Riprova.',
+  'chunkTestResults.testFailedHint': 'Si è verificato un errore durante l’esecuzione. Riprova.',
   'chunkTestResults.testingInProgress': 'Test in corso…',
   'chunkTestResults.totalChunks': 'Totale {n} chunk',
   'chunkTestResults.viewChunks': 'Visualizza chunk',
@@ -196,8 +194,7 @@ export default {
   'knowledge.upload.click': 'Clic per caricare',
   'knowledge.upload.drag': 'oppure trascina il file qui',
   'knowledge.upload.fileTooLarge': 'La dimensione del file non può superare 10 MB',
-  'knowledge.upload.hintFormats':
-    'Supporta PDF, DOCX, TXT, MD, immagini (max 10 MB)',
+  'knowledge.upload.hintFormats': 'Supporta PDF, DOCX, TXT, MD, immagini (max 10 MB)',
   'knowledge.upload.maxDocs': 'Limite massimo documenti raggiunto (5)',
   'knowledge.upload.title': 'Carica documento',
   'knowledge.upload.unsupportedType': 'Tipo di file non supportato',

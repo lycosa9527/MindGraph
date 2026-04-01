@@ -13,7 +13,10 @@ const OUT = join(__dirname, '../src/locales/messages/pt/canvas.ts')
 
 const REPS: [string, string][] = [
   ['inténtelo de nuevo', 'tente novamente'],
-  ['No se puede exportar: el lienzo no está listo', 'Não é possível exportar: a tela não está pronta'],
+  [
+    'No se puede exportar: el lienzo no está listo',
+    'Não é possível exportar: a tela não está pronta',
+  ],
   ['Error al exportar', 'Falha ao exportar'],
   [' exportado correctamente', ' exportado com sucesso'],
   ['Formato de exportación desconocido', 'Formato de exportação desconhecido'],
@@ -76,10 +79,7 @@ const REPS: [string, string][] = [
   ['Eliminar par de analogías', 'Eliminar par de analogias'],
   ['Eliminar nodos', 'Eliminar nós'],
   ['Eliminar nodo', 'Eliminar nó'],
-  [
-    'Se eliminaron {count} par(es) de analogías',
-    'Foram eliminados {count} par(es) de analogias',
-  ],
+  ['Se eliminaron {count} par(es) de analogías', 'Foram eliminados {count} par(es) de analogias'],
   ['Se eliminaron {count} atributo(s)', 'Foram eliminados {count} atributo(s)'],
   ['Se eliminaron {count} nodo(s)', 'Foram eliminados {count} nó(s)'],
   ['Diferencia A{n}', 'Diferença A{n}'],
@@ -111,10 +111,7 @@ const REPS: [string, string][] = [
   ['Álgebra · coordenadas y recta', 'Álgebra · coordenadas e reta'],
   ['Geometría · área y volumen', 'Geometria · área e volume'],
   ['Trigonometría · identidades', 'Trigonometria · identidades'],
-  [
-    'Sucesiones · combinatoria · estadística',
-    'Sucessões · combinatória · estatística',
-  ],
+  ['Sucesiones · combinatoria · estadística', 'Sucessões · combinatória · estatística'],
   ['Compuestos y sales comunes', 'Compostos e sais comuns'],
   ['Reacciones clásicas', 'Reações clássicas'],
   ['Ácidos · orgánicos · laboratorio', 'Ácidos · orgânicos · laboratório'],
@@ -155,10 +152,7 @@ const REPS: [string, string][] = [
   ],
   ['Formato aplicado a {count} nodo(s)', 'Formato aplicado a {count} nó(s)'],
   ['Copiador de formato cancelado', 'Pincel de formatação cancelado'],
-  [
-    'El copiador de formato está en desarrollo',
-    'O pincel de formatação está em desenvolvimento',
-  ],
+  ['El copiador de formato está en desarrollo', 'O pincel de formatação está em desenvolvimento'],
   ['Seleccione primero un nodo origen', 'Selecione primeiro um nó de origem'],
   ['Copiar formato', 'Pincel de formatação'],
   ['Dirección del diseño invertida', 'Direção do esquema invertida'],
@@ -176,7 +170,10 @@ const REPS: [string, string][] = [
     'Guarde primero el diagrama antes de tomar una instantánea',
     'Guarde primeiro o diagrama antes de tirar uma instantânea',
   ],
-  ['No se pudo guardar la instantánea; inténtelo de nuevo', 'Não foi possível guardar a instantânea; tente novamente'],
+  [
+    'No se pudo guardar la instantánea; inténtelo de nuevo',
+    'Não foi possível guardar a instantânea; tente novamente',
+  ],
   ['Nueva asociación', 'Nova associação'],
   ['Nuevo atributo', 'Novo atributo'],
   ['Nueva causa', 'Nova causa'],
@@ -214,10 +211,7 @@ const REPS: [string, string][] = [
     'Seleccione primero un nodo de similitud o diferencia',
     'Selecione primeiro um nó de semelhança ou diferença',
   ],
-  [
-    'Seleccione un paso al que añadir subpaso',
-    'Selecione um passo ao qual adicionar subpasso',
-  ],
+  ['Seleccione un paso al que añadir subpaso', 'Selecione um passo ao qual adicionar subpasso'],
   ['Similitud {n}', 'Semelhança {n}'],
   ['Paso añadido', 'Passo adicionado'],
   ['Corporativo', 'Profissional'],
