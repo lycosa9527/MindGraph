@@ -10,12 +10,12 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Dict, List, Optional, Any
+from typing import Any, Dict, List, Optional
 import logging
 
 from sqlalchemy.orm import Session
 
-from models.domain.debateverse import DebateSession, DebateMessage, DebateParticipant
+from models.domain.debateverse import DebateMessage, DebateParticipant, DebateSession
 from prompts.debateverse import (
     get_debater_system_prompt,
     get_judge_system_prompt,
@@ -45,6 +45,18 @@ class DebateVerseContextBuilder:
         self.session_id = session_id
         self.db = db
         self._analysis_cache: Dict[str, Any] = {}  # Cache analysis per stage
+        self._participants_by_id_cache: Optional[Dict[int, DebateParticipant]] = None
+
+    def _get_participants_by_id(self) -> Dict[int, DebateParticipant]:
+        """Load all participants for this session once (avoids N+1 in message loops)."""
+        if self._participants_by_id_cache is None:
+            rows = (
+                self.db.query(DebateParticipant)
+                .filter(DebateParticipant.session_id == self.session_id)
+                .all()
+            )
+            self._participants_by_id_cache = {p.id: p for p in rows}
+        return self._participants_by_id_cache
 
     def build_debater_messages(
         self,
@@ -65,8 +77,8 @@ class DebateVerseContextBuilder:
         Returns:
             List of message dicts ready for LLM service
         """
-        # Get participant and session
-        participant = self.db.query(DebateParticipant).filter_by(id=participant_id).first()
+        participants = self._get_participants_by_id()
+        participant = participants.get(participant_id)
         if not participant:
             raise ValueError(f"Participant {participant_id} not found")
 
@@ -105,7 +117,7 @@ class DebateVerseContextBuilder:
 
         # Add debate history with speaker identification
         for msg in all_messages:
-            msg_participant = self.db.query(DebateParticipant).filter_by(id=msg.participant_id).first()
+            msg_participant = participants.get(msg.participant_id)
             if not msg_participant:
                 continue
 
@@ -181,9 +193,11 @@ class DebateVerseContextBuilder:
 
         messages = [{"role": "system", "content": system_prompt}]
 
+        participants = self._get_participants_by_id()
+
         # Add debate history
         for msg in all_messages:
-            msg_participant = self.db.query(DebateParticipant).filter_by(id=msg.participant_id).first()
+            msg_participant = participants.get(msg.participant_id)
             if not msg_participant:
                 continue
 
@@ -222,8 +236,9 @@ class DebateVerseContextBuilder:
         Returns:
             List of message dicts ready for LLM service
         """
-        questioner = self.db.query(DebateParticipant).filter_by(id=questioner_id).first()
-        respondent = self.db.query(DebateParticipant).filter_by(id=respondent_id).first()
+        participants = self._get_participants_by_id()
+        questioner = participants.get(questioner_id)
+        respondent = participants.get(respondent_id)
 
         if not questioner or not respondent:
             raise ValueError("Questioner or respondent not found")
@@ -260,7 +275,7 @@ class DebateVerseContextBuilder:
 
         # Add previous cross-exam Q&A pairs
         for msg in cross_exam_messages:
-            msg_participant = self.db.query(DebateParticipant).filter_by(id=msg.participant_id).first()
+            msg_participant = participants.get(msg.participant_id)
             if not msg_participant:
                 continue
 
@@ -352,7 +367,7 @@ class DebateVerseContextBuilder:
 
     def _get_message_side(self, participant_id: int) -> Optional[str]:
         """Get side for a participant."""
-        participant = self.db.query(DebateParticipant).filter_by(id=participant_id).first()
+        participant = self._get_participants_by_id().get(participant_id)
         return participant.side if participant else None
 
     def _get_participant_arguments(self, participant_id: int) -> str:

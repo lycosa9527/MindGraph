@@ -12,7 +12,7 @@ import asyncio
 import json
 import logging
 import uuid as uuid_module
-from typing import Optional
+from typing import Optional, Set
 
 from fastapi import (
     APIRouter,
@@ -89,20 +89,24 @@ def _format_post_response(
     post: CommunityPost,
     current_user: Optional[User],
     db: Session,
+    liked_post_ids: Optional[Set[str]] = None,
 ) -> dict:
     """Format CommunityPost for API response."""
     user_id = current_user.id if current_user else None
     is_liked = False
     if user_id:
-        is_liked = (
-            db.query(CommunityPostLike)
-            .filter(
-                CommunityPostLike.post_id == post.id,
-                CommunityPostLike.user_id == user_id,
+        if liked_post_ids is not None:
+            is_liked = post.id in liked_post_ids
+        else:
+            is_liked = (
+                db.query(CommunityPostLike)
+                .filter(
+                    CommunityPostLike.post_id == post.id,
+                    CommunityPostLike.user_id == user_id,
+                )
+                .first()
+                is not None
             )
-            .first()
-            is not None
-        )
 
     thumbnail_url = None
     if post.thumbnail_path:
@@ -246,8 +250,22 @@ def list_posts(
         .all()
     )
 
+    liked_post_ids: Optional[Set[str]] = None
+    if posts:
+        uid = current_user.id
+        post_ids = [p.id for p in posts]
+        liked_rows = (
+            db.query(CommunityPostLike.post_id)
+            .filter(
+                CommunityPostLike.user_id == uid,
+                CommunityPostLike.post_id.in_(post_ids),
+            )
+            .all()
+        )
+        liked_post_ids = {row[0] for row in liked_rows}
+
     return {
-        "posts": [_format_post_response(p, current_user, db) for p in posts],
+        "posts": [_format_post_response(p, current_user, db, liked_post_ids) for p in posts],
         "total": total,
         "page": page,
         "page_size": page_size,

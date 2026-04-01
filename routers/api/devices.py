@@ -101,11 +101,18 @@ def list_devices(
         query = query.filter(Device.status == status_filter)
 
     devices = query.all()
+    student_ids = [d.student_id for d in devices if d.student_id]
+    users_by_id = {}
+    if student_ids:
+        users_by_id = {
+            u.id: u
+            for u in db.query(User).filter(User.id.in_(student_ids)).all()
+        }
     result = []
     for device in devices:
         device_dict = DeviceResponse.from_orm(device).dict()
         if device.student_id:
-            student = db.query(User).filter(User.id == device.student_id).first()
+            student = users_by_id.get(device.student_id)
             if student:
                 device_dict["student_name"] = student.username
         result.append(device_dict)
