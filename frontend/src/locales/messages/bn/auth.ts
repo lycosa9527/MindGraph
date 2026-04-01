@@ -1,4 +1,4 @@
-/** bn UI — auth (English copy; translate values as needed) */
+/** bn UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

@@ -250,7 +250,7 @@ const markdownDisplayEnabled = computed(
   () => props.renderMarkdown === true && !showMutedTailSplit.value && !props.truncate
 )
 
-const displayMarkdownHtml = useDiagramNodeMarkdownDisplay(
+const { richHtml: displayMarkdownHtml, needsRichMarkdown } = useDiagramNodeMarkdownDisplay(
   computed(() => props.text),
   markdownDisplayEnabled
 )
@@ -653,7 +653,7 @@ onUnmounted(() => {
       </template>
       <!-- eslint-disable vue/no-v-html -- Sanitized via useMarkdown + DOMPurify (KaTeX HTML allowlist) -->
       <div
-        v-else-if="markdownDisplayEnabled"
+        v-else-if="markdownDisplayEnabled && needsRichMarkdown"
         class="diagram-node-md inline-block min-w-0 max-w-full text-inherit"
         v-html="displayMarkdownHtml"
       />

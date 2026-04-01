@@ -1,4 +1,4 @@
-/** hr UI — notification (English copy; translate values as needed) */
+/** hr UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Cannot clear topic or center nodes',
   'notification.cannotResetSelectDiagramType': 'Cannot reset: select a diagram type first',

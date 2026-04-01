@@ -1,4 +1,4 @@
-/** tg UI — knowledge (English copy; translate values as needed) */
+/** tg UI — knowledge */
 export default {
   'chunkTest.history.confirmDeleteBody':
     'Are you sure you want to delete this test? This cannot be undone.',

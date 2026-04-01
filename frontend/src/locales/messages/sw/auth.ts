@@ -1,4 +1,4 @@
-/** sw UI — auth (English copy; translate values as needed) */
+/** sw UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

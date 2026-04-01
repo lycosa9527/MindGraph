@@ -1,4 +1,4 @@
-/** tk UI — admin (English copy; translate values as needed) */
+/** tk UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

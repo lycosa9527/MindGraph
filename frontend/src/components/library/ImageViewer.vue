@@ -1117,7 +1117,10 @@ defineExpose({
       class="nav-button nav-button-left"
       @click="goToPreviousPage"
     >
-      <ChevronLeft :size="32" />
+      <ChevronLeft
+        :size="32"
+        class="mg-icon-flip-rtl"
+      />
     </button>
 
     <!-- Next Page Button (Right) -->
@@ -1128,7 +1131,10 @@ defineExpose({
       class="nav-button nav-button-right"
       @click="goToNextPage"
     >
-      <ChevronRight :size="32" />
+      <ChevronRight
+        :size="32"
+        class="mg-icon-flip-rtl"
+      />
     </button>
 
     <div

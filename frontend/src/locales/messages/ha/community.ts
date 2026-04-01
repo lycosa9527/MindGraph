@@ -1,4 +1,4 @@
-/** ha UI — community (English copy; translate values as needed) */
+/** ha UI — community */
 export default {
   'community.category.all': 'All',
   'community.category.creative': 'Creative ideas',

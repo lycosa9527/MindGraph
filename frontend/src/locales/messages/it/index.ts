@@ -1,6 +1,4 @@
-/**
- * it UI messages — merged namespace bundles.
- */
+/** it UI — index */
 import admin from './admin'
 import auth from './auth'
 import canvas from './canvas'

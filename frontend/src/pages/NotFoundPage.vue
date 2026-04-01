@@ -37,7 +37,7 @@ function goBack() {
     <!-- Actions -->
     <div class="flex gap-4">
       <el-button @click="goBack">
-        <el-icon class="mr-1"><ArrowLeft /></el-icon>
+        <el-icon class="mr-1 mg-icon-flip-rtl"><ArrowLeft /></el-icon>
         Go Back
       </el-button>
       <el-button

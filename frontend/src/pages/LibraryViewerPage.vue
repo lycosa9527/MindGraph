@@ -493,7 +493,7 @@ watch([() => selectedDanmakuId.value, () => pinPlacementPosition.value], () => {
           class="shrink-0 back-button"
           @click="router.push('/library')"
         >
-          <ArrowLeft class="w-4 h-4" />
+          <ArrowLeft class="w-4 h-4 mg-icon-flip-rtl" />
         </ElButton>
         <h1 class="text-sm font-semibold text-stone-900 truncate">
           {{ libraryStore.currentDocument?.title || t('library.loading') }}

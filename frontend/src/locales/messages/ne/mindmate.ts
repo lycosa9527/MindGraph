@@ -1,4 +1,4 @@
-/** ne UI — mindmate (English copy; translate values as needed) */
+/** ne UI — mindmate */
 export default {
   'aiModel.conceptAiOff': 'Click to enable AI relationship labels (multi-model)',
   'aiModel.conceptAiOn': 'On: drag links to generate relationship labels',

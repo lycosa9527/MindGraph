@@ -29,9 +29,24 @@ const vendorChunkGroups = [
     test: /node_modules[\\/](?:vue-router|pinia|vue)[\\/]/,
   },
   {
+    name: 'vendor-highlight-js',
+    test: /node_modules[\\/]highlight\.js[\\/]/,
+  },
+  {
+    name: 'vendor-katex',
+    test: /node_modules[\\/]katex[\\/]/,
+  },
+  {
+    name: 'vendor-markdown-it',
+    test: /node_modules[\\/](?:markdown-it|@vscode[\\/]markdown-it-katex)[\\/]/,
+  },
+  {
+    name: 'vendor-mathlive',
+    test: /node_modules[\\/]mathlive[\\/]/,
+  },
+  {
     name: 'vendor-utils',
-    test:
-      /node_modules[\\/](?:axios|mitt|dompurify|markdown-it|katex|mathlive|@vscode[\\/]markdown-it-katex|@vueuse[\\/]core)[\\/]/,
+    test: /node_modules[\\/](?:axios|mitt|dompurify|@vueuse[\\/]core)[\\/]/,
   },
 ]
 
@@ -126,8 +141,8 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Full `app.use(ElementPlus)` keeps a ~1.1MB minified vendor chunk until on-demand components are adopted.
-    chunkSizeWarningLimit: 1200,
+    // Element Plus + icons is ~1.2MB minified; splitting further needs deeper on-demand adoption.
+    chunkSizeWarningLimit: 1300,
     rolldownOptions: {
       output: {
         codeSplitting: {

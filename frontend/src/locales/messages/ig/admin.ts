@@ -1,4 +1,4 @@
-/** ig UI — admin (English copy; translate values as needed) */
+/** ig UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

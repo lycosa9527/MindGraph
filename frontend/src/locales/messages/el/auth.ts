@@ -1,4 +1,4 @@
-/** el UI — auth (English copy; translate values as needed) */
+/** el UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

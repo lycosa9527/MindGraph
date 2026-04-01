@@ -868,7 +868,7 @@ async function exportAsPng() {
 
 :deep(.el-dialog__headerbtn) {
   top: 16px;
-  right: 16px;
+  inset-inline-end: 16px;
 }
 
 :deep(.el-dialog__headerbtn .el-dialog__close) {

@@ -1,4 +1,2 @@
-/**
- * hi UI messages — re-export merged bundles.
- */
+/** hi UI — messages re-export */
 export { default } from './hi/index'

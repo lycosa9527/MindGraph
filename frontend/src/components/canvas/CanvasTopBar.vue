@@ -354,7 +354,7 @@ async function handleReset() {
           size="small"
           @click="handleBack"
         >
-          <ArrowLeft class="w-[18px] h-[18px]" />
+          <ArrowLeft class="w-[18px] h-[18px] mg-icon-flip-rtl" />
         </ElButton>
       </ElTooltip>
 

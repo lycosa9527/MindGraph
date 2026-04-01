@@ -1,4 +1,4 @@
-/** ro UI — common (English copy; translate values as needed) */
+/** ro UI — common */
 export default {
   'app.aiDisclaimer': 'Content is AI-generated; please verify carefully.',
   'app.brandName': 'Mind Platform',

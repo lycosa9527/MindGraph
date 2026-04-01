@@ -61,6 +61,10 @@ import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvas
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
+import {
+  diagramSpecLikelyNeedsMarkdownPipeline,
+  loadDiagramMarkdownPipeline,
+} from '@/composables/core/diagramMarkdownPipeline'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
@@ -439,6 +443,9 @@ onMounted(async () => {
             delete (specForLoad as Record<string, unknown>).llm_results
           } else {
             llmResultsStore.clearCache()
+          }
+          if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
+            await loadDiagramMarkdownPipeline({ bumpLayout: false })
           }
           const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
           if (loaded) {

@@ -2,6 +2,8 @@
  * UI locale definitions — `SUPPORTED_UI_LOCALES` (imported by `locales.ts`).
  */
 
+import { SUPPORTED_UI_LOCALES_EXTRA } from './supportedUiLocalesExtra'
+
 export const SUPPORTED_UI_LOCALES = [
   // Traditional Chinese — must appear before `zh` so zh-TW/HK/MO browsers match here first.
   {
@@ -741,6 +743,7 @@ export const SUPPORTED_UI_LOCALES = [
     toolbarShort: 'SS',
     rtl: false as boolean,
   },
+  ...SUPPORTED_UI_LOCALES_EXTRA,
 ] as const
 
 export type UiLocaleEntry = (typeof SUPPORTED_UI_LOCALES)[number]

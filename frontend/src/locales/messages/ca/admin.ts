@@ -1,4 +1,4 @@
-/** ca UI — admin (English copy; translate values as needed) */
+/** ca UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

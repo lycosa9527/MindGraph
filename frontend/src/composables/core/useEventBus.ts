@@ -106,6 +106,8 @@ export type EventTypes = {
   'diagram:style_changed': { nodeId?: string; style?: unknown; all?: boolean; preset?: boolean }
   'diagram:loaded': { diagramType: string; spec?: unknown }
   'diagram:loaded_from_library': { diagramId: string; diagramType: string }
+  /** Increment diagram store layoutRecalcTrigger (e.g. after lazy-loaded KaTeX/markdown pipeline). */
+  'diagram:layout_recalc_bump': Record<string, never>
   'diagram:branch_moved': Record<string, never>
   'snapshot:requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>

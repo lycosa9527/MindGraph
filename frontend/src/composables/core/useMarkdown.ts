@@ -10,7 +10,7 @@
  */
 import markdownItKatexImport from '@vscode/markdown-it-katex'
 import DOMPurify from 'dompurify'
-import hljs from 'highlight.js'
+import hljs from 'highlight.js/lib/common'
 import katex from 'katex'
 import 'katex/contrib/mhchem'
 import MarkdownIt from 'markdown-it'

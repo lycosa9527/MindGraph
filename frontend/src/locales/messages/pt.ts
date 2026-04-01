@@ -1,4 +1,2 @@
-/**
- * pt UI messages — re-export merged bundles.
- */
+/** pt UI — re-export merged bundles (Brazilian/European neutral UI Portuguese) */
 export { default } from './pt/index'

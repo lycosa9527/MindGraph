@@ -1,4 +1,4 @@
-/** ky UI — common (English copy; translate values as needed) */
+/** ky UI — common */
 export default {
   'app.aiDisclaimer': 'Content is AI-generated; please verify carefully.',
   'app.brandName': 'Mind Platform',

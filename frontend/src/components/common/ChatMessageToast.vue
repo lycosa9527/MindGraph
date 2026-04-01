@@ -2,9 +2,9 @@
 /**
  * ChatMessageToast — WeChat-style in-app message notification stack.
  *
- * Renders up to 5 toast cards in the bottom-right corner.
+ * Renders up to 5 toast cards in the bottom trailing corner (mirrors for RTL).
  * Each card shows sender avatar, name, context, and a message preview.
- * Cards slide in from the right, auto-dismiss after 5 s, and stack vertically.
+ * Cards slide in from the outer edge, auto-dismiss after 5 s, and stack vertically.
  * Clicking "View" navigates to the relevant conversation.
  *
  * Mounted globally in App.vue via <Teleport to="body">.
@@ -47,7 +47,7 @@ function navigate(toast: ChatToastItem): void {
   <Teleport to="body">
     <div
       aria-live="polite"
-      class="fixed bottom-6 right-6 z-[9999] flex flex-col gap-2.5 items-end pointer-events-none"
+      class="fixed bottom-6 end-6 z-[9999] flex flex-col gap-2.5 items-end pointer-events-none"
     >
       <TransitionGroup name="chat-toast">
         <article
@@ -56,8 +56,8 @@ function navigate(toast: ChatToastItem): void {
           class="pointer-events-auto w-80 bg-white rounded-2xl shadow-2xl border border-stone-100 overflow-hidden"
           :class="
             toast.type === 'dm'
-              ? 'border-l-[3px] border-l-blue-400'
-              : 'border-l-[3px] border-l-amber-400'
+              ? 'border-s-[3px] border-s-blue-400'
+              : 'border-s-[3px] border-s-amber-400'
           "
           role="alert"
         >
@@ -159,6 +159,37 @@ function navigate(toast: ChatToastItem): void {
   to {
     opacity: 0;
     transform: translateX(110%);
+  }
+}
+
+/* Mirror slide direction when document is RTL */
+html[dir='rtl'] .chat-toast-enter-active {
+  animation-name: toast-slide-in-rtl;
+}
+
+html[dir='rtl'] .chat-toast-leave-active {
+  animation-name: toast-slide-out-rtl;
+}
+
+@keyframes toast-slide-in-rtl {
+  from {
+    opacity: 0;
+    transform: translateX(-110%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes toast-slide-out-rtl {
+  from {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  to {
+    opacity: 0;
+    transform: translateX(-110%);
   }
 }
 

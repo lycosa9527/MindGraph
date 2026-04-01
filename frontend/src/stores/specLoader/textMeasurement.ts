@@ -6,13 +6,20 @@
  * Multi-flow / diagram labels with `$...$` math: use {@link measureRenderedDiagramLabelWidth}
  * so width matches KaTeX output (plain `measureTextWidth` measures LaTeX source as text).
  */
-import { renderMarkdownForDiagramLabelMeasure } from '@/composables/core/useMarkdown'
+import {
+  diagramLabelLikelyNeedsRenderedMeasure,
+  isDiagramMarkdownPipelineLoaded,
+  loadDiagramMarkdownPipeline,
+  renderMarkdownForDiagramLabelMeasureSync,
+} from '@/composables/core/diagramMarkdownPipeline'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
 
 import {
   estimateTextWidthFallbackPx,
   prefersNoWrapWidthFitForCircleMap,
 } from './textMeasurementFallback'
+
+export { diagramLabelLikelyNeedsRenderedMeasure }
 
 const MEASURE_FONT_FAMILY = DIAGRAM_NODE_FONT_STACK
 const MIN_FONT_SIZE = 6
@@ -220,16 +227,6 @@ function unwrapSingleParagraphHtml(html: string): string {
 }
 
 /**
- * True when label likely contains markdown or KaTeX (needs rendered DOM width, not source string width).
- */
-export function diagramLabelLikelyNeedsRenderedMeasure(text: string): boolean {
-  const t = text || ''
-  return (
-    /\$/.test(t) || /`/.test(t) || /\\[a-zA-Z]/.test(t) || /\*\*[^*]/.test(t) || /__[^_\s]/.test(t)
-  )
-}
-
-/**
  * Measure label width after the same markdown + KaTeX pipeline as diagram nodes.
  * Use for multi-flow map column width when DOM dimensions are not yet available.
  */
@@ -253,9 +250,20 @@ export function measureRenderedDiagramLabelWidth(
   el.style.display = 'inline-block'
   el.style.lineHeight = '1.4'
   try {
+    if (!diagramLabelLikelyNeedsRenderedMeasure(t)) {
+      el.textContent = t
+      void el.offsetWidth
+      return Math.max(0, Math.ceil(el.getBoundingClientRect().width || el.offsetWidth))
+    }
+    if (!isDiagramMarkdownPipelineLoaded()) {
+      void loadDiagramMarkdownPipeline()
+      el.textContent = t
+      void el.offsetWidth
+      return Math.max(0, Math.ceil(el.getBoundingClientRect().width || el.offsetWidth))
+    }
     let html: string
     try {
-      html = unwrapSingleParagraphHtml(renderMarkdownForDiagramLabelMeasure(t))
+      html = unwrapSingleParagraphHtml(renderMarkdownForDiagramLabelMeasureSync(t))
     } catch {
       el.textContent = t
       void el.offsetWidth
@@ -300,9 +308,20 @@ export function measureRenderedDiagramLabelHeight(
   el.style.lineHeight = '1.35'
   el.className = 'diagram-node-md'
   try {
+    if (!diagramLabelLikelyNeedsRenderedMeasure(t)) {
+      el.textContent = t
+      void el.offsetHeight
+      return Math.max(0, el.getBoundingClientRect().height || el.offsetHeight)
+    }
+    if (!isDiagramMarkdownPipelineLoaded()) {
+      void loadDiagramMarkdownPipeline()
+      el.textContent = t
+      void el.offsetHeight
+      return Math.max(0, el.getBoundingClientRect().height || el.offsetHeight)
+    }
     let html: string
     try {
-      html = renderMarkdownForDiagramLabelMeasure(t)
+      html = renderMarkdownForDiagramLabelMeasureSync(t)
     } catch {
       el.textContent = t
       void el.offsetHeight

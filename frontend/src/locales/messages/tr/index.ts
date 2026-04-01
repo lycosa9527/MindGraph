@@ -1,5 +1,5 @@
 /**
- * tr UI messages — merged namespace bundles.
+ * tr UI — merged bundles.
  */
 import admin from './admin'
 import auth from './auth'

@@ -1,4 +1,4 @@
-/** hy UI — auth (English copy; translate values as needed) */
+/** hy UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

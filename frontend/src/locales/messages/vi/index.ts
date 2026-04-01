@@ -1,6 +1,4 @@
-/**
- * vi UI messages — merged namespace bundles.
- */
+/** vi UI — merged message bundles */
 import admin from './admin'
 import auth from './auth'
 import canvas from './canvas'

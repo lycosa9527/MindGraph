@@ -1,4 +1,4 @@
-/** tn UI — auth (English copy; translate values as needed) */
+/** tn UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

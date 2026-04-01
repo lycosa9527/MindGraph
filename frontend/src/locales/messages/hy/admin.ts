@@ -1,4 +1,4 @@
-/** hy UI — admin (English copy; translate values as needed) */
+/** hy UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

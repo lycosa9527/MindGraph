@@ -6,13 +6,16 @@ import arMessages from '@/locales/messages/ar'
 import azMessages from '@/locales/messages/az'
 import bgMessages from '@/locales/messages/bg'
 import bnMessages from '@/locales/messages/bn'
+import bsMessages from '@/locales/messages/bs'
 import caMessages from '@/locales/messages/ca'
 import csMessages from '@/locales/messages/cs'
 import daMessages from '@/locales/messages/da'
 import deMessages from '@/locales/messages/de'
+import dvMessages from '@/locales/messages/dv'
 import elMessages from '@/locales/messages/el'
 import enMessages from '@/locales/messages/en'
 import esMessages from '@/locales/messages/es'
+import etMessages from '@/locales/messages/et'
 import faMessages from '@/locales/messages/fa'
 import fiMessages from '@/locales/messages/fi'
 import frMessages from '@/locales/messages/fr'
@@ -32,6 +35,10 @@ import kmMessages from '@/locales/messages/km'
 import koMessages from '@/locales/messages/ko'
 import kyMessages from '@/locales/messages/ky'
 import loMessages from '@/locales/messages/lo'
+import ltMessages from '@/locales/messages/lt'
+import lvMessages from '@/locales/messages/lv'
+import mkMessages from '@/locales/messages/mk'
+import mlMessages from '@/locales/messages/ml'
 import mnMessages from '@/locales/messages/mn'
 import msMessages from '@/locales/messages/ms'
 import myMessages from '@/locales/messages/my'
@@ -39,11 +46,15 @@ import neMessages from '@/locales/messages/ne'
 import nlMessages from '@/locales/messages/nl'
 import noMessages from '@/locales/messages/no'
 import plMessages from '@/locales/messages/pl'
+import psMessages from '@/locales/messages/ps'
 import ptMessages from '@/locales/messages/pt'
 import roMessages from '@/locales/messages/ro'
 import ruMessages from '@/locales/messages/ru'
 import siMessages from '@/locales/messages/si'
+import skMessages from '@/locales/messages/sk'
+import slMessages from '@/locales/messages/sl'
 import soMessages from '@/locales/messages/so'
+import sqMessages from '@/locales/messages/sq'
 import srMessages from '@/locales/messages/sr'
 import ssMessages from '@/locales/messages/ss'
 import stMessages from '@/locales/messages/st'
@@ -88,13 +99,16 @@ const ALL_UI_MESSAGES: { [K in LocaleCode]: Record<string, string> } = {
   az: azMessages as Record<string, string>,
   bg: bgMessages as Record<string, string>,
   bn: bnMessages as Record<string, string>,
+  bs: bsMessages as Record<string, string>,
   ca: caMessages as Record<string, string>,
   cs: csMessages as Record<string, string>,
   da: daMessages as Record<string, string>,
   de: deMessages as Record<string, string>,
+  dv: dvMessages as Record<string, string>,
   el: elMessages as Record<string, string>,
   en: EN_FLAT,
   es: esMessages as Record<string, string>,
+  et: etMessages as Record<string, string>,
   fa: faMessages as Record<string, string>,
   fi: fiMessages as Record<string, string>,
   fr: frMessages as Record<string, string>,
@@ -114,6 +128,10 @@ const ALL_UI_MESSAGES: { [K in LocaleCode]: Record<string, string> } = {
   ko: koMessages as Record<string, string>,
   ky: kyMessages as Record<string, string>,
   lo: loMessages as Record<string, string>,
+  lt: ltMessages as Record<string, string>,
+  lv: lvMessages as Record<string, string>,
+  mk: mkMessages as Record<string, string>,
+  ml: mlMessages as Record<string, string>,
   mn: mnMessages as Record<string, string>,
   ms: msMessages as Record<string, string>,
   my: myMessages as Record<string, string>,
@@ -121,11 +139,15 @@ const ALL_UI_MESSAGES: { [K in LocaleCode]: Record<string, string> } = {
   nl: nlMessages as Record<string, string>,
   no: noMessages as Record<string, string>,
   pl: plMessages as Record<string, string>,
+  ps: psMessages as Record<string, string>,
   pt: ptMessages as Record<string, string>,
   ro: roMessages as Record<string, string>,
   ru: ruMessages as Record<string, string>,
   si: siMessages as Record<string, string>,
+  sk: skMessages as Record<string, string>,
+  sl: slMessages as Record<string, string>,
   so: soMessages as Record<string, string>,
+  sq: sqMessages as Record<string, string>,
   sr: srMessages as Record<string, string>,
   ss: ssMessages as Record<string, string>,
   st: stMessages as Record<string, string>,

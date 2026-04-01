@@ -1,7 +1,5 @@
 /**
- * useNotifications - Composable for unified top-right notifications
- * All notifications use ElNotification with dark-alert-notification style
- * (same as AI content notifications)
+ * useNotifications — unified ElNotification helpers (RTL-aware placement)
  */
 import { h, ref } from 'vue'
 
@@ -10,7 +8,11 @@ import type { MessageHandler } from 'element-plus'
 
 import { AlertTriangle } from 'lucide-vue-next'
 
-import { notify, showLoading as showLoadingImpl } from './notifications'
+import {
+  getDefaultElNotificationOptions,
+  notify,
+  showLoading as showLoadingImpl,
+} from './notifications'
 import type { NotificationType } from './notifications'
 
 export type { NotificationType } from './notifications'
@@ -22,13 +24,6 @@ export interface NotificationOptions {
   duration?: number
   showClose?: boolean
   onClick?: () => void
-}
-
-const NOTIFICATION_OPTIONS = {
-  customClass: 'dark-alert-notification',
-  position: 'top-right' as const,
-  offset: 16,
-  showClose: true,
 }
 
 export function useNotifications() {
@@ -45,7 +40,7 @@ export function useNotifications() {
 
   function showNotification(options: NotificationOptions): void {
     ElNotification({
-      ...NOTIFICATION_OPTIONS,
+      ...getDefaultElNotificationOptions(),
       title: options.title,
       message: options.message,
       type: options.type || 'info',
@@ -77,7 +72,7 @@ export function useNotifications() {
   ): Promise<boolean> {
     return new Promise((resolve) => {
       ElNotification({
-        ...NOTIFICATION_OPTIONS,
+        ...getDefaultElNotificationOptions(),
         title,
         message,
         type,

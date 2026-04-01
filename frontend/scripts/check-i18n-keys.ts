@@ -8,13 +8,16 @@ import ar from '../src/locales/messages/ar'
 import az from '../src/locales/messages/az'
 import bg from '../src/locales/messages/bg'
 import bn from '../src/locales/messages/bn'
+import bs from '../src/locales/messages/bs'
 import ca from '../src/locales/messages/ca'
 import cs from '../src/locales/messages/cs'
 import da from '../src/locales/messages/da'
 import de from '../src/locales/messages/de'
+import dv from '../src/locales/messages/dv'
 import el from '../src/locales/messages/el'
 import en from '../src/locales/messages/en'
 import es from '../src/locales/messages/es'
+import et from '../src/locales/messages/et'
 import fa from '../src/locales/messages/fa'
 import fi from '../src/locales/messages/fi'
 import fr from '../src/locales/messages/fr'
@@ -34,6 +37,10 @@ import km from '../src/locales/messages/km'
 import ko from '../src/locales/messages/ko'
 import ky from '../src/locales/messages/ky'
 import lo from '../src/locales/messages/lo'
+import lt from '../src/locales/messages/lt'
+import lv from '../src/locales/messages/lv'
+import mk from '../src/locales/messages/mk'
+import ml from '../src/locales/messages/ml'
 import mn from '../src/locales/messages/mn'
 import ms from '../src/locales/messages/ms'
 import my from '../src/locales/messages/my'
@@ -41,12 +48,16 @@ import ne from '../src/locales/messages/ne'
 import nl from '../src/locales/messages/nl'
 import no from '../src/locales/messages/no'
 import pl from '../src/locales/messages/pl'
+import ps from '../src/locales/messages/ps'
 import pt from '../src/locales/messages/pt'
 import ro from '../src/locales/messages/ro'
 import ru from '../src/locales/messages/ru'
 import si from '../src/locales/messages/si'
+import sk from '../src/locales/messages/sk'
+import sl from '../src/locales/messages/sl'
 import so from '../src/locales/messages/so'
 import sr from '../src/locales/messages/sr'
+import sq from '../src/locales/messages/sq'
 import ss from '../src/locales/messages/ss'
 import st from '../src/locales/messages/st'
 import sv from '../src/locales/messages/sv'
@@ -90,6 +101,7 @@ const NON_ZH_BUNDLES: { label: string; mod: Record<string, string> }[] = [
   { label: 'zh-tw', mod: zhTw as Record<string, string> },
   { label: 'fr', mod: fr as Record<string, string> },
   { label: 'de', mod: de as Record<string, string> },
+  { label: 'dv', mod: dv as Record<string, string> },
   { label: 'ja', mod: ja as Record<string, string> },
   { label: 'ko', mod: ko as Record<string, string> },
   { label: 'pt', mod: pt as Record<string, string> },
@@ -102,9 +114,11 @@ const NON_ZH_BUNDLES: { label: string; mod: Record<string, string> }[] = [
   { label: 'vi', mod: vi as Record<string, string> },
   { label: 'tr', mod: tr as Record<string, string> },
   { label: 'pl', mod: pl as Record<string, string> },
+  { label: 'ps', mod: ps as Record<string, string> },
   { label: 'uk', mod: uk as Record<string, string> },
   { label: 'ms', mod: ms as Record<string, string> },
   { label: 'es', mod: es as Record<string, string> },
+  { label: 'et', mod: et as Record<string, string> },
   { label: 'sv', mod: sv as Record<string, string> },
   { label: 'da', mod: da as Record<string, string> },
   { label: 'fi', mod: fi as Record<string, string> },
@@ -117,6 +131,7 @@ const NON_ZH_BUNDLES: { label: string; mod: Record<string, string> }[] = [
   { label: 'sw', mod: sw as Record<string, string> },
   { label: 'tl', mod: tl as Record<string, string> },
   { label: 'bn', mod: bn as Record<string, string> },
+  { label: 'bs', mod: bs as Record<string, string> },
   { label: 'ta', mod: ta as Record<string, string> },
   { label: 'ca', mod: ca as Record<string, string> },
   { label: 'bg', mod: bg as Record<string, string> },
@@ -129,10 +144,17 @@ const NON_ZH_BUNDLES: { label: string; mod: Record<string, string> }[] = [
   { label: 'kk', mod: kk as Record<string, string> },
   { label: 'ky', mod: ky as Record<string, string> },
   { label: 'lo', mod: lo as Record<string, string> },
+  { label: 'lt', mod: lt as Record<string, string> },
+  { label: 'lv', mod: lv as Record<string, string> },
+  { label: 'mk', mod: mk as Record<string, string> },
+  { label: 'ml', mod: ml as Record<string, string> },
   { label: 'mn', mod: mn as Record<string, string> },
   { label: 'my', mod: my as Record<string, string> },
   { label: 'ne', mod: ne as Record<string, string> },
   { label: 'si', mod: si as Record<string, string> },
+  { label: 'sk', mod: sk as Record<string, string> },
+  { label: 'sl', mod: sl as Record<string, string> },
+  { label: 'sq', mod: sq as Record<string, string> },
   { label: 'sr', mod: sr as Record<string, string> },
   { label: 'tg', mod: tg as Record<string, string> },
   { label: 'tk', mod: tk as Record<string, string> },

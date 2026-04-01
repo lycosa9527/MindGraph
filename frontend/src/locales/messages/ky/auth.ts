@@ -1,4 +1,4 @@
-/** ky UI — auth (English copy; translate values as needed) */
+/** ky UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

@@ -1,4 +1,4 @@
-/** he UI — sidebar (English copy; translate values as needed) */
+/** he UI — sidebar */
 export default {
   'sidebar.actions.delete': 'Delete',
   'sidebar.actions.pinToTop': 'Pin to Top',

@@ -1,0 +1,6016 @@
+{
+  "generatedAt": "2026-04-01T03:27:00.878Z",
+  "referenceLocale": "en",
+  "criteria": {
+    "stub": "header matches English-copy scaffolding OR ≥92% string values identical to en (and typical scaffold)",
+    "partial": "Qwen/review header or 35–92% identical to en, or mixed",
+    "done": "low identity ratio vs en (likely translated)"
+  },
+  "keyCount": 2008,
+  "locales": {
+    "zh-tw": {
+      "namespaces": {
+        "admin": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 382,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 78,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "done",
+          "identicalToEn": 0.124,
+          "keysCompared": 501,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "done",
+          "identicalToEn": 0.033,
+          "keysCompared": 120,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "done",
+          "identicalToEn": 0.014,
+          "keysCompared": 145,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 205,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 142,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 39,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "done",
+          "identicalToEn": 0.028,
+          "keysCompared": 72,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 324,
+          "headerStub": false,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 0,
+        "partial": 0,
+        "done": 10
+      }
+    },
+    "zh": {
+      "namespaces": {
+        "admin": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 382,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "done",
+          "identicalToEn": 0.013,
+          "keysCompared": 78,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "done",
+          "identicalToEn": 0.114,
+          "keysCompared": 501,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "done",
+          "identicalToEn": 0.033,
+          "keysCompared": 120,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "done",
+          "identicalToEn": 0.014,
+          "keysCompared": 145,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 205,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 142,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 39,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "done",
+          "identicalToEn": 0.042,
+          "keysCompared": 72,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 324,
+          "headerStub": false,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 0,
+        "partial": 0,
+        "done": 10
+      }
+    },
+    "az": {
+      "namespaces": {
+        "admin": {
+          "status": "partial",
+          "identicalToEn": 0.73,
+          "keysCompared": 382,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "done",
+          "identicalToEn": 0.179,
+          "keysCompared": 78,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "done",
+          "identicalToEn": 0.226,
+          "keysCompared": 501,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "partial",
+          "identicalToEn": 0.483,
+          "keysCompared": 120,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "partial",
+          "identicalToEn": 0.559,
+          "keysCompared": 145,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "partial",
+          "identicalToEn": 0.429,
+          "keysCompared": 205,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "partial",
+          "identicalToEn": 0.401,
+          "keysCompared": 142,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "done",
+          "identicalToEn": 0.154,
+          "keysCompared": 39,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "partial",
+          "identicalToEn": 0.806,
+          "keysCompared": 72,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "partial",
+          "identicalToEn": 0.852,
+          "keysCompared": 324,
+          "headerStub": false,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 0,
+        "partial": 7,
+        "done": 3
+      }
+    },
+    "th": {
+      "namespaces": {
+        "admin": {
+          "status": "done",
+          "identicalToEn": 0.073,
+          "keysCompared": 382,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "done",
+          "identicalToEn": 0.013,
+          "keysCompared": 78,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "done",
+          "identicalToEn": 0.222,
+          "keysCompared": 501,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "done",
+          "identicalToEn": 0.125,
+          "keysCompared": 120,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "done",
+          "identicalToEn": 0.021,
+          "keysCompared": 145,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "done",
+          "identicalToEn": 0.015,
+          "keysCompared": 205,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "done",
+          "identicalToEn": 0.007,
+          "keysCompared": 142,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 39,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "done",
+          "identicalToEn": 0.069,
+          "keysCompared": 72,
+          "headerStub": false,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "done",
+          "identicalToEn": 0.003,
+          "keysCompared": 324,
+          "headerStub": false,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 0,
+        "partial": 0,
+        "done": 10
+      }
+    },
+    "fr": {
+      "namespaces": {
+        "admin": {
+          "status": "done",
+          "identicalToEn": 0.071,
+          "keysCompared": 382,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "auth": {
+          "status": "done",
+          "identicalToEn": 0.013,
+          "keysCompared": 78,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "canvas": {
+          "status": "done",
+          "identicalToEn": 0.146,
+          "keysCompared": 501,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "common": {
+          "status": "done",
+          "identicalToEn": 0.133,
+          "keysCompared": 120,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "community": {
+          "status": "done",
+          "identicalToEn": 0.034,
+          "keysCompared": 145,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "knowledge": {
+          "status": "done",
+          "identicalToEn": 0.049,
+          "keysCompared": 205,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "mindmate": {
+          "status": "done",
+          "identicalToEn": 0.035,
+          "keysCompared": 142,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "notification": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 39,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "sidebar": {
+          "status": "done",
+          "identicalToEn": 0.069,
+          "keysCompared": 72,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "workshop": {
+          "status": "done",
+          "identicalToEn": 0.056,
+          "keysCompared": 324,
+          "headerStub": false,
+          "headerPartial": true
+        }
+      },
+      "summary": {
+        "stub": 0,
+        "partial": 0,
+        "done": 10
+      }
+    },
+    "de": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ja": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ko": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "pt": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ru": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ar": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "nl": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "it": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "hi": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "id": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "vi": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "tr": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "pl": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "uk": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ms": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "es": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "sv": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "da": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "fi": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "no": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "cs": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ro": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "el": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "he": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "fa": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "sw": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "tl": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "bn": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ta": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ca": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "bg": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "hr": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "hu": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "kk": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "uz": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ky": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "tg": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "tk": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "mn": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ur": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ne": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "my": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "km": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "lo": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "si": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "am": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ug": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ka": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "hy": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "sr": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "af": {
+      "namespaces": {
+        "admin": {
+          "status": "done",
+          "identicalToEn": 0.065,
+          "keysCompared": 382,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "auth": {
+          "status": "done",
+          "identicalToEn": 0.013,
+          "keysCompared": 78,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "canvas": {
+          "status": "done",
+          "identicalToEn": 0.23,
+          "keysCompared": 501,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "common": {
+          "status": "done",
+          "identicalToEn": 0.158,
+          "keysCompared": 120,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "community": {
+          "status": "done",
+          "identicalToEn": 0.021,
+          "keysCompared": 145,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "knowledge": {
+          "status": "done",
+          "identicalToEn": 0.01,
+          "keysCompared": 205,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "mindmate": {
+          "status": "done",
+          "identicalToEn": 0.014,
+          "keysCompared": 142,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "notification": {
+          "status": "done",
+          "identicalToEn": 0,
+          "keysCompared": 39,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "sidebar": {
+          "status": "done",
+          "identicalToEn": 0.056,
+          "keysCompared": 72,
+          "headerStub": false,
+          "headerPartial": true
+        },
+        "workshop": {
+          "status": "done",
+          "identicalToEn": 0.009,
+          "keysCompared": 324,
+          "headerStub": false,
+          "headerPartial": true
+        }
+      },
+      "summary": {
+        "stub": 0,
+        "partial": 0,
+        "done": 10
+      }
+    },
+    "ha": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "yo": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ig": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "so": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "zu": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "xh": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "tn": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "st": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ss": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "bs": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "dv": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "et": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "lt": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "lv": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "mk": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ml": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "ps": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "sk": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "sl": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    },
+    "sq": {
+      "namespaces": {
+        "admin": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 382,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "auth": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 78,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "canvas": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 501,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "common": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 120,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "community": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 145,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "knowledge": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 205,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "mindmate": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 142,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "notification": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 39,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "sidebar": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 72,
+          "headerStub": true,
+          "headerPartial": false
+        },
+        "workshop": {
+          "status": "stub",
+          "identicalToEn": 1,
+          "keysCompared": 324,
+          "headerStub": true,
+          "headerPartial": false
+        }
+      },
+      "summary": {
+        "stub": 10,
+        "partial": 0,
+        "done": 0
+      }
+    }
+  }
+}

@@ -1,4 +1,4 @@
-/** ky UI — community (English copy; translate values as needed) */
+/** ky UI — community */
 export default {
   'community.category.all': 'All',
   'community.category.creative': 'Creative ideas',

@@ -903,7 +903,7 @@ const {
 .close-btn {
   position: absolute;
   top: 12px;
-  right: 12px;
+  inset-inline-end: 12px;
   z-index: 10;
   --el-button-text-color: #a8a29e;
   --el-button-hover-text-color: #57534e;

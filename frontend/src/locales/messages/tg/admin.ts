@@ -1,4 +1,4 @@
-/** tg UI — admin (English copy; translate values as needed) */
+/** tg UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

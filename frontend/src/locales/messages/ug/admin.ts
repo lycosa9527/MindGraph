@@ -1,4 +1,4 @@
-/** ug UI — admin (English copy; translate values as needed) */
+/** ug UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

@@ -446,7 +446,7 @@ function handleBackdropClick(event: MouseEvent) {
 .close-btn {
   position: absolute;
   top: 16px;
-  right: 16px;
+  inset-inline-end: 16px;
   --el-button-text-color: #a8a29e;
   --el-button-hover-text-color: #57534e;
   --el-button-hover-bg-color: #f5f5f4;

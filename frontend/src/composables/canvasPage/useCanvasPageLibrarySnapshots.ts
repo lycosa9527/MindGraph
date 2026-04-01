@@ -1,3 +1,7 @@
+import {
+  diagramSpecLikelyNeedsMarkdownPipeline,
+  loadDiagramMarkdownPipeline,
+} from '@/composables/core/diagramMarkdownPipeline'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
@@ -54,6 +58,9 @@ export function useCanvasPageLibrarySnapshots(options: {
         diagramId,
         diagramType: diagram.diagram_type,
       })
+      if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
+        await loadDiagramMarkdownPipeline({ bumpLayout: false })
+      }
       const loaded = diagramStore.loadFromSpec(specForLoad, diagram.diagram_type as DiagramType)
 
       if (loaded) {
@@ -83,6 +90,9 @@ export function useCanvasPageLibrarySnapshots(options: {
     diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
     llmResultsStore.clearCache()
     eventBus.emit('diagram:loaded_from_library', { diagramId, diagramType })
+    if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
+      await loadDiagramMarkdownPipeline({ bumpLayout: false })
+    }
     diagramStore.loadFromSpec(spec, diagramType)
     snapshotHistory.setActiveVersion(versionNumber)
   }

@@ -1,4 +1,4 @@
-/** tg UI — workshop (English copy; translate values as needed) */
+/** tg UI — workshop */
 export default {
   'collab.codeCopied': 'Code copied',
   'collab.codeGenerated': 'Collaboration code generated — share to edit together.',

@@ -61,6 +61,18 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
       return (await import('element-plus/es/locale/lang/no')).default
     case 'cs':
       return (await import('element-plus/es/locale/lang/cs')).default
+    case 'sk':
+      return (await import('element-plus/es/locale/lang/sk')).default
+    case 'et':
+      return (await import('element-plus/es/locale/lang/et')).default
+    case 'lt':
+      return (await import('element-plus/es/locale/lang/lt')).default
+    case 'lv':
+      return (await import('element-plus/es/locale/lang/lv')).default
+    case 'sl':
+      return (await import('element-plus/es/locale/lang/sl')).default
+    case 'sq':
+      return (await import('element-plus/es/locale/lang/en')).default
     case 'ro':
       return (await import('element-plus/es/locale/lang/ro')).default
     case 'el':

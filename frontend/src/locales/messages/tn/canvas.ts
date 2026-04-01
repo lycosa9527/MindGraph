@@ -1,4 +1,4 @@
-/** tn UI — canvas (English copy; translate values as needed) */
+/** tn UI — canvas */
 export default {
   'braceMap.defaultSubpartFirst': 'New Subpart 1',
   'braceMap.defaultSubpartSecond': 'New Subpart 2',

@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.69.0] - 2026-04-01
+
+### Added
+- **Extra UI locales** (`i18n/supportedUiLocalesExtra.ts`): Merged into `SUPPORTED_UI_LOCALES` — Bosnian (`bs`), Dhivehi (`dv`, RTL), Estonian (`et`), Lithuanian (`lt`), Latvian (`lv`), Macedonian (`mk`), Malayalam (`ml`), Pashto (`ps`), Slovak (`sk`), Slovenian (`sl`), Albanian (`sq`), each with full `locales/messages/<code>/` module bundles.
+- **Diagram markdown lazy pipeline** (`composables/core/diagramMarkdownPipeline.ts`): Loads the markdown-it + KaTeX stack on demand for diagram label measurement so initial canvas chunks avoid pulling `useMarkdown` until math or markdown is needed; coordinates layout recalc via `diagram:layout_recalc_bump`.
+- **Hindi UI modules** (`locales/messages/hi/`): Split from the monolithic `hi.ts` into the standard per-module layout (`admin`, `auth`, `canvas`, etc.) aligned with other locales.
+- **i18n tooling**: `check-i18n-picker-stubs.ts` (guard for Settings picker), `translate-ui-locales-from-en.ts`, `analyze_i18n_en_parity.py`, `rewrite-pt-canvas-from-es.ts`, `setup-fetch-proxy.ts`, and `locales/i18n-stub-inventory.json` for translation workflow and parity checks.
+
+### Changed
+- **Interface language picker** (`i18n/locales.ts`): Expanded list (e.g. Spanish, Albanian, Persian, Uzbek, Tagalog) with stricter policy — codes appear only after all ten message modules are translated; documents `docs/i18n-belt-and-road-master-plan.md` and `npm run i18n:check-picker-stubs`; exports `INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT`.
+- **Tier-2 locale bundles**: Large translation and parity updates across existing `locales/messages/*` bundles (materialize/stub cleanup and copy improvements).
+- **Backend UI language allowlist** (`utils/ui_languages.py`): New codes aligned with frontend (`bs`, `dv`, `et`, `lt`, `lv`, `mk`, `ml`, `ps`, `sk`, `sl`, `sq`).
+- **Markdown / canvas UX**: `useMarkdown.ts`, `useDiagramNodeMarkdownDisplay.ts`, `useDiagramLabels.ts`, `textMeasurement.ts`, auth modals, `CanvasTopBar`, `ShareExportModal`, `InlineEditableText`, library snapshots, notifications, `MobileLayout` / mobile canvas, `main.ts`, `vite.config.ts`, and global styles — aligned with lazy markdown loading and RTL-capable locales (e.g. Dhivehi).
+- **i18n plumbing**: `elementPlusLocale.ts`, `i18n/index.ts`, `check-i18n-keys.ts`, `package.json` / lockfile dependency updates.
+
 ## [5.68.0] - 2026-04-01
 
 ### Added

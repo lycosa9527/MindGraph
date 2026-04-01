@@ -1,4 +1,4 @@
-/** km UI — auth (English copy; translate values as needed) */
+/** km UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

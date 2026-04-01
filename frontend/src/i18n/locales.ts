@@ -3,6 +3,7 @@
  * The locale table lives in `supportedUiLocales.ts` (`SUPPORTED_UI_LOCALES`).
  * When adding a code: edit `supportedUiLocales.ts`, then stub or run `npm run i18n:materialize-from-en`,
  * `elementPlusLocale.ts`, and `scripts/check-i18n-keys.ts` (regenerate `i18n/index.ts` if the script is extended).
+ * Translate UI copy by editing values in `src/locales/messages/<code>/*.ts` (same keys as `en/`), e.g. in Cursor/Composer.
  */
 import promptLanguageRegistry from '@data/prompt_language_registry.json'
 
@@ -18,26 +19,33 @@ export const UI_LOCALE_CODES: LocaleCode[] = SUPPORTED_UI_LOCALES.filter((e) => 
 
 /**
  * Locales listed in Settings → Interface language (and mobile account UI picker).
- * Only locales with real UI strings (non-stub `common.ts` — not 'English copy; translate values as needed').
- * Other codes may stay `enabled` for bundles and saved preferences but are hidden from the picker.
+ *
+ * Policy: add a code only after all 10 message modules are translated (no materialize stub in any file).
+ * See repo docs: `docs/i18n-belt-and-road-master-plan.md` (strategy + locale completion criteria).
+ * Guard: `npm run i18n:check-picker-stubs` (from `frontend/`).
  */
 export const INTERFACE_LANGUAGE_PICKER_CODES: readonly LocaleCode[] = [
   'zh-tw',
   'zh',
   'en',
+  'es',
   'az',
   'th',
   'fr',
   'de',
+  'sq',
   'ja',
   'ko',
   'pt',
   'ru',
   'ar',
+  'fa',
+  'uz',
   'nl',
   'it',
   'hi',
   'id',
+  'tl',
   'vi',
   'tr',
   'pl',
@@ -45,6 +53,9 @@ export const INTERFACE_LANGUAGE_PICKER_CODES: readonly LocaleCode[] = [
   'ms',
   'af',
 ] as const
+
+/** Locales in Settings → Interface language — use this for “supports {n} languages” next to 界面语言. */
+export const INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT = INTERFACE_LANGUAGE_PICKER_CODES.length
 
 const INTERFACE_LANGUAGE_PICKER_SET = new Set<string>(INTERFACE_LANGUAGE_PICKER_CODES)
 

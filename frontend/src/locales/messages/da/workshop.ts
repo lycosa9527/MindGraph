@@ -1,4 +1,4 @@
-/** da UI — workshop (English copy; translate values as needed) */
+/** da UI — workshop */
 export default {
   'collab.codeCopied': 'Code copied',
   'collab.codeGenerated': 'Collaboration code generated — share to edit together.',

@@ -38,6 +38,10 @@ import {
   useNotifications,
 } from '@/composables'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import {
+  diagramSpecLikelyNeedsMarkdownPipeline,
+  loadDiagramMarkdownPipeline,
+} from '@/composables/core/diagramMarkdownPipeline'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
   useAuthStore,
@@ -369,6 +373,9 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
     diagramId,
     diagramType: diagram.diagram_type,
   })
+  if (diagramSpecLikelyNeedsMarkdownPipeline(spec)) {
+    await loadDiagramMarkdownPipeline({ bumpLayout: false })
+  }
   const loaded = diagramStore.loadFromSpec(spec, diagram.diagram_type as DiagramType)
   if (loaded) {
     const zhName = Object.entries(DIAGRAM_TYPE_MAP).find(([, v]) => v === diagram.diagram_type)?.[0]
@@ -501,7 +508,10 @@ onUnmounted(() => {
           :disabled="!mobileCanPrev"
           @click="handleRecPrev"
         >
-          <ChevronLeft :size="14" />
+          <ChevronLeft
+            :size="14"
+            class="mg-icon-flip-rtl"
+          />
         </button>
 
         <div
@@ -551,6 +561,7 @@ onUnmounted(() => {
           <ChevronRight
             v-else
             :size="14"
+            class="mg-icon-flip-rtl"
           />
         </button>
       </div>

@@ -1,4 +1,4 @@
-/** cs UI — auth (English copy; translate values as needed) */
+/** cs UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

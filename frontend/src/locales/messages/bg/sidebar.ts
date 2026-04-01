@@ -1,4 +1,4 @@
-/** bg UI — sidebar (English copy; translate values as needed) */
+/** bg UI — sidebar */
 export default {
   'sidebar.actions.delete': 'Delete',
   'sidebar.actions.pinToTop': 'Pin to Top',

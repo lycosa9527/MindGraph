@@ -1,4 +1,4 @@
-/** km UI — admin (English copy; translate values as needed) */
+/** km UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

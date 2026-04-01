@@ -93,7 +93,12 @@ function goNext() {
         :aria-label="'Previous'"
         @click="goPrev"
       >
-        <el-icon :size="28"><ArrowLeft /></el-icon>
+        <el-icon
+          :size="28"
+          class="mg-icon-flip-rtl"
+        >
+          <ArrowLeft />
+        </el-icon>
       </button>
 
       <!-- Image: key on wrapper forces full re-render when navigating to avoid stale display -->
@@ -117,7 +122,12 @@ function goNext() {
         :aria-label="'Next'"
         @click="goNext"
       >
-        <el-icon :size="28"><ArrowRight /></el-icon>
+        <el-icon
+          :size="28"
+          class="mg-icon-flip-rtl"
+        >
+          <ArrowRight />
+        </el-icon>
       </button>
     </div>
 

@@ -60,7 +60,7 @@ function goHome() {
         >
           <ArrowLeft
             :size="18"
-            class="text-gray-500"
+            class="text-gray-500 mg-icon-flip-rtl"
           />
         </button>
 

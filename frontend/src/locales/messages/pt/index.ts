@@ -1,6 +1,4 @@
-/**
- * pt UI messages — merged namespace bundles.
- */
+/** pt UI — merged bundles (Brazilian/European neutral UI Portuguese) */
 import admin from './admin'
 import auth from './auth'
 import canvas from './canvas'

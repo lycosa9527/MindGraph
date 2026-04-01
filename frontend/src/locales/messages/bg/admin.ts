@@ -1,4 +1,4 @@
-/** bg UI — admin (English copy; translate values as needed) */
+/** bg UI — admin */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

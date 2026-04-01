@@ -1,6 +1,6 @@
 /**
- * Unified Notifications - Top-right ElNotification style
- * All app notifications use this for consistent UX (AI content, etc.)
+ * Unified Notifications — ElNotification with RTL-aware corner placement
+ * (LTR: top-right, RTL: top-left). Matches `document.documentElement.dir`.
  *
  * Use: import { notify } from '@/composables/core/notifications' for stores/outside setup
  * Or: useNotifications() composable for components
@@ -14,11 +14,23 @@ import { AlertTriangle, Check, CircleX, Info } from 'lucide-vue-next'
 
 export type NotificationType = 'success' | 'warning' | 'info' | 'error'
 
-const NOTIFICATION_OPTIONS = {
-  customClass: 'dark-alert-notification',
-  position: 'top-right' as const,
-  offset: 16,
-  showClose: true,
+export type ElNotificationCornerPosition = 'top-left' | 'top-right'
+
+/** Shared defaults for programmatic ElNotification (position mirrors for RTL). */
+export function getDefaultElNotificationOptions(): {
+  customClass: string
+  position: ElNotificationCornerPosition
+  offset: number
+  showClose: boolean
+} {
+  const rtl =
+    typeof document !== 'undefined' && document.documentElement.dir === 'rtl'
+  return {
+    customClass: 'dark-alert-notification',
+    position: rtl ? 'top-left' : 'top-right',
+    offset: 16,
+    showClose: true,
+  }
 }
 
 const DEFAULT_DURATION_MS = 4000
@@ -41,7 +53,7 @@ function showNotification(
     message,
     type,
     duration: durationMs,
-    ...NOTIFICATION_OPTIONS,
+    ...getDefaultElNotificationOptions(),
     icon: h(IconComponent, { size: 20 }),
   })
 }

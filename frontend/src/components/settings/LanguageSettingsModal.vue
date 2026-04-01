@@ -9,7 +9,11 @@ import { ElCheckbox } from 'element-plus'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { PROMPT_LANGUAGE_OPTIONS, getLocalesForInterfaceLanguagePicker } from '@/i18n/locales'
+import {
+  INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT,
+  PROMPT_LANGUAGE_OPTIONS,
+  getLocalesForInterfaceLanguagePicker,
+} from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage, UiVersion } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
@@ -65,7 +69,8 @@ function buildUiLanguageSelectRows(): {
 
 const uiLanguageOptions = computed(() => buildUiLanguageSelectRows())
 
-const interfaceLanguageOptionCount = computed(() => uiLanguageOptions.value.length)
+/** Matches `INTERFACE_LANGUAGE_PICKER_CODES` in `locales.ts` (subtitle next to 界面语言). */
+const interfaceLanguageOptionCount = INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT
 const promptLanguageOptionCount = computed(() => promptLangOptions.length)
 
 /**

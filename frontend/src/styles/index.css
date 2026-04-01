@@ -126,6 +126,11 @@ body {
   background: var(--mg-text-secondary);
 }
 
+/* RTL: mirror directional icons (back, carousel prev/next, inline-rec paging) */
+[dir='rtl'] .mg-icon-flip-rtl {
+  transform: scaleX(-1);
+}
+
 /* Focus styles */
 :focus-visible {
   outline: 2px solid var(--mg-primary);
@@ -316,6 +321,10 @@ body {
 
 .dark-alert-notification.el-notification .el-notification__closeBtn {
   color: #a1a1aa;
+  /* EP defaults to `right`; use inline-end so close mirrors in RTL (top-left stack). */
+  right: auto;
+  inset-inline-end: 15px;
+  top: 18px;
 }
 
 .dark-alert-notification.el-notification .el-notification__closeBtn:hover {
@@ -360,6 +369,36 @@ body {
 
 .dark-alert-notification.el-notification--info .el-notification__icon {
   color: #60a5fa;
+}
+
+/*
+ * Element Plus dialog / message-box: header close uses physical `right: 0`.
+ * Use inline-end so the × sits on the trailing edge in RTL (physical left), matching notifications.
+ * `show-close` padding uses `padding-right` in EP — switch to `padding-inline-end` so the title
+ * clears the close on the correct side in both directions.
+ */
+.el-dialog__headerbtn {
+  right: auto;
+  inset-inline-end: 0;
+}
+
+.el-dialog__header.show-close {
+  padding-right: 0;
+  padding-inline-end: calc(
+    var(--el-dialog-padding-primary, 16px) + var(--el-message-close-size, 16px)
+  );
+}
+
+.el-message-box__headerbtn {
+  right: auto;
+  inset-inline-end: 0;
+}
+
+.el-message-box__header.show-close {
+  padding-right: 0;
+  padding-inline-end: calc(
+    var(--el-messagebox-padding-primary, 12px) + var(--el-message-close-size, 16px)
+  );
 }
 
 /* Diagram node labels: compact markdown + KaTeX inside Vue Flow nodes */

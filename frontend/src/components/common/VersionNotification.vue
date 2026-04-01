@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
  * Version Update Notification
- * Shows a non-blocking notification in top-right corner when a new app version is available
+ * Shows a non-blocking notification (top corner; mirrors for RTL) when a new app version is available
  * Uses Element Plus ElNotification
  */
 import { h, watch } from 'vue'
@@ -11,6 +11,7 @@ import { ElButton, ElNotification } from 'element-plus'
 import { Refresh } from '@element-plus/icons-vue'
 
 import { useLanguage, useVersionCheck } from '@/composables'
+import { getDefaultElNotificationOptions } from '@/composables/core/notifications'
 
 const { t } = useLanguage()
 const { needsUpdate, currentVersion, serverVersion, forceRefresh, dismissUpdate } =
@@ -25,6 +26,7 @@ function showUpdateNotification() {
   }
 
   notificationInstance = ElNotification({
+    ...getDefaultElNotificationOptions(),
     title: t('notification.newVersionAvailable'),
     message: h('div', { class: 'version-notification-content' }, [
       h('div', { class: 'version-info' }, `${currentVersion.value} → ${serverVersion.value}`),
@@ -42,10 +44,7 @@ function showUpdateNotification() {
       ),
     ]),
     icon: h(Refresh),
-    position: 'top-right',
     duration: 0, // Don't auto-close
-    showClose: true,
-    customClass: 'dark-alert-notification',
     onClose: () => {
       dismissUpdate()
       notificationInstance = null

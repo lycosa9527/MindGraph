@@ -14,9 +14,11 @@ import 'element-plus/es/components/notification/style/css'
 import { QueryClient, VueQueryPlugin } from '@tanstack/vue-query'
 
 import App from './App.vue'
+import { eventBus } from './composables/core/useEventBus'
 import './fonts/eagerFonts'
 import { i18n, loadLocaleMessages, setI18nLocale } from './i18n'
 import router from './router'
+import { useDiagramStore } from './stores/diagram'
 import { useUIStore } from './stores/ui'
 // Styles
 import './styles/index.css'
@@ -26,6 +28,10 @@ async function bootstrap(): Promise<void> {
 
   const pinia = createPinia()
   app.use(pinia)
+
+  eventBus.on('diagram:layout_recalc_bump', () => {
+    useDiagramStore().layoutRecalcTrigger += 1
+  })
 
   const uiStore = useUIStore()
   await loadLocaleMessages(uiStore.language)

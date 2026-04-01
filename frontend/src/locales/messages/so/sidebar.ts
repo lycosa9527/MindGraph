@@ -1,4 +1,4 @@
-/** so UI — sidebar (English copy; translate values as needed) */
+/** so UI — sidebar */
 export default {
   'sidebar.actions.delete': 'Delete',
   'sidebar.actions.pinToTop': 'Pin to Top',

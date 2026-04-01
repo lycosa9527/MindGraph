@@ -1,4 +1,4 @@
-/** tk UI — auth (English copy; translate values as needed) */
+/** tk UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',

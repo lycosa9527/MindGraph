@@ -543,7 +543,7 @@ function formatDate(iso: string): string {
 
 .community-post-detail-modal :deep(.el-dialog__headerbtn) {
   top: 12px;
-  right: 12px;
+  inset-inline-end: 12px;
   z-index: 10;
   background: rgba(255, 255, 255, 0.9);
   border-radius: 50%;

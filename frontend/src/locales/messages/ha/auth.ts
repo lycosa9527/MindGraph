@@ -1,4 +1,4 @@
-/** ha UI — auth (English copy; translate values as needed) */
+/** ha UI — auth */
 export default {
   'auth.accountInfo': 'Account',
   'auth.backToLogin': 'Back to Login',
