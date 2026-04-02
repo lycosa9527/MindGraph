@@ -31,7 +31,8 @@ PROMPT_REGISTRY = {
     **PROMPT_TO_DIAGRAM_PROMPTS,
 }
 
-def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'generation') -> str:
+
+def get_prompt(diagram_type: str, language: str = "en", prompt_type: str = "generation") -> str:
     """
     Get a prompt for a specific diagram type and language.
 
@@ -45,7 +46,7 @@ def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'gene
     """
     registry_lang = template_lang_for_registry(language)
     # Handle prompt_to_diagram specially
-    if diagram_type == 'prompt_to_diagram':
+    if diagram_type == "prompt_to_diagram":
         key = f"prompt_to_diagram_{registry_lang}"
         text = PROMPT_REGISTRY.get(key, "")
     else:
@@ -55,20 +56,21 @@ def get_prompt(diagram_type: str, language: str = 'en', prompt_type: str = 'gene
         return ""
     return text + output_language_instruction(language)
 
+
 def get_available_diagram_types() -> list:
     """Get list of all available diagram types that the application supports."""
     supported_types = [
-        'bubble_map',
-        'bridge_map', 
-        'tree_map',
-        'circle_map',
-        'double_bubble_map',
-        'flow_map',
-        'brace_map',
-        'multi_flow_map',
-        'concept_map',
-        'mindmap',
-        'mind_map'  # Note: both mindmap and mind_map are supported for compatibility
+        "bubble_map",
+        "bridge_map",
+        "tree_map",
+        "circle_map",
+        "double_bubble_map",
+        "flow_map",
+        "brace_map",
+        "multi_flow_map",
+        "concept_map",
+        "mindmap",
+        "mind_map",  # Note: both mindmap and mind_map are supported for compatibility
     ]
 
     # Filter to only include types that have prompts in the registry
@@ -81,29 +83,25 @@ def get_available_diagram_types() -> list:
 
     return sorted(available_types)
 
+
 def get_prompt_metadata(diagram_type: str) -> Dict[str, Any]:
     """Get metadata about a diagram type's prompts."""
-    metadata = {
-        'has_generation': False,
-        'has_classification': False,
-        'has_extraction': False,
-        'languages': []
-    }
+    metadata = {"has_generation": False, "has_classification": False, "has_extraction": False, "languages": []}
 
     for key in PROMPT_REGISTRY.keys():
         # Check if key starts with diagram_type followed by underscore
         if key.startswith(f"{diagram_type}_"):
-            if 'generation' in key:
-                metadata['has_generation'] = True
-            elif 'classification' in key:
-                metadata['has_classification'] = True
-            elif 'extraction' in key:
-                metadata['has_extraction'] = True
+            if "generation" in key:
+                metadata["has_generation"] = True
+            elif "classification" in key:
+                metadata["has_classification"] = True
+            elif "extraction" in key:
+                metadata["has_extraction"] = True
 
-            if '_en' in key:
-                metadata['languages'].append('en')
-            elif '_zh' in key:
-                metadata['languages'].append('zh')
+            if "_en" in key:
+                metadata["languages"].append("en")
+            elif "_zh" in key:
+                metadata["languages"].append("zh")
 
-    metadata['languages'] = list(set(metadata['languages']))
+    metadata["languages"] = list(set(metadata["languages"]))
     return metadata

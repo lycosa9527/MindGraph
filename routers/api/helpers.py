@@ -11,7 +11,7 @@ import logging
 import time
 
 from fastapi import HTTPException, Request
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
@@ -21,7 +21,7 @@ from utils.auth import get_jwt_secret
 _logger = logging.getLogger(__name__)
 
 
-def log_diagram_edit(user: User, db: Session, count: int = 1) -> None:
+async def log_diagram_edit(user: User, db: AsyncSession, count: int = 1) -> None:
     """Log diagram_edit events to UserActivityLog for teacher usage tracking."""
     if getattr(user, "role", None) != "user" or count < 1:
         return
@@ -34,11 +34,11 @@ def log_diagram_edit(user: User, db: Session, count: int = 1) -> None:
                 created_at=now,
             )
             db.add(log_entry)
-        db.commit()
+        await db.commit()
     except Exception as exc:
         _logger.debug("Failed to log diagram_edit: %s", exc)
         try:
-            db.rollback()
+            await db.rollback()
         except Exception as rollback_exc:
             _logger.debug("Rollback after activity log failure: %s", rollback_exc)
 

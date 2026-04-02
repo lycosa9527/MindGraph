@@ -12,13 +12,13 @@ Proprietary License
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional, List, Dict, Any
 import logging
 
 from sqlalchemy import select, delete, and_
 from sqlalchemy.sql.functions import count as sql_count
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.gewe_contact import GeweContact
 from services.redis.redis_client import RedisOperations, is_redis_available
@@ -38,7 +38,7 @@ class GeweContactDB:
     Similar to xxxbot-pad's contacts_db pattern.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """
         Initialize contact database service.
 
@@ -48,7 +48,7 @@ class GeweContactDB:
         self.db = db
         self._redis = RedisOperations()
 
-    def save_contact(
+    async def save_contact(
         self,
         app_id: str,
         wxid: str,
@@ -89,9 +89,10 @@ class GeweContactDB:
 
             # JSONB columns accept dicts directly — no json.dumps needed.
 
-            existing = self.db.execute(
+            result = await self.db.execute(
                 select(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid == wxid))
-            ).scalar_one_or_none()
+            )
+            existing = result.scalar_one_or_none()
 
             if existing:
                 existing.nickname = nickname
@@ -101,7 +102,7 @@ class GeweContactDB:
                 existing.contact_type = contact_type
                 existing.region = region
                 existing.extra_data = extra_data
-                existing.last_updated = datetime.utcnow()
+                existing.last_updated = datetime.now(UTC)
             else:
                 contact = GeweContact(
                     app_id=app_id,
@@ -113,11 +114,11 @@ class GeweContactDB:
                     contact_type=contact_type,
                     region=region,
                     extra_data=extra_data,
-                    last_updated=datetime.utcnow(),
+                    last_updated=datetime.now(UTC),
                 )
                 self.db.add(contact)
 
-            self.db.commit()
+            await self.db.commit()
 
             # Invalidate Redis cache (write-through pattern)
             if is_redis_available():
@@ -130,10 +131,10 @@ class GeweContactDB:
             return True
         except Exception as e:
             logger.error("Failed to save contact: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
             return False
 
-    def save_contacts_batch(self, app_id: str, contacts: List[Dict[str, Any]]) -> int:
+    async def save_contacts_batch(self, app_id: str, contacts: List[Dict[str, Any]]) -> int:
         """
         Save multiple contacts in batch.
 
@@ -150,7 +151,7 @@ class GeweContactDB:
             if not wxid:
                 continue
 
-            if self.save_contact(
+            if await self.save_contact(
                 app_id=app_id,
                 wxid=wxid,
                 nickname=contact.get("nickname") or contact.get("NickName"),
@@ -165,7 +166,7 @@ class GeweContactDB:
 
         return saved_count
 
-    def get_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:
+    async def get_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:
         """
         Get contact from database with Redis cache lookup.
 
@@ -197,9 +198,10 @@ class GeweContactDB:
 
         # Cache miss - load from database
         try:
-            contact = self.db.execute(
+            result = await self.db.execute(
                 select(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid == wxid))
-            ).scalar_one_or_none()
+            )
+            contact = result.scalar_one_or_none()
 
             if not contact:
                 return None
@@ -241,7 +243,7 @@ class GeweContactDB:
             logger.error("Failed to get contact: %s", exc, exc_info=True)
             return None
 
-    def get_contacts(
+    async def get_contacts(
         self,
         app_id: str,
         contact_type: Optional[str] = None,
@@ -273,10 +275,10 @@ class GeweContactDB:
             if offset:
                 query = query.offset(offset)
 
-            result = self.db.execute(query)
+            db_result = await self.db.execute(query)
             contacts = []
 
-            for contact in result.scalars().all():
+            for contact in db_result.scalars().all():
                 contact_dict = {
                     "wxid": contact.wxid,
                     "nickname": contact.nickname,
@@ -304,7 +306,7 @@ class GeweContactDB:
             logger.error("Failed to get contacts: %s", e, exc_info=True)
             return []
 
-    def delete_contact(self, app_id: str, wxid: str) -> bool:
+    async def delete_contact(self, app_id: str, wxid: str) -> bool:
         """
         Delete contact from database.
 
@@ -316,10 +318,10 @@ class GeweContactDB:
             True if deleted successfully, False otherwise
         """
         try:
-            result = self.db.execute(
+            result = await self.db.execute(
                 delete(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid == wxid))
             )
-            self.db.commit()
+            await self.db.commit()
 
             # Invalidate Redis cache
             if is_redis_available():
@@ -332,10 +334,10 @@ class GeweContactDB:
             return result.rowcount > 0
         except Exception as e:
             logger.error("Failed to delete contact: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
             return False
 
-    def get_contacts_count(self, app_id: str, contact_type: Optional[str] = None) -> int:
+    async def get_contacts_count(self, app_id: str, contact_type: Optional[str] = None) -> int:
         """
         Get count of contacts.
 
@@ -352,7 +354,8 @@ class GeweContactDB:
             if contact_type:
                 query = query.where(GeweContact.contact_type == contact_type)
 
-            return self.db.execute(query).scalar() or 0
+            count_result = await self.db.execute(query)
+            return count_result.scalar() or 0
         except Exception as e:
             logger.error("Failed to get contacts count: %s", e, exc_info=True)
             return 0

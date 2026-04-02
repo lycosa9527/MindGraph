@@ -1,6 +1,5 @@
 """Post-accept join handshake (participants, editors, user_joined)."""
 
-import asyncio
 import logging
 from typing import Any, Dict, List
 
@@ -33,12 +32,8 @@ async def _send_live_spec_snapshot(
     if not redis:
         return
     try:
-        ttl_sec = await asyncio.to_thread(
-            get_workshop_redis_ttl_seconds,
-            diagram_id,
-        )
-        doc = await asyncio.to_thread(
-            ensure_live_spec_seeded,
+        ttl_sec = await get_workshop_redis_ttl_seconds(diagram_id)
+        doc = await ensure_live_spec_seeded(
             redis,
             code,
             diagram_id,
@@ -96,7 +91,7 @@ async def send_canvas_collab_join_handshake(
     """Send joined payload, replay remote editors, broadcast user_joined."""
     participant_ids = await workshop_service.get_participants(code)
     username = getattr(user, "username", None) or f"User {user.id}"
-    participants_with_names = build_participants_with_names(participant_ids)
+    participants_with_names = await build_participants_with_names(participant_ids)
 
     joined_payload: Dict[str, Any] = {
         "type": "joined",

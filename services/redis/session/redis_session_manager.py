@@ -29,7 +29,7 @@ import json
 import logging
 import time
 from typing import Optional, Dict, Any
-from datetime import datetime
+from datetime import UTC, datetime
 
 from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
@@ -780,7 +780,7 @@ class RedisSessionManager:
         try:
             notification_key = _get_invalidation_notification_key(user_id, old_token_hash)
             notification_data = {
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(tz=UTC).isoformat(),
                 "ip_address": ip_address or "unknown",
             }
 
@@ -1025,7 +1025,7 @@ class RefreshTokenManager:
 
             # Token data with device binding
             token_data = {
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(tz=UTC).isoformat(),
                 "ip_address": ip_address,
                 "user_agent": user_agent[:200],  # Truncate to prevent bloat
                 "device_hash": device_hash,

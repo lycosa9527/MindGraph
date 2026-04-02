@@ -6,7 +6,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Optional
 from zoneinfo import ZoneInfo
 
@@ -81,11 +81,11 @@ def compute_workshop_expires_at(
 
 def redis_ttl_seconds_for_expires_at(expires_at_naive_utc: datetime) -> int:
     """Seconds until expiry for Redis setex; at least 1."""
-    now = datetime.utcnow()
+    now = datetime.now(tz=UTC)
     if expires_at_naive_utc.tzinfo is not None:
-        exp = expires_at_naive_utc.astimezone(timezone.utc).replace(tzinfo=None)
+        exp = expires_at_naive_utc.astimezone(UTC)
     else:
-        exp = expires_at_naive_utc
+        exp = expires_at_naive_utc.replace(tzinfo=UTC)
     delta = (exp - now).total_seconds()
     return max(1, int(delta))
 
@@ -94,14 +94,22 @@ def is_workshop_expired(expires_at_naive_utc: Optional[datetime]) -> bool:
     """True if expiry time is in the past or None treated as unknown (not expired)."""
     if expires_at_naive_utc is None:
         return False
-    now = datetime.utcnow()
-    return expires_at_naive_utc <= now
+    now = datetime.now(tz=UTC)
+    if expires_at_naive_utc.tzinfo is None:
+        exp = expires_at_naive_utc.replace(tzinfo=UTC)
+    else:
+        exp = expires_at_naive_utc.astimezone(UTC)
+    return exp <= now
 
 
 def remaining_seconds(expires_at_naive_utc: Optional[datetime]) -> Optional[int]:
     """Seconds until expiry, or None if no expiry set."""
     if expires_at_naive_utc is None:
         return None
-    now = datetime.utcnow()
-    sec = int((expires_at_naive_utc - now).total_seconds())
+    now = datetime.now(tz=UTC)
+    if expires_at_naive_utc.tzinfo is None:
+        exp = expires_at_naive_utc.replace(tzinfo=UTC)
+    else:
+        exp = expires_at_naive_utc.astimezone(UTC)
+    sec = int((exp - now).total_seconds())
     return max(0, sec)

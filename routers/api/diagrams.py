@@ -17,7 +17,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 import io
 import json
@@ -29,10 +29,11 @@ from fastapi.responses import Response
 import qrcode
 from qrcode import constants as qrcode_constants
 from PIL import Image
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.diagram_snapshots import DiagramSnapshot
 from models.domain.diagrams import Diagram
@@ -116,8 +117,8 @@ async def create_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
 
 
@@ -149,7 +150,7 @@ async def list_diagrams(
                 title=d["title"],
                 diagram_type=d["diagram_type"],
                 thumbnail=d.get("thumbnail"),
-                updated_at=datetime.fromisoformat(d["updated_at"]) if d.get("updated_at") else datetime.utcnow(),
+                updated_at=datetime.fromisoformat(d["updated_at"]) if d.get("updated_at") else datetime.now(UTC),
                 is_pinned=d.get("is_pinned", False),
             )
         )
@@ -192,8 +193,8 @@ async def get_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
 
 
@@ -203,25 +204,22 @@ async def update_diagram(
     req: DiagramUpdateRequest,
     request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Update an existing diagram.
 
     Rate limited: 100 requests per minute per user.
     """
-    # Rate limiting
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("diagrams", identifier, max_requests=100, window_seconds=60)
 
     cache = get_diagram_cache()
 
-    # Get existing diagram
     existing = await cache.get_diagram(current_user.id, diagram_id)
     if not existing:
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    # Merge updates
     title = req.title if req.title is not None else existing["title"]
     spec = req.spec if req.spec is not None else existing["spec"]
     thumbnail = req.thumbnail if req.thumbnail is not None else existing.get("thumbnail")
@@ -230,7 +228,7 @@ async def update_diagram(
         user_id=current_user.id,
         diagram_id=diagram_id,
         title=title,
-        diagram_type=existing["diagram_type"],  # Cannot change type
+        diagram_type=existing["diagram_type"],
         spec=spec,
         language=existing.get("language", "zh"),
         thumbnail=thumbnail,
@@ -239,7 +237,6 @@ async def update_diagram(
     if not success:
         raise HTTPException(status_code=400, detail=error or "Failed to update diagram")
 
-    # Get updated diagram
     diagram = await cache.get_diagram(current_user.id, diagram_id)
     if not diagram:
         raise HTTPException(status_code=500, detail="Diagram updated but failed to retrieve")
@@ -247,7 +244,7 @@ async def update_diagram(
     logger.info("[Diagrams] Updated diagram %s for user %s", diagram_id, current_user.id)
 
     edit_count = getattr(req, "edit_count", None)
-    log_diagram_edit(current_user, db, count=edit_count if edit_count else 1)
+    await log_diagram_edit(current_user, db, count=edit_count if edit_count else 1)
 
     return DiagramResponse(
         id=diagram["id"],
@@ -256,8 +253,8 @@ async def update_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
 
 
@@ -336,8 +333,8 @@ async def duplicate_diagram(
         spec=diagram["spec"],
         language=diagram.get("language", "zh"),
         thumbnail=diagram.get("thumbnail"),
-        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.utcnow(),
-        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.utcnow(),
+        created_at=datetime.fromisoformat(diagram["created_at"]) if diagram.get("created_at") else datetime.now(UTC),
+        updated_at=datetime.fromisoformat(diagram["updated_at"]) if diagram.get("updated_at") else datetime.now(UTC),
     )
 
 
@@ -630,7 +627,7 @@ async def take_snapshot(
     diagram_id: str,
     req: SnapshotTakeRequest,
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -646,17 +643,18 @@ async def take_snapshot(
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    diagram = db.query(Diagram).filter_by(id=diagram_id, user_id=current_user.id, is_deleted=False).first()
+    result = await db.execute(
+        select(Diagram).where(Diagram.id == diagram_id, Diagram.user_id == current_user.id, ~Diagram.is_deleted)
+    )
+    diagram = result.scalar_one_or_none()
     if not diagram:
         raise HTTPException(
             status_code=409,
             detail=("Snapshot storage needs the diagram saved to the database. Save the diagram, then try again."),
         )
 
-    # Strip llm_results unconditionally — snapshots are diagram content only.
     spec = {k: v for k, v in req.spec.items() if k != "llm_results"}
 
-    # Guard against oversized specs (same limit as diagram saves).
     spec_size_kb = len(json.dumps(spec).encode()) / 1024
     if spec_size_kb > MAX_SPEC_SIZE_KB:
         raise HTTPException(
@@ -664,17 +662,20 @@ async def take_snapshot(
             detail=(f"Snapshot spec too large ({spec_size_kb:.1f} KB > {MAX_SPEC_SIZE_KB} KB)"),
         )
 
-    existing = (
-        db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id).order_by(DiagramSnapshot.version_number.asc()).all()
+    existing_result = await db.execute(
+        select(DiagramSnapshot)
+        .where(DiagramSnapshot.diagram_id == diagram_id)
+        .order_by(DiagramSnapshot.version_number.asc())
     )
+    existing = existing_result.scalars().all()
 
     if len(existing) >= _SNAPSHOT_MAX:
         oldest = existing[0]
-        db.delete(oldest)
-        db.flush()
+        await db.delete(oldest)
+        await db.flush()
         for snap in existing[1:]:
             snap.version_number -= 1
-        db.flush()
+        await db.flush()
         new_version = _SNAPSHOT_MAX
     else:
         new_version = len(existing) + 1
@@ -687,9 +688,9 @@ async def take_snapshot(
     )
     db.add(snapshot)
     try:
-        db.commit()
+        await db.commit()
     except IntegrityError:
-        db.rollback()
+        await db.rollback()
         logger.warning(
             "[Snapshots] Concurrent snapshot conflict for diagram %s user %s",
             diagram_id,
@@ -699,7 +700,7 @@ async def take_snapshot(
             status_code=409,
             detail="Another snapshot was taken at the same time. Please try again.",
         ) from None
-    db.refresh(snapshot)
+    await db.refresh(snapshot)
 
     logger.info(
         "[Snapshots] User %s took snapshot v%d for diagram %s",
@@ -718,7 +719,7 @@ async def take_snapshot(
 async def list_snapshots(
     diagram_id: str,
     request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -732,12 +733,12 @@ async def list_snapshots(
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    rows = (
-        db.query(DiagramSnapshot)
-        .filter_by(diagram_id=diagram_id, user_id=current_user.id)
+    result = await db.execute(
+        select(DiagramSnapshot)
+        .where(DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.user_id == current_user.id)
         .order_by(DiagramSnapshot.version_number.asc())
-        .all()
     )
+    rows = result.scalars().all()
     return SnapshotListResponse(
         snapshots=[
             SnapshotMetadata(
@@ -758,7 +759,7 @@ async def delete_snapshot(
     diagram_id: str,
     request: Request,
     version_number: int = Path(..., ge=1, le=10),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -773,7 +774,12 @@ async def delete_snapshot(
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    snapshot = db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id, version_number=version_number).first()
+    snap_result = await db.execute(
+        select(DiagramSnapshot).where(
+            DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.version_number == version_number
+        )
+    )
+    snapshot = snap_result.scalar_one_or_none()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     if snapshot.user_id != current_user.id:
@@ -782,16 +788,19 @@ async def delete_snapshot(
             detail="Not authorized to delete this snapshot",
         )
 
-    db.delete(snapshot)
-    db.flush()
+    await db.delete(snapshot)
+    await db.flush()
 
-    remaining = (
-        db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id).order_by(DiagramSnapshot.version_number.asc()).all()
+    remaining_result = await db.execute(
+        select(DiagramSnapshot)
+        .where(DiagramSnapshot.diagram_id == diagram_id)
+        .order_by(DiagramSnapshot.version_number.asc())
     )
+    remaining = remaining_result.scalars().all()
     for idx, snap in enumerate(remaining, start=1):
         if snap.version_number != idx:
             snap.version_number = idx
-    db.commit()
+    await db.commit()
 
     logger.info(
         "[Snapshots] User %s deleted snapshot v%d for diagram %s (%d remaining)",
@@ -820,7 +829,7 @@ async def recall_snapshot(
     diagram_id: str,
     request: Request,
     version_number: int = Path(..., ge=1, le=10),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """
@@ -835,7 +844,12 @@ async def recall_snapshot(
     if not await _diagram_visible_in_cache(current_user.id, diagram_id):
         raise HTTPException(status_code=404, detail="Diagram not found")
 
-    snapshot = db.query(DiagramSnapshot).filter_by(diagram_id=diagram_id, version_number=version_number).first()
+    snap_result = await db.execute(
+        select(DiagramSnapshot).where(
+            DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.version_number == version_number
+        )
+    )
+    snapshot = snap_result.scalar_one_or_none()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
     if snapshot.user_id != current_user.id:

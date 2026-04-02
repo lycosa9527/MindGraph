@@ -18,8 +18,9 @@ import hashlib
 import logging
 import os
 
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 import numpy as np
 
 from clients.dashscope_embedding import DashScopeEmbeddingClient, get_embedding_client
@@ -52,12 +53,12 @@ class EmbeddingCache:
         """Generate hash for text (for cache key)."""
         return hashlib.md5(text.encode("utf-8")).hexdigest()
 
-    def get_document_embedding(self, db: Session, text: str) -> Optional[List[float]]:
+    async def get_document_embedding(self, db: AsyncSession, text: str) -> Optional[List[float]]:
         """
         Get document embedding from database cache (permanent cache).
 
         Args:
-            db: Database session
+            db: Async database session
             text: Text to embed
 
         Returns:
@@ -68,11 +69,14 @@ class EmbeddingCache:
         provider_name = "dashscope"
 
         try:
-            embedding_record = (
-                db.query(Embedding)
-                .filter_by(model_name=model_name, provider_name=provider_name, hash=text_hash)
-                .first()
+            result = await db.execute(
+                select(Embedding).where(
+                    Embedding.model_name == model_name,
+                    Embedding.provider_name == provider_name,
+                    Embedding.hash == text_hash,
+                )
             )
+            embedding_record = result.scalars().first()
 
             if embedding_record:
                 hash_preview = text_hash[:8] + "..."
@@ -86,12 +90,12 @@ class EmbeddingCache:
 
         return None
 
-    def cache_document_embedding(self, db: Session, text: str, embedding: List[float]) -> None:
+    async def cache_document_embedding(self, db: AsyncSession, text: str, embedding: List[float]) -> None:
         """
         Cache document embedding in database (permanent cache).
 
         Args:
-            db: Database session
+            db: Async database session
             text: Text that was embedded
             embedding: Embedding vector
         """
@@ -100,12 +104,14 @@ class EmbeddingCache:
         provider_name = "dashscope"
 
         try:
-            # Check if already exists
-            existing = (
-                db.query(Embedding)
-                .filter_by(model_name=model_name, provider_name=provider_name, hash=text_hash)
-                .first()
+            result = await db.execute(
+                select(Embedding).where(
+                    Embedding.model_name == model_name,
+                    Embedding.provider_name == provider_name,
+                    Embedding.hash == text_hash,
+                )
             )
+            existing = result.scalars().first()
 
             if existing:
                 hash_preview = text_hash[:8] + "..."
@@ -115,25 +121,23 @@ class EmbeddingCache:
                 )
                 return
 
-            # Create new embedding cache record
             embedding_record = Embedding(model_name=model_name, provider_name=provider_name, hash=text_hash)
             embedding_record.set_embedding(embedding)
 
             db.add(embedding_record)
-            db.commit()
+            await db.commit()
             hash_preview = text_hash[:8] + "..."
             logger.debug("[EmbeddingCache] Cached document embedding for hash %s", hash_preview)
 
         except IntegrityError:
-            # Race condition: another process cached it first
-            db.rollback()
+            await db.rollback()
             hash_preview = text_hash[:8] + "..."
             logger.debug(
                 "[EmbeddingCache] Embedding already cached (race condition) for hash %s",
                 hash_preview,
             )
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.warning("[EmbeddingCache] Failed to cache document embedding: %s", e)
 
     def _vset_key(self, model_name: str) -> str:

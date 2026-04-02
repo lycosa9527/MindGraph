@@ -40,16 +40,10 @@ BRACE_DIMENSION_TYPES_EN = """Common dimension types (reference):
 - Hierarchical Structure (by levels)"""
 
 
-def get_brace_dimensions_prompt(
-    center_topic: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
-) -> str:
+def get_brace_dimensions_prompt(center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
     """Stage 1: Generate decomposition dimension options."""
-    dim_types = BRACE_DIMENSION_TYPES_ZH if language == 'zh' else BRACE_DIMENSION_TYPES_EN
-    if language == 'zh':
+    dim_types = BRACE_DIMENSION_TYPES_ZH if language == "zh" else BRACE_DIMENSION_TYPES_EN
+    if language == "zh":
         prompt = f"""为主题"{center_topic}"生成{count}个可能的拆解维度。
 
 教学背景：{context_desc}
@@ -85,22 +79,17 @@ Generate {count} dimensions:"""
     if batch_num > 1:
         prompt += (
             "\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
 
 
 def get_brace_parts_prompt(
-    center_topic: str,
-    dimension: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, dimension: str, context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Stage 2: Generate parts using selected dimension."""
-    if language == 'zh':
+    if language == "zh":
         if dimension:
             prompt = f"""需要从"{dimension}"这个视角来拆解整体"{center_topic}"。
 
@@ -168,25 +157,19 @@ Generate {count} component parts:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的部分，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
 
 
 def get_brace_subparts_prompt(
-    center_topic: str,
-    part_name: str,
-    dimension: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, part_name: str, dimension: str, context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Stage 3: Generate subparts for a selected part."""
-    dim_effective = (dimension or '').strip()
-    part_effective = (part_name or '').strip()
-    if language == 'zh':
+    dim_effective = (dimension or "").strip()
+    part_effective = (part_name or "").strip()
+    if language == "zh":
         if dim_effective:
             prompt = f"""为以下部分生成{count}个子部分：{part_effective}
 
@@ -250,7 +233,7 @@ Generate {count} subparts:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的子部分，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
@@ -279,16 +262,10 @@ TREE_DIMENSION_TYPES_EN = """Common dimension types (reference):
 - Geographic Region (Spatial)"""
 
 
-def get_tree_dimensions_prompt(
-    center_topic: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
-) -> str:
+def get_tree_dimensions_prompt(center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
     """Stage 1: Generate classification dimension options."""
-    dim_types = TREE_DIMENSION_TYPES_ZH if language == 'zh' else TREE_DIMENSION_TYPES_EN
-    if language == 'zh':
+    dim_types = TREE_DIMENSION_TYPES_ZH if language == "zh" else TREE_DIMENSION_TYPES_EN
+    if language == "zh":
         prompt = f"""为主题"{center_topic}"生成{count}个可能的分类维度。
 
 教学背景：{context_desc}
@@ -324,22 +301,17 @@ Generate {count} dimensions:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
 
 
 def get_tree_categories_prompt(
-    center_topic: str,
-    dimension: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, dimension: str, context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Stage 2: Generate categories using selected dimension."""
-    if language == 'zh':
+    if language == "zh":
         if dimension:
             prompt = f"""为主题"{center_topic}"生成{count}个分类类别，使用分类维度：{dimension}
 
@@ -368,10 +340,7 @@ def get_tree_categories_prompt(
 生成{count}个类别："""
     else:
         if dimension:
-            header = (
-                f"Generate {count} classification categories for: {center_topic}, "
-                f"using dimension: {dimension}"
-            )
+            header = f"Generate {count} classification categories for: {center_topic}, using dimension: {dimension}"
             req1 = f'1. ALL categories MUST follow the "{dimension}" dimension'
         else:
             header = f"Generate {count} classification categories for: {center_topic}"
@@ -392,23 +361,17 @@ Generate {count} categories:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的类别，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
 
 
 def get_tree_items_prompt(
-    center_topic: str,
-    category_name: str,
-    dimension: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, category_name: str, dimension: str, context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Stage 3: Generate items for a selected category."""
-    if language == 'zh':
+    if language == "zh":
         prompt = f"""为类别"{category_name}"生成{count}个具体条目
 
 主题：{center_topic}
@@ -440,7 +403,7 @@ Generate {count} items:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的条目，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
@@ -467,16 +430,10 @@ FLOW_DIMENSION_TYPES_EN = """Common dimension types (reference):
 - Type classification (by category)"""
 
 
-def get_flow_dimensions_prompt(
-    center_topic: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
-) -> str:
+def get_flow_dimensions_prompt(center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
     """Stage 1: Generate flow decomposition dimensions."""
-    dim_types = FLOW_DIMENSION_TYPES_ZH if language == 'zh' else FLOW_DIMENSION_TYPES_EN
-    if language == 'zh':
+    dim_types = FLOW_DIMENSION_TYPES_ZH if language == "zh" else FLOW_DIMENSION_TYPES_EN
+    if language == "zh":
         prompt = f"""为主题"{center_topic}"生成{count}个可能的拆解维度。
 
 教学背景：{context_desc}
@@ -512,21 +469,15 @@ Generate {count} decomposition dimensions:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Ensure different perspectives, avoid duplication."
         )
     return prompt
 
 
-def get_flow_steps_prompt(
-    center_topic: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
-) -> str:
+def get_flow_steps_prompt(center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
     """Stage 1: Generate major steps (chronological)."""
-    if language == 'zh':
+    if language == "zh":
         prompt = f"""为流程"{center_topic}"生成{count}个按时间顺序排列的步骤
 
 教学背景：{context_desc}
@@ -560,22 +511,17 @@ Generate {count} ordered steps:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的步骤，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
 
 
 def get_flow_substeps_prompt(
-    center_topic: str,
-    step_name: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, step_name: str, context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Stage 2: Generate substeps for a selected step."""
-    if language == 'zh':
+    if language == "zh":
         prompt = f"""为步骤"{step_name}"生成{count}个子步骤
 
 流程：{center_topic}
@@ -607,7 +553,7 @@ Generate {count} substeps:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的子步骤，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
@@ -635,25 +581,20 @@ BRIDGE_RELATIONSHIP_TYPES_EN = """Common analogy relationships reference:
 
 
 def get_bridge_pairs_prompt(
-    center_topic: str,
-    dimension: Optional[str],
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, dimension: Optional[str], context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Generate analogy pairs (with or without fixed dimension)."""
-    rel_types = BRIDGE_RELATIONSHIP_TYPES_ZH if language == 'zh' else BRIDGE_RELATIONSHIP_TYPES_EN
+    rel_types = BRIDGE_RELATIONSHIP_TYPES_ZH if language == "zh" else BRIDGE_RELATIONSHIP_TYPES_EN
     is_specific = dimension and dimension.strip()
     topic_hint = ""
     if center_topic and center_topic.strip():
         topic_hint = (
             f"（若用户指定了主题「{center_topic}」，可结合该主题思考）"
-            if language == 'zh'
+            if language == "zh"
             else f" (If user specified topic '{center_topic}', consider it)"
         )
 
-    if language == 'zh':
+    if language == "zh":
         if is_specific:
             focus = f"""
 ⚠️ 重要：用户在桥形图的"关系维度"字段中指定了「{dimension}」
@@ -759,9 +700,8 @@ Generate {count} analogies:"""
 
     if batch_num > 1:
         prompt += (
-            f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，"
-            "从新的领域和角度寻找类比，避免与之前批次重复。"
-            if language == 'zh'
+            f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的领域和角度寻找类比，避免与之前批次重复。"
+            if language == "zh"
             else (
                 f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
                 "from new domains and angles, avoid any repetition from previous "
@@ -777,7 +717,7 @@ def get_bridge_dimensions_prompt(
     language: str,
     count: int,
     batch_num: int,
-    existing_pairs: Optional[list] = None
+    existing_pairs: Optional[list] = None,
 ) -> str:
     """Stage 1: Generate relationship dimension options.
 
@@ -785,16 +725,13 @@ def get_bridge_dimensions_prompt(
     relationship dimension that fits those pairs.
     When existing_pairs is empty, suggest diverse dimension options.
     """
-    rel_types = BRIDGE_RELATIONSHIP_TYPES_ZH if language == 'zh' else BRIDGE_RELATIONSHIP_TYPES_EN
+    rel_types = BRIDGE_RELATIONSHIP_TYPES_ZH if language == "zh" else BRIDGE_RELATIONSHIP_TYPES_EN
     pairs = existing_pairs or []
 
     if pairs:
-        pairs_text = "\n".join(
-            f"- {p.get('left', '')} | {p.get('right', '')}"
-            for p in pairs[:10]
-        )
+        pairs_text = "\n".join(f"- {p.get('left', '')} | {p.get('right', '')}" for p in pairs[:10])
         infer_count = min(count, 5)
-        if language == 'zh':
+        if language == "zh":
             prompt = f"""用户已在桥形图中填写了以下类比对（左项 | 右项）：
 {pairs_text}
 
@@ -830,11 +767,9 @@ Requirements:
 Generate {infer_count} relationship dimensions:"""
     else:
         topic_hint = (
-            f"（若用户指定了主题「{center_topic}」，可结合该主题思考）"
-            if center_topic and center_topic.strip()
-            else ""
+            f"（若用户指定了主题「{center_topic}」，可结合该主题思考）" if center_topic and center_topic.strip() else ""
         )
-        if language == 'zh':
+        if language == "zh":
             prompt = f"""为桥形图生成{count}个可能的类比关系维度。{topic_hint}
 
 教学背景：{context_desc}
@@ -873,7 +808,7 @@ Generate {count} relationship dimensions:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保提供不同角度的维度，避免重复。"
-            if language == 'zh'
+            if language == "zh"
             else f"\n\nNote: Batch {batch_num}. Provide different perspectives, avoid repetition."
         )
     return prompt
@@ -883,15 +818,10 @@ Generate {count} relationship dimensions:"""
 # MIND MAP - Aligned with MIND_MAP_AGENT_GENERATION
 # ---------------------------------------------------------------------------
 
-def get_mindmap_branches_prompt(
-    center_topic: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
-) -> str:
+
+def get_mindmap_branches_prompt(center_topic: str, context_desc: str, language: str, count: int, batch_num: int) -> str:
     """Stage 1: Generate main branch ideas."""
-    if language == 'zh':
+    if language == "zh":
         prompt = f"""为以下主题生成{count}个思维导图分支想法：{center_topic}
 
 教学背景：{context_desc}
@@ -925,9 +855,8 @@ Generate {count} branch ideas:"""
 
     if batch_num > 1:
         prompt += (
-            f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性和创造性，"
-            "\n从新的维度和角度思考，避免与之前批次重复。"
-            if language == 'zh'
+            f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性和创造性，\n从新的维度和角度思考，避免与之前批次重复。"
+            if language == "zh"
             else (
                 f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
                 "and creativity from new dimensions and angles,\n"
@@ -938,15 +867,10 @@ Generate {count} branch ideas:"""
 
 
 def get_mindmap_children_prompt(
-    center_topic: str,
-    branch_name: str,
-    context_desc: str,
-    language: str,
-    count: int,
-    batch_num: int
+    center_topic: str, branch_name: str, context_desc: str, language: str, count: int, batch_num: int
 ) -> str:
     """Stage 2: Generate sub-branches for a selected branch."""
-    if language == 'zh':
+    if language == "zh":
         prompt = f"""为思维导图分支"{branch_name}"生成{count}个子分支想法：
 
 主题：{center_topic}
@@ -985,7 +909,7 @@ Generate {count} sub-branch ideas:"""
     if batch_num > 1:
         prompt += (
             f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性和创造性，避免与之前批次重复。"
-            if language == 'zh'
+            if language == "zh"
             else (
                 f"\n\nNote: This is batch {batch_num}. Ensure MAXIMUM diversity "
                 "and creativity, avoid repetition from previous batches."

@@ -16,9 +16,11 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from routers.auth.dependencies import require_admin_or_manager
 from routers.features.workshop_chat.conditional_list_response import (
@@ -66,12 +68,12 @@ def _escape_ilike_literal(text: str) -> str:
 
 
 @router.get("/org-members", response_model=OrgMembersPage)
-def list_org_members(
+async def list_org_members(
     org_id: Optional[int] = None,
     q: Optional[str] = None,
     limit: int = _ORG_MEMBER_LIMIT_DEFAULT,
     offset: int = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """List members in the user's organization (including the current user).
@@ -95,8 +97,10 @@ def list_org_members(
         pattern = f"%{_escape_ilike_literal(raw_q)}%"
         filters.append(User.name.ilike(pattern, escape="\\"))
 
-    total = db.query(User).filter(*filters).count()
-    users = db.query(User).filter(*filters).order_by(User.name).offset(off).limit(lim).all()
+    count_result = await db.execute(select(sa_count()).select_from(User).where(*filters))
+    total = count_result.scalar_one()
+    users_result = await db.execute(select(User).where(*filters).order_by(User.name).offset(off).limit(lim))
+    users = users_result.scalars().all()
     items = [
         OrgMemberRow(
             id=u.id,
@@ -135,7 +139,7 @@ async def initialize_default_channels_get():
 
 @router.post("/channels/initialize", status_code=status.HTTP_200_OK)
 async def initialize_default_channels(
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Seed the global announce channel and org-level default channels.
@@ -144,10 +148,10 @@ async def initialize_default_channels(
     Both seed functions are idempotent.
     """
     try:
-        seed_announce_channel(db, current_user.id)
+        await seed_announce_channel(db, current_user.id)
         if not current_user.organization_id:
             return {"ok": True, "created": 0, "channels": []}
-        created = seed_default_channels(
+        created = await seed_default_channels(
             db,
             current_user.organization_id,
             current_user.id,
@@ -172,7 +176,7 @@ async def initialize_default_channels(
 @router.put("/channels/teaching-groups/order")
 async def reorder_teaching_groups(
     body: ReorderTeachingGroupsRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(require_admin_or_manager),
 ):
     """Set sidebar order for all top-level teaching groups in the org."""
@@ -181,7 +185,7 @@ async def reorder_teaching_groups(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not belong to an organization",
         )
-    ok = channel_service.reorder_teaching_groups(
+    ok = await channel_service.reorder_teaching_groups(
         db,
         current_user.organization_id,
         body.channel_ids,
@@ -201,7 +205,7 @@ async def reorder_teaching_groups(
 async def list_channels(
     request: Request,
     org_id: Optional[int] = None,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """List channels in the user's organization.
@@ -209,28 +213,29 @@ async def list_channels(
     Admins may pass ``org_id`` to view channels of another organization.
     """
     effective_org_id = get_effective_org_id(current_user, org_id)
-    etag = channels_list_etag(
+    etag = await channels_list_etag(
         db,
         effective_org_id,
         current_user.id,
         current_user,
     )
+    channels_body = await channel_service.list_channels(
+        db,
+        effective_org_id,
+        current_user.id,
+        current_user=current_user,
+    )
     return workshop_list_json_response(
         request,
         etag,
-        lambda: channel_service.list_channels(
-            db,
-            effective_org_id,
-            current_user.id,
-            current_user=current_user,
-        ),
+        lambda: channels_body,
     )
 
 
 @router.post("/channels", status_code=status.HTTP_201_CREATED)
 async def create_channel(
     body: CreateChannelRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(require_admin_or_manager),
 ):
     """Create a channel — group or lesson-study (admin or org manager).
@@ -242,7 +247,7 @@ async def create_channel(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not belong to an organization",
         )
-    return channel_service.create_channel(
+    return await channel_service.create_channel(
         db,
         name=body.name,
         organization_id=current_user.organization_id,
@@ -261,16 +266,16 @@ async def create_channel(
 async def update_channel(
     channel_id: int,
     body: UpdateChannelRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update a channel (manager or owner only, same org)."""
-    channel = access_channel(db, channel_id, current_user)
+    channel = await access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
     payload = body.model_dump(exclude_unset=True)
     clear_deadline = "deadline" in payload and payload["deadline"] is None
     deadline_val = None if clear_deadline else body.deadline
-    return channel_service.update_channel(
+    return await channel_service.update_channel(
         db,
         channel_id,
         name=body.name,
@@ -288,12 +293,12 @@ async def update_channel(
 @router.post("/channels/{channel_id}/read")
 async def mark_channel_read(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Advance the current user's read waterline to the latest channel message."""
-    access_channel(db, channel_id, current_user)
-    return channel_service.mark_channel_read(
+    await access_channel(db, channel_id, current_user)
+    return await channel_service.mark_channel_read(
         db,
         channel_id,
         current_user.id,
@@ -303,16 +308,16 @@ async def mark_channel_read(
 @router.delete("/channels/{channel_id}")
 async def archive_channel(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Archive a channel (same rules as channel settings: org managers or admins).
 
     Global announce channels require a full admin (see ``require_channel_manager``).
     """
-    channel = access_channel(db, channel_id, current_user)
+    channel = await access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
-    channel_service.archive_channel(db, channel_id)
+    await channel_service.archive_channel(db, channel_id)
     return {"ok": True}
 
 
@@ -322,46 +327,46 @@ async def archive_channel(
 @router.post("/channels/{channel_id}/join")
 async def join_channel(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Join a channel (must be in same org)."""
-    access_channel(db, channel_id, current_user)
-    channel_service.join_channel(db, channel_id, current_user.id)
+    await access_channel(db, channel_id, current_user)
+    await channel_service.join_channel(db, channel_id, current_user.id)
     return {"ok": True}
 
 
 @router.post("/channels/{channel_id}/leave")
 async def leave_channel(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Leave a channel."""
-    channel_service.leave_channel(db, channel_id, current_user.id)
+    await channel_service.leave_channel(db, channel_id, current_user.id)
     return {"ok": True}
 
 
 @router.get("/channels/{channel_id}/members")
 async def get_channel_members(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """List members of a channel (must belong to same org)."""
-    access_channel(db, channel_id, current_user)
-    return channel_service.get_channel_members(db, channel_id)
+    await access_channel(db, channel_id, current_user)
+    return await channel_service.get_channel_members(db, channel_id)
 
 
 @router.post("/channels/{channel_id}/invite")
 async def invite_channel_member(
     channel_id: int,
     body: InviteChannelMemberRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Add an organization member to a channel (managers / creators)."""
-    channel = channel_service.get_channel(db, channel_id)
+    channel = await channel_service.get_channel(db, channel_id)
     if not channel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -383,7 +388,7 @@ async def invite_channel_member(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not belong to an organization",
         )
-    result = channel_service.invite_user_to_channel(
+    result = await channel_service.invite_user_to_channel(
         db,
         channel_id,
         body.user_id,
@@ -412,11 +417,11 @@ async def invite_channel_member(
 )
 async def duplicate_teaching_group(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Duplicate a top-level teaching group (settings only; no lesson-study children)."""
-    channel = channel_service.get_channel(db, channel_id)
+    channel = await channel_service.get_channel(db, channel_id)
     if not channel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -433,7 +438,7 @@ async def duplicate_teaching_group(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User does not belong to an organization",
         )
-    result = channel_service.duplicate_teaching_group(
+    result = await channel_service.duplicate_teaching_group(
         db,
         channel_id,
         current_user.id,
@@ -453,13 +458,13 @@ async def duplicate_teaching_group(
 @router.post("/channels/{channel_id}/mute")
 async def toggle_mute(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Toggle mute state for the current user's channel subscription."""
-    access_channel(db, channel_id, current_user)
+    await access_channel(db, channel_id, current_user)
     try:
-        return channel_service.toggle_mute(db, channel_id, current_user.id)
+        return await channel_service.toggle_mute(db, channel_id, current_user.id)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -470,13 +475,13 @@ async def toggle_mute(
 @router.post("/channels/{channel_id}/pin")
 async def toggle_pin(
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Toggle pin-to-top state for the current user's channel subscription."""
-    access_channel(db, channel_id, current_user)
+    await access_channel(db, channel_id, current_user)
     try:
-        return channel_service.toggle_pin(db, channel_id, current_user.id)
+        return await channel_service.toggle_pin(db, channel_id, current_user.id)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -488,13 +493,13 @@ async def toggle_pin(
 async def update_preferences(
     channel_id: int,
     body: UpdateMemberPrefsRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update the current user's per-channel preferences (color, notifications)."""
-    access_channel(db, channel_id, current_user)
+    await access_channel(db, channel_id, current_user)
     try:
-        return channel_service.update_member_prefs(
+        return await channel_service.update_member_prefs(
             db,
             channel_id,
             current_user.id,
@@ -516,16 +521,16 @@ async def update_preferences(
 async def update_permissions(
     channel_id: int,
     body: UpdateChannelPermissionsRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update channel-level settings (type, posting policy, default flag).
 
     Requires manager or channel creator permissions.
     """
-    channel = access_channel(db, channel_id, current_user)
+    channel = await access_channel(db, channel_id, current_user)
     require_channel_manager(current_user, channel)
-    result = channel_service.update_channel_permissions(
+    result = await channel_service.update_channel_permissions(
         db,
         channel_id,
         channel_type=body.channel_type,

@@ -15,7 +15,7 @@ Proprietary License
 
 import asyncio
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from services.workshop import workshop_service
 
@@ -47,11 +47,11 @@ async def start_workshop_cleanup_scheduler(
             await asyncio.sleep(interval_seconds)
 
             logger.info("[WorkshopCleanup] Running cleanup of expired workshops...")
-            start_time = datetime.utcnow()
+            start_time = datetime.now(tz=UTC)
 
             cleaned_count = await workshop_service.cleanup_expired_workshops()
 
-            duration = (datetime.utcnow() - start_time).total_seconds()
+            duration = (datetime.now(tz=UTC) - start_time).total_seconds()
 
             if cleaned_count > 0:
                 logger.info(

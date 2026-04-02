@@ -10,6 +10,7 @@ Run with: python scripts/cleanup_stuck_chunk_test_documents.py
 import importlib
 import sys
 import os
+import traceback
 from pathlib import Path
 from datetime import datetime, timedelta
 
@@ -26,7 +27,7 @@ try:
 
     # Now import database session - this triggers model imports in config.database
     # which handles the correct import order for other models
-    from config.database import SessionLocal
+    from config.database import SyncSessionLocal
 
     # Now import the specific model we need
     # config.database already imported all necessary models in correct order
@@ -35,14 +36,10 @@ try:
 except ImportError as e:
     print(f"Error importing dependencies: {e}")
     print("\nPlease ensure you're in the correct Python environment.")
-    import traceback
-
     traceback.print_exc()
     sys.exit(1)
 except Exception as e:
     print(f"Error setting up models: {e}")
-    import traceback
-
     traceback.print_exc()
     sys.exit(1)
 
@@ -56,7 +53,7 @@ def cleanup_stuck_documents(user_id: int = None, reset_to: str = "failed", older
         reset_to: Status to set ('failed' or 'pending')
         older_than_minutes: Only reset documents stuck longer than this (default: 30 minutes)
     """
-    db = SessionLocal()
+    db = SyncSessionLocal()
 
     try:
         # Find documents stuck in 'processing' status
@@ -178,8 +175,6 @@ def cleanup_stuck_documents(user_id: int = None, reset_to: str = "failed", older
 
     except Exception as e:
         print(f"\n✗ Error: {e}")
-        import traceback
-
         traceback.print_exc()
         db.rollback()
         return []

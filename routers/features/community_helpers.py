@@ -1,6 +1,5 @@
 """Community helpers: thumbnail, spec, and post creation/update logic."""
 
-import asyncio
 import json
 import logging
 import uuid
@@ -8,7 +7,7 @@ from pathlib import Path
 from typing import Optional
 
 from fastapi import HTTPException, UploadFile, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.community import CommunityPost
 
@@ -118,7 +117,7 @@ async def save_post_and_thumbnail(
     category: Optional[str],
     diagram_type: str,
     author_id: int,
-    db: Session,
+    db: AsyncSession,
 ) -> CommunityPost:
     """Save thumbnail, spec JSON, and create post record. Returns created post."""
     try:
@@ -142,31 +141,31 @@ async def save_post_and_thumbnail(
         thumbnail_path=thumbnail_path,
         author_id=author_id,
     )
-    await asyncio.to_thread(db.add, post)
-    await asyncio.to_thread(_commit_post_or_rollback, db, post, post_id)
+    db.add(post)
+    await _commit_post_or_rollback(db, post, post_id)
     return post
 
 
-def commit_and_refresh(db: Session, obj: object, error_detail: str) -> None:
+async def commit_and_refresh(db: AsyncSession, obj: object, error_detail: str) -> None:
     """Commit and refresh object. Raises HTTPException on failure."""
     try:
-        db.commit()
-        db.refresh(obj)
+        await db.commit()
+        await db.refresh(obj)
     except Exception as exc:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=error_detail,
         ) from exc
 
 
-def _commit_post_or_rollback(db: Session, post: CommunityPost, post_id: str) -> None:
+async def _commit_post_or_rollback(db: AsyncSession, post: CommunityPost, post_id: str) -> None:
     """Commit and refresh post, or rollback and clean up on failure."""
     try:
-        db.commit()
-        db.refresh(post)
+        await db.commit()
+        await db.refresh(post)
     except Exception as exc:
-        db.rollback()
+        await db.rollback()
         delete_thumbnail(post_id)
         delete_spec_json(post_id)
         logger.error("[Community] Failed to create post %s: %s", post_id, exc)
@@ -176,9 +175,9 @@ def _commit_post_or_rollback(db: Session, post: CommunityPost, post_id: str) -> 
         ) from exc
 
 
-def commit_post_update(db: Session, post: CommunityPost) -> None:
+async def commit_post_update(db: AsyncSession, post: CommunityPost) -> None:
     """Commit post update. Raises HTTPException on failure."""
-    commit_and_refresh(db, post, "Failed to update post")
+    await commit_and_refresh(db, post, "Failed to update post")
 
 
 async def resolve_update_thumbnail_path(

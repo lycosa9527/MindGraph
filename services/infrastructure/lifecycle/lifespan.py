@@ -301,7 +301,7 @@ async def lifespan(fastapi_app: FastAPI):
     # If unreachable, startup is aborted and a critical alert is sent
     if is_main_worker:
         logger.debug("[LIFESPAN] Checking database integrity...")
-    if not check_database_on_startup():
+    if not await check_database_on_startup():
         if is_main_worker:
             logger.critical("Database recovery failed or was aborted. Shutting down.")
         try:
@@ -318,9 +318,6 @@ async def lifespan(fastapi_app: FastAPI):
         raise SystemExit(1)
     if is_main_worker:
         logger.debug("Database integrity verified")
-        logger.debug("[LIFESPAN] Connecting to PostgreSQL database...")
-        logger.debug("[LIFESPAN] Verifying PostgreSQL tables...")
-        logger.debug("[LIFESPAN] Running database migrations...")
 
     # init_db() creates tables and runs migrations — must not be swallowed or the app
     # will serve traffic against an empty database (e.g. missing organizations table).
@@ -378,18 +375,15 @@ async def lifespan(fastapi_app: FastAPI):
             "yes",
         )
 
-        def load_user_cache():
-            """Load user cache from database (runs in thread pool)."""
+        async def load_user_cache():
+            """Load user cache from database."""
             if not preload_auth_cache:
                 if is_main_worker:
                     logger.info("[CacheLoader] User auth cache preloading skipped (PRELOAD_USER_AUTH_CACHE disabled)")
-                return True  # Return True to indicate skip was intentional
+                return True
 
             try:
-                # reload_cache_from_database() handles Redis lock internally
-                # No need for pre-check - let the atomic lock handle coordination
-                # The Redis SETNX operation is atomic, so the lock acquisition prevents race conditions
-                result = reload_cache_from_database()
+                result = await reload_cache_from_database()
                 return result
             except Exception as e:  # pylint: disable=broad-except
                 logger.error("Failed to load cache from database: %s", e, exc_info=True)
@@ -414,9 +408,8 @@ async def lifespan(fastapi_app: FastAPI):
                     logger.warning("Failed to initialize IP Geolocation Service: %s", e)
                 return False
 
-        # Run both operations in parallel using thread pool
         cache_result, ip_db_result = await asyncio.gather(
-            asyncio.to_thread(load_user_cache),
+            load_user_cache(),
             asyncio.to_thread(load_ip_database),
             return_exceptions=True,
         )
@@ -756,7 +749,7 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Cleanup Database
         try:
-            close_db()
+            await close_db()
             if is_main_worker:
                 logger.info("Database connections closed")
         except Exception as e:  # pylint: disable=broad-except

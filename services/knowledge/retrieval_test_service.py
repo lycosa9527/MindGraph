@@ -15,7 +15,8 @@ import logging
 import math
 import time
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import (
     DocumentChunk,
@@ -42,9 +43,9 @@ class RetrievalTestService:
         """Initialize retrieval test service."""
         self.rag_service = get_rag_service()
 
-    def test_retrieval(
+    async def test_retrieval(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         method: str = "hybrid",
@@ -55,7 +56,7 @@ class RetrievalTestService:
         Test retrieval for user's knowledge base.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             query: Test query
             method: 'semantic', 'keyword', or 'hybrid'
@@ -68,15 +69,13 @@ class RetrievalTestService:
         if not query or not query.strip():
             raise ValueError("Query cannot be empty")
 
-        # Check if user has completed documents
-        if not self.rag_service.has_knowledge_base(db, user_id):
+        if not await self.rag_service.has_knowledge_base(db, user_id):
             raise ValueError("No completed documents found. Please upload and process documents first.")
 
         start_time = time.time()
         timing = {}
 
         try:
-            # Step 1: Generate query embedding
             embedding_start = time.time()
             try:
                 query_embedding = self.rag_service.embedding_client.embed_query(query)
@@ -92,15 +91,14 @@ class RetrievalTestService:
                 logger.error("[RAG] ✗ Embedding FAILED: %s", emb_error)
                 raise
 
-            # Step 2: Vector/Keyword search
             search_start = time.time()
             try:
                 if method == "semantic":
-                    chunk_ids = self.rag_service.vector_search(db, user_id, query, top_k * 2)
+                    chunk_ids = await self.rag_service.vector_search(db, user_id, query, top_k * 2)
                 elif method == "keyword":
-                    chunk_ids = self.rag_service.keyword_search_func(db, user_id, query, top_k * 2)
-                else:  # hybrid
-                    chunk_ids = self.rag_service.hybrid_search(db, user_id, query, top_k * 2)
+                    chunk_ids = await self.rag_service.keyword_search_func(db, user_id, query, top_k * 2)
+                else:
+                    chunk_ids = await self.rag_service.hybrid_search(db, user_id, query, top_k * 2)
                 timing["search_ms"] = (time.time() - search_start) * 1000
                 logger.info(
                     "[RAG] ✓ Search (%s): found %d chunks, time=%.0fms",
@@ -113,8 +111,8 @@ class RetrievalTestService:
                 logger.error("[RAG] ✗ Search FAILED: %s", search_error)
                 raise
 
-            # Lookup chunks
-            chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).all()
+            result = await db.execute(select(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids)))
+            chunks = list(result.scalars().all())
 
             logger.debug(
                 "[RAG] database lookup: %d chunks from %d IDs",
@@ -122,11 +120,9 @@ class RetrievalTestService:
                 len(chunk_ids),
             )
 
-            # Get document info
             document_ids = list(set(chunk.document_id for chunk in chunks))
-            documents = {
-                doc.id: doc for doc in db.query(KnowledgeDocument).filter(KnowledgeDocument.id.in_(document_ids)).all()
-            }
+            doc_result = await db.execute(select(KnowledgeDocument).where(KnowledgeDocument.id.in_(document_ids)))
+            documents = {doc.id: doc for doc in doc_result.scalars().all()}
 
             # Prepare results
             results = []
@@ -219,10 +215,9 @@ class RetrievalTestService:
                 "chunks_filtered_by_threshold": len(chunks) - len(results),
             }
 
-            # Record query for analytics
-            # Only keep the most recent 10 retrieval test queries to save server resources
             try:
-                space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+                space_result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+                space = space_result.scalars().first()
                 if space:
                     query_record = KnowledgeQuery(
                         user_id=user_id,
@@ -240,35 +235,31 @@ class RetrievalTestService:
                         source_context={"test": True},
                     )
                     db.add(query_record)
-                    db.flush()  # Flush to get the ID
+                    await db.flush()
 
-                    # Keep only the most recent 10 retrieval test queries
-                    # Delete older ones to save server resources
-                    # Get all retrieval test queries except the one we just added, ordered by newest first
-                    all_old_queries = (
-                        db.query(KnowledgeQuery)
-                        .filter(
+                    old_result = await db.execute(
+                        select(KnowledgeQuery)
+                        .where(
                             KnowledgeQuery.space_id == space.id,
                             KnowledgeQuery.source == "retrieval_test",
-                            KnowledgeQuery.id != query_record.id,  # Exclude the one we just added
+                            KnowledgeQuery.id != query_record.id,
                         )
                         .order_by(KnowledgeQuery.created_at.desc())
-                        .all()
                     )
+                    all_old_queries = list(old_result.scalars().all())
 
-                    # Keep the first 9 (most recent), delete the rest
                     if len(all_old_queries) > 9:
-                        queries_to_delete = all_old_queries[9:]  # Skip first 9, delete the rest
+                        queries_to_delete = all_old_queries[9:]
                         for old_query in queries_to_delete:
-                            db.delete(old_query)
+                            await db.delete(old_query)
 
-                    db.commit()
+                    await db.commit()
                     logger.debug(
                         "[RetrievalTest] Recorded query and cleaned up old queries. Total retrieval test queries: %d",
                         10,
                     )
             except Exception as e:
-                db.rollback()
+                await db.rollback()
                 logger.warning("[RetrievalTest] Failed to record query: %s", e)
 
             return {
@@ -550,12 +541,14 @@ class RetrievalTestService:
             "recall_at_k": recall_at_k,
         }
 
-    def run_evaluation(self, db: Session, user_id: int, dataset_id: int, method: str = "hybrid") -> Dict[str, Any]:
+    async def run_evaluation(
+        self, db: AsyncSession, user_id: int, dataset_id: int, method: str = "hybrid"
+    ) -> Dict[str, Any]:
         """
         Run evaluation on a dataset.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             dataset_id: Dataset ID
             method: Retrieval method to test
@@ -563,11 +556,10 @@ class RetrievalTestService:
         Returns:
             Dict with evaluation results
         """
-        dataset = (
-            db.query(EvaluationDataset)
-            .filter(EvaluationDataset.id == dataset_id, EvaluationDataset.user_id == user_id)
-            .first()
+        result = await db.execute(
+            select(EvaluationDataset).where(EvaluationDataset.id == dataset_id, EvaluationDataset.user_id == user_id)
         )
+        dataset = result.scalars().first()
 
         if not dataset:
             raise ValueError(f"Dataset {dataset_id} not found")
@@ -586,17 +578,17 @@ class RetrievalTestService:
             if not query:
                 continue
 
-            # Perform retrieval
             try:
                 chunk_ids = []
                 if method == "semantic":
-                    chunk_ids = self.rag_service.vector_search(db, user_id, query, len(expected_chunk_ids) * 2)
+                    chunk_ids = await self.rag_service.vector_search(db, user_id, query, len(expected_chunk_ids) * 2)
                 elif method == "keyword":
-                    chunk_ids = self.rag_service.keyword_search_func(db, user_id, query, len(expected_chunk_ids) * 2)
-                else:  # hybrid
-                    chunk_ids = self.rag_service.hybrid_search(db, user_id, query, len(expected_chunk_ids) * 2)
+                    chunk_ids = await self.rag_service.keyword_search_func(
+                        db, user_id, query, len(expected_chunk_ids) * 2
+                    )
+                else:
+                    chunk_ids = await self.rag_service.hybrid_search(db, user_id, query, len(expected_chunk_ids) * 2)
 
-                # Calculate metrics
                 metrics = self.calculate_quality_metrics(
                     retrieved_chunk_ids=chunk_ids,
                     expected_chunk_ids=expected_chunk_ids,
@@ -606,7 +598,6 @@ class RetrievalTestService:
                 all_metrics.append(metrics)
                 results.append({"query": query, "metrics": metrics})
 
-                # Record evaluation result
                 eval_result = EvaluationResult(dataset_id=dataset_id, method=method, metrics=metrics)
                 db.add(eval_result)
 
@@ -614,9 +605,8 @@ class RetrievalTestService:
                 logger.error("[RetrievalTest] Failed to evaluate query '%s': %s", query, e)
                 continue
 
-        db.commit()
+        await db.commit()
 
-        # Calculate average metrics
         if all_metrics:
             avg_metrics = {
                 "precision": sum(m["precision"] for m in all_metrics) / len(all_metrics),

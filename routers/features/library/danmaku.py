@@ -14,9 +14,9 @@ from typing import Optional
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from services.library import LibraryService
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
@@ -37,7 +37,7 @@ async def get_danmaku(
     page_number: Optional[int] = Query(None, ge=1),
     selected_text: Optional[str] = Query(None),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get danmaku for a document.
@@ -48,7 +48,9 @@ async def get_danmaku(
     user_id = current_user.id
     service = LibraryService(db, user_id=user_id)
 
-    danmaku_list = service.get_danmaku(document_id=document_id, page_number=page_number, selected_text=selected_text)
+    danmaku_list = await service.get_danmaku(
+        document_id=document_id, page_number=page_number, selected_text=selected_text
+    )
 
     return {"danmaku": danmaku_list}
 
@@ -57,7 +59,7 @@ async def get_danmaku(
 async def get_recent_danmaku(
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get recent danmaku across all documents.
@@ -68,7 +70,7 @@ async def get_recent_danmaku(
     user_id = current_user.id
     service = LibraryService(db, user_id=user_id)
 
-    danmaku_list = service.get_recent_danmaku(limit=limit)
+    danmaku_list = await service.get_recent_danmaku(limit=limit)
 
     return {"danmaku": danmaku_list}
 
@@ -78,7 +80,7 @@ async def create_danmaku(
     document_id: int,
     data: DanmakuCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Create a danmaku comment.
@@ -102,7 +104,7 @@ async def create_danmaku(
     service = LibraryService(db, user_id=current_user.id)
 
     try:
-        danmaku = service.create_danmaku(
+        danmaku = await service.create_danmaku(
             document_id=document_id,
             content=data.content,
             page_number=data.page_number,
@@ -154,7 +156,7 @@ async def create_danmaku(
 async def toggle_like(
     danmaku_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Toggle like on a danmaku.
@@ -162,7 +164,7 @@ async def toggle_like(
     service = LibraryService(db, user_id=current_user.id)
 
     try:
-        result = service.toggle_like(danmaku_id)
+        result = await service.toggle_like(danmaku_id)
         return result
     except ValueError as e:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e)) from e
@@ -172,14 +174,14 @@ async def toggle_like(
 async def get_replies(
     danmaku_id: int,
     _current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get replies to a danmaku.
     Requires authentication.
     """
     service = LibraryService(db)
-    replies = service.get_replies(danmaku_id)
+    replies = await service.get_replies(danmaku_id)
 
     return {"replies": replies}
 
@@ -189,7 +191,7 @@ async def create_reply(
     danmaku_id: int,
     data: ReplyCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Reply to a danmaku.
@@ -197,7 +199,7 @@ async def create_reply(
     service = LibraryService(db, user_id=current_user.id)
 
     try:
-        reply = service.create_reply(
+        reply = await service.create_reply(
             danmaku_id=danmaku_id,
             content=data.content,
             parent_reply_id=data.parent_reply_id,
@@ -242,7 +244,7 @@ async def update_danmaku_position(
     danmaku_id: int,
     data: DanmakuUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Update danmaku position.
@@ -250,7 +252,7 @@ async def update_danmaku_position(
     Only the creator or admin can update position.
     """
     service = LibraryService(db, user_id=current_user.id)
-    updated = service.update_danmaku_position(
+    updated = await service.update_danmaku_position(
         danmaku_id=danmaku_id,
         position_x=data.position_x,
         position_y=data.position_y,
@@ -270,7 +272,7 @@ async def update_danmaku_position(
 async def delete_danmaku(
     danmaku_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete danmaku.
@@ -278,7 +280,7 @@ async def delete_danmaku(
     Only the creator or admin can delete.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = service.delete_danmaku(danmaku_id, is_admin=is_admin(current_user))
+    deleted = await service.delete_danmaku(danmaku_id, is_admin=is_admin(current_user))
 
     if not deleted:
         raise HTTPException(
@@ -293,7 +295,7 @@ async def delete_danmaku(
 async def delete_reply(
     reply_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete reply.
@@ -301,7 +303,7 @@ async def delete_reply(
     Only the creator or admin can delete.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = service.delete_reply(reply_id, is_admin=is_admin(current_user))
+    deleted = await service.delete_reply(reply_id, is_admin=is_admin(current_user))
 
     if not deleted:
         raise HTTPException(

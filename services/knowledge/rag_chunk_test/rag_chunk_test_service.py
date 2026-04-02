@@ -16,7 +16,7 @@ from typing import List, Dict, Any, Optional, Callable, TYPE_CHECKING
 import logging
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.knowledge.rag_chunk_test.benchmark_loaders import (
     get_benchmark_loader,
@@ -65,9 +65,9 @@ class RAGChunkTestService:
         )
         self.summary_generator = SummaryGenerator()
 
-    def run_chunk_test(
+    async def run_chunk_test(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         dataset_name: Optional[str] = None,
         document_ids: Optional[List[int]] = None,
@@ -77,7 +77,7 @@ class RAGChunkTestService:
         Run chunk test with benchmark dataset or user documents.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             dataset_name: Benchmark dataset name ('FinanceBench', 'KG-RAG', etc.)
             document_ids: List of user document IDs (if testing user documents)
@@ -87,17 +87,16 @@ class RAGChunkTestService:
             Test results with comparison metrics
         """
         if dataset_name:
-            return self.test_benchmark_dataset(db, user_id, dataset_name, queries)
-        elif document_ids:
+            return await self.test_benchmark_dataset(db, user_id, dataset_name, queries)
+        if document_ids:
             if not queries:
                 raise ValueError("Queries are required when testing user documents")
-            return self.test_user_documents(db, user_id, document_ids, queries)
-        else:
-            raise ValueError("Either dataset_name or document_ids must be provided")
+            return await self.test_user_documents(db, user_id, document_ids, queries)
+        raise ValueError("Either dataset_name or document_ids must be provided")
 
-    def test_benchmark_dataset(
+    async def test_benchmark_dataset(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         dataset_name: str,
         custom_queries: Optional[List[str]] = None,
@@ -108,7 +107,7 @@ class RAGChunkTestService:
         Test chunking methods with benchmark dataset.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             dataset_name: Benchmark dataset name
             custom_queries: Optional custom queries (uses dataset queries if not provided)
@@ -126,7 +125,7 @@ class RAGChunkTestService:
 
         # Load dataset
         loader = get_benchmark_loader(dataset_name)
-        documents = loader.load_documents()
+        documents = await loader.load_documents()
         dataset_queries = loader.load_queries()
 
         # Use custom queries if provided, otherwise use dataset queries
@@ -152,8 +151,7 @@ class RAGChunkTestService:
             if q.get("query") and q.get("relevance_scores")
         }
 
-        # Run comparison
-        return self.compare_chunking_methods(
+        return await self.compare_chunking_methods(
             _db=db,
             _user_id=user_id,
             documents=documents,
@@ -165,9 +163,9 @@ class RAGChunkTestService:
             progress_callback=progress_callback,
         )
 
-    def test_user_documents(
+    async def test_user_documents(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         document_ids: List[int],
         queries: List[str],
@@ -178,7 +176,7 @@ class RAGChunkTestService:
         Test chunking methods with user's uploaded documents.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             document_ids: List of document IDs to test
             queries: List of test queries
@@ -188,7 +186,6 @@ class RAGChunkTestService:
         Returns:
             Test results
         """
-        # Ensure 5 methods are used
         if modes is None:
             modes = ["spacy", "semchunk", "chonkie", "langchain", "mindchunk"]
 
@@ -200,15 +197,13 @@ class RAGChunkTestService:
             modes,
         )
 
-        # Load user documents
         loader = UserDocumentLoader(db, user_id, document_ids)
-        documents = loader.load_documents()
+        documents = await loader.load_documents()
 
         if not documents:
             raise ValueError("No documents found or access denied")
 
-        # Run comparison with progress tracking
-        return self.compare_chunking_methods(
+        return await self.compare_chunking_methods(
             _db=db,
             _user_id=user_id,
             documents=documents,
@@ -217,9 +212,9 @@ class RAGChunkTestService:
             progress_callback=progress_callback,
         )
 
-    def compare_chunking_methods(
+    async def compare_chunking_methods(
         self,
-        _db: Session,
+        _db: AsyncSession,
         _user_id: int,
         documents: List[Dict[str, Any]],
         queries: List[str],
@@ -233,7 +228,7 @@ class RAGChunkTestService:
         Compare chunking methods (semchunk vs mindchunk vs qa).
 
         Args:
-            _db: Database session (unused, kept for interface compatibility)
+            _db: Async database session (unused, kept for interface compatibility)
             _user_id: User ID (unused, kept for interface compatibility)
             documents: List of documents with format {id, text, metadata}
             queries: List of test queries
@@ -461,7 +456,7 @@ class RAGChunkTestService:
                                 callback_method = method if method is not None else captured_mode
                                 update_progress(status, callback_method, stage, stage_progress)
 
-                            result = self.retrieval_evaluator.test_retrieval(
+                            result = await self.retrieval_evaluator.test_retrieval(
                                 all_chunks[mode],
                                 query,
                                 _method="hybrid",
@@ -594,14 +589,14 @@ class RAGChunkTestService:
 
         return results
 
-    def get_chunks_for_test(
-        self, db: Session, user_id: int, test_result: "ChunkTestResult", method: str
+    async def get_chunks_for_test(
+        self, db: AsyncSession, user_id: int, test_result: "ChunkTestResult", method: str
     ) -> List[Dict[str, Any]]:
         """
         Regenerate chunks for a test result using a specific method.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID (for verification)
             test_result: ChunkTestResult instance
             method: Chunking method name ('spacy', 'semchunk', 'chonkie', 'langchain', 'mindchunk')
@@ -612,15 +607,12 @@ class RAGChunkTestService:
         if test_result.user_id != user_id:
             raise ValueError("Test does not belong to user")
 
-        # Load documents based on test type
         if test_result.dataset_name and test_result.dataset_name != "user_documents":
-            # Benchmark dataset
             loader = get_benchmark_loader(test_result.dataset_name)
-            documents = loader.load_documents()
+            documents = await loader.load_documents()
         elif test_result.document_ids:
-            # User documents
             loader = UserDocumentLoader(db, user_id, test_result.document_ids)
-            documents = loader.load_documents()
+            documents = await loader.load_documents()
         else:
             raise ValueError("Test has no associated documents or dataset")
 

@@ -1,6 +1,6 @@
 """Helpers for joining a workshop (Redis restore from DB)."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from models.domain.diagrams import Diagram
@@ -24,7 +24,7 @@ def restore_workshop_redis_from_db_row(
         "diagram_id": diagram_id,
         "owner_id": str(diagram.user_id),
         "created_at": (
-            diagram.workshop_started_at.isoformat() if diagram.workshop_started_at else datetime.utcnow().isoformat()
+            diagram.workshop_started_at.isoformat() if diagram.workshop_started_at else datetime.now(tz=UTC).isoformat()
         ),
     }
     redis.setex(

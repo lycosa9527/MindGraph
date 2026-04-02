@@ -14,7 +14,7 @@ import hashlib
 import logging
 import secrets
 import uuid
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 
 from fastapi import HTTPException, Request, status
 from fastapi.security import HTTPBearer, APIKeyHeader
@@ -48,7 +48,7 @@ def create_access_token(user) -> str:
     Returns:
         JWT token string
     """
-    expire = datetime.utcnow() + timedelta(minutes=ACCESS_TOKEN_EXPIRY_MINUTES)
+    expire = datetime.now(tz=UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRY_MINUTES)
 
     # Generate unique token ID for session tracking
     token_id = str(uuid.uuid4())

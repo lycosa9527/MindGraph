@@ -14,7 +14,8 @@ Proprietary License
 import logging
 from typing import Any, Dict, List
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.workshop_chat import MessageReaction
 
@@ -25,8 +26,8 @@ class ReactionService:
     """Emoji reaction operations on messages."""
 
     @staticmethod
-    def toggle_reaction(
-        db: Session,
+    async def toggle_reaction(
+        db: AsyncSession,
         message_id: int,
         user_id: int,
         emoji_name: str,
@@ -36,18 +37,17 @@ class ReactionService:
 
         Returns ``{"action": "added"|"removed", ...}``.
         """
-        existing = (
-            db.query(MessageReaction)
-            .filter(
+        result = await db.execute(
+            select(MessageReaction).where(
                 MessageReaction.message_id == message_id,
                 MessageReaction.user_id == user_id,
                 MessageReaction.emoji_name == emoji_name,
             )
-            .first()
         )
+        existing = result.scalars().first()
         if existing:
-            db.delete(existing)
-            db.commit()
+            await db.delete(existing)
+            await db.commit()
             return {
                 "action": "removed",
                 "message_id": message_id,
@@ -63,7 +63,7 @@ class ReactionService:
             emoji_code=emoji_code,
         )
         db.add(reaction)
-        db.commit()
+        await db.commit()
         return {
             "action": "added",
             "message_id": message_id,
@@ -73,23 +73,25 @@ class ReactionService:
         }
 
     @staticmethod
-    def get_message_reactions(
-        db: Session,
+    async def get_message_reactions(
+        db: AsyncSession,
         message_id: int,
     ) -> List[Dict[str, Any]]:
         """Get grouped reactions for a single message."""
-        rows = db.query(MessageReaction).filter(MessageReaction.message_id == message_id).all()
+        result = await db.execute(select(MessageReaction).where(MessageReaction.message_id == message_id))
+        rows = result.scalars().all()
         return ReactionService._group_reactions(rows)
 
     @staticmethod
-    def get_reactions_batch(
-        db: Session,
+    async def get_reactions_batch(
+        db: AsyncSession,
         message_ids: List[int],
     ) -> Dict[int, List[Dict[str, Any]]]:
         """Batch-fetch grouped reactions keyed by message_id."""
         if not message_ids:
             return {}
-        rows = db.query(MessageReaction).filter(MessageReaction.message_id.in_(message_ids)).all()
+        result = await db.execute(select(MessageReaction).where(MessageReaction.message_id.in_(message_ids)))
+        rows = result.scalars().all()
         by_msg: Dict[int, list] = {}
         for row in rows:
             by_msg.setdefault(row.message_id, []).append(row)

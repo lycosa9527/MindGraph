@@ -16,11 +16,13 @@ from typing import Optional, cast
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Body, Query, status
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, delete, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import Organization, User
+from models.domain.diagrams import Diagram
 from models.domain.messages import Messages, Language
 from models.domain.token_usage import TokenUsage
 from services.auth.password_security import (
@@ -41,8 +43,8 @@ router = APIRouter()
 
 
 @router.get("/admin/users", dependencies=[Depends(require_admin)])
-def list_users_admin(
-    db: Session = Depends(get_db),
+async def list_users_admin(
+    db: AsyncSession = Depends(get_async_db),
     page: int = Query(1, ge=1),
     page_size: int = Query(50, ge=1, le=100),
     search: str = Query(""),
@@ -57,48 +59,47 @@ def list_users_admin(
     - search: Search by name or phone number
     - organization_id: Filter by organization
     """
-    query = db.query(User)
-
+    conditions = []
     if organization_id:
-        query = query.filter(User.organization_id == organization_id)
-
-    # Apply search filter (name or phone)
+        conditions.append(User.organization_id == organization_id)
     if search:
         search_term = f"%{search}%"
-        query = query.filter((User.name.like(search_term)) | (User.phone.like(search_term)))
+        conditions.append((User.name.like(search_term)) | (User.phone.like(search_term)))
 
-    # Get total count for pagination
-    total = query.count()
-
-    # Calculate pagination
+    total_stmt = select(sa_count()).select_from(User)
+    list_stmt = select(User).order_by(User.created_at.desc())
+    if conditions:
+        filt = and_(*conditions)
+        total_stmt = total_stmt.where(filt)
+        list_stmt = list_stmt.where(filt)
+    total = (await db.execute(total_stmt)).scalar_one()
     skip = (page - 1) * page_size
     total_pages = (total + page_size - 1) // page_size
 
-    # Get paginated users
-    users = query.order_by(User.created_at.desc()).offset(skip).limit(page_size).all()
+    list_stmt = list_stmt.offset(skip).limit(page_size)
+    users = (await db.execute(list_stmt)).scalars().all()
 
-    # Performance optimization: Fetch all organizations in one query
     org_ids = {user.organization_id for user in users if user.organization_id}
     organizations_by_id = {}
     if org_ids:
-        orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
+        org_stmt = select(Organization).where(Organization.id.in_(org_ids))
+        orgs = (await db.execute(org_stmt)).scalars().all()
         organizations_by_id = {cast(int, org.id): org for org in orgs}
 
-    # Get token stats for all users
     token_stats_by_user = {}
 
     try:
-        user_token_stats = (
-            db.query(
+        token_stmt = (
+            select(
                 TokenUsage.user_id,
-                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
             )
-            .filter(TokenUsage.success, TokenUsage.user_id.isnot(None))
+            .where(TokenUsage.success, TokenUsage.user_id.isnot(None))
             .group_by(TokenUsage.user_id)
-            .all()
         )
+        user_token_stats = (await db.execute(token_stmt)).all()
 
         for stat in user_token_stats:
             token_stats_by_user[stat.user_id] = {
@@ -113,7 +114,6 @@ def list_users_admin(
     for user in users:
         org = organizations_by_id.get(user.organization_id) if user.organization_id else None
 
-        # Mask phone number for privacy
         masked_phone = user.phone
         if len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
@@ -148,34 +148,29 @@ def list_users_admin(
 
 
 @router.put("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
-def update_user_admin(
+async def update_user_admin(
     user_id: int,
     request: dict,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Update user information (ADMIN ONLY)"""
-    # Check if user exists (use cache for quick check)
-    cached_user = user_cache.get_by_id(user_id)
+    cached_user = await user_cache.get_by_id(user_id)
     if not cached_user:
-        # Check database as fallback
-        cached_user = db.query(User).filter(User.id == user_id).first()
-        if not cached_user:
+        row = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+        if not row:
             error_msg = Messages.error("user_not_found", lang, user_id)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Reload from database for modification (cached users are detached)
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Save old values for cache invalidation
     old_phone = user.phone
     old_org_id = user.organization_id
 
-    # Update phone (with validation)
     if "phone" in request:
         new_phone = request["phone"].strip()
         if not new_phone:
@@ -186,13 +181,12 @@ def update_user_admin(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
         if new_phone != user.phone:
-            existing = user_cache.get_by_phone(new_phone)
+            existing = await user_cache.get_by_phone(new_phone)
             if existing and existing.id != user.id:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
         user.phone = new_phone
 
-    # Update name (with validation)
     if "name" in request:
         new_name = request["name"].strip()
         if not new_name or len(new_name) < 2:
@@ -203,49 +197,44 @@ def update_user_admin(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         user.name = new_name
 
-    # Update organization
     if "organization_id" in request:
         org_id = request["organization_id"]
         if org_id:
-            org = org_cache.get_by_id(org_id)
+            org = await org_cache.get_by_id(org_id)
             if not org:
-                org = db.query(Organization).filter(Organization.id == org_id).first()
+                org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
                 if not org:
                     error_msg = Messages.error("organization_not_found", lang, org_id)
                     raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
             user.organization_id = org_id
 
-    # Write to database FIRST
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to update user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update user",
         ) from e
 
-    # Invalidate old cache entries
     try:
         user_cache.invalidate(user_id, old_phone)
         logger.debug("[Auth] Invalidated old cache for user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for user ID %s: %s", user_id, e)
 
-    # Re-cache updated user
     try:
         user_cache.cache_user(user)
         logger.info("[Auth] Updated and re-cached user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to re-cache user ID %s: %s", user_id, e)
 
-    # If organization changed, invalidate org cache
     if old_org_id != user.organization_id:
         try:
             if user.organization_id:
-                new_org = org_cache.get_by_id(user.organization_id)
+                new_org = await org_cache.get_by_id(user.organization_id)
                 if new_org:
                     org_cache.invalidate(
                         user.organization_id,
@@ -253,7 +242,7 @@ def update_user_admin(
                         cast(Optional[str], new_org.invitation_code),
                     )
             if old_org_id:
-                old_org = org_cache.get_by_id(old_org_id)
+                old_org = await org_cache.get_by_id(old_org_id)
                 if old_org:
                     org_cache.invalidate(
                         old_org_id,
@@ -263,10 +252,11 @@ def update_user_admin(
         except Exception as e:
             logger.warning("[Auth] Failed to invalidate org cache: %s", e)
 
-    # Get updated organization info
-    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
-        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        org = (
+            await db.execute(select(Organization).where(Organization.id == user.organization_id))
+        ).scalar_one_or_none()
 
     logger.info("Admin %s updated user: %s", current_user.phone, user.phone)
 
@@ -283,38 +273,36 @@ def update_user_admin(
 
 
 @router.delete("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
-def delete_user_admin(
+async def delete_user_admin(
     user_id: int,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Delete user (ADMIN ONLY)"""
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Prevent deleting self
     if user.id == current_user.id:
         error_msg = Messages.error("cannot_delete_own_account", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     user_phone = user.phone
 
-    # Delete from database FIRST
-    db.delete(user)
     try:
-        db.commit()
+        await db.execute(delete(Diagram).where(Diagram.user_id == user_id))
+        await db.delete(user)
+        await db.commit()
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to delete user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete user",
         ) from e
 
-    # Invalidate cache (non-blocking)
     try:
         user_cache.invalidate(user_id, user_phone)
         logger.info("[Auth] Invalidated cache for deleted user ID %s", user_id)
@@ -326,14 +314,14 @@ def delete_user_admin(
 
 
 @router.put("/admin/users/{user_id}/unlock", dependencies=[Depends(require_admin)])
-def unlock_user_admin(
+async def unlock_user_admin(
     user_id: int,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Unlock user account (ADMIN ONLY)"""
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -341,19 +329,17 @@ def unlock_user_admin(
     user.failed_login_attempts = 0
     user.locked_until = None
 
-    # Write to database FIRST
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to unlock user ID %s in database: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to unlock user",
         ) from e
 
-    # Invalidate and re-cache user
     try:
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
@@ -366,11 +352,11 @@ def unlock_user_admin(
 
 
 @router.put("/admin/users/{user_id}/reset-password", dependencies=[Depends(require_admin)])
-def reset_user_password_admin(
+async def reset_user_password_admin(
     user_id: int,
     request: Optional[dict] = Body(None),
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Reset user password (ADMIN ONLY)
@@ -385,21 +371,18 @@ def reset_user_password_admin(
         - Cannot reset own password
         - Also unlocks account if locked
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Prevent admin from resetting their own password
     if user.id == current_user.id:
         error_msg = Messages.error("cannot_reset_own_password", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Get password from request body, default to '12345678' if not provided
     password = request.get("password") if request and isinstance(request, dict) else None
     new_password = password if password and password.strip() else "12345678"
 
-    # Validate password length
     if not new_password or len(new_password.strip()) == 0:
         error_msg = Messages.error("password_cannot_be_empty", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
@@ -407,17 +390,15 @@ def reset_user_password_admin(
         error_msg = Messages.error("password_too_short", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Reset password
     user.password_hash = hash_password(new_password)
     user.failed_login_attempts = 0
     user.locked_until = None
 
-    # Write to database FIRST
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to reset password in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

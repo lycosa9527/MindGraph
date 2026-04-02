@@ -9,7 +9,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Column,
@@ -67,12 +67,12 @@ class TokenUsage(Base):
 
     # Timing
     response_time = Column(Float)  # seconds
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     # Relationships
-    user = relationship("User", foreign_keys=[user_id])
-    organization = relationship("Organization", foreign_keys=[organization_id])
-    api_key = relationship("APIKey", foreign_keys=[api_key_id])  # APIKey is defined in models.auth
+    user = relationship("User", foreign_keys=[user_id], lazy="selectin")
+    organization = relationship("Organization", foreign_keys=[organization_id], lazy="selectin")
+    api_key = relationship("APIKey", foreign_keys=[api_key_id], lazy="selectin")  # APIKey is defined in models.auth
 
     # Indexes for fast queries
     __table_args__ = (

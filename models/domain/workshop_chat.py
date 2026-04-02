@@ -21,7 +21,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import List, Optional
 
 from sqlalchemy import (
@@ -115,40 +115,54 @@ class ChatChannel(Base):
         server_default="0",
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
-    organization = relationship("Organization", backref="chat_channels")
-    creator = relationship("User", backref="created_channels", foreign_keys=[created_by])
+    organization = relationship(
+        "Organization",
+        backref="chat_channels",
+        lazy="selectin",
+    )
+    creator = relationship(
+        "User",
+        backref="created_channels",
+        foreign_keys=[created_by],
+        lazy="selectin",
+    )
     parent = relationship(
         "ChatChannel",
         remote_side=[id],
         backref="children",
         foreign_keys=[parent_id],
+        lazy="selectin",
     )
     diagram = relationship(
         "Diagram",
         backref="chat_channel_diagrams",
         foreign_keys=[diagram_id],
+        lazy="selectin",
     )
     members = relationship(
         "ChannelMember",
         back_populates="channel",
         cascade="all, delete-orphan",
+        lazy="selectin",
     )
     topics = relationship(
         "ChatTopic",
         back_populates="channel",
         cascade="all, delete-orphan",
+        lazy="selectin",
     )
     messages = relationship(
         "ChatMessage",
         back_populates="channel",
         cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     __table_args__ = (
@@ -210,10 +224,10 @@ class ChannelMember(Base):
     color: Mapped[str] = mapped_column(String(10), nullable=False, default="#c2c2c2")
     desktop_notifications: Mapped[bool] = mapped_column(Boolean, default=True)
     email_notifications: Mapped[bool] = mapped_column(Boolean, default=False)
-    joined_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    joined_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    channel = relationship("ChatChannel", back_populates="members")
-    user = relationship("User", backref="channel_memberships")
+    channel = relationship("ChatChannel", back_populates="members", lazy="selectin")
+    user = relationship("User", backref="channel_memberships", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("channel_id", "user_id", name="uq_channel_member"),
@@ -256,20 +270,26 @@ class ChatTopic(Base):
         index=True,
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     updated_at: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
-    channel = relationship("ChatChannel", back_populates="topics")
-    creator = relationship("User", backref="created_topics", foreign_keys=[created_by])
+    channel = relationship("ChatChannel", back_populates="topics", lazy="selectin")
+    creator = relationship(
+        "User",
+        backref="created_topics",
+        foreign_keys=[created_by],
+        lazy="selectin",
+    )
     messages = relationship(
         "ChatMessage",
         back_populates="topic",
         cascade="all, delete-orphan",
         foreign_keys="ChatMessage.topic_id",
+        lazy="selectin",
     )
 
     __table_args__ = (Index("ix_chat_topics_channel_updated", "channel_id", "updated_at"),)
@@ -313,13 +333,23 @@ class ChatMessage(Base):
         nullable=True,
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    channel = relationship("ChatChannel", back_populates="messages")
-    topic = relationship("ChatTopic", back_populates="messages", foreign_keys=[topic_id])
-    sender = relationship("User", backref="chat_messages")
-    parent = relationship("ChatMessage", remote_side=[id], backref="replies")
+    channel = relationship("ChatChannel", back_populates="messages", lazy="selectin")
+    topic = relationship(
+        "ChatTopic",
+        back_populates="messages",
+        foreign_keys=[topic_id],
+        lazy="selectin",
+    )
+    sender = relationship("User", backref="chat_messages", lazy="selectin")
+    parent = relationship(
+        "ChatMessage",
+        remote_side=[id],
+        backref="replies",
+        lazy="selectin",
+    )
 
     __table_args__ = (
         Index("ix_chat_messages_channel_id_msg", "channel_id", "id"),
@@ -362,11 +392,21 @@ class DirectMessage(Base):
         nullable=True,
     )
 
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     edited_at: Mapped[Optional[datetime]] = mapped_column(DateTime, nullable=True)
 
-    sender = relationship("User", foreign_keys=[sender_id], backref="sent_dms")
-    recipient = relationship("User", foreign_keys=[recipient_id], backref="received_dms")
+    sender = relationship(
+        "User",
+        foreign_keys=[sender_id],
+        backref="sent_dms",
+        lazy="selectin",
+    )
+    recipient = relationship(
+        "User",
+        foreign_keys=[recipient_id],
+        backref="received_dms",
+        lazy="selectin",
+    )
 
     __table_args__ = (
         Index(
@@ -413,10 +453,10 @@ class MessageReaction(Base):
     )
     emoji_name: Mapped[str] = mapped_column(String(50), nullable=False)
     emoji_code: Mapped[str] = mapped_column(String(10), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    message = relationship("ChatMessage", backref="reactions")
-    user = relationship("User", backref="message_reactions")
+    message = relationship("ChatMessage", backref="reactions", lazy="selectin")
+    user = relationship("User", backref="message_reactions", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint(
@@ -454,10 +494,10 @@ class StarredMessage(Base):
         nullable=False,
         index=True,
     )
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    message = relationship("ChatMessage", backref="stars")
-    user = relationship("User", backref="starred_messages_rel")
+    message = relationship("ChatMessage", backref="stars", lazy="selectin")
+    user = relationship("User", backref="starred_messages_rel", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint(
@@ -505,11 +545,11 @@ class FileAttachment(Base):
     content_type: Mapped[str] = mapped_column(String(100), nullable=False)
     file_size: Mapped[int] = mapped_column(Integer, nullable=False)
     file_path: Mapped[str] = mapped_column(String(500), nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    message = relationship("ChatMessage", backref="attachments")
-    dm = relationship("DirectMessage", backref="attachments")
-    uploader = relationship("User", backref="uploaded_attachments")
+    message = relationship("ChatMessage", backref="attachments", lazy="selectin")
+    dm = relationship("DirectMessage", backref="attachments", lazy="selectin")
+    uploader = relationship("User", backref="uploaded_attachments", lazy="selectin")
 
     __table_args__ = (
         Index("ix_file_attachments_message", "message_id"),
@@ -553,12 +593,12 @@ class UserTopicPreference(Base):
     )
     last_updated: Mapped[datetime] = mapped_column(
         DateTime,
-        default=datetime.utcnow,
-        onupdate=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
     )
 
-    user = relationship("User", backref="topic_preferences")
-    topic = relationship("ChatTopic", backref="user_preferences")
+    user = relationship("User", backref="topic_preferences", lazy="selectin")
+    topic = relationship("ChatTopic", backref="user_preferences", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("user_id", "topic_id", name="uq_user_topic_pref"),

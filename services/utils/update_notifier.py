@@ -25,11 +25,13 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, Optional
-from sqlalchemy.orm import Session
 
-from config.database import SessionLocal
+from sqlalchemy import delete, func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+
+from config.database import AsyncSessionLocal
 from models.domain.auth import UpdateNotification, UpdateNotificationDismissed
 
 logger = logging.getLogger(__name__)
@@ -39,7 +41,7 @@ class UpdateNotifier:
     """
     Manages update notifications for the application.
 
-    Stores notification state in database database for persistence.
+    Stores notification state in database for persistence.
     Uses immediate writes for multi-worker compatibility.
     """
 
@@ -47,35 +49,31 @@ class UpdateNotifier:
         """Initialize the UpdateNotifier."""
         logger.info("UpdateNotifier initialized (database storage)")
 
-    def _get_db(self) -> Session:
-        """Get a database session."""
-        return SessionLocal()
-
-    def _ensure_notification_exists(self, db: Session) -> UpdateNotification:
+    async def _ensure_notification_exists(self, db: AsyncSession) -> UpdateNotification:
         """Ensure a notification record exists in the database (race-condition safe)."""
-        notification = db.query(UpdateNotification).filter(UpdateNotification.id == 1).first()
+        result = await db.execute(select(UpdateNotification).where(UpdateNotification.id == 1))
+        notification = result.scalar_one_or_none()
         if not notification:
             try:
                 notification = UpdateNotification(id=1, enabled=False, version="", title="", message="")
                 db.add(notification)
-                db.commit()
-                db.refresh(notification)
+                await db.commit()
+                await db.refresh(notification)
             except Exception:
-                # Race condition: another request created it first
-                db.rollback()
-                notification = db.query(UpdateNotification).filter(UpdateNotification.id == 1).first()
+                await db.rollback()
+                result = await db.execute(select(UpdateNotification).where(UpdateNotification.id == 1))
+                notification = result.scalar_one_or_none()
         return notification
 
-    def get_notification(self) -> Dict:
+    async def get_notification(self) -> Dict:
         """
         Get the current notification configuration.
 
         Returns:
             Dict containing notification state and content
         """
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
+        async with AsyncSessionLocal() as db:
+            notification = await self._ensure_notification_exists(db)
             return {
                 "enabled": notification.enabled,
                 "version": notification.version or "",
@@ -83,10 +81,8 @@ class UpdateNotifier:
                 "message": notification.message or "",
                 "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
             }
-        finally:
-            db.close()
 
-    def set_notification(
+    async def set_notification(
         self,
         enabled: bool,
         version: str = "",
@@ -119,54 +115,47 @@ class UpdateNotifier:
             changelog_items_en,
             kwargs,
         )
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
-            old_version = notification.version or ""
+        async with AsyncSessionLocal() as db:
+            try:
+                notification = await self._ensure_notification_exists(db)
+                old_version = notification.version or ""
 
-            # Update fields
-            notification.enabled = enabled
-            notification.version = version
-            notification.title = title
-            notification.message = message
-            notification.updated_at = datetime.utcnow()
+                notification.enabled = enabled
+                notification.version = version
+                notification.title = title
+                notification.message = message
+                notification.updated_at = datetime.now(UTC)
 
-            db.commit()
+                await db.commit()
 
-            # If version changed, clean up old dismissed records (not for current version)
-            # This prevents table clutter while keeping current version dismissals if any
-            if version and version != old_version:
-                # Delete dismissed records for OLD versions only
-                deleted = (
-                    db.query(UpdateNotificationDismissed)
-                    .filter(UpdateNotificationDismissed.version != version)
-                    .delete(synchronize_session=False)
-                )
-                db.commit()
-                logger.info(
-                    "Version changed from %s to %s, cleaned up %s old dismissed records",
-                    old_version,
-                    version,
-                    deleted,
-                )
+                if version and version != old_version:
+                    result = await db.execute(
+                        delete(UpdateNotificationDismissed).where(UpdateNotificationDismissed.version != version)
+                    )
+                    deleted = result.rowcount
+                    await db.commit()
+                    logger.info(
+                        "Version changed from %s to %s, cleaned up %s old dismissed records",
+                        old_version,
+                        version,
+                        deleted,
+                    )
 
-            logger.info("Update notification set: enabled=%s, version=%s", enabled, version)
+                logger.info("Update notification set: enabled=%s, version=%s", enabled, version)
 
-            return {
-                "enabled": notification.enabled,
-                "version": notification.version or "",
-                "title": notification.title or "",
-                "message": notification.message or "",
-                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
-            }
-        except Exception as e:
-            db.rollback()
-            logger.error("Failed to set notification: %s", e)
-            raise
-        finally:
-            db.close()
+                return {
+                    "enabled": notification.enabled,
+                    "version": notification.version or "",
+                    "title": notification.title or "",
+                    "message": notification.message or "",
+                    "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
+                }
+            except Exception as exc:
+                await db.rollback()
+                logger.error("Failed to set notification: %s", exc)
+                raise
 
-    def should_show_notification(self, user_id: int) -> bool:
+    async def should_show_notification(self, user_id: int) -> bool:
         """
         Check if notification should be shown to a specific user.
 
@@ -176,11 +165,9 @@ class UpdateNotifier:
         Returns:
             True if notification should be shown, False otherwise
         """
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
+        async with AsyncSessionLocal() as db:
+            notification = await self._ensure_notification_exists(db)
 
-            # Check if notification is enabled
             if not notification.enabled:
                 return False
 
@@ -188,21 +175,17 @@ class UpdateNotifier:
             if not version:
                 return False
 
-            # Check if user has dismissed this version
-            dismissed = (
-                db.query(UpdateNotificationDismissed)
-                .filter(
+            result = await db.execute(
+                select(UpdateNotificationDismissed).where(
                     UpdateNotificationDismissed.user_id == int(user_id),
                     UpdateNotificationDismissed.version == version,
                 )
-                .first()
             )
+            dismissed = result.scalar_one_or_none()
 
             return dismissed is None
-        finally:
-            db.close()
 
-    def get_notification_for_user(self, user_id: int) -> Optional[Dict]:
+    async def get_notification_for_user(self, user_id: int) -> Optional[Dict]:
         """
         Get notification content for a user if they should see it.
 
@@ -212,27 +195,24 @@ class UpdateNotifier:
         Returns:
             Notification content if should show, None otherwise
         """
-        if not self.should_show_notification(user_id):
+        if not await self.should_show_notification(user_id):
             return None
 
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
+        async with AsyncSessionLocal() as db:
+            notification = await self._ensure_notification_exists(db)
 
             return {
                 "version": notification.version or "",
                 "title": notification.title or "",
-                "title_en": "",  # For API compatibility
+                "title_en": "",
                 "message": notification.message or "",
-                "message_en": "",  # For API compatibility
+                "message_en": "",
                 "show_changelog": False,
                 "changelog_items": [],
                 "changelog_items_en": [],
             }
-        finally:
-            db.close()
 
-    def dismiss_notification(self, user_id: int) -> bool:
+    async def dismiss_notification(self, user_id: int) -> bool:
         """
         Mark notification as dismissed for a user.
 
@@ -245,125 +225,116 @@ class UpdateNotifier:
         Returns:
             True if successful
         """
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
-            version = notification.version or ""
+        async with AsyncSessionLocal() as db:
+            try:
+                notification = await self._ensure_notification_exists(db)
+                version = notification.version or ""
 
-            if not version:
-                return True
+                if not version:
+                    return True
 
-            # Check if already dismissed (avoid duplicate insert attempt)
-            existing = (
-                db.query(UpdateNotificationDismissed)
-                .filter(
-                    UpdateNotificationDismissed.user_id == int(user_id),
-                    UpdateNotificationDismissed.version == version,
+                result = await db.execute(
+                    select(UpdateNotificationDismissed).where(
+                        UpdateNotificationDismissed.user_id == int(user_id),
+                        UpdateNotificationDismissed.version == version,
+                    )
                 )
-                .first()
-            )
+                existing = result.scalar_one_or_none()
 
-            if not existing:
-                try:
-                    dismissed = UpdateNotificationDismissed(
-                        user_id=int(user_id),
-                        version=version,
-                        dismissed_at=datetime.utcnow(),
-                    )
-                    db.add(dismissed)
-                    db.commit()
-                    logger.debug(
-                        "User %s dismissed notification for version %s",
-                        user_id,
-                        version,
-                    )
-                except Exception:
-                    # Race condition or duplicate - that's fine
-                    db.rollback()
+                if not existing:
+                    try:
+                        dismissed = UpdateNotificationDismissed(
+                            user_id=int(user_id),
+                            version=version,
+                            dismissed_at=datetime.now(UTC),
+                        )
+                        db.add(dismissed)
+                        await db.commit()
+                        logger.debug(
+                            "User %s dismissed notification for version %s",
+                            user_id,
+                            version,
+                        )
+                    except Exception:
+                        await db.rollback()
 
-            return True
-        except Exception as e:
-            db.rollback()
-            logger.error("Failed to dismiss notification: %s", e)
-            return False
-        finally:
-            db.close()
+                return True
+            except Exception as exc:
+                await db.rollback()
+                logger.error("Failed to dismiss notification: %s", exc)
+                return False
 
-    def disable_notification(self) -> Dict:
+    async def disable_notification(self) -> Dict:
         """
         Disable the current notification.
 
         Returns:
             Updated notification configuration
         """
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
-            notification.enabled = False
-            notification.updated_at = datetime.utcnow()
+        async with AsyncSessionLocal() as db:
+            try:
+                notification = await self._ensure_notification_exists(db)
+                notification.enabled = False
+                notification.updated_at = datetime.now(UTC)
 
-            db.commit()
+                await db.commit()
 
-            logger.info("Update notification disabled")
+                logger.info("Update notification disabled")
 
-            return {
-                "enabled": notification.enabled,
-                "version": notification.version or "",
-                "title": notification.title or "",
-                "message": notification.message or "",
-                "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
-            }
-        except Exception as e:
-            db.rollback()
-            logger.error("Failed to disable notification: %s", e)
-            raise
-        finally:
-            db.close()
+                return {
+                    "enabled": notification.enabled,
+                    "version": notification.version or "",
+                    "title": notification.title or "",
+                    "message": notification.message or "",
+                    "updated_at": notification.updated_at.isoformat() if notification.updated_at else None,
+                }
+            except Exception as exc:
+                await db.rollback()
+                logger.error("Failed to disable notification: %s", exc)
+                raise
 
-    def clear_dismissed(self) -> bool:
+    async def clear_dismissed(self) -> bool:
         """
         Clear all dismissed states (show notification to all users again).
 
         Returns:
             True if successful
         """
-        db = self._get_db()
-        try:
-            deleted = db.query(UpdateNotificationDismissed).delete()
-            db.commit()
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await db.execute(delete(UpdateNotificationDismissed))
+                deleted = result.rowcount
+                await db.commit()
 
-            logger.info("Cleared %s dismissed states", deleted)
-            return True
-        except Exception as e:
-            db.rollback()
-            logger.error("Failed to clear dismissed: %s", e)
-            return False
-        finally:
-            db.close()
+                logger.info("Cleared %s dismissed states", deleted)
+                return True
+            except Exception as exc:
+                await db.rollback()
+                logger.error("Failed to clear dismissed: %s", exc)
+                return False
 
-    def get_dismissed_count(self) -> int:
+    async def get_dismissed_count(self) -> int:
         """
         Get the number of users who have dismissed the notification.
 
         Returns:
             Count of dismissed users for current version
         """
-        db = self._get_db()
-        try:
-            notification = self._ensure_notification_exists(db)
+        async with AsyncSessionLocal() as db:
+            notification = await self._ensure_notification_exists(db)
             version = notification.version or ""
 
             if not version:
                 return 0
 
-            return db.query(UpdateNotificationDismissed).filter(UpdateNotificationDismissed.version == version).count()
-        finally:
-            db.close()
+            result = await db.execute(
+                select(func.count(UpdateNotificationDismissed.id)).where(UpdateNotificationDismissed.version == version)
+            )
+            return result.scalar_one()
 
     def shutdown(self):
         """Graceful shutdown (no-op since we write immediately)."""
         logger.info("UpdateNotifier shutdown complete")
 
 
-# Global singleton instance
 update_notifier = UpdateNotifier()

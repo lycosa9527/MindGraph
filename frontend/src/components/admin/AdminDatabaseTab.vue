@@ -48,6 +48,25 @@ interface PgStats {
   tables: Record<string, number>
 }
 
+interface PgDumpAnalysis {
+  success: boolean
+  matched_users: number
+  new_users: number
+  matched_orgs: number
+  new_orgs: number
+  staging_tables: Record<string, number>
+  merge_tables: string[]
+  skipped_tables: string[]
+  per_table: Record<string, { staging_rows: number; live_rows: number }>
+}
+
+interface PgDumpMergeResult {
+  success: boolean
+  tables: Record<string, { inserted: number; skipped: number; orphaned: number }>
+  elapsed_seconds: number
+  file_warning?: string
+}
+
 // ── composables ──────────────────────────────────────────────────────
 
 const { t } = useLanguage()
@@ -72,6 +91,12 @@ const mergeResult = ref<MergeResult | null>(null)
 
 const isExporting = ref(false)
 const isImporting = ref(false)
+
+const selectedDump = ref<string | null>(null)
+const isAnalyzingDump = ref(false)
+const pgDumpAnalysis = ref<PgDumpAnalysis | null>(null)
+const isMergingDump = ref(false)
+const pgDumpMergeResult = ref<PgDumpMergeResult | null>(null)
 
 const isDetectingOrphans = ref(false)
 const orphans = ref<Record<string, number> | null>(null)
@@ -106,6 +131,22 @@ const sortedPgTables = computed(() => {
     .map(([name, count]) => ({ name, count }))
 })
 
+const pgDumpAnalysisTableData = computed(() => {
+  if (!pgDumpAnalysis.value?.per_table) return []
+  return Object.entries(pgDumpAnalysis.value.per_table)
+    .filter(([, v]) => v.staging_rows > 0)
+    .sort(([, a], [, b]) => b.staging_rows - a.staging_rows)
+    .map(([name, v]) => ({ name, ...v }))
+})
+
+const pgMergeResultTableData = computed(() => {
+  if (!pgDumpMergeResult.value?.tables) return []
+  return Object.entries(pgDumpMergeResult.value.tables)
+    .filter(([, v]) => v.inserted > 0 || v.skipped > 0 || v.orphaned > 0)
+    .sort(([, a], [, b]) => b.inserted - a.inserted)
+    .map(([name, v]) => ({ name, ...v }))
+})
+
 // ── helpers ──────────────────────────────────────────────────────────
 
 function formatBytes(bytes: number): string {
@@ -138,6 +179,9 @@ async function scanBackup() {
   analysis.value = null
   mergeResult.value = null
   selectedSqlite.value = null
+  pgDumpAnalysis.value = null
+  pgDumpMergeResult.value = null
+  selectedDump.value = null
   try {
     const response = await apiRequest('/api/auth/admin/database/scan')
     if (!response.ok) throw new Error('scan request failed')
@@ -317,6 +361,74 @@ async function importDump(filename: string) {
     notify.error(t('admin.database.importError'))
   } finally {
     isImporting.value = false
+  }
+}
+
+async function analyzeDump(filename: string) {
+  selectedDump.value = filename
+  isAnalyzingDump.value = true
+  pgDumpAnalysis.value = null
+  pgDumpMergeResult.value = null
+  try {
+    const response = await apiRequest('/api/auth/admin/database/analyze-dump', {
+      method: 'POST',
+      body: JSON.stringify({ filename }),
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      const detail = body?.detail ?? response.statusText
+      notify.error(`${t('admin.database.pgAnalyzeError')}: ${detail}`)
+      return
+    }
+    pgDumpAnalysis.value = (await response.json()) as PgDumpAnalysis
+  } catch (err: unknown) {
+    console.error('[AdminDB] PG dump analyze error:', err)
+    notify.error(t('admin.database.pgAnalyzeError'))
+  } finally {
+    isAnalyzingDump.value = false
+  }
+}
+
+async function executePgMerge() {
+  if (!selectedDump.value) return
+  const filename = selectedDump.value
+
+  try {
+    await ElMessageBox.confirm(
+      t('admin.database.pgMergeConfirmMsg'),
+      t('admin.database.pgMergeConfirmTitle'),
+      {
+        confirmButtonText: t('admin.confirm'),
+        cancelButtonText: t('admin.cancel'),
+        type: 'warning',
+      }
+    )
+  } catch (err: unknown) {
+    if (err === 'cancel' || err === 'close') return
+    console.error('[AdminDB] ElMessageBox error:', err)
+    return
+  }
+
+  isMergingDump.value = true
+  try {
+    const response = await apiRequest('/api/auth/admin/database/merge-dump', {
+      method: 'POST',
+      body: JSON.stringify({ filename }),
+    })
+    if (!response.ok) {
+      const body = await response.json().catch(() => null)
+      const detail = body?.detail ?? response.statusText
+      notify.error(`${t('admin.database.pgMergeError')}: ${detail}`)
+      return
+    }
+    pgDumpMergeResult.value = (await response.json()) as PgDumpMergeResult
+    notify.success(t('admin.database.pgMergeSuccess'))
+    loadStats()
+  } catch (err: unknown) {
+    console.error('[AdminDB] PG dump merge error:', err)
+    notify.error(t('admin.database.pgMergeError'))
+  } finally {
+    isMergingDump.value = false
   }
 }
 
@@ -665,7 +777,7 @@ onMounted(() => {
       </template>
     </el-card>
 
-    <!-- ═══ Section 3: PG Export / Import ═══ -->
+    <!-- ═══ Section 3: PG Export / Import / Merge ═══ -->
     <el-card shadow="never">
       <template #header>
         <div class="flex items-center justify-between">
@@ -717,18 +829,28 @@ onMounted(() => {
           </el-table-column>
           <el-table-column
             :label="t('admin.actions')"
-            width="120"
+            width="240"
             align="center"
           >
             <template #default="{ row }">
-              <el-button
-                size="small"
-                type="danger"
-                :loading="isImporting"
-                @click="importDump(row.name)"
-              >
-                {{ t('admin.database.restore') }}
-              </el-button>
+              <div class="flex gap-1 justify-center">
+                <el-button
+                  size="small"
+                  type="primary"
+                  :loading="isAnalyzingDump && selectedDump === row.name"
+                  @click="analyzeDump(row.name)"
+                >
+                  {{ t('admin.database.pgAnalyze') }}
+                </el-button>
+                <el-button
+                  size="small"
+                  type="danger"
+                  :loading="isImporting"
+                  @click="importDump(row.name)"
+                >
+                  {{ t('admin.database.restore') }}
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -740,6 +862,133 @@ onMounted(() => {
       >
         {{ t('admin.database.noDumpFiles') }}
       </div>
+
+      <!-- PG dump analysis result -->
+      <template v-if="pgDumpAnalysis && !pgDumpMergeResult">
+        <el-divider />
+        <h4 class="font-medium mb-3">{{ t('admin.database.pgAnalysisResult') }}</h4>
+
+        <div class="grid grid-cols-4 gap-3 mb-4">
+          <div class="stat-card stat-card-sm">
+            <div class="stat-value text-blue-600">{{ pgDumpAnalysis.matched_users }}</div>
+            <div class="stat-label">{{ t('admin.database.matchedUsers') }}</div>
+          </div>
+          <div class="stat-card stat-card-sm">
+            <div class="stat-value text-green-600">{{ pgDumpAnalysis.new_users }}</div>
+            <div class="stat-label">{{ t('admin.database.newUsers') }}</div>
+          </div>
+          <div class="stat-card stat-card-sm">
+            <div class="stat-value text-blue-600">{{ pgDumpAnalysis.matched_orgs }}</div>
+            <div class="stat-label">{{ t('admin.database.matchedOrgs') }}</div>
+          </div>
+          <div class="stat-card stat-card-sm">
+            <div class="stat-value text-green-600">{{ pgDumpAnalysis.new_orgs }}</div>
+            <div class="stat-label">{{ t('admin.database.newOrgs') }}</div>
+          </div>
+        </div>
+
+        <div
+          v-if="pgDumpAnalysis.skipped_tables.length > 0"
+          class="text-sm text-gray-500 mb-3"
+        >
+          {{ t('admin.database.pgSkippedTables') }}:
+          <span class="font-mono">{{ pgDumpAnalysis.skipped_tables.join(', ') }}</span>
+        </div>
+
+        <el-table
+          :data="pgDumpAnalysisTableData"
+          size="small"
+          max-height="300"
+          stripe
+        >
+          <el-table-column
+            prop="name"
+            :label="t('admin.database.tableName')"
+          />
+          <el-table-column
+            prop="staging_rows"
+            :label="t('admin.database.pgStagingRows')"
+            width="140"
+            align="right"
+          >
+            <template #default="{ row }">{{ row.staging_rows.toLocaleString() }}</template>
+          </el-table-column>
+          <el-table-column
+            prop="live_rows"
+            :label="t('admin.database.pgLiveRows')"
+            width="140"
+            align="right"
+          >
+            <template #default="{ row }">{{ row.live_rows.toLocaleString() }}</template>
+          </el-table-column>
+        </el-table>
+
+        <div class="mt-4 flex justify-end">
+          <el-button
+            type="success"
+            :loading="isMergingDump"
+            @click="executePgMerge"
+          >
+            {{ t('admin.database.pgExecuteMerge') }}
+          </el-button>
+        </div>
+      </template>
+
+      <!-- PG dump merge result -->
+      <template v-if="pgDumpMergeResult">
+        <el-divider />
+        <el-result
+          icon="success"
+          :title="t('admin.database.pgMergeComplete')"
+          :sub-title="`${pgDumpMergeResult.elapsed_seconds}s`"
+        />
+
+        <el-alert
+          v-if="pgDumpMergeResult.file_warning"
+          type="warning"
+          :title="pgDumpMergeResult.file_warning"
+          show-icon
+          class="mb-4"
+          :closable="false"
+        />
+
+        <el-table
+          :data="pgMergeResultTableData"
+          size="small"
+          max-height="400"
+          stripe
+        >
+          <el-table-column
+            prop="name"
+            :label="t('admin.database.tableName')"
+          />
+          <el-table-column
+            :label="t('admin.database.inserted')"
+            width="120"
+            align="right"
+          >
+            <template #default="{ row }">
+              <span class="text-green-600 font-medium">{{ row.inserted }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            :label="t('admin.database.skipped')"
+            width="120"
+            align="right"
+          >
+            <template #default="{ row }">{{ row.skipped }}</template>
+          </el-table-column>
+          <el-table-column
+            :label="t('admin.database.orphaned')"
+            width="120"
+            align="right"
+          >
+            <template #default="{ row }">
+              <span :class="row.orphaned ? 'text-orange-500' : ''">{{ row.orphaned ?? '-' }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+      </template>
     </el-card>
 
     <!-- ═══ Section 4: Orphan Cleanup ═══ -->

@@ -200,7 +200,7 @@ def compare_chunks(
     return chunks_to_add, chunks_to_update, chunks_to_delete
 
 
-def process_updated_chunks(
+async def process_updated_chunks(
     chunks_to_update: List[Tuple[int, Any, str]],
     existing_chunk_map: Dict[int, DocumentChunk],
     _document: KnowledgeDocument,
@@ -233,9 +233,8 @@ def process_updated_chunks(
         existing_chunk = existing_chunk_map[chunk_index]
 
         # Get or generate embedding
-        cached_embedding = embedding_cache.get_document_embedding(db, new_chunk.text)
+        cached_embedding = await embedding_cache.get_document_embedding(db, new_chunk.text)
         if not cached_embedding:
-            # Check rate limit
             allowed, _count, _error_msg = kb_rate_limiter.check_embedding_limit(user_id)
             if not allowed:
                 logger.warning(
@@ -243,13 +242,12 @@ def process_updated_chunks(
                 )
                 break
 
-            # Generate embedding
             dimensions = config.EMBEDDING_DIMENSIONS
             try:
                 embeddings = embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
                 if embeddings:
                     cached_embedding = embeddings[0]
-                    embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
+                    await embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
             except Exception as e:
                 logger.error(
                     "[KnowledgeSpace] Failed to generate embedding for chunk %s: %s",
@@ -271,7 +269,7 @@ def process_updated_chunks(
     return updated_chunk_ids, updated_embeddings, updated_chunks
 
 
-def process_new_chunks(
+async def process_new_chunks(
     chunks_to_add: List[Tuple[int, Any, str]],
     document: KnowledgeDocument,
     embedding_client,
@@ -300,9 +298,8 @@ def process_new_chunks(
 
     for chunk_index, new_chunk, _chunk_hash in chunks_to_add:
         # Get or generate embedding
-        cached_embedding = embedding_cache.get_document_embedding(db, new_chunk.text)
+        cached_embedding = await embedding_cache.get_document_embedding(db, new_chunk.text)
         if not cached_embedding:
-            # Check rate limit
             allowed, _count, _error_msg = kb_rate_limiter.check_embedding_limit(user_id)
             if not allowed:
                 logger.warning(
@@ -310,13 +307,12 @@ def process_new_chunks(
                 )
                 break
 
-            # Generate embedding
             dimensions = config.EMBEDDING_DIMENSIONS
             try:
                 embeddings = embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
                 if embeddings:
                     cached_embedding = embeddings[0]
-                    embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
+                    await embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
             except Exception as e:
                 logger.error(
                     "[KnowledgeSpace] Failed to generate embedding for new chunk %s: %s",
@@ -326,7 +322,6 @@ def process_new_chunks(
                 continue
 
         if cached_embedding:
-            # Create chunk in database
             db_chunk = DocumentChunk(
                 document_id=document.id,
                 chunk_index=chunk_index,
@@ -335,7 +330,7 @@ def process_new_chunks(
                 end_char=new_chunk.end_char,
             )
             db.add(db_chunk)
-            db.flush()
+            await db.flush()
 
             new_chunk_ids.append(db_chunk.id)
             new_embeddings.append(cached_embedding)

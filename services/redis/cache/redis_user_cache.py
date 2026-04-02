@@ -24,11 +24,13 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional, Dict
 import logging
 
-from config.database import SessionLocal
+from sqlalchemy import select
+
+from config.database import AsyncSessionLocal
 from models.domain.auth import User
 from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
@@ -116,9 +118,9 @@ class UserCache:
             try:
                 user.created_at = datetime.fromisoformat(data["created_at"])
             except (ValueError, TypeError):
-                user.created_at = datetime.utcnow()
+                user.created_at = datetime.now(UTC)
         else:
-            user.created_at = datetime.utcnow()
+            user.created_at = datetime.now(UTC)
 
         if data.get("last_login"):
             try:
@@ -133,7 +135,7 @@ class UserCache:
 
         return user
 
-    def _load_from_database(self, user_id: Optional[int] = None, phone: Optional[str] = None) -> Optional[User]:
+    async def _load_from_database(self, user_id: Optional[int] = None, phone: Optional[str] = None) -> Optional[User]:
         """
         Load user from database.
 
@@ -144,32 +146,29 @@ class UserCache:
         Returns:
             User object or None if not found
         """
-        db = SessionLocal()
         try:
-            if user_id:
-                user = db.query(User).filter(User.id == user_id).first()
-            elif phone:
-                user = db.query(User).filter(User.phone == phone).first()
-            else:
-                return None
+            async with AsyncSessionLocal() as db:
+                if user_id:
+                    result = await db.execute(select(User).where(User.id == user_id))
+                    user = result.scalar_one_or_none()
+                elif phone:
+                    result = await db.execute(select(User).where(User.phone == phone))
+                    user = result.scalar_one_or_none()
+                else:
+                    return None
 
-            if user:
-                # Detach from session so it can be used after close
-                db.expunge(user)
-                # Cache it for next time (non-blocking)
-                try:
-                    self.cache_user(user)
-                except Exception as e:
-                    logger.debug("[UserCache] Failed to cache user loaded from database: %s", e)
+                if user:
+                    try:
+                        self.cache_user(user)
+                    except Exception as e:
+                        logger.debug("[UserCache] Failed to cache user loaded from database: %s", e)
 
-            return user
+                return user
         except Exception as e:
             logger.error("[UserCache] Database query failed: %s", e, exc_info=True)
             raise
-        finally:
-            db.close()
 
-    def get_by_id(self, user_id: int) -> Optional[User]:
+    async def get_by_id(self, user_id: int) -> Optional[User]:
         """
         Get user by ID with cache lookup and database fallback.
 
@@ -179,16 +178,14 @@ class UserCache:
         Returns:
             User object or None if not found
         """
-        # Check Redis availability
         if not is_redis_available():
             logger.debug(
                 "[UserCache] Redis unavailable, loading user ID %s from database",
                 user_id,
             )
-            return self._load_from_database(user_id=user_id)
+            return await self._load_from_database(user_id=user_id)
 
         try:
-            # Try cache read
             key = f"{USER_KEY_PREFIX}{user_id}"
             cached = RedisOps.hash_get_all(key)
 
@@ -198,14 +195,12 @@ class UserCache:
                     logger.debug("[UserCache] Cache hit for user ID %s", user_id)
                     return user
                 except (KeyError, ValueError, TypeError) as e:
-                    # Corrupted cache entry
                     logger.error(
                         "[UserCache] Corrupted cache for user ID %s: %s",
                         user_id,
                         e,
                         exc_info=True,
                     )
-                    # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
                     except Exception as exc:
@@ -214,22 +209,19 @@ class UserCache:
                             user_id,
                             exc,
                         )
-                    # Fallback to database
-                    return self._load_from_database(user_id=user_id)
+                    return await self._load_from_database(user_id=user_id)
         except Exception as e:
-            # Transient Redis errors - fallback to database
             logger.warning(
                 "[UserCache] Redis error for user ID %s, falling back to database: %s",
                 user_id,
                 e,
             )
-            return self._load_from_database(user_id=user_id)
+            return await self._load_from_database(user_id=user_id)
 
-        # Cache miss - load from database
         logger.debug("[UserCache] Cache miss for user ID %s, loading from database", user_id)
-        return self._load_from_database(user_id=user_id)
+        return await self._load_from_database(user_id=user_id)
 
-    def get_by_phone(self, phone: str) -> Optional[User]:
+    async def get_by_phone(self, phone: str) -> Optional[User]:
         """
         Get user by phone number with cache lookup and database fallback.
 
@@ -239,25 +231,22 @@ class UserCache:
         Returns:
             User object or None if not found
         """
-        # Check Redis availability
         if not is_redis_available():
             phone_masked = phone[:3] + "***" + phone[-4:]
             logger.debug(
                 "[UserCache] Redis unavailable, loading user by phone %s from database",
                 phone_masked,
             )
-            return self._load_from_database(phone=phone)
+            return await self._load_from_database(phone=phone)
 
         try:
-            # Try cache index lookup
             index_key = f"{USER_PHONE_INDEX_PREFIX}{phone}"
             user_id_str = RedisOps.get(index_key)
 
             if user_id_str:
                 try:
                     user_id = int(user_id_str)
-                    # Load user by ID (will use cache)
-                    return self.get_by_id(user_id)
+                    return await self.get_by_id(user_id)
                 except (ValueError, TypeError) as e:
                     phone_masked = phone[:3] + "***" + phone[-4:]
                     logger.error(
@@ -265,27 +254,23 @@ class UserCache:
                         phone_masked,
                         e,
                     )
-                    # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
                     except Exception as exc:
                         logger.debug("Corrupted user phone index deletion failed: %s", exc)
-                    # Fallback to database
-                    return self._load_from_database(phone=phone)
+                    return await self._load_from_database(phone=phone)
         except Exception as e:
-            # Transient Redis errors - fallback to database
             phone_masked = phone[:3] + "***" + phone[-4:]
             logger.warning(
                 "[UserCache] Redis error for phone %s, falling back to database: %s",
                 phone_masked,
                 e,
             )
-            return self._load_from_database(phone=phone)
+            return await self._load_from_database(phone=phone)
 
-        # Cache miss - load from database
         phone_masked = phone[:3] + "***" + phone[-4:]
         logger.debug("[UserCache] Cache miss for phone %s, loading from database", phone_masked)
-        return self._load_from_database(phone=phone)
+        return await self._load_from_database(phone=phone)
 
     def cache_user(self, user: User) -> bool:
         """

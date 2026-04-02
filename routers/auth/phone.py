@@ -14,9 +14,9 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import SendChangePhoneSMSRequest, ChangePhoneRequest
@@ -46,7 +46,7 @@ async def send_change_phone_code(
     request: SendChangePhoneSMSRequest,
     _http_request: Request,
     current_user: User = Depends(get_current_user),
-    _db: Session = Depends(get_db),
+    _db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -72,7 +72,7 @@ async def send_change_phone_code(
         )
 
     # Check if new phone is already registered by another user
-    existing_user = user_cache.get_by_phone(new_phone)
+    existing_user = await user_cache.get_by_phone(new_phone)
     if existing_user and existing_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -186,7 +186,7 @@ async def change_phone(
     request: ChangePhoneRequest,
     _http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -206,7 +206,7 @@ async def change_phone(
         )
 
     # Check if new phone is already registered by another user
-    existing_user = user_cache.get_by_phone(new_phone)
+    existing_user = await user_cache.get_by_phone(new_phone)
     if existing_user and existing_user.id != current_user.id:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
@@ -228,12 +228,7 @@ async def change_phone(
     current_user.phone = new_phone
 
     # Commit with retry for database lock handling
-    success = commit_user_with_retry(db, current_user)
-    if not success:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=Messages.error("database_temporarily_unavailable", lang),
-        )
+    await commit_user_with_retry(db, current_user)
 
     # Invalidate cache for both old and new phone
     user_cache.invalidate(current_user.id, old_phone)

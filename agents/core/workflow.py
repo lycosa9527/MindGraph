@@ -31,7 +31,7 @@ from agents.core.learning_sheet import (
     _detect_learning_sheet_from_prompt,
 )
 from agents.core.utils import create_error_response, validate_inputs
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 
 if TYPE_CHECKING:
     pass
@@ -460,24 +460,21 @@ auto-complete - user has dimension but no topic (generate topic and children)
         if use_rag and user_id:
             try:
                 rag_service = RAGService()
-                db = SessionLocal()
-                try:
-                    # Check if user has knowledge base
-                    if rag_service.has_knowledge_base(db, user_id):
+                async with AsyncSessionLocal() as db:
+                    if await rag_service.has_knowledge_base(db, user_id):
                         logger.info(
                             "[RAG] Retrieving context for user %d, top_k=%d",
                             user_id,
                             rag_top_k,
                         )
 
-                        # Retrieve relevant context using hybrid search
-                        rag_context_chunks = rag_service.retrieve_context(
+                        rag_context_chunks = await rag_service.retrieve_context(
                             db=db,
                             user_id=user_id,
                             query=generation_prompt,
-                            method="hybrid",  # Use hybrid search for best results
+                            method="hybrid",
                             top_k=rag_top_k,
-                            score_threshold=0.3,  # Minimum relevance threshold
+                            score_threshold=0.3,
                             source="diagram_generation",
                             source_context={
                                 "stage": "generation",
@@ -486,7 +483,6 @@ auto-complete - user has dimension but no topic (generate topic and children)
                         )
 
                         if rag_context_chunks:
-                            # Format context for prompt enhancement
                             rag_context = (
                                 "\n\n".join(
                                     [f"[知识库参考 {i + 1}]: {chunk}" for i, chunk in enumerate(rag_context_chunks)]
@@ -511,11 +507,8 @@ auto-complete - user has dimension but no topic (generate topic and children)
                             )
                     else:
                         logger.debug("[RAG] User %d has no knowledge base, skipping RAG", user_id)
-                finally:
-                    db.close()
             except Exception as e:  # pylint: disable=broad-except
                 logger.warning("[RAG] Failed to retrieve context: %s", e, exc_info=True)
-                # Continue without RAG context if retrieval fails
 
         # Enhance prompt with RAG context if available
         if rag_context:

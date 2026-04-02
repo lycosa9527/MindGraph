@@ -25,10 +25,12 @@ import os
 import uuid
 from typing import Tuple, Optional
 
+from sqlalchemy import select
+
 from services.redis.cache.redis_user_cache import get_user_cache
 from services.redis.cache.redis_org_cache import get_org_cache
 from services.redis.redis_client import get_redis, is_redis_available
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import User, Organization
 
 logger = logging.getLogger(__name__)
@@ -179,7 +181,7 @@ def release_cache_loader_lock() -> bool:
         return False
 
 
-def load_all_users_to_cache() -> Tuple[int, int]:
+async def load_all_users_to_cache() -> Tuple[int, int]:
     """
     Load all users from database into Redis cache.
 
@@ -187,10 +189,12 @@ def load_all_users_to_cache() -> Tuple[int, int]:
         Tuple of (success_count, error_count)
     """
     user_cache = get_user_cache()
-    db = SessionLocal()
 
     try:
-        users = db.query(User).all()
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(User))
+            users = result.scalars().all()
+
         total_count = len(users)
 
         if total_count == 0:
@@ -221,7 +225,6 @@ def load_all_users_to_cache() -> Tuple[int, int]:
                     e,
                     exc_info=True,
                 )
-                # Continue loading other users
 
         logger.info("[CacheLoader] Loaded %d/%d users into cache", success_count, total_count)
         if error_count > 0:
@@ -232,11 +235,9 @@ def load_all_users_to_cache() -> Tuple[int, int]:
     except Exception as e:
         logger.error("[CacheLoader] Failed to load users from database: %s", e, exc_info=True)
         return 0, 0
-    finally:
-        db.close()
 
 
-def load_all_orgs_to_cache() -> Tuple[int, int]:
+async def load_all_orgs_to_cache() -> Tuple[int, int]:
     """
     Load all organizations from database into Redis cache.
 
@@ -244,10 +245,12 @@ def load_all_orgs_to_cache() -> Tuple[int, int]:
         Tuple of (success_count, error_count)
     """
     org_cache = get_org_cache()
-    db = SessionLocal()
 
     try:
-        orgs = db.query(Organization).all()
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(Organization))
+            orgs = result.scalars().all()
+
         total_count = len(orgs)
 
         if total_count == 0:
@@ -271,7 +274,6 @@ def load_all_orgs_to_cache() -> Tuple[int, int]:
                     e,
                     exc_info=True,
                 )
-                # Continue loading other orgs
 
         logger.info(
             "[CacheLoader] Loaded %d/%d organizations into cache",
@@ -290,11 +292,9 @@ def load_all_orgs_to_cache() -> Tuple[int, int]:
             exc_info=True,
         )
         return 0, 0
-    finally:
-        db.close()
 
 
-def reload_cache_from_database() -> bool:
+async def reload_cache_from_database() -> bool:
     """
     Reload all users and organizations from database into Redis cache.
 
@@ -305,28 +305,22 @@ def reload_cache_from_database() -> bool:
     Returns:
         True if reload completed successfully (even with some errors), False if critical failure
     """
-    # Check if Redis is available first
     if not is_redis_available():
         logger.warning("[CacheLoader] Redis is not available - cannot load cache. Cache will be populated on-demand.")
         return False
 
-    # Try to acquire lock - only one worker should load cache
     if not acquire_cache_loader_lock():
-        # Another worker is loading cache, skip
-        # Use DEBUG level since this is expected behavior in multi-worker setups
         logger.debug("[CacheLoader] Another worker is loading cache, skipping (cache will be loaded by that worker)")
-        return True  # Return True since cache will be loaded by another worker
+        return True
 
     start_time = time.time()
 
     logger.info("[CacheLoader] Starting cache reload from database...")
 
     try:
-        # Load users
-        user_success, user_errors = load_all_users_to_cache()
+        user_success, user_errors = await load_all_users_to_cache()
 
-        # Load organizations
-        org_success, org_errors = load_all_orgs_to_cache()
+        org_success, org_errors = await load_all_orgs_to_cache()
 
         elapsed_time = time.time() - start_time
 
@@ -345,7 +339,6 @@ def reload_cache_from_database() -> bool:
             elapsed_time,
         )
 
-        # Return True if at least some data was loaded successfully
         return total_success > 0
 
     except Exception as e:
@@ -358,5 +351,4 @@ def reload_cache_from_database() -> bool:
         )
         return False
     finally:
-        # Always release lock after cache loading completes (or fails)
         release_cache_loader_lock()

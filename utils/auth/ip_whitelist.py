@@ -18,13 +18,13 @@ from .config import BAYI_IP_WHITELIST
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_REDIS_AVAILABLE = False
+_redis_available = False
 _get_bayi_whitelist = None
 
 try:
     from services.redis.redis_bayi_whitelist import get_bayi_whitelist
 
-    _REDIS_AVAILABLE = True
+    _redis_available = True
     _get_bayi_whitelist = get_bayi_whitelist
 except ImportError:
     pass
@@ -47,7 +47,7 @@ def is_ip_whitelisted(client_ip: str) -> bool:
         True if IP is whitelisted, False otherwise
     """
     # Try Redis first (for multi-worker support and dynamic management)
-    if _REDIS_AVAILABLE and _get_bayi_whitelist is not None:
+    if _redis_available and _get_bayi_whitelist is not None:
         try:
             whitelist = _get_bayi_whitelist()
             result = whitelist.is_ip_whitelisted(client_ip)

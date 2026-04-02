@@ -26,11 +26,13 @@ Proprietary License
 """
 
 import logging
+from datetime import UTC, datetime
 from typing import Optional, Dict
-from datetime import datetime
+
+from sqlalchemy import select
 
 from services.redis.redis_client import is_redis_available, RedisOps, get_redis
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import Organization
 
 logger = logging.getLogger(__name__)
@@ -104,9 +106,9 @@ class OrganizationCache:
             try:
                 setattr(org, "created_at", datetime.fromisoformat(data["created_at"]))
             except (ValueError, TypeError):
-                setattr(org, "created_at", datetime.utcnow())
+                setattr(org, "created_at", datetime.now(UTC))
         else:
-            setattr(org, "created_at", datetime.utcnow())
+            setattr(org, "created_at", datetime.now(UTC))
 
         if data.get("expires_at"):
             try:
@@ -122,7 +124,7 @@ class OrganizationCache:
 
         return org
 
-    def _load_from_database(
+    async def _load_from_database(
         self,
         org_id: Optional[int] = None,
         code: Optional[str] = None,
@@ -139,34 +141,32 @@ class OrganizationCache:
         Returns:
             Organization object or None if not found
         """
-        db = SessionLocal()
         try:
-            if org_id:
-                org = db.query(Organization).filter(Organization.id == org_id).first()
-            elif code:
-                org = db.query(Organization).filter(Organization.code == code).first()
-            elif invite_code:
-                org = db.query(Organization).filter(Organization.invitation_code == invite_code).first()
-            else:
-                return None
+            async with AsyncSessionLocal() as db:
+                if org_id:
+                    result = await db.execute(select(Organization).where(Organization.id == org_id))
+                    org = result.scalar_one_or_none()
+                elif code:
+                    result = await db.execute(select(Organization).where(Organization.code == code))
+                    org = result.scalar_one_or_none()
+                elif invite_code:
+                    result = await db.execute(select(Organization).where(Organization.invitation_code == invite_code))
+                    org = result.scalar_one_or_none()
+                else:
+                    return None
 
-            if org:
-                # Detach from session so it can be used after close
-                db.expunge(org)
-                # Cache it for next time (non-blocking)
-                try:
-                    self.cache_org(org)
-                except Exception as e:
-                    logger.debug("[OrgCache] Failed to cache org loaded from database: %s", e)
+                if org:
+                    try:
+                        self.cache_org(org)
+                    except Exception as e:
+                        logger.debug("[OrgCache] Failed to cache org loaded from database: %s", e)
 
-            return org
+                return org
         except Exception as e:
             logger.error("[OrgCache] Database query failed: %s", e, exc_info=True)
             raise
-        finally:
-            db.close()
 
-    def get_by_id(self, org_id: int) -> Optional[Organization]:
+    async def get_by_id(self, org_id: int) -> Optional[Organization]:
         """
         Get organization by ID with cache lookup and database fallback.
 
@@ -176,13 +176,11 @@ class OrganizationCache:
         Returns:
             Organization object or None if not found
         """
-        # Check Redis availability
         if not is_redis_available():
             logger.debug("[OrgCache] Redis unavailable, loading org ID %s from database", org_id)
-            return self._load_from_database(org_id=org_id)
+            return await self._load_from_database(org_id=org_id)
 
         try:
-            # Try cache read
             key = f"{ORG_KEY_PREFIX}{org_id}"
             cached = RedisOps.hash_get_all(key)
 
@@ -192,14 +190,12 @@ class OrganizationCache:
                     logger.debug("[OrgCache] Cache hit for org ID %s", org_id)
                     return org
                 except (KeyError, ValueError, TypeError) as e:
-                    # Corrupted cache entry
                     logger.error(
                         "[OrgCache] Corrupted cache for org ID %s: %s",
                         org_id,
                         e,
                         exc_info=True,
                     )
-                    # Invalidate corrupted entry
                     try:
                         RedisOps.delete(key)
                     except Exception as exc:
@@ -208,22 +204,19 @@ class OrganizationCache:
                             org_id,
                             exc,
                         )
-                    # Fallback to database
-                    return self._load_from_database(org_id=org_id)
+                    return await self._load_from_database(org_id=org_id)
         except Exception as e:
-            # Transient Redis errors - fallback to database
             logger.warning(
                 "[OrgCache] Redis error for org ID %s, falling back to database: %s",
                 org_id,
                 e,
             )
-            return self._load_from_database(org_id=org_id)
+            return await self._load_from_database(org_id=org_id)
 
-        # Cache miss - load from database
         logger.debug("[OrgCache] Cache miss for org ID %s, loading from database", org_id)
-        return self._load_from_database(org_id=org_id)
+        return await self._load_from_database(org_id=org_id)
 
-    def get_by_code(self, code: str) -> Optional[Organization]:
+    async def get_by_code(self, code: str) -> Optional[Organization]:
         """
         Get organization by code with cache lookup and database fallback.
 
@@ -233,27 +226,23 @@ class OrganizationCache:
         Returns:
             Organization object or None if not found
         """
-        # Check Redis availability
         if not is_redis_available():
             logger.debug(
                 "[OrgCache] Redis unavailable, loading org by code %s from database",
                 code,
             )
-            return self._load_from_database(code=code)
+            return await self._load_from_database(code=code)
 
         try:
-            # Try cache index lookup
             index_key = f"{ORG_CODE_INDEX_PREFIX}{code}"
             org_id_str = RedisOps.get(index_key)
 
             if org_id_str:
                 try:
                     org_id = int(org_id_str)
-                    # Load org by ID (will use cache)
-                    return self.get_by_id(org_id)
+                    return await self.get_by_id(org_id)
                 except (ValueError, TypeError) as e:
                     logger.error("[OrgCache] Invalid org ID in code index for %s: %s", code, e)
-                    # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
                     except Exception as exc:
@@ -262,22 +251,19 @@ class OrganizationCache:
                             code,
                             exc,
                         )
-                    # Fallback to database
-                    return self._load_from_database(code=code)
+                    return await self._load_from_database(code=code)
         except Exception as e:
-            # Transient Redis errors - fallback to database
             logger.warning(
                 "[OrgCache] Redis error for code %s, falling back to database: %s",
                 code,
                 e,
             )
-            return self._load_from_database(code=code)
+            return await self._load_from_database(code=code)
 
-        # Cache miss - load from database
         logger.debug("[OrgCache] Cache miss for org code %s, loading from database", code)
-        return self._load_from_database(code=code)
+        return await self._load_from_database(code=code)
 
-    def get_by_invitation_code(self, invite_code: str) -> Optional[Organization]:
+    async def get_by_invitation_code(self, invite_code: str) -> Optional[Organization]:
         """
         Get organization by invitation code with cache lookup and database fallback.
 
@@ -287,25 +273,22 @@ class OrganizationCache:
         Returns:
             Organization object or None if not found
         """
-        # Check Redis availability
         if not is_redis_available():
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
             logger.debug(
                 "[OrgCache] Redis unavailable, loading org by invitation code %s from database",
                 masked_invite,
             )
-            return self._load_from_database(invite_code=invite_code)
+            return await self._load_from_database(invite_code=invite_code)
 
         try:
-            # Try cache index lookup
             index_key = f"{ORG_INVITE_INDEX_PREFIX}{invite_code}"
             org_id_str = RedisOps.get(index_key)
 
             if org_id_str:
                 try:
                     org_id = int(org_id_str)
-                    # Load org by ID (will use cache)
-                    return self.get_by_id(org_id)
+                    return await self.get_by_id(org_id)
                 except (ValueError, TypeError) as e:
                     masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
                     logger.error(
@@ -313,30 +296,26 @@ class OrganizationCache:
                         masked_invite,
                         e,
                     )
-                    # Invalidate corrupted index
                     try:
                         RedisOps.delete(index_key)
                     except Exception as exc:
                         logger.debug("Corrupted org invite index deletion failed: %s", exc)
-                    # Fallback to database
-                    return self._load_from_database(invite_code=invite_code)
+                    return await self._load_from_database(invite_code=invite_code)
         except Exception as e:
-            # Transient Redis errors - fallback to database
             masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
             logger.warning(
                 "[OrgCache] Redis error for invitation code %s, falling back to database: %s",
                 masked_invite,
                 e,
             )
-            return self._load_from_database(invite_code=invite_code)
+            return await self._load_from_database(invite_code=invite_code)
 
-        # Cache miss - load from database
         masked_invite = f"{invite_code[:8]}***" if len(invite_code) >= 8 else "***"
         logger.debug(
             "[OrgCache] Cache miss for invitation code %s, loading from database",
             masked_invite,
         )
-        return self._load_from_database(invite_code=invite_code)
+        return await self._load_from_database(invite_code=invite_code)
 
     def cache_org(self, org: Organization) -> bool:
         """

@@ -12,12 +12,12 @@ import logging
 import threading
 from pathlib import Path
 from typing import Optional, Dict, Any, cast, Tuple
-from datetime import datetime
+from datetime import UTC, datetime
 import time
 
 from PIL import Image
-from sqlalchemy import or_
-from sqlalchemy.orm import Session
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.library import LibraryDocument
 from services.library.library_path_utils import (
@@ -34,26 +34,23 @@ from services.library.image_path_resolver import (
 
 logger = logging.getLogger(__name__)
 
-# In-memory cache for document metadata (for high-concurrency image serving)
-# Cache structure: {document_id: {"data": {...}, "cached_at": timestamp}}
 _document_metadata_cache: Dict[int, Dict[str, Any]] = {}
-_cache_lock = threading.Lock()  # Thread-safe cache operations
-CACHE_TTL_SECONDS = 600  # 10 minutes TTL
-CACHE_MAX_SIZE = 1000  # Maximum number of cached documents
+_cache_lock = threading.Lock()
+CACHE_TTL_SECONDS = 600
+CACHE_MAX_SIZE = 1000
 
 
 class LibraryDocumentMixin:
     """Mixin for document management operations."""
 
-    # Type annotations for expected attributes provided by classes using this mixin
-    db: Session
+    db: AsyncSession
     user_id: Optional[int]
     cover_max_width: int
     cover_max_height: int
     covers_dir: Path
     storage_dir: Path
 
-    def get_documents(self, page: int = 1, page_size: int = 20, search: Optional[str] = None) -> Dict[str, Any]:
+    async def get_documents(self, page: int = 1, page_size: int = 20, search: Optional[str] = None) -> Dict[str, Any]:
         """
         Get list of library documents.
 
@@ -65,21 +62,28 @@ class LibraryDocumentMixin:
         Returns:
             Dict with documents list and pagination info
         """
-        query = self.db.query(LibraryDocument).filter(LibraryDocument.is_active)
+        conditions = [LibraryDocument.is_active]
 
         if search:
             search_term = f"%{search}%"
-            query = query.filter(
+            conditions.append(
                 or_(
                     LibraryDocument.title.ilike(search_term),
                     LibraryDocument.description.ilike(search_term),
                 )
             )
 
-        total = query.count()
-        documents = (
-            query.order_by(LibraryDocument.created_at.desc()).offset((page - 1) * page_size).limit(page_size).all()
+        count_result = await self.db.execute(select(func.count(LibraryDocument.id)).where(*conditions))
+        total = count_result.scalar_one()
+
+        result = await self.db.execute(
+            select(LibraryDocument)
+            .where(*conditions)
+            .order_by(LibraryDocument.created_at.desc())
+            .offset((page - 1) * page_size)
+            .limit(page_size)
         )
+        documents = result.scalars().all()
 
         return {
             "documents": [
@@ -107,7 +111,7 @@ class LibraryDocumentMixin:
             "page_size": page_size,
         }
 
-    def get_document(self, document_id: int, use_cache: bool = True) -> Optional[LibraryDocument]:
+    async def get_document(self, document_id: int, use_cache: bool = True) -> Optional[LibraryDocument]:
         """
         Get a single library document with optional caching.
 
@@ -124,28 +128,21 @@ class LibraryDocumentMixin:
             LibraryDocument instance or None
         """
         if not use_cache:
-            # Skip cache, query database directly
-            return (
-                self.db.query(LibraryDocument)
-                .filter(LibraryDocument.id == document_id, LibraryDocument.is_active)
-                .first()
+            result = await self.db.execute(
+                select(LibraryDocument).where(LibraryDocument.id == document_id, LibraryDocument.is_active)
             )
+            return result.scalar_one_or_none()
 
-        # Try Redis cache first (shared across servers)
         try:
             redis_cache = LibraryRedisCache()
             cached_metadata = redis_cache.get_document_metadata(document_id)
 
             if cached_metadata:
-                # Cache hit - reconstruct minimal document object for compatibility
-                # Note: This avoids DB query but returns limited object
-                # For full document object, still need DB query
                 logger.debug("[Library] Redis cache hit for document %s", document_id)
-        except Exception as e:
-            logger.debug("[Library] Redis cache check failed: %s", e)
+        except Exception as exc:
+            logger.debug("[Library] Redis cache check failed: %s", exc)
             cached_metadata = None
 
-        # Try in-memory cache (per-process)
         if not cached_metadata:
             with _cache_lock:
                 cached = _document_metadata_cache.get(document_id)
@@ -154,17 +151,14 @@ class LibraryDocumentMixin:
                     if cache_age < CACHE_TTL_SECONDS:
                         cached_metadata = cached["data"]
                     else:
-                        # Cache expired, remove it
                         _document_metadata_cache.pop(document_id, None)
 
-        # Query database (always needed for full object, or if cache miss)
-        document = (
-            self.db.query(LibraryDocument).filter(LibraryDocument.id == document_id, LibraryDocument.is_active).first()
+        result = await self.db.execute(
+            select(LibraryDocument).where(LibraryDocument.id == document_id, LibraryDocument.is_active)
         )
+        document = result.scalar_one_or_none()
 
-        # Cache metadata if document found and caching enabled
         if document and use_cache:
-            # Cache in both Redis and in-memory
             try:
                 redis_cache = LibraryRedisCache()
                 metadata = {
@@ -176,10 +170,9 @@ class LibraryDocumentMixin:
                     "title": document.title,
                 }
                 redis_cache.cache_document_metadata(document_id, metadata)
-            except Exception as e:
-                logger.debug("[Library] Redis cache write failed: %s", e)
+            except Exception as exc:
+                logger.debug("[Library] Redis cache write failed: %s", exc)
 
-            # Also cache in-memory
             self._cache_document_metadata(document_id, document)
 
         return document
@@ -193,14 +186,11 @@ class LibraryDocumentMixin:
             document: LibraryDocument instance
         """
         with _cache_lock:
-            # Evict oldest entries if cache exceeds max size (LRU-like eviction)
             if len(_document_metadata_cache) >= CACHE_MAX_SIZE:
-                # Remove oldest entries (by cached_at timestamp)
                 sorted_items = sorted(
                     _document_metadata_cache.items(),
                     key=lambda x: x[1].get("cached_at", 0),
                 )
-                # Remove oldest 10% of entries
                 evict_count = max(1, CACHE_MAX_SIZE // 10)
                 for doc_id, _ in sorted_items[:evict_count]:
                     _document_metadata_cache.pop(doc_id, None)
@@ -235,17 +225,15 @@ class LibraryDocumentMixin:
         Returns:
             Cached metadata dict or None if not cached or expired
         """
-        # Try Redis cache first (shared across servers)
         try:
             redis_cache = LibraryRedisCache()
             cached = redis_cache.get_document_metadata(document_id)
             if cached:
                 logger.debug("[Library] Redis cache hit for document metadata %s", document_id)
                 return cached
-        except Exception as e:
-            logger.debug("[Library] Redis cache check failed: %s", e)
+        except Exception as exc:
+            logger.debug("[Library] Redis cache check failed: %s", exc)
 
-        # Fallback to in-memory cache
         with _cache_lock:
             cached = _document_metadata_cache.get(document_id)
             if not cached:
@@ -253,7 +241,6 @@ class LibraryDocumentMixin:
 
             cache_age = time.time() - cached["cached_at"]
             if cache_age >= CACHE_TTL_SECONDS:
-                # Cache expired, remove it
                 _document_metadata_cache.pop(document_id, None)
                 return None
 
@@ -268,19 +255,17 @@ class LibraryDocumentMixin:
         Args:
             document_id: Document ID
         """
-        # Invalidate Redis cache
         try:
             redis_cache = LibraryRedisCache()
             redis_cache.invalidate_document(document_id)
-        except Exception as e:
-            logger.debug("[Library] Redis cache invalidation failed: %s", e)
+        except Exception as exc:
+            logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
-        # Invalidate in-memory cache
         with _cache_lock:
             _document_metadata_cache.pop(document_id, None)
         logger.debug("Invalidated cache for document %s", document_id)
 
-    def increment_views(self, document_id: int) -> None:
+    async def increment_views(self, document_id: int) -> None:
         """
         Increment view count for a document.
 
@@ -288,10 +273,10 @@ class LibraryDocumentMixin:
             document_id: Document ID
         """
         try:
-            document = self.get_document(document_id)
+            document = await self.get_document(document_id)
             if document:
                 document.views_count = cast(int, document.views_count) + 1
-                self.db.commit()
+                await self.db.commit()
                 logger.debug(
                     "[Library] Document view incremented",
                     extra={
@@ -300,7 +285,7 @@ class LibraryDocumentMixin:
                     },
                 )
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
     def _convert_image_to_rgb(self, img: Image.Image) -> Image.Image:
@@ -378,11 +363,11 @@ class LibraryDocumentMixin:
                     img.size[1],
                 )
                 return result_path
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "[Library] Failed to process cover image %s: %s",
                 source_image_path,
-                e,
+                exc,
                 exc_info=True,
             )
             return None
@@ -411,7 +396,7 @@ class LibraryDocumentMixin:
         resolved = resolve_library_path(cover_path, self.covers_dir, Path.cwd())
         return resolved is not None and resolved.exists()
 
-    def regenerate_cover(self, document_id: int) -> Optional[str]:
+    async def regenerate_cover(self, document_id: int) -> Optional[str]:
         """
         Regenerate cover image from the first page for an already-registered document.
 
@@ -428,7 +413,8 @@ class LibraryDocumentMixin:
         Raises:
             ValueError: If the document or its folder cannot be found.
         """
-        document = self.db.query(LibraryDocument).filter(LibraryDocument.id == document_id).first()
+        result = await self.db.execute(select(LibraryDocument).where(LibraryDocument.id == document_id))
+        document = result.scalar_one_or_none()
         if not document:
             raise ValueError(f"Document not found: {document_id}")
 
@@ -445,18 +431,18 @@ class LibraryDocumentMixin:
             return None
 
         document.cover_image_path = cover_path
-        document.updated_at = datetime.utcnow()
+        document.updated_at = datetime.now(UTC)
         try:
-            self.db.commit()
-            self.db.refresh(document)
+            await self.db.commit()
+            await self.db.refresh(document)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
         self.invalidate_document_cache(document_id)
         return cover_path
 
-    def _update_existing_book_document(
+    async def _update_existing_book_document(
         self,
         existing_doc: LibraryDocument,
         folder_path: Path,
@@ -483,12 +469,12 @@ class LibraryDocumentMixin:
             if cover_image_path:
                 existing_doc.cover_image_path = cover_image_path
 
-        existing_doc.updated_at = datetime.utcnow()
+        existing_doc.updated_at = datetime.now(UTC)
         try:
-            self.db.commit()
-            self.db.refresh(existing_doc)
+            await self.db.commit()
+            await self.db.refresh(existing_doc)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
         self.invalidate_document_cache(cast(int, existing_doc.id))
         logger.info(
@@ -502,7 +488,7 @@ class LibraryDocumentMixin:
         )
         return existing_doc
 
-    def _create_new_book_document(
+    async def _create_new_book_document(
         self,
         folder_path: Path,
         page_count: int,
@@ -533,10 +519,10 @@ class LibraryDocumentMixin:
         )
         self.db.add(new_doc)
         try:
-            self.db.commit()
-            self.db.refresh(new_doc)
+            await self.db.commit()
+            await self.db.refresh(new_doc)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
         cover_image_path = None
@@ -545,10 +531,10 @@ class LibraryDocumentMixin:
             if cover_image_path:
                 new_doc.cover_image_path = cover_image_path
                 try:
-                    self.db.commit()
-                    self.db.refresh(new_doc)
+                    await self.db.commit()
+                    await self.db.refresh(new_doc)
                 except Exception:
-                    self.db.rollback()
+                    await self.db.rollback()
                     raise
 
         logger.info(
@@ -563,7 +549,7 @@ class LibraryDocumentMixin:
         )
         return new_doc
 
-    def register_book_folder(
+    async def register_book_folder(
         self,
         folder_path: Path,
         title: Optional[str] = None,
@@ -587,29 +573,24 @@ class LibraryDocumentMixin:
         pages_dir_path = normalize_library_path(folder_path, self.storage_dir, Path.cwd())
         first_page_image_path = self._get_first_page_image_path(folder_path)
 
-        # Primary lookup: exact normalised path (fast, unambiguous)
-        existing_doc = self.db.query(LibraryDocument).filter(LibraryDocument.pages_dir_path == pages_dir_path).first()
+        result = await self.db.execute(select(LibraryDocument).where(LibraryDocument.pages_dir_path == pages_dir_path))
+        existing_doc = result.scalar_one_or_none()
 
-        # Fallback lookup: match by folder name alone.
-        # Handles path-format drift (absolute ↔ relative, separator differences,
-        # server migrations) so that "Re-register" on a needs_repair book updates
-        # the existing record instead of silently creating a duplicate.
         if not existing_doc:
             folder_name = folder_path.name
-            existing_doc = (
-                self.db.query(LibraryDocument)
-                .filter(
+            fallback_result = await self.db.execute(
+                select(LibraryDocument).where(
                     or_(
                         LibraryDocument.pages_dir_path.like(f"%/{folder_name}"),
                         LibraryDocument.pages_dir_path.like(f"%\\{folder_name}"),
                         LibraryDocument.pages_dir_path == folder_name,
                     )
                 )
-                .first()
             )
+            existing_doc = fallback_result.scalar_one_or_none()
 
         if existing_doc:
-            return self._update_existing_book_document(
+            return await self._update_existing_book_document(
                 existing_doc,
                 folder_path,
                 page_count,
@@ -617,7 +598,7 @@ class LibraryDocumentMixin:
                 description=description,
                 first_page_image_path=first_page_image_path,
             )
-        return self._create_new_book_document(
+        return await self._create_new_book_document(
             folder_path,
             page_count,
             pages_dir_path,
@@ -626,7 +607,7 @@ class LibraryDocumentMixin:
             first_page_image_path=first_page_image_path,
         )
 
-    def update_document(
+    async def update_document(
         self,
         document_id: int,
         title: Optional[str] = None,
@@ -645,7 +626,7 @@ class LibraryDocumentMixin:
         Returns:
             Updated LibraryDocument instance or None
         """
-        document = self.get_document(document_id)
+        document = await self.get_document(document_id)
         if not document:
             return None
 
@@ -656,20 +637,19 @@ class LibraryDocumentMixin:
         if cover_image_path is not None:
             document.cover_image_path = cover_image_path
 
-        document.updated_at = datetime.utcnow()
+        document.updated_at = datetime.now(UTC)
         try:
-            self.db.commit()
-            self.db.refresh(document)
+            await self.db.commit()
+            await self.db.refresh(document)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
-        # Invalidate cache since metadata changed
         self.invalidate_document_cache(document_id)
 
         return document
 
-    def delete_document(self, document_id: int) -> bool:
+    async def delete_document(self, document_id: int) -> bool:
         """
         Soft delete a document (for future admin panel).
 
@@ -679,19 +659,18 @@ class LibraryDocumentMixin:
         Returns:
             True if deleted, False if not found
         """
-        document = self.get_document(document_id)
+        document = await self.get_document(document_id)
         if not document:
             return False
 
         document.is_active = False
-        document.updated_at = datetime.utcnow()
+        document.updated_at = datetime.now(UTC)
         try:
-            self.db.commit()
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
-        # Invalidate cache since document is deleted
         self.invalidate_document_cache(document_id)
 
         logger.info(

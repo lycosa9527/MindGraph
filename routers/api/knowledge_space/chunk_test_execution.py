@@ -9,9 +9,10 @@ import threading
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import ChunkTestResult
 from models.requests.requests_knowledge_space import (
@@ -35,10 +36,10 @@ router = APIRouter()
 
 
 @router.post("/chunk-test/benchmark", response_model=ChunkTestResultResponse)
-def test_benchmark_dataset(
+async def test_benchmark_dataset(
     request: ChunkTestBenchmarkRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Test chunking methods with benchmark dataset.
@@ -67,8 +68,8 @@ def test_benchmark_dataset(
             comparison_summary=results.get("summary", {}),
         )
         db.add(test_result)
-        db.commit()
-        db.refresh(test_result)
+        await db.commit()
+        await db.refresh(test_result)
 
         return ChunkTestResultResponse(
             test_id=test_result.id,
@@ -89,15 +90,15 @@ def test_benchmark_dataset(
             e,
             exc_info=True,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Chunk test failed") from e
 
 
 @router.post("/chunk-test/benchmark-async", response_model=ChunkTestResultResponse)
-def test_benchmark_dataset_async(
+async def test_benchmark_dataset_async(
     request: ChunkTestBenchmarkRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Test chunking methods with benchmark dataset (async background execution).
@@ -123,8 +124,8 @@ def test_benchmark_dataset_async(
             completed_methods=[],
         )
         db.add(test_result)
-        db.commit()
-        db.refresh(test_result)
+        await db.commit()
+        await db.refresh(test_result)
 
         logger.info(
             "[ChunkTestExecution] Creating background thread for benchmark test %s: "
@@ -181,15 +182,15 @@ def test_benchmark_dataset_async(
             e,
             exc_info=True,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to initiate benchmark test") from e
 
 
 @router.post("/chunk-test/user-documents", response_model=ChunkTestResultResponse)
-def test_user_documents(
+async def test_user_documents(
     request: ChunkTestUserDocumentsRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Test chunking methods with user's uploaded documents.
@@ -217,8 +218,8 @@ def test_user_documents(
             completed_methods=[],
         )
         db.add(test_result)
-        db.commit()
-        db.refresh(test_result)
+        await db.commit()
+        await db.refresh(test_result)
 
         logger.info(
             "[ChunkTestExecution] Creating background thread for test %s: "
@@ -276,15 +277,15 @@ def test_user_documents(
             e,
             exc_info=True,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to initiate chunk test") from e
 
 
 @router.get("/chunk-test/progress/{test_id}", response_model=ChunkTestProgressResponse)
-def get_chunk_test_progress(
+async def get_chunk_test_progress(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get current progress of a chunk test.
@@ -293,7 +294,6 @@ def get_chunk_test_progress(
     Automatically detects and marks stuck tests before returning progress.
     """
     check_feature_enabled()
-    # Check for stuck tests before returning progress
     stuck_count = detect_and_mark_stuck_tests()
     if stuck_count > 0:
         logger.info(
@@ -301,11 +301,13 @@ def get_chunk_test_progress(
             stuck_count,
         )
 
-    test_result = (
-        db.query(ChunkTestResult)
-        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
-        .first()
+    result = await db.execute(
+        select(ChunkTestResult).where(
+            ChunkTestResult.id == test_id,
+            ChunkTestResult.user_id == current_user.id,
+        )
     )
+    test_result = result.scalar_one_or_none()
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -322,10 +324,10 @@ def get_chunk_test_progress(
 
 
 @router.get("/chunk-test/results/{test_id}", response_model=ChunkTestResultResponse)
-def get_chunk_test_result(
+async def get_chunk_test_result(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get complete chunk test result by ID.
@@ -334,11 +336,13 @@ def get_chunk_test_result(
     Returns full results only when status='completed'.
     """
     check_feature_enabled()
-    test_result = (
-        db.query(ChunkTestResult)
-        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
-        .first()
+    result = await db.execute(
+        select(ChunkTestResult).where(
+            ChunkTestResult.id == test_id,
+            ChunkTestResult.user_id == current_user.id,
+        )
     )
+    test_result = result.scalar_one_or_none()
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -362,11 +366,11 @@ def get_chunk_test_result(
 
 
 @router.get("/chunk-test/results")
-def get_chunk_test_results(
+async def get_chunk_test_results(
     dataset_name: Optional[str] = None,
     limit: int = 10,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get chunk test results list for user.
@@ -374,12 +378,14 @@ def get_chunk_test_results(
     Requires authentication.
     """
     check_feature_enabled()
-    query = db.query(ChunkTestResult).filter(ChunkTestResult.user_id == current_user.id)
+    stmt = select(ChunkTestResult).where(ChunkTestResult.user_id == current_user.id)
 
     if dataset_name:
-        query = query.filter(ChunkTestResult.dataset_name == dataset_name)
+        stmt = stmt.where(ChunkTestResult.dataset_name == dataset_name)
 
-    results = query.order_by(ChunkTestResult.created_at.desc()).limit(limit).all()
+    stmt = stmt.order_by(ChunkTestResult.created_at.desc()).limit(limit)
+    result = await db.execute(stmt)
+    results = result.scalars().all()
 
     return {
         "results": [
@@ -401,10 +407,10 @@ def get_chunk_test_results(
 
 
 @router.delete("/chunk-test/results/{test_id}")
-def delete_chunk_test_result(
+async def delete_chunk_test_result(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a chunk test result.
@@ -413,11 +419,13 @@ def delete_chunk_test_result(
     Cannot delete tests that are currently processing.
     """
     check_feature_enabled()
-    test_result = (
-        db.query(ChunkTestResult)
-        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
-        .first()
+    result = await db.execute(
+        select(ChunkTestResult).where(
+            ChunkTestResult.id == test_id,
+            ChunkTestResult.user_id == current_user.id,
+        )
     )
+    test_result = result.scalar_one_or_none()
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -429,8 +437,8 @@ def delete_chunk_test_result(
         )
 
     try:
-        db.delete(test_result)
-        db.commit()
+        await db.delete(test_result)
+        await db.commit()
 
         logger.info("[ChunkTestExecution] Test %s deleted by user %s", test_id, current_user.id)
 
@@ -442,15 +450,15 @@ def delete_chunk_test_result(
             e,
             exc_info=True,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete test result") from e
 
 
 @router.post("/chunk-test/{test_id}/cancel")
-def cancel_chunk_test(
+async def cancel_chunk_test(
     test_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Cancel a running chunk test.
@@ -459,11 +467,13 @@ def cancel_chunk_test(
     Only tests with status 'pending' or 'processing' can be cancelled.
     """
     check_feature_enabled()
-    test_result = (
-        db.query(ChunkTestResult)
-        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
-        .first()
+    result = await db.execute(
+        select(ChunkTestResult).where(
+            ChunkTestResult.id == test_id,
+            ChunkTestResult.user_id == current_user.id,
+        )
     )
+    test_result = result.scalar_one_or_none()
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -479,7 +489,7 @@ def cancel_chunk_test(
 
         test_result.status = "failed"
         test_result.current_stage = "cancelled"
-        db.commit()
+        await db.commit()
 
         logger.info(
             "[ChunkTestExecution] Test %s cancelled by user %s",
@@ -498,12 +508,15 @@ def cancel_chunk_test(
             e,
             exc_info=True,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to cancel test") from e
 
 
 @router.post("/chunk-test/detect-stuck")
-def detect_stuck_tests(_current_user: User = Depends(get_current_user), _db: Session = Depends(get_db)):
+async def detect_stuck_tests(
+    _current_user: User = Depends(get_current_user),
+    _db: AsyncSession = Depends(get_async_db),
+):
     """
     Detect and mark stuck chunk tests as failed.
 

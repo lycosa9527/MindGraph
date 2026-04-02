@@ -62,7 +62,7 @@ class BenchmarkLoader(ABC):
         """Return dataset identifier."""
 
     @abstractmethod
-    def load_documents(self) -> List[Dict[str, Any]]:
+    async def load_documents(self) -> List[Dict[str, Any]]:
         """
         Load documents from dataset.
 
@@ -150,7 +150,7 @@ class FinanceBenchLoader(BenchmarkLoader):
     def get_dataset_name(self) -> str:
         return "FinanceBench"
 
-    def load_documents(self) -> List[Dict[str, Any]]:
+    async def load_documents(self) -> List[Dict[str, Any]]:
         """Load FinanceBench documents."""
         # Try local first - check both JSON and JSONL
         local_data = self._load_from_local("documents.json")
@@ -288,7 +288,7 @@ class KGRAGLoader(BenchmarkLoader):
     def get_dataset_name(self) -> str:
         return "KG-RAG"
 
-    def load_documents(self) -> List[Dict[str, Any]]:
+    async def load_documents(self) -> List[Dict[str, Any]]:
         """Load KG-RAG documents."""
         local_data = self._load_from_local("documents.json")
         if not local_data:
@@ -393,7 +393,7 @@ class FRAMESLoader(BenchmarkLoader):
     def get_dataset_name(self) -> str:
         return "FRAMES"
 
-    def load_documents(self) -> List[Dict[str, Any]]:
+    async def load_documents(self) -> List[Dict[str, Any]]:
         """Load FRAMES documents."""
         local_data = self._load_from_local("documents.json")
         if not local_data:
@@ -504,7 +504,7 @@ class PubMedQALoader(BenchmarkLoader):
     def get_dataset_name(self) -> str:
         return "PubMedQA"
 
-    def load_documents(self) -> List[Dict[str, Any]]:
+    async def load_documents(self) -> List[Dict[str, Any]]:
         """Load PubMedQA documents."""
         local_data = self._load_from_local("documents.json")
         if not local_data:
@@ -613,7 +613,7 @@ class UserDocumentLoader(BenchmarkLoader):
         Initialize user document loader.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             document_ids: List of document IDs to load
         """
@@ -625,21 +625,22 @@ class UserDocumentLoader(BenchmarkLoader):
     def get_dataset_name(self) -> str:
         return "user_documents"
 
-    def load_documents(self) -> List[Dict[str, Any]]:
+    async def load_documents(self) -> List[Dict[str, Any]]:
         """Load chunk test documents from database."""
         if not HAS_CHUNK_TEST_MODELS:
             raise ImportError("Chunk test document models not available. Cannot load user documents.")
 
+        from sqlalchemy import select, func
+
         documents = []
         for doc_id in self.document_ids:
-            doc = (
-                self.db.query(ChunkTestDocument)
-                .filter(
+            result = await self.db.execute(
+                select(ChunkTestDocument).where(
                     ChunkTestDocument.id == doc_id,
                     ChunkTestDocument.user_id == self.user_id,
                 )
-                .first()
             )
+            doc = result.scalars().first()
 
             if not doc:
                 logger.warning(
@@ -648,32 +649,28 @@ class UserDocumentLoader(BenchmarkLoader):
                 )
                 continue
 
-            # Extract original text from file (not from chunks)
-            # This ensures we get the original document text, not reconstructed from chunks
-            # which may have been processed with different chunking methods
             from services.knowledge.document_processor import get_document_processor
             from services.knowledge.document_cleaner import get_document_cleaner
 
             processor = get_document_processor()
             cleaner = get_document_cleaner()
 
-            # Extract text from file
             if doc.file_type == "application/pdf":
                 text, _ = processor.extract_text_with_pages(doc.file_path, doc.file_type)
             else:
                 text = processor.extract_text(doc.file_path, doc.file_type)
 
-            # Ensure text is string
             if isinstance(text, list):
                 text = "\n".join(str(item) for item in text)
             if not isinstance(text, str):
                 text = str(text) if text else ""
 
-            # Clean text (same as ChunkTestDocumentService)
             full_text = cleaner.clean(text, remove_extra_spaces=True, remove_urls_emails=False)
 
-            # Get chunk count for metadata (optional, for reference)
-            chunks = self.db.query(ChunkTestDocumentChunk).filter(ChunkTestDocumentChunk.document_id == doc_id).count()
+            count_result = await self.db.execute(
+                select(func.count(ChunkTestDocumentChunk.id)).where(ChunkTestDocumentChunk.document_id == doc_id)
+            )
+            chunk_count = count_result.scalar_one()
 
             documents.append(
                 {
@@ -683,7 +680,7 @@ class UserDocumentLoader(BenchmarkLoader):
                         "document_id": doc_id,
                         "file_name": doc.file_name,
                         "file_type": doc.file_type,
-                        "chunk_count": len(chunks),
+                        "chunk_count": chunk_count,
                     },
                 }
             )

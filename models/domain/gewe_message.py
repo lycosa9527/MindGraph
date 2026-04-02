@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Text, Boolean, Index
 
@@ -36,7 +36,7 @@ class GeweMessage(Base):
     content = Column(Text, nullable=True, comment="Message content")
     timestamp = Column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
         index=True,
         nullable=False,
         comment="Message timestamp",

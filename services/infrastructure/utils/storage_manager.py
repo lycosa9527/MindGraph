@@ -16,7 +16,8 @@ import logging
 import os
 import shutil
 
-from sqlalchemy.orm import Session
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import (
     KnowledgeSpace,
@@ -43,7 +44,7 @@ class StorageManager:
         self.monitor_threshold = float(os.getenv("STORAGE_MONITOR_THRESHOLD", "0.8"))  # 80%
         self.qdrant = get_qdrant_service()
 
-    def get_user_storage_usage(self, db: Session, user_id: int) -> Dict[str, Any]:
+    async def get_user_storage_usage(self, db: AsyncSession, user_id: int) -> Dict[str, Any]:
         """
         Get storage usage for user.
 
@@ -54,7 +55,8 @@ class StorageManager:
         Returns:
             Dict with storage statistics
         """
-        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+        result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+        space = result.scalar_one_or_none()
 
         if not space:
             return {
@@ -69,7 +71,6 @@ class StorageManager:
                 "usage_percent": 0.0,
             }
 
-        # Calculate file storage
         user_dir = self.storage_dir / str(user_id)
         file_storage_bytes = 0
         if user_dir.exists():
@@ -77,20 +78,18 @@ class StorageManager:
                 if file_path.is_file():
                     file_storage_bytes += file_path.stat().st_size
 
-        # Get document count
-        document_count = db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
-
-        # Get chunk count
-        chunk_count = (
-            db.query(DocumentChunk).join(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
+        doc_result = await db.execute(
+            select(func.count(KnowledgeDocument.id)).where(KnowledgeDocument.space_id == space.id)
         )
+        document_count = doc_result.scalar_one()
 
-        # Get Qdrant chunk count
+        chunk_result = await db.execute(
+            select(func.count(DocumentChunk.id)).join(KnowledgeDocument).where(KnowledgeDocument.space_id == space.id)
+        )
+        chunk_count = chunk_result.scalar_one()
+
         qdrant_chunks = self.qdrant.get_collection_size(user_id)
 
-        # Estimate Qdrant storage (with SQ8 compression: ~4x smaller than uncompressed)
-        # Typical embedding: 1536 dimensions x 1 byte (SQ8) = 1536 bytes + metadata overhead
-        # Using ~1.6KB per chunk as estimate with SQ8 compression (includes metadata)
         qdrant_storage_bytes = qdrant_chunks * 1638
 
         total_bytes = file_storage_bytes + qdrant_storage_bytes
@@ -111,7 +110,7 @@ class StorageManager:
             "usage_percent": usage_percent,
         }
 
-    def get_total_storage_usage(self, db: Session) -> Dict[str, Any]:
+    async def get_total_storage_usage(self, db: AsyncSession) -> Dict[str, Any]:
         """
         Get total storage usage across all users.
 
@@ -121,11 +120,10 @@ class StorageManager:
         Returns:
             Dict with total storage statistics
         """
-        # Get all users with knowledge spaces
-        spaces = db.query(KnowledgeSpace).all()
+        result = await db.execute(select(KnowledgeSpace))
+        spaces = result.scalars().all()
 
         total_file_storage = 0
-        total_chunks = 0
         total_documents = 0
         total_qdrant_chunks = 0
 
@@ -136,17 +134,18 @@ class StorageManager:
                     if file_path.is_file():
                         total_file_storage += file_path.stat().st_size
 
-            doc_count = db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
+            doc_result = await db.execute(
+                select(func.count(KnowledgeDocument.id)).where(KnowledgeDocument.space_id == space.id)
+            )
+            doc_count = doc_result.scalar_one()
             total_documents += doc_count
 
             qdrant_chunks = self.qdrant.get_collection_size(space.user_id)
             total_qdrant_chunks += qdrant_chunks
 
-        # Get total chunk count
-        total_chunks = db.query(DocumentChunk).count()
+        chunk_result = await db.execute(select(func.count(DocumentChunk.id)))
+        total_chunks = chunk_result.scalar_one()
 
-        # Estimate Qdrant storage (with SQ8 compression: ~4x smaller)
-        # Typical embedding: 1536 dimensions x 1 byte (SQ8) = 1536 bytes + metadata overhead
         total_qdrant_storage = total_qdrant_chunks * 1638
         total_bytes = total_file_storage + total_qdrant_storage
 
@@ -160,7 +159,7 @@ class StorageManager:
             "user_count": len(spaces),
         }
 
-    def check_storage_limit(self, db: Session, user_id: int) -> bool:
+    async def check_storage_limit(self, db: AsyncSession, user_id: int) -> bool:
         """
         Check if user has exceeded storage limit.
 
@@ -171,10 +170,10 @@ class StorageManager:
         Returns:
             True if under limit, False if exceeded
         """
-        usage = self.get_user_storage_usage(db, user_id)
+        usage = await self.get_user_storage_usage(db, user_id)
         return usage["total_bytes"] < self.max_storage_per_user
 
-    def cleanup_orphaned_files(self, db: Session) -> int:
+    async def cleanup_orphaned_files(self, db: AsyncSession) -> int:
         """
         Cleanup orphaned files (files without database records).
 
@@ -189,7 +188,6 @@ class StorageManager:
         if not self.storage_dir.exists():
             return 0
 
-        # Get all user directories
         for user_dir in self.storage_dir.iterdir():
             if not user_dir.is_dir():
                 continue
@@ -199,11 +197,10 @@ class StorageManager:
             except ValueError:
                 continue
 
-            # Check if user has knowledge space
-            space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+            result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+            space = result.scalar_one_or_none()
 
             if not space:
-                # User has no knowledge space, delete directory
                 try:
                     shutil.rmtree(user_dir)
                     deleted_count += 1
@@ -211,35 +208,34 @@ class StorageManager:
                         "[StorageManager] Deleted orphaned directory for user %s",
                         user_id,
                     )
-                except Exception as e:
+                except Exception as exc:
                     logger.error(
                         "[StorageManager] Failed to delete orphaned directory %s: %s",
                         user_dir,
-                        e,
+                        exc,
                     )
                 continue
 
-            # Get all document file paths from database
-            documents = db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).all()
+            doc_result = await db.execute(select(KnowledgeDocument).where(KnowledgeDocument.space_id == space.id))
+            documents = doc_result.scalars().all()
             valid_paths = {Path(doc.file_path) for doc in documents if doc.file_path}
 
-            # Check files in directory
             for file_path in user_dir.rglob("*"):
                 if file_path.is_file() and file_path not in valid_paths:
                     try:
                         file_path.unlink()
                         deleted_count += 1
                         logger.debug("[StorageManager] Deleted orphaned file: %s", file_path)
-                    except Exception as e:
+                    except Exception as exc:
                         logger.error(
                             "[StorageManager] Failed to delete orphaned file %s: %s",
                             file_path,
-                            e,
+                            exc,
                         )
 
         return deleted_count
 
-    def get_storage_alerts(self, db: Session) -> List[Dict[str, Any]]:
+    async def get_storage_alerts(self, db: AsyncSession) -> List[Dict[str, Any]]:
         """
         Get storage alerts for users exceeding threshold.
 
@@ -250,10 +246,11 @@ class StorageManager:
             List of alert dicts
         """
         alerts = []
-        spaces = db.query(KnowledgeSpace).all()
+        result = await db.execute(select(KnowledgeSpace))
+        spaces = result.scalars().all()
 
         for space in spaces:
-            usage = self.get_user_storage_usage(db, space.user_id)
+            usage = await self.get_user_storage_usage(db, space.user_id)
             if usage["usage_percent"] >= (self.monitor_threshold * 100):
                 alerts.append(
                     {

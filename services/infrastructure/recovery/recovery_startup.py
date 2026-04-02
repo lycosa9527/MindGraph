@@ -8,13 +8,13 @@ import logging
 import os
 from typing import Any, Dict
 
-from sqlalchemy import text
+from sqlalchemy import select, text
 
 from config.database import (
     recover_from_kill_9,
-    SessionLocal,
+    AsyncSessionLocal,
     check_integrity,
-    engine,
+    async_engine,
     DATABASE_URL,
 )
 from models.domain.knowledge_space import ChunkTestDocument
@@ -29,40 +29,44 @@ from services.utils.backup_scheduler import get_backup_status
 logger = logging.getLogger(__name__)
 
 
-def _cleanup_user_documents(db, user_id, docs) -> int:
-    """Clean up stuck documents for a single user. Returns count cleaned."""
-    cleaned = 0
-    try:
-        service = ChunkTestDocumentService(db, user_id)
-    except Exception as exc:
-        logger.error(
-            "[Recovery] Failed to create service for user %s: %s",
-            user_id,
-            exc,
-            exc_info=True,
-        )
-        return 0
+async def _cleanup_user_documents(user_id, docs) -> int:
+    """Clean up stuck documents for a single user using an async session.
 
-    for doc in docs:
+    Returns count cleaned.
+    """
+    cleaned = 0
+    async with AsyncSessionLocal() as db:
         try:
-            service.cleanup_incomplete_processing(doc.id)
-            cleaned += 1
-            logger.info(
-                "[Recovery] Cleaned up incomplete processing for document %s (user %s)",
-                doc.id,
-                user_id,
-            )
+            service = ChunkTestDocumentService(db, user_id)
         except Exception as exc:
             logger.error(
-                "[Recovery] Failed to cleanup document %s: %s",
-                doc.id,
+                "[Recovery] Failed to create service for user %s: %s",
+                user_id,
                 exc,
                 exc_info=True,
             )
+            return 0
+
+        for doc in docs:
+            try:
+                await service.cleanup_incomplete_processing(doc.id)
+                cleaned += 1
+                logger.info(
+                    "[Recovery] Cleaned up incomplete processing for document %s (user %s)",
+                    doc.id,
+                    user_id,
+                )
+            except Exception as exc:
+                logger.error(
+                    "[Recovery] Failed to cleanup document %s: %s",
+                    doc.id,
+                    exc,
+                    exc_info=True,
+                )
     return cleaned
 
 
-def cleanup_incomplete_chunk_operations() -> int:
+async def cleanup_incomplete_chunk_operations() -> int:
     """
     Clean up incomplete chunk operations after kill -9.
 
@@ -75,7 +79,9 @@ def cleanup_incomplete_chunk_operations() -> int:
         Number of documents cleaned up
     """
     try:
-        db = SessionLocal()
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(select(ChunkTestDocument).where(ChunkTestDocument.status == "processing"))
+            stuck_docs = result.scalars().all()
     except ImportError as exc:
         logger.debug(
             "[Recovery] Could not import chunk test models (may not be available): %s",
@@ -89,44 +95,32 @@ def cleanup_incomplete_chunk_operations() -> int:
         )
         return 0
 
-    try:
-        stuck_docs = db.query(ChunkTestDocument).filter(ChunkTestDocument.status == "processing").all()
-
-        if not stuck_docs:
-            logger.debug("[Recovery] No documents stuck in processing status")
-            return 0
-
-        logger.info(
-            "[Recovery] Found %d document(s) stuck in 'processing' status, cleaning up...",
-            len(stuck_docs),
-        )
-
-        docs_by_user: Dict[Any, list] = {}
-        for doc in stuck_docs:
-            docs_by_user.setdefault(doc.user_id, []).append(doc)
-
-        cleaned_count = sum(_cleanup_user_documents(db, uid, docs) for uid, docs in docs_by_user.items())
-
-        if cleaned_count > 0:
-            logger.info(
-                "[Recovery] Successfully cleaned up %d incomplete chunk operation(s)",
-                cleaned_count,
-            )
-        return cleaned_count
-
-    except Exception as exc:
-        logger.error(
-            "[Recovery] Error during incomplete chunk operations cleanup: %s",
-            exc,
-            exc_info=True,
-        )
-        db.rollback()
+    if not stuck_docs:
+        logger.debug("[Recovery] No documents stuck in processing status")
         return 0
-    finally:
-        db.close()
+
+    logger.info(
+        "[Recovery] Found %d document(s) stuck in 'processing' status, cleaning up...",
+        len(stuck_docs),
+    )
+
+    docs_by_user: Dict[Any, list] = {}
+    for doc in stuck_docs:
+        docs_by_user.setdefault(doc.user_id, []).append(doc)
+
+    cleaned_count = 0
+    for uid, docs in docs_by_user.items():
+        cleaned_count += await _cleanup_user_documents(uid, docs)
+
+    if cleaned_count > 0:
+        logger.info(
+            "[Recovery] Successfully cleaned up %d incomplete chunk operation(s)",
+            cleaned_count,
+        )
+    return cleaned_count
 
 
-def check_database_on_startup() -> bool:
+async def check_database_on_startup() -> bool:
     """
     Check PostgreSQL connectivity on startup.
 
@@ -144,7 +138,7 @@ def check_database_on_startup() -> bool:
         logger.warning("[Recovery] Database recovery from kill -9 failed, but continuing with connectivity check")
 
     logger.debug("[Recovery] Cleaning up incomplete chunk operations...")
-    cleaned_count = cleanup_incomplete_chunk_operations()
+    cleaned_count = await cleanup_incomplete_chunk_operations()
     if cleaned_count > 0:
         logger.info(
             "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
@@ -210,7 +204,7 @@ def check_database_on_startup() -> bool:
     return False
 
 
-def get_recovery_status() -> Dict[str, Any]:
+async def get_recovery_status() -> Dict[str, Any]:
     """
     Get current PostgreSQL database and backup status.
     For API/admin panel use.
@@ -223,9 +217,9 @@ def get_recovery_status() -> Dict[str, Any]:
 
     current_stats: Dict[str, Any] = {}
     try:
-        with engine.connect() as conn:
+        async with async_engine.connect() as conn:
             db_name = DATABASE_URL.split("/")[-1].split("?")[0]
-            result = conn.execute(
+            result = await conn.execute(
                 text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
                 {"db_name": db_name},
             )

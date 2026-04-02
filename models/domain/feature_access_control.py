@@ -1,6 +1,6 @@
 """Database models for per-feature organization and user access grants."""
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column
@@ -20,7 +20,9 @@ class FeatureAccessRule(Base):
 
     feature_key: Mapped[str] = mapped_column(String(80), primary_key=True)
     restrict: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
 
 class FeatureAccessOrgGrant(Base):

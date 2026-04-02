@@ -23,7 +23,7 @@ async def authenticate_and_resolve_canvas_workshop(
     Returns ``(user, normalized_code, diagram_id, owner_id)``, or ``None`` if
     the socket was closed due to auth/join failure.
     """
-    user, auth_error = authenticate_websocket_user(websocket)
+    user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or user is None:
         try:
             record_ws_auth_failure()

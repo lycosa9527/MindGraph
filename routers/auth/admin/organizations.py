@@ -17,16 +17,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 import logging
 from typing import Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_
-from sqlalchemy.orm import Session
-from sqlalchemy.sql import func
+from sqlalchemy import and_, delete, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import Organization, User
 from models.domain.diagrams import Diagram
 from models.domain.messages import Messages, Language
@@ -42,7 +42,6 @@ from services.redis.cache.redis_user_cache import user_cache
 from utils.invitations import generate_invitation_code, normalize_or_generate
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
-from .stats import _sql_count
 
 logger = logging.getLogger(__name__)
 
@@ -50,52 +49,49 @@ router = APIRouter()
 
 
 @router.get("/admin/organizations", dependencies=[Depends(require_admin)])
-def list_organizations_admin(
+async def list_organizations_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
     """List all organizations (ADMIN ONLY)"""
-    orgs = db.query(Organization).all()
+    orgs = (await db.execute(select(Organization))).scalars().all()
     result = []
 
-    # Performance optimization: Get user counts for all organizations in one GROUP BY query
     user_counts_by_org = {}
-    user_counts_query = (
-        db.query(User.organization_id, _sql_count(User.id).label("user_count"))
-        .filter(User.organization_id.isnot(None))
+    user_counts_stmt = (
+        select(User.organization_id, sa_count(User.id).label("user_count"))
+        .where(User.organization_id.isnot(None))
         .group_by(User.organization_id)
-        .all()
     )
+    user_counts_query = (await db.execute(user_counts_stmt)).all()
 
     for count_result in user_counts_query:
         user_counts_by_org[count_result.organization_id] = count_result.user_count
 
-    # Get manager counts for all organizations
     manager_counts_by_org = {}
-    manager_counts_query = (
-        db.query(User.organization_id, _sql_count(User.id).label("manager_count"))
-        .filter(User.organization_id.isnot(None), User.role == "manager")
+    manager_counts_stmt = (
+        select(User.organization_id, sa_count(User.id).label("manager_count"))
+        .where(User.organization_id.isnot(None), User.role == "manager")
         .group_by(User.organization_id)
-        .all()
     )
+    manager_counts_query = (await db.execute(manager_counts_stmt)).all()
 
     for count_result in manager_counts_query:
         manager_counts_by_org[count_result.organization_id] = count_result.manager_count
 
-    # Get token stats for all organizations (all-time totals)
     token_stats_by_org = {}
 
     if TokenUsage is not None:
         try:
-            org_token_stats = (
-                db.query(
+            org_token_stmt = (
+                select(
                     Organization.id,
                     Organization.name,
-                    func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                    func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-                    func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
                 )
                 .outerjoin(
                     TokenUsage,
@@ -105,8 +101,8 @@ def list_organizations_admin(
                     ),
                 )
                 .group_by(Organization.id, Organization.name)
-                .all()
             )
+            org_token_stats = (await db.execute(org_token_stmt)).all()
 
             for org_stat in org_token_stats:
                 token_stats_by_org[org_stat.id] = {
@@ -143,11 +139,11 @@ def list_organizations_admin(
 
 
 @router.post("/admin/organizations", dependencies=[Depends(require_admin)])
-def create_organization_admin(
+async def create_organization_admin(
     request: dict,
     _http_request: Request,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Create new organization (ADMIN ONLY)"""
@@ -155,10 +151,11 @@ def create_organization_admin(
         error_msg = Messages.error("missing_required_fields", lang, "code, name")
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Check code uniqueness (use cache with database fallback)
-    existing = org_cache.get_by_code(request["code"])
+    existing = await org_cache.get_by_code(request["code"])
     if not existing:
-        existing = db.query(Organization).filter(Organization.code == request["code"]).first()
+        existing = (
+            await db.execute(select(Organization).where(Organization.code == request["code"]))
+        ).scalar_one_or_none()
     if existing:
         error_msg = Messages.error("organization_exists", lang, request["code"])
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
@@ -168,16 +165,20 @@ def create_organization_admin(
     invitation_code = normalize_or_generate(provided_invite, request.get("name"), request.get("code"))
 
     # Ensure uniqueness of invitation codes across organizations
-    existing_invite = org_cache.get_by_invitation_code(invitation_code)
+    existing_invite = await org_cache.get_by_invitation_code(invitation_code)
     if not existing_invite:
-        existing_invite = db.query(Organization).filter(Organization.invitation_code == invitation_code).first()
+        existing_invite = (
+            await db.execute(select(Organization).where(Organization.invitation_code == invitation_code))
+        ).scalar_one_or_none()
     if existing_invite:
         attempts = 0
         while attempts < 5:
             invitation_code = normalize_or_generate(None, request.get("name"), request.get("code"))
-            existing_invite = org_cache.get_by_invitation_code(invitation_code)
+            existing_invite = await org_cache.get_by_invitation_code(invitation_code)
             if not existing_invite:
-                existing_invite = db.query(Organization).filter(Organization.invitation_code == invitation_code).first()
+                existing_invite = (
+                    await db.execute(select(Organization).where(Organization.invitation_code == invitation_code))
+                ).scalar_one_or_none()
             if not existing_invite:
                 break
             attempts += 1
@@ -189,16 +190,15 @@ def create_organization_admin(
         code=request["code"],
         name=request["name"],
         invitation_code=invitation_code,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
 
-    # Write to database FIRST
     db.add(new_org)
     try:
-        db.commit()
-        db.refresh(new_org)
+        await db.commit()
+        await db.refresh(new_org)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to create org in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -223,17 +223,16 @@ def create_organization_admin(
 
 
 @router.put("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
-def update_organization_admin(
+async def update_organization_admin(
     org_id: int,
     request: dict,
     _http_request: Request,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Update organization (ADMIN ONLY)"""
-    # Load org from database (must be session-attached for commit/refresh)
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -254,9 +253,11 @@ def update_organization_admin(
         org_code_val = cast(Optional[str], org.code)
         if new_code != org_code_val:
             # Check code uniqueness (use cache)
-            conflict = org_cache.get_by_code(new_code)
+            conflict = await org_cache.get_by_code(new_code)
             if conflict is None or cast(int, conflict.id) == cast(int, org.id):
-                conflict = db.query(Organization).filter(Organization.code == new_code).first()
+                conflict = (
+                    await db.execute(select(Organization).where(Organization.code == new_code))
+                ).scalar_one_or_none()
             if conflict is not None and cast(int, conflict.id) != cast(int, org.id):
                 error_msg = Messages.error("organization_exists", lang, new_code)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
@@ -278,18 +279,18 @@ def update_organization_admin(
             request.get("code", org_code_val),
         )
         # Ensure uniqueness across organizations (exclude current org)
-        conflict = org_cache.get_by_invitation_code(normalized)
+        conflict = await org_cache.get_by_invitation_code(normalized)
         if conflict is not None and cast(int, conflict.id) == cast(int, org.id):
             conflict = None
         if conflict is None:
             conflict = (
-                db.query(Organization)
-                .filter(
-                    Organization.invitation_code == normalized,
-                    Organization.id != org.id,
+                await db.execute(
+                    select(Organization).where(
+                        Organization.invitation_code == normalized,
+                        Organization.id != org.id,
+                    )
                 )
-                .first()
-            )
+            ).scalar_one_or_none()
         if conflict is not None:
             attempts = 0
             while attempts < 5:
@@ -298,18 +299,18 @@ def update_organization_admin(
                     request.get("name", org_name_val),
                     request.get("code", org_code_val),
                 )
-                conflict = org_cache.get_by_invitation_code(normalized)
+                conflict = await org_cache.get_by_invitation_code(normalized)
                 if conflict is not None and cast(int, conflict.id) == cast(int, org.id):
                     conflict = None
                 if conflict is None:
                     conflict = (
-                        db.query(Organization)
-                        .filter(
-                            Organization.invitation_code == normalized,
-                            Organization.id != org.id,
+                        await db.execute(
+                            select(Organization).where(
+                                Organization.invitation_code == normalized,
+                                Organization.id != org.id,
+                            )
                         )
-                        .first()
-                    )
+                    ).scalar_one_or_none()
                 if conflict is None:
                     break
                 attempts += 1
@@ -338,12 +339,11 @@ def update_organization_admin(
     if "is_active" in request:
         setattr(org, "is_active", bool(request.get("is_active")))
 
-    # Write to database FIRST
     try:
-        db.commit()
-        db.refresh(org)
+        await db.commit()
+        await db.refresh(org)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to update org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -374,15 +374,15 @@ def update_organization_admin(
     "/admin/organizations/{org_id}/refresh-invitation-code",
     dependencies=[Depends(require_admin)],
 )
-def refresh_organization_invitation_code(
+async def refresh_organization_invitation_code(
     org_id: int,
     _request: Request,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """Generate a new invitation code for the organization (ADMIN ONLY)"""
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if org is None:
         error_msg = Messages.error("organization_not_found", org_id, lang=lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -392,31 +392,36 @@ def refresh_organization_invitation_code(
     org_code_val = cast(Optional[str], org.code)
     new_code = generate_invitation_code(org_name_val, org_code_val)
 
-    def _has_conflict(code: str) -> bool:
-        cached = org_cache.get_by_invitation_code(code)
+    async def _has_conflict(code: str) -> bool:
+        cached = await org_cache.get_by_invitation_code(code)
         if cached is not None and cast(int, cached.id) != cast(int, org.id):
             return True
         if cached is None:
             other = (
-                db.query(Organization).filter(Organization.invitation_code == code, Organization.id != org.id).first()
-            )
+                await db.execute(
+                    select(Organization).where(
+                        Organization.invitation_code == code,
+                        Organization.id != org.id,
+                    )
+                )
+            ).scalar_one_or_none()
             return other is not None
         return False
 
     attempts = 0
-    while _has_conflict(new_code) and attempts < 5:
+    while await _has_conflict(new_code) and attempts < 5:
         new_code = generate_invitation_code(org_name_val, org_code_val)
         attempts += 1
-    if _has_conflict(new_code):
+    if await _has_conflict(new_code):
         error_msg = Messages.error("failed_generate_invitation_code", lang)
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
 
     setattr(org, "invitation_code", new_code)
     try:
-        db.commit()
-        db.refresh(org)
+        await db.commit()
+        await db.refresh(org)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to refresh invitation code for org %s: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -434,16 +439,16 @@ def refresh_organization_invitation_code(
 
 
 @router.delete("/admin/organizations/{org_id}", dependencies=[Depends(require_admin)])
-def delete_organization_admin(
+async def delete_organization_admin(
     org_id: int,
     _request: Request,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
     delete_users: bool = False,
 ):
     """Delete organization (ADMIN ONLY). Use delete_users=true to also remove all user accounts."""
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if org is None:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -451,7 +456,8 @@ def delete_organization_admin(
     org_code = cast(Optional[str], org.code)
     org_invite = cast(Optional[str], org.invitation_code)
 
-    users_in_org = db.query(User).filter(User.organization_id == org_id).all()
+    users_stmt = select(User).where(User.organization_id == org_id)
+    users_in_org = (await db.execute(users_stmt)).scalars().all()
     user_count = len(users_in_org)
 
     if user_count > 0 and not delete_users:
@@ -461,30 +467,28 @@ def delete_organization_admin(
     if delete_users and user_count > 0:
         for user in users_in_org:
             uid = user.id
-            db.query(Diagram).filter(Diagram.user_id == uid).delete()
-            db.query(UserActivityLog).filter(UserActivityLog.user_id == uid).delete()
-            db.query(UserUsageStats).filter(UserUsageStats.user_id == uid).delete()
+            await db.execute(delete(Diagram).where(Diagram.user_id == uid))
+            await db.execute(delete(UserActivityLog).where(UserActivityLog.user_id == uid))
+            await db.execute(delete(UserUsageStats).where(UserUsageStats.user_id == uid))
             if TokenUsage is not None:
-                db.query(TokenUsage).filter(TokenUsage.user_id == uid).update(
-                    {"user_id": None}, synchronize_session="fetch"
-                )
+                await db.execute(update(TokenUsage).where(TokenUsage.user_id == uid).values(user_id=None))
             user_cache.invalidate(uid, user.phone)
-            db.delete(user)
+            await db.delete(user)
         try:
-            db.flush()
+            await db.flush()
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.error("[Auth] Failed to delete users for org %s: %s", org_id, e)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to delete organization users",
             ) from e
 
-    db.delete(org)
+    await db.delete(org)
     try:
-        db.commit()
+        await db.commit()
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to delete org ID %s in database: %s", org_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -512,10 +516,10 @@ def delete_organization_admin(
 
 
 @router.get("/admin/managers", dependencies=[Depends(require_admin)])
-def list_all_managers(
+async def list_all_managers(
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -523,17 +527,18 @@ def list_all_managers(
 
     Returns managers with their organization info for the role control panel.
     """
-    managers = (
-        db.query(User)
-        .filter(User.organization_id.isnot(None), User.role == "manager")
+    managers_stmt = (
+        select(User)
+        .where(User.organization_id.isnot(None), User.role == "manager")
         .order_by(User.organization_id, User.name)
-        .all()
     )
+    managers = (await db.execute(managers_stmt)).scalars().all()
 
     org_ids = list({u.organization_id for u in managers if u.organization_id})
     orgs_by_id: dict[int, Organization] = {}
     if org_ids:
-        orgs = db.query(Organization).filter(Organization.id.in_(org_ids)).all()
+        org_stmt = select(Organization).where(Organization.id.in_(org_ids))
+        orgs = (await db.execute(org_stmt)).scalars().all()
         orgs_by_id = {cast(int, org.id): org for org in orgs}
 
     result = []
@@ -559,11 +564,11 @@ def list_all_managers(
 
 
 @router.get("/admin/organizations/{org_id}/users", dependencies=[Depends(require_admin)])
-def list_organization_users(
+async def list_organization_users(
     org_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -571,13 +576,13 @@ def list_organization_users(
 
     Used for manager selection dropdown in admin panel.
     """
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Get all users in this organization
-    users = db.query(User).filter(User.organization_id == org_id).order_by(User.name).all()
+    users_stmt = select(User).where(User.organization_id == org_id).order_by(User.name)
+    users = (await db.execute(users_stmt)).scalars().all()
 
     result = []
     for user in users:
@@ -600,23 +605,23 @@ def list_organization_users(
 
 
 @router.get("/admin/organizations/{org_id}/managers", dependencies=[Depends(require_admin)])
-def list_organization_managers(
+async def list_organization_managers(
     org_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
     List managers of an organization (ADMIN ONLY)
     """
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    # Get managers in this organization
-    managers = db.query(User).filter(User.organization_id == org_id, User.role == "manager").order_by(User.name).all()
+    managers_stmt = select(User).where(User.organization_id == org_id, User.role == "manager").order_by(User.name)
+    managers = (await db.execute(managers_stmt)).scalars().all()
 
     result = []
     for user in managers:
@@ -638,12 +643,12 @@ def list_organization_managers(
     "/admin/organizations/{org_id}/managers/{user_id}",
     dependencies=[Depends(require_admin)],
 )
-def set_organization_manager(
+async def set_organization_manager(
     org_id: int,
     user_id: int,
     _request: Request,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -651,12 +656,12 @@ def set_organization_manager(
 
     The user must belong to the specified organization.
     """
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -670,10 +675,10 @@ def set_organization_manager(
     user.role = "manager"
 
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to set manager role for user ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -704,12 +709,12 @@ def set_organization_manager(
     "/admin/organizations/{org_id}/managers/{user_id}",
     dependencies=[Depends(require_admin)],
 )
-def remove_organization_manager(
+async def remove_organization_manager(
     org_id: int,
     user_id: int,
     _request: Request,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -717,12 +722,12 @@ def remove_organization_manager(
 
     Resets the user's role back to 'user'.
     """
-    org = db.query(Organization).filter(Organization.id == org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
     if not org:
         error_msg = Messages.error("organization_not_found", lang, org_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         error_msg = Messages.error("user_not_found", lang, user_id)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -736,10 +741,10 @@ def remove_organization_manager(
     user.role = "user"
 
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to remove manager role from user ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

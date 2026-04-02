@@ -14,10 +14,12 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from models.domain.auth import User
 from models.domain.workshop_chat import (
@@ -64,15 +66,15 @@ class MessageService:
     """Channel and topic message operations."""
 
     @staticmethod
-    def get_channel_messages(
-        db: Session,
+    async def get_channel_messages(
+        db: AsyncSession,
         channel_id: int,
         anchor: int = 0,
         num_before: int = DEFAULT_PAGE_SIZE,
         num_after: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get general channel messages (topic_id is NULL), anchor-based."""
-        return MessageService._fetch(
+        return await MessageService._fetch(
             db,
             channel_id=channel_id,
             topic_id=None,
@@ -83,8 +85,8 @@ class MessageService:
         )
 
     @staticmethod
-    def get_topic_messages(
-        db: Session,
+    async def get_topic_messages(
+        db: AsyncSession,
         topic_id: int,
         channel_id: int,
         anchor: int = 0,
@@ -92,7 +94,7 @@ class MessageService:
         num_after: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get messages for a specific topic, anchor-based."""
-        return MessageService._fetch(
+        return await MessageService._fetch(
             db,
             channel_id=channel_id,
             topic_id=topic_id,
@@ -103,8 +105,8 @@ class MessageService:
         )
 
     @staticmethod
-    def _fetch(
-        db: Session,
+    async def _fetch(
+        db: AsyncSession,
         channel_id: int,
         topic_id: Optional[int],
         general_only: bool,
@@ -128,28 +130,29 @@ class MessageService:
         messages: List[ChatMessage] = []
 
         if num_before > 0:
-            before_q = db.query(ChatMessage).options(joinedload(ChatMessage.sender)).filter(*base_filter)
+            stmt = select(ChatMessage).options(joinedload(ChatMessage.sender)).where(*base_filter)
             if anchor > 0:
-                before_q = before_q.filter(ChatMessage.id < anchor)
-            before_q = before_q.order_by(ChatMessage.id.desc()).limit(num_before)
-            messages.extend(reversed(before_q.all()))
+                stmt = stmt.where(ChatMessage.id < anchor)
+            stmt = stmt.order_by(ChatMessage.id.desc()).limit(num_before)
+            result = await db.execute(stmt)
+            messages.extend(reversed(result.unique().scalars().all()))
 
         if num_after > 0 and anchor > 0:
-            after_q = (
-                db.query(ChatMessage)
+            stmt = (
+                select(ChatMessage)
                 .options(joinedload(ChatMessage.sender))
-                .filter(*base_filter, ChatMessage.id >= anchor)
+                .where(*base_filter, ChatMessage.id >= anchor)
                 .order_by(ChatMessage.id.asc())
                 .limit(num_after)
-                .all()
             )
-            messages.extend(after_q)
+            result = await db.execute(stmt)
+            messages.extend(result.unique().scalars().all())
 
         return [_format_message(m) for m in messages]
 
     @staticmethod
-    def search_messages(
-        db: Session,
+    async def search_messages(
+        db: AsyncSession,
         channel_id: int,
         text: str,
         topic_id: Optional[int] = None,
@@ -177,16 +180,18 @@ class MessageService:
         if topic_id is not None:
             filters.append(ChatMessage.topic_id == topic_id)
 
-        query = db.query(ChatMessage).options(joinedload(ChatMessage.sender)).filter(*filters)
+        stmt = select(ChatMessage).options(joinedload(ChatMessage.sender)).where(*filters)
         if rank_expr is not None:
-            rows = query.order_by(rank_expr.desc(), ChatMessage.id.desc()).limit(lim).all()
+            stmt = stmt.order_by(rank_expr.desc(), ChatMessage.id.desc()).limit(lim)
         else:
-            rows = query.order_by(ChatMessage.id.desc()).limit(lim).all()
+            stmt = stmt.order_by(ChatMessage.id.desc()).limit(lim)
+        result = await db.execute(stmt)
+        rows = result.unique().scalars().all()
         return [_format_message(m) for m in reversed(rows)]
 
     @staticmethod
-    def send_message(
-        db: Session,
+    async def send_message(
+        db: AsyncSession,
         channel_id: int,
         sender_id: int,
         content: str,
@@ -195,12 +200,14 @@ class MessageService:
         parent_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """Send a message to a channel or topic."""
-        sender = db.query(User).filter(User.id == sender_id).first()
+        row = await db.execute(select(User).where(User.id == sender_id))
+        sender = row.scalar_one_or_none()
         if not sender:
             raise ValueError("Sender not found")
-        channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
+        ch_row = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
+        channel = ch_row.scalar_one_or_none()
         org_id = channel.organization_id if channel else None
-        mention_ids = resolve_mentioned_user_ids(
+        mention_ids = await resolve_mentioned_user_ids(
             db,
             sender,
             org_id,
@@ -216,15 +223,16 @@ class MessageService:
             mentioned_user_ids=mention_ids or None,
         )
         db.add(msg)
-        db.flush()
+        await db.flush()
 
         if topic_id:
-            topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+            t_row = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+            topic = t_row.scalar_one_or_none()
             if topic:
-                topic.updated_at = datetime.utcnow()
+                topic.updated_at = datetime.now(UTC)
 
-        db.commit()
-        db.refresh(msg)
+        await db.commit()
+        await db.refresh(msg)
 
         return {
             "id": msg.id,
@@ -241,26 +249,32 @@ class MessageService:
         }
 
     @staticmethod
-    def edit_message(
-        db: Session,
+    async def edit_message(
+        db: AsyncSession,
         message_id: int,
         sender_id: int,
         new_content: str,
     ) -> Optional[Dict[str, Any]]:
         """Edit a message (sender only)."""
-        msg = (
-            db.query(ChatMessage)
-            .options(joinedload(ChatMessage.channel), joinedload(ChatMessage.sender))
-            .filter(ChatMessage.id == message_id, ChatMessage.sender_id == sender_id)
-            .first()
+        row = await db.execute(
+            select(ChatMessage)
+            .options(
+                joinedload(ChatMessage.channel),
+                joinedload(ChatMessage.sender),
+            )
+            .where(
+                ChatMessage.id == message_id,
+                ChatMessage.sender_id == sender_id,
+            )
         )
+        msg = row.unique().scalar_one_or_none()
         if not msg:
             return None
         sender = msg.sender
         if not sender:
             return None
         org_id = msg.channel.organization_id if msg.channel else None
-        mention_ids = resolve_mentioned_user_ids(
+        mention_ids = await resolve_mentioned_user_ids(
             db,
             sender,
             org_id,
@@ -268,23 +282,30 @@ class MessageService:
         )
         msg.content = new_content[:MAX_CONTENT_LENGTH]
         msg.mentioned_user_ids = mention_ids or None
-        msg.edited_at = datetime.utcnow()
-        db.commit()
-        db.refresh(msg)
+        msg.edited_at = datetime.now(UTC)
+        await db.commit()
+        refreshed = await db.execute(
+            select(ChatMessage).options(joinedload(ChatMessage.sender)).where(ChatMessage.id == message_id)
+        )
+        msg = refreshed.unique().scalar_one_or_none()
         return _format_message(msg)
 
     @staticmethod
-    def delete_message(db: Session, message_id: int, user: User) -> bool:
+    async def delete_message(
+        db: AsyncSession,
+        message_id: int,
+        user: User,
+    ) -> bool:
         """Soft-delete a message (sender or channel moderator, Zulip-style)."""
-        msg = (
-            db.query(ChatMessage)
+        result = await db.execute(
+            select(ChatMessage)
             .options(joinedload(ChatMessage.channel))
-            .filter(
+            .where(
                 ChatMessage.id == message_id,
                 ChatMessage.is_deleted.is_(False),
             )
-            .first()
         )
+        msg = result.unique().scalar_one_or_none()
         if not msg:
             return False
         if msg.sender_id != user.id:
@@ -292,28 +313,27 @@ class MessageService:
             if not channel or not can_moderate_workshop_channel(user, channel):
                 return False
         msg.is_deleted = True
-        db.commit()
+        await db.commit()
         return True
 
     @staticmethod
-    def update_last_read(
-        db: Session,
+    async def update_last_read(
+        db: AsyncSession,
         channel_id: int,
         user_id: int,
         message_id: int,
     ) -> None:
         """Update last_read_message_id for a channel member."""
-        member = (
-            db.query(ChannelMember)
-            .filter(
+        row = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
                 ChannelMember.user_id == user_id,
             )
-            .first()
         )
+        member = row.scalar_one_or_none()
         if member and (member.last_read_message_id is None or message_id > member.last_read_message_id):
             member.last_read_message_id = message_id
-            db.commit()
+            await db.commit()
 
 
 message_service = MessageService()

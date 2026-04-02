@@ -112,9 +112,7 @@ if __name__ == "__main__":
     print("Cleaning Old Diagram IDs (Integer -> UUID Migration)")
     print("=" * 60)
 
-    success = clean_old_diagram_ids()
-
-    if success:
+    if clean_old_diagram_ids():
         print("\nDone. The database is now clean.")
     else:
         print("\nFailed to clean database.")

@@ -104,7 +104,7 @@ async def get_update_notification(current_user: User = Depends(get_current_user)
     or null if notification is disabled or already dismissed.
     """
     try:
-        notification = update_notifier.get_notification_for_user(current_user.id)
+        notification = await update_notifier.get_notification_for_user(current_user.id)
 
         if notification is None:
             return {"notification": None}
@@ -127,7 +127,7 @@ async def dismiss_update_notification(current_user: User = Depends(get_current_u
     User won't see the notification again for the current version.
     """
     try:
-        success = update_notifier.dismiss_notification(current_user.id)
+        success = await update_notifier.dismiss_notification(current_user.id)
 
         if success:
             return {"message": "Notification dismissed"}
@@ -163,8 +163,8 @@ async def get_notification_config(current_user: User = Depends(get_current_user)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
-        notification = update_notifier.get_notification()
-        dismissed_count = update_notifier.get_dismissed_count()
+        notification = await update_notifier.get_notification()
+        dismissed_count = await update_notifier.get_dismissed_count()
 
         return {
             "enabled": notification.get("enabled", False),
@@ -199,7 +199,7 @@ async def set_notification_config(request: NotificationSetRequest, current_user:
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
-        notification = update_notifier.set_notification(
+        notification = await update_notifier.set_notification(
             enabled=request.enabled,
             version=request.version,
             title=request.title,
@@ -241,7 +241,7 @@ async def disable_notification(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
-        notification = update_notifier.disable_notification()
+        notification = await update_notifier.disable_notification()
 
         logger.info("Admin %s disabled update notification", current_user.phone)
 
@@ -266,7 +266,7 @@ async def reset_dismissed(current_user: User = Depends(get_current_user)):
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
 
     try:
-        success = update_notifier.clear_dismissed()
+        success = await update_notifier.clear_dismissed()
 
         if success:
             logger.info("Admin %s reset all dismissed states", current_user.phone)

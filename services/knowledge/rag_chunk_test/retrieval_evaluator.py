@@ -17,7 +17,7 @@ import logging
 import time
 import uuid
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dashscope_embedding import get_embedding_client
 from services.infrastructure.rate_limiting.kb_rate_limiter import get_kb_rate_limiter
@@ -40,7 +40,7 @@ class RetrievalEvaluator:
         self.rate_limiter = get_kb_rate_limiter()
         self.retrieval_test_service = RetrievalTestService()
 
-    def test_retrieval(
+    async def test_retrieval(
         self,
         chunks: List[Chunk],
         query: str,
@@ -50,7 +50,7 @@ class RetrievalEvaluator:
         collection_name: Optional[str] = None,
         progress_callback: Optional[Callable[[str, Optional[str], str, int], None]] = None,
         method_name: Optional[str] = None,
-        db: Optional[Session] = None,
+        db: Optional[AsyncSession] = None,
         user_id: Optional[int] = None,
     ) -> Dict[str, Any]:
         """
@@ -65,7 +65,7 @@ class RetrievalEvaluator:
             collection_name: Optional collection name (auto-generated if None)
             progress_callback: Optional callback function(status, method, stage, progress)
             method_name: Optional chunking method name for progress reporting
-            db: Optional database session for embedding caching
+            db: Optional async database session for embedding caching
             user_id: Optional user ID for embedding caching (uses test_user_id if not provided)
 
         Returns:
@@ -101,7 +101,7 @@ class RetrievalEvaluator:
             # Use cached embedding generation if db and user_id provided, otherwise direct embedding
             if db is not None:
                 cache_user_id = user_id if user_id is not None else test_user_id
-                embeddings = generate_embeddings_with_cache(
+                embeddings = await generate_embeddings_with_cache(
                     self.embedding_client, self.rate_limiter, texts, cache_user_id, db
                 )
             else:

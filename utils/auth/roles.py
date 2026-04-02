@@ -11,7 +11,7 @@ Proprietary License
 """
 
 from config.settings import config
-from services.feature_access.repository import load_feature_org_access_map
+from services.redis.cache.redis_feature_org_access_cache import get_cached_map as _get_feature_access_map_cached
 
 from .config import AUTH_MODE, ADMIN_PHONES
 
@@ -151,7 +151,7 @@ def user_has_feature_access(current_user, feature_key: str) -> bool:
         return False
     if is_admin_or_manager(current_user):
         return True
-    doc = load_feature_org_access_map()
+    doc = _get_feature_access_map_cached() or {}
     entry = doc.get(feature_key)
     if entry is None:
         return _legacy_workshop_preview_or_open(feature_key, current_user)

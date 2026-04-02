@@ -195,17 +195,22 @@ MIND_MAP_SPEC_EN = "9. mind_map:\n" + _escape_braces_for_format(MIND_MAP_AGENT_G
 MIND_MAP_SPEC_ZH = "9. mind_map:\n" + _escape_braces_for_format(MIND_MAP_AGENT_GENERATION_ZH)
 
 # Concept Map - use same prompts as ConceptMapAgent (preserve {user_prompt})
-CONCEPT_MAP_SPEC_EN = "10. concept_map:\n" + _escape_braces_for_format(CONCEPT_MAP_GENERATION_EN, preserve_user_prompt=True)
-CONCEPT_MAP_SPEC_ZH = "10. concept_map:\n" + _escape_braces_for_format(CONCEPT_MAP_GENERATION_ZH, preserve_user_prompt=True)
+CONCEPT_MAP_SPEC_EN = "10. concept_map:\n" + _escape_braces_for_format(
+    CONCEPT_MAP_GENERATION_EN, preserve_user_prompt=True
+)
+CONCEPT_MAP_SPEC_ZH = "10. concept_map:\n" + _escape_braces_for_format(
+    CONCEPT_MAP_GENERATION_ZH, preserve_user_prompt=True
+)
 
 # ============================================================================
 # PROMPT BUILDERS - Functions to assemble complete prompts
 # ============================================================================
 
+
 def _build_diagram_specs_section(language: str) -> str:
     """Build the diagram specifications section for a given language."""
     specs = {
-        'en': [
+        "en": [
             BUBBLE_MAP_SPEC_EN,
             CIRCLE_MAP_SPEC_EN,
             DOUBLE_BUBBLE_MAP_SPEC_EN,
@@ -217,7 +222,7 @@ def _build_diagram_specs_section(language: str) -> str:
             MIND_MAP_SPEC_EN,
             CONCEPT_MAP_SPEC_EN,
         ],
-        'zh': [
+        "zh": [
             BUBBLE_MAP_SPEC_ZH,
             CIRCLE_MAP_SPEC_ZH,
             DOUBLE_BUBBLE_MAP_SPEC_ZH,
@@ -230,13 +235,13 @@ def _build_diagram_specs_section(language: str) -> str:
             CONCEPT_MAP_SPEC_ZH,
         ],
     }
-    return "\n\n".join(specs.get(language, specs['en']))
+    return "\n\n".join(specs.get(language, specs["en"]))
 
 
 def _build_prompt(language: str) -> str:
     """Build the complete prompt for a given language."""
     # Select language-specific components
-    if language == 'zh':
+    if language == "zh":
         task_header = """你是一名专业的图表生成助手。分析用户的提示，在一步中生成完整的图表规范。
 
 你的任务：
@@ -291,11 +296,11 @@ Your task:
 # EXPORTED PROMPTS - Main prompt constants
 # ============================================================================
 
-PROMPT_TO_DIAGRAM_EN = _build_prompt('en')
-PROMPT_TO_DIAGRAM_ZH = _build_prompt('zh')
+PROMPT_TO_DIAGRAM_EN = _build_prompt("en")
+PROMPT_TO_DIAGRAM_ZH = _build_prompt("zh")
 
 # Prompt registry
 PROMPT_TO_DIAGRAM_PROMPTS = {
-    'prompt_to_diagram_en': PROMPT_TO_DIAGRAM_EN,
-    'prompt_to_diagram_zh': PROMPT_TO_DIAGRAM_ZH,
+    "prompt_to_diagram_en": PROMPT_TO_DIAGRAM_EN,
+    "prompt_to_diagram_zh": PROMPT_TO_DIAGRAM_ZH,
 }

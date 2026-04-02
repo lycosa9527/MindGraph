@@ -15,7 +15,7 @@ import logging
 import os
 import json
 from pathlib import Path
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.gewe import AsyncGeweClient
 from clients.dify import AsyncDifyClient
@@ -55,7 +55,7 @@ class GeweService(
 ):
     """Service for managing Gewe WeChat integration"""
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """
         Initialize Gewe service.
 

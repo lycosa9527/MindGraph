@@ -77,10 +77,12 @@ def check_and_fix():
             else:
                 fixes.append("ALTER TABLE chunk_test_document_chunks ADD COLUMN chunking_method VARCHAR(50) NULL;")
             fixes.append(
-                "CREATE INDEX IF NOT EXISTS ix_chunk_test_document_chunks_chunking_method ON chunk_test_document_chunks(chunking_method);"
+                "CREATE INDEX IF NOT EXISTS ix_chunk_test_document_chunks_chunking_method"
+                " ON chunk_test_document_chunks(chunking_method);"
             )
             fixes.append(
-                "CREATE INDEX IF NOT EXISTS ix_chunk_test_document_chunks_document_method ON chunk_test_document_chunks(document_id, chunking_method);"
+                "CREATE INDEX IF NOT EXISTS ix_chunk_test_document_chunks_document_method"
+                " ON chunk_test_document_chunks(document_id, chunking_method);"
             )
         else:
             print("✓ chunk_test_document_chunks.chunking_method exists")

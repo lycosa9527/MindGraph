@@ -7,10 +7,10 @@ Handles background thread execution, cancellation, and cleanup.
 import atexit
 import logging
 import threading
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import List, Optional, Set
 
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 
@@ -66,7 +66,7 @@ def _cleanup_active_tests():
         )
         db = None
         try:
-            db = SessionLocal()
+            db = SyncSessionLocal()
             for test_id in _active_tests:
                 try:
                     test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
@@ -117,11 +117,11 @@ def detect_and_mark_stuck_tests() -> int:
     Returns:
         Number of stuck tests detected and marked as failed
     """
-    db = SessionLocal()
+    db = SyncSessionLocal()
     stuck_count = 0
 
     try:
-        threshold_time = datetime.utcnow() - timedelta(minutes=STUCK_TEST_THRESHOLD_MINUTES)
+        threshold_time = datetime.now(UTC) - timedelta(minutes=STUCK_TEST_THRESHOLD_MINUTES)
 
         stuck_tests = (
             db.query(ChunkTestResult)
@@ -144,7 +144,7 @@ def detect_and_mark_stuck_tests() -> int:
 
         for test in stuck_tests:
             try:
-                age_minutes = (datetime.utcnow() - test.created_at).total_seconds() / 60
+                age_minutes = (datetime.now(UTC) - test.created_at).total_seconds() / 60
                 logger.warning(
                     "[ChunkTestBackground] Marking stuck test as failed: "
                     "test_id=%s, status=%s, age=%.1f minutes, stage=%s, progress=%s%%",
@@ -212,7 +212,7 @@ def run_test_in_background(
 
     try:
         # Create database session with proper error handling
-        db = SessionLocal()
+        db = SyncSessionLocal()
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
         test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
         if not test_result:
@@ -455,7 +455,7 @@ def run_benchmark_in_background(
 
     try:
         # Create database session with proper error handling
-        db = SessionLocal()
+        db = SyncSessionLocal()
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
         test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
         if not test_result:

@@ -16,20 +16,20 @@ from typing import Any
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, Field
-from sqlalchemy import func
-from sqlalchemy.orm import Session
-from sqlalchemy.sql.functions import count as sql_count
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count, sum as sa_sum
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
 from routers.auth.helpers import BEIJING_TIMEZONE, get_beijing_now
 from services.teacher_usage_stats import (
-    get_classification_config,
-    save_classification_config,
-    compute_and_upsert_user_usage_stats,
+    get_classification_config_async,
+    save_classification_config_async,
+    compute_and_upsert_user_usage_stats_async,
 )
 
 from ..dependencies import require_admin
@@ -88,8 +88,8 @@ def _get_group_key(tier1: str | None, tier2: str | None) -> str:
 
 
 @router.get("/admin/teacher-usage", dependencies=[Depends(require_admin)])
-def get_teacher_usage(
-    db: Session = Depends(get_db),
+async def get_teacher_usage(
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Get teacher engagement classification (ADMIN ONLY).
 
@@ -100,45 +100,52 @@ def get_teacher_usage(
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     cutoff_90d = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
 
-    teachers = db.query(User).filter(User.role == "user").all()
+    teachers = (await db.execute(select(User).where(User.role == "user"))).scalars().all()
     teacher_ids = [u.id for u in teachers]
 
-    stats_map = {}
+    stats_map: dict[int, tuple] = {}
     try:
-        stats_rows = db.query(UserUsageStats).filter(UserUsageStats.user_id.in_(teacher_ids)).all()
+        stats_rows = (
+            (await db.execute(select(UserUsageStats).where(UserUsageStats.user_id.in_(teacher_ids)))).scalars().all()
+        )
         for row in stats_rows:
             stats_map[row.user_id] = (row.tier1, row.tier2)
     except Exception as exc:
         logger.debug("Failed to fetch usage stats: %s", exc)
 
     token_rows = (
-        db.query(
-            TokenUsage.user_id,
-            func.sum(TokenUsage.total_tokens).label("total"),
-            func.max(TokenUsage.created_at).label("last_at"),
+        await db.execute(
+            select(
+                TokenUsage.user_id,
+                sa_sum(TokenUsage.total_tokens).label("total"),
+                func.max(TokenUsage.created_at).label("last_at"),
+            )
+            .where(
+                TokenUsage.user_id.in_(teacher_ids),
+                TokenUsage.success.is_(True),
+            )
+            .group_by(TokenUsage.user_id)
         )
-        .filter(
-            TokenUsage.user_id.in_(teacher_ids),
-            TokenUsage.success.is_(True),
-        )
-        .group_by(TokenUsage.user_id)
-        .all()
-    )
+    ).all()
     user_token_total = {r.user_id: int(r.total or 0) for r in token_rows}
     user_last_active = {r.user_id: r.last_at for r in token_rows}
 
     user_autocomplete_count: dict[int, int] = {}
     if teacher_ids:
         autocomplete_rows = (
-            db.query(TokenUsage.user_id, sql_count(TokenUsage.id).label("cnt"))
-            .filter(
-                TokenUsage.user_id.in_(teacher_ids),
-                TokenUsage.request_type == "autocomplete",
-                TokenUsage.success.is_(True),
+            await db.execute(
+                select(
+                    TokenUsage.user_id,
+                    sa_count(TokenUsage.id).label("cnt"),
+                )
+                .where(
+                    TokenUsage.user_id.in_(teacher_ids),
+                    TokenUsage.request_type == "autocomplete",
+                    TokenUsage.success.is_(True),
+                )
+                .group_by(TokenUsage.user_id)
             )
-            .group_by(TokenUsage.user_id)
-            .all()
-        )
+        ).all()
         user_autocomplete_count = {int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows}
 
     user_concept_gen_count: dict[int, int] = {}
@@ -146,24 +153,32 @@ def get_teacher_usage(
     if teacher_ids:
         try:
             concept_gen_rows = (
-                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
-                .filter(
-                    UserActivityLog.user_id.in_(teacher_ids),
-                    UserActivityLog.activity_type == "concept_generation",
+                await db.execute(
+                    select(
+                        UserActivityLog.user_id,
+                        sa_count(UserActivityLog.id).label("cnt"),
+                    )
+                    .where(
+                        UserActivityLog.user_id.in_(teacher_ids),
+                        UserActivityLog.activity_type == "concept_generation",
+                    )
+                    .group_by(UserActivityLog.user_id)
                 )
-                .group_by(UserActivityLog.user_id)
-                .all()
-            )
+            ).all()
             user_concept_gen_count = {int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows}
             rel_labels_rows = (
-                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
-                .filter(
-                    UserActivityLog.user_id.in_(teacher_ids),
-                    UserActivityLog.activity_type == "relationship_labels",
+                await db.execute(
+                    select(
+                        UserActivityLog.user_id,
+                        sa_count(UserActivityLog.id).label("cnt"),
+                    )
+                    .where(
+                        UserActivityLog.user_id.in_(teacher_ids),
+                        UserActivityLog.activity_type == "relationship_labels",
+                    )
+                    .group_by(UserActivityLog.user_id)
                 )
-                .group_by(UserActivityLog.user_id)
-                .all()
-            )
+            ).all()
             user_rel_labels_count = {int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows}
         except Exception as exc:
             logger.debug("Failed to fetch activity log counts: %s", exc)
@@ -190,26 +205,27 @@ def get_teacher_usage(
     total_teachers = len(teachers)
     group_user_ids = {gid: [t["id"] for t in teachers_list] for gid, teachers_list in groups.items()}
 
-    weekly_by_group = {}
+    weekly_by_group: dict[str, list[int]] = {}
     for gid, uids in group_user_ids.items():
         if not uids:
             weekly_by_group[gid] = []
             continue
         try:
             weekly_rows = (
-                db.query(
-                    func.date_trunc("week", TokenUsage.created_at).label("week"),
-                    func.sum(TokenUsage.total_tokens).label("total"),
+                await db.execute(
+                    select(
+                        func.date_trunc("week", TokenUsage.created_at).label("week"),
+                        sa_sum(TokenUsage.total_tokens).label("total"),
+                    )
+                    .where(
+                        TokenUsage.user_id.in_(uids),
+                        TokenUsage.success.is_(True),
+                        TokenUsage.created_at >= cutoff_90d,
+                    )
+                    .group_by(func.date_trunc("week", TokenUsage.created_at))
+                    .order_by(func.date_trunc("week", TokenUsage.created_at))
                 )
-                .filter(
-                    TokenUsage.user_id.in_(uids),
-                    TokenUsage.success.is_(True),
-                    TokenUsage.created_at >= cutoff_90d,
-                )
-                .group_by(func.date_trunc("week", TokenUsage.created_at))
-                .order_by(func.date_trunc("week", TokenUsage.created_at))
-                .all()
-            )
+            ).all()
             weekly_by_group[gid] = [int(r.total or 0) for r in weekly_rows]
         except Exception:
             weekly_by_group[gid] = []
@@ -239,13 +255,13 @@ def get_teacher_usage(
     "/admin/teacher-usage/users",
     dependencies=[Depends(require_admin)],
 )
-def get_teacher_usage_users(
-    db: Session = Depends(get_db),
+async def get_teacher_usage_users(
+    db: AsyncSession = Depends(get_async_db),
     page: int = Query(1, ge=1, description="Page number"),
     page_size: int = Query(50, ge=1, le=100, description="Items per page"),
 ) -> dict[str, Any]:
     """List teachers with usage stats, paginated (ADMIN ONLY)."""
-    teachers = db.query(User).filter(User.role == "user").all()
+    teachers = (await db.execute(select(User).where(User.role == "user"))).scalars().all()
     teacher_ids = [u.id for u in teachers]
     user_token_total: dict[int, int] = {}
     user_last_active: dict[int, Any] = {}
@@ -254,51 +270,64 @@ def get_teacher_usage_users(
     user_rel_labels_count: dict[int, int] = {}
     if teacher_ids:
         token_rows = (
-            db.query(
-                TokenUsage.user_id,
-                func.sum(TokenUsage.total_tokens).label("total"),
-                func.max(TokenUsage.created_at).label("last_at"),
+            await db.execute(
+                select(
+                    TokenUsage.user_id,
+                    sa_sum(TokenUsage.total_tokens).label("total"),
+                    func.max(TokenUsage.created_at).label("last_at"),
+                )
+                .where(
+                    TokenUsage.user_id.in_(teacher_ids),
+                    TokenUsage.success.is_(True),
+                )
+                .group_by(TokenUsage.user_id)
             )
-            .filter(
-                TokenUsage.user_id.in_(teacher_ids),
-                TokenUsage.success.is_(True),
-            )
-            .group_by(TokenUsage.user_id)
-            .all()
-        )
+        ).all()
         user_token_total = {r.user_id: int(r.total or 0) for r in token_rows}
         user_last_active = {r.user_id: r.last_at for r in token_rows}
         autocomplete_rows = (
-            db.query(TokenUsage.user_id, sql_count(TokenUsage.id).label("cnt"))
-            .filter(
-                TokenUsage.user_id.in_(teacher_ids),
-                TokenUsage.request_type == "autocomplete",
-                TokenUsage.success.is_(True),
+            await db.execute(
+                select(
+                    TokenUsage.user_id,
+                    sa_count(TokenUsage.id).label("cnt"),
+                )
+                .where(
+                    TokenUsage.user_id.in_(teacher_ids),
+                    TokenUsage.request_type == "autocomplete",
+                    TokenUsage.success.is_(True),
+                )
+                .group_by(TokenUsage.user_id)
             )
-            .group_by(TokenUsage.user_id)
-            .all()
-        )
+        ).all()
         user_autocomplete_count = {int(r.user_id): int(r.cnt or 0) for r in autocomplete_rows}
         try:
             concept_gen_rows = (
-                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
-                .filter(
-                    UserActivityLog.user_id.in_(teacher_ids),
-                    UserActivityLog.activity_type == "concept_generation",
+                await db.execute(
+                    select(
+                        UserActivityLog.user_id,
+                        sa_count(UserActivityLog.id).label("cnt"),
+                    )
+                    .where(
+                        UserActivityLog.user_id.in_(teacher_ids),
+                        UserActivityLog.activity_type == "concept_generation",
+                    )
+                    .group_by(UserActivityLog.user_id)
                 )
-                .group_by(UserActivityLog.user_id)
-                .all()
-            )
+            ).all()
             user_concept_gen_count = {int(r.user_id): int(r.cnt or 0) for r in concept_gen_rows}
             rel_labels_rows = (
-                db.query(UserActivityLog.user_id, sql_count(UserActivityLog.id).label("cnt"))
-                .filter(
-                    UserActivityLog.user_id.in_(teacher_ids),
-                    UserActivityLog.activity_type == "relationship_labels",
+                await db.execute(
+                    select(
+                        UserActivityLog.user_id,
+                        sa_count(UserActivityLog.id).label("cnt"),
+                    )
+                    .where(
+                        UserActivityLog.user_id.in_(teacher_ids),
+                        UserActivityLog.activity_type == "relationship_labels",
+                    )
+                    .group_by(UserActivityLog.user_id)
                 )
-                .group_by(UserActivityLog.user_id)
-                .all()
-            )
+            ).all()
             user_rel_labels_count = {int(r.user_id): int(r.cnt or 0) for r in rel_labels_rows}
         except Exception as exc:
             logger.debug("Failed to fetch paginated activity log counts: %s", exc)
@@ -333,12 +362,12 @@ def get_teacher_usage_users(
     "/admin/teacher-usage/user/{user_id}/weekly-tokens",
     dependencies=[Depends(require_admin)],
 )
-def get_user_weekly_tokens(
+async def get_user_weekly_tokens(
     user_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Get weekly token usage for a specific user (ADMIN ONLY)."""
-    user = db.query(User).filter(User.id == user_id, User.role == "user").first()
+    user = (await db.execute(select(User).where(User.id == user_id, User.role == "user"))).scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()
@@ -346,19 +375,20 @@ def get_user_weekly_tokens(
     cutoff_90d = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
     try:
         weekly_rows = (
-            db.query(
-                func.date_trunc("week", TokenUsage.created_at).label("week"),
-                func.sum(TokenUsage.total_tokens).label("total"),
+            await db.execute(
+                select(
+                    func.date_trunc("week", TokenUsage.created_at).label("week"),
+                    sa_sum(TokenUsage.total_tokens).label("total"),
+                )
+                .where(
+                    TokenUsage.user_id == user_id,
+                    TokenUsage.success.is_(True),
+                    TokenUsage.created_at >= cutoff_90d,
+                )
+                .group_by(func.date_trunc("week", TokenUsage.created_at))
+                .order_by(func.date_trunc("week", TokenUsage.created_at))
             )
-            .filter(
-                TokenUsage.user_id == user_id,
-                TokenUsage.success.is_(True),
-                TokenUsage.created_at >= cutoff_90d,
-            )
-            .group_by(func.date_trunc("week", TokenUsage.created_at))
-            .order_by(func.date_trunc("week", TokenUsage.created_at))
-            .all()
-        )
+        ).all()
         weekly_tokens = [int(r.total or 0) for r in weekly_rows]
     except Exception:
         weekly_tokens = []
@@ -373,12 +403,12 @@ def get_user_weekly_tokens(
     "/admin/teacher-usage/user/{user_id}/detail",
     dependencies=[Depends(require_admin)],
 )
-def get_user_detail(
+async def get_user_detail(
     user_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Get user detail with usage metrics and token stats (ADMIN ONLY)."""
-    user = db.query(User).filter(User.id == user_id, User.role == "user").first()
+    user = (await db.execute(select(User).where(User.id == user_id, User.role == "user"))).scalars().first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     beijing_now = get_beijing_now()
@@ -400,37 +430,37 @@ def get_user_detail(
     }
     try:
         ac_row = (
-            db.query(sql_count(TokenUsage.id).label("cnt"))
-            .filter(
-                TokenUsage.user_id == user_id,
-                TokenUsage.request_type == "autocomplete",
-                TokenUsage.success.is_(True),
+            await db.execute(
+                select(sa_count(TokenUsage.id).label("cnt")).where(
+                    TokenUsage.user_id == user_id,
+                    TokenUsage.request_type == "autocomplete",
+                    TokenUsage.success.is_(True),
+                )
             )
-            .first()
-        )
+        ).first()
         diagrams = int(ac_row.cnt or 0) if ac_row else 0
         cg_row = (
-            db.query(sql_count(UserActivityLog.id).label("cnt"))
-            .filter(
-                UserActivityLog.user_id == user_id,
-                UserActivityLog.activity_type == "concept_generation",
+            await db.execute(
+                select(sa_count(UserActivityLog.id).label("cnt")).where(
+                    UserActivityLog.user_id == user_id,
+                    UserActivityLog.activity_type == "concept_generation",
+                )
             )
-            .first()
-        )
+        ).first()
         concept_gen = int(cg_row.cnt or 0) if cg_row else 0
         rl_row = (
-            db.query(sql_count(UserActivityLog.id).label("cnt"))
-            .filter(
-                UserActivityLog.user_id == user_id,
-                UserActivityLog.activity_type == "relationship_labels",
+            await db.execute(
+                select(sa_count(UserActivityLog.id).label("cnt")).where(
+                    UserActivityLog.user_id == user_id,
+                    UserActivityLog.activity_type == "relationship_labels",
+                )
             )
-            .first()
-        )
+        ).first()
         rel_labels = int(rl_row.cnt or 0) if rl_row else 0
 
         activity_trends = []
         beijing_start = (beijing_today - timedelta(days=90)).astimezone(timezone.utc).replace(tzinfo=None)
-        date_list = []
+        date_list: list[Any] = []
         current = beijing_today - timedelta(days=90)
         while current <= beijing_now:
             date_list.append(current.date())
@@ -441,18 +471,19 @@ def get_user_detail(
         autocomplete_by_date: dict[str, int] = {}
 
         edit_rows = (
-            db.query(
-                func.date(UserActivityLog.created_at).label("d"),
-                sql_count(UserActivityLog.id).label("cnt"),
+            await db.execute(
+                select(
+                    func.date(UserActivityLog.created_at).label("d"),
+                    sa_count(UserActivityLog.id).label("cnt"),
+                )
+                .where(
+                    UserActivityLog.user_id == user_id,
+                    UserActivityLog.activity_type == "diagram_edit",
+                    UserActivityLog.created_at >= beijing_start,
+                )
+                .group_by(func.date(UserActivityLog.created_at))
             )
-            .filter(
-                UserActivityLog.user_id == user_id,
-                UserActivityLog.activity_type == "diagram_edit",
-                UserActivityLog.created_at >= beijing_start,
-            )
-            .group_by(func.date(UserActivityLog.created_at))
-            .all()
-        )
+        ).all()
         for row in edit_rows:
             utc_date = row.d
             if isinstance(utc_date, str):
@@ -462,18 +493,19 @@ def get_user_detail(
             edit_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
 
         export_rows = (
-            db.query(
-                func.date(UserActivityLog.created_at).label("d"),
-                sql_count(UserActivityLog.id).label("cnt"),
+            await db.execute(
+                select(
+                    func.date(UserActivityLog.created_at).label("d"),
+                    sa_count(UserActivityLog.id).label("cnt"),
+                )
+                .where(
+                    UserActivityLog.user_id == user_id,
+                    UserActivityLog.activity_type == "diagram_export",
+                    UserActivityLog.created_at >= beijing_start,
+                )
+                .group_by(func.date(UserActivityLog.created_at))
             )
-            .filter(
-                UserActivityLog.user_id == user_id,
-                UserActivityLog.activity_type == "diagram_export",
-                UserActivityLog.created_at >= beijing_start,
-            )
-            .group_by(func.date(UserActivityLog.created_at))
-            .all()
-        )
+        ).all()
         for row in export_rows:
             utc_date = row.d
             if isinstance(utc_date, str):
@@ -483,19 +515,20 @@ def get_user_detail(
             export_by_date[str(beijing_dt.date())] = int(row.cnt or 0)
 
         ac_rows = (
-            db.query(
-                func.date(TokenUsage.created_at).label("d"),
-                sql_count(TokenUsage.id).label("cnt"),
+            await db.execute(
+                select(
+                    func.date(TokenUsage.created_at).label("d"),
+                    sa_count(TokenUsage.id).label("cnt"),
+                )
+                .where(
+                    TokenUsage.user_id == user_id,
+                    TokenUsage.request_type == "autocomplete",
+                    TokenUsage.success.is_(True),
+                    TokenUsage.created_at >= beijing_start,
+                )
+                .group_by(func.date(TokenUsage.created_at))
             )
-            .filter(
-                TokenUsage.user_id == user_id,
-                TokenUsage.request_type == "autocomplete",
-                TokenUsage.success.is_(True),
-                TokenUsage.created_at >= beijing_start,
-            )
-            .group_by(func.date(TokenUsage.created_at))
-            .all()
-        )
+        ).all()
         for row in ac_rows:
             utc_date = row.d
             if isinstance(utc_date, str):
@@ -516,19 +549,20 @@ def get_user_detail(
             )
 
         weekly_rows = (
-            db.query(
-                func.date_trunc("week", TokenUsage.created_at).label("week"),
-                func.sum(TokenUsage.total_tokens).label("total"),
+            await db.execute(
+                select(
+                    func.date_trunc("week", TokenUsage.created_at).label("week"),
+                    sa_sum(TokenUsage.total_tokens).label("total"),
+                )
+                .where(
+                    TokenUsage.user_id == user_id,
+                    TokenUsage.success.is_(True),
+                    TokenUsage.created_at >= cutoff_90d,
+                )
+                .group_by(func.date_trunc("week", TokenUsage.created_at))
+                .order_by(func.date_trunc("week", TokenUsage.created_at))
             )
-            .filter(
-                TokenUsage.user_id == user_id,
-                TokenUsage.success.is_(True),
-                TokenUsage.created_at >= cutoff_90d,
-            )
-            .group_by(func.date_trunc("week", TokenUsage.created_at))
-            .order_by(func.date_trunc("week", TokenUsage.created_at))
-            .all()
-        )
+        ).all()
         for r in weekly_rows:
             week_dt = r.week
             date_str = week_dt.strftime("%Y-%m-%d") if week_dt else ""
@@ -539,17 +573,17 @@ def get_user_detail(
             ("month", month_ago),
             ("total", None),
         ]:
-            q = db.query(
-                func.sum(TokenUsage.input_tokens).label("input_tokens"),
-                func.sum(TokenUsage.output_tokens).label("output_tokens"),
-                func.sum(TokenUsage.total_tokens).label("total_tokens"),
-            ).filter(
+            stmt = select(
+                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+            ).where(
                 TokenUsage.user_id == user_id,
                 TokenUsage.success.is_(True),
             )
             if start_ts is not None:
-                q = q.filter(TokenUsage.created_at >= start_ts)
-            row = q.first()
+                stmt = stmt.where(TokenUsage.created_at >= start_ts)
+            row = (await db.execute(stmt)).first()
             if row:
                 token_stats[period] = {
                     "input_tokens": int(row.input_tokens or 0),
@@ -571,17 +605,17 @@ def get_user_detail(
 
 
 @router.get("/admin/teacher-usage/config", dependencies=[Depends(require_admin)])
-def get_teacher_usage_config(
-    db: Session = Depends(get_db),
+async def get_teacher_usage_config(
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Get classification thresholds (ADMIN ONLY)."""
-    return get_classification_config(db)
+    return await get_classification_config_async(db)
 
 
 @router.put("/admin/teacher-usage/config", dependencies=[Depends(require_admin)])
-def put_teacher_usage_config(
+async def put_teacher_usage_config(
     body: ClassificationThresholds,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Update classification thresholds (ADMIN ONLY)."""
     thresholds = {
@@ -590,17 +624,18 @@ def put_teacher_usage_config(
         "stopped": body.stopped,
         "intermittent": body.intermittent,
     }
-    ok = save_classification_config(db, thresholds)
-    return {"success": ok, "config": get_classification_config(db)}
+    ok = await save_classification_config_async(db, thresholds)
+    config = await get_classification_config_async(db)
+    return {"success": ok, "config": config}
 
 
-def _run_recompute(db: Session) -> tuple[int, int]:
+async def _run_recompute(db: AsyncSession) -> tuple[int, int]:
     """Recompute user_usage_stats for all teachers. Returns (success, failed)."""
-    teachers = db.query(User).filter(User.role == "user").all()
+    teachers = (await db.execute(select(User).where(User.role == "user"))).scalars().all()
     success = 0
     failed = 0
     for user in teachers:
-        if compute_and_upsert_user_usage_stats(user.id, db):
+        if await compute_and_upsert_user_usage_stats_async(user.id, db):
             success += 1
         else:
             failed += 1
@@ -608,9 +643,9 @@ def _run_recompute(db: Session) -> tuple[int, int]:
 
 
 @router.post("/admin/teacher-usage/recompute", dependencies=[Depends(require_admin)])
-def post_teacher_usage_recompute(
-    db: Session = Depends(get_db),
+async def post_teacher_usage_recompute(
+    db: AsyncSession = Depends(get_async_db),
 ) -> dict[str, Any]:
     """Recompute all teacher classifications (ADMIN ONLY). Run after config change."""
-    success, failed = _run_recompute(db)
+    success, failed = await _run_recompute(db)
     return {"success": True, "recomputed": success, "failed": failed}

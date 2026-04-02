@@ -12,9 +12,10 @@ Proprietary License
 """
 
 from fastapi import APIRouter, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import Organization
 from utils.auth import AUTH_MODE
 
@@ -32,11 +33,12 @@ async def get_auth_mode():
 
 
 @router.get("/organizations")
-def list_organizations(db: Session = Depends(get_db)):
+async def list_organizations(db: AsyncSession = Depends(get_async_db)):
     """
     Get list of all organizations (public endpoint for registration)
 
     Returns basic organization info for registration form dropdown.
     """
-    orgs = db.query(Organization).all()
+    result = await db.execute(select(Organization))
+    orgs = result.scalars().all()
     return [{"code": org.code, "name": org.name} for org in orgs]

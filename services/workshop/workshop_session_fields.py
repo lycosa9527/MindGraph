@@ -6,20 +6,22 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
+
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.diagrams import Diagram
 
 
-def backfill_workshop_expiry_if_needed(diagram: Diagram, db) -> None:
+async def backfill_workshop_expiry_if_needed(diagram: Diagram, db: AsyncSession) -> None:
     """Legacy rows: set expiry to 24h from diagram updated_at if missing."""
     if not diagram.workshop_code or diagram.workshop_expires_at is not None:
         return
-    started = diagram.updated_at or diagram.created_at or datetime.utcnow()
+    started = diagram.updated_at or diagram.created_at or datetime.now(UTC)
     diagram.workshop_started_at = started
     diagram.workshop_expires_at = started + timedelta(hours=24)
     diagram.workshop_duration_preset = "legacy"
-    db.commit()
+    await db.commit()
 
 
 def clear_workshop_session_fields(diagram: Diagram) -> None:

@@ -1,4 +1,4 @@
-﻿"""
+"""
 DebateVerse Prompts
 ===================
 
@@ -94,8 +94,8 @@ Please begin your speech."""
 # ============================================================================
 
 STAGE_INSTRUCTIONS = {
-    'zh': {
-        'opening': """【立论发言阶段】
+    "zh": {
+        "opening": """【立论发言阶段】
 - 建立你的论证框架
 - 明确核心论点（2-3个主要论点）
 - 定义关键术语
@@ -103,8 +103,7 @@ STAGE_INSTRUCTIONS = {
 - 时长：1分钟（约150-200字）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
 - 重要：必须使用中文进行发言""",
-
-        'rebuttal': """【驳论发言阶段】
+        "rebuttal": """【驳论发言阶段】
 - 攻击对手的论证框架
 - 指出对手论点的逻辑漏洞
 - 为你的团队辩护
@@ -112,8 +111,7 @@ STAGE_INSTRUCTIONS = {
 - 时长：1分钟（约150-200字）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
 - 重要：必须使用中文进行发言""",
-
-        'cross_exam': """【交叉质询阶段】
+        "cross_exam": """【交叉质询阶段】
 - 通过提问暴露对手的矛盾
 - 揭示对手论点的弱点
 - 巩固你方的立场
@@ -121,49 +119,45 @@ STAGE_INSTRUCTIONS = {
 - 时长：1分钟（问答轮次）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
 - 重要：必须使用中文进行提问和回答""",
-
-        'closing': """【总结陈词阶段】
+        "closing": """【总结陈词阶段】
 - 总结整场辩论
 - 强化你方的优势
 - 指出对手的缺陷
 - 将论证提升到更高层次
 - 时长：1分钟（约150-200字）
 - 注意：发言将被转录，请确保内容完整且能在1分钟内完成
-- 重要：必须使用中文进行发言"""
+- 重要：必须使用中文进行发言""",
     },
-    'en': {
-        'opening': """【Opening Statements Stage】
+    "en": {
+        "opening": """【Opening Statements Stage】
 - Establish your argumentative framework
 - Present core arguments (2-3 main points)
 - Define key terms
 - Lay foundation for your position
 - Duration: 1 minute (approximately 150-200 words)
 - Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
-
-        'rebuttal': """【Rebuttal Stage】
+        "rebuttal": """【Rebuttal Stage】
 - Attack opponent's argumentative framework
 - Point out logical flaws in opponent's arguments
 - Defend your team's position
 - Strengthen your core arguments
 - Duration: 1 minute (approximately 150-200 words)
 - Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
-
-        'cross_exam': """【Cross-Examination Stage】
+        "cross_exam": """【Cross-Examination Stage】
 - Expose opponent's contradictions through questions
 - Reveal weaknesses in opponent's arguments
 - Strengthen your position
 - Avoid falling into opponent's traps
 - Duration: 1 minute (Q&A rounds)
 - Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
-
-        'closing': """【Closing Statements Stage】
+        "closing": """【Closing Statements Stage】
 - Summarize the entire debate
 - Reinforce your team's strengths
 - Point out opponent's weaknesses
 - Elevate arguments to higher level
 - Duration: 1 minute (approximately 150-200 words)
-- Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute"""
-    }
+- Note: Speech will be transcribed, ensure content is complete and can be finished within 1 minute""",
+    },
 }
 
 # ============================================================================
@@ -171,56 +165,50 @@ STAGE_INSTRUCTIONS = {
 # ============================================================================
 
 ROLE_TASKS = {
-    'zh': {
-        'affirmative_1': """作为正方一辩，你需要：
+    "zh": {
+        "affirmative_1": """作为正方一辩，你需要：
 1. 建立正方的论证框架
 2. 提出2-3个核心论点
 3. 定义关键术语
 4. 为正方立场奠定坚实基础""",
-
-        'affirmative_2': """作为正方二辩，你需要：
+        "affirmative_2": """作为正方二辩，你需要：
 1. 攻击反方的论证框架
 2. 指出反方论点的逻辑漏洞
 3. 为正方一辩的论点进行辩护
 4. 强化正方的核心立场""",
-
-        'negative_1': """作为反方一辩，你需要：
+        "negative_1": """作为反方一辩，你需要：
 1. 建立反方的论证框架
 2. 提出2-3个核心论点
 3. 定义关键术语
 4. 为反方立场奠定坚实基础""",
-
-        'negative_2': """作为反方二辩，你需要：
+        "negative_2": """作为反方二辩，你需要：
 1. 攻击正方的论证框架
 2. 指出正方论点的逻辑漏洞
 3. 为反方一辩的论点进行辩护
-4. 强化反方的核心立场"""
+4. 强化反方的核心立场""",
     },
-    'en': {
-        'affirmative_1': """As Affirmative 1st debater, you need to:
+    "en": {
+        "affirmative_1": """As Affirmative 1st debater, you need to:
 1. Establish the affirmative argumentative framework
 2. Present 2-3 core arguments
 3. Define key terms
 4. Lay a solid foundation for the affirmative position""",
-
-        'affirmative_2': """As Affirmative 2nd debater, you need to:
+        "affirmative_2": """As Affirmative 2nd debater, you need to:
 1. Attack the negative's argumentative framework
 2. Point out logical flaws in negative's arguments
 3. Defend Affirmative 1st debater's points
 4. Strengthen the affirmative core position""",
-
-        'negative_1': """As Negative 1st debater, you need to:
+        "negative_1": """As Negative 1st debater, you need to:
 1. Establish the negative argumentative framework
 2. Present 2-3 core arguments
 3. Define key terms
 4. Lay a solid foundation for the negative position""",
-
-        'negative_2': """As Negative 2nd debater, you need to:
+        "negative_2": """As Negative 2nd debater, you need to:
 1. Attack the affirmative's argumentative framework
 2. Point out logical flaws in affirmative's arguments
 3. Defend Negative 1st debater's points
-4. Strengthen the negative core position"""
-    }
+4. Strengthen the negative core position""",
+    },
 }
 
 # ============================================================================
@@ -310,48 +298,49 @@ JUDGE_SYSTEM_PROMPT_ZH = """你是一位专业的辩论裁判，正在主持一�
 请执行你的职责（必须使用中文）。"""
 
 JUDGE_TASKS = {
-    'zh': {
-        'coin_toss': """执行掷硬币，决定发言顺序。""",
-        'opening': """引导立论发言阶段，确保双方按顺序发言。""",
-        'rebuttal': """引导驳论发言阶段，确保双方按顺序发言。""",
-        'cross_exam': """引导交叉质询阶段，确保问答有序进行。""",
-        'closing': """引导总结陈词阶段，确保双方按顺序发言。""",
-        'judgment': """进行最终评判：
+    "zh": {
+        "coin_toss": """执行掷硬币，决定发言顺序。""",
+        "opening": """引导立论发言阶段，确保双方按顺序发言。""",
+        "rebuttal": """引导驳论发言阶段，确保双方按顺序发言。""",
+        "cross_exam": """引导交叉质询阶段，确保问答有序进行。""",
+        "closing": """引导总结陈词阶段，确保双方按顺序发言。""",
+        "judgment": """进行最终评判：
 1. 分析双方的表现
 2. 按照评分标准打分
 3. 宣布获胜方
 4. 评选最佳辩手
-5. 提供详细的分析报告"""
+5. 提供详细的分析报告""",
     },
-    'en': {
-        'coin_toss': """Execute coin toss to determine speaking order.""",
-        'opening': """Guide opening statements stage, ensure both sides speak in order.""",
-        'rebuttal': """Guide rebuttal stage, ensure both sides speak in order.""",
-        'cross_exam': """Guide cross-examination stage, ensure Q&A proceeds orderly.""",
-        'closing': """Guide closing statements stage, ensure both sides speak in order.""",
-        'judgment': """Provide final judgment:
+    "en": {
+        "coin_toss": """Execute coin toss to determine speaking order.""",
+        "opening": """Guide opening statements stage, ensure both sides speak in order.""",
+        "rebuttal": """Guide rebuttal stage, ensure both sides speak in order.""",
+        "cross_exam": """Guide cross-examination stage, ensure Q&A proceeds orderly.""",
+        "closing": """Guide closing statements stage, ensure both sides speak in order.""",
+        "judgment": """Provide final judgment:
 1. Analyze both sides' performance
 2. Score according to criteria
 3. Announce winner
 4. Select best debater
-5. Provide detailed analysis report"""
-    }
+5. Provide detailed analysis report""",
+    },
 }
 
 # ============================================================================
 # Helper Functions
 # ============================================================================
 
+
 def get_debater_system_prompt(
     role: str,
     side: str,
     stage: str,
     topic: str,
-    language: str = 'zh',
+    language: str = "zh",
     time_limit: int = 1,
-    opponent_arguments: str = '',
-    attack_strategy: str = '',
-    unaddressed_points: str = ''
+    opponent_arguments: str = "",
+    attack_strategy: str = "",
+    unaddressed_points: str = "",
 ) -> str:
     """
     Get system prompt for a debater.
@@ -370,9 +359,9 @@ def get_debater_system_prompt(
     Returns:
         Formatted system prompt
     """
-    template = DEBATER_SYSTEM_PROMPT_ZH if language == 'zh' else DEBATER_SYSTEM_PROMPT_EN
-    stage_instructions = STAGE_INSTRUCTIONS[language].get(stage, '')
-    task_description = ROLE_TASKS[language].get(role, '')
+    template = DEBATER_SYSTEM_PROMPT_ZH if language == "zh" else DEBATER_SYSTEM_PROMPT_EN
+    stage_instructions = STAGE_INSTRUCTIONS[language].get(stage, "")
+    task_description = ROLE_TASKS[language].get(role, "")
 
     return template.format(
         role=role,
@@ -382,17 +371,13 @@ def get_debater_system_prompt(
         stage_instructions=stage_instructions,
         task_description=task_description,
         topic=topic,
-        opponent_arguments=opponent_arguments or '暂无',
-        attack_strategy=attack_strategy or '暂无',
-        unaddressed_points=unaddressed_points or '暂无'
+        opponent_arguments=opponent_arguments or "暂无",
+        attack_strategy=attack_strategy or "暂无",
+        unaddressed_points=unaddressed_points or "暂无",
     )
 
 
-def get_judge_system_prompt(
-    current_stage: str,
-    topic: str,
-    language: str = 'zh'
-) -> str:
+def get_judge_system_prompt(current_stage: str, topic: str, language: str = "zh") -> str:
     """
     Get system prompt for judge.
 
@@ -404,44 +389,36 @@ def get_judge_system_prompt(
     Returns:
         Formatted judge system prompt
     """
-    template = JUDGE_SYSTEM_PROMPT_ZH if language == 'zh' else JUDGE_SYSTEM_PROMPT_ZH.replace('中文', 'English')
-    task_description = JUDGE_TASKS[language].get(current_stage, '')
+    template = JUDGE_SYSTEM_PROMPT_ZH if language == "zh" else JUDGE_SYSTEM_PROMPT_ZH.replace("中文", "English")
+    task_description = JUDGE_TASKS[language].get(current_stage, "")
 
-    return template.format(
-        current_stage=current_stage,
-        topic=topic,
-        task_description=task_description
-    )
+    return template.format(current_stage=current_stage, topic=topic, task_description=task_description)
 
 
 def get_cross_exam_questioner_prompt(
-    opponent_arguments: str,
-    identified_flaws: str,
-    question_strategy: str,
-    language: str = 'zh'
+    opponent_arguments: str, identified_flaws: str, question_strategy: str, language: str = "zh"
 ) -> str:
     """Get prompt for cross-examination questioner."""
-    template = CROSS_EXAM_QUESTIONER_PROMPT_ZH if language == 'zh' else CROSS_EXAM_QUESTIONER_PROMPT_ZH.replace('中文', 'English')
+    template = (
+        CROSS_EXAM_QUESTIONER_PROMPT_ZH
+        if language == "zh"
+        else CROSS_EXAM_QUESTIONER_PROMPT_ZH.replace("中文", "English")
+    )
     return template.format(
-        opponent_arguments=opponent_arguments,
-        identified_flaws=identified_flaws,
-        question_strategy=question_strategy
+        opponent_arguments=opponent_arguments, identified_flaws=identified_flaws, question_strategy=question_strategy
     )
 
 
 def get_cross_exam_respondent_prompt(
-    question: str,
-    my_arguments: str,
-    response_strategy: str,
-    language: str = 'zh'
+    question: str, my_arguments: str, response_strategy: str, language: str = "zh"
 ) -> str:
     """Get prompt for cross-examination respondent."""
-    template = CROSS_EXAM_RESPONDENT_PROMPT_ZH if language == 'zh' else CROSS_EXAM_RESPONDENT_PROMPT_ZH.replace('中文', 'English')
-    return template.format(
-        question=question,
-        my_arguments=my_arguments,
-        response_strategy=response_strategy
+    template = (
+        CROSS_EXAM_RESPONDENT_PROMPT_ZH
+        if language == "zh"
+        else CROSS_EXAM_RESPONDENT_PROMPT_ZH.replace("中文", "English")
     )
+    return template.format(question=question, my_arguments=my_arguments, response_strategy=response_strategy)
 
 
 # ============================================================================
@@ -498,10 +475,7 @@ Negative Position: [Negative position content]
 Please begin generating:"""
 
 
-def get_position_generation_prompt(
-    topic: str,
-    language: str = 'zh'
-) -> str:
+def get_position_generation_prompt(topic: str, language: str = "zh") -> str:
     """
     Get prompt for generating debate positions.
 
@@ -512,5 +486,5 @@ def get_position_generation_prompt(
     Returns:
         Formatted position generation prompt
     """
-    template = POSITION_GENERATION_PROMPT_ZH if language == 'zh' else POSITION_GENERATION_PROMPT_EN
+    template = POSITION_GENERATION_PROMPT_ZH if language == "zh" else POSITION_GENERATION_PROMPT_EN
     return template.format(topic=topic)

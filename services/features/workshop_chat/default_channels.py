@@ -17,10 +17,12 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Any, Dict, List, Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.workshop_chat import (
     ChatChannel,
@@ -51,7 +53,7 @@ def _normalize_message_content(raw: Any) -> str:
 
 
 def _seed_topic_messages(
-    db: Session,
+    db: AsyncSession,
     channel_id: int,
     topic_id: int,
     sender_id: int,
@@ -76,8 +78,8 @@ def _seed_topic_messages(
         )
 
 
-def _seed_lesson_study_channel(
-    db: Session,
+async def _seed_lesson_study_channel(
+    db: AsyncSession,
     parent_id: int,
     organization_id: int,
     created_by: int,
@@ -95,7 +97,7 @@ def _seed_lesson_study_channel(
         status=child_data.get("status", "open"),
     )
     db.add(child)
-    db.flush()
+    await db.flush()
 
     db.add(
         ChannelMember(
@@ -113,7 +115,7 @@ def _seed_lesson_study_channel(
             created_by=created_by,
         )
         db.add(topic)
-        db.flush()
+        await db.flush()
 
         topic_messages = topic_data.get("messages", [])
         if topic_messages:
@@ -137,14 +139,15 @@ def _seed_lesson_study_channel(
 # ── Seeding logic ─────────────────────────────────────────────────
 
 
-def _ensure_announce_topics_and_messages(
-    db: Session,
+async def _ensure_announce_topics_and_messages(
+    db: AsyncSession,
     channel: ChatChannel,
     created_by: int,
     base_time: datetime,
 ) -> None:
     """Add missing topics and messages to an existing announce channel."""
-    existing_titles = {t.title for t in db.query(ChatTopic).filter(ChatTopic.channel_id == channel.id).all()}
+    result = await db.execute(select(ChatTopic).where(ChatTopic.channel_id == channel.id))
+    existing_titles = {t.title for t in result.scalars().all()}
     for topic_idx, topic_data in enumerate(ANNOUNCE_CHANNEL.get("topics", [])):
         title = topic_data["title"]
         if title in existing_titles:
@@ -156,7 +159,7 @@ def _ensure_announce_topics_and_messages(
             created_by=created_by,
         )
         db.add(topic)
-        db.flush()
+        await db.flush()
         topic_messages = topic_data.get("messages", [])
         if topic_messages:
             topic_base = base_time + timedelta(minutes=topic_idx * 20)
@@ -171,8 +174,8 @@ def _ensure_announce_topics_and_messages(
         existing_titles.add(title)
 
 
-def _backfill_empty_announce_topic_messages(
-    db: Session,
+async def _backfill_empty_announce_topic_messages(
+    db: AsyncSession,
     channel: ChatChannel,
     created_by: int,
     base_time: datetime,
@@ -188,21 +191,21 @@ def _backfill_empty_announce_topic_messages(
     if not title_to_data:
         return False
     ordered_titles = [t["title"] for t in topic_specs]
-    topics = db.query(ChatTopic).filter(ChatTopic.channel_id == channel.id).all()
+    result = await db.execute(select(ChatTopic).where(ChatTopic.channel_id == channel.id))
+    topics = result.scalars().all()
     added = False
     for topic in topics:
         data = title_to_data.get(topic.title)
         if not data:
             continue
-        msg_count = (
-            db.query(ChatMessage)
-            .filter(
+        count_result = await db.execute(
+            select(sql_count(ChatMessage.id)).where(
                 ChatMessage.channel_id == channel.id,
                 ChatMessage.topic_id == topic.id,
                 ChatMessage.is_deleted.is_(False),
             )
-            .count()
         )
+        msg_count = count_result.scalar()
         if msg_count > 0:
             continue
         topic_messages = data.get("messages", [])
@@ -225,8 +228,8 @@ def _backfill_empty_announce_topic_messages(
     return added
 
 
-def seed_announce_channel(
-    db: Session,
+async def seed_announce_channel(
+    db: AsyncSession,
     created_by: int,
 ) -> Optional[Dict[str, Any]]:
     """Create or top-up the global announce channel.
@@ -235,44 +238,49 @@ def seed_announce_channel(
     all users.  If it already exists but has no (or incomplete) topics/messages,
     we add the missing seed content so it is never left empty.
     """
-    existing = db.query(ChatChannel).filter(ChatChannel.channel_type == "announce").first()
-    base_time = datetime.utcnow() - timedelta(hours=2)
+    result = await db.execute(select(ChatChannel).where(ChatChannel.channel_type == "announce"))
+    existing = result.scalar_one_or_none()
+    base_time = datetime.now(UTC) - timedelta(hours=2)
 
     if existing:
-        topic_count = db.query(ChatTopic).filter(ChatTopic.channel_id == existing.id).count()
+        count_result = await db.execute(
+            select(sql_count(ChatTopic.id)).where(
+                ChatTopic.channel_id == existing.id,
+            )
+        )
+        topic_count = count_result.scalar()
         if topic_count < len(ANNOUNCE_CHANNEL.get("topics", [])):
-            _ensure_announce_topics_and_messages(
+            await _ensure_announce_topics_and_messages(
                 db,
                 existing,
                 created_by,
                 base_time,
             )
-            db.commit()
+            await db.commit()
             logger.info(
                 "[WorkshopChat] Topped up announce channel '%s' with missing topics (user %d)",
                 existing.name,
                 created_by,
             )
-        if _backfill_empty_announce_topic_messages(
+        if await _backfill_empty_announce_topic_messages(
             db,
             existing,
             created_by,
             base_time,
         ):
-            db.commit()
+            await db.commit()
             logger.info(
                 "[WorkshopChat] Backfilled seed messages on announce channel '%s' (user %d)",
                 existing.name,
                 created_by,
             )
-        membership = (
-            db.query(ChannelMember)
-            .filter(
+        mem_result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == existing.id,
                 ChannelMember.user_id == created_by,
             )
-            .first()
         )
+        membership = mem_result.scalar_one_or_none()
         if not membership:
             db.add(
                 ChannelMember(
@@ -281,7 +289,7 @@ def seed_announce_channel(
                     role="owner",
                 )
             )
-            db.commit()
+            await db.commit()
         return {"id": existing.id, "name": existing.name, "channel_type": "announce"}
 
     channel = ChatChannel(
@@ -294,7 +302,7 @@ def seed_announce_channel(
         posting_policy="managers",
     )
     db.add(channel)
-    db.flush()
+    await db.flush()
 
     db.add(
         ChannelMember(
@@ -312,7 +320,7 @@ def seed_announce_channel(
             created_by=created_by,
         )
         db.add(topic)
-        db.flush()
+        await db.flush()
 
         topic_messages = topic_data.get("messages", [])
         if topic_messages:
@@ -326,7 +334,7 @@ def seed_announce_channel(
                 topic_base,
             )
 
-    db.commit()
+    await db.commit()
     logger.info(
         "[WorkshopChat] Global announce channel '%s' seeded by user %d",
         channel.name,
@@ -335,23 +343,22 @@ def seed_announce_channel(
     return {"id": channel.id, "name": channel.name, "channel_type": "announce"}
 
 
-def _find_or_create_group(
-    db: Session,
+async def _find_or_create_group(
+    db: AsyncSession,
     group_data: Dict[str, Any],
     organization_id: int,
     created_by: int,
 ) -> ChatChannel:
     """Return existing group by name or create a new one. Caller must flush."""
-    existing = (
-        db.query(ChatChannel)
-        .filter(
+    result = await db.execute(
+        select(ChatChannel).where(
             ChatChannel.organization_id == organization_id,
             ChatChannel.parent_id.is_(None),
             ChatChannel.is_archived.is_(False),
             ChatChannel.name == group_data["name"],
         )
-        .first()
     )
+    existing = result.scalar_one_or_none()
     if existing:
         return existing
     group = ChatChannel(
@@ -362,12 +369,12 @@ def _find_or_create_group(
         created_by=created_by,
     )
     db.add(group)
-    db.flush()
+    await db.flush()
     return group
 
 
-def _seed_one_default_group(
-    db: Session,
+async def _seed_one_default_group(
+    db: AsyncSession,
     group_data: Dict[str, Any],
     organization_id: int,
     created_by: int,
@@ -375,20 +382,19 @@ def _seed_one_default_group(
     base_time: datetime,
 ) -> Dict[str, Any]:
     """Create or reuse one top-level group and its lesson-study children."""
-    group = _find_or_create_group(
+    group = await _find_or_create_group(
         db,
         group_data,
         organization_id,
         created_by,
     )
-    if not (
-        db.query(ChannelMember)
-        .filter(
+    mem_result = await db.execute(
+        select(ChannelMember).where(
             ChannelMember.channel_id == group.id,
             ChannelMember.user_id == created_by,
         )
-        .first()
-    ):
+    )
+    if not mem_result.scalar_one_or_none():
         db.add(
             ChannelMember(
                 channel_id=group.id,
@@ -402,15 +408,14 @@ def _seed_one_default_group(
     children_list = group_data.get("children", [])
 
     for child_idx, child_data in enumerate(children_list):
-        existing_child = (
-            db.query(ChatChannel)
-            .filter(
+        child_result = await db.execute(
+            select(ChatChannel).where(
                 ChatChannel.parent_id == group.id,
                 ChatChannel.name == child_data["name"],
                 ChatChannel.is_archived.is_(False),
             )
-            .first()
         )
+        existing_child = child_result.scalar_one_or_none()
         if existing_child:
             children_summaries.append(
                 {
@@ -422,7 +427,7 @@ def _seed_one_default_group(
             )
             continue
         child_base = group_base_time + timedelta(hours=child_idx * 2)
-        summary = _seed_lesson_study_channel(
+        summary = await _seed_lesson_study_channel(
             db,
             group.id,
             organization_id,
@@ -440,8 +445,8 @@ def _seed_one_default_group(
     }
 
 
-def seed_default_channels(
-    db: Session,
+async def seed_default_channels(
+    db: AsyncSession,
     organization_id: int,
     created_by: int,
 ) -> List[Dict[str, Any]]:
@@ -451,15 +456,14 @@ def seed_default_channels(
     so that groups created without children (e.g. from a partial seed) can be
     topped up. Reuses existing groups by name when adding missing children.
     """
-    existing_children_count = (
-        db.query(ChatChannel)
-        .filter(
+    count_result = await db.execute(
+        select(sql_count(ChatChannel.id)).where(
             ChatChannel.organization_id == organization_id,
             ChatChannel.parent_id.isnot(None),
             ChatChannel.is_archived.is_(False),
         )
-        .count()
     )
+    existing_children_count = count_result.scalar()
     if existing_children_count > 0:
         logger.info(
             "[WorkshopChat] Org %d already has %d lesson-study channels — skipping seed",
@@ -468,9 +472,10 @@ def seed_default_channels(
         )
         return []
 
-    base_time = datetime.utcnow() - timedelta(days=1)
-    created_groups = [
-        _seed_one_default_group(
+    base_time = datetime.now(UTC) - timedelta(days=1)
+    created_groups = []
+    for group_idx, group_data in enumerate(DEFAULT_CHANNEL_GROUPS):
+        group_result = await _seed_one_default_group(
             db,
             group_data,
             organization_id,
@@ -478,10 +483,9 @@ def seed_default_channels(
             group_idx,
             base_time,
         )
-        for group_idx, group_data in enumerate(DEFAULT_CHANNEL_GROUPS)
-    ]
+        created_groups.append(group_result)
 
-    db.commit()
+    await db.commit()
 
     logger.info(
         "[WorkshopChat] Seeded %d channel groups for org %d by user %d",

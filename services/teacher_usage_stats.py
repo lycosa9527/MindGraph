@@ -15,10 +15,11 @@ import logging
 from datetime import datetime, timedelta, timezone
 from typing import Any, Optional, Set
 
-from sqlalchemy import func
+from sqlalchemy import func, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import Session
 
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.teacher_usage_config import (
     TeacherUsageConfig,
     _default_thresholds,
@@ -66,7 +67,7 @@ def _get_active_dates_for_user(
             active_dates.add(row.d)
 
     try:
-        log_db = SessionLocal()
+        log_db = SyncSessionLocal()
         try:
             log_rows = (
                 log_db.query(func.date(UserActivityLog.created_at).label("d"))
@@ -187,7 +188,7 @@ def save_classification_config(db: Session, thresholds: dict) -> bool:
         row = db.query(TeacherUsageConfig).filter(TeacherUsageConfig.config_key == CONFIG_KEY).first()
         if row:
             row.config_value = thresholds
-            row.updated_at = datetime.utcnow()
+            row.updated_at = datetime.now(timezone.utc)
         else:
             row = TeacherUsageConfig(
                 config_key=CONFIG_KEY,
@@ -280,7 +281,7 @@ def compute_and_upsert_user_usage_stats(user_id: int, db: Session) -> bool:
             existing.internal_max_zero_gap_days = metrics["internal_max_zero_gap_days"]
             existing.tier1 = tier1
             existing.tier2 = tier2
-            existing.computed_at = datetime.utcnow()
+            existing.computed_at = datetime.now(timezone.utc)
         else:
             stats = UserUsageStats(
                 user_id=user_id,
@@ -297,7 +298,7 @@ def compute_and_upsert_user_usage_stats(user_id: int, db: Session) -> bool:
                 internal_max_zero_gap_days=metrics["internal_max_zero_gap_days"],
                 tier1=tier1,
                 tier2=tier2,
-                computed_at=datetime.utcnow(),
+                computed_at=datetime.now(timezone.utc),
             )
             db.add(stats)
 
@@ -306,4 +307,143 @@ def compute_and_upsert_user_usage_stats(user_id: int, db: Session) -> bool:
     except Exception as e:
         logger.exception("compute_and_upsert_user_usage_stats failed for user %s: %s", user_id, e)
         db.rollback()
+        return False
+
+
+async def get_classification_config_async(db: AsyncSession) -> dict:
+    """Async version: get classification thresholds from DB, or defaults."""
+    result = await db.execute(select(TeacherUsageConfig).where(TeacherUsageConfig.config_key == CONFIG_KEY))
+    row = result.scalars().first()
+    if row and row.config_value:
+        defaults = _default_thresholds()
+        merged = {}
+        for group, default_group in defaults.items():
+            merged[group] = {**default_group, **(row.config_value.get(group) or {})}
+        return merged
+    return _default_thresholds()
+
+
+async def save_classification_config_async(
+    db: AsyncSession,
+    thresholds: dict,
+) -> bool:
+    """Async version: save classification thresholds to DB."""
+    try:
+        result = await db.execute(select(TeacherUsageConfig).where(TeacherUsageConfig.config_key == CONFIG_KEY))
+        row = result.scalars().first()
+        if row:
+            row.config_value = thresholds
+            row.updated_at = datetime.now(timezone.utc)
+        else:
+            row = TeacherUsageConfig(
+                config_key=CONFIG_KEY,
+                config_value=thresholds,
+            )
+            db.add(row)
+        await db.commit()
+        return True
+    except Exception as e:
+        logger.exception("save_classification_config_async failed: %s", e)
+        await db.rollback()
+        return False
+
+
+async def _get_active_dates_for_user_async(
+    db: AsyncSession,
+    user_id: int,
+    window_start,
+) -> Set[Any]:
+    """Async version: get distinct active dates for user in observation window."""
+    active_dates: Set[Any] = set()
+
+    result = await db.execute(
+        select(func.date(TokenUsage.created_at).label("d"))
+        .where(
+            TokenUsage.user_id == user_id,
+            TokenUsage.success.is_(True),
+            TokenUsage.created_at >= window_start,
+        )
+        .distinct()
+    )
+    for row in result.all():
+        if row.d:
+            active_dates.add(row.d)
+
+    try:
+        log_result = await db.execute(
+            select(func.date(UserActivityLog.created_at).label("d"))
+            .where(
+                UserActivityLog.user_id == user_id,
+                UserActivityLog.activity_type == "login",
+                UserActivityLog.created_at >= window_start,
+            )
+            .distinct()
+        )
+        for row in log_result.all():
+            if row.d:
+                active_dates.add(row.d)
+    except Exception as e:
+        logger.debug("UserActivityLog async query failed: %s", e)
+
+    return active_dates
+
+
+async def compute_and_upsert_user_usage_stats_async(
+    user_id: int,
+    db: AsyncSession,
+) -> bool:
+    """Async version: compute metrics and classification, upsert into user_usage_stats."""
+    try:
+        window_start = _get_window_cutoff_utc()
+        active_dates = await _get_active_dates_for_user_async(db, user_id, window_start)
+        metrics = _compute_metrics(active_dates, window_start)
+        config = await get_classification_config_async(db)
+        tier1, tier2 = _classify(metrics, config)
+
+        result = await db.execute(select(UserUsageStats).where(UserUsageStats.user_id == user_id))
+        existing = result.scalars().first()
+        if existing:
+            existing.active_days = metrics["active_days"]
+            existing.active_days_first10 = metrics["active_days_first10"]
+            existing.active_days_last25 = metrics["active_days_last25"]
+            existing.active_days_first25 = metrics["active_days_first25"]
+            existing.active_days_last14 = metrics["active_days_last14"]
+            existing.active_weeks = metrics["active_weeks"]
+            existing.active_weeks_first4 = metrics["active_weeks_first4"]
+            existing.active_weeks_last4 = metrics["active_weeks_last4"]
+            existing.max_zero_gap_days = metrics["max_zero_gap_days"]
+            existing.n_bursts = metrics["n_bursts"]
+            existing.internal_max_zero_gap_days = metrics["internal_max_zero_gap_days"]
+            existing.tier1 = tier1
+            existing.tier2 = tier2
+            existing.computed_at = datetime.now(timezone.utc)
+        else:
+            new_stats = UserUsageStats(
+                user_id=user_id,
+                active_days=metrics["active_days"],
+                active_days_first10=metrics["active_days_first10"],
+                active_days_last25=metrics["active_days_last25"],
+                active_days_first25=metrics["active_days_first25"],
+                active_days_last14=metrics["active_days_last14"],
+                active_weeks=metrics["active_weeks"],
+                active_weeks_first4=metrics["active_weeks_first4"],
+                active_weeks_last4=metrics["active_weeks_last4"],
+                max_zero_gap_days=metrics["max_zero_gap_days"],
+                n_bursts=metrics["n_bursts"],
+                internal_max_zero_gap_days=metrics["internal_max_zero_gap_days"],
+                tier1=tier1,
+                tier2=tier2,
+                computed_at=datetime.now(timezone.utc),
+            )
+            db.add(new_stats)
+
+        await db.commit()
+        return True
+    except Exception as e:
+        logger.exception(
+            "compute_and_upsert_user_usage_stats_async failed for user %s: %s",
+            user_id,
+            e,
+        )
+        await db.rollback()
         return False

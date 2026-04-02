@@ -13,7 +13,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, UniqueConstraint
 from sqlalchemy.dialects import postgresql as pg
@@ -51,9 +51,9 @@ class DiagramSnapshot(Base):
     )
     version_number: Mapped[int] = mapped_column(Integer, nullable=False)
     spec: Mapped[dict] = mapped_column(pg.JSONB, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
 
-    diagram: Mapped["Diagram"] = relationship("Diagram", back_populates="snapshots")
+    diagram: Mapped["Diagram"] = relationship("Diagram", back_populates="snapshots", lazy="selectin")
 
     __table_args__ = (
         UniqueConstraint("diagram_id", "version_number", name="uq_diagram_snapshot_version"),

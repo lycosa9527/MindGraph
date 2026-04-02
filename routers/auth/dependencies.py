@@ -36,7 +36,7 @@ from utils.auth import (
 security_optional = HTTPBearer(auto_error=False)
 
 
-def get_current_user_optional(
+async def get_current_user_optional(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security_optional),
 ) -> Optional[User]:
@@ -81,7 +81,7 @@ def get_current_user_optional(
             return None
 
         # Get user from cache
-        user = user_cache.get_by_id(int(user_id))
+        user = await user_cache.get_by_id(int(user_id))
         return user
 
     except HTTPException:

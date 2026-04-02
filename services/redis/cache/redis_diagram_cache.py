@@ -28,10 +28,10 @@ import json
 import logging
 import time
 import uuid
+from datetime import UTC, datetime
 from typing import Optional, Dict, Any, List, Tuple
-from datetime import datetime
 
-from sqlalchemy import desc
+from sqlalchemy import desc, select, update as sa_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from services.redis.redis_client import is_redis_available, get_redis
@@ -48,7 +48,7 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     USER_LIST_KEY,
     DIRTY_SET_KEY,
 )
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
 
 logger = logging.getLogger(__name__)
@@ -161,7 +161,7 @@ class RedisDiagramCache:
             # Generate UUID for new diagram
             diagram_id = str(uuid.uuid4())
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         now_ts = now.timestamp()
 
         # For updates, get existing data to preserve created_at and is_pinned
@@ -243,35 +243,33 @@ class RedisDiagramCache:
         thumbnail: Optional[str],
         created_at: datetime,
     ) -> bool:
-        """Create new diagram in database using INSERT … RETURNING to confirm in one query."""
+        """Create new diagram in database using INSERT ... RETURNING to confirm in one query."""
         try:
-            db = SessionLocal()
-            try:
-                stmt = (
-                    pg_insert(Diagram)
-                    .values(
-                        id=diagram_id,
-                        user_id=user_id,
-                        title=title,
-                        diagram_type=diagram_type,
-                        spec=spec,
-                        language=language,
-                        thumbnail=thumbnail,
-                        created_at=created_at,
-                        updated_at=created_at,
-                        is_deleted=False,
+            async with AsyncSessionLocal() as db:
+                try:
+                    stmt = (
+                        pg_insert(Diagram)
+                        .values(
+                            id=diagram_id,
+                            user_id=user_id,
+                            title=title,
+                            diagram_type=diagram_type,
+                            spec=spec,
+                            language=language,
+                            thumbnail=thumbnail,
+                            created_at=created_at,
+                            updated_at=created_at,
+                            is_deleted=False,
+                        )
+                        .returning(Diagram.id)
                     )
-                    .returning(Diagram.id)
-                )
-                result = db.execute(stmt)
-                db.commit()
-                return result.scalar_one_or_none() == diagram_id
-            except Exception as exc:
-                db.rollback()
-                logger.error("[DiagramCache] Database create failed: %s", exc)
-                return False
-            finally:
-                db.close()
+                    result = await db.execute(stmt)
+                    await db.commit()
+                    return result.scalar_one_or_none() == diagram_id
+                except Exception as exc:
+                    await db.rollback()
+                    logger.error("[DiagramCache] Database create failed: %s", exc)
+                    return False
         except Exception as exc:
             logger.error("[DiagramCache] Database connection failed: %s", exc)
             return False
@@ -287,31 +285,27 @@ class RedisDiagramCache:
     ) -> bool:
         """Update diagram in database."""
         try:
-            db = SessionLocal()
-            try:
-                rows = (
-                    db.query(Diagram)
-                    .filter(Diagram.id == diagram_id, Diagram.user_id == user_id)
-                    .update(
-                        {
-                            Diagram.title: title,
-                            Diagram.spec: spec,
-                            Diagram.thumbnail: thumbnail,
-                            Diagram.updated_at: updated_at,
-                        },
-                        synchronize_session=False,
+            async with AsyncSessionLocal() as db:
+                try:
+                    stmt = (
+                        sa_update(Diagram)
+                        .where(Diagram.id == diagram_id, Diagram.user_id == user_id)
+                        .values(
+                            title=title,
+                            spec=spec,
+                            thumbnail=thumbnail,
+                            updated_at=updated_at,
+                        )
                     )
-                )
-                if rows == 0:
+                    result = await db.execute(stmt)
+                    if result.rowcount == 0:
+                        return False
+                    await db.commit()
+                    return True
+                except Exception as e:
+                    await db.rollback()
+                    logger.error("[DiagramCache] Database update failed: %s", e)
                     return False
-                db.commit()
-                return True
-            except Exception as e:
-                db.rollback()
-                logger.error("[DiagramCache] Database update failed: %s", e)
-                return False
-            finally:
-                db.close()
         except Exception as e:
             logger.error("[DiagramCache] Database connection failed: %s", e)
             return False
@@ -358,24 +352,19 @@ class RedisDiagramCache:
     async def _load_from_database(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
         """Load diagram from database and cache in Redis."""
         try:
-            db = SessionLocal()
-            try:
-                diagram = (
-                    db.query(Diagram)
-                    .filter(
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(Diagram).where(
                         Diagram.id == diagram_id,
                         Diagram.user_id == user_id,
                         Diagram.is_deleted.is_(False),
                     )
-                    .first()
                 )
+                diagram = result.scalar_one_or_none()
 
                 if not diagram:
                     return None
 
-                # JSONB columns are returned as dicts by SQLAlchemy.
-                # Rows written before the JSONB migration may still carry a string value;
-                # parse those transparently so callers always receive a dict.
                 raw_spec = getattr(diagram, "spec", None)
                 if isinstance(raw_spec, dict):
                     spec = raw_spec
@@ -403,30 +392,25 @@ class RedisDiagramCache:
                     "is_pinned": getattr(diagram, "is_pinned", False),
                 }
 
-                # Cache in Redis — JSON.SET + EXPIRE + ZADD in a single pipeline.
-                if self._use_redis():
-                    redis = get_redis()
-                    if redis:
-                        try:
-                            diagram_key = self._get_diagram_key(user_id, diagram_id)
-                            meta_key = self._get_user_meta_key(user_id)
-                            updated_ts = updated_at_val.timestamp() if updated_at_val is not None else time.time()
+            if self._use_redis():
+                redis = get_redis()
+                if redis:
+                    try:
+                        diagram_key = self._get_diagram_key(user_id, diagram_id)
+                        meta_key = self._get_user_meta_key(user_id)
+                        updated_ts = updated_at_val.timestamp() if updated_at_val is not None else time.time()
 
-                            pipe = redis.pipeline()
-                            # DELETE before JSON.SET to clear any stale key with wrong type.
-                            pipe.delete(diagram_key)
-                            pipe.json().set(diagram_key, "$", diagram_data)
-                            pipe.expire(diagram_key, CACHE_TTL)
-                            pipe.zadd(meta_key, {str(diagram_id): updated_ts})
-                            pipe.expire(meta_key, CACHE_TTL)
-                            pipe.execute()
-                        except Exception as exc:
-                            logger.debug("[DiagramCache] Redis cache-aside write failed: %s", exc)
+                        pipe = redis.pipeline()
+                        pipe.delete(diagram_key)
+                        pipe.json().set(diagram_key, "$", diagram_data)
+                        pipe.expire(diagram_key, CACHE_TTL)
+                        pipe.zadd(meta_key, {str(diagram_id): updated_ts})
+                        pipe.expire(meta_key, CACHE_TTL)
+                        pipe.execute()
+                    except Exception as exc:
+                        logger.debug("[DiagramCache] Redis cache-aside write failed: %s", exc)
 
-                return diagram_data
-
-            finally:
-                db.close()
+            return diagram_data
         except Exception as e:
             logger.error("[DiagramCache] Database load failed: %s", e)
             return None
@@ -507,14 +491,13 @@ class RedisDiagramCache:
     async def _load_list_from_database(self, user_id: int) -> List[Dict[str, Any]]:
         """Load diagram list metadata from database."""
         try:
-            db = SessionLocal()
-            try:
-                diagrams = (
-                    db.query(Diagram)
-                    .filter(Diagram.user_id == user_id, Diagram.is_deleted.is_(False))
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(Diagram)
+                    .where(Diagram.user_id == user_id, Diagram.is_deleted.is_(False))
                     .order_by(desc(Diagram.is_pinned), desc(Diagram.updated_at))
-                    .all()
                 )
+                diagrams = result.scalars().all()
 
                 items = []
                 for d in diagrams:
@@ -530,8 +513,6 @@ class RedisDiagramCache:
                         }
                     )
                 return items
-            finally:
-                db.close()
         except Exception as e:
             logger.error("[DiagramCache] Database list load failed: %s", e)
             return []
@@ -543,35 +524,32 @@ class RedisDiagramCache:
         Returns:
             Tuple of (success, error_message)
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
-        # Write-through: Update database FIRST
         try:
-            db = SessionLocal()
-            try:
-                diagram = db.query(Diagram).filter(Diagram.id == diagram_id, Diagram.user_id == user_id).first()
+            async with AsyncSessionLocal() as db:
+                try:
+                    result = await db.execute(
+                        select(Diagram).where(Diagram.id == diagram_id, Diagram.user_id == user_id)
+                    )
+                    diagram = result.scalar_one_or_none()
 
-                if not diagram:
-                    return False, "Diagram not found"
+                    if not diagram:
+                        return False, "Diagram not found"
 
-                # If already deleted, return success (idempotent delete)
-                if getattr(diagram, "is_deleted", False):
-                    return True, None
+                    if getattr(diagram, "is_deleted", False):
+                        return True, None
 
-                db.query(Diagram).filter(Diagram.id == diagram_id, Diagram.user_id == user_id).update(
-                    {
-                        Diagram.is_deleted: True,
-                        Diagram.updated_at: now,
-                    },
-                    synchronize_session=False,
-                )
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                logger.error("[DiagramCache] Database delete failed: %s", e)
-                return False, "Failed to delete diagram"
-            finally:
-                db.close()
+                    await db.execute(
+                        sa_update(Diagram)
+                        .where(Diagram.id == diagram_id, Diagram.user_id == user_id)
+                        .values(is_deleted=True, updated_at=now)
+                    )
+                    await db.commit()
+                except Exception as e:
+                    await db.rollback()
+                    logger.error("[DiagramCache] Database delete failed: %s", e)
+                    return False, "Failed to delete diagram"
         except Exception as e:
             logger.error("[DiagramCache] Database connection failed: %s", e)
             return False, "Database error"
@@ -659,36 +637,28 @@ class RedisDiagramCache:
         Returns:
             Tuple of (success, error_message)
         """
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
 
-        # Write-through: Update database FIRST
         try:
-            db = SessionLocal()
-            try:
-                rows = (
-                    db.query(Diagram)
-                    .filter(
-                        Diagram.id == diagram_id,
-                        Diagram.user_id == user_id,
-                        Diagram.is_deleted.is_(False),
+            async with AsyncSessionLocal() as db:
+                try:
+                    stmt = (
+                        sa_update(Diagram)
+                        .where(
+                            Diagram.id == diagram_id,
+                            Diagram.user_id == user_id,
+                            Diagram.is_deleted.is_(False),
+                        )
+                        .values(is_pinned=pinned, updated_at=now)
                     )
-                    .update(
-                        {
-                            Diagram.is_pinned: pinned,
-                            Diagram.updated_at: now,
-                        },
-                        synchronize_session=False,
-                    )
-                )
-                if rows == 0:
-                    return False, "Diagram not found"
-                db.commit()
-            except Exception as e:
-                db.rollback()
-                logger.error("[DiagramCache] Database pin failed: %s", e)
-                return False, "Failed to update diagram"
-            finally:
-                db.close()
+                    result = await db.execute(stmt)
+                    if result.rowcount == 0:
+                        return False, "Diagram not found"
+                    await db.commit()
+                except Exception as e:
+                    await db.rollback()
+                    logger.error("[DiagramCache] Database pin failed: %s", e)
+                    return False, "Failed to update diagram"
         except Exception as e:
             logger.error("[DiagramCache] Pin connection failed: %s", e)
             return False, "Database error"

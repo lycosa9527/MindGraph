@@ -13,14 +13,14 @@ Proprietary License
 
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.relationship_labels import get_relationship_labels_generator
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from models.requests.requests_thinking import (
@@ -93,10 +93,10 @@ async def _stream_labels(req, user: User | None, is_next: bool):
 
 
 @router.post("/thinking_mode/relationship_labels/start")
-def start_relationship_labels(
+async def start_relationship_labels(
     req: RelationshipLabelsStartRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Start relationship labels generation - fires 3 LLMs concurrently.
@@ -116,14 +116,14 @@ def start_relationship_labels(
             log_entry = UserActivityLog(
                 user_id=current_user.id,
                 activity_type="relationship_labels",
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             )
             db.add(log_entry)
-            db.commit()
+            await db.commit()
         except Exception as e:
             logger.debug("Failed to log relationship_labels: %s", e)
             try:
-                db.rollback()
+                await db.rollback()
             except Exception as exc:
                 logger.debug("Rollback after relationship_labels log failure: %s", exc)
 

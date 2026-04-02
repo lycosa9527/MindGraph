@@ -9,14 +9,14 @@ All Rights Reserved
 Proprietary License
 """
 
-import asyncio
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatMessage, MessageReaction
 from services.features.workshop_chat import reaction_service
@@ -39,22 +39,21 @@ class AddReactionRequest(BaseModel):
 async def toggle_reaction(
     message_id: int,
     body: AddReactionRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Toggle an emoji reaction on a message (add or remove)."""
-    msg = await asyncio.to_thread(lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first())
+    msg_result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
+    msg = msg_result.scalar_one_or_none()
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    result = await asyncio.to_thread(
-        lambda: reaction_service.toggle_reaction(
-            db,
-            message_id,
-            current_user.id,
-            body.emoji_name,
-            body.emoji_code,
-        )
+    result = await reaction_service.toggle_reaction(
+        db,
+        message_id,
+        current_user.id,
+        body.emoji_name,
+        body.emoji_code,
     )
 
     await chat_ws_manager.broadcast_to_channel(
@@ -79,35 +78,30 @@ async def toggle_reaction(
 async def remove_reaction(
     message_id: int,
     emoji_name: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Explicitly remove a specific emoji reaction."""
-    msg = await asyncio.to_thread(lambda: db.query(ChatMessage).filter(ChatMessage.id == message_id).first())
+    msg_result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
+    msg = msg_result.scalar_one_or_none()
     if not msg:
         raise HTTPException(status_code=404, detail="Message not found")
 
-    existing = await asyncio.to_thread(
-        lambda: (
-            db.query(MessageReaction)
-            .filter(
-                MessageReaction.message_id == message_id,
-                MessageReaction.user_id == current_user.id,
-                MessageReaction.emoji_name == emoji_name,
-            )
-            .first()
+    existing_result = await db.execute(
+        select(MessageReaction).where(
+            MessageReaction.message_id == message_id,
+            MessageReaction.user_id == current_user.id,
+            MessageReaction.emoji_name == emoji_name,
         )
     )
+    existing = existing_result.scalar_one_or_none()
     if not existing:
         raise HTTPException(status_code=404, detail="Reaction not found")
 
     emoji_code = existing.emoji_code
 
-    def _sync_delete_reaction():
-        db.delete(existing)
-        db.commit()
-
-    await asyncio.to_thread(_sync_delete_reaction)
+    await db.delete(existing)
+    await db.commit()
 
     await chat_ws_manager.broadcast_to_channel(
         msg.channel_id,
@@ -127,8 +121,8 @@ async def remove_reaction(
 @router.get("/messages/{message_id}/reactions")
 async def get_reactions(
     message_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _current_user: User = Depends(get_current_user),
 ):
     """Get grouped reactions for a message."""
-    return reaction_service.get_message_reactions(db, message_id)
+    return await reaction_service.get_message_reactions(db, message_id)

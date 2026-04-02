@@ -84,7 +84,7 @@ async def process_voice_command(
                     # Get organization_id from user if available (use cache)
                     if redis_user_cache:
                         try:
-                            user = redis_user_cache.get_by_id(user_id)
+                            user = await redis_user_cache.get_by_id(user_id)
                             if user:
                                 organization_id = user.organization_id
                         except (AttributeError, KeyError) as e:

@@ -399,4 +399,18 @@ export default {
   'admin.database.orphanCleanSuccess': 'अनाथ रिकॉर्ड साफ़',
   'admin.database.orphanCleanError': 'अनाथ सफ़ाई विफल',
   'admin.database.cleanSqliteOrphans': 'SQLite अनाथ साफ़',
+
+  'admin.database.pgAnalyze': 'Analyze',
+  'admin.database.pgAnalyzeError': 'Failed to analyze PG dump',
+  'admin.database.pgAnalysisResult': 'PG Dump Analysis',
+  'admin.database.pgSkippedTables': 'Skipped tables',
+  'admin.database.pgStagingRows': 'Dump Rows',
+  'admin.database.pgLiveRows': 'Live Rows',
+  'admin.database.pgExecuteMerge': 'Merge Into Live DB',
+  'admin.database.pgMergeConfirmTitle': 'Confirm PG Merge',
+  'admin.database.pgMergeConfirmMsg':
+    'This will merge data from the dump into the live database. Existing records will be preserved. Continue?',
+  'admin.database.pgMergeSuccess': 'PG dump merged successfully',
+  'admin.database.pgMergeError': 'PG dump merge failed',
+  'admin.database.pgMergeComplete': 'PG Merge Complete',
 } as const

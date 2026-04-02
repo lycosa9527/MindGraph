@@ -15,9 +15,11 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import (
     KnowledgeSpace,
@@ -35,7 +37,7 @@ router = APIRouter()
 
 
 @router.get("/metrics/compression", response_model=CompressionMetricsResponse)
-def get_compression_metrics(current_user: User = Depends(get_current_user)):
+async def get_compression_metrics(current_user: User = Depends(get_current_user)):
     """
     Get compression metrics for user's knowledge space vector database.
 
@@ -60,7 +62,10 @@ def get_compression_metrics(current_user: User = Depends(get_current_user)):
 
 
 @router.get("/debug/qdrant-diagnostics")
-def get_qdrant_diagnostics(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_qdrant_diagnostics(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get diagnostic information for user's Qdrant collection.
 
@@ -78,8 +83,8 @@ def get_qdrant_diagnostics(current_user: User = Depends(get_current_user), db: S
         qdrant_service = get_qdrant_service()
         diagnostics = qdrant_service.get_diagnostics(current_user.id)
 
-        # Add database chunk info for comparison
-        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == current_user.id).first()
+        result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == current_user.id))
+        space = result.scalar_one_or_none()
 
         database_info = {
             "space_exists": space is not None,
@@ -90,43 +95,43 @@ def get_qdrant_diagnostics(current_user: User = Depends(get_current_user), db: S
         }
 
         if space:
-            # Get document counts
-            database_info["documents_count"] = (
-                db.query(KnowledgeDocument).filter(KnowledgeDocument.space_id == space.id).count()
+            count_result = await db.execute(
+                select(sa_count()).select_from(KnowledgeDocument).where(KnowledgeDocument.space_id == space.id)
             )
+            database_info["documents_count"] = count_result.scalar_one()
 
-            database_info["completed_documents_count"] = (
-                db.query(KnowledgeDocument)
-                .filter(
+            count_result = await db.execute(
+                select(sa_count())
+                .select_from(KnowledgeDocument)
+                .where(
                     KnowledgeDocument.space_id == space.id,
                     KnowledgeDocument.status == "completed",
                 )
-                .count()
             )
+            database_info["completed_documents_count"] = count_result.scalar_one()
 
-            # Get total chunks across all documents
-            completed_doc_ids = [
-                d.id
-                for d in db.query(KnowledgeDocument)
-                .filter(
+            doc_result = await db.execute(
+                select(KnowledgeDocument.id).where(
                     KnowledgeDocument.space_id == space.id,
                     KnowledgeDocument.status == "completed",
                 )
-                .all()
-            ]
+            )
+            completed_doc_ids = list(doc_result.scalars().all())
 
             if completed_doc_ids:
-                database_info["total_chunks_count"] = (
-                    db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(completed_doc_ids)).count()
+                count_result = await db.execute(
+                    select(sa_count())
+                    .select_from(DocumentChunk)
+                    .where(DocumentChunk.document_id.in_(completed_doc_ids))
                 )
+                database_info["total_chunks_count"] = count_result.scalar_one()
 
-                # Sample chunk IDs
-                sample_chunks = (
-                    db.query(DocumentChunk).filter(DocumentChunk.document_id.in_(completed_doc_ids)).limit(5).all()
+                sample_result = await db.execute(
+                    select(DocumentChunk).where(DocumentChunk.document_id.in_(completed_doc_ids)).limit(5)
                 )
+                sample_chunks = sample_result.scalars().all()
                 database_info["chunk_ids_sample"] = [c.id for c in sample_chunks]
 
-        # Summary diagnosis
         diagnosis = []
         if not diagnostics["collection_exists"]:
             diagnosis.append("ISSUE: Qdrant collection does not exist for this user")

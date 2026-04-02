@@ -12,7 +12,7 @@ import os
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from sqlalchemy.orm import Session
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.knowledge_space import ChunkTestResult
 
 
@@ -52,7 +52,7 @@ def delete_test_result(db: Session, test_id: int) -> bool:
 
 def main():
     """Main function to list and optionally delete test results."""
-    db = SessionLocal()
+    db = SyncSessionLocal()
 
     try:
         # Get all test results

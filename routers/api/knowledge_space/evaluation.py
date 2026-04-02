@@ -16,9 +16,10 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import EvaluationDataset, EvaluationResult
 from models.requests.requests_knowledge_space import (
@@ -37,10 +38,10 @@ router = APIRouter()
 
 
 @router.post("/evaluation/datasets")
-def create_evaluation_dataset(
+async def create_evaluation_dataset(
     request: EvaluationDatasetRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Create an evaluation dataset.
@@ -48,7 +49,7 @@ def create_evaluation_dataset(
     Requires authentication.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    space = service.create_knowledge_space()
+    space = await service.create_knowledge_space()
 
     try:
         dataset = EvaluationDataset(
@@ -59,8 +60,8 @@ def create_evaluation_dataset(
             queries=request.queries,
         )
         db.add(dataset)
-        db.commit()
-        db.refresh(dataset)
+        await db.commit()
+        await db.refresh(dataset)
 
         return EvaluationDatasetResponse(
             id=dataset.id,
@@ -72,23 +73,26 @@ def create_evaluation_dataset(
         )
     except Exception as e:
         logger.error("[KnowledgeSpaceAPI] Failed to create evaluation dataset: %s", e)
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create evaluation dataset") from e
 
 
 @router.get("/evaluation/datasets")
-def list_evaluation_datasets(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_evaluation_datasets(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     List evaluation datasets for user.
 
     Requires authentication.
     """
-    datasets = (
-        db.query(EvaluationDataset)
-        .filter(EvaluationDataset.user_id == current_user.id)
+    result = await db.execute(
+        select(EvaluationDataset)
+        .where(EvaluationDataset.user_id == current_user.id)
         .order_by(EvaluationDataset.created_at.desc())
-        .all()
     )
+    datasets = result.scalars().all()
 
     return {
         "datasets": [
@@ -107,10 +111,10 @@ def list_evaluation_datasets(current_user: User = Depends(get_current_user), db:
 
 
 @router.post("/evaluation/run")
-def run_evaluation(
+async def run_evaluation(
     request: EvaluationRunRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Run evaluation on a dataset.
@@ -119,7 +123,7 @@ def run_evaluation(
     """
     try:
         service = get_retrieval_test_service()
-        result = service.run_evaluation(
+        result = await service.run_evaluation(
             db=db,
             user_id=current_user.id,
             dataset_id=request.dataset_id,
@@ -134,25 +138,27 @@ def run_evaluation(
 
 
 @router.get("/evaluation/results")
-def get_evaluation_results(
+async def get_evaluation_results(
     dataset_id: Optional[int] = None,
     method: Optional[str] = None,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get evaluation results.
 
     Requires authentication.
     """
-    query = db.query(EvaluationResult).join(EvaluationDataset).filter(EvaluationDataset.user_id == current_user.id)
+    stmt = select(EvaluationResult).join(EvaluationDataset).where(EvaluationDataset.user_id == current_user.id)
 
     if dataset_id:
-        query = query.filter(EvaluationResult.dataset_id == dataset_id)
+        stmt = stmt.where(EvaluationResult.dataset_id == dataset_id)
     if method:
-        query = query.filter(EvaluationResult.method == method)
+        stmt = stmt.where(EvaluationResult.method == method)
 
-    results = query.order_by(EvaluationResult.created_at.desc()).limit(100).all()
+    stmt = stmt.order_by(EvaluationResult.created_at.desc()).limit(100)
+    result = await db.execute(stmt)
+    results = result.scalars().all()
 
     return {
         "results": [

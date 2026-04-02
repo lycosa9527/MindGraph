@@ -13,15 +13,16 @@ Proprietary License
 import logging
 import os
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
 from fastapi.security import HTTPAuthorizationCredentials
 from jose import JWTError, jwt
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import User, APIKey
 from .config import AUTH_MODE, JWT_ALGORITHM
 from .jwt_secret import get_jwt_secret
@@ -32,7 +33,7 @@ from .enterprise_mode import get_enterprise_user
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_REDIS_AVAILABLE = False
+_redis_available = False
 _get_session_manager = None
 _hash_token = None
 _user_cache = None
@@ -46,7 +47,7 @@ try:
     from services.redis.cache.redis_user_cache import user_cache
     from services.redis.cache.redis_org_cache import org_cache
 
-    _REDIS_AVAILABLE = True
+    _redis_available = True
     _get_session_manager = get_session_manager
     _hash_token = redis_hash_token
     _user_cache = user_cache
@@ -55,7 +56,7 @@ except ImportError:
     pass
 
 
-def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+async def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
     """
     Get current authenticated user from JWT token (Authorization header or cookie)
 
@@ -110,7 +111,7 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     # Session validation: Check if session exists in Redis
-    if not _REDIS_AVAILABLE:
+    if not _redis_available:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Redis is required for session validation",
@@ -154,8 +155,8 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
 
     # Use cache for user lookup
     user = None
-    if _REDIS_AVAILABLE and _user_cache:
-        user = _user_cache.get_by_id(int(user_id))
+    if _redis_available and _user_cache:
+        user = await _user_cache.get_by_id(int(user_id))
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -163,8 +164,8 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
     # Check organization status (locked or expired) using cache
     if user.organization_id:
         org = None
-        if _REDIS_AVAILABLE and _org_cache:
-            org = _org_cache.get_by_id(user.organization_id)
+        if _redis_available and _org_cache:
+            org = await _org_cache.get_by_id(user.organization_id)
         if org:
             # Check if organization is locked
             is_active = org.is_active if hasattr(org, "is_active") else True
@@ -176,7 +177,7 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
 
             # Check if organization subscription has expired
             if hasattr(org, "expires_at") and org.expires_at:
-                if org.expires_at < datetime.utcnow():
+                if org.expires_at < datetime.now(UTC):
                     raise HTTPException(
                         status_code=status.HTTP_403_FORBIDDEN,
                         detail="Organization subscription has expired. Please contact support.",
@@ -185,7 +186,7 @@ def get_current_user(request: Request, credentials: HTTPAuthorizationCredentials
     return user
 
 
-def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
+async def get_user_from_cookie(token: str, db: AsyncSession) -> Optional[User]:
     """
     Get user from cookie token without HTTPBearer dependency
 
@@ -194,7 +195,7 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
 
     Args:
         token: JWT token string
-        db: Database session
+        db: Async database session
 
     Returns:
         User object if valid, None otherwise
@@ -203,15 +204,13 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
         return None
 
     try:
-        # Decode token - jwt.decode automatically validates expiration
         payload = jwt.decode(token, get_jwt_secret(), algorithms=[JWT_ALGORITHM])
         user_id = payload.get("sub")
 
         if not user_id:
             return None
 
-        # Session validation: Check if session exists in Redis
-        if not _REDIS_AVAILABLE:
+        if not _redis_available:
             return None
         if _get_session_manager is None:
             return None
@@ -221,13 +220,12 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
             logger.debug("Session invalid for user %s in get_user_from_cookie", user_id)
             return None
 
-        # Use cache for user lookup (with SQLite fallback)
         user = None
         if _user_cache:
-            user = _user_cache.get_by_id(int(user_id))
+            user = await _user_cache.get_by_id(int(user_id))
         if not user:
-            # Fallback to DB if not in cache
-            user = db.query(User).filter(User.id == int(user_id)).first()
+            result = await db.execute(select(User).where(User.id == int(user_id)))
+            user = result.scalar_one_or_none()
             if user:
                 db.expunge(user)
                 if _user_cache:
@@ -246,7 +244,7 @@ def get_user_from_cookie(token: str, db: Session) -> Optional[User]:
         return None
 
 
-def get_current_user_or_api_key(
+async def get_current_user_or_api_key(
     request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     api_key: str = Depends(api_key_header),
@@ -270,13 +268,10 @@ def get_current_user_or_api_key(
     Raises:
         HTTPException(401): If both invalid
     """
-    # Priority 1: Try JWT token (for authenticated teachers)
     token = None
 
-    # Check Authorization header first
     if credentials:
         token = credentials.credentials
-    # Check cookie if no Authorization header
     elif request:
         token = request.cookies.get("access_token")
 
@@ -286,17 +281,15 @@ def get_current_user_or_api_key(
             user_id = payload.get("sub")
 
             if user_id:
-                # Session validation: Check if session exists in Redis
-                if not _REDIS_AVAILABLE:
+                if not _redis_available:
                     user = None
                 elif _get_session_manager is None:
                     user = None
                 else:
                     session_manager = _get_session_manager()
                     if session_manager.is_session_valid(int(user_id), token):
-                        # Use cache for user lookup (with SQLite fallback)
                         if _user_cache is not None:
-                            user = _user_cache.get_by_id(int(user_id))
+                            user = await _user_cache.get_by_id(int(user_id))
                         else:
                             user = None
                     else:
@@ -313,18 +306,15 @@ def get_current_user_or_api_key(
                         worker_id,
                         endpoint,
                     )
-                    return user  # Authenticated teacher - full access
+                    return user
         except HTTPException:
-            # Invalid JWT, try API key instead
             pass
 
-    # Priority 2: Try API key (for Dify, public API users)
     if api_key:
-        db = SessionLocal()
-        try:
-            if validate_api_key(api_key, db):
-                # Get API key record to store ID in request state
-                key_record = db.query(APIKey).filter(APIKey.key == api_key).first()
+        async with AsyncSessionLocal() as db:
+            if await validate_api_key(api_key, db):
+                result = await db.execute(select(APIKey).where(APIKey.key == api_key))
+                key_record = result.scalar_one_or_none()
 
                 if key_record:
                     if request and hasattr(request, "state"):
@@ -337,7 +327,7 @@ def get_current_user_or_api_key(
                     else:
                         logger.warning("[Auth] Request state not available, cannot store api_key_id")
 
-                    track_api_key_usage(api_key, db)
+                    await track_api_key_usage(api_key, db)
                     endpoint = request.url.path if request else "unknown"
                     logger.info(
                         "[Auth] Valid API key access: %s (ID: %d) [%s]",
@@ -347,14 +337,11 @@ def get_current_user_or_api_key(
                     )
                 else:
                     logger.warning("[Auth] API key validated but record not found in database")
-                    track_api_key_usage(api_key, db)
+                    await track_api_key_usage(api_key, db)
                     logger.info("[Auth] Valid API key access (record lookup failed)")
 
-                return None  # Valid API key, no user object
-        finally:
-            db.close()
+                return None
 
-    # No valid authentication
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Authentication required: provide JWT token (Authorization: Bearer) or API key (X-API-Key header)",

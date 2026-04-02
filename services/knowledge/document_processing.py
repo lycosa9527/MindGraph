@@ -18,7 +18,7 @@ from services.llm.embedding_cache import get_embedding_cache
 logger = logging.getLogger(__name__)
 
 
-def extract_and_clean_text(
+async def extract_and_clean_text(
     processor,
     cleaner,
     document: KnowledgeDocument,
@@ -65,7 +65,7 @@ def extract_and_clean_text(
         existing_metadata = document.doc_metadata or {}
         existing_metadata.update(extracted_metadata)
         document.doc_metadata = existing_metadata
-        db.commit()
+        await db.commit()
 
     # Clean text with processing rules
     try:
@@ -265,7 +265,7 @@ def chunk_text_with_mode(
     return chunks
 
 
-def generate_embeddings_with_cache(
+async def generate_embeddings_with_cache(
     embedding_client, kb_rate_limiter, texts: List[str], user_id: int, db
 ) -> List[List[float]]:
     """
@@ -288,7 +288,7 @@ def generate_embeddings_with_cache(
     texts_to_embed = []
     indices_to_embed = []
     for i, text in enumerate(texts):
-        cached_embedding = embedding_cache.get_document_embedding(db, text)
+        cached_embedding = await embedding_cache.get_document_embedding(db, text)
         if cached_embedding:
             embeddings.append(cached_embedding)
         else:
@@ -339,7 +339,7 @@ def generate_embeddings_with_cache(
 
             # Store in cache and fill in embeddings list
             for text, embedding, idx in zip(texts_to_embed, new_embeddings, indices_to_embed):
-                embedding_cache.cache_document_embedding(db, text, embedding)
+                await embedding_cache.cache_document_embedding(db, text, embedding)
                 embeddings[idx] = embedding
 
             logger.debug("[KnowledgeSpace] Successfully embedded %s texts", len(new_embeddings))

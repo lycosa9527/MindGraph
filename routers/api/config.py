@@ -52,7 +52,7 @@ async def get_feature_flags(
     for UI gating.
     """
     external_base = os.getenv("EXTERNAL_BASE_URL", "").strip().rstrip("/")
-    access_map = load_feature_org_access_map() if current_user is not None else {}
+    access_map = await load_feature_org_access_map() if current_user is not None else {}
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,

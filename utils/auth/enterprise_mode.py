@@ -14,11 +14,11 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
 
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.auth import User, Organization
 from .config import ENTERPRISE_DEFAULT_ORG_CODE, ENTERPRISE_DEFAULT_USER_PHONE
 from .password import hash_password
@@ -26,17 +26,17 @@ from .password import hash_password
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_REDIS_AVAILABLE = False
-_ORG_CACHE = None
-_USER_CACHE = None
+_redis_available = False
+_org_cache = None
+_user_cache = None
 
 try:
     from services.redis.cache.redis_org_cache import org_cache
     from services.redis.cache.redis_user_cache import user_cache
 
-    _REDIS_AVAILABLE = True
-    _ORG_CACHE = org_cache
-    _USER_CACHE = user_cache
+    _redis_available = True
+    _org_cache = org_cache
+    _user_cache = user_cache
 except ImportError:
     pass
 
@@ -54,50 +54,30 @@ def get_enterprise_user() -> User:
     Raises:
         HTTPException: If enterprise organization not found
     """
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
-        # Use cache for org lookup (with SQLite fallback)
-        org = None
-        if _REDIS_AVAILABLE and _ORG_CACHE is not None:
-            org = _ORG_CACHE.get_by_code(ENTERPRISE_DEFAULT_ORG_CODE)
-
+        org = db.query(Organization).filter(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE).first()
         if not org:
-            org = db.query(Organization).filter(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE).first()
-            if not org:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found",
-                )
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found",
+            )
 
-        # Use cache for user lookup (with SQLite fallback)
-        user = None
-        if _REDIS_AVAILABLE and _USER_CACHE:
-            user = _USER_CACHE.get_by_phone(ENTERPRISE_DEFAULT_USER_PHONE)
+        user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
 
         if not user:
-            # Check if user exists in database
-            user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
-
-            if not user:
-                # Auto-create enterprise user
-                user = User(
-                    phone=ENTERPRISE_DEFAULT_USER_PHONE,
-                    password_hash=hash_password("ent-no-pwd"),
-                    name="Enterprise User",
-                    organization_id=org.id,
-                    created_at=datetime.utcnow(),
-                )
-                db.add(user)
-                db.commit()
-                db.refresh(user)
-                logger.info("Created enterprise mode user")
-
-            # Cache the user (non-blocking)
-            try:
-                if _REDIS_AVAILABLE and _USER_CACHE:
-                    _USER_CACHE.cache_user(user)
-            except Exception as e:
-                logger.warning("Failed to cache enterprise user: %s", e)
+            # Auto-create enterprise user
+            user = User(
+                phone=ENTERPRISE_DEFAULT_USER_PHONE,
+                password_hash=hash_password("ent-no-pwd"),
+                name="Enterprise User",
+                organization_id=org.id,
+                created_at=datetime.now(tz=UTC),
+            )
+            db.add(user)
+            db.commit()
+            db.refresh(user)
+            logger.info("Created enterprise mode user")
 
         return user
     finally:

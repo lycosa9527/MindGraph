@@ -69,7 +69,7 @@ async def voice_conversation(websocket: WebSocket, diagram_session_id: str):
         logger.warning("Voice agent WebSocket connection rejected: feature disabled")
         return
 
-    current_user, auth_error = authenticate_websocket_user(websocket)
+    current_user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or current_user is None:
         await websocket.close(
             code=4001,

@@ -19,7 +19,7 @@ from typing import cast
 _project_root = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(_project_root))
 
-from config.database import SessionLocal, engine
+from config.database import SyncSessionLocal, engine
 from models.domain.auth import Base, User
 from models.domain.user_activity_log import UserActivityLog
 from models.domain.user_usage_stats import UserUsageStats
@@ -41,7 +41,7 @@ def main():
     )
     print("Tables ready.")
 
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
         teachers = db.query(User).filter(User.role == "user").all()
         total = len(teachers)
@@ -51,7 +51,7 @@ def main():
     success = 0
     failed = 0
     for i, user in enumerate(teachers):
-        user_db = SessionLocal()
+        user_db = SyncSessionLocal()
         try:
             if compute_and_upsert_user_usage_stats(cast(int, user.id), user_db):
                 success += 1

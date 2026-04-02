@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any
 
 from sqlalchemy import DateTime, Integer, String
@@ -59,4 +59,8 @@ class TeacherUsageConfig(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     config_key: Mapped[str] = mapped_column(String(100), unique=True, nullable=False, index=True)
     config_value: Mapped[dict[str, Any] | None] = mapped_column(JSONB, nullable=True)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )

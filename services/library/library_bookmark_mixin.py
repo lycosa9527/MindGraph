@@ -11,9 +11,11 @@ Proprietary License
 import logging
 import re
 from typing import Optional, List, Dict, Any
-from datetime import datetime
+from datetime import UTC, datetime
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from models.domain.library import LibraryBookmark
 
@@ -24,11 +26,10 @@ logger = logging.getLogger(__name__)
 class LibraryBookmarkMixin:
     """Mixin for bookmark operations."""
 
-    # Type annotations for expected attributes provided by classes using this mixin
-    db: Session
+    db: AsyncSession
     user_id: Optional[int]
 
-    def create_bookmark(self, document_id: int, page_number: int, note: Optional[str] = None) -> LibraryBookmark:
+    async def create_bookmark(self, document_id: int, page_number: int, note: Optional[str] = None) -> LibraryBookmark:
         """
         Create a bookmark for a document page.
 
@@ -46,30 +47,26 @@ class LibraryBookmarkMixin:
         if not self.user_id:
             raise ValueError("User ID required to create bookmark")
 
-        # Check if bookmark already exists
-        existing = (
-            self.db.query(LibraryBookmark)
-            .filter(
+        result = await self.db.execute(
+            select(LibraryBookmark).where(
                 LibraryBookmark.document_id == document_id,
                 LibraryBookmark.user_id == self.user_id,
                 LibraryBookmark.page_number == page_number,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
 
         if existing:
-            # Update existing bookmark
             sanitized_note = self._sanitize_content(note) if note else None
             setattr(existing, "note", sanitized_note)
-            setattr(existing, "updated_at", datetime.utcnow())
+            setattr(existing, "updated_at", datetime.now(UTC))
             try:
-                self.db.commit()
+                await self.db.commit()
             except Exception:
-                self.db.rollback()
+                await self.db.rollback()
                 raise
             return existing
 
-        # Sanitize user content to prevent XSS
         sanitized_note = self._sanitize_content(note) if note else None
 
         bookmark = LibraryBookmark(
@@ -80,14 +77,14 @@ class LibraryBookmarkMixin:
         )
         self.db.add(bookmark)
         try:
-            self.db.commit()
-            self.db.refresh(bookmark)
+            await self.db.commit()
+            await self.db.refresh(bookmark)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
         return bookmark
 
-    def delete_bookmark(self, bookmark_id: int) -> bool:
+    async def delete_bookmark(self, bookmark_id: int) -> bool:
         """
         Delete a bookmark.
 
@@ -100,27 +97,26 @@ class LibraryBookmarkMixin:
         if not self.user_id:
             return False
 
-        bookmark = (
-            self.db.query(LibraryBookmark)
-            .filter(
+        result = await self.db.execute(
+            select(LibraryBookmark).where(
                 LibraryBookmark.id == bookmark_id,
                 LibraryBookmark.user_id == self.user_id,
             )
-            .first()
         )
+        bookmark = result.scalar_one_or_none()
 
         if not bookmark:
             return False
 
-        self.db.delete(bookmark)
+        await self.db.delete(bookmark)
         try:
-            self.db.commit()
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
         return True
 
-    def get_bookmark(self, document_id: int, page_number: int) -> Optional[LibraryBookmark]:
+    async def get_bookmark(self, document_id: int, page_number: int) -> Optional[LibraryBookmark]:
         """
         Get bookmark for a specific document page.
 
@@ -134,18 +130,18 @@ class LibraryBookmarkMixin:
         if not self.user_id:
             return None
 
-        return (
-            self.db.query(LibraryBookmark)
+        result = await self.db.execute(
+            select(LibraryBookmark)
             .options(joinedload(LibraryBookmark.document))
-            .filter(
+            .where(
                 LibraryBookmark.document_id == document_id,
                 LibraryBookmark.user_id == self.user_id,
                 LibraryBookmark.page_number == page_number,
             )
-            .first()
         )
+        return result.scalars().unique().first()
 
-    def get_recent_bookmarks(self, limit: int = 50) -> List[Dict[str, Any]]:
+    async def get_recent_bookmarks(self, limit: int = 50) -> List[Dict[str, Any]]:
         """
         Get recent bookmarks for the current user.
 
@@ -158,14 +154,14 @@ class LibraryBookmarkMixin:
         if not self.user_id:
             return []
 
-        bookmarks = (
-            self.db.query(LibraryBookmark)
+        result = await self.db.execute(
+            select(LibraryBookmark)
             .options(joinedload(LibraryBookmark.document))
-            .filter(LibraryBookmark.user_id == self.user_id)
+            .where(LibraryBookmark.user_id == self.user_id)
             .order_by(LibraryBookmark.created_at.desc())
             .limit(limit)
-            .all()
         )
+        bookmarks = result.scalars().unique().all()
 
         return [
             {
@@ -187,7 +183,7 @@ class LibraryBookmarkMixin:
             for b in bookmarks
         ]
 
-    def get_bookmark_by_uuid(self, bookmark_uuid: str) -> Optional[LibraryBookmark]:
+    async def get_bookmark_by_uuid(self, bookmark_uuid: str) -> Optional[LibraryBookmark]:
         """
         Get bookmark by UUID.
 
@@ -200,15 +196,15 @@ class LibraryBookmarkMixin:
         if not self.user_id:
             return None
 
-        return (
-            self.db.query(LibraryBookmark)
+        result = await self.db.execute(
+            select(LibraryBookmark)
             .options(joinedload(LibraryBookmark.document))
-            .filter(
+            .where(
                 LibraryBookmark.uuid == bookmark_uuid,
                 LibraryBookmark.user_id == self.user_id,
             )
-            .first()
         )
+        return result.scalars().unique().first()
 
     def _sanitize_content(self, content: Optional[str]) -> Optional[str]:
         """
@@ -223,16 +219,10 @@ class LibraryBookmarkMixin:
         if not content:
             return None
 
-        # Remove HTML tags
         content = re.sub(r"<[^>]+>", "", content)
-        # Remove script tags and content
         content = re.sub(r"<script[^>]*>.*?</script>", "", content, flags=re.IGNORECASE | re.DOTALL)
-        # Remove javascript: protocol
         content = re.sub(r"javascript:", "", content, flags=re.IGNORECASE)
-        # Remove on* event handlers
         content = re.sub(r"on\w+\s*=", "", content, flags=re.IGNORECASE)
-        # Remove control characters
         content = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", content)
-        # Normalize whitespace
         content = re.sub(r"\s+", " ", content)
         return content.strip()

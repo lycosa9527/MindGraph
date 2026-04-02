@@ -19,33 +19,53 @@ import logging
 import multiprocessing
 from typing import Literal, cast, Any
 
-# Import SafeStreamHandler to handle closed streams gracefully
-try:
-    from services.infrastructure.utils.logging_config import SafeStreamHandler, _is_stream_usable
-except ImportError:
-    # Fallback if import fails (shouldn't happen in normal operation)
-    SafeStreamHandler = logging.StreamHandler
-    def _is_stream_usable(stream):
-        """Fallback check for stream usability."""
-        if stream is None:
+def _is_stream_usable(stream: object) -> bool:
+    """Return True if *stream* is open and writable."""
+    if stream is None:
+        return False
+    try:
+        if getattr(stream, "closed", False):
             return False
+        return hasattr(stream, "write")
+    except (AttributeError, ValueError, OSError):
+        return False
+
+
+class SafeStreamHandler(logging.StreamHandler):
+    """StreamHandler that silently ignores closed-stream I/O errors."""
+
+    def emit(self, record: logging.LogRecord) -> None:
+        if not _is_stream_usable(self.stream):
+            return
         try:
-            if hasattr(stream, 'closed') and stream.closed:
-                return False
-            return hasattr(stream, 'write')
-        except (AttributeError, ValueError, OSError):
-            return False
+            super().emit(record)
+        except (ValueError, OSError, AttributeError, RuntimeError) as exc:
+            msg = str(exc).lower()
+            if any(
+                phrase in msg
+                for phrase in (
+                    "closed file",
+                    "i/o operation",
+                    "bad file descriptor",
+                    "operation on closed",
+                    "stream is closed",
+                )
+            ):
+                return
+            raise
+        except Exception:  # pylint: disable=broad-exception-caught
+            return
 
 
 class SafeStdoutHandler(SafeStreamHandler):
     """SafeStreamHandler that uses stdout, falling back to stderr if stdout is closed."""
-    
-    def __init__(self, stream=None):
+
+    def __init__(self, stream: object = None) -> None:
         """Initialize handler with safe stream selection."""
         if stream is None:
-            # Use stdout if available, otherwise fall back to stderr
             stream = sys.stdout if _is_stream_usable(sys.stdout) else sys.stderr
         super().__init__(stream)
+
 
 # ============================================================================
 # SERVER CONFIGURATION
@@ -54,12 +74,12 @@ class SafeStdoutHandler(SafeStreamHandler):
 # Host and Port
 BIND = f"0.0.0.0:{os.getenv('PORT', '5000')}"
 HOST = "0.0.0.0"
-PORT = int(os.getenv('PORT', '5000'))
+PORT = int(os.getenv("PORT", "5000"))
 
 # Workers (async, so we need FAR fewer than sync servers)
 # Formula: 1-2 workers per CPU core (async handles 1000s per worker)
 # Default: Number of CPU cores (not 2x+1 like sync servers)
-workers = int(os.getenv('UVICORN_WORKERS', multiprocessing.cpu_count()))
+workers = int(os.getenv("UVICORN_WORKERS", multiprocessing.cpu_count()))
 
 # ============================================================================
 # ASYNC CONFIGURATION FOR 4,000+ CONCURRENT SSE CONNECTIONS
@@ -79,6 +99,7 @@ LIMIT_CONCURRENCY = 1000
 # LOGGING CONFIGURATION
 # ============================================================================
 
+
 # Copy of our UnifiedFormatter from main.py
 class UnifiedFormatter(logging.Formatter):
     """
@@ -87,16 +108,23 @@ class UnifiedFormatter(logging.Formatter):
     """
 
     COLORS = {
-        'DEBUG': '\033[37m',      # Gray
-        'INFO': '\033[36m',       # Cyan
-        'WARNING': '\033[33m',    # Yellow
-        'ERROR': '\033[31m',      # Red
-        'CRITICAL': '\033[35m',   # Magenta
-        'RESET': '\033[0m',
-        'BOLD': '\033[1m'
+        "DEBUG": "\033[37m",  # Gray
+        "INFO": "\033[36m",  # Cyan
+        "WARNING": "\033[33m",  # Yellow
+        "ERROR": "\033[31m",  # Red
+        "CRITICAL": "\033[35m",  # Magenta
+        "RESET": "\033[0m",
+        "BOLD": "\033[1m",
     }
 
-    def __init__(self, fmt=None, datefmt=None, style: Literal['%', '{', '"'] = '%', validate=True, use_colors=None, _use_colors=None):
+    def __init__(
+        self,
+        fmt=None,
+        datefmt=None,
+        style: Literal["%", "{", '"'] = "%",
+        validate=True,
+        **_kwargs,
+    ):
         """
         Initialize formatter, accepting Uvicorn's use_colors parameter.
         We ignore use_colors since we handle our own color logic.
@@ -109,33 +137,33 @@ class UnifiedFormatter(logging.Formatter):
 
     def format(self, record) -> str:
         # Timestamp: HH:MM:SS
-        timestamp = self.formatTime(record, '%H:%M:%S')
+        timestamp = self.formatTime(record, "%H:%M:%S")
 
         # Level abbreviation
         level_name = record.levelname
-        if level_name == 'CRITICAL':
-            level_name = 'CRIT'
-        elif level_name == 'WARNING':
-            level_name = 'WARN'
+        if level_name == "CRITICAL":
+            level_name = "CRIT"
+        elif level_name == "WARNING":
+            level_name = "WARN"
 
-        color = self.COLORS.get(level_name, '')
-        reset = self.COLORS['RESET']
+        color = self.COLORS.get(level_name, "")
+        reset = self.COLORS["RESET"]
 
-        if level_name == 'CRIT':
+        if level_name == "CRIT":
             colored_level = f"{self.COLORS['BOLD']}{color}{level_name.ljust(5)}{reset}"
         else:
             colored_level = f"{color}{level_name.ljust(5)}{reset}"
 
         # Source abbreviation
         source = record.name
-        if source.startswith('uvicorn.error'):
-            source = 'SRVR'
-        elif source.startswith('uvicorn.access'):
-            source = 'HTTP'
-        elif source.startswith('watchfiles'):
-            source = 'WATC'  # File watcher
-        elif source.startswith('uvicorn'):
-            source = 'SRVR'
+        if source.startswith("uvicorn.error"):
+            source = "SRVR"
+        elif source.startswith("uvicorn.access"):
+            source = "HTTP"
+        elif source.startswith("watchfiles"):
+            source = "WATC"  # File watcher
+        elif source.startswith("uvicorn"):
+            source = "SRVR"
         else:
             source = source[:4].upper()
 
@@ -205,21 +233,21 @@ LOGGING_CONFIG = {
 # ============================================================================
 
 # Log level
-LOG_LEVEL = os.getenv('LOG_LEVEL', 'info').lower()
+LOG_LEVEL = os.getenv("LOG_LEVEL", "info").lower()
 
 # Access log
 ACCESS_LOG = True
 
 # Reload on code changes (development only)
-RELOAD = os.getenv('ENVIRONMENT', 'production') == 'development'
+RELOAD = os.getenv("ENVIRONMENT", "production") == "development"
 
 # Production settings
-if os.getenv('ENVIRONMENT') == 'production':
+if os.getenv("ENVIRONMENT") == "production":
     # Disable auto-reload in production
     RELOAD = False
 
     # Use production log level
-    LOG_LEVEL = 'warning'
+    LOG_LEVEL = "warning"
 
 # ============================================================================
 # CONFIGURATION SUMMARY
@@ -235,7 +263,7 @@ Timeout Keep-Alive: {TIMEOUT_KEEP_ALIVE}s
 Graceful Shutdown: {TIMEOUT_GRACEFUL_SHUTDOWN}s
 Log Level: {LOG_LEVEL}
 Reload: {RELOAD}
-Environment: {os.getenv('ENVIRONMENT', 'production')}
+Environment: {os.getenv("ENVIRONMENT", "production")}
 
 Expected Capacity: 4,000+ concurrent SSE connections per worker
 Total Capacity: ~{workers * 4000} concurrent connections

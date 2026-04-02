@@ -18,8 +18,8 @@ import os
 import re
 from typing import FrozenSet, List, Optional, Sequence, Set
 
-from sqlalchemy import func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy import func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 
@@ -62,8 +62,8 @@ def _staff_id_set() -> FrozenSet[int]:
     return frozenset(found)
 
 
-def _users_matching_mention(
-    db: Session,
+async def _users_matching_mention(
+    db: AsyncSession,
     lowered: str,
     effective_org_id: Optional[int],
     staff_ids: FrozenSet[int],
@@ -74,19 +74,18 @@ def _users_matching_mention(
         conds.append(User.organization_id == effective_org_id)
     if staff_ids:
         conds.append(User.id.in_(staff_ids))
-    return (
-        db.query(User)
-        .filter(
+    result = await db.execute(
+        select(User).where(
             User.name.isnot(None),
             func.lower(func.trim(User.name)) == lowered,
             or_(*conds),
         )
-        .all()
     )
+    return list(result.scalars().all())
 
 
-def resolve_mentioned_user_ids(
-    db: Session,
+async def resolve_mentioned_user_ids(
+    db: AsyncSession,
     sender: User,
     channel_organization_id: Optional[int],
     content: str,
@@ -117,7 +116,7 @@ def resolve_mentioned_user_ids(
         lowered = label.strip().lower()
         if not lowered:
             continue
-        matches = _users_matching_mention(
+        matches = await _users_matching_mention(
             db,
             lowered,
             effective_org,

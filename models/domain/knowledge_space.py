@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 import pickle
 import uuid
@@ -76,11 +76,16 @@ class KnowledgeSpace(Base):
     # }
     processing_rules = Column(JSONB, nullable=True)
 
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    documents = relationship("KnowledgeDocument", back_populates="space", cascade="all, delete-orphan")
+    documents = relationship(
+        "KnowledgeDocument",
+        back_populates="space",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return f"<KnowledgeSpace user_id={self.user_id}>"
@@ -146,12 +151,17 @@ class KnowledgeDocument(Base):
     language = Column(String(10), nullable=True, index=True)  # Detected language code (e.g., 'zh', 'en', 'ja')
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    space = relationship("KnowledgeSpace", back_populates="documents")
-    chunks = relationship("DocumentChunk", back_populates="document", cascade="all, delete-orphan")
+    space = relationship("KnowledgeSpace", back_populates="documents", lazy="selectin")
+    chunks = relationship(
+        "DocumentChunk",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     # Constraints and indexes for metadata filtering
     __table_args__ = (
@@ -193,10 +203,10 @@ class DocumentChunk(Base):
     end_char = Column(Integer, nullable=False)
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    document = relationship("KnowledgeDocument", back_populates="chunks")
+    document = relationship("KnowledgeDocument", back_populates="chunks", lazy="selectin")
 
     # Indexes for efficient queries (id index from index=True; used for Qdrant lookup)
     __table_args__ = (Index("ix_document_chunks_document_id_chunk_index", "document_id", "chunk_index"),)
@@ -222,7 +232,7 @@ class Embedding(Base):
     embedding = Column(LargeBinary, nullable=False)  # Pickled embedding vector
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Unique constraint: same model + provider + hash = same embedding
     __table_args__ = (
@@ -284,10 +294,10 @@ class KnowledgeQuery(Base):
     source_context = Column(JSONB, nullable=True)  # Additional context (e.g., diagram_type)
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    space = relationship("KnowledgeSpace", backref="queries")
+    space = relationship("KnowledgeSpace", backref="queries", lazy="selectin")
 
     # Indexes for analytics queries
     __table_args__ = (
@@ -329,10 +339,10 @@ class ChunkAttachment(Base):
     position = Column(Integer, nullable=False, default=0)  # Order within chunk
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    chunk = relationship("DocumentChunk", backref="attachments")
+    chunk = relationship("DocumentChunk", backref="attachments", lazy="selectin")
 
     # Indexes
     __table_args__ = (Index("ix_chunk_attachments_chunk_id_position", "chunk_id", "position"),)
@@ -376,10 +386,10 @@ class ChildChunk(Base):
     meta_data = Column(JSONB, nullable=True)  # Renamed from metadata to avoid SQLAlchemy reserved name
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    parent_chunk = relationship("DocumentChunk", backref="child_chunks")
+    parent_chunk = relationship("DocumentChunk", backref="child_chunks", lazy="selectin")
 
     # Indexes
     __table_args__ = (Index("ix_child_chunks_parent_position", "parent_chunk_id", "position"),)
@@ -417,11 +427,11 @@ class DocumentBatch(Base):
     error_message = Column(Text, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    documents = relationship("KnowledgeDocument", backref="batch")
+    documents = relationship("KnowledgeDocument", backref="batch", lazy="selectin")
 
     def __repr__(self):
         return (
@@ -460,10 +470,10 @@ class DocumentVersion(Base):
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    document = relationship("KnowledgeDocument", backref="versions")
+    document = relationship("KnowledgeDocument", backref="versions", lazy="selectin")
 
     # Constraints
     __table_args__ = (
@@ -512,10 +522,10 @@ class QueryFeedback(Base):
     irrelevant_chunk_ids = Column(JSONB, nullable=True)  # Array of chunk IDs that were irrelevant
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    query = relationship("KnowledgeQuery", backref="feedbacks")
+    query = relationship("KnowledgeQuery", backref="feedbacks", lazy="selectin")
 
     def __repr__(self):
         return f"<QueryFeedback id={self.id} query_id={self.query_id} type={self.feedback_type}>"
@@ -549,11 +559,11 @@ class QueryTemplate(Base):
     success_rate = Column(Float, default=0.0, nullable=False)  # Average feedback score
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    space = relationship("KnowledgeSpace", backref="query_templates")
+    space = relationship("KnowledgeSpace", backref="query_templates", lazy="selectin")
 
     def __repr__(self):
         return f"<QueryTemplate id={self.id} name={self.name} usage={self.usage_count}>"
@@ -595,18 +605,20 @@ class DocumentRelationship(Base):
     created_by = Column(Integer, ForeignKey("users.id", ondelete="SET NULL"), nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
     source_document = relationship(
         "KnowledgeDocument",
         foreign_keys=[source_document_id],
         backref="outgoing_relationships",
+        lazy="selectin",
     )
     target_document = relationship(
         "KnowledgeDocument",
         foreign_keys=[target_document_id],
         backref="incoming_relationships",
+        lazy="selectin",
     )
 
     # Constraints
@@ -659,12 +671,17 @@ class EvaluationDataset(Base):
     queries = Column(JSONB, nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    space = relationship("KnowledgeSpace", backref="evaluation_datasets")
-    results = relationship("EvaluationResult", back_populates="dataset", cascade="all, delete-orphan")
+    space = relationship("KnowledgeSpace", backref="evaluation_datasets", lazy="selectin")
+    results = relationship(
+        "EvaluationResult",
+        back_populates="dataset",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return f"<EvaluationDataset id={self.id} name={self.name} queries={len(self.queries) if self.queries else 0}>"
@@ -701,11 +718,11 @@ class EvaluationResult(Base):
     method = Column(String(50), nullable=False, index=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    dataset = relationship("EvaluationDataset", back_populates="results")
-    query = relationship("KnowledgeQuery", backref="evaluation_results")
+    dataset = relationship("EvaluationDataset", back_populates="results", lazy="selectin")
+    query = relationship("KnowledgeQuery", backref="evaluation_results", lazy="selectin")
 
     def __repr__(self):
         return f"<EvaluationResult id={self.id} dataset_id={self.dataset_id} method={self.method}>"
@@ -753,10 +770,10 @@ class ChunkTestResult(Base):
     completed_methods = Column(JSONB, nullable=True)  # List of completed methods: ['spacy', 'semchunk', ...]
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    user = relationship("User", backref="chunk_test_results")
+    user = relationship("User", backref="chunk_test_results", lazy="selectin")
 
     @property
     def processing_progress(self) -> Optional[str]:
@@ -829,15 +846,16 @@ class ChunkTestDocument(Base):
     meta_data = Column(JSONB, nullable=True)  # Store processing results and metadata
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    user = relationship("User", backref="chunk_test_documents")
+    user = relationship("User", backref="chunk_test_documents", lazy="selectin")
     chunks = relationship(
         "ChunkTestDocumentChunk",
         back_populates="document",
         cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     # Constraints
@@ -893,10 +911,10 @@ class ChunkTestDocumentChunk(Base):
     meta_data = Column(JSONB, nullable=True)
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    document = relationship("ChunkTestDocument", back_populates="chunks")
+    document = relationship("ChunkTestDocument", back_populates="chunks", lazy="selectin")
 
     # Indexes for efficient queries (chunking_method single-column index from index=True)
     __table_args__ = (

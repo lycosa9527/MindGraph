@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String
@@ -53,6 +53,6 @@ class UserUsageStats(Base):
     tier1: Mapped[str] = mapped_column(String(50), nullable=False, default="unused")
     tier2: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
 
-    computed_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False)
+    computed_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     __table_args__ = (Index("idx_user_usage_stats_tier1_tier2", "tier1", "tier2"),)

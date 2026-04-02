@@ -393,4 +393,18 @@ export default {
   'admin.database.orphanCleanSuccess': '孤立记录已清理',
   'admin.database.orphanCleanError': '孤立记录清理失败',
   'admin.database.cleanSqliteOrphans': '清理 SQLite 孤立记录',
+
+  'admin.database.pgAnalyze': '分析',
+  'admin.database.pgAnalyzeError': '分析 PG 转储失败',
+  'admin.database.pgAnalysisResult': 'PG 转储分析',
+  'admin.database.pgSkippedTables': '跳过的表',
+  'admin.database.pgStagingRows': '转储行数',
+  'admin.database.pgLiveRows': '线上行数',
+  'admin.database.pgExecuteMerge': '合并到线上数据库',
+  'admin.database.pgMergeConfirmTitle': '确认 PG 合并',
+  'admin.database.pgMergeConfirmMsg':
+    '此操作将把转储中的数据合并到线上数据库，现有记录将被保留。是否继续？',
+  'admin.database.pgMergeSuccess': 'PG 转储合并成功',
+  'admin.database.pgMergeError': 'PG 转储合并失败',
+  'admin.database.pgMergeComplete': 'PG 合并完成',
 } as const

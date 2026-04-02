@@ -508,7 +508,7 @@ class MessageServiceMixin(GeweServiceBase):
                                 sender_wxid = parts[0]
                                 content = parts[1]
 
-                    self._message_db.save_message(
+                    await self._message_db.save_message(
                         app_id=app_id,
                         msg_id=int(msg_id),
                         sender_wxid=sender_wxid,

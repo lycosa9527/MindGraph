@@ -6,11 +6,12 @@ import logging
 import random
 import string
 from typing import Any, Dict, List, Optional, Tuple
-from datetime import datetime
+from datetime import UTC, datetime
 
-from sqlalchemy import or_
+from sqlalchemy import or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from services.redis.redis_client import get_redis
@@ -53,8 +54,8 @@ WORKSHOP_VISIBILITY_ORGANIZATION = "organization"
 WORKSHOP_VISIBILITY_NETWORK = "network"
 
 
-def _user_may_join_diagram_workshop(
-    db,
+async def _user_may_join_diagram_workshop(
+    db: AsyncSession,
     diagram: Diagram,
     joiner_id: int,
 ) -> bool:
@@ -63,8 +64,10 @@ def _user_may_join_diagram_workshop(
     """
     if diagram.user_id == joiner_id:
         return True
-    joiner = db.query(User).filter(User.id == joiner_id).first()
-    owner = db.query(User).filter(User.id == diagram.user_id).first()
+    result = await db.execute(select(User).filter(User.id == joiner_id))
+    joiner = result.scalars().first()
+    result = await db.execute(select(User).filter(User.id == diagram.user_id))
+    owner = result.scalars().first()
     if not joiner or not owner:
         return False
     if joiner.role in ("admin", "superadmin", "manager"):
@@ -86,8 +89,8 @@ def _diagram_workshop_visibility(diagram: Diagram) -> str:
     return WORKSHOP_VISIBILITY_ORGANIZATION
 
 
-def _viewer_may_see_workshop_code(
-    db,
+async def _viewer_may_see_workshop_code(
+    db: AsyncSession,
     diagram: Diagram,
     viewer_id: int,
 ) -> bool:
@@ -100,7 +103,7 @@ def _viewer_may_see_workshop_code(
     vis = _diagram_workshop_visibility(diagram)
     if vis == WORKSHOP_VISIBILITY_NETWORK:
         return False
-    return _user_may_join_diagram_workshop(db, diagram, viewer_id)
+    return await _user_may_join_diagram_workshop(db, diagram, viewer_id)
 
 
 def _workshop_start_validation_error(
@@ -168,15 +171,13 @@ class WorkshopService:
     """
 
     def __init__(self):
-        # Redis is REQUIRED - application exits if Redis unavailable
-        # No need for fallback logic
         pass
 
-    def _clear_expired_workshop_session(self, diagram: Diagram, db, redis: Any) -> bool:
+    async def _clear_expired_workshop_session(self, diagram: Diagram, db: AsyncSession, redis: Any) -> bool:
         """
         If session is expired, clear DB + Redis. Returns True if cleared.
         """
-        backfill_workshop_expiry_if_needed(diagram, db)
+        await backfill_workshop_expiry_if_needed(diagram, db)
         if not diagram.workshop_code:
             return False
         if not diagram.workshop_expires_at:
@@ -186,7 +187,7 @@ class WorkshopService:
         code = diagram.workshop_code
         purge_workshop_redis_keys(redis, code)
         clear_workshop_session_fields(diagram)
-        db.commit()
+        await db.commit()
         logger.info(
             "[WorkshopService] Cleared expired workshop for diagram %s",
             diagram.id,
@@ -198,9 +199,9 @@ class WorkshopService:
             return redis_ttl_seconds_for_expires_at(diagram.workshop_expires_at)
         return WORKSHOP_SESSION_TTL
 
-    def _finalize_join_after_diagram_loaded(
+    async def _finalize_join_after_diagram_loaded(
         self,
-        db,
+        db: AsyncSession,
         redis: Any,
         diagram: Diagram,
         diagram_id: str,
@@ -208,14 +209,14 @@ class WorkshopService:
         user_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Authorize join, add participant keys, return workshop info or None."""
-        backfill_workshop_expiry_if_needed(diagram, db)
+        await backfill_workshop_expiry_if_needed(diagram, db)
         if diagram.workshop_expires_at and is_workshop_expired(diagram.workshop_expires_at):
             if redis:
-                self._clear_expired_workshop_session(diagram, db, redis)
+                await self._clear_expired_workshop_session(diagram, db, redis)
             return None
 
         vis = _diagram_workshop_visibility(diagram)
-        may_join = vis == WORKSHOP_VISIBILITY_NETWORK or _user_may_join_diagram_workshop(db, diagram, user_id)
+        may_join = vis == WORKSHOP_VISIBILITY_NETWORK or await _user_may_join_diagram_workshop(db, diagram, user_id)
         if not may_join:
             logger.warning(
                 "[WorkshopService] Join denied user=%s diagram=%s",
@@ -277,90 +278,84 @@ class WorkshopService:
         Returns:
             Tuple of (workshop code, error message, expires_at naive UTC or None)
         """
-        # Verify diagram exists and user owns it
-        db = SessionLocal()
-        try:
-            diagram = (
-                db.query(Diagram)
-                .filter(
-                    Diagram.id == diagram_id,
-                    Diagram.user_id == user_id,
-                    ~Diagram.is_deleted,
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await db.execute(
+                    select(Diagram).filter(
+                        Diagram.id == diagram_id,
+                        Diagram.user_id == user_id,
+                        ~Diagram.is_deleted,
+                    )
                 )
-                .first()
-            )
+                diagram = result.scalars().first()
 
-            verr = _workshop_start_validation_error(
-                diagram,
-                diagram_id,
-                user_id,
-                visibility,
-                duration,
-            )
-            if verr:
-                return None, verr, None
-
-            redis = get_redis()
-            if not redis:
-                error_msg = "Redis client not available. Presentation mode requires Redis."
-                logger.error("[WorkshopService] %s", error_msg)
-                return None, error_msg, None
-
-            code = _allocate_unique_workshop_code(redis)
-
-            if not code:
-                error_msg = "Failed to generate unique presentation code after multiple attempts"
-                logger.error("[WorkshopService] %s", error_msg)
-                return None, error_msg, None
-
-            started_at = datetime.utcnow()
-            expires_at = compute_workshop_expires_at(started_at, duration)
-            ttl_sec = redis_ttl_seconds_for_expires_at(expires_at)
-            ttl_sec = min(max(ttl_sec, 1), WORKSHOP_SESSION_TTL * 14)
-
-            # Update diagram with workshop code and visibility
-            diagram.workshop_code = code
-            diagram.workshop_visibility = visibility
-            diagram.workshop_started_at = started_at
-            diagram.workshop_expires_at = expires_at
-            diagram.workshop_duration_preset = duration
-            db.commit()
-
-            # Use synchronous Redis operations (no await)
-            redis.setex(
-                session_key(code),
-                ttl_sec,
-                _workshop_start_session_redis_value(
+                verr = _workshop_start_validation_error(
+                    diagram,
                     diagram_id,
                     user_id,
-                    started_at,
-                ),
-            )
-            redis.setex(
-                code_to_diagram_key(code),
-                ttl_sec,
-                diagram_id,
-            )
+                    visibility,
+                    duration,
+                )
+                if verr:
+                    return None, verr, None
 
-            logger.info(
-                "[WorkshopService] Started workshop %s for diagram %s (user %s)",
-                code,
-                diagram_id,
-                user_id,
-            )
-            return code, None, expires_at
+                redis = get_redis()
+                if not redis:
+                    error_msg = "Redis client not available. Presentation mode requires Redis."
+                    logger.error("[WorkshopService] %s", error_msg)
+                    return None, error_msg, None
 
-        except Exception as e:
-            error_msg = f"Error starting presentation mode: {str(e)}"
-            logger.error(
-                "[WorkshopService] %s",
-                error_msg,
-                exc_info=True,
-            )
-            db.rollback()
-            return None, error_msg, None
-        finally:
-            db.close()
+                code = _allocate_unique_workshop_code(redis)
+
+                if not code:
+                    error_msg = "Failed to generate unique presentation code after multiple attempts"
+                    logger.error("[WorkshopService] %s", error_msg)
+                    return None, error_msg, None
+
+                started_at = datetime.now(UTC)
+                expires_at = compute_workshop_expires_at(started_at, duration)
+                ttl_sec = redis_ttl_seconds_for_expires_at(expires_at)
+                ttl_sec = min(max(ttl_sec, 1), WORKSHOP_SESSION_TTL * 14)
+
+                diagram.workshop_code = code
+                diagram.workshop_visibility = visibility
+                diagram.workshop_started_at = started_at
+                diagram.workshop_expires_at = expires_at
+                diagram.workshop_duration_preset = duration
+                await db.commit()
+
+                redis.setex(
+                    session_key(code),
+                    ttl_sec,
+                    _workshop_start_session_redis_value(
+                        diagram_id,
+                        user_id,
+                        started_at,
+                    ),
+                )
+                redis.setex(
+                    code_to_diagram_key(code),
+                    ttl_sec,
+                    diagram_id,
+                )
+
+                logger.info(
+                    "[WorkshopService] Started workshop %s for diagram %s (user %s)",
+                    code,
+                    diagram_id,
+                    user_id,
+                )
+                return code, None, expires_at
+
+            except Exception as exc:
+                error_msg = f"Error starting presentation mode: {str(exc)}"
+                logger.error(
+                    "[WorkshopService] %s",
+                    error_msg,
+                    exc_info=True,
+                )
+                await db.rollback()
+                return None, error_msg, None
 
     async def stop_workshop(self, diagram_id: str, user_id: int) -> bool:
         """
@@ -373,50 +368,46 @@ class WorkshopService:
         Returns:
             True if successful, False otherwise
         """
-        db = SessionLocal()
-        try:
-            diagram = (
-                db.query(Diagram)
-                .filter(
-                    Diagram.id == diagram_id,
-                    Diagram.user_id == user_id,
-                    ~Diagram.is_deleted,
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await db.execute(
+                    select(Diagram).filter(
+                        Diagram.id == diagram_id,
+                        Diagram.user_id == user_id,
+                        ~Diagram.is_deleted,
+                    )
                 )
-                .first()
-            )
+                diagram = result.scalars().first()
 
-            if not diagram or not diagram.workshop_code:
+                if not diagram or not diagram.workshop_code:
+                    return False
+
+                code = diagram.workshop_code
+
+                await flush_live_spec_to_db(code, diagram_id)
+
+                clear_workshop_session_fields(diagram)
+                await db.commit()
+
+                redis = get_redis()
+                if redis:
+                    purge_workshop_redis_keys(redis, code)
+
+                logger.info(
+                    "[WorkshopService] Stopped workshop %s for diagram %s",
+                    code,
+                    diagram_id,
+                )
+                return True
+
+            except Exception as exc:
+                logger.error(
+                    "[WorkshopService] Error stopping workshop: %s",
+                    exc,
+                    exc_info=True,
+                )
+                await db.rollback()
                 return False
-
-            code = diagram.workshop_code
-
-            flush_live_spec_to_db(code, diagram_id)
-
-            clear_workshop_session_fields(diagram)
-            db.commit()
-
-            # Remove from Redis (Redis is required)
-            redis = get_redis()
-            if redis:
-                purge_workshop_redis_keys(redis, code)
-
-            logger.info(
-                "[WorkshopService] Stopped workshop %s for diagram %s",
-                code,
-                diagram_id,
-            )
-            return True
-
-        except Exception as e:
-            logger.error(
-                "[WorkshopService] Error stopping workshop: %s",
-                e,
-                exc_info=True,
-            )
-            db.rollback()
-            return False
-        finally:
-            db.close()
 
     async def join_workshop(self, code: str, user_id: int) -> Optional[Dict[str, Any]]:
         """
@@ -429,84 +420,74 @@ class WorkshopService:
         Returns:
             Workshop info dict with diagram_id if successful, None otherwise
         """
-        db = SessionLocal()
-        try:
-            # Normalize code (digits only, no case conversion needed)
-            code = code.strip()
+        async with AsyncSessionLocal() as db:
+            try:
+                code = code.strip()
 
-            # Check Redis first (fast path)
-            redis = get_redis()
-            diagram_id = None
-            if redis:
-                # Use synchronous Redis operations (no await)
-                diagram_id_raw = redis.get(code_to_diagram_key(code))
-                if diagram_id_raw:
-                    # Redis client returns strings (decode_responses=True), no need to decode
-                    diagram_id = diagram_id_raw if isinstance(diagram_id_raw, str) else diagram_id_raw.decode("utf-8")
-
-            # Fallback to database (edge case: Redis TTL expired but code still in DB)
-            # This allows joining even if Redis key expired but workshop is still active
-            if not diagram_id:
-                diagram = (
-                    db.query(Diagram)
-                    .filter(
-                        Diagram.workshop_code == code,
-                        ~Diagram.is_deleted,
-                    )
-                    .first()
-                )
-                if diagram:
-                    diagram_id = diagram.id
-                    # Restore Redis keys if found in database
-                    if redis:
-                        backfill_workshop_expiry_if_needed(diagram, db)
-                        ttl = self._redis_ttl_seconds_for_diagram(diagram)
-                        restore_workshop_redis_from_db_row(
-                            redis,
-                            code,
-                            diagram_id,
-                            diagram,
-                            ttl,
+                redis = get_redis()
+                diagram_id = None
+                if redis:
+                    diagram_id_raw = redis.get(code_to_diagram_key(code))
+                    if diagram_id_raw:
+                        diagram_id = (
+                            diagram_id_raw if isinstance(diagram_id_raw, str) else diagram_id_raw.decode("utf-8")
                         )
 
-            if not diagram_id:
-                logger.warning(
-                    "[WorkshopService] Invalid workshop code: %s",
+                if not diagram_id:
+                    result = await db.execute(
+                        select(Diagram).filter(
+                            Diagram.workshop_code == code,
+                            ~Diagram.is_deleted,
+                        )
+                    )
+                    diagram = result.scalars().first()
+                    if diagram:
+                        diagram_id = diagram.id
+                        if redis:
+                            await backfill_workshop_expiry_if_needed(diagram, db)
+                            ttl = self._redis_ttl_seconds_for_diagram(diagram)
+                            restore_workshop_redis_from_db_row(
+                                redis,
+                                code,
+                                diagram_id,
+                                diagram,
+                                ttl,
+                            )
+
+                if not diagram_id:
+                    logger.warning(
+                        "[WorkshopService] Invalid workshop code: %s",
+                        code,
+                    )
+                    return None
+
+                result = await db.execute(
+                    select(Diagram).filter(
+                        Diagram.id == diagram_id,
+                        ~Diagram.is_deleted,
+                    )
+                )
+                diagram = result.scalars().first()
+
+                if not diagram:
+                    return None
+
+                return await self._finalize_join_after_diagram_loaded(
+                    db,
+                    redis,
+                    diagram,
+                    diagram_id,
                     code,
+                    user_id,
+                )
+
+            except Exception as exc:
+                logger.error(
+                    "[WorkshopService] Error joining workshop: %s",
+                    exc,
+                    exc_info=True,
                 )
                 return None
-
-            # Verify diagram exists
-            diagram = (
-                db.query(Diagram)
-                .filter(
-                    Diagram.id == diagram_id,
-                    ~Diagram.is_deleted,
-                )
-                .first()
-            )
-
-            if not diagram:
-                return None
-
-            return self._finalize_join_after_diagram_loaded(
-                db,
-                redis,
-                diagram,
-                diagram_id,
-                code,
-                user_id,
-            )
-
-        except Exception as e:
-            logger.error(
-                "[WorkshopService] Error joining workshop: %s",
-                e,
-                exc_info=True,
-            )
-            return None
-        finally:
-            db.close()
 
     def _participant_count_for_code(self, code: str) -> int:
         redis = get_redis()
@@ -522,21 +503,19 @@ class WorkshopService:
         """
         Join an organization-scoped workshop by diagram id (校内 — no typed code in UI).
         """
-        db = SessionLocal()
-        try:
-            diagram = (
-                db.query(Diagram)
-                .filter(
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(Diagram).filter(
                     Diagram.id == diagram_id,
                     ~Diagram.is_deleted,
                 )
-                .first()
             )
+            diagram = result.scalars().first()
             if not diagram or not diagram.workshop_code:
                 return None
             if _diagram_workshop_visibility(diagram) != WORKSHOP_VISIBILITY_ORGANIZATION:
                 return None
-            if not _user_may_join_diagram_workshop(db, diagram, user_id):
+            if not await _user_may_join_diagram_workshop(db, diagram, user_id):
                 logger.warning(
                     "[WorkshopService] Org join denied user=%s diagram=%s",
                     user_id,
@@ -544,80 +523,77 @@ class WorkshopService:
                 )
                 return None
             code = diagram.workshop_code
-        finally:
-            db.close()
         return await self.join_workshop(code, user_id)
 
     async def list_organization_workshop_sessions(self, user_id: int) -> List[Dict[str, Any]]:
         """
         Active workshops visible within the same organization (校内 list).
         """
-        db = SessionLocal()
-        try:
-            viewer = db.query(User).filter(User.id == user_id).first()
-            if not viewer or viewer.organization_id is None:
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await db.execute(select(User).filter(User.id == user_id))
+                viewer = result.scalars().first()
+                if not viewer or viewer.organization_id is None:
+                    return []
+
+                result = await db.execute(
+                    select(Diagram, User)
+                    .join(User, User.id == Diagram.user_id)
+                    .filter(
+                        ~Diagram.is_deleted,
+                        Diagram.workshop_code.isnot(None),
+                        User.organization_id == viewer.organization_id,
+                        or_(
+                            Diagram.workshop_visibility.is_(None),
+                            Diagram.workshop_visibility == WORKSHOP_VISIBILITY_ORGANIZATION,
+                        ),
+                        or_(
+                            Diagram.workshop_expires_at.is_(None),
+                            Diagram.workshop_expires_at > datetime.now(UTC),
+                        ),
+                    )
+                )
+                rows = result.all()
+                out: List[Dict[str, Any]] = []
+                for diagram, owner in rows:
+                    code = diagram.workshop_code
+                    if not code:
+                        continue
+                    rem = remaining_seconds(diagram.workshop_expires_at)
+                    out.append(
+                        {
+                            "diagram_id": diagram.id,
+                            "title": diagram.title,
+                            "owner_username": getattr(owner, "username", None) or f"User {owner.id}",
+                            "participant_count": self._participant_count_for_code(code),
+                            "expires_at": (
+                                diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None
+                            ),
+                            "remaining_seconds": rem,
+                        }
+                    )
+                return out
+            except Exception as exc:
+                logger.error(
+                    "[WorkshopService] list_organization_workshop_sessions: %s",
+                    exc,
+                    exc_info=True,
+                )
                 return []
 
-            rows = (
-                db.query(Diagram, User)
-                .join(User, User.id == Diagram.user_id)
-                .filter(
-                    ~Diagram.is_deleted,
-                    Diagram.workshop_code.isnot(None),
-                    User.organization_id == viewer.organization_id,
-                    or_(
-                        Diagram.workshop_visibility.is_(None),
-                        Diagram.workshop_visibility == WORKSHOP_VISIBILITY_ORGANIZATION,
-                    ),
-                    or_(
-                        Diagram.workshop_expires_at.is_(None),
-                        Diagram.workshop_expires_at > datetime.utcnow(),
-                    ),
-                )
-                .all()
-            )
-            out: List[Dict[str, Any]] = []
-            for diagram, owner in rows:
-                code = diagram.workshop_code
-                if not code:
-                    continue
-                rem = remaining_seconds(diagram.workshop_expires_at)
-                out.append(
-                    {
-                        "diagram_id": diagram.id,
-                        "title": diagram.title,
-                        "owner_username": getattr(owner, "username", None) or f"User {owner.id}",
-                        "participant_count": self._participant_count_for_code(code),
-                        "expires_at": (
-                            diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None
-                        ),
-                        "remaining_seconds": rem,
-                    }
-                )
-            return out
-        except Exception as e:
-            logger.error(
-                "[WorkshopService] list_organization_workshop_sessions: %s",
-                e,
-                exc_info=True,
-            )
-            return []
-        finally:
-            db.close()
-
-    def _workshop_status_payload_for_viewer(
+    async def _workshop_status_payload_for_viewer(
         self,
-        db,
+        db: AsyncSession,
         diagram: Diagram,
         viewer_user_id: int,
     ) -> Tuple[Optional[Dict[str, Any]], str]:
         """Compute status payload; error is '' or 'not_found' or 'forbidden'."""
-        backfill_workshop_expiry_if_needed(diagram, db)
+        await backfill_workshop_expiry_if_needed(diagram, db)
         redis = get_redis()
         if diagram.workshop_expires_at and is_workshop_expired(diagram.workshop_expires_at):
             if redis:
-                self._clear_expired_workshop_session(diagram, db, redis)
-            db.refresh(diagram)
+                await self._clear_expired_workshop_session(diagram, db, redis)
+            await db.refresh(diagram)
             if diagram.user_id != viewer_user_id:
                 return None, "forbidden"
             return {"active": False}, ""
@@ -631,7 +607,7 @@ class WorkshopService:
         participant_count = self._participant_count_for_code(code)
         vis = _diagram_workshop_visibility(diagram)
 
-        if _viewer_may_see_workshop_code(db, diagram, viewer_user_id):
+        if await _viewer_may_see_workshop_code(db, diagram, viewer_user_id):
             rem = remaining_seconds(diagram.workshop_expires_at)
             payload = {
                 "active": True,
@@ -652,35 +628,32 @@ class WorkshopService:
         Returns:
             (payload, error) where error is '' or 'not_found' or 'forbidden'
         """
-        db = SessionLocal()
-        try:
-            diagram = (
-                db.query(Diagram)
-                .filter(
-                    Diagram.id == diagram_id,
-                    ~Diagram.is_deleted,
+        async with AsyncSessionLocal() as db:
+            try:
+                result = await db.execute(
+                    select(Diagram).filter(
+                        Diagram.id == diagram_id,
+                        ~Diagram.is_deleted,
+                    )
                 )
-                .first()
-            )
+                diagram = result.scalars().first()
 
-            if not diagram:
+                if not diagram:
+                    return None, "not_found"
+
+                return await self._workshop_status_payload_for_viewer(
+                    db,
+                    diagram,
+                    viewer_user_id,
+                )
+
+            except Exception as exc:
+                logger.error(
+                    "[WorkshopService] Error getting workshop status: %s",
+                    exc,
+                    exc_info=True,
+                )
                 return None, "not_found"
-
-            return self._workshop_status_payload_for_viewer(
-                db,
-                diagram,
-                viewer_user_id,
-            )
-
-        except Exception as e:
-            logger.error(
-                "[WorkshopService] Error getting workshop status: %s",
-                e,
-                exc_info=True,
-            )
-            return None, "not_found"
-        finally:
-            db.close()
 
     async def get_participants(self, code: str) -> List[int]:
         """
@@ -698,17 +671,15 @@ class WorkshopService:
             return []
 
         try:
-            # Use synchronous Redis operations (no await)
             participants = redis.smembers(participants_key(code))
             if not participants:
                 return []
 
-            # Redis client returns strings (decode_responses=True), no need to decode
             return [int(pid) if isinstance(pid, str) else int(pid.decode("utf-8")) for pid in participants]
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "[WorkshopService] Error getting participants: %s",
-                e,
+                exc,
                 exc_info=True,
             )
             return []
@@ -729,8 +700,6 @@ class WorkshopService:
 
         try:
             p_key = participants_key(code)
-            # Check if user is in the set before refreshing
-            # Use synchronous Redis operations (no await)
             is_member = redis.sismember(p_key, str(user_id))
             if is_member:
                 redis.expire(p_key, WORKSHOP_PARTICIPANTS_TTL)
@@ -739,10 +708,10 @@ class WorkshopService:
                     user_id,
                     code,
                 )
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "[WorkshopService] Error refreshing participant TTL: %s",
-                e,
+                exc,
                 exc_info=True,
             )
 
@@ -760,22 +729,21 @@ class WorkshopService:
             return
 
         try:
-            # Use synchronous Redis operations (no await)
             redis.srem(
                 participants_key(code),
                 str(user_id),
             )
             redis.delete(mutation_idle_key(code, user_id))
-            maybe_flush_live_spec_when_room_empty(redis, code)
+            await maybe_flush_live_spec_when_room_empty(redis, code)
             logger.debug(
                 "[WorkshopService] Removed participant %s from workshop %s",
                 user_id,
                 code,
             )
-        except Exception as e:
+        except Exception as exc:
             logger.error(
                 "[WorkshopService] Error removing participant: %s",
-                e,
+                exc,
                 exc_info=True,
             )
 
@@ -795,7 +763,7 @@ class WorkshopService:
 
     async def cleanup_expired_workshops(self) -> int:
         """Delegate to :func:`cleanup_expired_workshops_impl`."""
-        return cleanup_expired_workshops_impl()
+        return await cleanup_expired_workshops_impl()
 
 
 workshop_service = WorkshopService()

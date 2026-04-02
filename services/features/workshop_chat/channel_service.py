@@ -27,11 +27,12 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, case, func, or_
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import and_, case, func, or_, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.auth import User
@@ -51,8 +52,8 @@ class ChannelService:
     """Channel CRUD and membership operations."""
 
     @staticmethod
-    def list_channels(
-        db: Session,
+    async def list_channels(
+        db: AsyncSession,
         organization_id: int,
         user_id: Optional[int] = None,
         current_user: Optional[Any] = None,
@@ -62,12 +63,9 @@ class ChannelService:
         Top-level groups contain a ``children`` list of lesson-study channels.
         Announce channels are returned as standalone items (no parent).
         """
-        # Order so parents (parent_id IS NULL) always come before their children.
-        # Otherwise children can appear before the parent in the list and get appended
-        # to standalone instead of parent["children"], leaving groups with empty children.
-        channels = (
-            db.query(ChatChannel)
-            .filter(
+        result = await db.execute(
+            select(ChatChannel)
+            .where(
                 ChatChannel.is_archived.is_(False),
                 or_(
                     ChatChannel.organization_id == organization_id,
@@ -80,7 +78,6 @@ class ChannelService:
                     (ChatChannel.channel_type == "public", 1),
                     else_=2,
                 ),
-                # Parents first (parent_id IS NULL -> 0), then children (1), then by name
                 case(
                     (ChatChannel.parent_id.is_(None), 0),
                     else_=1,
@@ -88,12 +85,12 @@ class ChannelService:
                 ChatChannel.display_order.asc(),
                 ChatChannel.name,
             )
-            .all()
         )
+        channels = result.scalars().all()
 
-        member_map = ChannelService._build_member_map(db, user_id, channels)
+        member_map = await ChannelService._build_member_map(db, user_id, channels)
         user_is_admin = is_admin(current_user) if current_user else False
-        member_counts, topic_counts, unread_counts = ChannelService._batch_channel_list_metrics(
+        member_counts, topic_counts, unread_counts = await ChannelService._batch_channel_list_metrics(
             db,
             [c.id for c in channels],
             member_map,
@@ -125,56 +122,57 @@ class ChannelService:
         return standalone
 
     @staticmethod
-    def _build_member_map(
-        db: Session,
+    async def _build_member_map(
+        db: AsyncSession,
         user_id: Optional[int],
         channels: List[ChatChannel],
     ) -> Dict[int, ChannelMember]:
         """Build mapping of channel_id -> ChannelMember for the given user."""
         if not user_id:
             return {}
-        memberships = (
-            db.query(ChannelMember)
-            .filter(
+        result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.user_id == user_id,
                 ChannelMember.channel_id.in_([c.id for c in channels]),
             )
-            .all()
         )
+        memberships = result.scalars().all()
         return {m.channel_id: m for m in memberships}
 
     @staticmethod
-    def _batch_channel_list_metrics(
-        db: Session,
+    async def _batch_channel_list_metrics(
+        db: AsyncSession,
         channel_ids: List[int],
         member_map: Dict[int, ChannelMember],
     ) -> Tuple[Dict[int, int], Dict[int, int], Dict[int, int]]:
         """Member counts, topic counts, and per-user unreads for list_channels."""
         if not channel_ids:
             return {}, {}, {}
-        member_counts = {
-            int(a): int(b)
-            for a, b in db.query(
+
+        mc_result = await db.execute(
+            select(
                 ChannelMember.channel_id,
                 sql_count(ChannelMember.user_id),
             )
-            .filter(ChannelMember.channel_id.in_(channel_ids))
+            .where(ChannelMember.channel_id.in_(channel_ids))
             .group_by(ChannelMember.channel_id)
-            .all()
-        }
-        topic_counts = {
-            int(a): int(b)
-            for a, b in db.query(
+        )
+        member_counts = {int(a): int(b) for a, b in mc_result.all()}
+
+        tc_result = await db.execute(
+            select(
                 ChatTopic.channel_id,
                 sql_count(ChatTopic.id),
             )
-            .filter(ChatTopic.channel_id.in_(channel_ids))
+            .where(ChatTopic.channel_id.in_(channel_ids))
             .group_by(ChatTopic.channel_id)
-            .all()
-        }
-        unread_counts = {cid: 0 for cid in channel_ids}
+        )
+        topic_counts = {int(a): int(b) for a, b in tc_result.all()}
+
+        unread_counts: Dict[int, int] = {cid: 0 for cid in channel_ids}
         if not member_map:
             return member_counts, topic_counts, unread_counts
+
         mids = [cid for cid in member_map if cid in channel_ids]
         or_clauses = [
             and_(
@@ -184,33 +182,36 @@ class ChannelService:
             for cid in mids
         ]
         uid = member_map[mids[0]].user_id if mids else None
-        muted_topic_ids = ()
+        muted_topic_ids: tuple = ()
         if uid is not None:
-            muted_topic_ids = tuple(
-                int(row[0])
-                for row in db.query(UserTopicPreference.topic_id)
-                .filter(
+            muted_result = await db.execute(
+                select(UserTopicPreference.topic_id).where(
                     UserTopicPreference.user_id == uid,
                     UserTopicPreference.visibility_policy == "muted",
                 )
-                .all()
             )
+            muted_topic_ids = tuple(int(row[0]) for row in muted_result.all())
         if or_clauses:
-            q_unread = db.query(ChatMessage.channel_id, sql_count(ChatMessage.id)).filter(
+            unread_stmt = select(
+                ChatMessage.channel_id,
+                sql_count(ChatMessage.id),
+            ).where(
                 ChatMessage.channel_id.in_(mids),
                 ChatMessage.is_deleted.is_(False),
                 or_(*or_clauses),
             )
             if muted_topic_ids:
-                q_unread = q_unread.filter(
+                unread_stmt = unread_stmt.where(
                     or_(
                         ChatMessage.topic_id.is_(None),
                         ChatMessage.topic_id.notin_(muted_topic_ids),
                     )
                 )
-            q_unread = q_unread.group_by(ChatMessage.channel_id)
-            for row_cid, cnt in q_unread.all():
+            unread_stmt = unread_stmt.group_by(ChatMessage.channel_id)
+            unread_result = await db.execute(unread_stmt)
+            for row_cid, cnt in unread_result.all():
                 unread_counts[int(row_cid)] = int(cnt)
+
         return member_counts, topic_counts, unread_counts
 
     @staticmethod
@@ -267,43 +268,41 @@ class ChannelService:
         return data
 
     @staticmethod
-    def mark_channel_read(
-        db: Session,
+    async def mark_channel_read(
+        db: AsyncSession,
         channel_id: int,
         user_id: int,
     ) -> Dict[str, Any]:
         """Advance the member waterline to the latest non-deleted message."""
-        member = (
-            db.query(ChannelMember)
-            .filter(
+        result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
                 ChannelMember.user_id == user_id,
             )
-            .first()
         )
+        member = result.scalar_one_or_none()
         if not member:
             return {"marked": False}
-        max_msg_id = (
-            db.query(func.max(ChatMessage.id))
-            .filter(
+        max_result = await db.execute(
+            select(func.max(ChatMessage.id)).where(
                 ChatMessage.channel_id == channel_id,
                 ChatMessage.is_deleted.is_(False),
             )
-            .scalar()
         )
+        max_msg_id = max_result.scalar()
         if max_msg_id:
             current = member.last_read_message_id or 0
             if max_msg_id > current:
                 member.last_read_message_id = max_msg_id
-        db.commit()
+        await db.commit()
         return {
             "marked": True,
             "last_read_message_id": member.last_read_message_id,
         }
 
     @staticmethod
-    def create_channel(
-        db: Session,
+    async def create_channel(
+        db: AsyncSession,
         name: str,
         organization_id: int,
         created_by: int,
@@ -318,15 +317,16 @@ class ChannelService:
         """Create a channel (group or lesson-study) and add creator as owner."""
         display_order = 0
         if parent_id is None:
-            max_order = (
-                db.query(func.coalesce(func.max(ChatChannel.display_order), -1))
-                .filter(
+            max_result = await db.execute(
+                select(
+                    func.coalesce(func.max(ChatChannel.display_order), -1),
+                ).where(
                     ChatChannel.organization_id == organization_id,
                     ChatChannel.is_archived.is_(False),
                     ChatChannel.parent_id.is_(None),
                 )
-                .scalar()
             )
+            max_order = max_result.scalar()
             display_order = int(max_order) + 1
 
         channel = ChatChannel(
@@ -343,7 +343,7 @@ class ChannelService:
             display_order=display_order,
         )
         db.add(channel)
-        db.flush()
+        await db.flush()
 
         owner_member = ChannelMember(
             channel_id=channel.id,
@@ -351,7 +351,7 @@ class ChannelService:
             role="owner",
         )
         db.add(owner_member)
-        db.commit()
+        await db.commit()
 
         logger.info(
             "[WorkshopChat] Channel '%s' (parent=%s) created by user %d in org %d",
@@ -373,8 +373,8 @@ class ChannelService:
         }
 
     @staticmethod
-    def update_channel(
-        db: Session,
+    async def update_channel(
+        db: AsyncSession,
         channel_id: int,
         name: Optional[str] = None,
         description: Optional[str] = None,
@@ -387,7 +387,8 @@ class ChannelService:
         is_resolved: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """Update channel fields (including lesson-study metadata)."""
-        channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
+        result = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
+        channel = result.scalar_one_or_none()
         if not channel:
             return None
         if name is not None:
@@ -408,8 +409,8 @@ class ChannelService:
             channel.diagram_id = diagram_id if diagram_id else None
         if is_resolved is not None:
             channel.is_resolved = is_resolved
-        channel.updated_at = datetime.utcnow()
-        db.commit()
+        channel.updated_at = datetime.now(UTC)
+        await db.commit()
         return {
             "id": channel.id,
             "name": channel.name,
@@ -423,66 +424,93 @@ class ChannelService:
         }
 
     @staticmethod
-    def archive_channel(db: Session, channel_id: int) -> bool:
+    async def archive_channel(
+        db: AsyncSession,
+        channel_id: int,
+    ) -> bool:
         """Soft-archive a channel."""
-        channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
+        result = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
+        channel = result.scalar_one_or_none()
         if not channel:
             return False
         channel.is_archived = True
-        channel.updated_at = datetime.utcnow()
-        db.commit()
+        channel.updated_at = datetime.now(UTC)
+        await db.commit()
         logger.info("[WorkshopChat] Channel %d archived", channel_id)
         return True
 
     @staticmethod
-    def join_channel(db: Session, channel_id: int, user_id: int) -> bool:
+    async def join_channel(
+        db: AsyncSession,
+        channel_id: int,
+        user_id: int,
+    ) -> bool:
         """Join a channel as a member."""
-        existing = (
-            db.query(ChannelMember)
-            .filter(
+        result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
                 ChannelMember.user_id == user_id,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
         if existing:
             return True
-        db.add(ChannelMember(channel_id=channel_id, user_id=user_id, role="member"))
-        db.commit()
-        logger.info("[WorkshopChat] User %d joined channel %d", user_id, channel_id)
+        db.add(
+            ChannelMember(
+                channel_id=channel_id,
+                user_id=user_id,
+                role="member",
+            )
+        )
+        await db.commit()
+        logger.info(
+            "[WorkshopChat] User %d joined channel %d",
+            user_id,
+            channel_id,
+        )
         return True
 
     @staticmethod
-    def leave_channel(db: Session, channel_id: int, user_id: int) -> bool:
+    async def leave_channel(
+        db: AsyncSession,
+        channel_id: int,
+        user_id: int,
+    ) -> bool:
         """Leave a channel."""
-        member = (
-            db.query(ChannelMember)
-            .filter(
+        result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
                 ChannelMember.user_id == user_id,
             )
-            .first()
         )
+        member = result.scalar_one_or_none()
         if not member:
             return False
-        db.delete(member)
-        db.commit()
-        logger.info("[WorkshopChat] User %d left channel %d", user_id, channel_id)
+        await db.delete(member)
+        await db.commit()
+        logger.info(
+            "[WorkshopChat] User %d left channel %d",
+            user_id,
+            channel_id,
+        )
         return True
 
     @staticmethod
-    def get_channel_members(db: Session, channel_id: int) -> List[Dict[str, Any]]:
+    async def get_channel_members(
+        db: AsyncSession,
+        channel_id: int,
+    ) -> List[Dict[str, Any]]:
         """List members with user details, owners first."""
-        members = (
-            db.query(ChannelMember)
+        result = await db.execute(
+            select(ChannelMember)
             .options(joinedload(ChannelMember.user))
-            .filter(ChannelMember.channel_id == channel_id)
+            .where(ChannelMember.channel_id == channel_id)
             .order_by(
                 case((ChannelMember.role == "owner", 0), else_=1),
                 ChannelMember.joined_at,
             )
-            .all()
         )
+        members = result.unique().scalars().all()
         return [
             {
                 "user_id": m.user_id,
@@ -495,69 +523,80 @@ class ChannelService:
         ]
 
     @staticmethod
-    def is_channel_member(db: Session, channel_id: int, user_id: int) -> bool:
+    async def is_channel_member(
+        db: AsyncSession,
+        channel_id: int,
+        user_id: int,
+    ) -> bool:
         """Check if user is a member of a channel."""
-        return (
-            db.query(ChannelMember)
-            .filter(
+        result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
                 ChannelMember.user_id == user_id,
             )
-            .first()
-        ) is not None
+        )
+        return result.scalar_one_or_none() is not None
 
     @staticmethod
-    def get_channel(db: Session, channel_id: int) -> Optional[ChatChannel]:
+    async def get_channel(
+        db: AsyncSession,
+        channel_id: int,
+    ) -> Optional[ChatChannel]:
         """Get a non-archived channel by ID."""
-        return db.query(ChatChannel).filter(ChatChannel.id == channel_id, ChatChannel.is_archived.is_(False)).first()
+        result = await db.execute(
+            select(ChatChannel).where(
+                ChatChannel.id == channel_id,
+                ChatChannel.is_archived.is_(False),
+            )
+        )
+        return result.scalar_one_or_none()
 
     # ── Subscription preference helpers ──────────────────────────
 
     @staticmethod
-    def _get_membership(
-        db: Session,
+    async def _get_membership(
+        db: AsyncSession,
         channel_id: int,
         user_id: int,
     ) -> ChannelMember:
-        member = (
-            db.query(ChannelMember)
-            .filter(
+        result = await db.execute(
+            select(ChannelMember).where(
                 ChannelMember.channel_id == channel_id,
                 ChannelMember.user_id == user_id,
             )
-            .first()
         )
+        member = result.scalar_one_or_none()
         if not member:
             raise ValueError("Not a channel member")
         return member
 
     @staticmethod
-    def toggle_mute(
-        db: Session,
+    async def toggle_mute(
+        db: AsyncSession,
         channel_id: int,
         user_id: int,
     ) -> Dict[str, Any]:
         """Toggle mute state for a user's channel subscription."""
-        member = ChannelService._get_membership(db, channel_id, user_id)
+        member = await ChannelService._get_membership(db, channel_id, user_id)
         member.is_muted = not member.is_muted
-        db.commit()
+        await db.commit()
         return {"channel_id": channel_id, "is_muted": member.is_muted}
 
     @staticmethod
-    def toggle_pin(
-        db: Session,
+    async def toggle_pin(
+        db: AsyncSession,
         channel_id: int,
         user_id: int,
     ) -> Dict[str, Any]:
         """Toggle pin-to-top state for a user's channel subscription."""
-        member = ChannelService._get_membership(db, channel_id, user_id)
+        member = await ChannelService._get_membership(db, channel_id, user_id)
         member.pin_to_top = not member.pin_to_top
-        db.commit()
+        await db.commit()
         return {"channel_id": channel_id, "pin_to_top": member.pin_to_top}
 
     @staticmethod
-    def update_member_prefs(
-        db: Session,
+    async def update_member_prefs(
+        db: AsyncSession,
         channel_id: int,
         user_id: int,
         color: Optional[str] = None,
@@ -565,14 +604,14 @@ class ChannelService:
         email_notifications: Optional[bool] = None,
     ) -> Dict[str, Any]:
         """Update per-user subscription preferences."""
-        member = ChannelService._get_membership(db, channel_id, user_id)
+        member = await ChannelService._get_membership(db, channel_id, user_id)
         if color is not None:
             member.color = color
         if desktop_notifications is not None:
             member.desktop_notifications = desktop_notifications
         if email_notifications is not None:
             member.email_notifications = email_notifications
-        db.commit()
+        await db.commit()
         return {
             "channel_id": channel_id,
             "color": member.color,
@@ -581,15 +620,16 @@ class ChannelService:
         }
 
     @staticmethod
-    def update_channel_permissions(
-        db: Session,
+    async def update_channel_permissions(
+        db: AsyncSession,
         channel_id: int,
         channel_type: Optional[str] = None,
         posting_policy: Optional[str] = None,
         is_default: Optional[bool] = None,
     ) -> Optional[Dict[str, Any]]:
         """Update channel-level permission settings (manager/admin only)."""
-        channel = db.query(ChatChannel).filter(ChatChannel.id == channel_id).first()
+        result = await db.execute(select(ChatChannel).where(ChatChannel.id == channel_id))
+        channel = result.scalar_one_or_none()
         if not channel:
             return None
 
@@ -605,8 +645,8 @@ class ChannelService:
         if is_default is not None:
             channel.is_default = is_default
 
-        channel.updated_at = datetime.utcnow()
-        db.commit()
+        channel.updated_at = datetime.now(UTC)
+        await db.commit()
         return {
             "id": channel.id,
             "channel_type": channel.channel_type,
@@ -615,61 +655,61 @@ class ChannelService:
         }
 
     @staticmethod
-    def reorder_teaching_groups(
-        db: Session,
+    async def reorder_teaching_groups(
+        db: AsyncSession,
         organization_id: int,
         ordered_ids: List[int],
     ) -> bool:
-        """Set display_order for all top-level org teaching groups (non-announce)."""
-        rows = (
-            db.query(ChatChannel.id)
-            .filter(
+        """Set display_order for all top-level org teaching groups."""
+        result = await db.execute(
+            select(ChatChannel.id).where(
                 ChatChannel.organization_id == organization_id,
                 ChatChannel.is_archived.is_(False),
                 ChatChannel.parent_id.is_(None),
                 ChatChannel.channel_type != "announce",
             )
-            .all()
         )
+        rows = result.all()
         expected = {int(r[0]) for r in rows}
         got = list(ordered_ids)
         if set(got) != expected or len(got) != len(expected):
             return False
         for idx, cid in enumerate(got):
-            channel = db.query(ChatChannel).filter(ChatChannel.id == cid).first()
+            ch_result = await db.execute(select(ChatChannel).where(ChatChannel.id == cid))
+            channel = ch_result.scalar_one_or_none()
             if not channel:
                 return False
             channel.display_order = idx
-            channel.updated_at = datetime.utcnow()
-        db.commit()
+            channel.updated_at = datetime.now(UTC)
+        await db.commit()
         return True
 
     @staticmethod
-    def invite_user_to_channel(
-        db: Session,
+    async def invite_user_to_channel(
+        db: AsyncSession,
         channel_id: int,
         target_user_id: int,
         organization_id: int,
     ) -> Optional[Dict[str, Any]]:
-        """Add an org member to a channel. Announce channels are not supported."""
-        channel = (
-            db.query(ChatChannel)
-            .filter(
+        """Add an org member to a channel. Announce channels not supported."""
+        result = await db.execute(
+            select(ChatChannel).where(
                 ChatChannel.id == channel_id,
                 ChatChannel.is_archived.is_(False),
             )
-            .first()
         )
+        channel = result.scalar_one_or_none()
         if not channel:
             return None
         if channel.channel_type == "announce":
             return None
         if channel.organization_id != organization_id:
             return None
-        target = db.query(User).filter(User.id == target_user_id).first()
+        user_result = await db.execute(select(User).where(User.id == target_user_id))
+        target = user_result.scalar_one_or_none()
         if not target or target.organization_id != organization_id:
             return None
-        ChannelService.join_channel(db, channel_id, target_user_id)
+        await ChannelService.join_channel(db, channel_id, target_user_id)
         return {
             "channel_id": channel_id,
             "user_id": target_user_id,
@@ -677,34 +717,34 @@ class ChannelService:
         }
 
     @staticmethod
-    def duplicate_teaching_group(
-        db: Session,
+    async def duplicate_teaching_group(
+        db: AsyncSession,
         source_channel_id: int,
         created_by: int,
         organization_id: int,
     ) -> Optional[Dict[str, Any]]:
-        """Clone a top-level teaching group; does not copy lesson-study children."""
-        src = (
-            db.query(ChatChannel)
-            .filter(
+        """Clone a top-level teaching group; does not copy children."""
+        result = await db.execute(
+            select(ChatChannel).where(
                 ChatChannel.id == source_channel_id,
                 ChatChannel.is_archived.is_(False),
                 ChatChannel.organization_id == organization_id,
                 ChatChannel.parent_id.is_(None),
             )
-            .first()
         )
+        src = result.scalar_one_or_none()
         if not src or src.channel_type == "announce":
             return None
-        max_order = (
-            db.query(func.coalesce(func.max(ChatChannel.display_order), -1))
-            .filter(
+        max_result = await db.execute(
+            select(
+                func.coalesce(func.max(ChatChannel.display_order), -1),
+            ).where(
                 ChatChannel.organization_id == organization_id,
                 ChatChannel.is_archived.is_(False),
                 ChatChannel.parent_id.is_(None),
             )
-            .scalar()
         )
+        max_order = max_result.scalar()
         suffix = " (copy)"
         base = src.name
         if len(base) + len(suffix) > 100:
@@ -724,7 +764,7 @@ class ChannelService:
             display_order=int(max_order) + 1,
         )
         db.add(channel)
-        db.flush()
+        await db.flush()
 
         owner_member = ChannelMember(
             channel_id=channel.id,
@@ -732,7 +772,7 @@ class ChannelService:
             role="owner",
         )
         db.add(owner_member)
-        db.commit()
+        await db.commit()
         logger.info(
             "[WorkshopChat] Channel %d duplicated as %d by user %d",
             source_channel_id,

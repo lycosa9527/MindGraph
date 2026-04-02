@@ -25,10 +25,11 @@ import uuid
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from fastapi.responses import StreamingResponse
-from sqlalchemy import func, case
-from sqlalchemy.orm import Session
+from sqlalchemy import case, select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count, sum as sa_sum
 
-from config.database import get_db
+from config.database import get_async_db
 from config.settings import config
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
@@ -258,7 +259,7 @@ def get_cached_stats(tracker) -> Dict:
 
 
 @router.get("/stats")
-async def get_dashboard_stats(request: Request, db: Session = Depends(get_db)) -> Dict[str, Any]:
+async def get_dashboard_stats(request: Request, db: AsyncSession = Depends(get_async_db)) -> Dict[str, Any]:
     """
     Get public dashboard statistics.
 
@@ -297,7 +298,7 @@ async def get_dashboard_stats(request: Request, db: Session = Depends(get_db)) -
                 logger.debug("Error reading registered users cache: %s", e)
 
         if registered_users is None:
-            registered_users = await asyncio.to_thread(lambda: db.query(User).count())
+            registered_users = (await db.execute(select(sa_count()).select_from(User))).scalar_one()
             # Cache the result
             if redis:
                 try:
@@ -324,28 +325,22 @@ async def get_dashboard_stats(request: Request, db: Session = Depends(get_db)) -
                 logger.debug("Error reading token usage cache: %s", e)
 
         if tokens_used_today is None or total_tokens_used is None:
-            # Optimize: Use a single query with conditional aggregation to get both values
-            # This is faster than two separate queries - scans table only once
             # Single query that calculates both today and total in one pass
-            # Uses conditional aggregation to avoid scanning the table twice
-            token_stats_query = await asyncio.to_thread(
-                lambda: (
-                    db.query(
-                        func.sum(
-                            case(
-                                (
-                                    TokenUsage.created_at >= today_start,
-                                    TokenUsage.total_tokens,
-                                ),
-                                else_=0,
-                            )
-                        ).label("today_tokens"),
-                        func.sum(TokenUsage.total_tokens).label("total_tokens"),
-                    )
-                    .filter(TokenUsage.success.is_(True))
-                    .first()
-                )
+            token_stats_result = await db.execute(
+                select(
+                    sa_sum(
+                        case(
+                            (
+                                TokenUsage.created_at >= today_start,
+                                TokenUsage.total_tokens,
+                            ),
+                            else_=0,
+                        )
+                    ).label("today_tokens"),
+                    sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                ).where(TokenUsage.success.is_(True))
             )
+            token_stats_query = token_stats_result.one_or_none()
 
             if token_stats_query:
                 tokens_used_today = int(token_stats_query.today_tokens or 0)

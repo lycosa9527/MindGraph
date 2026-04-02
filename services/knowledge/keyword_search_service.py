@@ -14,9 +14,9 @@ from typing import List, Dict, Any, Optional
 import logging
 
 from sqlalchemy import text
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import engine
+from config.database import async_engine
 
 
 logger = logging.getLogger(__name__)
@@ -29,7 +29,7 @@ class KeywordSearchService:
 
     def __init__(self):
         """Initialize keyword search service."""
-        logger.info("[KeywordSearch] Initialized with database=%s", engine.url.drivername)
+        logger.info("[KeywordSearch] Initialized with database=%s", async_engine.url.drivername)
 
     def extract_keywords(self, text_content: str) -> List[str]:
         """
@@ -56,9 +56,9 @@ class KeywordSearchService:
             words = re.findall(r"\b\w+\b", text_content.lower())
             return list(set(words))
 
-    def keyword_search(
+    async def keyword_search(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int = 5,
@@ -69,7 +69,7 @@ class KeywordSearchService:
         Search for chunks using keyword/full-text search.
 
         Args:
-            db: Database session
+            db: Async database session
             user_id: User ID
             query: Search query
             top_k: Number of results
@@ -87,15 +87,14 @@ class KeywordSearchService:
             document_id = metadata_filter["document_id"]
 
         try:
-            return self._search_postgresql(db, user_id, query, top_k, document_id, metadata_filter)
+            return await self._search_postgresql(db, user_id, query, top_k, document_id, metadata_filter)
         except Exception as e:
             logger.error("[KeywordSearch] Search failed: %s", e)
-            # Fallback to LIKE query
-            return self._search_like(db, user_id, query, top_k, document_id, metadata_filter)
+            return await self._search_like(db, user_id, query, top_k, document_id, metadata_filter)
 
-    def _search_postgresql(
+    async def _search_postgresql(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -103,7 +102,6 @@ class KeywordSearchService:
         metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Search using PostgreSQL full-text search."""
-        # Extract keywords for PostgreSQL tsquery
         self.extract_keywords(query)
 
         sql = """
@@ -121,7 +119,6 @@ class KeywordSearchService:
 
         params: Dict[str, Any] = {"user_id": user_id, "query": query}
 
-        # Apply metadata filters
         if document_id:
             sql += " AND dc.document_id = :document_id"
             params["document_id"] = document_id
@@ -140,7 +137,7 @@ class KeywordSearchService:
         sql += " ORDER BY score DESC LIMIT :top_k"
         params["top_k"] = top_k
 
-        result = db.execute(text(sql), params)
+        result = await db.execute(text(sql), params)
         results = []
         for row in result:
             results.append(
@@ -153,9 +150,9 @@ class KeywordSearchService:
             )
         return results
 
-    def _search_like(
+    async def _search_like(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -163,12 +160,10 @@ class KeywordSearchService:
         metadata_filter: Optional[Dict[str, Any]] = None,
     ) -> List[Dict[str, Any]]:
         """Fallback search using LIKE queries."""
-        # Extract keywords
         keywords = self.extract_keywords(query)
         if not keywords:
             return []
 
-        # Build LIKE conditions
         like_conditions = " OR ".join([f"dc.text LIKE :keyword{i}" for i in range(len(keywords))])
 
         sql = f"""
@@ -188,7 +183,6 @@ class KeywordSearchService:
         for i, keyword in enumerate(keywords):
             params[f"keyword{i}"] = f"%{keyword}%"
 
-        # Apply metadata filters
         if document_id:
             sql += " AND dc.document_id = :document_id"
             params["document_id"] = document_id
@@ -207,7 +201,7 @@ class KeywordSearchService:
         sql += " LIMIT :top_k"
         params["top_k"] = top_k
 
-        result = db.execute(text(sql), params)
+        result = await db.execute(text(sql), params)
         results = []
         for row in result:
             results.append(
@@ -215,7 +209,7 @@ class KeywordSearchService:
                     "chunk_id": row.chunk_id,
                     "text": row.text,
                     "document_id": row.document_id,
-                    "score": 0.5,  # Default score for LIKE
+                    "score": 0.5,
                 }
             )
         return results

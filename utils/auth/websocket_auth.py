@@ -14,16 +14,17 @@ import logging
 
 from fastapi import Depends, HTTPException
 from fastapi.websockets import WebSocketDisconnect
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from .tokens import decode_access_token
 
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_REDIS_AVAILABLE = False
+_redis_available = False
 _get_session_manager = None
 _user_cache = None
 
@@ -31,14 +32,14 @@ try:
     from services.redis.session.redis_session_manager import get_session_manager
     from services.redis.cache.redis_user_cache import user_cache
 
-    _REDIS_AVAILABLE = True
+    _redis_available = True
     _get_session_manager = get_session_manager
     _user_cache = user_cache
 except ImportError:
     pass
 
 
-async def get_current_user_ws(websocket, db: Session = Depends(get_db)) -> User:
+async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db)) -> User:
     """
     Get current user from WebSocket connection.
     Extracts JWT from query params or cookies.
@@ -74,7 +75,7 @@ async def get_current_user_ws(websocket, db: Session = Depends(get_db)) -> User:
             raise WebSocketDisconnect(code=4001, reason="Invalid token")
 
         # Session validation: Check if session exists in Redis
-        if not _REDIS_AVAILABLE:
+        if not _redis_available:
             await websocket.close(code=4001, reason="Redis unavailable")
             raise WebSocketDisconnect(code=4001, reason="Redis unavailable")
 
@@ -90,11 +91,12 @@ async def get_current_user_ws(websocket, db: Session = Depends(get_db)) -> User:
         # Use cache for user lookup (with SQLite fallback)
         user = None
         if _user_cache:
-            user = _user_cache.get_by_id(int(user_id))
+            user = await _user_cache.get_by_id(int(user_id))
 
         if not user:
             # Fallback to DB if not in cache
-            user = db.query(User).filter(User.id == int(user_id)).first()
+            result = await db.execute(select(User).where(User.id == int(user_id)))
+            user = result.scalar_one_or_none()
             if user:
                 db.expunge(user)
                 if _user_cache:

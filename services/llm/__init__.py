@@ -200,7 +200,7 @@ class LLMService:
         start_time = time.time()
 
         # Build messages with RAG context injection
-        chat_messages = self.message_builder.build_with_rag(
+        chat_messages = await self.message_builder.build_with_rag(
             prompt=prompt,
             system_message=system_message,
             messages=messages,
@@ -519,7 +519,7 @@ class LLMService:
 
         # Enhance prompt with RAG for streaming (if enabled)
         if use_knowledge_base and user_id and messages is None:
-            prompt = self.message_builder.enhance_prompt_for_streaming(
+            prompt = await self.message_builder.enhance_prompt_for_streaming(
                 prompt=prompt, user_id=user_id, use_knowledge_base=use_knowledge_base
             )
 

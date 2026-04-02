@@ -13,7 +13,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Index
 
@@ -40,7 +40,7 @@ class DashboardActivity(Base):
     topic = Column(String(500), nullable=True)  # Optional topic/subject
 
     # Timestamp
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Index for efficient queries (most recent first)
     __table_args__ = (Index("idx_dashboard_activities_created_at", "created_at"),)

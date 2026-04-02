@@ -12,7 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 from sqlalchemy.orm import relationship
@@ -33,10 +33,10 @@ class PinnedConversation(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     conversation_id = Column(String(36), nullable=False, index=True)
-    pinned_at = Column(DateTime, default=datetime.utcnow)
+    pinned_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Relationship
-    user = relationship("User", backref="pinned_conversations")
+    user = relationship("User", backref="pinned_conversations", lazy="selectin")
 
     # Composite unique constraint: one pin per user per conversation
     __table_args__ = (Index("ix_pinned_conv_user_conv", "user_id", "conversation_id", unique=True),)

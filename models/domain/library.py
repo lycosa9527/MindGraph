@@ -12,7 +12,7 @@ Proprietary License
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import UTC, datetime
 import uuid
 from typing import Optional, TYPE_CHECKING
 
@@ -86,15 +86,23 @@ class LibraryDocument(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True, nullable=False, index=True)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True
+    )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
     )
 
     # Relationships
-    uploader: Mapped["User"] = relationship("User")
+    uploader: Mapped["User"] = relationship("User", lazy="selectin")
     danmaku: Mapped[list["LibraryDanmaku"]] = relationship(
-        "LibraryDanmaku", back_populates="document", cascade="all, delete-orphan"
+        "LibraryDanmaku",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     # Indexes for efficient queries
@@ -148,14 +156,29 @@ class LibraryDanmaku(Base):
     is_active = Column(Boolean, default=True, nullable=False, index=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
     # Relationships
-    document = relationship("LibraryDocument", back_populates="danmaku")
-    user = relationship("User")
-    likes = relationship("LibraryDanmakuLike", back_populates="danmaku", cascade="all, delete-orphan")
-    replies = relationship("LibraryDanmakuReply", back_populates="danmaku", cascade="all, delete-orphan")
+    document = relationship("LibraryDocument", back_populates="danmaku", lazy="selectin")
+    user = relationship("User", lazy="selectin")
+    likes = relationship(
+        "LibraryDanmakuLike",
+        back_populates="danmaku",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    replies = relationship(
+        "LibraryDanmakuReply",
+        back_populates="danmaku",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     # Indexes for efficient queries
     __table_args__ = (
@@ -189,11 +212,11 @@ class LibraryDanmakuLike(Base):
         index=True,
     )
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    danmaku = relationship("LibraryDanmaku", back_populates="likes")
-    user = relationship("User")
+    danmaku = relationship("LibraryDanmaku", back_populates="likes", lazy="selectin")
+    user = relationship("User", lazy="selectin")
 
     # Unique constraint: one like per user per danmaku
     __table_args__ = (Index("ix_library_danmaku_likes_unique", "danmaku_id", "user_id", unique=True),)
@@ -231,13 +254,23 @@ class LibraryDanmakuReply(Base):
     is_active = Column(Boolean, default=True, nullable=False, index=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
     # Relationships
-    danmaku = relationship("LibraryDanmaku", back_populates="replies")
-    user = relationship("User")
-    parent_reply = relationship("LibraryDanmakuReply", remote_side=[id], backref="child_replies")
+    danmaku = relationship("LibraryDanmaku", back_populates="replies", lazy="selectin")
+    user = relationship("User", lazy="selectin")
+    parent_reply = relationship(
+        "LibraryDanmakuReply",
+        remote_side=[id],
+        backref="child_replies",
+        lazy="selectin",
+    )
 
     # Indexes for efficient queries
     __table_args__ = (
@@ -278,12 +311,17 @@ class LibraryBookmark(Base):
     note = Column(Text, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+        nullable=False,
+    )
 
     # Relationships
-    document = relationship("LibraryDocument")
-    user = relationship("User")
+    document = relationship("LibraryDocument", lazy="selectin")
+    user = relationship("User", lazy="selectin")
 
     # Unique constraint: one bookmark per user per document per page
     __table_args__ = (

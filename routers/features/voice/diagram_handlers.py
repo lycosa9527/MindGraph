@@ -84,8 +84,7 @@ async def _handle_update_center_action(
                     {
                         "type": "error",
                         "error": (
-                            "Double bubble map requires two topics separated by "
-                            f"'和', 'vs', or 'and'. Got: {target}"
+                            f"Double bubble map requires two topics separated by '和', 'vs', or 'and'. Got: {target}"
                         ),
                     },
                 )

@@ -15,7 +15,9 @@ Proprietary License
 import logging
 from typing import Any, Dict, List, Set
 
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from models.domain.workshop_chat import ChatMessage, StarredMessage
 
@@ -28,8 +30,8 @@ class StarService:
     """Starred message operations."""
 
     @staticmethod
-    def toggle_star(
-        db: Session,
+    async def toggle_star(
+        db: AsyncSession,
         message_id: int,
         user_id: int,
     ) -> Dict[str, Any]:
@@ -37,43 +39,42 @@ class StarService:
 
         Returns ``{"action": "starred"|"unstarred", ...}``.
         """
-        existing = (
-            db.query(StarredMessage)
-            .filter(
+        result = await db.execute(
+            select(StarredMessage).where(
                 StarredMessage.message_id == message_id,
                 StarredMessage.user_id == user_id,
             )
-            .first()
         )
+        existing = result.scalars().first()
         if existing:
-            db.delete(existing)
-            db.commit()
+            await db.delete(existing)
+            await db.commit()
             return {"action": "unstarred", "message_id": message_id}
 
         star = StarredMessage(message_id=message_id, user_id=user_id)
         db.add(star)
-        db.commit()
+        await db.commit()
         return {"action": "starred", "message_id": message_id}
 
     @staticmethod
-    def get_starred_messages(
-        db: Session,
+    async def get_starred_messages(
+        db: AsyncSession,
         user_id: int,
         limit: int = DEFAULT_PAGE_SIZE,
         offset: int = 0,
     ) -> List[Dict[str, Any]]:
         """Get a user's starred messages, most recently starred first."""
-        stars = (
-            db.query(StarredMessage)
-            .filter(StarredMessage.user_id == user_id)
+        result = await db.execute(
+            select(StarredMessage)
+            .where(StarredMessage.user_id == user_id)
             .options(
                 joinedload(StarredMessage.message).joinedload(ChatMessage.sender),
             )
             .order_by(StarredMessage.created_at.desc())
             .offset(offset)
             .limit(min(limit, 200))
-            .all()
         )
+        stars = result.scalars().unique().all()
         results: List[Dict[str, Any]] = []
         for star in stars:
             msg = star.message
@@ -100,23 +101,21 @@ class StarService:
         return results
 
     @staticmethod
-    def is_starred_batch(
-        db: Session,
+    async def is_starred_batch(
+        db: AsyncSession,
         message_ids: List[int],
         user_id: int,
     ) -> Set[int]:
         """Return the subset of *message_ids* that the user has starred."""
         if not message_ids:
             return set()
-        rows = (
-            db.query(StarredMessage.message_id)
-            .filter(
+        result = await db.execute(
+            select(StarredMessage.message_id).where(
                 StarredMessage.user_id == user_id,
                 StarredMessage.message_id.in_(message_ids),
             )
-            .all()
         )
-        return {r[0] for r in rows}
+        return set(result.scalars().all())
 
 
 star_service = StarService()

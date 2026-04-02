@@ -17,17 +17,18 @@ Proprietary License
 import asyncio
 import logging
 import random
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta, timezone
 from typing import Optional, Callable, Awaitable
 
 from fastapi import HTTPException, Request, Response, status
 from sqlalchemy.exc import OperationalError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+
 
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from services.redis.redis_activity_tracker import get_activity_tracker
-from services.teacher_usage_stats import compute_and_upsert_user_usage_stats
+from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 from services.redis.session.redis_session_manager import get_session_manager
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.auth.ip_geolocation import get_geolocation_service
@@ -94,12 +95,12 @@ def utc_to_beijing_iso(utc_dt: Optional[datetime]) -> Optional[str]:
 # ============================================================================
 
 
-def track_user_activity(
+async def track_user_activity(
     user: User,
     activity_type: str,
     details: Optional[dict] = None,
     request: Optional[Request] = None,
-    db: Optional[Session] = None,
+    db: Optional[AsyncSession] = None,
 ):
     """
     Track user activity for real-time monitoring.
@@ -128,7 +129,7 @@ def track_user_activity(
                 reuse_existing=True,  # Reuse existing session if user already has one
             )
             if db and user.role == "user":
-                _log_login_and_compute_stats(user.id, db)
+                await _log_login_and_compute_stats(user.id, db)
         else:
             session_id = None  # Let record_activity find/create session
 
@@ -147,21 +148,22 @@ def track_user_activity(
         logger.debug("Failed to track user activity: %s", e)
 
 
-def _log_login_and_compute_stats(user_id: int, db: Session) -> None:
+async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
     """Persist login to user_activity_log and trigger stats compute (fire-and-forget)."""
     try:
         log_entry = UserActivityLog(
             user_id=user_id,
             activity_type="login",
-            created_at=datetime.utcnow(),
+            created_at=datetime.now(UTC),
         )
         db.add(log_entry)
-        db.commit()
-        compute_and_upsert_user_usage_stats(user_id, db)
+        await db.commit()
+
+        await compute_and_upsert_user_usage_stats_async(user_id, db)
     except Exception as e:
         logger.debug("Failed to log login or compute stats: %s", e)
         try:
-            db.rollback()
+            await db.rollback()
         except Exception as exc:
             logger.debug("Rollback after login activity log failure: %s", exc)
 
@@ -219,7 +221,7 @@ def _record_city_flag_async(ip_address: str):
 # ============================================================================
 
 
-async def commit_user_with_retry(db: Session, new_user: User, max_retries: int = 5) -> int:
+async def commit_user_with_retry(db: AsyncSession, new_user: User, max_retries: int = 5) -> int:
     """
     Commit user to database with retry logic for database deadlock errors.
 
@@ -228,7 +230,7 @@ async def commit_user_with_retry(db: Session, new_user: User, max_retries: int =
     high concurrency scenarios (e.g., 500 concurrent registrations).
 
     Args:
-        db: SQLAlchemy database session
+        db: Async SQLAlchemy database session
         new_user: User object to commit
         max_retries: Maximum number of retry attempts (default: 5, increased from 3)
 
@@ -240,8 +242,8 @@ async def commit_user_with_retry(db: Session, new_user: User, max_retries: int =
     """
     for attempt in range(max_retries):
         try:
-            await asyncio.to_thread(db.commit)
-            await asyncio.to_thread(db.refresh, new_user)
+            await db.commit()
+            await db.refresh(new_user)
             return attempt  # Return number of retries (0 = first attempt succeeded)
         except OperationalError as e:
             error_msg = str(e).lower()
@@ -268,7 +270,7 @@ async def commit_user_with_retry(db: Session, new_user: User, max_retries: int =
                     continue
                 else:
                     # All retries exhausted
-                    db.rollback()
+                    await db.rollback()
                     phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
                     logger.error(
                         "[Auth] Database deadlock persists after %d retries. Phone: %s***",
@@ -281,7 +283,7 @@ async def commit_user_with_retry(db: Session, new_user: User, max_retries: int =
                     ) from e
             else:
                 # Other OperationalError (not a lock) - don't retry
-                db.rollback()
+                await db.rollback()
                 logger.error("[Auth] Database operational error during registration: %s", e)
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -289,7 +291,7 @@ async def commit_user_with_retry(db: Session, new_user: User, max_retries: int =
                 ) from e
         except Exception as e:
             # Non-OperationalError - don't retry
-            db.rollback()
+            await db.rollback()
             logger.error("[Auth] Failed to create user in database: %s", e, exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -297,7 +299,7 @@ async def commit_user_with_retry(db: Session, new_user: User, max_retries: int =
             ) from e
 
     # Should never reach here, but just in case
-    db.rollback()
+    await db.rollback()
     raise HTTPException(
         status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
         detail="Failed to create user account",

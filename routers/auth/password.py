@@ -14,9 +14,10 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
@@ -68,10 +69,10 @@ def _raise_for_captcha_failure(captcha_error: Optional[str], lang: Language) -> 
 
 
 @router.post("/reset-password")
-def reset_password_with_sms(
+async def reset_password_with_sms(
     request: ResetPasswordWithSMSRequest,
     http_request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -81,7 +82,7 @@ def reset_password_with_sms(
     Also unlocks the account if it was locked.
     """
     # Find user (use cache with database fallback)
-    cached_user = user_cache.get_by_phone(request.phone)
+    cached_user = await user_cache.get_by_phone(request.phone)
 
     if not cached_user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
@@ -91,7 +92,8 @@ def reset_password_with_sms(
     _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
 
     # Reload user from database for modification (cached users are detached)
-    user = db.query(User).filter(User.id == cached_user.id).first()
+    result = await db.execute(select(User).where(User.id == cached_user.id))
+    user = result.scalar_one_or_none()
     if not user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
@@ -105,9 +107,9 @@ def reset_password_with_sms(
 
     # Write to database FIRST
     try:
-        db.commit()
+        await db.commit()
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to update password in database: %s", e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -138,7 +140,7 @@ async def change_password(
     request: ChangePasswordRequest,
     http_request: Request,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -162,7 +164,8 @@ async def change_password(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Reload user from database for modification
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
@@ -172,9 +175,9 @@ async def change_password(
     user.locked_until = None
 
     try:
-        db.commit()
+        await db.commit()
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("Failed to change password for user %s: %s", user.id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

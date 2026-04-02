@@ -11,7 +11,7 @@ Proprietary License
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from sqlalchemy import (
     Column,
     Integer,
@@ -74,12 +74,16 @@ class SharedDiagram(Base):
     is_active = Column(Boolean, default=True)  # Soft delete support
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Relationships
-    organization = relationship("Organization")
-    author = relationship("User")
+    organization = relationship("Organization", lazy="selectin")
+    author = relationship("User", lazy="selectin")
 
     # Composite index for efficient organization-scoped queries
     __table_args__ = (
@@ -99,11 +103,11 @@ class SharedDiagramLike(Base):
     id = Column(Integer, primary_key=True, index=True)
     diagram_id = Column(String(36), ForeignKey("shared_diagrams.id"), nullable=False, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Relationships
-    diagram = relationship("SharedDiagram")
-    user = relationship("User")
+    diagram = relationship("SharedDiagram", lazy="selectin")
+    user = relationship("User", lazy="selectin")
 
     # Unique constraint: one like per user per diagram
     __table_args__ = (Index("ix_shared_diagram_likes_unique", "diagram_id", "user_id", unique=True),)
@@ -122,12 +126,16 @@ class SharedDiagramComment(Base):
     content = Column(Text, nullable=False)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Status
     is_active = Column(Boolean, default=True)  # Soft delete support
 
     # Relationships
-    diagram = relationship("SharedDiagram")
-    user = relationship("User")
+    diagram = relationship("SharedDiagram", lazy="selectin")
+    user = relationship("User", lazy="selectin")

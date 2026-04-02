@@ -14,12 +14,13 @@ Proprietary License
 
 import asyncio
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.messages import Messages, Language
 from models.domain.auth import User, Organization
 from models.requests.requests_auth import (
@@ -86,12 +87,10 @@ def _preload_user_diagrams(user_id: int):
             except Exception as e:
                 logging.getLogger(__name__).debug("[Login] Diagram preload failed for user %s: %s", user_id, e)
 
-        # Schedule as background task
         try:
             loop = asyncio.get_running_loop()
             loop.create_task(_do_preload())
         except RuntimeError:
-            # No running loop - skip preload
             pass
     except Exception as exc:
         logger.debug("Failed to preload diagrams: %s", exc)
@@ -107,7 +106,7 @@ async def login(
     request: LoginRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -127,19 +126,16 @@ async def login(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     # Find user (use cache with database fallback)
-    cached_user = user_cache.get_by_phone(request.phone)
+    cached_user = await user_cache.get_by_phone(request.phone)
 
     if not cached_user:
         attempts_left = get_login_attempts_remaining(request.phone)
         if attempts_left > 0:
             error_msg = Messages.error("login_failed_phone_not_found", lang, attempts_left)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
-        else:
-            error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
-            raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+        error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
-    # For read-only operations, use cached user (detached is fine)
-    # For write operations, we need user attached to session - reload from DB if needed
     # Check account lockout (read-only, can use cached user)
     is_locked, _ = check_account_lockout(cached_user)
     if is_locked:
@@ -157,11 +153,11 @@ async def login(
 
         # For all other captcha errors, increment failed attempts in database
         # Need user attached to session for modification - reload from DB
-        db_user = await asyncio.to_thread(lambda: db.query(User).filter(User.id == cached_user.id).first())
+        result = await db.execute(select(User).where(User.id == cached_user.id))
+        db_user = result.scalar_one_or_none()
         if db_user:
             increment_failed_attempts(db_user, db)
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
-            # Update cached user's failed_login_attempts for subsequent checks
             cached_user.failed_login_attempts = db_user.failed_login_attempts
         else:
             attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
@@ -182,42 +178,41 @@ async def login(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"{captcha_msg}{attempts_msg}",
             )
-        else:
-            minutes_left = LOCKOUT_DURATION_MINUTES
-            lockout_msg = Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
-            raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=lockout_msg)
+        minutes_left = LOCKOUT_DURATION_MINUTES
+        lockout_msg = Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=lockout_msg)
 
     # Verify password
     if not verify_password(request.password, cached_user.password_hash):
         # Need user attached to session for modification - reload from DB
-        db_user = await asyncio.to_thread(lambda: db.query(User).filter(User.id == cached_user.id).first())
+        result = await db.execute(select(User).where(User.id == cached_user.id))
+        db_user = result.scalar_one_or_none()
         if db_user:
             increment_failed_attempts(db_user, db)
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
-            # Update cached user's failed_login_attempts for subsequent checks
             cached_user.failed_login_attempts = db_user.failed_login_attempts
         else:
             attempts_left = MAX_LOGIN_ATTEMPTS - cached_user.failed_login_attempts
         if attempts_left > 0:
             error_msg = Messages.error("invalid_password", lang, attempts_left)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
-        else:
-            minutes_left = LOCKOUT_DURATION_MINUTES
-            error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
-            raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
+        minutes_left = LOCKOUT_DURATION_MINUTES
+        error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
+        raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     # Successful login - clear rate limit attempts in Redis
     clear_login_attempts(request.phone)
     # Need user attached to session for modification - reload from DB
-    db_user = await asyncio.to_thread(lambda: db.query(User).filter(User.id == cached_user.id).first())
+    result = await db.execute(select(User).where(User.id == cached_user.id))
+    db_user = result.scalar_one_or_none()
     if db_user:
         reset_failed_attempts(db_user, db)
-        user = db_user  # Use DB user for rest of function
+        user = db_user
     else:
-        user = cached_user  # Fallback to cached user
+        user = cached_user
 
     # Get organization (use cache with database fallback)
-    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
     # Check organization status (locked or expired)
     if org:
@@ -228,7 +223,7 @@ async def login(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
         if hasattr(org, "expires_at") and org.expires_at:
-            if org.expires_at < datetime.now(timezone.utc):
+            if org.expires_at < datetime.now(UTC):
                 logger.warning(
                     "Login blocked: Organization %s expired on %s",
                     org.code,
@@ -316,11 +311,11 @@ async def login(
 
 
 @router.post("/sms/login")
-def login_with_sms(
+async def login_with_sms(
     request: LoginWithSMSRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -335,14 +330,14 @@ def login_with_sms(
     - Quick verification
     """
     # Find user first (use cache with database fallback)
-    user = user_cache.get_by_phone(request.phone)
+    user = await user_cache.get_by_phone(request.phone)
 
     if not user:
         error_msg = Messages.error("phone_not_registered_login", lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Get organization and check status BEFORE consuming code (use cache)
-    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
     # Check organization status
     if org:
@@ -353,7 +348,7 @@ def login_with_sms(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
         if hasattr(org, "expires_at") and org.expires_at:
-            if org.expires_at < datetime.now(timezone.utc):
+            if org.expires_at < datetime.now(UTC):
                 logger.warning("SMS login blocked: Organization %s expired", org.code)
                 expired_date = org.expires_at.strftime("%Y-%m-%d")
                 error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
@@ -363,11 +358,12 @@ def login_with_sms(
     _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
 
     # Reload user from database for modification (cached user is detached)
-    db_user = db.query(User).filter(User.id == user.id).first()
+    result = await db.execute(select(User).where(User.id == user.id))
+    db_user = result.scalar_one_or_none()
     if db_user:
         # Reset any failed attempts (SMS login is verified)
         reset_failed_attempts(db_user, db)
-        user = db_user  # Use attached user for rest of function
+        user = db_user
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -414,9 +410,10 @@ def login_with_sms(
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
     # Use cache for org lookup (with database fallback)
-    org = org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
-        org = db.query(Organization).filter(Organization.id == user.organization_id).first()
+        result = await db.execute(select(Organization).where(Organization.id == user.organization_id))
+        org = result.scalar_one_or_none()
         if org:
             db.expunge(org)
             org_cache.cache_org(org)
@@ -455,11 +452,11 @@ def login_with_sms(
 
 
 @router.post("/demo/verify")
-def verify_demo(
+async def verify_demo(
     passkey_request: DemoPasskeyRequest,
     request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -498,23 +495,24 @@ def verify_demo(
         user_name = "Demo Admin" if is_admin_access else "Demo User"
 
     # Get or create user (use cache with database fallback)
-    auth_user = user_cache.get_by_phone(user_phone)
+    auth_user = await user_cache.get_by_phone(user_phone)
 
     if not auth_user:
         # Get or create organization based on mode
         if AUTH_MODE == "bayi":
-            org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
+            result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
+            org = result.scalar_one_or_none()
             if not org:
                 # Create bayi organization if it doesn't exist
                 org = Organization(
                     code=BAYI_DEFAULT_ORG_CODE,
                     name="Bayi School",
                     invitation_code="BAYI2024",
-                    created_at=datetime.now(timezone.utc),
+                    created_at=datetime.now(UTC),
                 )
                 db.add(org)
-                db.commit()
-                db.refresh(org)
+                await db.commit()
+                await db.refresh(org)
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 # Cache the newly created org (non-blocking)
                 try:
@@ -523,7 +521,8 @@ def verify_demo(
                     logger.warning("Failed to cache bayi org: %s", e)
         else:
             # Demo mode: use first available organization
-            org = db.query(Organization).first()
+            result = await db.execute(select(Organization))
+            org = result.scalars().first()
             if not org:
                 error_msg = Messages.error("no_organizations_available", "en")
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg)
@@ -535,11 +534,11 @@ def verify_demo(
                 password_hash=hash_password("passkey-no-pwd"),
                 name=user_name,
                 organization_id=org.id,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
             db.add(auth_user)
-            db.commit()
-            db.refresh(auth_user)
+            await db.commit()
+            await db.refresh(auth_user)
             logger.info("Created new %s user: %s", AUTH_MODE, user_phone)
 
             # Cache the newly created user and org (non-blocking)
@@ -551,11 +550,11 @@ def verify_demo(
                 logger.warning("Failed to cache demo user/org: %s", e)
         except Exception as e:
             # If creation fails, try to rollback and check if user was somehow created
-            db.rollback()
+            await db.rollback()
             logger.error("Failed to create %s user: %s", AUTH_MODE, e)
 
             # Try to get the user again in case it was created by another request (use cache)
-            auth_user = user_cache.get_by_phone(user_phone)
+            auth_user = await user_cache.get_by_phone(user_phone)
             if not auth_user:
                 error_msg = Messages.error("user_creation_failed", "en", str(e))
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg) from e

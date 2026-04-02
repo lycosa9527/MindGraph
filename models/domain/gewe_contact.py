@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB
@@ -44,7 +44,7 @@ class GeweContact(Base):
     region = Column(String(100), nullable=True, comment="Region/location")
     last_updated = Column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
         nullable=False,
         index=True,
         comment="Last update timestamp",

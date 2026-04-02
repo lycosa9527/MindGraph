@@ -13,7 +13,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Optional
 import logging
@@ -21,9 +21,10 @@ import os
 
 from fastapi import APIRouter, HTTPException, Request
 from fastapi.responses import FileResponse, RedirectResponse
+from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import User, Organization
 from services.redis.session.redis_session_manager import get_session_manager
 from services.redis.cache.redis_org_cache import org_cache
@@ -55,7 +56,7 @@ router = APIRouter(tags=["Authentication"])
 
 
 @router.get("/loginByXz")
-def login_by_xz(request: Request, token: Optional[str] = None):
+async def login_by_xz(request: Request, token: Optional[str] = None):
     """
     Bayi mode authentication endpoint
 
@@ -101,11 +102,10 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                 client_ip,
             )
 
-            # Use manual session management - close immediately after DB operations
-            db = SessionLocal()
-            try:
+            async with AsyncSessionLocal() as db:
                 # Get or create organization (same as token flow)
-                org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
+                result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
+                org = result.scalar_one_or_none()
 
                 if not org:
                     try:
@@ -113,29 +113,29 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                             code=BAYI_DEFAULT_ORG_CODE,
                             name="Bayi School",
                             invitation_code="BAYI2024",
-                            created_at=datetime.utcnow(),
+                            created_at=datetime.now(UTC),
                         )
                         db.add(org)
-                        db.commit()
-                        db.refresh(org)
+                        await db.commit()
+                        await db.refresh(org)
                         logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
-                        # Cache the newly created org (non-blocking)
                         try:
                             org_cache.cache_org(org)
                         except Exception as cache_err:
                             logger.warning("Failed to cache bayi org: %s", cache_err)
                     except IntegrityError as integrity_err:
-                        # Organization created by another request (race condition)
-                        db.rollback()
+                        await db.rollback()
                         logger.debug(
                             "Organization creation race condition (expected): %s",
                             integrity_err,
                         )
-                        org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
+                        result = await db.execute(
+                            select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE)
+                        )
+                        org = result.scalar_one_or_none()
                         if not org:
                             logger.error("Failed to create or retrieve bayi organization")
                             return RedirectResponse(url="/demo", status_code=303)
-                        # Cache the org that was created by another request (race condition)
                         try:
                             org_cache.cache_org(org)
                         except Exception as cache_err:
@@ -144,21 +144,19 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                                 cache_err,
                             )
                     except Exception as org_err:
-                        db.rollback()
+                        await db.rollback()
                         logger.error("Failed to create bayi organization: %s", org_err)
                         return RedirectResponse(url="/demo", status_code=303)
 
                 # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
                 if org:
-                    # Check if organization is locked
                     is_active = org.is_active if hasattr(org, "is_active") else True
                     if not is_active:
                         logger.warning("IP whitelist blocked: Organization %s is locked", org.code)
                         return RedirectResponse(url="/demo", status_code=303)
 
-                    # Check if organization subscription has expired
                     if hasattr(org, "expires_at") and org.expires_at:
-                        if org.expires_at < datetime.utcnow():
+                        if org.expires_at < datetime.now(UTC):
                             logger.warning(
                                 "IP whitelist blocked: Organization %s expired on %s",
                                 org.code,
@@ -166,11 +164,11 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                             )
                             return RedirectResponse(url="/demo", status_code=303)
 
-                # Use single shared user for all IP whitelist authentications
                 user_phone = "bayi-ip@system.com"
                 user_name = "Bayi IP User"
 
-                bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                result = await db.execute(select(User).where(User.phone == user_phone))
+                bayi_user = result.scalar_one_or_none()
 
                 if not bayi_user:
                     try:
@@ -179,26 +177,24 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                             password_hash=hash_password("bayi-no-pwd"),
                             name=user_name,
                             organization_id=org.id,
-                            created_at=datetime.utcnow(),
+                            created_at=datetime.now(UTC),
                         )
                         db.add(bayi_user)
-                        db.commit()
-                        db.refresh(bayi_user)
+                        await db.commit()
+                        await db.refresh(bayi_user)
                         logger.info("Created shared bayi IP user: %s", user_phone)
-                        # Cache the newly created user (non-blocking)
                         try:
                             user_cache.cache_user(bayi_user)
                         except Exception as cache_err:
                             logger.warning("Failed to cache bayi user: %s", cache_err)
                     except IntegrityError as integrity_err:
-                        # Handle race condition: user created by another request
-                        db.rollback()
+                        await db.rollback()
                         logger.debug("User creation race condition (expected): %s", integrity_err)
-                        bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                        result = await db.execute(select(User).where(User.phone == user_phone))
+                        bayi_user = result.scalar_one_or_none()
                         if not bayi_user:
                             logger.error("Failed to create or retrieve bayi IP user after race condition")
                             return RedirectResponse(url="/demo", status_code=303)
-                        # Cache the user that was created by another request (race condition)
                         try:
                             user_cache.cache_user(bayi_user)
                         except Exception as cache_err:
@@ -207,12 +203,12 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                                 cache_err,
                             )
                     except Exception as user_err:
-                        db.rollback()
+                        await db.rollback()
                         logger.error("Failed to create bayi IP user: %s", user_err)
-                        bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                        result = await db.execute(select(User).where(User.phone == user_phone))
+                        bayi_user = result.scalar_one_or_none()
                         if not bayi_user:
                             return RedirectResponse(url="/demo", status_code=303)
-                        # Cache the user if it exists after error recovery
                         if bayi_user:
                             try:
                                 user_cache.cache_user(bayi_user)
@@ -222,19 +218,10 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                                     cache_err,
                                 )
 
-                # Session management: For IP whitelist users, allow multiple concurrent sessions
-                # (50 teachers can all be logged in simultaneously from whitelisted IP)
-                # We don't invalidate old sessions for shared bayi-ip@system.com account
                 session_manager = get_session_manager()
-
-                # Generate JWT token (user object is still valid after expunge)
                 jwt_token = create_access_token(bayi_user)
-
-                # Compute device hash for session tracking
                 device_hash = compute_device_hash(request)
 
-                # Store new session in Redis (allow_multiple=True for shared account)
-                # This allows multiple teachers to use the system simultaneously
                 session_manager.store_session(
                     bayi_user.id,
                     jwt_token,
@@ -243,8 +230,6 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                 )
 
                 logger.info("Bayi IP whitelist authentication successful: %s", client_ip)
-            finally:
-                db.close()  # ✅ Connection released BEFORE redirect
 
             # Redirect to editor with cookie
             redirect_response = RedirectResponse(url="/editor", status_code=303)
@@ -375,37 +360,32 @@ def login_by_xz(request: Request, token: Optional[str] = None):
             logger.debug("Failed to mark token as used/cache result: %s", e)
             # Non-critical - continue with authentication
 
-        # Use manual session management - close immediately after DB operations
-        db = SessionLocal()
-        try:
+        async with AsyncSessionLocal() as db:
             # Get or create organization
-            org = db.query(Organization).filter(Organization.code == BAYI_DEFAULT_ORG_CODE).first()
+            result = await db.execute(select(Organization).where(Organization.code == BAYI_DEFAULT_ORG_CODE))
+            org = result.scalar_one_or_none()
 
             if not org:
-                # Create bayi organization if it doesn't exist
                 org = Organization(
                     code=BAYI_DEFAULT_ORG_CODE,
                     name="Bayi School",
                     invitation_code="BAYI2024",
-                    created_at=datetime.utcnow(),
+                    created_at=datetime.now(UTC),
                 )
                 db.add(org)
-                db.commit()
-                db.refresh(org)
+                await db.commit()
+                await db.refresh(org)
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
-                # Cache the newly created org (non-blocking)
                 try:
                     org_cache.cache_org(org)
                 except Exception as e:
                     logger.warning("Failed to cache bayi org: %s", e)
 
-            # Extract user info from token body (if available)
-            # Default to a generic bayi user if not specified
             user_phone = body.get("phone") or body.get("user") or "bayi@system.com"
             user_name = body.get("name") or "Bayi User"
 
-            # Get or create user
-            bayi_user = db.query(User).filter(User.phone == user_phone).first()
+            result = await db.execute(select(User).where(User.phone == user_phone))
+            bayi_user = result.scalar_one_or_none()
 
             if not bayi_user:
                 try:
@@ -414,52 +394,41 @@ def login_by_xz(request: Request, token: Optional[str] = None):
                         password_hash=hash_password("bayi-no-pwd"),
                         name=user_name,
                         organization_id=org.id,
-                        created_at=datetime.utcnow(),
+                        created_at=datetime.now(UTC),
                     )
                     db.add(bayi_user)
-                    db.commit()
-                    db.refresh(bayi_user)
+                    await db.commit()
+                    await db.refresh(bayi_user)
                     logger.info("Created bayi user: %s", user_phone)
-                    # Cache the newly created user (non-blocking)
                     try:
                         user_cache.cache_user(bayi_user)
                     except Exception as e:
                         logger.warning("Failed to cache bayi user: %s", e)
                 except Exception as e:
-                    db.rollback()
+                    await db.rollback()
                     logger.error("Failed to create bayi user: %s", e)
-                    # Try to get user again in case it was created by another request
-                    bayi_user = db.query(User).filter(User.phone == user_phone).first()
+                    result = await db.execute(select(User).where(User.phone == user_phone))
+                    bayi_user = result.scalar_one_or_none()
                     if not bayi_user:
                         logger.error("Failed to create bayi user after retry: %s", e)
                         return RedirectResponse(url="/demo", status_code=303)
-                    else:
-                        # Cache the user if it exists after error recovery
-                        try:
-                            user_cache.cache_user(bayi_user)
-                        except Exception as cache_err:
-                            logger.debug(
-                                "Failed to cache user after error recovery: %s",
-                                cache_err,
-                            )
+                    try:
+                        user_cache.cache_user(bayi_user)
+                    except Exception as cache_err:
+                        logger.debug(
+                            "Failed to cache user after error recovery: %s",
+                            cache_err,
+                        )
 
-            # Session management: Invalidate old sessions before creating new one
             session_manager = get_session_manager()
             old_token_hash = session_manager.get_session_token(bayi_user.id)
             session_manager.invalidate_user_sessions(bayi_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
 
-            # Generate JWT token (user object is still valid after session close)
             jwt_token = create_access_token(bayi_user)
-
-            # Compute device hash for session tracking
             device_hash = compute_device_hash(request)
-
-            # Store new session in Redis
             session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
 
             logger.info("Bayi mode authentication successful: %s", user_phone)
-        finally:
-            db.close()  # ✅ Connection released BEFORE redirect
 
         # Valid token: redirect to editor with cookie set on redirect response
         redirect_response = RedirectResponse(url="/editor", status_code=303)

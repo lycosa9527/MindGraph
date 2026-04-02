@@ -23,7 +23,7 @@ logger = logging.getLogger(__name__)
 _jwt_secret_cache: Optional[str] = None
 
 # Redis module availability flag
-_REDIS_AVAILABLE = False
+_redis_available = False
 _get_redis = None
 _is_redis_available = None
 
@@ -31,7 +31,7 @@ try:
     from services.redis.redis_client import get_redis as redis_get_redis
     from services.redis.redis_client import is_redis_available as redis_is_available
 
-    _REDIS_AVAILABLE = True
+    _redis_available = True
     _get_redis = redis_get_redis
     _is_redis_available = redis_is_available
 except ImportError:
@@ -126,7 +126,7 @@ def get_jwt_secret() -> str:
     if _jwt_secret_cache:
         return _jwt_secret_cache
 
-    if not _REDIS_AVAILABLE:
+    if not _redis_available:
         raise RuntimeError("Redis client not available. Redis is required for JWT secret storage.")
 
     if _is_redis_available is None:

@@ -13,7 +13,9 @@ import logging
 import time
 from typing import Any, Dict, Optional
 
-from config.database import SessionLocal
+from sqlalchemy import select
+
+from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
 from services.redis.redis_client import get_redis
 from services.workshop.workshop_live_spec import (
@@ -32,7 +34,7 @@ from services.workshop.workshop_redis_keys import (
 logger = logging.getLogger(__name__)
 
 
-def ensure_live_spec_seeded(
+async def ensure_live_spec_seeded(
     redis: Any,
     code: str,
     diagram_id: str,
@@ -42,24 +44,20 @@ def ensure_live_spec_seeded(
     existing = read_live_spec(redis, code)
     if existing:
         return existing
-    db = SessionLocal()
-    try:
-        diagram = (
-            db.query(Diagram)
-            .filter(
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Diagram).filter(
                 Diagram.id == diagram_id,
                 ~Diagram.is_deleted,
             )
-            .first()
         )
+        diagram = result.scalars().first()
         if not diagram:
             return {}
         return seed_live_spec_from_diagram(redis, code, diagram, ttl_sec)
-    finally:
-        db.close()
 
 
-def mutate_live_spec_after_ws_update(
+async def mutate_live_spec_after_ws_update(
     redis: Any,
     code: str,
     diagram_id: str,
@@ -71,13 +69,13 @@ def mutate_live_spec_after_ws_update(
     """
     Merge one collab update into Redis. Returns the full live document (with ``v``).
     """
-    current = ensure_live_spec_seeded(redis, code, diagram_id, ttl_sec)
+    current = await ensure_live_spec_seeded(redis, code, diagram_id, ttl_sec)
     merged, _ver = apply_live_update(current, spec, nodes, connections)
     write_live_spec(redis, code, merged, ttl_sec)
     return merged
 
 
-def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
+async def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
     """After a participant leaves: if nobody remains, persist live Redis spec to Postgres."""
     try:
         remaining = redis.scard(participants_key(code))
@@ -89,10 +87,10 @@ def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
     if not raw_did:
         return
     diagram_id_val = raw_did if isinstance(raw_did, str) else raw_did.decode("utf-8")
-    flush_live_spec_to_db(code, diagram_id_val)
+    await flush_live_spec_to_db(code, diagram_id_val)
 
 
-def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
+async def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
     """Write Redis live spec to ``Diagram.spec``. Returns True if a row was updated."""
     redis = get_redis()
     if not redis:
@@ -107,26 +105,23 @@ def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
         logger.warning("[LiveSpec] flush: JSON serialize failed for diagram %s", diagram_id)
         return False
 
-    db = SessionLocal()
-    try:
-        diagram = (
-            db.query(Diagram)
-            .filter(
-                Diagram.id == diagram_id,
-                ~Diagram.is_deleted,
+    async with AsyncSessionLocal() as db:
+        try:
+            result = await db.execute(
+                select(Diagram).filter(
+                    Diagram.id == diagram_id,
+                    ~Diagram.is_deleted,
+                )
             )
-            .first()
-        )
-        if not diagram:
+            diagram = result.scalars().first()
+            if not diagram:
+                return False
+            diagram.spec = text
+            await db.commit()
+            redis.set(live_last_db_flush_key(code), str(int(time.time())))
+            logger.debug("[LiveSpec] Flushed diagram %s from workshop %s", diagram_id, code)
+            return True
+        except Exception as exc:
+            logger.error("[LiveSpec] flush failed: %s", exc, exc_info=True)
+            await db.rollback()
             return False
-        diagram.spec = text
-        db.commit()
-        redis.set(live_last_db_flush_key(code), str(int(time.time())))
-        logger.debug("[LiveSpec] Flushed diagram %s from workshop %s", diagram_id, code)
-        return True
-    except Exception as exc:
-        logger.error("[LiveSpec] flush failed: %s", exc, exc_info=True)
-        db.rollback()
-        return False
-    finally:
-        db.close()

@@ -12,13 +12,13 @@ Proprietary License
 """
 
 import json
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional, List, Dict, Any
 import logging
 
 from sqlalchemy import select, delete, and_
 from sqlalchemy.sql.functions import count as sql_count
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.gewe_group_member import GeweGroupMember
 from services.redis.redis_client import RedisOperations, is_redis_available
@@ -39,7 +39,7 @@ class GeweGroupMemberDB:
     Similar to xxxbot-pad's group_members_db pattern.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """
         Initialize group member database service.
 
@@ -49,7 +49,7 @@ class GeweGroupMemberDB:
         self.db = db
         self._redis = RedisOperations()
 
-    def save_group_members(self, app_id: str, group_wxid: str, members: List[Dict[str, Any]]) -> int:
+    async def save_group_members(self, app_id: str, group_wxid: str, members: List[Dict[str, Any]]) -> int:
         """
         Save group members list to database.
 
@@ -110,12 +110,14 @@ class GeweGroupMemberDB:
                 # JSONB column accepts dict directly.
                 extra_data_val = extra_data if extra_data else None
 
-                existing = self.db.execute(
-                    select(GeweGroupMember).where(
-                        and_(
-                            GeweGroupMember.app_id == app_id,
-                            GeweGroupMember.group_wxid == group_wxid,
-                            GeweGroupMember.member_wxid == member_wxid,
+                existing = (
+                    await self.db.execute(
+                        select(GeweGroupMember).where(
+                            and_(
+                                GeweGroupMember.app_id == app_id,
+                                GeweGroupMember.group_wxid == group_wxid,
+                                GeweGroupMember.member_wxid == member_wxid,
+                            )
                         )
                     )
                 ).scalar_one_or_none()
@@ -127,7 +129,7 @@ class GeweGroupMemberDB:
                     existing.inviter_wxid = inviter_wxid
                     existing.join_time = join_time
                     existing.extra_data = extra_data_val
-                    existing.last_updated = datetime.utcnow()
+                    existing.last_updated = datetime.now(UTC)
                 else:
                     group_member = GeweGroupMember(
                         app_id=app_id,
@@ -139,7 +141,7 @@ class GeweGroupMemberDB:
                         inviter_wxid=inviter_wxid,
                         join_time=join_time,
                         extra_data=extra_data_val,
-                        last_updated=datetime.utcnow(),
+                        last_updated=datetime.now(UTC),
                     )
                     self.db.add(group_member)
 
@@ -149,7 +151,7 @@ class GeweGroupMemberDB:
                 continue
 
         try:
-            self.db.commit()
+            await self.db.commit()
             logger.info("Saved %d group members for group %s", saved_count, group_wxid)
 
             # Invalidate Redis cache for group members list (write-through pattern)
@@ -172,11 +174,11 @@ class GeweGroupMemberDB:
                     )
         except Exception as e:
             logger.error("Failed to commit group members: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
 
         return saved_count
 
-    def get_group_members(self, app_id: str, group_wxid: str) -> List[Dict[str, Any]]:
+    async def get_group_members(self, app_id: str, group_wxid: str) -> List[Dict[str, Any]]:
         """
         Get group members list from database with Redis cache lookup.
 
@@ -213,7 +215,7 @@ class GeweGroupMemberDB:
 
         # Cache miss - load from database
         try:
-            result = self.db.execute(
+            result = await self.db.execute(
                 select(GeweGroupMember)
                 .where(
                     and_(
@@ -268,7 +270,7 @@ class GeweGroupMemberDB:
             logger.error("Failed to get group members: %s", e, exc_info=True)
             return []
 
-    def get_group_member(self, app_id: str, group_wxid: str, member_wxid: str) -> Optional[Dict[str, Any]]:
+    async def get_group_member(self, app_id: str, group_wxid: str, member_wxid: str) -> Optional[Dict[str, Any]]:
         """
         Get single group member from database with Redis cache lookup.
 
@@ -316,12 +318,14 @@ class GeweGroupMemberDB:
 
         # Cache miss - load from database
         try:
-            member = self.db.execute(
-                select(GeweGroupMember).where(
-                    and_(
-                        GeweGroupMember.app_id == app_id,
-                        GeweGroupMember.group_wxid == group_wxid,
-                        GeweGroupMember.member_wxid == member_wxid,
+            member = (
+                await self.db.execute(
+                    select(GeweGroupMember).where(
+                        and_(
+                            GeweGroupMember.app_id == app_id,
+                            GeweGroupMember.group_wxid == group_wxid,
+                            GeweGroupMember.member_wxid == member_wxid,
+                        )
                     )
                 )
             ).scalar_one_or_none()
@@ -370,7 +374,7 @@ class GeweGroupMemberDB:
             logger.error("Failed to get group member: %s", e, exc_info=True)
             return None
 
-    def delete_group_member(self, app_id: str, group_wxid: str, member_wxid: str) -> bool:
+    async def delete_group_member(self, app_id: str, group_wxid: str, member_wxid: str) -> bool:
         """
         Delete group member from database.
 
@@ -383,7 +387,7 @@ class GeweGroupMemberDB:
             True if deleted successfully, False otherwise
         """
         try:
-            result = self.db.execute(
+            result = await self.db.execute(
                 delete(GeweGroupMember).where(
                     and_(
                         GeweGroupMember.app_id == app_id,
@@ -392,7 +396,7 @@ class GeweGroupMemberDB:
                     )
                 )
             )
-            self.db.commit()
+            await self.db.commit()
 
             # Invalidate Redis cache
             if is_redis_available() and result.rowcount > 0:
@@ -413,10 +417,10 @@ class GeweGroupMemberDB:
             return result.rowcount > 0
         except Exception as e:
             logger.error("Failed to delete group member: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
             return False
 
-    def delete_all_group_members(self, app_id: str, group_wxid: str) -> int:
+    async def delete_all_group_members(self, app_id: str, group_wxid: str) -> int:
         """
         Delete all members of a group.
 
@@ -428,7 +432,7 @@ class GeweGroupMemberDB:
             Number of members deleted
         """
         try:
-            result = self.db.execute(
+            result = await self.db.execute(
                 delete(GeweGroupMember).where(
                     and_(
                         GeweGroupMember.app_id == app_id,
@@ -436,7 +440,7 @@ class GeweGroupMemberDB:
                     )
                 )
             )
-            self.db.commit()
+            await self.db.commit()
 
             # Invalidate Redis cache for group members list
             if is_redis_available() and result.rowcount > 0:
@@ -454,10 +458,10 @@ class GeweGroupMemberDB:
             return result.rowcount
         except Exception as e:
             logger.error("Failed to delete all group members: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
             return 0
 
-    def get_member_groups(self, app_id: str, member_wxid: str) -> List[str]:
+    async def get_member_groups(self, app_id: str, member_wxid: str) -> List[str]:
         """
         Get all groups that a member belongs to.
 
@@ -469,7 +473,7 @@ class GeweGroupMemberDB:
             List of group wxids
         """
         try:
-            result = self.db.execute(
+            result = await self.db.execute(
                 select(GeweGroupMember.group_wxid)
                 .where(
                     and_(
@@ -485,7 +489,7 @@ class GeweGroupMemberDB:
             logger.error("Failed to get member groups: %s", e, exc_info=True)
             return []
 
-    def get_group_member_count(self, app_id: str, group_wxid: str) -> int:
+    async def get_group_member_count(self, app_id: str, group_wxid: str) -> int:
         """
         Get count of members in a group.
 
@@ -497,7 +501,7 @@ class GeweGroupMemberDB:
             Member count
         """
         try:
-            result = self.db.execute(
+            result = await self.db.execute(
                 select(sql_count())
                 .select_from(GeweGroupMember)
                 .where(

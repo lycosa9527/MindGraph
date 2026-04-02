@@ -17,9 +17,10 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatMessage, ChatTopic
 from routers.features.workshop_chat.dependencies import (
@@ -57,13 +58,13 @@ async def get_channel_messages(
     anchor: int = 0,
     num_before: int = 50,
     num_after: int = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Get general channel messages (not tied to a topic)."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
-    return message_service.get_channel_messages(
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
+    return await message_service.get_channel_messages(
         db,
         channel_id,
         anchor=anchor,
@@ -73,32 +74,31 @@ async def get_channel_messages(
 
 
 @router.get("/channels/{channel_id}/messages/search")
-def search_channel_messages(
+async def search_channel_messages(
     channel_id: int,
     q: str,
     topic_id: Optional[int] = None,
     limit: int = 40,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Search message bodies within a channel; optional topic narrow (Zulip-style)."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
     if topic_id is not None:
-        topic = (
-            db.query(ChatTopic)
-            .filter(
+        topic_result = await db.execute(
+            select(ChatTopic).where(
                 ChatTopic.id == topic_id,
                 ChatTopic.channel_id == channel_id,
             )
-            .first()
         )
+        topic = topic_result.scalar_one_or_none()
         if not topic:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Topic not found in this channel",
             )
-    return message_service.search_messages(
+    return await message_service.search_messages(
         db,
         channel_id,
         q,
@@ -111,15 +111,15 @@ def search_channel_messages(
 async def send_channel_message(
     channel_id: int,
     body: SendMessageRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Send a general channel message."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
     require_post_permission(channel, current_user)
     try:
-        result = message_service.send_message(
+        result = await message_service.send_message(
             db,
             channel_id,
             current_user.id,
@@ -158,13 +158,13 @@ async def get_topic_messages(
     anchor: int = 0,
     num_before: int = 50,
     num_after: int = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Get messages for a specific topic."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
-    return message_service.get_topic_messages(
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
+    return await message_service.get_topic_messages(
         db,
         topic_id,
         channel_id,
@@ -182,15 +182,15 @@ async def send_topic_message(
     channel_id: int,
     topic_id: int,
     body: SendMessageRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Send a message to a topic."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
     require_post_permission(channel, current_user)
     try:
-        result = message_service.send_message(
+        result = await message_service.send_message(
             db,
             channel_id,
             current_user.id,
@@ -228,12 +228,12 @@ async def send_topic_message(
 async def edit_message(
     message_id: int,
     body: EditMessageRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Edit a message (sender only)."""
     try:
-        result = message_service.edit_message(
+        result = await message_service.edit_message(
             db,
             message_id,
             current_user.id,
@@ -254,17 +254,18 @@ async def edit_message(
 
 
 @router.delete("/messages/{message_id}")
-def delete_message(
+async def delete_message(
     message_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Soft-delete a message (sender or org/realm moderator)."""
-    stub = db.query(ChatMessage).filter(ChatMessage.id == message_id).first()
+    stub_result = await db.execute(select(ChatMessage).where(ChatMessage.id == message_id))
+    stub = stub_result.scalar_one_or_none()
     if not stub:
         raise HTTPException(status_code=404, detail="Message not found")
-    access_channel(db, stub.channel_id, current_user)
-    success = message_service.delete_message(db, message_id, current_user)
+    await access_channel(db, stub.channel_id, current_user)
+    success = await message_service.delete_message(db, message_id, current_user)
     if not success:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -279,22 +280,22 @@ def delete_message(
 @router.post("/messages/{message_id}/star")
 async def toggle_star(
     message_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Star or unstar a message."""
-    return star_service.toggle_star(db, message_id, current_user.id)
+    return await star_service.toggle_star(db, message_id, current_user.id)
 
 
 @router.get("/starred")
 async def get_starred_messages(
     limit: int = 50,
     offset: int = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """List the current user's starred messages."""
-    return star_service.get_starred_messages(
+    return await star_service.get_starred_messages(
         db,
         current_user.id,
         limit=limit,
@@ -308,31 +309,31 @@ async def get_starred_messages(
 @router.get("/messages/reactions/batch")
 async def get_reactions_batch(
     ids: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _current_user: User = Depends(get_current_user),
 ):
     """Batch-fetch grouped reactions for multiple messages."""
     message_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
-    return reaction_service.get_reactions_batch(db, message_ids)
+    return await reaction_service.get_reactions_batch(db, message_ids)
 
 
 @router.get("/messages/starred/batch")
 async def get_starred_batch(
     ids: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Return which of the given message IDs are starred by the user."""
     message_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
-    return list(star_service.is_starred_batch(db, message_ids, current_user.id))
+    return list(await star_service.is_starred_batch(db, message_ids, current_user.id))
 
 
 @router.get("/messages/attachments/batch")
 async def get_attachments_batch(
     ids: str,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _current_user: User = Depends(get_current_user),
 ):
     """Batch-fetch attachments for multiple messages."""
     message_ids = [int(x) for x in ids.split(",") if x.strip().isdigit()]
-    return file_service.get_attachments_batch(db, message_ids)
+    return await file_service.get_attachments_batch(db, message_ids)

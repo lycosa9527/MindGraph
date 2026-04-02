@@ -12,7 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 import uuid
 
 from sqlalchemy import (
@@ -64,20 +64,35 @@ class DebateSession(Base):
     coin_toss_result = Column(String(50), nullable=True)  # 'affirmative_first' or 'negative_first'
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
-    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at = Column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
     started_at = Column(DateTime, nullable=True)
     completed_at = Column(DateTime, nullable=True)
 
     # Relationships
-    user = relationship("User", backref="debate_sessions")
-    participants = relationship("DebateParticipant", back_populates="session", cascade="all, delete-orphan")
-    messages = relationship("DebateMessage", back_populates="session", cascade="all, delete-orphan")
+    user = relationship("User", backref="debate_sessions", lazy="selectin")
+    participants = relationship(
+        "DebateParticipant",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    messages = relationship(
+        "DebateMessage",
+        back_populates="session",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
     judgment = relationship(
         "DebateJudgment",
         back_populates="session",
         uselist=False,
         cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     # Composite index for efficient queries
@@ -119,12 +134,21 @@ class DebateParticipant(Base):
     name = Column(String(100), nullable=False)  # User name or AI model display name
 
     # Timestamps
-    joined_at = Column(DateTime, default=datetime.utcnow)
+    joined_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Relationships
-    session = relationship("DebateSession", back_populates="participants")
-    user = relationship("User", backref="debate_participations")
-    messages = relationship("DebateMessage", back_populates="participant", cascade="all, delete-orphan")
+    session = relationship(
+        "DebateSession",
+        back_populates="participants",
+        lazy="selectin",
+    )
+    user = relationship("User", backref="debate_participations", lazy="selectin")
+    messages = relationship(
+        "DebateMessage",
+        back_populates="participant",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     # Composite index
     __table_args__ = (Index("ix_debate_participants_session_role", "session_id", "role"),)
@@ -167,12 +191,21 @@ class DebateMessage(Base):
     audio_url = Column(String(500), nullable=True)  # URL to generated TTS audio
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
 
     # Relationships
-    session = relationship("DebateSession", back_populates="messages")
-    participant = relationship("DebateParticipant", back_populates="messages")
-    parent_message = relationship("DebateMessage", remote_side=[id], backref="child_messages")
+    session = relationship("DebateSession", back_populates="messages", lazy="selectin")
+    participant = relationship(
+        "DebateParticipant",
+        back_populates="messages",
+        lazy="selectin",
+    )
+    parent_message = relationship(
+        "DebateMessage",
+        remote_side=[id],
+        backref="child_messages",
+        lazy="selectin",
+    )
 
     # Composite indexes
     __table_args__ = (
@@ -224,16 +257,21 @@ class DebateJudgment(Base):
     detailed_analysis = Column(Text, nullable=True)
 
     # Timestamps
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Relationships
-    session = relationship("DebateSession", back_populates="judgment")
+    session = relationship("DebateSession", back_populates="judgment", lazy="selectin")
     judge = relationship(
         "DebateParticipant",
         foreign_keys=[judge_participant_id],
         backref="judgments_made",
+        lazy="selectin",
     )
-    best_debater = relationship("DebateParticipant", foreign_keys=[best_debater_id])
+    best_debater = relationship(
+        "DebateParticipant",
+        foreign_keys=[best_debater_id],
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return f"<DebateJudgment {self.id}: Winner={self.winner_side}>"

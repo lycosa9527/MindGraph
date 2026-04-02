@@ -511,6 +511,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'School collaboration',
   'mindgraphLanding.dialogSharedTitle': 'Shared collaboration',
   'mindgraphLanding.import': 'Import',
+  'mindgraphLanding.inputPlaceholder': 'Describe your diagram, or choose a template below...',
   'mindgraphLanding.join': 'Join',
   'mindgraphLanding.joinFailed': 'Failed to join',
   'mindgraphLanding.joinPresentationFailed': 'Failed to join presentation',

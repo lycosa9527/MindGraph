@@ -33,7 +33,7 @@ sys.path.insert(0, str(_project_root))
 
 from sqlalchemy.orm import Session
 
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
 from models.domain.user_activity_log import UserActivityLog
@@ -132,7 +132,7 @@ def main():
     print("  - diagram_export: no historical data, cannot backfill")
     print()
 
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
         inserted = backfill_diagram_edit(db, dry_run=args.dry_run, force=args.force)
         mode = "Would insert" if args.dry_run else "Inserted"

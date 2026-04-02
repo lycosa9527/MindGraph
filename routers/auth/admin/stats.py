@@ -14,12 +14,16 @@ from typing import Optional, Dict, Any
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import func, and_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, select
+from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
-from sqlalchemy.sql.functions import count as sql_count
+from sqlalchemy.sql.functions import (
+    count as sql_count,
+    sum as sa_sum,
+    coalesce as sa_coalesce,
+)
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User, Organization
 from models.domain.token_usage import TokenUsage
 from utils.auth import get_current_user, is_admin
@@ -42,7 +46,7 @@ def _sql_count(column: Any) -> ColumnElement:
 
 
 @router.get("/admin/status")
-def get_admin_status(current_user: User = Depends(get_current_user)) -> Dict[str, bool]:
+async def get_admin_status(current_user: User = Depends(get_current_user)) -> Dict[str, bool]:
     """
     Lightweight endpoint to check if current user is admin.
 
@@ -56,25 +60,26 @@ def get_admin_status(current_user: User = Depends(get_current_user)) -> Dict[str
 
 
 @router.get("/admin/stats", dependencies=[Depends(require_admin)])
-def get_stats_admin(
+async def get_stats_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get system statistics (ADMIN ONLY)"""
-    total_users = db.query(User).count()
-    total_orgs = db.query(Organization).count()
+    total_users = (await db.execute(select(_sql_count(User.id)))).scalar_one()
+    total_orgs = (await db.execute(select(_sql_count(Organization.id)))).scalar_one()
 
     # Performance optimization: Get user counts for all organizations in one GROUP BY query
     # instead of N+1 queries (one per organization)
     users_by_org = {}
     user_counts_query = (
-        db.query(Organization.id, Organization.name, _sql_count(User.id).label("user_count"))
-        .outerjoin(User, Organization.id == User.organization_id)
-        .group_by(Organization.id, Organization.name)
-        .all()
-    )
+        await db.execute(
+            select(Organization.id, Organization.name, _sql_count(User.id).label("user_count"))
+            .outerjoin(User, Organization.id == User.organization_id)
+            .group_by(Organization.id, Organization.name)
+        )
+    ).all()
 
     # Build dictionary with organization name as key
     for count_result in user_counts_query:
@@ -90,7 +95,9 @@ def get_stats_admin(
     # Calculate week_ago from today start (00:00:00) to match token-stats endpoint behavior
     beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
-    recent_registrations = db.query(User).filter(User.created_at >= today_start).count()
+    recent_registrations = (
+        await db.execute(select(_sql_count(User.id)).where(User.created_at >= today_start))
+    ).scalar_one()
 
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
     token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
@@ -101,14 +108,14 @@ def get_stats_admin(
     try:
         # Global token stats for past week
         week_token_stats = (
-            db.query(
-                func.sum(TokenUsage.input_tokens).label("input_tokens"),
-                func.sum(TokenUsage.output_tokens).label("output_tokens"),
-                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+            await db.execute(
+                select(
+                    sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                    sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+                    sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                ).where(TokenUsage.created_at >= week_ago, TokenUsage.success)
             )
-            .filter(TokenUsage.created_at >= week_ago, TokenUsage.success)
-            .first()
-        )
+        ).first()
 
         if week_token_stats:
             token_stats = {
@@ -120,21 +127,22 @@ def get_stats_admin(
         # Per-organization TOTAL token usage (all time, for active school ranking)
         # Use LEFT JOIN to include organizations with no token usage
         org_token_stats = (
-            db.query(
-                Organization.id,
-                Organization.name,
-                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                func.coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
+            await db.execute(
+                select(
+                    Organization.id,
+                    Organization.name,
+                    sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                    sa_coalesce(_sql_count(TokenUsage.id), 0).label("request_count"),
+                )
+                .outerjoin(
+                    TokenUsage,
+                    and_(Organization.id == TokenUsage.organization_id, TokenUsage.success),
+                )
+                .group_by(Organization.id, Organization.name)
             )
-            .outerjoin(
-                TokenUsage,
-                and_(Organization.id == TokenUsage.organization_id, TokenUsage.success),
-            )
-            .group_by(Organization.id, Organization.name)
-            .all()
-        )
+        ).all()
 
         # Build per-organization stats dictionary
         # Only include organizations that actually have token usage
@@ -163,10 +171,10 @@ def get_stats_admin(
 
 
 @router.get("/admin/stats/school", dependencies=[Depends(require_admin_or_manager)])
-def get_school_stats(
+async def get_school_stats(
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
@@ -195,7 +203,7 @@ def get_school_stats(
                 detail="Manager can only view their own organization",
             )
 
-    org = db.query(Organization).filter(Organization.id == effective_org_id).first()
+    org = (await db.execute(select(Organization).where(Organization.id == effective_org_id))).scalars().first()
     if not org:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
 
@@ -204,10 +212,17 @@ def get_school_stats(
     beijing_today_start = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     week_ago = (beijing_today_start - timedelta(days=7)).astimezone(timezone.utc).replace(tzinfo=None)
 
-    total_users = db.query(User).filter(User.organization_id == effective_org_id).count()
+    total_users = (
+        await db.execute(select(_sql_count(User.id)).where(User.organization_id == effective_org_id))
+    ).scalar_one()
     recent_registrations = (
-        db.query(User).filter(User.organization_id == effective_org_id, User.created_at >= today_start).count()
-    )
+        await db.execute(
+            select(_sql_count(User.id)).where(
+                User.organization_id == effective_org_id,
+                User.created_at >= today_start,
+            )
+        )
+    ).scalar_one()
 
     token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
     token_stats_by_org = {}
@@ -216,18 +231,18 @@ def get_school_stats(
 
     try:
         week_token_stats = (
-            db.query(
-                func.sum(TokenUsage.input_tokens).label("input_tokens"),
-                func.sum(TokenUsage.output_tokens).label("output_tokens"),
-                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+            await db.execute(
+                select(
+                    sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                    sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+                    sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                ).where(
+                    TokenUsage.organization_id == effective_org_id,
+                    TokenUsage.created_at >= week_ago,
+                    TokenUsage.success,
+                )
             )
-            .filter(
-                TokenUsage.organization_id == effective_org_id,
-                TokenUsage.created_at >= week_ago,
-                TokenUsage.success,
-            )
-            .first()
-        )
+        ).first()
 
         if week_token_stats:
             token_stats = {
@@ -237,14 +252,14 @@ def get_school_stats(
             }
 
         org_token_stats = (
-            db.query(
-                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
-                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+            await db.execute(
+                select(
+                    sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                ).where(TokenUsage.organization_id == effective_org_id, TokenUsage.success)
             )
-            .filter(TokenUsage.organization_id == effective_org_id, TokenUsage.success)
-            .first()
-        )
+        ).first()
 
         if org_token_stats:
             token_stats_by_org[org.name] = {
@@ -256,19 +271,20 @@ def get_school_stats(
             }
 
         top_users_query = (
-            db.query(
-                User.id,
-                User.phone,
-                User.name,
-                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+            await db.execute(
+                select(
+                    User.id,
+                    User.phone,
+                    User.name,
+                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                )
+                .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
+                .where(User.organization_id == effective_org_id)
+                .group_by(User.id, User.phone, User.name)
+                .order_by(sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).desc())
+                .limit(10)
             )
-            .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
-            .filter(User.organization_id == effective_org_id)
-            .group_by(User.id, User.phone, User.name)
-            .order_by(func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc())
-            .limit(10)
-            .all()
-        )
+        ).all()
 
         top_users = []
         for u in top_users_query:
@@ -324,11 +340,11 @@ def _resolve_school_org_id(
 
 
 @router.get("/admin/stats/school/token-stats", dependencies=[Depends(require_admin_or_manager)])
-def get_school_token_stats(
+async def get_school_token_stats(
     request: Request,
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
@@ -336,7 +352,7 @@ def get_school_token_stats(
     Same structure as /admin/token-stats with organization_id filter.
     """
     org_id = _resolve_school_org_id(organization_id, current_user)
-    return get_token_stats_admin(
+    return await get_token_stats_admin(
         _request=request,
         organization_id=org_id,
         _current_user=current_user,
@@ -346,11 +362,11 @@ def get_school_token_stats(
 
 
 @router.get("/admin/token-stats", dependencies=[Depends(require_admin)])
-def get_token_stats_admin(
+async def get_token_stats_admin(
     _request: Request,
     organization_id: Optional[int] = None,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get detailed token usage statistics (ADMIN ONLY)
@@ -410,7 +426,7 @@ def get_token_stats_admin(
     try:
         org_filter = []
         if organization_id:
-            org = db.query(Organization).filter(Organization.id == organization_id).first()
+            org = (await db.execute(select(Organization).where(Organization.id == organization_id))).scalars().first()
             if not org:
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
@@ -420,28 +436,28 @@ def get_token_stats_admin(
 
         # Today stats - sum all token usage today (including records with user_id=NULL)
         # Note: This includes API key usage without user_id, so it may be larger than sum of top users
-        today_query = db.query(
-            func.sum(TokenUsage.input_tokens).label("input_tokens"),
-            func.sum(TokenUsage.output_tokens).label("output_tokens"),
-            func.sum(TokenUsage.total_tokens).label("total_tokens"),
-        ).filter(TokenUsage.created_at >= today_start, TokenUsage.success)
+        today_stmt = select(
+            sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+            sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).where(TokenUsage.created_at >= today_start, TokenUsage.success)
         if org_filter:
-            today_query = today_query.filter(*org_filter)
-        today_token_stats = today_query.first()
+            today_stmt = today_stmt.where(*org_filter)
+        today_token_stats = (await db.execute(today_stmt)).first()
 
         # Also calculate today stats for authenticated users only (for comparison)
-        today_user_token_stats_query = db.query(
-            func.sum(TokenUsage.input_tokens).label("input_tokens"),
-            func.sum(TokenUsage.output_tokens).label("output_tokens"),
-            func.sum(TokenUsage.total_tokens).label("total_tokens"),
-        ).filter(
+        today_user_stmt = select(
+            sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+            sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).where(
             TokenUsage.created_at >= today_start,
             TokenUsage.success,
             TokenUsage.user_id.isnot(None),
         )
         if org_filter:
-            today_user_token_stats_query = today_user_token_stats_query.filter(*org_filter)
-        today_user_token_stats = today_user_token_stats_query.first()
+            today_user_stmt = today_user_stmt.where(*org_filter)
+        today_user_token_stats = (await db.execute(today_user_stmt)).first()
 
         if today_token_stats:
             today_stats = {
@@ -454,14 +470,12 @@ def get_token_stats_admin(
         if today_user_token_stats:
             authenticated_total = int(today_user_token_stats.total_tokens or 0)
             all_total = today_stats.get("total_tokens", 0)
-            # Log for debugging if there's a discrepancy
             logger.debug(
                 "Today token stats - All: %s, Authenticated users only: %s",
                 all_total,
                 authenticated_total,
             )
 
-            # Warn if authenticated total exceeds all total (shouldn't happen)
             if authenticated_total > all_total:
                 logger.warning(
                     "Token count mismatch: Authenticated users (%s) > All users (%s)",
@@ -470,14 +484,14 @@ def get_token_stats_admin(
                 )
 
         # Past week stats
-        week_query = db.query(
-            func.sum(TokenUsage.input_tokens).label("input_tokens"),
-            func.sum(TokenUsage.output_tokens).label("output_tokens"),
-            func.sum(TokenUsage.total_tokens).label("total_tokens"),
-        ).filter(TokenUsage.created_at >= week_ago, TokenUsage.success)
+        week_stmt = select(
+            sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+            sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).where(TokenUsage.created_at >= week_ago, TokenUsage.success)
         if org_filter:
-            week_query = week_query.filter(*org_filter)
-        week_token_stats = week_query.first()
+            week_stmt = week_stmt.where(*org_filter)
+        week_token_stats = (await db.execute(week_stmt)).first()
 
         if week_token_stats:
             week_stats = {
@@ -487,14 +501,14 @@ def get_token_stats_admin(
             }
 
         # Past month stats
-        month_query = db.query(
-            func.sum(TokenUsage.input_tokens).label("input_tokens"),
-            func.sum(TokenUsage.output_tokens).label("output_tokens"),
-            func.sum(TokenUsage.total_tokens).label("total_tokens"),
-        ).filter(TokenUsage.created_at >= month_ago, TokenUsage.success)
+        month_stmt = select(
+            sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+            sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).where(TokenUsage.created_at >= month_ago, TokenUsage.success)
         if org_filter:
-            month_query = month_query.filter(*org_filter)
-        month_token_stats = month_query.first()
+            month_stmt = month_stmt.where(*org_filter)
+        month_token_stats = (await db.execute(month_stmt)).first()
 
         if month_token_stats:
             month_stats = {
@@ -504,14 +518,14 @@ def get_token_stats_admin(
             }
 
         # Total stats (all time)
-        total_query = db.query(
-            func.sum(TokenUsage.input_tokens).label("input_tokens"),
-            func.sum(TokenUsage.output_tokens).label("output_tokens"),
-            func.sum(TokenUsage.total_tokens).label("total_tokens"),
-        ).filter(TokenUsage.success)
+        total_stmt = select(
+            sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+            sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+            sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+        ).where(TokenUsage.success)
         if org_filter:
-            total_query = total_query.filter(*org_filter)
-        total_token_stats = total_query.first()
+            total_stmt = total_stmt.where(*org_filter)
+        total_token_stats = (await db.execute(total_stmt)).first()
 
         if total_token_stats:
             total_stats = {
@@ -522,22 +536,22 @@ def get_token_stats_admin(
 
         # Service breakdown: MindGraph vs MindMate
         # Query stats grouped by request_type for different time periods
-        def get_service_stats(date_filter=None):
+        async def get_service_stats(date_filter=None):
             """Get stats grouped by service type (mindgraph vs mindmate)"""
-            query = db.query(
+            stmt = select(
                 TokenUsage.request_type,
-                func.sum(TokenUsage.input_tokens).label("input_tokens"),
-                func.sum(TokenUsage.output_tokens).label("output_tokens"),
-                func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
                 _sql_count(TokenUsage.id).label("request_count"),
-            ).filter(TokenUsage.success)
+            ).where(TokenUsage.success)
 
             if date_filter is not None:
-                query = query.filter(TokenUsage.created_at >= date_filter)
+                stmt = stmt.where(TokenUsage.created_at >= date_filter)
             if org_filter:
-                query = query.filter(*org_filter)
+                stmt = stmt.where(*org_filter)
 
-            return query.group_by(TokenUsage.request_type).all()
+            return (await db.execute(stmt.group_by(TokenUsage.request_type))).all()
 
         # Get breakdown for each time period
         for period, date_filter in [
@@ -546,14 +560,13 @@ def get_token_stats_admin(
             ("month", month_ago),
             ("total", None),
         ]:
-            service_results = get_service_stats(date_filter)
+            service_results = await get_service_stats(date_filter)
             for result in service_results:
                 request_type = result.request_type or "unknown"
                 # Map request_type to service category
                 if request_type == "mindmate":
                     service = "mindmate"
                 else:
-                    # All other types (diagram_generation, node_palette, autocomplete, etc.) are MindGraph
                     service = "mindgraph"
 
                 by_service[service][period]["input_tokens"] += int(result.input_tokens or 0)
@@ -563,29 +576,29 @@ def get_token_stats_admin(
 
         # Top 10 users by total tokens (all time), including organization name
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
-        # Skip top_users if organization_id is specified (not needed for organization-specific stats)
-        top_users_query = (
-            db.query(
+        top_users_stmt = (
+            select(
                 User.id,
                 User.phone,
                 User.name,
                 Organization.id.label("organization_id"),
                 Organization.name.label("organization_name"),
-                func.coalesce(func.sum(TokenUsage.total_tokens), 0).label("total_tokens"),
-                func.coalesce(func.sum(TokenUsage.input_tokens), 0).label("input_tokens"),
-                func.coalesce(func.sum(TokenUsage.output_tokens), 0).label("output_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.input_tokens), 0).label("input_tokens"),
+                sa_coalesce(sa_sum(TokenUsage.output_tokens), 0).label("output_tokens"),
             )
             .outerjoin(Organization, User.organization_id == Organization.id)
             .outerjoin(TokenUsage, and_(User.id == TokenUsage.user_id, TokenUsage.success))
         )
         if org_filter:
-            top_users_query = top_users_query.filter(*org_filter)
+            top_users_stmt = top_users_stmt.where(*org_filter)
         top_users_query = (
-            top_users_query.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
-            .order_by(func.coalesce(func.sum(TokenUsage.total_tokens), 0).desc())
-            .limit(10)
-            .all()
-        )
+            await db.execute(
+                top_users_stmt.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
+                .order_by(sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).desc())
+                .limit(10)
+            )
+        ).all()
 
         top_users = [
             {
@@ -603,19 +616,18 @@ def get_token_stats_admin(
         # Top 10 users by today's token usage, including organization name
         # Use inner join to only include users with actual token usage today
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
-        # Skip top_users_today if organization_id is specified (not needed for organization-specific stats)
-        top_users_today_query = (
-            db.query(
+        top_users_today_stmt = (
+            select(
                 User.id,
                 User.phone,
                 User.name,
                 Organization.id.label("organization_id"),
                 Organization.name.label("organization_name"),
-                func.sum(TokenUsage.total_tokens).label("total_tokens"),
-                func.sum(TokenUsage.input_tokens).label("input_tokens"),
-                func.sum(TokenUsage.output_tokens).label("output_tokens"),
+                sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             )
-            .join(Organization, User.organization_id == Organization.id, isouter=True)
+            .outerjoin(Organization, User.organization_id == Organization.id)
             .join(
                 TokenUsage,
                 and_(
@@ -626,14 +638,15 @@ def get_token_stats_admin(
             )
         )
         if org_filter:
-            top_users_today_query = top_users_today_query.filter(*org_filter)
+            top_users_today_stmt = top_users_today_stmt.where(*org_filter)
         top_users_today_query = (
-            top_users_today_query.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
-            .having(func.sum(TokenUsage.total_tokens) > 0)
-            .order_by(func.sum(TokenUsage.total_tokens).desc())
-            .limit(10)
-            .all()
-        )
+            await db.execute(
+                top_users_today_stmt.group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
+                .having(sa_sum(TokenUsage.total_tokens) > 0)
+                .order_by(sa_sum(TokenUsage.total_tokens).desc())
+                .limit(10)
+            )
+        ).all()
 
         top_users_today = [
             {
@@ -654,7 +667,6 @@ def get_token_stats_admin(
             top10_sum = sum(user["total_tokens"] for user in top_users_today)
             all_total = today_stats.get("total_tokens", 0)
 
-            # Log for debugging
             logger.debug(
                 "Today token verification - All: %s, Authenticated: %s, Top 10 sum: %s",
                 all_total,
@@ -662,14 +674,12 @@ def get_token_stats_admin(
                 top10_sum,
             )
 
-            # Warn if top 10 sum exceeds authenticated total (indicates double counting or grouping issue)
             if top10_sum > authenticated_total:
                 logger.warning(
                     "Token count mismatch: Top 10 users sum (%s) > Authenticated users total (%s)",
                     top10_sum,
                     authenticated_total,
                 )
-            # Warn if authenticated total exceeds all total (shouldn't happen)
             if authenticated_total > all_total:
                 logger.warning(
                     "Token count mismatch: Authenticated users (%s) > All users (%s)",
@@ -678,7 +688,6 @@ def get_token_stats_admin(
                 )
 
     except HTTPException:
-        # Re-raise HTTP exceptions (like 404 for organization not found)
         raise
     except (ImportError, Exception) as e:
         logger.error("Error loading token stats: %s", e, exc_info=True)

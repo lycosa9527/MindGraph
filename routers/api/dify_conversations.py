@@ -19,10 +19,11 @@ import os
 
 from fastapi import APIRouter, HTTPException, Depends, Query
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.pinned_conversations import PinnedConversation
 from utils.auth import get_current_user
@@ -273,19 +274,22 @@ async def submit_message_feedback(
 
 
 @router.get("/dify/pinned")
-def list_pinned_conversations(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_pinned_conversations(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get list of pinned conversation IDs for the current user.
 
     Returns a list of conversation IDs that the user has pinned.
     """
     try:
-        pinned = (
-            db.query(PinnedConversation)
-            .filter(PinnedConversation.user_id == current_user.id)
+        result = await db.execute(
+            select(PinnedConversation)
+            .where(PinnedConversation.user_id == current_user.id)
             .order_by(PinnedConversation.pinned_at.desc())
-            .all()
         )
+        pinned = result.scalars().all()
 
         return {"success": True, "data": [p.conversation_id for p in pinned]}
 
@@ -295,10 +299,10 @@ def list_pinned_conversations(current_user: User = Depends(get_current_user), db
 
 
 @router.post("/dify/conversations/{conversation_id}/pin")
-def toggle_pin_conversation(
+async def toggle_pin_conversation(
     conversation_id: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Toggle pin status for a conversation.
@@ -307,39 +311,35 @@ def toggle_pin_conversation(
     If not pinned, it will be pinned to the top.
     """
     try:
-        # Check if already pinned
-        existing = (
-            db.query(PinnedConversation)
-            .filter(
+        result = await db.execute(
+            select(PinnedConversation).where(
                 PinnedConversation.user_id == current_user.id,
                 PinnedConversation.conversation_id == conversation_id,
             )
-            .first()
         )
+        existing = result.scalar_one_or_none()
 
         if existing:
-            # Unpin
-            db.delete(existing)
-            db.commit()
+            await db.delete(existing)
+            await db.commit()
             logger.info("User %s unpinned conversation %s", current_user.id, conversation_id)
             return {
                 "success": True,
                 "is_pinned": False,
                 "message": "Conversation unpinned",
             }
-        else:
-            # Pin
-            pinned = PinnedConversation(user_id=current_user.id, conversation_id=conversation_id)
-            db.add(pinned)
-            db.commit()
-            logger.info("User %s pinned conversation %s", current_user.id, conversation_id)
-            return {
-                "success": True,
-                "is_pinned": True,
-                "message": "Conversation pinned",
-            }
+
+        pinned = PinnedConversation(user_id=current_user.id, conversation_id=conversation_id)
+        db.add(pinned)
+        await db.commit()
+        logger.info("User %s pinned conversation %s", current_user.id, conversation_id)
+        return {
+            "success": True,
+            "is_pinned": True,
+            "message": "Conversation pinned",
+        }
 
     except Exception as e:
         logger.error("Failed to toggle pin for conversation: %s", e)
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail=str(e)) from e

@@ -12,16 +12,18 @@ All Rights Reserved
 Proprietary License
 """
 
-import asyncio
 import json
 import logging
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, WebSocket, WebSocketDisconnect
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.settings import config
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import User as UserModel
-from models.domain.workshop_chat import ChatChannel
+from models.domain.workshop_chat import ChatChannel, ChannelMember
 from routers.features.workshop_chat.dependencies import (
     get_effective_org_id,
     require_post_permission,
@@ -30,9 +32,6 @@ from services.features.workshop_chat import (
     channel_service,
     message_service,
     dm_service,
-)
-from services.features.workshop_chat.presence_last_seen import (
-    record_workshop_last_seen,
 )
 from services.features.workshop_chat.mention_resolution import (
     MentionResolutionError,
@@ -61,12 +60,18 @@ MAX_CHANNEL_IDS_SUBSCRIBE = 512
 
 async def _ws_channel_post_gate(
     websocket: WebSocket,
-    db,
+    db: AsyncSession,
     channel_id: int,
     user,
 ) -> ChatChannel | None:
     """Load channel, enforce membership (except announce), posting policy; else error."""
-    channel = channel_service.get_channel(db, channel_id)
+    result = await db.execute(
+        select(ChatChannel).where(
+            ChatChannel.id == channel_id,
+            ChatChannel.is_archived.is_(False),
+        )
+    )
+    channel = result.scalar_one_or_none()
     if not channel:
         await websocket.send_text(
             json.dumps(
@@ -78,7 +83,13 @@ async def _ws_channel_post_gate(
         )
         return None
     if channel.channel_type != "announce":
-        if not channel_service.is_channel_member(db, channel_id, user.id):
+        member_result = await db.execute(
+            select(ChannelMember).where(
+                ChannelMember.channel_id == channel_id,
+                ChannelMember.user_id == user.id,
+            )
+        )
+        if not member_result.scalar_one_or_none():
             await websocket.send_text(
                 json.dumps(
                     {
@@ -128,7 +139,7 @@ async def chat_websocket(websocket: WebSocket):
     if not config.FEATURE_WORKSHOP_CHAT:
         await websocket.close(code=4403, reason="Workshop Chat feature is disabled")
         return
-    user, error = authenticate_websocket_user(websocket)
+    user, error = await authenticate_websocket_user(websocket)
     if not user:
         try:
             record_ws_auth_failure()
@@ -217,15 +228,11 @@ async def chat_websocket(websocket: WebSocket):
             channel_ids=old_channels,
         )
         if presence_org is not None:
-
-            def _sync_record_last_seen():
-                db_local = SessionLocal()
-                try:
-                    record_workshop_last_seen(db_local, user.id)
-                finally:
-                    db_local.close()
-
-            await asyncio.to_thread(_sync_record_last_seen)
+            async with AsyncSessionLocal() as db_local:
+                row = (await db_local.execute(select(UserModel).where(UserModel.id == user.id))).scalar_one_or_none()
+                if row:
+                    row.workshop_last_seen_at = datetime.now(UTC)
+                    await db_local.commit()
 
 
 async def _handle_message(websocket: WebSocket, user, data: dict):
@@ -250,11 +257,11 @@ async def _handle_subscribe_channels(
     channel_ids = channel_ids[:MAX_CHANNEL_IDS_SUBSCRIBE]
     if not channel_ids:
         return
-    db = SessionLocal()
-    try:
-        valid_ids = [cid for cid in channel_ids if channel_service.is_channel_member(db, cid, user.id)]
-    finally:
-        db.close()
+    async with AsyncSessionLocal() as db:
+        valid_ids = []
+        for cid in channel_ids:
+            if await channel_service.is_channel_member(db, cid, user.id):
+                valid_ids.append(cid)
     chat_ws_manager.subscribe_channels(user.id, valid_ids)
 
 
@@ -307,19 +314,16 @@ async def _handle_channel_message(
     if not channel_id or not content:
         return
 
-    db = await asyncio.to_thread(SessionLocal)
-    try:
+    async with AsyncSessionLocal() as db:
         post_channel = await _ws_channel_post_gate(websocket, db, channel_id, user)
         if post_channel is None:
             return
         try:
-            result = await asyncio.to_thread(
-                lambda: message_service.send_message(
-                    db,
-                    channel_id,
-                    user.id,
-                    content,
-                )
+            result = await message_service.send_message(
+                db,
+                channel_id,
+                user.id,
+                content,
             )
         except MentionResolutionError as exc:
             await websocket.send_text(
@@ -351,8 +355,6 @@ async def _handle_channel_message(
             },
             exclude_user=user.id,
         )
-    finally:
-        await asyncio.to_thread(db.close)
 
 
 async def _handle_topic_message(
@@ -367,20 +369,17 @@ async def _handle_topic_message(
     if not channel_id or not topic_id or not content:
         return
 
-    db = await asyncio.to_thread(SessionLocal)
-    try:
+    async with AsyncSessionLocal() as db:
         post_channel = await _ws_channel_post_gate(websocket, db, channel_id, user)
         if post_channel is None:
             return
         try:
-            result = await asyncio.to_thread(
-                lambda: message_service.send_message(
-                    db,
-                    channel_id,
-                    user.id,
-                    content,
-                    topic_id=topic_id,
-                )
+            result = await message_service.send_message(
+                db,
+                channel_id,
+                user.id,
+                content,
+                topic_id=topic_id,
             )
         except MentionResolutionError as exc:
             await websocket.send_text(
@@ -414,8 +413,6 @@ async def _handle_topic_message(
             },
             exclude_user=user.id,
         )
-    finally:
-        await asyncio.to_thread(db.close)
 
 
 async def _handle_dm(
@@ -429,17 +426,9 @@ async def _handle_dm(
     if not recipient_id or not content:
         return
 
-    db = await asyncio.to_thread(SessionLocal)
-    try:
-        recipient = await asyncio.to_thread(
-            lambda: (
-                db.query(UserModel)
-                .filter(
-                    UserModel.id == recipient_id,
-                )
-                .first()
-            )
-        )
+    async with AsyncSessionLocal() as db:
+        recip_row = await db.execute(select(UserModel).where(UserModel.id == recipient_id))
+        recipient = recip_row.scalar_one_or_none()
         if not recipient:
             await websocket.send_text(
                 json.dumps(
@@ -450,15 +439,8 @@ async def _handle_dm(
                 )
             )
             return
-        sender = await asyncio.to_thread(
-            lambda: (
-                db.query(UserModel)
-                .filter(
-                    UserModel.id == user.id,
-                )
-                .first()
-            )
-        )
+        sender_row = await db.execute(select(UserModel).where(UserModel.id == user.id))
+        sender = sender_row.scalar_one_or_none()
         if not sender or not sender.organization_id or sender.organization_id != recipient.organization_id:
             await websocket.send_text(
                 json.dumps(
@@ -470,7 +452,12 @@ async def _handle_dm(
             )
             return
         try:
-            result = await asyncio.to_thread(lambda: dm_service.send(db, user.id, recipient_id, content))
+            dm_result = await dm_service.send(
+                db,
+                user.id,
+                recipient_id,
+                content,
+            )
         except MentionResolutionError as exc:
             await websocket.send_text(
                 json.dumps(
@@ -488,18 +475,16 @@ async def _handle_dm(
             user.id,
             {
                 "type": "dm",
-                "message": result,
+                "message": dm_result,
             },
         )
         await chat_ws_manager.send_to_user(
             recipient_id,
             {
                 "type": "dm",
-                "message": result,
+                "message": dm_result,
             },
         )
-    finally:
-        await asyncio.to_thread(db.close)
 
 
 async def _handle_typing_channel(
@@ -550,28 +535,12 @@ async def _handle_typing_dm(
     if not recipient_id:
         return
 
-    def _sync_check_same_org():
-        db_local = SessionLocal()
-        try:
-            recipient = (
-                db_local.query(UserModel)
-                .filter(
-                    UserModel.id == recipient_id,
-                )
-                .first()
-            )
-            sender = (
-                db_local.query(UserModel)
-                .filter(
-                    UserModel.id == user.id,
-                )
-                .first()
-            )
-            return recipient is not None and sender is not None and sender.organization_id == recipient.organization_id
-        finally:
-            db_local.close()
-
-    can_send = await asyncio.to_thread(_sync_check_same_org)
+    async with AsyncSessionLocal() as db:
+        recip_row = await db.execute(select(UserModel).where(UserModel.id == recipient_id))
+        recipient = recip_row.scalar_one_or_none()
+        sender_row = await db.execute(select(UserModel).where(UserModel.id == user.id))
+        sender = sender_row.scalar_one_or_none()
+        can_send = recipient is not None and sender is not None and sender.organization_id == recipient.organization_id
     if not can_send:
         return
     await chat_ws_manager.broadcast_typing_dm(
@@ -590,11 +559,13 @@ async def _handle_read_channel(
     channel_id = data.get("channel_id")
     msg_id = data.get("message_id")
     if channel_id and msg_id:
-        db = SessionLocal()
-        try:
-            message_service.update_last_read(db, channel_id, user.id, msg_id)
-        finally:
-            db.close()
+        async with AsyncSessionLocal() as db:
+            await message_service.update_last_read(
+                db,
+                channel_id,
+                user.id,
+                msg_id,
+            )
 
 
 async def _handle_presence(

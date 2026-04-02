@@ -15,9 +15,9 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from routers.features.workshop_chat.conditional_list_response import (
     workshop_list_json_response,
@@ -62,36 +62,33 @@ def _may_mutate_topic(
 async def list_topics(
     request: Request,
     channel_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """List topics (conversations) in a channel."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
-    etag = topics_list_etag(db, channel_id, current_user.id)
-    return workshop_list_json_response(
-        request,
-        etag,
-        lambda: topic_service.list_topics(
-            db,
-            channel_id,
-            user_id=current_user.id,
-        ),
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
+    etag = await topics_list_etag(db, channel_id, current_user.id)
+    topics_data = await topic_service.list_topics(
+        db,
+        channel_id,
+        user_id=current_user.id,
     )
+    return workshop_list_json_response(request, etag, lambda: topics_data)
 
 
 @router.post("/channels/{channel_id}/topics", status_code=status.HTTP_201_CREATED)
 async def create_topic(
     channel_id: int,
     body: CreateTopicRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Create a topic (channel members; announce channel is admin-only)."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership(db, channel_id, current_user.id)
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership(db, channel_id, current_user.id)
     require_post_permission(channel, current_user)
-    result = topic_service.create_topic(
+    result = await topic_service.create_topic(
         db,
         channel_id,
         body.title,
@@ -113,20 +110,20 @@ async def create_topic(
 async def get_topic_detail(
     channel_id: int,
     topic_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Get topic detail with recent messages."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
-    topic = topic_service.get_topic(db, topic_id)
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
+    topic = await topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
-    topic_data = topic_service.list_topics(db, channel_id)
+    topic_data = await topic_service.list_topics(db, channel_id)
     match = next((t for t in topic_data if t["id"] == topic_id), None)
     if not match:
         raise HTTPException(status_code=404, detail="Topic not found")
-    recent_msgs = message_service.get_topic_messages(
+    recent_msgs = await message_service.get_topic_messages(
         db,
         topic_id,
         channel_id,
@@ -141,19 +138,19 @@ async def update_topic(
     channel_id: int,
     topic_id: int,
     body: UpdateTopicRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Update topic (creator, channel creator, or moderator)."""
-    channel = access_channel(db, channel_id, current_user)
-    topic = topic_service.get_topic(db, topic_id)
+    channel = await access_channel(db, channel_id, current_user)
+    topic = await topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
     if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
     if not can_moderate_workshop_channel(current_user, channel):
-        require_membership(db, channel_id, current_user.id)
-    result = topic_service.update_topic(
+        await require_membership(db, channel_id, current_user.id)
+    result = await topic_service.update_topic(
         db,
         topic_id,
         title=body.title,
@@ -179,20 +176,20 @@ async def move_topic(
     channel_id: int,
     topic_id: int,
     body: MoveTopicRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Move a topic to another channel (creator, channel owner, or moderator)."""
-    channel = access_channel(db, channel_id, current_user)
-    topic = topic_service.get_topic(db, topic_id)
+    channel = await access_channel(db, channel_id, current_user)
+    topic = await topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
     if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
     if not can_moderate_workshop_channel(current_user, channel):
-        require_membership(db, channel_id, current_user.id)
-    access_channel(db, body.target_channel_id, current_user)
-    result = topic_service.move_topic(db, topic_id, body.target_channel_id)
+        await require_membership(db, channel_id, current_user.id)
+    await access_channel(db, body.target_channel_id, current_user)
+    result = await topic_service.move_topic(db, topic_id, body.target_channel_id)
     if result:
         await chat_ws_manager.broadcast_to_channel(
             channel_id,
@@ -214,19 +211,19 @@ async def rename_topic(
     channel_id: int,
     topic_id: int,
     body: RenameTopicRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Rename a topic (creator, channel owner, or moderator)."""
-    channel = access_channel(db, channel_id, current_user)
-    topic = topic_service.get_topic(db, topic_id)
+    channel = await access_channel(db, channel_id, current_user)
+    topic = await topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
     if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
     if not can_moderate_workshop_channel(current_user, channel):
-        require_membership(db, channel_id, current_user.id)
-    result = topic_service.rename_topic(db, topic_id, body.title)
+        await require_membership(db, channel_id, current_user.id)
+    result = await topic_service.rename_topic(db, topic_id, body.title)
     if result:
         await chat_ws_manager.broadcast_to_channel(
             channel_id,
@@ -246,19 +243,19 @@ async def rename_topic(
 async def delete_topic(
     channel_id: int,
     topic_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Delete a topic (creator, channel owner, or moderator)."""
-    channel = access_channel(db, channel_id, current_user)
-    topic = topic_service.get_topic(db, topic_id)
+    channel = await access_channel(db, channel_id, current_user)
+    topic = await topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
     if not _may_mutate_topic(current_user, channel, topic):
         raise HTTPException(status_code=403, detail="Permission denied")
     if not can_moderate_workshop_channel(current_user, channel):
-        require_membership(db, channel_id, current_user.id)
-    topic_service.delete_topic(db, topic_id)
+        await require_membership(db, channel_id, current_user.id)
+    await topic_service.delete_topic(db, topic_id)
     await chat_ws_manager.broadcast_to_channel(
         channel_id,
         {
@@ -277,13 +274,13 @@ async def delete_topic(
 async def mark_topic_read(
     channel_id: int,
     topic_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Mark a topic as read for the current user."""
-    channel = access_channel(db, channel_id, current_user)
-    require_membership_unless_announce(db, channel, current_user.id)
-    return topic_service.mark_topic_read(db, topic_id, current_user.id)
+    channel = await access_channel(db, channel_id, current_user)
+    await require_membership_unless_announce(db, channel, current_user.id)
+    return await topic_service.mark_topic_read(db, topic_id, current_user.id)
 
 
 # ── Visibility preference ────────────────────────────────────────
@@ -294,17 +291,17 @@ async def set_topic_visibility(
     channel_id: int,
     topic_id: int,
     body: SetTopicVisibilityRequest,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Set user's visibility preference for a topic (mute/follow/inherit)."""
-    access_channel(db, channel_id, current_user)
-    require_membership(db, channel_id, current_user.id)
-    topic = topic_service.get_topic(db, topic_id)
+    await access_channel(db, channel_id, current_user)
+    await require_membership(db, channel_id, current_user.id)
+    topic = await topic_service.get_topic(db, topic_id)
     if not topic or topic.channel_id != channel_id:
         raise HTTPException(status_code=404, detail="Topic not found")
     try:
-        return topic_service.set_visibility(
+        return await topic_service.set_visibility(
             db,
             topic_id,
             current_user.id,

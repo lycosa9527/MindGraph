@@ -89,7 +89,7 @@ class GroupServiceMixin(GeweServiceBase):
             members = response.get("data", {}).get("members", [])
             if members:
                 try:
-                    saved_count = self._group_member_db.save_group_members(
+                    saved_count = await self._group_member_db.save_group_members(
                         app_id=app_id, group_wxid=chatroom_id, members=members
                     )
                     logger.info("Cached %d members for group %s", saved_count, chatroom_id)
@@ -98,7 +98,7 @@ class GroupServiceMixin(GeweServiceBase):
 
         return response
 
-    def get_cached_group_members(self, app_id: str, group_wxid: str) -> List[Dict[str, Any]]:
+    async def get_cached_group_members(self, app_id: str, group_wxid: str) -> List[Dict[str, Any]]:
         """
         Get group members from cache.
 
@@ -109,9 +109,9 @@ class GroupServiceMixin(GeweServiceBase):
         Returns:
             List of member dictionaries
         """
-        return self._group_member_db.get_group_members(app_id=app_id, group_wxid=group_wxid)
+        return await self._group_member_db.get_group_members(app_id=app_id, group_wxid=group_wxid)
 
-    def get_cached_group_member(self, app_id: str, group_wxid: str, member_wxid: str) -> Optional[Dict[str, Any]]:
+    async def get_cached_group_member(self, app_id: str, group_wxid: str, member_wxid: str) -> Optional[Dict[str, Any]]:
         """
         Get single group member from cache.
 
@@ -123,7 +123,9 @@ class GroupServiceMixin(GeweServiceBase):
         Returns:
             Member dictionary or None if not cached
         """
-        return self._group_member_db.get_group_member(app_id=app_id, group_wxid=group_wxid, member_wxid=member_wxid)
+        return await self._group_member_db.get_group_member(
+            app_id=app_id, group_wxid=group_wxid, member_wxid=member_wxid
+        )
 
     async def get_chatroom_member_detail(self, app_id: str, chatroom_id: str, wxid: str) -> Dict[str, Any]:
         """Get group member detail."""

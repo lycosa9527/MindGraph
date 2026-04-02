@@ -17,9 +17,9 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, Query, File, UploadFile, status
 from fastapi.responses import FileResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from services.library import LibraryService
 from services.library.image_path_resolver import resolve_page_image
@@ -87,13 +87,13 @@ def _resolve_page_image_from_cache(
     return resolve_page_image(pages_dir, page_number), cached_metadata.get("title", "Document")
 
 
-def _resolve_page_image_from_db(
+async def _resolve_page_image_from_db(
     service: LibraryService,
     document_id: int,
     page_number: int,
 ) -> tuple:
     """Resolve page image path and title via a database query."""
-    document = service.get_document(document_id, use_cache=True)
+    document = await service.get_document(document_id, use_cache=True)
     if not document:
         raise DocumentNotFoundError(document_id)
     if not document.use_images:
@@ -165,7 +165,7 @@ async def list_documents(
     page_size: int = Query(20, ge=1, le=100),
     search: Optional[str] = Query(None),
     _current_user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     List all library documents.
@@ -174,7 +174,7 @@ async def list_documents(
     Public endpoint - authentication optional.
     """
     service = LibraryService(db)
-    result = service.get_documents(page=page, page_size=page_size, search=search)
+    result = await service.get_documents(page=page, page_size=page_size, search=search)
     return result
 
 
@@ -182,14 +182,14 @@ async def list_documents(
 async def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get a single library document.
     Requires authentication.
     """
     service = LibraryService(db)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         error = DocumentNotFoundError(document_id)
@@ -222,7 +222,7 @@ async def get_document_page_image(
     document_id: int,
     page_number: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Serve page image for image-based documents.
@@ -254,7 +254,7 @@ async def get_document_page_image(
                 service, cached_metadata, document_id, page_number
             )
         else:
-            image_path, document_title = _resolve_page_image_from_db(service, document_id, page_number)
+            image_path, document_title = await _resolve_page_image_from_db(service, document_id, page_number)
 
         if not image_path or not image_path.exists():
             raise PageImageNotFoundError(document_id, page_number, str(image_path) if image_path else None)
@@ -306,7 +306,7 @@ async def get_document_page_image(
 async def register_book(
     data: BookRegisterRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Register a book folder as a library document (admin only).
@@ -360,7 +360,9 @@ async def register_book(
     folder_path = resolved_path
 
     try:
-        document = service.register_book_folder(folder_path=folder_path, title=data.title, description=data.description)
+        document = await service.register_book_folder(
+            folder_path=folder_path, title=data.title, description=data.description
+        )
 
         return serialize_document(document)
 
@@ -372,7 +374,7 @@ async def register_book(
 async def register_books_batch(
     data: BookRegisterBatchRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Register multiple book folders at once (admin only).
@@ -433,7 +435,7 @@ async def register_books_batch(
 
             folder_path = resolved_path
 
-            document = service.register_book_folder(folder_path=folder_path)
+            document = await service.register_book_folder(folder_path=folder_path)
             results["successful"].append(
                 {
                     "folder_path": folder_path_str,
@@ -467,13 +469,13 @@ async def update_document(
     document_id: int,
     data: DocumentUpdate,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Update document metadata (admin only, for future admin panel).
     """
     service = LibraryService(db, user_id=current_user.id)
-    document = service.update_document(document_id=document_id, title=data.title, description=data.description)
+    document = await service.update_document(document_id=document_id, title=data.title, description=data.description)
 
     if not document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -491,13 +493,13 @@ async def upload_cover_image(
     document_id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Upload/update cover image (admin only, for future admin panel).
     """
     service = LibraryService(db, user_id=current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -532,7 +534,7 @@ async def upload_cover_image(
         with open(cover_path, "wb") as f:
             f.write(content)
 
-        document = service.update_document(document_id=document_id, cover_image_path=str(cover_path))
+        document = await service.update_document(document_id=document_id, cover_image_path=str(cover_path))
 
         if not document:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
@@ -558,7 +560,7 @@ async def upload_cover_image(
 async def get_cover_image(
     document_id: int,
     _current_user: Optional[User] = Depends(get_optional_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Serve cover image.
@@ -568,7 +570,7 @@ async def get_cover_image(
     Public endpoint - authentication optional.
     """
     service = LibraryService(db)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(
@@ -599,13 +601,13 @@ async def get_cover_image(
 async def delete_document(
     document_id: int,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a document (admin only, for future admin panel).
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = service.delete_document(document_id)
+    deleted = await service.delete_document(document_id)
 
     if not deleted:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")

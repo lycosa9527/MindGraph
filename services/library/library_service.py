@@ -15,7 +15,7 @@ import os
 from pathlib import Path
 from typing import Optional
 
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from services.library.library_document_mixin import LibraryDocumentMixin
 from services.library.library_danmaku_mixin import LibraryDanmakuMixin
@@ -34,7 +34,7 @@ class LibraryService(LibraryDocumentMixin, LibraryDanmakuMixin, LibraryBookmarkM
     Documents are image-based (pages exported as images).
     """
 
-    def __init__(self, db: Session, user_id: Optional[int] = None):
+    def __init__(self, db: AsyncSession, user_id: Optional[int] = None):
         """
         Initialize service.
 

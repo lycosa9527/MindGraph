@@ -17,9 +17,9 @@ import os
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
 from pydantic import BaseModel, Field
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.gewe_responses import (
     GeweLoginQrCodeResponse,
@@ -181,7 +181,7 @@ class GeweSavePreferencesRequest(BaseModel):
 async def get_gewe_login_qrcode(
     data: GeweLoginQrCodeRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get login QR code for WeChat (admin only).
@@ -231,7 +231,7 @@ async def get_gewe_login_qrcode(
             )
             try:
                 # Clear saved login info since device doesn't exist
-                service.reset_device_id()
+                await service.reset_device_id()
 
                 # Retry with empty app_id
                 result = await service.get_login_qr_code(
@@ -273,7 +273,7 @@ async def get_gewe_login_qrcode(
 async def check_gewe_login(
     data: GeweCheckLoginRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Check login status (admin only).
@@ -307,7 +307,7 @@ async def check_gewe_login(
 async def set_gewe_callback(
     data: GeweSetCallbackRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Set callback URL for receiving messages (admin only).
@@ -335,7 +335,7 @@ async def set_gewe_callback(
 async def send_gewe_message(
     data: GeweSendMessageRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Send text message via WeChat (admin only).
@@ -364,7 +364,7 @@ async def send_gewe_message(
 async def get_gewe_contacts(
     data: GeweGetContactsRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get contacts list (admin only).
@@ -392,7 +392,7 @@ async def get_gewe_contacts(
 async def get_gewe_contacts_info(
     data: GeweGetContactsInfoRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get contacts info (admin only).
@@ -416,13 +416,13 @@ async def get_gewe_contacts_info(
 
 
 @router.get("/login/info")
-async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)):
     """
     Get saved login info (app_id and wxid) (admin only).
     """
     service = GeweService(db)
     try:
-        login_info = service.get_saved_login_info()
+        login_info = await service.get_saved_login_info()
         if login_info:
             return login_info
         return {"app_id": None, "wxid": None}
@@ -437,7 +437,9 @@ async def get_gewe_login_info(_current_user: User = Depends(require_admin), db: 
 
 
 @router.get("/config/status")
-async def get_gewe_config_status(_current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+async def get_gewe_config_status(
+    _current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)
+):
     """
     Get Gewe configuration status (admin only).
     Returns token status and masked token value.
@@ -455,7 +457,7 @@ async def get_gewe_config_status(_current_user: User = Depends(require_admin), d
     app_id_masked = ""
     service = GeweService(db)
     try:
-        login_info = service.get_saved_login_info()
+        login_info = await service.get_saved_login_info()
         if login_info:
             app_id_value = login_info.get("app_id")
             if app_id_value:
@@ -481,14 +483,14 @@ async def get_gewe_config_status(_current_user: User = Depends(require_admin), d
 async def save_gewe_preferences(
     data: GeweSavePreferencesRequest,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Save user preferences (region_id and device_type) (admin only).
     """
     service = GeweService(db)
     try:
-        service.save_preferences(
+        await service.save_preferences(
             region_id=data.region_id,
             device_type=data.device_type,
             auto_sliding=data.auto_sliding,
@@ -505,13 +507,13 @@ async def save_gewe_preferences(
 
 
 @router.get("/preferences")
-async def get_gewe_preferences(_current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+async def get_gewe_preferences(_current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)):
     """
     Get user preferences (region_id and device_type) (admin only).
     """
     service = GeweService(db)
     try:
-        preferences = service.get_preferences()
+        preferences = await service.get_preferences()
         return preferences
     except Exception as e:
         logger.error("Error getting preferences: %s", e, exc_info=True)
@@ -524,14 +526,14 @@ async def get_gewe_preferences(_current_user: User = Depends(require_admin), db:
 
 
 @router.post("/device/reset")
-async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db: AsyncSession = Depends(get_async_db)):
     """
     Reset device ID by clearing saved login info (admin only).
     This will allow creating a new device on next login.
     """
     service = GeweService(db)
     try:
-        service.reset_device_id()
+        await service.reset_device_id()
         return {"status": "success", "message": "Device ID reset successfully"}
     except Exception as e:
         logger.error("Error resetting device ID: %s", e, exc_info=True)
@@ -544,7 +546,7 @@ async def reset_gewe_device_id(_current_user: User = Depends(require_admin), db:
 
 
 @router.post("/webhook", response_model=dict)
-async def gewe_webhook(request: Request, db: Session = Depends(get_db)):
+async def gewe_webhook(request: Request, db: AsyncSession = Depends(get_async_db)):
     """
     Webhook endpoint to receive messages from Gewe.
 

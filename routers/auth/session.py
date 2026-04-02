@@ -16,7 +16,7 @@ Proprietary License
 import hashlib
 import logging
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from jose import jwt, JWTError
@@ -231,7 +231,7 @@ async def refresh_token(request: Request, response: Response):
         )
 
     # Get user from database/cache
-    user = user_cache.get_by_id(user_id)
+    user = await user_cache.get_by_id(user_id)
     if not user:
         logger.warning(
             "[TokenAudit] Refresh failed - user not found: user=%s, ip=%s",
@@ -288,7 +288,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         org = None
         try:
             if current_user.organization_id:
-                org = org_cache.get_by_id(current_user.organization_id)
+                org = await org_cache.get_by_id(current_user.organization_id)
         except Exception as org_error:
             logger.warning("Error getting organization from cache: %s", org_error, exc_info=True)
             # Continue without org - not critical
@@ -370,7 +370,7 @@ async def get_session_status(
             return {
                 "status": "invalidated",
                 "message": "Session invalidated",
-                "timestamp": datetime.utcnow().isoformat(),
+                "timestamp": datetime.now(tz=UTC).isoformat(),
             }
 
         # Session is already validated by get_current_user dependency
@@ -391,7 +391,7 @@ async def get_session_status(
             return {
                 "status": "invalidated",
                 "message": "Session ended: maximum device limit exceeded",
-                "timestamp": notification.get("timestamp", datetime.utcnow().isoformat()),
+                "timestamp": notification.get("timestamp", datetime.now(tz=UTC).isoformat()),
                 "ip_address": notification.get("ip_address", "unknown"),
             }
 

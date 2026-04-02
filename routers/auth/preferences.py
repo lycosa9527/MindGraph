@@ -9,9 +9,10 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.requests.requests_auth import LanguagePreferencesUpdate
 from services.redis.cache.redis_user_cache import user_cache
@@ -23,10 +24,10 @@ router = APIRouter()
 
 
 @router.patch("/language-preferences")
-def update_language_preferences(
+async def update_language_preferences(
     body: LanguagePreferencesUpdate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Persist interface language, prompt output language, and/or UI version
@@ -38,7 +39,8 @@ def update_language_preferences(
             detail="Provide at least one of ui_language, prompt_language, or ui_version",
         )
 
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -53,8 +55,8 @@ def update_language_preferences(
         user.ui_version = body.ui_version
 
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as exc:
         logger.error(
             "Failed to save language preferences for user %s: %s",
@@ -62,7 +64,7 @@ def update_language_preferences(
             exc,
             exc_info=True,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to save preferences",

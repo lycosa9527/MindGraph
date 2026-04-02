@@ -1,4 +1,4 @@
-﻿"""
+"""
 Voice Agent Prompts
 
 This module contains prompts used by the voice agent for:
@@ -140,7 +140,6 @@ PARAGRAPH_PROCESSING_ZH = """你是一个智能图表助手。老师提供了一
 
 # Export prompts dictionary following the pattern used in other prompt files
 VOICE_AGENT_PROMPTS = {
-    'paragraph_processing_en': PARAGRAPH_PROCESSING_EN,
-    'paragraph_processing_zh': PARAGRAPH_PROCESSING_ZH,
+    "paragraph_processing_en": PARAGRAPH_PROCESSING_EN,
+    "paragraph_processing_zh": PARAGRAPH_PROCESSING_ZH,
 }
-

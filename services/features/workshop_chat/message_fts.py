@@ -10,7 +10,6 @@ from __future__ import annotations
 from typing import Any, Optional, Tuple
 
 from sqlalchemy import func
-from sqlalchemy.orm import Session
 from sqlalchemy.sql.elements import ColumnElement
 
 from services.features.workshop_chat.message_search_normalize import (
@@ -18,9 +17,9 @@ from services.features.workshop_chat.message_search_normalize import (
 )
 
 
-def engine_is_postgresql(session: Session) -> bool:
+def engine_is_postgresql(session: Any) -> bool:
     """True when the session is bound to PostgreSQL."""
-    bind = session.get_bind()
+    bind = session.bind
     return bind is not None and bind.dialect.name == "postgresql"
 
 
@@ -33,7 +32,7 @@ def normalized_fts_query(text: str) -> Optional[str]:
 
 
 def channel_content_match(
-    session: Session,
+    session: Any,
     content_column: Any,
     text: str,
     limit: int,
@@ -64,7 +63,7 @@ def channel_content_match(
 
 
 def dm_content_match(
-    session: Session,
+    session: Any,
     content_column: Any,
     text: str,
     limit: int,

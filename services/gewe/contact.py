@@ -44,14 +44,14 @@ class ContactServiceMixin(GeweServiceBase):
             contacts = response.get("data", {}).get("contacts", [])
             if contacts:
                 try:
-                    saved_count = self._contact_db.save_contacts_batch(app_id=app_id, contacts=contacts)
+                    saved_count = await self._contact_db.save_contacts_batch(app_id=app_id, contacts=contacts)
                     logger.info("Cached %d contacts for app %s", saved_count, app_id)
                 except Exception as e:
                     logger.warning("Failed to cache contacts: %s", e)
 
         return response
 
-    def get_cached_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:
+    async def get_cached_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:
         """
         Get contact from cache.
 
@@ -62,9 +62,9 @@ class ContactServiceMixin(GeweServiceBase):
         Returns:
             Contact dictionary or None if not cached
         """
-        return self._contact_db.get_contact(app_id=app_id, wxid=wxid)
+        return await self._contact_db.get_contact(app_id=app_id, wxid=wxid)
 
-    def get_cached_contacts(
+    async def get_cached_contacts(
         self,
         app_id: str,
         contact_type: Optional[str] = None,
@@ -83,7 +83,7 @@ class ContactServiceMixin(GeweServiceBase):
         Returns:
             List of contact dictionaries
         """
-        return self._contact_db.get_contacts(app_id=app_id, contact_type=contact_type, offset=offset, limit=limit)
+        return await self._contact_db.get_contacts(app_id=app_id, contact_type=contact_type, offset=offset, limit=limit)
 
     async def get_contacts_info(self, app_id: str, wxids: list) -> Dict[str, Any]:
         """Get brief info for contacts."""

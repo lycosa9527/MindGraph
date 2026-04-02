@@ -13,7 +13,7 @@ import logging
 import os
 import subprocess
 import sys
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
@@ -144,7 +144,7 @@ def _build_manifest(
     """Build a manifest dict for a pg_dump backup file."""
     manifest: Dict[str, Any] = {
         "dump_file": filename,
-        "timestamp": datetime.utcnow().isoformat(),
+        "timestamp": datetime.now(tz=UTC).isoformat(),
         "size_bytes": dump_path.stat().st_size,
     }
     if pg_engine is None:
@@ -191,7 +191,7 @@ def export_postgres_dump(
         return {"success": False, "error": "pg_dump not found on server"}
 
     backup_dir.mkdir(parents=True, exist_ok=True)
-    timestamp = datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
     filename = f"{DUMP_PREFIX}.{timestamp}{DUMP_EXT}"
     dump_path = backup_dir / filename
 

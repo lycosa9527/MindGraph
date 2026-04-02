@@ -1,11 +1,10 @@
 """
 Database Migration Utilities
 
-This package contains utilities for database migrations, including SQLite to PostgreSQL migration tools.
+PostgreSQL schema management is now handled by Alembic (see ``alembic/``).
+This package retains SQLite and SQLite-to-PostgreSQL data migration helpers.
 """
 
-# Re-export from subfolders for backward compatibility
-from .postgresql import run_migrations, check_database_status, verify_migration_results
 from .sqlite_to_postgresql import migrate_sqlite_to_postgresql
 from .sqlite import (
     backup_sqlite_database,
@@ -22,9 +21,6 @@ from .sqlite import (
 )
 
 __all__ = [
-    "run_migrations",
-    "check_database_status",
-    "verify_migration_results",
     "migrate_sqlite_to_postgresql",
     "backup_sqlite_database",
     "move_sqlite_database_to_backup",

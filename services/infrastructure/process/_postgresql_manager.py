@@ -299,11 +299,13 @@ def _wait_for_postgresql_ready(port: str) -> str:
 
 
 def _create_database_and_user(superuser_name: str, port: str, user: str, password: str, database: str) -> None:
-    """Create database and user if they don't exist."""
-    try:
-        if sql is None:
-            raise RuntimeError("psycopg2.sql not available")
+    """Create database and user if they don't exist, granting CREATEDB."""
+    if sql is None:
+        logger.warning("[PGManager] psycopg2.sql not available — skipping DB provisioning")
+        return
 
+    conn = None
+    try:
         conn = psycopg2.connect(
             f"postgresql://{superuser_name}@127.0.0.1:{port}/postgres",
             connect_timeout=5,
@@ -311,50 +313,110 @@ def _create_database_and_user(superuser_name: str, port: str, user: str, passwor
         conn.autocommit = True
         cursor = conn.cursor()
 
-        # Ensure "postgres" role exists (required for PostgreSQL)
+        # Ensure "postgres" role exists
         cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = 'postgres'")
         if not cursor.fetchone():
             try:
-                # Create postgres role as superuser
                 cursor.execute("CREATE ROLE postgres WITH SUPERUSER CREATEDB CREATEROLE LOGIN")
-                try:
-                    print("[POSTGRESQL] Created missing 'postgres' role")
-                except (ValueError, OSError):
-                    pass
+                logger.info("[PGManager] Created missing 'postgres' role")
             except Exception as role_error:
-                # If we can't create postgres role, log warning but continue
-                try:
-                    print(f"[WARNING] Could not create 'postgres' role: {role_error}")
-                except (ValueError, OSError):
-                    pass
+                logger.warning("[PGManager] Could not create 'postgres' role: %s", role_error)
 
         cursor.execute("SELECT 1 FROM pg_roles WHERE rolname = %s", (user,))
         if not cursor.fetchone():
-            create_user_query = sql.SQL("CREATE USER {} WITH PASSWORD %s").format(sql.Identifier(user))
-            cursor.execute(create_user_query, (password,))
-            try:
-                print(f"[POSTGRESQL] Created user: {user}")
-            except (ValueError, OSError):
-                pass
+            cursor.execute(
+                sql.SQL("CREATE USER {} WITH PASSWORD %s CREATEDB").format(sql.Identifier(user)),
+                (password,),
+            )
+            logger.info("[PGManager] Created user: %s", user)
+        else:
+            cursor.execute(sql.SQL("ALTER USER {} CREATEDB").format(sql.Identifier(user)))
+            logger.info("[PGManager] Granted CREATEDB to existing user: %s", user)
 
         cursor.execute("SELECT 1 FROM pg_database WHERE datname = %s", (database,))
         if not cursor.fetchone():
-            create_db_query = sql.SQL("CREATE DATABASE {} OWNER {}").format(
-                sql.Identifier(database), sql.Identifier(user)
+            cursor.execute(
+                sql.SQL("CREATE DATABASE {} OWNER {}").format(sql.Identifier(database), sql.Identifier(user))
             )
-            cursor.execute(create_db_query)
-            try:
-                print(f"[POSTGRESQL] Created database: {database}")
-            except (ValueError, OSError):
-                pass
+            logger.info("[PGManager] Created database: %s", database)
 
         cursor.close()
-        conn.close()
-    except Exception as e:
-        try:
-            print(f"[WARNING] Failed to create database/user (may already exist): {e}")
-        except (ValueError, OSError):
-            pass
+    except Exception as exc:
+        logger.warning(
+            "[PGManager] DB provisioning failed (superuser='%s'): %s",
+            superuser_name,
+            exc,
+        )
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _app_user_has_createdb(port: str, user: str, password: str, database: str) -> bool:
+    """Return True if the app user already has CREATEDB privilege."""
+    conn = None
+    try:
+        conn = psycopg2.connect(
+            f"postgresql://{user}:{password}@127.0.0.1:{port}/{database}",
+            connect_timeout=5,
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT rolcreatedb FROM pg_roles WHERE rolname = current_user")
+        row = cursor.fetchone()
+        cursor.close()
+        return bool(row and row[0])
+    except Exception:
+        return False
+    finally:
+        if conn is not None:
+            try:
+                conn.close()
+            except Exception:
+                pass
+
+
+def _ensure_createdb_privilege(port: str, user: str, password: str, database: str) -> None:
+    """Ensure the app user has CREATEDB when PostgreSQL is already running.
+
+    Skipped entirely once the privilege is granted (it is permanent).
+    On first run: writes trust pg_hba.conf, reloads via SIGHUP, then
+    grants CREATEDB through the postgres superuser (WSL / Ubuntu only).
+    """
+    if _app_user_has_createdb(port, user, password, database):
+        return
+
+    logger.info("[PGManager] %s lacks CREATEDB — granting now (first-time only)", user)
+    data_path, _ = resolve_data_path()
+    create_pg_hba_conf(data_path)
+
+    postmaster_pid_file = data_path / "postmaster.pid"
+    if not postmaster_pid_file.exists():
+        logger.warning(
+            "[PGManager] postmaster.pid not found in %s — cannot auto-grant CREATEDB. "
+            'Run manually in WSL/Ubuntu: sudo -u postgres psql -c "ALTER USER %s CREATEDB;"',
+            data_path,
+            user,
+        )
+        return
+
+    try:
+        with open(postmaster_pid_file, "r", encoding="utf-8") as pid_f:
+            pid = int(pid_f.readline().strip())
+        sighup = getattr(signal, "SIGHUP", None)
+        if sighup is None:
+            logger.warning("[PGManager] SIGHUP not available on this platform; skipping pg_hba.conf reload")
+            return
+        os.kill(pid, sighup)
+        time.sleep(0.5)
+        logger.debug("[PGManager] Reloaded pg_hba.conf (SIGHUP → PID %d)", pid)
+    except Exception as exc:
+        logger.warning("[PGManager] pg_hba.conf reload failed: %s", exc)
+        return
+
+    _create_database_and_user("postgres", port, user, password, database)
 
 
 def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
@@ -392,6 +454,7 @@ def start_postgresql_server(server_state) -> Optional[subprocess.Popen[bytes]]:
     # Check if PostgreSQL is already running
     existing = _check_existing_postgresql(port, port_int, db_url)
     if existing is True:
+        _ensure_createdb_privilege(port, user, password, database)
         return None
 
     # Check systemd service

@@ -14,9 +14,9 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from services.features.workshop_chat import file_service
 from utils.auth import get_current_user
@@ -31,7 +31,7 @@ async def upload_file(
     file: UploadFile = File(...),
     message_id: int = 0,
     dm_id: int = 0,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     current_user: User = Depends(get_current_user),
 ):
     """Upload a file attachment.
@@ -59,11 +59,11 @@ async def upload_file(
 @router.get("/attachments/{attachment_id}")
 async def get_attachment(
     attachment_id: int,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _current_user: User = Depends(get_current_user),
 ):
     """Get attachment metadata by ID."""
-    att = file_service.get_attachment(db, attachment_id)
+    att = await file_service.get_attachment(db, attachment_id)
     if not att:
         raise HTTPException(status_code=404, detail="Attachment not found")
     return att

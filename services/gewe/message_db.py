@@ -11,12 +11,13 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import Optional, List
 import logging
 
 from sqlalchemy import select, delete
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.gewe_message import GeweMessage
 from services.redis.redis_client import RedisOperations
@@ -32,7 +33,7 @@ class GeweMessageDB:
     Similar to xxxbot-pad's MessageDB pattern.
     """
 
-    def __init__(self, db: Session):
+    def __init__(self, db: AsyncSession):
         """
         Initialize message database service.
 
@@ -42,7 +43,7 @@ class GeweMessageDB:
         self.db = db
         self._redis = RedisOperations()
 
-    def save_message(
+    async def save_message(
         self,
         app_id: str,
         msg_id: int,
@@ -83,10 +84,10 @@ class GeweMessageDB:
                 msg_type=msg_type,
                 content=content or "",
                 is_group=is_group,
-                timestamp=datetime.utcnow(),
+                timestamp=datetime.now(UTC),
             )
             self.db.add(message)
-            self.db.commit()
+            await self.db.commit()
 
             # Mark as processed in Redis (24 hour TTL)
             self._redis.set_with_ttl(message_key, "1", 86400)
@@ -94,10 +95,10 @@ class GeweMessageDB:
             return True
         except Exception as e:
             logger.error("Failed to save message: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
             return False
 
-    def get_messages(
+    async def get_messages(
         self,
         app_id: str,
         start_time: Optional[datetime] = None,
@@ -145,13 +146,13 @@ class GeweMessageDB:
             if is_group is not None:
                 query = query.where(GeweMessage.is_group == is_group)
 
-            result = self.db.execute(query)
+            result = await self.db.execute(query)
             return list(result.scalars().all())
         except Exception as e:
             logger.error("Failed to query messages: %s", e, exc_info=True)
             return []
 
-    def cleanup_old_messages(self, days: int = 3) -> int:
+    async def cleanup_old_messages(self, days: int = 3) -> int:
         """
         Clean up messages older than specified days.
 
@@ -164,18 +165,18 @@ class GeweMessageDB:
             Number of messages deleted
         """
         try:
-            cutoff_time = datetime.utcnow() - timedelta(days=days)
-            result = self.db.execute(delete(GeweMessage).where(GeweMessage.timestamp < cutoff_time))
-            self.db.commit()
+            cutoff_time = datetime.now(UTC) - timedelta(days=days)
+            result = await self.db.execute(delete(GeweMessage).where(GeweMessage.timestamp < cutoff_time))
+            await self.db.commit()
             deleted_count = result.rowcount
             logger.info("Cleaned up %d old messages (older than %d days)", deleted_count, days)
             return deleted_count
         except Exception as e:
             logger.error("Failed to cleanup old messages: %s", e, exc_info=True)
-            self.db.rollback()
+            await self.db.rollback()
             return 0
 
-    def get_message_count(
+    async def get_message_count(
         self,
         app_id: str,
         start_time: Optional[datetime] = None,
@@ -193,14 +194,14 @@ class GeweMessageDB:
             Message count
         """
         try:
-            query = select(GeweMessage).where(GeweMessage.app_id == app_id)
+            query = select(sql_count()).select_from(GeweMessage).where(GeweMessage.app_id == app_id)
             if start_time:
                 query = query.where(GeweMessage.timestamp >= start_time)
             if end_time:
                 query = query.where(GeweMessage.timestamp <= end_time)
 
-            result = self.db.execute(query)
-            return len(list(result.scalars().all()))
+            result = await self.db.execute(query)
+            return result.scalar() or 0
         except Exception as e:
             logger.error("Failed to get message count: %s", e, exc_info=True)
             return 0

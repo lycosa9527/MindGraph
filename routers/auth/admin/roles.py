@@ -12,9 +12,11 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
@@ -32,8 +34,8 @@ VALID_ROLES = frozenset({"user", "manager", "admin"})
 
 
 @router.get("/admin/admins", dependencies=[Depends(require_admin)])
-def list_admins(
-    db: Session = Depends(get_db),
+async def list_admins(
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     List all users with admin role in database (ADMIN ONLY).
@@ -41,13 +43,15 @@ def list_admins(
     Returns users where role='admin', plus env-configured ADMIN_PHONES
     as read-only reference.
     """
-    admin_users = db.query(User).filter(User.role.in_(["admin", "superadmin"])).order_by(User.created_at.asc()).all()
+    admin_stmt = select(User).where(User.role.in_(["admin", "superadmin"])).order_by(User.created_at.asc())
+    admin_users = (await db.execute(admin_stmt)).scalars().all()
 
     env_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
 
     env_admins = []
     if env_phones:
-        env_users = db.query(User).filter(User.phone.in_(env_phones)).all()
+        env_stmt = select(User).where(User.phone.in_(env_phones))
+        env_users = (await db.execute(env_stmt)).scalars().all()
         user_by_phone = {u.phone: u for u in env_users}
         for phone in env_phones:
             user = user_by_phone.get(phone)
@@ -84,11 +88,11 @@ def list_admins(
 
 
 @router.put("/admin/users/{user_id}/role", dependencies=[Depends(require_admin)])
-def update_user_role(
+async def update_user_role(
     user_id: int,
     role: str = Query(..., description="New role: user, manager, or admin"),
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -104,7 +108,7 @@ def update_user_role(
             detail=Messages.error("invalid_role", role, lang=lang),
         )
 
-    user = db.query(User).filter(User.id == user_id).first()
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -125,7 +129,8 @@ def update_user_role(
         }
 
     if old_role in ("admin", "superadmin") and role not in ("admin", "superadmin"):
-        admin_count = db.query(User).filter(User.role.in_(["admin", "superadmin"])).count()
+        count_stmt = select(sa_count()).select_from(User).where(User.role.in_(["admin", "superadmin"]))
+        admin_count = (await db.execute(count_stmt)).scalar_one()
         if admin_count <= 1:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -134,10 +139,10 @@ def update_user_role(
 
     user.role = role
     try:
-        db.commit()
-        db.refresh(user)
+        await db.commit()
+        await db.refresh(user)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("[Auth] Failed to update user role ID %s: %s", user_id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

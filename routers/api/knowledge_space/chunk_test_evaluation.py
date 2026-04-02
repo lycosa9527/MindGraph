@@ -7,9 +7,10 @@ Handles manual evaluation and chunk viewing.
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from utils.auth import get_current_user
 from models.domain.knowledge_space import ChunkTestResult
@@ -25,11 +26,11 @@ router = APIRouter()
 
 
 @router.get("/chunk-test/{test_id}/chunks/{method}")
-def get_chunk_test_chunks(
+async def get_chunk_test_chunks(
     test_id: int,
     method: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get chunks for a test result using a specific method (on-demand generation).
@@ -45,11 +46,13 @@ def get_chunk_test_chunks(
         List of chunks with text, metadata, and position info
     """
     check_feature_enabled()
-    test_result = (
-        db.query(ChunkTestResult)
-        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
-        .first()
+    result = await db.execute(
+        select(ChunkTestResult).where(
+            ChunkTestResult.id == test_id,
+            ChunkTestResult.user_id == current_user.id,
+        )
     )
+    test_result = result.scalar_one_or_none()
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")
@@ -85,11 +88,11 @@ def get_chunk_test_chunks(
 
 
 @router.post("/chunk-test/{test_id}/evaluate")
-def manual_evaluate_chunks(
+async def manual_evaluate_chunks(
     test_id: int,
     request: ManualEvaluationRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Manually evaluate chunks using DashScope LLM models.
@@ -109,11 +112,13 @@ def manual_evaluate_chunks(
         Evaluation results with scores
     """
     check_feature_enabled()
-    test_result = (
-        db.query(ChunkTestResult)
-        .filter(ChunkTestResult.id == test_id, ChunkTestResult.user_id == current_user.id)
-        .first()
+    result = await db.execute(
+        select(ChunkTestResult).where(
+            ChunkTestResult.id == test_id,
+            ChunkTestResult.user_id == current_user.id,
+        )
     )
+    test_result = result.scalar_one_or_none()
 
     if not test_result:
         raise HTTPException(status_code=404, detail="Test not found")

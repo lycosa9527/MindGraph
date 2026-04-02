@@ -17,7 +17,7 @@ sys.path.insert(0, str(_project_root))
 
 from sqlalchemy import func
 
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.auth import User
 from models.domain.token_usage import TokenUsage
 
@@ -26,7 +26,7 @@ _count: Callable = cast(Callable, getattr(func, "count"))
 
 def main() -> None:
     """Check auto-complete counts for teachers."""
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
         teachers = db.query(User).filter(User.role == "user").all()
         teacher_ids = [u.id for u in teachers]

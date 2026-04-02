@@ -15,9 +15,10 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import (
     DocumentRelationship,
@@ -36,11 +37,11 @@ router = APIRouter()
 
 
 @router.post("/documents/{document_id}/relationships")
-def create_relationship(
+async def create_relationship(
     document_id: int,
     request: RelationshipRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Create a relationship between documents.
@@ -49,26 +50,22 @@ def create_relationship(
     """
     service = KnowledgeSpaceService(db, current_user.id)
 
-    # Verify source document ownership
-    source_doc = service.get_document(document_id)
+    source_doc = await service.get_document(document_id)
     if not source_doc:
         raise HTTPException(status_code=404, detail="Source document not found")
 
-    # Verify target document ownership
-    target_doc = service.get_document(request.target_document_id)
+    target_doc = await service.get_document(request.target_document_id)
     if not target_doc:
         raise HTTPException(status_code=404, detail="Target document not found")
 
-    # Check if relationship already exists
-    existing = (
-        db.query(DocumentRelationship)
-        .filter(
+    result = await db.execute(
+        select(DocumentRelationship).where(
             DocumentRelationship.source_document_id == document_id,
             DocumentRelationship.target_document_id == request.target_document_id,
             DocumentRelationship.relationship_type == request.relationship_type,
         )
-        .first()
     )
+    existing = result.scalar_one_or_none()
 
     if existing:
         raise HTTPException(status_code=400, detail="Relationship already exists")
@@ -82,8 +79,8 @@ def create_relationship(
             created_by=current_user.id,
         )
         db.add(relationship)
-        db.commit()
-        db.refresh(relationship)
+        await db.commit()
+        await db.refresh(relationship)
 
         return RelationshipResponse(
             id=relationship.id,
@@ -95,15 +92,15 @@ def create_relationship(
         )
     except Exception as e:
         logger.error("[KnowledgeSpaceAPI] Failed to create relationship: %s", e)
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create relationship") from e
 
 
 @router.get("/documents/{document_id}/relationships")
-def get_document_relationships(
+async def get_document_relationships(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get relationships for a document.
@@ -111,12 +108,15 @@ def get_document_relationships(
     Requires authentication. Verifies ownership.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    relationships = db.query(DocumentRelationship).filter(DocumentRelationship.source_document_id == document_id).all()
+    result = await db.execute(
+        select(DocumentRelationship).where(DocumentRelationship.source_document_id == document_id)
+    )
+    relationships = result.scalars().all()
 
     return {
         "relationships": [
@@ -135,36 +135,36 @@ def get_document_relationships(
 
 
 @router.delete("/relationships/{relationship_id}")
-def delete_relationship(
+async def delete_relationship(
     relationship_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a document relationship.
 
     Requires authentication. Verifies ownership.
     """
-    relationship = (
-        db.query(DocumentRelationship)
+    result = await db.execute(
+        select(DocumentRelationship)
         .join(
             KnowledgeDocument,
             DocumentRelationship.source_document_id == KnowledgeDocument.id,
         )
         .join(KnowledgeSpace)
-        .filter(
+        .where(
             DocumentRelationship.id == relationship_id,
             KnowledgeSpace.user_id == current_user.id,
         )
-        .first()
     )
+    relationship = result.scalar_one_or_none()
 
     if not relationship:
         raise HTTPException(status_code=404, detail="Relationship not found")
 
     try:
-        db.delete(relationship)
-        db.commit()
+        await db.delete(relationship)
+        await db.commit()
         return {"message": "Relationship deleted successfully"}
     except Exception as e:
         logger.error(
@@ -172,5 +172,5 @@ def delete_relationship(
             relationship_id,
             e,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to delete relationship") from e

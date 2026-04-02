@@ -23,7 +23,8 @@ Proprietary License
 from typing import Optional
 
 from fastapi import HTTPException, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.workshop_chat import ChatChannel
@@ -50,8 +51,8 @@ def get_effective_org_id(
     return current_user.organization_id
 
 
-def access_channel(
-    db: Session,
+async def access_channel(
+    db: AsyncSession,
     channel_id: int,
     current_user: User,
 ) -> ChatChannel:
@@ -61,7 +62,13 @@ def access_channel(
     - Public channels: user's org must match channel's org (admins bypass).
     - Private channels: same org check + membership required.
     """
-    channel = channel_service.get_channel(db, channel_id)
+    result = await db.execute(
+        select(ChatChannel).where(
+            ChatChannel.id == channel_id,
+            ChatChannel.is_archived.is_(False),
+        )
+    )
+    channel = result.scalar_one_or_none()
     if not channel:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
@@ -78,7 +85,7 @@ def access_channel(
         )
 
     if channel.channel_type == "private":
-        if not channel_service.is_channel_member(
+        if not await channel_service.is_channel_member(
             db,
             channel_id,
             current_user.id,
@@ -118,8 +125,8 @@ def require_post_permission(
             )
 
 
-def require_membership(
-    db: Session,
+async def require_membership(
+    db: AsyncSession,
     channel_id: int,
     user_id: int,
 ) -> None:
@@ -127,15 +134,15 @@ def require_membership(
 
     Analogous to checking ``Subscription`` existence in Zulip.
     """
-    if not channel_service.is_channel_member(db, channel_id, user_id):
+    if not await channel_service.is_channel_member(db, channel_id, user_id):
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="You must join this channel first",
         )
 
 
-def require_membership_unless_announce(
-    db: Session,
+async def require_membership_unless_announce(
+    db: AsyncSession,
     channel: ChatChannel,
     user_id: int,
 ) -> None:
@@ -146,7 +153,7 @@ def require_membership_unless_announce(
     """
     if channel.channel_type == "announce":
         return
-    require_membership(db, channel.id, user_id)
+    await require_membership(db, channel.id, user_id)
 
 
 def require_channel_manager(
@@ -182,8 +189,8 @@ def require_channel_manager(
     )
 
 
-def access_dm_partner(
-    db: Session,
+async def access_dm_partner(
+    db: AsyncSession,
     current_user: User,
     partner_id: int,
 ) -> User:
@@ -191,7 +198,8 @@ def access_dm_partner(
 
     Returns the partner ``User`` on success.
     """
-    partner = db.query(User).filter(User.id == partner_id).first()
+    partner_result = await db.execute(select(User).where(User.id == partner_id))
+    partner = partner_result.scalar_one_or_none()
     if not partner:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,

@@ -13,9 +13,9 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from services.library import LibraryService
 from utils.auth import get_current_user
@@ -33,7 +33,7 @@ async def create_bookmark(
     document_id: int,
     data: BookmarkCreate,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Create or update a bookmark for a document page.
@@ -41,7 +41,7 @@ async def create_bookmark(
     service = LibraryService(db, user_id=current_user.id)
 
     try:
-        bookmark = service.create_bookmark(document_id=document_id, page_number=data.page_number, note=data.note)
+        bookmark = await service.create_bookmark(document_id=document_id, page_number=data.page_number, note=data.note)
 
         # Structured logging
         logger.info(
@@ -76,7 +76,7 @@ async def create_bookmark(
 async def get_recent_bookmarks(
     limit: int = Query(50, ge=1, le=100),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get recent bookmarks for the current user.
@@ -85,7 +85,7 @@ async def get_recent_bookmarks(
     """
     service = LibraryService(db, user_id=current_user.id)
 
-    bookmarks = service.get_recent_bookmarks(limit=limit)
+    bookmarks = await service.get_recent_bookmarks(limit=limit)
 
     return {"bookmarks": bookmarks}
 
@@ -95,7 +95,7 @@ async def get_bookmark(
     document_id: int,
     page_number: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get bookmark for a specific document page.
@@ -103,7 +103,7 @@ async def get_bookmark(
     Returns 404 if bookmark doesn't exist or doesn't belong to the user.
     """
     service = LibraryService(db, user_id=current_user.id)
-    bookmark = service.get_bookmark(document_id, page_number)
+    bookmark = await service.get_bookmark(document_id, page_number)
 
     if not bookmark:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bookmark not found")
@@ -123,13 +123,13 @@ async def get_bookmark(
 async def get_bookmark_by_uuid(
     bookmark_uuid: str,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get bookmark by UUID.
     """
     service = LibraryService(db, user_id=current_user.id)
-    bookmark = service.get_bookmark_by_uuid(bookmark_uuid)
+    bookmark = await service.get_bookmark_by_uuid(bookmark_uuid)
 
     if not bookmark:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Bookmark not found")
@@ -155,13 +155,13 @@ async def get_bookmark_by_uuid(
 async def delete_bookmark(
     bookmark_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a bookmark.
     """
     service = LibraryService(db, user_id=current_user.id)
-    deleted = service.delete_bookmark(bookmark_id)
+    deleted = await service.delete_bookmark(bookmark_id)
 
     if not deleted:
         raise HTTPException(

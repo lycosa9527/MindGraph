@@ -9,9 +9,11 @@ import tempfile
 import threading
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import SessionLocal, get_db
+from config.database import SyncSessionLocal, get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
 from models.requests.requests_knowledge_space import ProcessSelectedRequest
@@ -32,7 +34,7 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
         document_id,
         user_id,
     )
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
         service = ChunkTestDocumentService(db, user_id)
         service.process_document(document_id)
@@ -82,15 +84,15 @@ def _process_chunk_test_document(user_id: int, document_id: int) -> None:
 async def upload_chunk_test_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
-    check_feature_enabled()
     """
     Upload a document for chunk testing.
 
     Requires authentication. Max 5 documents per user.
     Documents are separate from knowledge space documents.
     """
+    check_feature_enabled()
     service = ChunkTestDocumentService(db, current_user.id)
 
     try:
@@ -101,7 +103,7 @@ async def upload_chunk_test_document(
 
         file_type = service.processor.get_file_type(file.filename)
 
-        document = service.upload_document(
+        document = await service.upload_document(
             file_name=file.filename,
             file_path=tmp_path,
             file_type=file_type,
@@ -130,7 +132,10 @@ async def upload_chunk_test_document(
 
 
 @router.get("/chunk-test/documents", response_model=DocumentListResponse)
-async def list_chunk_test_documents(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_chunk_test_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     List all chunk test documents for the user.
 
@@ -138,7 +143,7 @@ async def list_chunk_test_documents(current_user: User = Depends(get_current_use
     """
     check_feature_enabled()
     service = ChunkTestDocumentService(db, current_user.id)
-    documents = service.get_user_documents()
+    documents = await service.get_user_documents()
 
     status_counts = {}
     for doc in documents:
@@ -175,7 +180,7 @@ async def list_chunk_test_documents(current_user: User = Depends(get_current_use
 async def delete_chunk_test_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a chunk test document and all associated data.
@@ -186,7 +191,7 @@ async def delete_chunk_test_document(
     service = ChunkTestDocumentService(db, current_user.id)
 
     try:
-        service.delete_document(document_id)
+        await service.delete_document(document_id)
         return {"message": "Document deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -201,8 +206,9 @@ async def delete_chunk_test_document(
 
 
 @router.post("/chunk-test/documents/start-processing")
-def start_processing_chunk_test_documents(
-    current_user: User = Depends(get_current_user), db: Session = Depends(get_db)
+async def start_processing_chunk_test_documents(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Manually trigger processing for all pending chunk test documents.
@@ -211,7 +217,7 @@ def start_processing_chunk_test_documents(
     """
     check_feature_enabled()
     service = ChunkTestDocumentService(db, current_user.id)
-    documents = service.get_user_documents()
+    documents = await service.get_user_documents()
 
     pending_docs = [doc for doc in documents if doc.status in ("pending", "failed")]
 
@@ -229,7 +235,7 @@ def start_processing_chunk_test_documents(
             doc.status = "processing"
             doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
-            db.commit()
+            await db.commit()
 
             logger.info(
                 "[ChunkTestDocuments] Starting background thread for document %s (user %s)",
@@ -263,10 +269,10 @@ def start_processing_chunk_test_documents(
 
 
 @router.post("/chunk-test/documents/process-selected")
-def process_selected_chunk_test_documents(
+async def process_selected_chunk_test_documents(
     request: ProcessSelectedRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Process selected chunk test documents by their IDs.
@@ -275,7 +281,7 @@ def process_selected_chunk_test_documents(
     status 'pending' or 'failed'.
     """
     service = ChunkTestDocumentService(db, current_user.id)
-    documents = service.get_user_documents()
+    documents = await service.get_user_documents()
 
     user_doc_ids = {doc.id for doc in documents}
     valid_ids = [doc_id for doc_id in request.document_ids if doc_id in user_doc_ids]
@@ -299,7 +305,7 @@ def process_selected_chunk_test_documents(
             doc.status = "processing"
             doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
-            db.commit()
+            await db.commit()
 
             logger.info(
                 "[ChunkTestDocuments] Starting background thread for selected document %s (user %s)",
@@ -333,12 +339,12 @@ def process_selected_chunk_test_documents(
 
 
 @router.get("/chunk-test/documents/{document_id}/chunks")
-def get_chunk_test_document_chunks(
+async def get_chunk_test_document_chunks(
     document_id: int,
     page: int = 1,
     page_size: int = 20,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get chunks for a chunk test document with pagination.
@@ -347,22 +353,25 @@ def get_chunk_test_document_chunks(
     """
     check_feature_enabled()
     service = ChunkTestDocumentService(db, current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
 
     offset = (page - 1) * page_size
-    chunks = (
-        db.query(ChunkTestDocumentChunk)
-        .filter(ChunkTestDocumentChunk.document_id == document_id)
+    result = await db.execute(
+        select(ChunkTestDocumentChunk)
+        .where(ChunkTestDocumentChunk.document_id == document_id)
         .order_by(ChunkTestDocumentChunk.chunk_index)
         .offset(offset)
         .limit(page_size)
-        .all()
     )
+    chunks = result.scalars().all()
 
-    total = db.query(ChunkTestDocumentChunk).filter(ChunkTestDocumentChunk.document_id == document_id).count()
+    count_result = await db.execute(
+        select(sa_count()).select_from(ChunkTestDocumentChunk).where(ChunkTestDocumentChunk.document_id == document_id)
+    )
+    total = count_result.scalar_one()
 
     return {
         "document_id": document_id,

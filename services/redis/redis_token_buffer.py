@@ -8,7 +8,7 @@ to per-worker memory buffer. Key schema: tokens:stream -> Redis Stream,
 tokens:stats -> hash of total_written, total_dropped, batches.
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional, Dict, Any, List, Tuple
 import asyncio
 import json
@@ -19,10 +19,10 @@ import time
 
 from sqlalchemy import insert as sa_insert
 
-from config.database import SessionLocal, check_disk_space
+from config.database import AsyncSessionLocal, check_disk_space
 from models.domain.token_usage import TokenUsage
 from services.redis.redis_client import is_redis_available, get_redis
-from services.teacher_usage_stats import compute_and_upsert_user_usage_stats
+from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 
 logger = logging.getLogger(__name__)
 
@@ -204,7 +204,6 @@ class RedisTokenBuffer:
         if not self._enabled:
             return
 
-        # _pop_records returns [(entry_id, record), ...]; entry_id is None for memory fallback
         tuples = self._pop_records(BATCH_SIZE)
         if not tuples:
             return
@@ -215,7 +214,6 @@ class RedisTokenBuffer:
         start_time = time.time()
 
         try:
-            # Check disk space
             try:
                 if not check_disk_space(required_mb=50):
                     logger.error("[TokenBuffer] Insufficient disk space - records dropped")
@@ -224,49 +222,45 @@ class RedisTokenBuffer:
             except Exception as exc:
                 logger.debug("Token buffer disk space check failed: %s", exc)
 
-            db = SessionLocal()
-            try:
-                # Bulk insert — SQLAlchemy 2.0 style, replaces deprecated bulk_insert_mappings.
-                db.execute(sa_insert(TokenUsage), records)
-                db.commit()
+            async with AsyncSessionLocal() as db:
+                try:
+                    await db.execute(sa_insert(TokenUsage), records)
+                    await db.commit()
 
-                # Only ack stream entries after confirmed DB commit
-                self._ack_records(entry_ids)
+                    self._ack_records(entry_ids)
 
-                write_time = time.time() - start_time
-                self._total_written += record_count
-                self._total_batches += 1
-                self._last_flush_time = time.time()
+                    write_time = time.time() - start_time
+                    self._total_written += record_count
+                    self._total_batches += 1
+                    self._last_flush_time = time.time()
 
-                self._update_stats(record_count)
+                    self._update_stats(record_count)
 
-                total_tokens = sum(r.get("total_tokens", 0) for r in records)
-                write_time_ms = write_time * 1000
-                logger.info(
-                    "[TokenBuffer] Wrote %s records (%s tokens) in %.1fms | Total: %s",
-                    record_count,
-                    total_tokens,
-                    write_time_ms,
-                    self._total_written,
-                )
+                    total_tokens = sum(r.get("total_tokens", 0) for r in records)
+                    write_time_ms = write_time * 1000
+                    logger.info(
+                        "[TokenBuffer] Wrote %s records (%s tokens) in %.1fms | Total: %s",
+                        record_count,
+                        total_tokens,
+                        write_time_ms,
+                        self._total_written,
+                    )
 
-                user_ids = {uid for r in records for uid in (r.get("user_id"),) if isinstance(uid, int)}
-                for uid in user_ids:
-                    try:
-                        compute_and_upsert_user_usage_stats(uid, db)
-                    except Exception as stats_err:
-                        logger.debug(
-                            "[TokenBuffer] Stats compute failed for user %s: %s",
-                            uid,
-                            stats_err,
-                        )
+                    user_ids = {uid for r in records for uid in (r.get("user_id"),) if isinstance(uid, int)}
+                    for uid in user_ids:
+                        try:
+                            await compute_and_upsert_user_usage_stats_async(uid, db)
+                        except Exception as stats_err:
+                            logger.debug(
+                                "[TokenBuffer] Stats compute failed for user %s: %s",
+                                uid,
+                                stats_err,
+                            )
 
-            except Exception as exc:
-                db.rollback()
-                self._total_dropped += record_count
-                logger.error("[TokenBuffer] Database write failed: %s", exc)
-            finally:
-                db.close()
+                except Exception as exc:
+                    await db.rollback()
+                    self._total_dropped += record_count
+                    logger.error("[TokenBuffer] Database write failed: %s", exc)
 
         except Exception as exc:
             self._total_dropped += record_count
@@ -439,7 +433,7 @@ class RedisTokenBuffer:
                 "endpoint_path": endpoint_path,
                 "success": success,
                 "response_time": response_time,
-                "created_at": datetime.utcnow().isoformat(),
+                "created_at": datetime.now(UTC).isoformat(),
             }
 
             # Add to buffer

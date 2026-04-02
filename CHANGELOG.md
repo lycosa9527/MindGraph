@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.70.0] - 2026-04-02
+
+### Added
+- **Alembic migration infrastructure** (`alembic/`, `alembic.ini`, `alembic/env.py`): Formal schema-migration pipeline replaces ad-hoc inline migration code in `config/database.py`; `alembic upgrade head` is run automatically on startup via `init_db()`.
+- **`models/domain/registry.py`**: Central model registry that imports every ORM model to guarantee registration on `Base.metadata` for Alembic autogenerate and startup seeding — eliminates scattered try/except import blocks.
+- **Repository layer** (`repositories/`): New `base.py` with generic async CRUD helpers plus domain-specific repositories — `user_repo.py`, `diagram_repo.py`, `knowledge_repo.py`, `community_repo.py`, `library_repo.py`, `workshop_repo.py`.
+- **PG-to-PG merge service** (`services/admin/pg_merge_service.py`, `services/admin/pg_merge_tables.py`): Non-destructive PostgreSQL dump analysis and merge via a temporary staging database using `pg_restore`; remaps user/org IDs by phone/org-name, merges every table in FK-safe order, then drops the staging database.
+- **`services/admin/sqlite_orphan_service.py`**: SQLite orphan detection and cleanup functions extracted from `sqlite_merge_service.py` into their own module.
+- **Admin DB UI — PG dump merge** (`AdminDatabaseTab.vue`): New panel to analyze and execute a PG-dump-to-live merge with table-level row counts (`staging_rows` / `live_rows`), skipped/merge table lists, elapsed-time reporting, and a confirmation dialog.
+- **i18n — PG dump merge keys** (`locales/messages/*/admin.ts`): 14 new translation keys (`admin.database.pgAnalyze`, `pgAnalyzeError`, `pgAnalysisResult`, `pgSkippedTables`, `pgStagingRows`, `pgLiveRows`, `pgExecuteMerge`, `pgMergeConfirmTitle`, `pgMergeConfirmMsg`, `pgMergeSuccess`, `pgMergeError`, `pgMergeComplete`) propagated to all locale bundles.
+
+### Changed
+- **`config/database.py`**: Major refactor — all inline schema-migration code removed; introduces `AsyncSessionLocal` (async SQLAlchemy 2.0 session factory) alongside the legacy sync `SessionLocal`; model imports consolidated via `models.domain.registry`.
+- **`models/domain/auth.py`**: `Base` migrated from `declarative_base()` to the SQLAlchemy 2.0 `class Base(DeclarativeBase)` pattern; all `datetime.utcnow` replaced with timezone-aware `datetime.now(UTC)`; `Organization.users` and `User.organization` relationships set to `lazy="selectin"`; `User.diagrams` gains `cascade="all, delete-orphan"` and `passive_deletes=True`.
+- **All `models/domain/*.py`**: `datetime.utcnow` → `datetime.now(UTC)` across all model modules; SQLAlchemy 2.0 / PEP8 alignment (import cleanup, quote styles).
+- **`services/llm/rag_service.py`**: `has_knowledge_base`, `retrieve_context`, and `_apply_metadata_post_filter` converted from sync SQLAlchemy `Session` to `AsyncSession` with `select()`-style queries; `ThreadPoolExecutor` removed in favour of `asyncio`.
+- **`agents/core/workflow.py`**: RAG lookup updated to use `AsyncSessionLocal` context manager and `await` the async `rag_service` methods.
+- **`routers/admin/database.py`**: Added `/analyze-dump` and `/merge-dump` endpoints backed by `pg_merge_service`; orphan helpers moved to `sqlite_orphan_service`; spurious `async` removed from sync router functions.
+- **`services/admin/sqlite_merge_service.py`**: Orphan-cleanup functions split out to `sqlite_orphan_service`; org matching switched from phone to org-name; `datetime.utcnow` → `datetime.now(UTC)`.
+- **`uvicorn_config.py`**: `SafeStreamHandler` and `_is_stream_usable` inlined directly (removed import dependency on `services.infrastructure.utils.logging_config`); PEP8 / type-annotation cleanup.
+- **`prompts/`**: PEP8 alignment across all prompt modules — single quotes replaced with double quotes, trailing commas added, blank-line normalisation (`debateverse.py`, `main_agent.py`, `mind_maps.py`, `node_palette.py`, `prompt_to_diagram_agent.py`, `thinking_maps.py`, `voice_agent.py`).
+- **Backend-wide PEP8 / Pylint pass**: All router, service, utility, and script modules — quote-style normalisation, UTC datetime usage, import cleanup, line-length fixes (`routers/**`, `services/**`, `utils/**`, `scripts/**`).
+- **`frontend/src/locales/messages/en/canvas.ts`** and **`zh/canvas.ts`**: Canvas locale updates propagated alongside the admin locale additions.
+
 ## [5.69.0] - 2026-04-01
 
 ### Added

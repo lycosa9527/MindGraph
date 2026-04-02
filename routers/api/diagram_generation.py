@@ -9,14 +9,14 @@ Proprietary License
 """
 
 from typing import Optional
-import asyncio
 import logging
 import time
 
 from fastapi import APIRouter, Depends, HTTPException, Request
+from sqlalchemy import select
 
 from agents.core.workflow import agent_graph_workflow_with_styles
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
 from models import GenerateRequest, GenerateResponse, Messages, get_request_language
 from models.domain.auth import User
@@ -31,23 +31,14 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["api"])
 
 
-def _query_diagram_ownership(diagram_id):
-    """Query diagram ownership info using a short-lived session."""
-    db = SessionLocal()
-    try:
-        diagram = (
-            db.query(Diagram)
-            .filter(
-                Diagram.id == diagram_id,
-                ~Diagram.is_deleted,
-            )
-            .first()
-        )
+async def _query_diagram_ownership(diagram_id):
+    """Query diagram ownership info using a short-lived async session."""
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(select(Diagram).where(Diagram.id == diagram_id, ~Diagram.is_deleted))
+        diagram = result.scalar_one_or_none()
         if diagram:
             return diagram.workshop_code, diagram.user_id
         return None, None
-    finally:
-        db.close()
 
 
 @router.post("/generate_graph", response_model=GenerateResponse)
@@ -70,7 +61,7 @@ async def generate_graph(
     await check_endpoint_rate_limit("generate_graph", identifier, max_requests=100, window_seconds=60)
 
     if req.diagram_id and current_user:
-        workshop_code, diagram_user_id = await asyncio.to_thread(_query_diagram_ownership, req.diagram_id)
+        workshop_code, diagram_user_id = await _query_diagram_ownership(req.diagram_id)
         if workshop_code:
             role = getattr(current_user, "role", "user") or "user"
             if role != "admin" and diagram_user_id != current_user.id:

@@ -116,23 +116,26 @@ default_text_search_config = 'pg_catalog.english'
 
 def create_pg_hba_conf(data_path: Path) -> None:
     """
-    Create pg_hba.conf if it doesn't exist.
+    Write pg_hba.conf with trust authentication for all local connections.
+
+    Always overwrites the file so that initdb's default scram-sha-256 config
+    does not prevent the application from connecting as the postgres superuser
+    (which has no password in the managed setup).
 
     Args:
         data_path: PostgreSQL data directory
     """
     pg_hba_conf = data_path / "pg_hba.conf"
-    if not pg_hba_conf.exists():
-        try:
-            with open(pg_hba_conf, "w", encoding="utf-8") as f:
-                f.write("""# PostgreSQL host-based authentication configuration
+    try:
+        with open(pg_hba_conf, "w", encoding="utf-8") as f:
+            f.write("""# PostgreSQL host-based authentication configuration
 # TYPE  DATABASE        USER            ADDRESS                 METHOD
 local   all             all                                     trust
 host    all             all             127.0.0.1/32            trust
 host    all             all             ::1/128                 trust
 """)
-        except Exception as e:
-            try:
-                print(f"[ERROR] Failed to create pg_hba.conf: {e}")
-            except (ValueError, OSError):
-                pass
+    except Exception as e:
+        try:
+            print(f"[ERROR] Failed to write pg_hba.conf: {e}")
+        except (ValueError, OSError):
+            pass

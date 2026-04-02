@@ -11,10 +11,12 @@ Proprietary License
 import logging
 import re
 from typing import Optional, List, Dict, Any, TYPE_CHECKING
-from datetime import datetime
+from datetime import UTC, datetime
 
+from sqlalchemy import select
 from sqlalchemy.sql.functions import count as sql_count
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from models.domain.library import (
     LibraryDanmaku,
@@ -31,17 +33,16 @@ logger = logging.getLogger(__name__)
 class LibraryDanmakuMixin:
     """Mixin for danmaku operations."""
 
-    # Type annotations for expected attributes provided by classes using this mixin
-    db: Session
+    db: AsyncSession
     user_id: Optional[int]
 
     if TYPE_CHECKING:
 
-        def get_document(self, document_id: int) -> Optional["LibraryDocument"]:
+        async def get_document(self, document_id: int) -> Optional["LibraryDocument"]:
             """Get a single library document - provided by LibraryDocumentMixin."""
             raise NotImplementedError
 
-    def get_danmaku(
+    async def get_danmaku(
         self,
         document_id: int,
         page_number: Optional[int] = None,
@@ -60,7 +61,6 @@ class LibraryDanmakuMixin:
         Returns:
             List of danmaku dictionaries
         """
-        # Try Redis cache first (only for filtered queries)
         if page_number is not None or selected_text:
             try:
                 from services.library.redis_cache import LibraryRedisCache
@@ -74,68 +74,61 @@ class LibraryDanmakuMixin:
                 if cached_list is not None:
                     logger.debug("[Library] Redis cache hit for danmaku doc=%s", document_id)
                     return cached_list
-            except Exception as e:
-                logger.debug("[Library] Redis cache check failed: %s", e)
+            except Exception as exc:
+                logger.debug("[Library] Redis cache check failed: %s", exc)
 
-        query = self.db.query(LibraryDanmaku).filter(
-            LibraryDanmaku.document_id == document_id, LibraryDanmaku.is_active
-        )
+        stmt = select(LibraryDanmaku).where(LibraryDanmaku.document_id == document_id, LibraryDanmaku.is_active)
 
         if page_number is not None:
-            query = query.filter(LibraryDanmaku.page_number == page_number)
+            stmt = stmt.where(LibraryDanmaku.page_number == page_number)
 
         if selected_text:
-            query = query.filter(LibraryDanmaku.selected_text == selected_text)
+            stmt = stmt.where(LibraryDanmaku.selected_text == selected_text)
 
-        # Eager load user relationship to avoid N+1
-        query = query.options(joinedload(LibraryDanmaku.user))
+        stmt = stmt.options(joinedload(LibraryDanmaku.user))
+        stmt = stmt.order_by(LibraryDanmaku.created_at.asc())
 
-        # Get all danmaku IDs for batch queries
-        danmaku_list = query.order_by(LibraryDanmaku.created_at.asc()).all()
+        result = await self.db.execute(stmt)
+        danmaku_list = result.scalars().unique().all()
         danmaku_ids = [d.id for d in danmaku_list]
 
         if not danmaku_ids:
             return []
 
-        # Batch query: Get likes counts for all danmaku in one query
-        likes_counts = dict(
-            self.db.query(
+        likes_result = await self.db.execute(
+            select(
                 LibraryDanmakuLike.danmaku_id,
                 sql_count(LibraryDanmakuLike.id).label("count"),
             )
-            .filter(LibraryDanmakuLike.danmaku_id.in_(danmaku_ids))
+            .where(LibraryDanmakuLike.danmaku_id.in_(danmaku_ids))
             .group_by(LibraryDanmakuLike.danmaku_id)
-            .all()
         )
+        likes_counts = dict(likes_result.all())
 
-        # Batch query: Get user's liked danmaku IDs in one query
-        user_liked_ids = set()
+        user_liked_ids: set = set()
         if self.user_id:
-            liked_rows = (
-                self.db.query(LibraryDanmakuLike.danmaku_id)
-                .filter(
+            liked_result = await self.db.execute(
+                select(LibraryDanmakuLike.danmaku_id).where(
                     LibraryDanmakuLike.danmaku_id.in_(danmaku_ids),
                     LibraryDanmakuLike.user_id == self.user_id,
                 )
-                .all()
             )
-            user_liked_ids = {row[0] for row in liked_rows}
+            user_liked_ids = {row[0] for row in liked_result.all()}
 
-        # Batch query: Get replies counts for all danmaku in one query
-        replies_counts = dict(
-            self.db.query(
+        replies_result = await self.db.execute(
+            select(
                 LibraryDanmakuReply.danmaku_id,
                 sql_count(LibraryDanmakuReply.id).label("count"),
             )
-            .filter(
+            .where(
                 LibraryDanmakuReply.danmaku_id.in_(danmaku_ids),
                 LibraryDanmakuReply.is_active,
             )
             .group_by(LibraryDanmakuReply.danmaku_id)
-            .all()
         )
+        replies_counts = dict(replies_result.all())
 
-        result = [
+        result_list = [
             {
                 "id": d.id,
                 "document_id": d.document_id,
@@ -161,24 +154,23 @@ class LibraryDanmakuMixin:
             for d in danmaku_list
         ]
 
-        # Cache result in Redis (only for filtered queries)
-        if (page_number is not None or selected_text) and result:
+        if (page_number is not None or selected_text) and result_list:
             try:
                 from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
                 redis_cache.cache_danmaku_list(
                     document_id=document_id,
-                    danmaku_list=result,
+                    danmaku_list=result_list,
                     page_number=page_number,
                     selected_text=selected_text,
                 )
-            except Exception as e:
-                logger.debug("[Library] Redis cache write failed: %s", e)
+            except Exception as exc:
+                logger.debug("[Library] Redis cache write failed: %s", exc)
 
-        return result
+        return result_list
 
-    def get_recent_danmaku(self, limit: int = 50) -> List[Dict[str, Any]]:
+    async def get_recent_danmaku(self, limit: int = 50) -> List[Dict[str, Any]]:
         """
         Get recent danmaku across all documents.
 
@@ -188,60 +180,55 @@ class LibraryDanmakuMixin:
         Returns:
             List of danmaku dictionaries, ordered by created_at descending
         """
-        # Eager load user relationship to avoid N+1
-        danmaku_list = (
-            self.db.query(LibraryDanmaku)
+        stmt = (
+            select(LibraryDanmaku)
             .options(joinedload(LibraryDanmaku.user))
-            .filter(LibraryDanmaku.is_active)
+            .where(LibraryDanmaku.is_active)
             .order_by(LibraryDanmaku.created_at.desc())
             .limit(limit)
-            .all()
         )
+        result = await self.db.execute(stmt)
+        danmaku_list = result.scalars().unique().all()
 
         if not danmaku_list:
             return []
 
         danmaku_ids = [d.id for d in danmaku_list]
 
-        # Batch query: Get likes counts for all danmaku in one query
-        likes_counts = dict(
-            self.db.query(
+        likes_result = await self.db.execute(
+            select(
                 LibraryDanmakuLike.danmaku_id,
                 sql_count(LibraryDanmakuLike.id).label("count"),
             )
-            .filter(LibraryDanmakuLike.danmaku_id.in_(danmaku_ids))
+            .where(LibraryDanmakuLike.danmaku_id.in_(danmaku_ids))
             .group_by(LibraryDanmakuLike.danmaku_id)
-            .all()
         )
+        likes_counts = dict(likes_result.all())
 
-        # Batch query: Get user's liked danmaku IDs in one query
-        user_liked_ids = set()
+        user_liked_ids: set = set()
         if self.user_id:
-            liked_rows = (
-                self.db.query(LibraryDanmakuLike.danmaku_id)
-                .filter(
+            liked_result = await self.db.execute(
+                select(LibraryDanmakuLike.danmaku_id).where(
                     LibraryDanmakuLike.danmaku_id.in_(danmaku_ids),
                     LibraryDanmakuLike.user_id == self.user_id,
                 )
-                .all()
             )
-            user_liked_ids = {row[0] for row in liked_rows}
+            user_liked_ids = {row[0] for row in liked_result.all()}
 
-        # Batch query: Get replies counts for all danmaku in one query
-        replies_counts = dict(
-            self.db.query(
+        replies_result = await self.db.execute(
+            select(
                 LibraryDanmakuReply.danmaku_id,
                 sql_count(LibraryDanmakuReply.id).label("count"),
             )
-            .filter(
+            .where(
                 LibraryDanmakuReply.danmaku_id.in_(danmaku_ids),
                 LibraryDanmakuReply.is_active,
             )
             .group_by(LibraryDanmakuReply.danmaku_id)
-            .all()
         )
+        replies_counts = dict(replies_result.all())
 
-        result = [
+        result_list = [
             {
                 "id": d.id,
                 "document_id": d.document_id,
@@ -267,19 +254,18 @@ class LibraryDanmakuMixin:
             for d in danmaku_list
         ]
 
-        # Cache result in Redis
-        if result:
+        if result_list:
             try:
                 from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
-                redis_cache.cache_recent_danmaku(limit, result)
-            except Exception as e:
-                logger.debug("[Library] Redis cache write failed: %s", e)
+                redis_cache.cache_recent_danmaku(limit, result_list)
+            except Exception as exc:
+                logger.debug("[Library] Redis cache write failed: %s", exc)
 
-        return result
+        return result_list
 
-    def create_danmaku(
+    async def create_danmaku(
         self,
         document_id: int,
         content: str,
@@ -308,11 +294,10 @@ class LibraryDanmakuMixin:
         Returns:
             Created LibraryDanmaku instance
         """
-        document = self.get_document(document_id)
+        document = await self.get_document(document_id)
         if not document:
             raise ValueError(f"Document {document_id} not found")
 
-        # Sanitize user content to prevent XSS
         sanitized_content = self.sanitize_content(content)
         sanitized_selected_text = self.sanitize_content(selected_text) if selected_text else None
 
@@ -332,10 +317,10 @@ class LibraryDanmakuMixin:
         self.db.add(danmaku)
         document.comments_count += 1
         try:
-            self.db.commit()
-            self.db.refresh(danmaku)
+            await self.db.commit()
+            await self.db.refresh(danmaku)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
         logger.info(
@@ -348,18 +333,17 @@ class LibraryDanmakuMixin:
             },
         )
 
-        # Invalidate danmaku caches (TTL-based expiration handles this, but we can trigger early)
         try:
             from services.library.redis_cache import LibraryRedisCache
 
             redis_cache = LibraryRedisCache()
             redis_cache.invalidate_danmaku(document_id)
-        except Exception as e:
-            logger.debug("[Library] Redis cache invalidation failed: %s", e)
+        except Exception as exc:
+            logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
         return danmaku
 
-    def toggle_like(self, danmaku_id: int) -> Dict[str, Any]:
+    async def toggle_like(self, danmaku_id: int) -> Dict[str, Any]:
         """
         Toggle like on a danmaku.
 
@@ -369,24 +353,24 @@ class LibraryDanmakuMixin:
         Returns:
             Dict with is_liked and likes_count
         """
-        danmaku = (
-            self.db.query(LibraryDanmaku).filter(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active).first()
+        result = await self.db.execute(
+            select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active)
         )
+        danmaku = result.scalar_one_or_none()
 
         if not danmaku:
             raise ValueError(f"Danmaku {danmaku_id} not found")
 
-        existing_like = (
-            self.db.query(LibraryDanmakuLike)
-            .filter(
+        like_result = await self.db.execute(
+            select(LibraryDanmakuLike).where(
                 LibraryDanmakuLike.danmaku_id == danmaku_id,
                 LibraryDanmakuLike.user_id == self.user_id,
             )
-            .first()
         )
+        existing_like = like_result.scalar_one_or_none()
 
         if existing_like:
-            self.db.delete(existing_like)
+            await self.db.delete(existing_like)
             is_liked = False
         else:
             like = LibraryDanmakuLike(danmaku_id=danmaku_id, user_id=self.user_id)
@@ -394,16 +378,19 @@ class LibraryDanmakuMixin:
             is_liked = True
 
         try:
-            self.db.commit()
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
-        likes_count = self.db.query(LibraryDanmakuLike).filter(LibraryDanmakuLike.danmaku_id == danmaku_id).count()
+        count_result = await self.db.execute(
+            select(sql_count(LibraryDanmakuLike.id)).where(LibraryDanmakuLike.danmaku_id == danmaku_id)
+        )
+        likes_count = count_result.scalar_one()
 
         return {"is_liked": is_liked, "likes_count": likes_count}
 
-    def get_replies(self, danmaku_id: int) -> List[Dict[str, Any]]:
+    async def get_replies(self, danmaku_id: int) -> List[Dict[str, Any]]:
         """
         Get replies to a danmaku.
 
@@ -413,15 +400,16 @@ class LibraryDanmakuMixin:
         Returns:
             List of reply dictionaries
         """
-        replies = (
-            self.db.query(LibraryDanmakuReply)
-            .filter(
+        result = await self.db.execute(
+            select(LibraryDanmakuReply)
+            .options(joinedload(LibraryDanmakuReply.user))
+            .where(
                 LibraryDanmakuReply.danmaku_id == danmaku_id,
                 LibraryDanmakuReply.is_active,
             )
             .order_by(LibraryDanmakuReply.created_at.asc())
-            .all()
         )
+        replies = result.scalars().unique().all()
 
         return [
             {
@@ -440,7 +428,9 @@ class LibraryDanmakuMixin:
             for r in replies
         ]
 
-    def create_reply(self, danmaku_id: int, content: str, parent_reply_id: Optional[int] = None) -> LibraryDanmakuReply:
+    async def create_reply(
+        self, danmaku_id: int, content: str, parent_reply_id: Optional[int] = None
+    ) -> LibraryDanmakuReply:
         """
         Create a reply to a danmaku.
 
@@ -452,14 +442,14 @@ class LibraryDanmakuMixin:
         Returns:
             Created LibraryDanmakuReply instance
         """
-        danmaku = (
-            self.db.query(LibraryDanmaku).filter(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active).first()
+        result = await self.db.execute(
+            select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active)
         )
+        danmaku = result.scalar_one_or_none()
 
         if not danmaku:
             raise ValueError(f"Danmaku {danmaku_id} not found")
 
-        # Sanitize user content to prevent XSS
         sanitized_content = self.sanitize_content(content)
 
         reply = LibraryDanmakuReply(
@@ -471,10 +461,10 @@ class LibraryDanmakuMixin:
 
         self.db.add(reply)
         try:
-            self.db.commit()
-            self.db.refresh(reply)
+            await self.db.commit()
+            await self.db.refresh(reply)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
         logger.info(
@@ -487,20 +477,20 @@ class LibraryDanmakuMixin:
             },
         )
 
-        # Invalidate danmaku caches (TTL handles this, but trigger early)
         try:
-            danmaku = self.db.query(LibraryDanmaku).filter(LibraryDanmaku.id == danmaku_id).first()
-            if danmaku:
+            refresh_result = await self.db.execute(select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id))
+            refreshed_danmaku = refresh_result.scalar_one_or_none()
+            if refreshed_danmaku:
                 from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
-                redis_cache.invalidate_danmaku(danmaku.document_id)
-        except Exception as e:
-            logger.debug("[Library] Redis cache invalidation failed: %s", e)
+                redis_cache.invalidate_danmaku(refreshed_danmaku.document_id)
+        except Exception as exc:
+            logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
         return reply
 
-    def delete_danmaku(self, danmaku_id: int, is_admin: bool = False) -> bool:
+    async def delete_danmaku(self, danmaku_id: int, is_admin: bool = False) -> bool:
         """
         Delete danmaku.
 
@@ -513,33 +503,32 @@ class LibraryDanmakuMixin:
         Returns:
             True if deleted, False if not found or not authorized
         """
-        danmaku = (
-            self.db.query(LibraryDanmaku).filter(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active).first()
+        result = await self.db.execute(
+            select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active)
         )
+        danmaku = result.scalar_one_or_none()
 
         if not danmaku:
             return False
 
-        # Check permission: must be owner or admin
         if danmaku.user_id != self.user_id and not is_admin:
             return False
 
         danmaku.is_active = False
-        danmaku.updated_at = datetime.utcnow()
+        danmaku.updated_at = datetime.now(UTC)
 
-        # Update document comments count
         document = danmaku.document
         if document:
             document.comments_count = max(0, document.comments_count - 1)
 
         try:
-            self.db.commit()
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
         return True
 
-    def update_danmaku_position(
+    async def update_danmaku_position(
         self,
         danmaku_id: int,
         position_x: Optional[int] = None,
@@ -560,29 +549,28 @@ class LibraryDanmakuMixin:
         Returns:
             True if updated, False if not found or not authorized
         """
-        danmaku = (
-            self.db.query(LibraryDanmaku).filter(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active).first()
+        result = await self.db.execute(
+            select(LibraryDanmaku).where(LibraryDanmaku.id == danmaku_id, LibraryDanmaku.is_active)
         )
+        danmaku = result.scalar_one_or_none()
 
         if not danmaku:
             return False
 
-        # Check permission: must be owner or admin
         if danmaku.user_id != self.user_id and not is_admin:
             return False
 
-        # Update position
         if position_x is not None:
             danmaku.position_x = position_x
         if position_y is not None:
             danmaku.position_y = position_y
 
-        danmaku.updated_at = datetime.utcnow()
+        danmaku.updated_at = datetime.now(UTC)
         try:
-            self.db.commit()
-            self.db.refresh(danmaku)
+            await self.db.commit()
+            await self.db.refresh(danmaku)
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
 
         logger.info(
@@ -609,21 +597,15 @@ class LibraryDanmakuMixin:
         if not content:
             return None
 
-        # Remove HTML tags
         content = re.sub(r"<[^>]+>", "", content)
-        # Remove script tags and content
         content = re.sub(r"<script[^>]*>.*?</script>", "", content, flags=re.IGNORECASE | re.DOTALL)
-        # Remove javascript: protocol
         content = re.sub(r"javascript:", "", content, flags=re.IGNORECASE)
-        # Remove on* event handlers
         content = re.sub(r"on\w+\s*=", "", content, flags=re.IGNORECASE)
-        # Remove control characters
         content = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", content)
-        # Normalize whitespace
         content = re.sub(r"\s+", " ", content)
         return content.strip()
 
-    def delete_reply(self, reply_id: int, is_admin: bool = False) -> bool:
+    async def delete_reply(self, reply_id: int, is_admin: bool = False) -> bool:
         """
         Delete reply.
 
@@ -636,24 +618,22 @@ class LibraryDanmakuMixin:
         Returns:
             True if deleted, False if not found or not authorized
         """
-        reply = (
-            self.db.query(LibraryDanmakuReply)
-            .filter(LibraryDanmakuReply.id == reply_id, LibraryDanmakuReply.is_active)
-            .first()
+        result = await self.db.execute(
+            select(LibraryDanmakuReply).where(LibraryDanmakuReply.id == reply_id, LibraryDanmakuReply.is_active)
         )
+        reply = result.scalar_one_or_none()
 
         if not reply:
             return False
 
-        # Check permission: must be owner or admin
         if reply.user_id != self.user_id and not is_admin:
             return False
 
         reply.is_active = False
-        reply.updated_at = datetime.utcnow()
+        reply.updated_at = datetime.now(UTC)
         try:
-            self.db.commit()
+            await self.db.commit()
         except Exception:
-            self.db.rollback()
+            await self.db.rollback()
             raise
         return True

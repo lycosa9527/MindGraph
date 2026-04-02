@@ -10,12 +10,13 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Dict, Optional
 import logging
 import random
 
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.debateverse import DebateSession, DebateParticipant, DebateMessage
 from services.features.debateverse_context_builder import DebateVerseContextBuilder
@@ -29,7 +30,7 @@ class DebateVerseService:
     Core service for managing debate sessions and orchestrating debate flow.
     """
 
-    def __init__(self, session_id: str, db: Session):
+    def __init__(self, session_id: str, db: AsyncSession):
         """
         Initialize debate service.
 
@@ -41,7 +42,7 @@ class DebateVerseService:
         self.db = db
         self.context_builder = DebateVerseContextBuilder(session_id, db)
 
-    def create_debate_session(
+    async def create_debate_session(
         self,
         topic: str,
         user_id: int,
@@ -67,7 +68,6 @@ class DebateVerseService:
         Returns:
             Created DebateSession
         """
-        # Create session
         session = DebateSession(
             topic=topic,
             format=debate_format,
@@ -76,12 +76,10 @@ class DebateVerseService:
             status="pending",
         )
         self.db.add(session)
-        self.db.flush()  # Get session.id
+        await self.db.flush()
 
-        # Create AI participants
         participants = []
 
-        # Affirmative team
         for role in ["affirmative_1", "affirmative_2"]:
             model_id = llm_assignments.get(role, "qwen")
             participant = DebateParticipant(
@@ -94,7 +92,6 @@ class DebateVerseService:
             )
             participants.append(participant)
 
-        # Negative team
         for role in ["negative_1", "negative_2"]:
             model_id = llm_assignments.get(role, "doubao")
             participant = DebateParticipant(
@@ -107,7 +104,6 @@ class DebateVerseService:
             )
             participants.append(participant)
 
-        # Judge
         judge_model = llm_assignments.get("judge", "deepseek")
         judge = DebateParticipant(
             session_id=session.id,
@@ -120,12 +116,12 @@ class DebateVerseService:
         participants.append(judge)
 
         self.db.add_all(participants)
-        self.db.commit()
+        await self.db.commit()
 
         logger.info("Created debate session %s with topic: %s", session.id, topic)
         return session
 
-    def coin_toss(self) -> str:
+    async def coin_toss(self) -> str:
         """
         Execute coin toss to determine speaking order.
 
@@ -137,21 +133,21 @@ class DebateVerseService:
         """
         result = random.choice(["affirmative_first", "negative_first"])
 
-        session = self.db.query(DebateSession).filter_by(id=self.session_id).first()
+        session = (
+            await self.db.execute(select(DebateSession).where(DebateSession.id == self.session_id))
+        ).scalar_one_or_none()
         if session:
             session.coin_toss_result = result
-            # Don't change stage here - stage should already be 'coin_toss'
-            # Stage will be advanced to 'opening' separately
             if session.status != "active":
                 session.status = "active"
             if not session.started_at:
-                session.started_at = datetime.utcnow()
-            self.db.commit()
+                session.started_at = datetime.now(tz=UTC)
+            await self.db.commit()
 
         logger.info("Coin toss result for session %s: %s", self.session_id, result)
         return result
 
-    def get_next_speaker(self, stage: str) -> Optional[DebateParticipant]:
+    async def get_next_speaker(self, stage: str) -> Optional[DebateParticipant]:
         """
         Determine who speaks next based on stage and round structure.
 
@@ -161,69 +157,71 @@ class DebateVerseService:
         Returns:
             Next speaker participant or None if stage complete
         """
-        session = self.db.query(DebateSession).filter_by(id=self.session_id).first()
+        session = (
+            await self.db.execute(select(DebateSession).where(DebateSession.id == self.session_id))
+        ).scalar_one_or_none()
         if not session:
             return None
 
-        # Get all messages in current stage
         stage_messages = (
-            self.db.query(DebateMessage)
-            .filter_by(session_id=self.session_id, stage=stage)
-            .order_by(DebateMessage.round_number, DebateMessage.created_at)
+            (
+                await self.db.execute(
+                    select(DebateMessage)
+                    .where(DebateMessage.session_id == self.session_id, DebateMessage.stage == stage)
+                    .order_by(DebateMessage.round_number, DebateMessage.created_at)
+                )
+            )
+            .scalars()
             .all()
         )
 
-        # Determine next speaker based on stage
         if stage == "opening":
-            # Order: Affirmative 1 → Negative 1
             if not stage_messages:
-                return self._get_participant_by_role("affirmative_1")
+                return await self._get_participant_by_role("affirmative_1")
             if len(stage_messages) == 1:
-                return self._get_participant_by_role("negative_1")
-            return None  # Stage complete
+                return await self._get_participant_by_role("negative_1")
+            return None
 
         if stage == "rebuttal":
-            # Order: Affirmative 2 → Negative 2
             if not stage_messages:
-                return self._get_participant_by_role("affirmative_2")
+                return await self._get_participant_by_role("affirmative_2")
             if len(stage_messages) == 1:
-                return self._get_participant_by_role("negative_2")
-            return None  # Stage complete
+                return await self._get_participant_by_role("negative_2")
+            return None
 
         if stage == "cross_exam":
-            # Order: Affirmative 2 questions Negative 1 → Negative 2 questions Affirmative 1
-            # Check if we're in round 1 or round 2
-            round_1_complete = any(
-                m.message_type == "cross_answer"
-                and (participant := self._get_participant_by_id(m.participant_id)) is not None
-                and participant.role == "negative_1"
-                for m in stage_messages
-            )
+            round_1_complete = False
+            for m in stage_messages:
+                if m.message_type == "cross_answer":
+                    participant = await self._get_participant_by_id(m.participant_id)
+                    if participant is not None and participant.role == "negative_1":
+                        round_1_complete = True
+                        break
 
             if not round_1_complete:
-                # Round 1: Affirmative 2 questions Negative 1
                 last_msg = stage_messages[-1] if stage_messages else None
                 if not last_msg or last_msg.message_type == "cross_answer":
-                    return self._get_participant_by_role("affirmative_2")  # Questioner
-                return self._get_participant_by_role("negative_1")  # Respondent
-            # Round 2: Negative 2 questions Affirmative 1
+                    return await self._get_participant_by_role("affirmative_2")
+                return await self._get_participant_by_role("negative_1")
+
+            now_utc = datetime.now(tz=UTC)
             round_2_messages = [
                 m
                 for m in stage_messages
-                if m.created_at > datetime.utcnow()  # After round 1
+                if (m.created_at.replace(tzinfo=UTC) if m.created_at.tzinfo is None else m.created_at.astimezone(UTC))
+                > now_utc
             ]
             last_msg = round_2_messages[-1] if round_2_messages else None
             if not last_msg or last_msg.message_type == "cross_answer":
-                return self._get_participant_by_role("negative_2")  # Questioner
-            return self._get_participant_by_role("affirmative_1")  # Respondent
+                return await self._get_participant_by_role("negative_2")
+            return await self._get_participant_by_role("affirmative_1")
 
         if stage == "closing":
-            # Order: Affirmative 1 → Negative 1
             if not stage_messages:
-                return self._get_participant_by_role("affirmative_1")
+                return await self._get_participant_by_role("affirmative_1")
             if len(stage_messages) == 1:
-                return self._get_participant_by_role("negative_1")
-            return None  # Stage complete
+                return await self._get_participant_by_role("negative_1")
+            return None
 
         return None
 
@@ -239,22 +237,20 @@ class DebateVerseService:
         Returns:
             Generated response content
         """
-        participant = self.db.query(DebateParticipant).filter_by(id=participant_id).first()
+        participant = (
+            await self.db.execute(select(DebateParticipant).where(DebateParticipant.id == participant_id))
+        ).scalar_one_or_none()
         if not participant or not participant.is_ai:
             raise ValueError(f"Participant {participant_id} is not an AI debater")
 
-        # Build context-aware messages
-        messages = self.context_builder.build_debater_messages(
+        messages = await self.context_builder.build_debater_messages(
             participant_id=participant_id, stage=stage, language=language
         )
 
-        # Get assigned model
         model = participant.model_id or "qwen"
 
-        # Disable thinking for Kimi model
         enable_thinking = model.lower() != "kimi"
 
-        # Generate response using LLM service
         logger.info(
             "Generating response for %s (%s) in stage %s",
             participant.name,
@@ -262,7 +258,6 @@ class DebateVerseService:
             stage,
         )
 
-        # Use chat_stream to get response (non-streaming for now, can be enhanced)
         response_content = ""
         async for chunk in llm_service.chat_stream(
             messages=messages,
@@ -271,7 +266,7 @@ class DebateVerseService:
             max_tokens=2000,
             enable_thinking=enable_thinking,
             yield_structured=True,
-            user_id=None,  # Will be set by caller
+            user_id=None,
             request_type="debateverse",
             endpoint_path=f"/api/debateverse/sessions/{self.session_id}/messages",
         ):
@@ -279,9 +274,8 @@ class DebateVerseService:
                 if chunk.get("type") == "token":
                     response_content += chunk.get("content", "")
 
-        # Save message to database
-        self.db.query(DebateSession).filter_by(id=self.session_id).first()
-        round_number = self.get_next_round_number(stage)
+        (await self.db.execute(select(DebateSession).where(DebateSession.id == self.session_id))).scalar_one_or_none()
+        round_number = await self.get_next_round_number(stage)
 
         message = DebateMessage(
             session_id=self.session_id,
@@ -292,7 +286,7 @@ class DebateVerseService:
             message_type=self.get_message_type_for_stage(stage),
         )
         self.db.add(message)
-        self.db.commit()
+        await self.db.commit()
 
         logger.info(
             "Generated response for %s: %s chars",
@@ -312,19 +306,16 @@ class DebateVerseService:
         Returns:
             Judge's commentary
         """
-        judge = self._get_participant_by_role("judge")
+        judge = await self._get_participant_by_role("judge")
         if not judge:
             raise ValueError("Judge not found")
 
-        # Build judge messages
-        messages = self.context_builder.build_judge_messages(
+        messages = await self.context_builder.build_judge_messages(
             judge_participant_id=judge.id, stage=stage, language=language
         )
 
-        # Generate response
         model = judge.model_id or "deepseek"
 
-        # Disable thinking for Kimi model
         enable_thinking = model.lower() != "kimi"
 
         logger.info("Generating judge commentary for stage %s", stage)
@@ -344,8 +335,7 @@ class DebateVerseService:
                 if chunk.get("type") == "token":
                     response_content += chunk.get("content", "")
 
-        # Save judge message
-        round_number = self.get_next_round_number(stage)
+        round_number = await self.get_next_round_number(stage)
         message = DebateMessage(
             session_id=self.session_id,
             participant_id=judge.id,
@@ -355,11 +345,11 @@ class DebateVerseService:
             message_type="judgment" if stage == "judgment" else stage,
         )
         self.db.add(message)
-        self.db.commit()
+        await self.db.commit()
 
         return response_content
 
-    def advance_stage(self, new_stage: str) -> bool:
+    async def advance_stage(self, new_stage: str) -> bool:
         """
         Advance debate to next stage.
 
@@ -369,11 +359,12 @@ class DebateVerseService:
         Returns:
             True if advanced successfully
         """
-        session = self.db.query(DebateSession).filter_by(id=self.session_id).first()
+        session = (
+            await self.db.execute(select(DebateSession).where(DebateSession.id == self.session_id))
+        ).scalar_one_or_none()
         if not session:
             return False
 
-        # Validate stage transition
         valid_transitions = {
             "setup": ["coin_toss"],
             "coin_toss": ["opening"],
@@ -391,29 +382,37 @@ class DebateVerseService:
         session.current_stage = new_stage
         if new_stage == "completed":
             session.status = "completed"
-            session.completed_at = datetime.utcnow()
+            session.completed_at = datetime.now(tz=UTC)
 
-        self.db.commit()
+        await self.db.commit()
         logger.info("Advanced session %s to stage %s", self.session_id, new_stage)
         return True
 
-    def _get_participant_by_role(self, role: str) -> Optional[DebateParticipant]:
+    async def _get_participant_by_role(self, role: str) -> Optional[DebateParticipant]:
         """Get participant by role."""
-        return self.db.query(DebateParticipant).filter_by(session_id=self.session_id, role=role).first()
+        return (
+            await self.db.execute(
+                select(DebateParticipant).where(
+                    DebateParticipant.session_id == self.session_id,
+                    DebateParticipant.role == role,
+                )
+            )
+        ).scalar_one_or_none()
 
-    def _get_participant_by_id(self, participant_id: int) -> Optional[DebateParticipant]:
+    async def _get_participant_by_id(self, participant_id: int) -> Optional[DebateParticipant]:
         """Get participant by ID."""
-        return self.db.query(DebateParticipant).filter_by(id=participant_id).first()
+        return (
+            await self.db.execute(select(DebateParticipant).where(DebateParticipant.id == participant_id))
+        ).scalar_one_or_none()
 
-    def get_next_round_number(self, stage: str) -> int:
+    async def get_next_round_number(self, stage: str) -> int:
         """Get next round number for stage."""
-        max_round = (
-            self.db.query(DebateMessage)
-            .filter_by(session_id=self.session_id, stage=stage)
-            .with_entities(DebateMessage.round_number)
+        result = await self.db.execute(
+            select(DebateMessage.round_number)
+            .where(DebateMessage.session_id == self.session_id, DebateMessage.stage == stage)
             .order_by(DebateMessage.round_number.desc())
-            .first()
         )
+        max_round = result.first()
 
         return (max_round[0] if max_round else 0) + 1
 
@@ -423,7 +422,7 @@ class DebateVerseService:
             "coin_toss": "coin_toss",
             "opening": "opening",
             "rebuttal": "rebuttal",
-            "cross_exam": "cross_question",  # Will be set correctly based on Q/A
+            "cross_exam": "cross_question",
             "closing": "closing",
             "judgment": "judgment",
         }

@@ -10,7 +10,7 @@ Proprietary License
 """
 
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 
 from sqlalchemy import DateTime, ForeignKey, Index, Integer, String, Text
@@ -55,11 +55,18 @@ class CommunityPost(Base):
     comments_count: Mapped[int] = mapped_column(Integer, default=0)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+        onupdate=lambda: datetime.now(UTC),
+    )
 
     # Relationships
-    author: Mapped["User"] = relationship("User")
+    author: Mapped["User"] = relationship("User", lazy="selectin")
 
     __table_args__ = (
         Index("ix_community_posts_author_created", "author_id", "created_at"),
@@ -76,10 +83,13 @@ class CommunityPostLike(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     post_id: Mapped[str] = mapped_column(String(36), ForeignKey("community_posts.id"), nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+    )
 
-    post: Mapped["CommunityPost"] = relationship("CommunityPost")
-    user: Mapped["User"] = relationship("User")
+    post: Mapped["CommunityPost"] = relationship("CommunityPost", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
 
     __table_args__ = (Index("ix_community_post_likes_unique", "post_id", "user_id", unique=True),)
 
@@ -93,9 +103,12 @@ class CommunityPostComment(Base):
     post_id: Mapped[str] = mapped_column(String(36), ForeignKey("community_posts.id"), nullable=False, index=True)
     user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime,
+        default=lambda: datetime.now(UTC),
+    )
 
-    post: Mapped["CommunityPost"] = relationship("CommunityPost")
-    user: Mapped["User"] = relationship("User")
+    post: Mapped["CommunityPost"] = relationship("CommunityPost", lazy="selectin")
+    user: Mapped["User"] = relationship("User", lazy="selectin")
 
     __table_args__ = (Index("ix_community_post_comments_post", "post_id", "created_at"),)

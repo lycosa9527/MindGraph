@@ -15,9 +15,9 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
     SendSMSCodeRequest,
@@ -48,7 +48,7 @@ router = APIRouter()
 async def send_sms_code(
     request: SendSMSCodeRequest,
     _http_request: Request,
-    _db: Session = Depends(get_db),
+    _db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -104,14 +104,14 @@ async def send_sms_code(
 
     # For registration, check if phone already exists (use cache)
     if purpose == "register":
-        existing_user = user_cache.get_by_phone(phone)
+        existing_user = await user_cache.get_by_phone(phone)
         if existing_user:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
     # For login and reset_password, check if user exists (use cache)
     if purpose in ["login", "reset_password"]:
-        existing_user = user_cache.get_by_phone(phone)
+        existing_user = await user_cache.get_by_phone(phone)
         if not existing_user:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
@@ -195,7 +195,7 @@ async def send_sms_code(
 async def verify_sms_code(
     request: VerifySMSCodeRequest,
     _http_request: Request,
-    _db: Session = Depends(get_db),
+    _db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -232,7 +232,7 @@ async def verify_sms_code(
     return {"valid": True, "message": Messages.success("verification_code_valid", lang)}
 
 
-def _verify_and_consume_sms_code(phone: str, code: str, purpose: str, _db: Session, lang: Language = "en") -> bool:
+def _verify_and_consume_sms_code(phone: str, code: str, purpose: str, _db: AsyncSession, lang: Language = "en") -> bool:
     """
     Internal helper to verify and consume SMS code
 
@@ -266,7 +266,7 @@ async def _send_sms_code_with_purpose(
     request: SendSMSCodeSimpleRequest,
     _http_request: Request,
     purpose: str,
-    _db: Session,
+    _db: AsyncSession,
     lang: Language,
 ):
     """
@@ -309,14 +309,14 @@ async def _send_sms_code_with_purpose(
 
     # For registration, check if phone already exists (use cache)
     if purpose == "register":
-        existing_user = user_cache.get_by_phone(phone)
+        existing_user = await user_cache.get_by_phone(phone)
         if existing_user:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
     # For login and reset_password, check if user exists (use cache)
     if purpose in ["login", "reset_password"]:
-        existing_user = user_cache.get_by_phone(phone)
+        existing_user = await user_cache.get_by_phone(phone)
         if not existing_user:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
@@ -400,7 +400,7 @@ async def _send_sms_code_with_purpose(
 async def send_sms_code_for_login(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -416,7 +416,7 @@ async def send_sms_code_for_login(
 async def send_sms_code_for_reset(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -432,7 +432,7 @@ async def send_sms_code_for_reset(
 async def send_sms_code_for_register(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """

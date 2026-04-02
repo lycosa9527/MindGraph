@@ -10,9 +10,9 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 from collections import Counter
-from concurrent.futures import ThreadPoolExecutor, as_completed
-from datetime import datetime, timedelta
+from datetime import UTC, datetime, timedelta
 from typing import List, Dict, Any, Optional
 import logging
 import os
@@ -24,7 +24,9 @@ except ImportError:
     np = None
 
 from fastapi import HTTPException
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
 from clients.dashscope_embedding import get_embedding_client
 from clients.dashscope_rerank import get_rerank_client
@@ -93,7 +95,7 @@ class RAGService:
             self.parallel_workers,
         )
 
-    def has_knowledge_base(self, db: Session, user_id: int) -> bool:
+    async def has_knowledge_base(self, db: AsyncSession, user_id: int) -> bool:
         """
         Check if user has completed documents.
 
@@ -105,15 +107,16 @@ class RAGService:
             True if user has completed documents
         """
         try:
-            count = (
-                db.query(KnowledgeDocument)
+            result = await db.execute(
+                select(sa_count())
+                .select_from(KnowledgeDocument)
                 .join(KnowledgeSpace)
-                .filter(
+                .where(
                     KnowledgeSpace.user_id == user_id,
                     KnowledgeDocument.status == "completed",
                 )
-                .count()
             )
+            count = result.scalar()
             return count > 0
         except Exception as e:
             logger.error(
@@ -123,9 +126,9 @@ class RAGService:
             )
             return False
 
-    def _apply_metadata_post_filter(
+    async def _apply_metadata_post_filter(
         self,
-        db: Session,
+        db: AsyncSession,
         chunk_ids: List[int],
         metadata_filter: Optional[Dict[str, Any]],
     ) -> List[int]:
@@ -145,8 +148,8 @@ class RAGService:
         if not metadata_filter or not chunk_ids:
             return chunk_ids
 
-        # Get chunks with their documents
-        chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).join(KnowledgeDocument).all()
+        result = await db.execute(select(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids)).join(KnowledgeDocument))
+        chunks = result.scalars().all()
 
         filtered_chunk_ids = []
 
@@ -256,9 +259,9 @@ class RAGService:
 
         return filtered_chunk_ids
 
-    def retrieve_with_relationships(
+    async def retrieve_with_relationships(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         method: Optional[str] = None,
@@ -283,8 +286,7 @@ class RAGService:
         Returns:
             List of chunk texts
         """
-        # Get initial results (chunk texts)
-        initial_texts = self.retrieve_context(
+        initial_texts = await self.retrieve_context(
             db=db,
             user_id=user_id,
             query=query,
@@ -296,38 +298,27 @@ class RAGService:
         if not include_related:
             return initial_texts
 
-        # Get chunk IDs from initial results by matching texts
-        # This is a workaround - ideally retrieve_context would return IDs
-        initial_chunks = (
-            db.query(DocumentChunk)
-            .filter(
-                DocumentChunk.text.in_(initial_texts[:top_k])  # Limit to avoid too many matches
-            )
-            .all()
-        )
+        result = await db.execute(select(DocumentChunk).where(DocumentChunk.text.in_(initial_texts[:top_k])))
+        initial_chunks = result.scalars().all()
         document_ids = list(set(chunk.document_id for chunk in initial_chunks))
 
-        # Find related documents
         related_doc_ids = set()
         for doc_id in document_ids:
-            relationships = (
-                db.query(DocumentRelationship)
-                .filter(DocumentRelationship.source_document_id == doc_id)
-                .limit(max_related)
-                .all()
+            result = await db.execute(
+                select(DocumentRelationship).where(DocumentRelationship.source_document_id == doc_id).limit(max_related)
             )
+            relationships = result.scalars().all()
 
             for rel in relationships:
                 related_doc_ids.add(rel.target_document_id)
 
-        # Retrieve chunks from related documents
         if related_doc_ids:
-            related_texts = self.retrieve_context(
+            related_texts = await self.retrieve_context(
                 db=db,
                 user_id=user_id,
                 query=query,
                 method=method or "hybrid",
-                top_k=max_related * 2,  # Get more chunks from related docs
+                top_k=max_related * 2,
                 score_threshold=score_threshold,
                 metadata_filter={"document_id": list(related_doc_ids)},
             )
@@ -339,9 +330,9 @@ class RAGService:
 
         return all_texts[: top_k + max_related * 2]  # Limit total results
 
-    def retrieve_context(
+    async def retrieve_context(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: Optional[str] = None,
         method: Optional[str] = None,
@@ -350,7 +341,7 @@ class RAGService:
         source: str = "api",
         source_context: Optional[Dict[str, Any]] = None,
         metadata_filter: Optional[Dict[str, Any]] = None,
-        attachment_ids: Optional[List[int]] = None,  # NEW: For multimodal image queries
+        attachment_ids: Optional[List[int]] = None,
     ) -> List[str]:
         """
         Retrieve relevant context chunks for query.
@@ -369,10 +360,8 @@ class RAGService:
         Returns:
             List of text chunks
         """
-        # Support multimodal queries (image-only or text+image)
         if attachment_ids and not query:
-            # Image-only query
-            return self._retrieve_by_images(db, user_id, attachment_ids, top_k, score_threshold, metadata_filter)
+            return await self._retrieve_by_images(db, user_id, attachment_ids, top_k, score_threshold, metadata_filter)
 
         if not query or not query.strip():
             return []
@@ -397,23 +386,21 @@ class RAGService:
         }
 
         try:
-            # Get space_id for query recording
-            space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+            result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+            space = result.scalar_one_or_none()
             space_id = space.id if space else None
 
-            # Get chunk IDs from search (with timing)
-            # Note: embedding time is included in vector_search/hybrid_search
             search_start = time.time()
             if method == "semantic":
-                # Get more for reranking
-                chunk_ids = self.vector_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
+                chunk_ids = await self.vector_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
             elif method == "keyword":
-                chunk_ids = self.keyword_search_func(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
+                chunk_ids = await self.keyword_search_func(
+                    db, user_id, query, top_k * 2, metadata_filter=metadata_filter
+                )
             else:  # hybrid
-                chunk_ids = self.hybrid_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
+                chunk_ids = await self.hybrid_search(db, user_id, query, top_k * 2, metadata_filter=metadata_filter)
 
-            # Apply post-filtering for advanced metadata (tags, date ranges, etc.)
-            chunk_ids = self._apply_metadata_post_filter(db, chunk_ids, metadata_filter)
+            chunk_ids = await self._apply_metadata_post_filter(db, chunk_ids, metadata_filter)
 
             timing["search_ms"] = (time.time() - search_start) * 1000
             # Embedding time is included in search time for semantic/hybrid methods
@@ -425,7 +412,7 @@ class RAGService:
             if not chunk_ids:
                 # Record query even if no results
                 if space_id:
-                    self._record_query(
+                    await self._record_query(
                         db=db,
                         user_id=user_id,
                         space_id=space_id,
@@ -440,8 +427,8 @@ class RAGService:
                     )
                 return []
 
-            # Lookup text from database
-            chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).all()
+            result = await db.execute(select(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids)))
+            chunks = result.scalars().all()
 
             # Extract text and metadata
             chunk_texts = [(chunk.text, chunk.id) for chunk in chunks]
@@ -502,9 +489,8 @@ class RAGService:
             timing["rerank_ms"] = (time.time() - rerank_start) * 1000
             timing["total_ms"] = (time.time() - start_time) * 1000
 
-            # Record query for analytics
             if space_id:
-                self._record_query(
+                await self._record_query(
                     db=db,
                     user_id=user_id,
                     space_id=space_id,
@@ -522,12 +508,12 @@ class RAGService:
 
         except Exception as e:
             logger.error("[RAGService] Failed to retrieve context: %s", e)
-            # Record failed query
             try:
-                space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+                result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+                space = result.scalar_one_or_none()
                 if space:
                     timing["total_ms"] = (time.time() - start_time) * 1000
-                    self._record_query(
+                    await self._record_query(
                         db=db,
                         user_id=user_id,
                         space_id=space.id,
@@ -544,9 +530,9 @@ class RAGService:
                 logger.error("[RAGService] Failed to record query: %s", record_error)
             return []
 
-    def vector_search(
+    async def vector_search(
         self,
-        _db: Session,
+        _db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -596,9 +582,9 @@ class RAGService:
             logger.error("[RAGService] Vector search failed: %s", e)
             return []
 
-    def keyword_search_func(
+    async def keyword_search_func(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -629,9 +615,9 @@ class RAGService:
             logger.error("[RAGService] Keyword search failed: %s", e)
             return []
 
-    def hybrid_search(
+    async def hybrid_search(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -641,7 +627,7 @@ class RAGService:
         """
         Hybrid search combining vector and keyword search (Dify's approach).
 
-        Runs both searches in parallel, then combines with weighted scores.
+        Runs both searches concurrently, then combines with weighted scores.
 
         Args:
             db: Database session
@@ -657,72 +643,31 @@ class RAGService:
             weights = {"vector": self.vector_weight, "keyword": self.keyword_weight}
 
         try:
-            # Run both searches in parallel (Dify's approach - 43% faster)
-            vector_results = []
-            keyword_results = []
-            exceptions = []
+            vector_results, keyword_results = [], []
 
-            with ThreadPoolExecutor(max_workers=self.parallel_workers) as executor:
-                # Submit both searches in parallel
-                vector_future = executor.submit(
-                    self._vector_search_with_scores,
-                    db,
-                    user_id,
-                    query,
-                    top_k * 2,
-                    metadata_filter,
+            try:
+                vector_results, keyword_results = await asyncio.gather(
+                    self._vector_search_with_scores(
+                        db,
+                        user_id,
+                        query,
+                        top_k * 2,
+                        metadata_filter,
+                    ),
+                    self._keyword_search_with_scores(
+                        db,
+                        user_id,
+                        query,
+                        top_k * 2,
+                        metadata_filter,
+                    ),
                 )
-                keyword_future = executor.submit(
-                    self._keyword_search_with_scores,
-                    db,
-                    user_id,
-                    query,
-                    top_k * 2,
-                    metadata_filter,
+            except Exception as parallel_err:
+                logger.warning(
+                    "[RAGService] Parallel search failed, falling back to vector search: %s",
+                    parallel_err,
                 )
-
-                # Wait for both to complete, handle errors (Dify's approach)
-                # Use as_completed for early error propagation - cancel remaining futures on first error
-                futures = [vector_future, keyword_future]
-                try:
-                    for future in as_completed(futures, timeout=300):
-                        if future.exception():
-                            # Cancel remaining futures to avoid unnecessary waiting
-                            for f in futures:
-                                if not f.done():
-                                    f.cancel()
-                            exceptions.append(str(future.exception()))
-                            break
-
-                    # Only get results if no exceptions occurred
-                    if not exceptions:
-                        vector_results = vector_future.result(timeout=0) if vector_future.done() else []
-                        keyword_results = keyword_future.result(timeout=0) if keyword_future.done() else []
-                    else:
-                        # If we had exceptions, try to get any successful results
-                        vector_results = []
-                        keyword_results = []
-                        if vector_future.done() and not vector_future.exception():
-                            try:
-                                vector_results = vector_future.result(timeout=0)
-                            except Exception as exc:
-                                logger.debug("Vector search result retrieval failed: %s", exc)
-                        if keyword_future.done() and not keyword_future.exception():
-                            try:
-                                keyword_results = keyword_future.result(timeout=0)
-                            except Exception as exc:
-                                logger.debug("Keyword search result retrieval failed: %s", exc)
-                except Exception as e:
-                    logger.error("[RAGService] Parallel search failed: %s", e)
-                    # Cancel remaining futures on error
-                    for f in futures:
-                        if not f.done():
-                            f.cancel()
-                    exceptions.append(str(e))
-
-            if exceptions:
-                logger.warning("[RAGService] Some searches failed, falling back to vector search")
-                return self.vector_search(db, user_id, query, top_k, metadata_filter)
+                return await self.vector_search(db, user_id, query, top_k, metadata_filter)
 
             # Combine results with weighted scores
             combined_scores = {}
@@ -749,12 +694,11 @@ class RAGService:
 
         except Exception as e:
             logger.error("[RAGService] Hybrid search failed: %s", e)
-            # Fallback to vector search
-            return self.vector_search(db, user_id, query, top_k, metadata_filter)
+            return await self.vector_search(db, user_id, query, top_k, metadata_filter)
 
-    def _vector_search_with_scores(
+    async def _vector_search_with_scores(
         self,
-        _db: Session,
+        _db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -774,9 +718,9 @@ class RAGService:
             logger.error("[RAGService] Vector search with scores failed: %s", e)
             return []
 
-    def _keyword_search_with_scores(
+    async def _keyword_search_with_scores(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         query: str,
         top_k: int,
@@ -819,9 +763,9 @@ class RAGService:
 
         return [seen[text] for text in order]
 
-    def _retrieve_by_images(
+    async def _retrieve_by_images(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         attachment_ids: List[int],
         top_k: int,
@@ -843,15 +787,13 @@ class RAGService:
             List of text chunks
         """
         try:
-            # Get attachments
-            attachments = (
-                db.query(ChunkAttachment)
-                .filter(
+            result = await db.execute(
+                select(ChunkAttachment).where(
                     ChunkAttachment.id.in_(attachment_ids),
                     ChunkAttachment.attachment_type == "image",
                 )
-                .all()
             )
+            attachments = result.scalars().all()
 
             if not attachments:
                 logger.warning(
@@ -905,9 +847,9 @@ class RAGService:
                 metadata_filter=metadata_filter,
             )
 
-            # Get chunk texts
             chunk_ids = [r["chunk_id"] for r in results]
-            chunks = db.query(DocumentChunk).filter(DocumentChunk.id.in_(chunk_ids)).all()
+            result = await db.execute(select(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids)))
+            chunks = result.scalars().all()
 
             # Sort by score
             chunk_dict = {chunk.id: chunk for chunk in chunks}
@@ -923,7 +865,7 @@ class RAGService:
             return []
 
     @staticmethod
-    def _expand_query(query: str, db: Session, user_id: int) -> str:
+    async def _expand_query(query: str, db: AsyncSession, user_id: int) -> str:
         """
         Expand query using synonyms and related terms from successful queries.
 
@@ -935,18 +877,17 @@ class RAGService:
         Returns:
             Expanded query string
         """
-        # Get space_id for query history
-        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+        result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+        space = result.scalar_one_or_none()
         if not space:
             return query
 
-        # Get successful queries (with positive feedback) from last 30 days
-        cutoff_date = datetime.utcnow() - timedelta(days=30)
+        cutoff_date = datetime.now(UTC) - timedelta(days=30)
 
-        successful_queries = (
-            db.query(KnowledgeQuery)
+        result = await db.execute(
+            select(KnowledgeQuery)
             .join(QueryFeedback)
-            .filter(
+            .where(
                 KnowledgeQuery.space_id == space.id,
                 KnowledgeQuery.created_at >= cutoff_date,
                 QueryFeedback.feedback_type == "positive",
@@ -954,8 +895,8 @@ class RAGService:
             )
             .distinct()
             .limit(100)
-            .all()
         )
+        successful_queries = result.scalars().all()
 
         # Extract related terms from successful queries
         related_terms = set()
@@ -978,7 +919,7 @@ class RAGService:
 
         return query
 
-    def analyze_query_performance(self, db: Session, user_id: int, days: int = 30) -> Dict[str, Any]:
+    async def analyze_query_performance(self, db: AsyncSession, user_id: int, days: int = 30) -> Dict[str, Any]:
         """
         Analyze query performance patterns.
 
@@ -994,7 +935,8 @@ class RAGService:
             - average_scores: Average feedback scores by method
             - suggestions: List of query improvement suggestions
         """
-        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == user_id).first()
+        result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == user_id))
+        space = result.scalar_one_or_none()
         if not space:
             return {
                 "common_queries": [],
@@ -1003,47 +945,43 @@ class RAGService:
                 "suggestions": [],
             }
 
-        cutoff_date = datetime.utcnow() - timedelta(days=days)
+        cutoff_date = datetime.now(UTC) - timedelta(days=days)
 
-        # Get queries with feedback
-        queries_with_feedback = (
-            db.query(KnowledgeQuery)
+        result = await db.execute(
+            select(KnowledgeQuery)
             .join(QueryFeedback)
-            .filter(
+            .where(
                 KnowledgeQuery.space_id == space.id,
                 KnowledgeQuery.created_at >= cutoff_date,
             )
-            .all()
         )
+        queries_with_feedback = result.scalars().all()
 
-        # Analyze common queries
         query_counts = Counter(q.query for q in queries_with_feedback)
         common_queries = [{"query": query, "count": count} for query, count in query_counts.most_common(10)]
 
-        # Analyze query performance by method
         method_scores = {}
         for method in ["semantic", "keyword", "hybrid"]:
             method_queries = [q for q in queries_with_feedback if q.method == method]
             if method_queries:
                 feedbacks = []
                 for q in method_queries:
-                    q_feedbacks = (
-                        db.query(QueryFeedback)
-                        .filter(
+                    result = await db.execute(
+                        select(QueryFeedback).where(
                             QueryFeedback.query_id == q.id,
                             QueryFeedback.feedback_score.isnot(None),
                         )
-                        .all()
                     )
+                    q_feedbacks = result.scalars().all()
                     feedbacks.extend([f.feedback_score for f in q_feedbacks])
 
                 if feedbacks:
                     method_scores[method] = sum(feedbacks) / len(feedbacks)
 
-        # Identify low-performing queries
         low_performing = []
         for q in queries_with_feedback:
-            q_feedbacks = db.query(QueryFeedback).filter(QueryFeedback.query_id == q.id).all()
+            result = await db.execute(select(QueryFeedback).where(QueryFeedback.query_id == q.id))
+            q_feedbacks = result.scalars().all()
             if q_feedbacks:
                 avg_score = sum(f.feedback_score for f in q_feedbacks if f.feedback_score) / len(q_feedbacks)
                 if avg_score < 3.0:
@@ -1107,9 +1045,9 @@ class RAGService:
 
         return escaped
 
-    def _record_query(
+    async def _record_query(
         self,
-        db: Session,
+        db: AsyncSession,
         user_id: int,
         space_id: int,
         query: str,
@@ -1154,7 +1092,7 @@ class RAGService:
                 source_context=source_context,
             )
             db.add(query_record)
-            db.commit()
+            await db.commit()
             total_ms = timing.get("total_ms")
             logger.debug(
                 "[RAGService] Recorded query for user %s: method=%s, results=%s, time=%.2fms",
@@ -1164,7 +1102,7 @@ class RAGService:
                 total_ms if total_ms else 0.0,
             )
         except Exception as e:
-            db.rollback()
+            await db.rollback()
             logger.warning("[RAGService] Failed to record query: %s", e)
 
     def enhance_prompt(

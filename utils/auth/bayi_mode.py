@@ -14,7 +14,7 @@ import base64
 import hashlib
 import json
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from urllib.parse import unquote
 
 from .config import BAYI_CLOCK_SKEW_TOLERANCE
@@ -153,13 +153,17 @@ def validate_bayi_token_body(body: dict) -> bool:
             )
             return False
 
-        now = datetime.utcnow()
-        time_diff = (now - token_time).total_seconds()
+        now = datetime.now(tz=UTC)
+        if token_time.tzinfo is None:
+            token_time_utc = token_time.replace(tzinfo=UTC)
+        else:
+            token_time_utc = token_time.astimezone(UTC)
+        time_diff = (now - token_time_utc).total_seconds()
 
         logger.debug(
             "Timestamp validation - now (UTC): %s, token_time (UTC): %s, diff: %ds (%.1f minutes)",
             now,
-            token_time,
+            token_time_utc,
             time_diff,
             time_diff / 60,
         )
@@ -172,7 +176,7 @@ def validate_bayi_token_body(body: dict) -> bool:
                 time_diff,
                 BAYI_CLOCK_SKEW_TOLERANCE,
                 now,
-                token_time,
+                token_time_utc,
             )
             return False
 
@@ -191,7 +195,7 @@ def validate_bayi_token_body(body: dict) -> bool:
                 time_diff,
                 time_diff / 60,
                 now,
-                token_time,
+                token_time_utc,
             )
             return False
 

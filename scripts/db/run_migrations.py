@@ -1,8 +1,8 @@
 """
-MindGraph database migration (aligned with application DB startup).
+MindGraph database migration / PostgreSQL import CLI.
 
-Loads ``.env`` from the project root automatically (or ``MINDGRAPH_ENV_FILE`` if set).
-Set ``MINDGRAPH_MIGRATION_DEBUG=1`` for debug logging (optional).
+Loads ``.env`` from the project root automatically (or ``MINDGRAPH_ENV_FILE``
+if set).  Set ``MINDGRAPH_MIGRATION_DEBUG=1`` for debug logging (optional).
 
 For PostgreSQL, after loading ``.env`` the script tries to ensure the server is
 reachable (same logic as ``dump_import_postgres.ensure_postgresql_running``):
@@ -10,11 +10,13 @@ if the database does not accept connections, it may start PostgreSQL via the
 app starter, ``systemctl``, or Windows services — but not when failure is
 password authentication (server already running).
 
-- **Create missing tables**: same as ``config.database.init_db()`` (app startup).
-- **Import backup**: if any expected tables are missing, runs ``init_db`` (schema
-  only, no org seed) before ``pg_restore``. Then restores from ``BACKUP_DIR``
-  (default ``backup/``), same rules as ``scripts/db/dump_import_postgres.py`` —
-  each ``mindgraph.postgresql.*.dump`` needs a ``*.dump.manifest.json`` beside it.
+- **Run Alembic migrations**: executes ``alembic upgrade head`` to apply all
+  pending schema changes.
+- **Import backup**: if any expected tables are missing, runs ``alembic
+  upgrade head`` (schema only) before ``pg_restore``.  Then restores from
+  ``BACKUP_DIR`` (default ``backup/``), same rules as
+  ``scripts/db/dump_import_postgres.py`` — each
+  ``mindgraph.postgresql.*.dump`` needs a ``*.dump.manifest.json`` beside it.
 
 Usage:
     python scripts/db/run_migrations.py
@@ -32,16 +34,12 @@ import logging
 import os
 import sys
 from pathlib import Path
-from typing import Any, Callable, Dict
+from typing import Any, Dict
 from urllib.parse import urlparse, urlunparse
 
-from sqlalchemy import text
+from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import DeclarativeMeta
 
-# -----------------------------------------------------------------------------
-# Project root — before config.database or lazy imports of ``services.*``
-# -----------------------------------------------------------------------------
 PROJECT_ROOT = Path(__file__).resolve().parent.parent.parent
 sys.path.insert(0, str(PROJECT_ROOT))
 os.environ.setdefault("PYTHONPATH", str(PROJECT_ROOT))
@@ -50,11 +48,7 @@ _DEFAULT_ENV_PATH = PROJECT_ROOT / ".env"
 
 
 def _ensure_public_schema_for_project_db(mods: Dict[str, Any]) -> bool:
-    """
-    Ensure ``public`` exists before ORM DDL.
-
-    Loads ``pg_restore_prep`` after ``sys.path`` includes ``PROJECT_ROOT``.
-    """
+    """Ensure ``public`` schema exists before ORM DDL."""
     prep = importlib.import_module("services.utils.pg_restore_prep")
     ensure_fn = getattr(prep, "ensure_public_schema_exists")
     return bool(ensure_fn(mods["DATABASE_URL"], mods["engine"]))
@@ -90,7 +84,6 @@ def _apply_env_file(path: Path) -> None:
             os.environ[key] = val
 
 
-# Ubuntu/Debian as root: match migrate_sqlite_to_postgresql default data dir
 if sys.platform != "win32":
     try:
         uid_zero = hasattr(os, "geteuid") and os.geteuid() == 0
@@ -123,7 +116,7 @@ def _mask_database_url(url: str) -> str:
 
 
 def _preflight_database(db_engine: Engine) -> None:
-    """Fail fast if PostgreSQL/SQLite is unreachable."""
+    """Fail fast if PostgreSQL is unreachable."""
     with db_engine.connect() as conn:
         conn.execute(text("SELECT 1"))
 
@@ -159,121 +152,31 @@ def _configure_logging(debug: bool) -> None:
     )
 
 
-def _log_model_registration_summary(base: DeclarativeMeta) -> None:
-    names = sorted(base.metadata.tables.keys())
-    logging.getLogger(__name__).info(
-        "Registered %d table(s) on Base.metadata (via config.database)",
-        len(names),
-    )
-    logging.getLogger(__name__).debug("Tables: %s", ", ".join(names))
-
-
-def _check_status(
-    db_engine: Engine,
-    base: DeclarativeMeta,
-    check_database_status_fn: Callable[..., Any],
-) -> None:
-    """Log expected vs existing tables and missing columns."""
+def _check_status(db_engine: Engine, base: Any) -> None:
+    """Log expected vs existing tables."""
     logger = logging.getLogger(__name__)
     logger.info("%s", "=" * 60)
     logger.info("STEP 1: CHECK — current database status")
     logger.info("%s", "=" * 60)
 
-    status = check_database_status_fn(db_engine, base)
-    expected_tables = status["expected_tables"]
-    existing_tables = status["existing_tables"]
-    missing_tables = status["missing_tables"]
-    missing_columns = status["missing_columns"]
+    expected_tables = set(base.metadata.tables.keys())
+    inspector = inspect(db_engine)
+    existing_tables = set(inspector.get_table_names())
+    missing_tables = expected_tables - existing_tables
 
-    logger.info("Expected tables in Base.metadata (%d):", len(expected_tables))
-    for table_name in sorted(expected_tables):
-        logger.info("  - %s", table_name)
-
-    logger.info("Existing tables in database (%d):", len(existing_tables))
-    for table_name in sorted(existing_tables):
-        logger.info("  - %s", table_name)
+    logger.info(
+        "Expected tables: %d  |  Existing: %d  |  Missing: %d",
+        len(expected_tables),
+        len(existing_tables),
+        len(missing_tables),
+    )
 
     if missing_tables:
-        logger.warning("Found %d missing table(s):", len(missing_tables))
+        logger.warning("Missing table(s):")
         for table_name in sorted(missing_tables):
             logger.warning("  - %s", table_name)
     else:
-        logger.info("All expected tables exist in database")
-
-    if missing_columns:
-        missing_columns_count = sum(len(cols) for cols in missing_columns.values())
-        logger.warning("Found %d missing column(s) across tables:", missing_columns_count)
-        for table_name, missing_cols in missing_columns.items():
-            logger.warning(
-                "  - Table '%s': %s",
-                table_name,
-                ", ".join(sorted(missing_cols)),
-            )
-    else:
-        logger.info("All existing tables have expected columns (per metadata)")
-
-
-def _verify_results(
-    db_engine: Engine,
-    base: DeclarativeMeta,
-    expected_tables: set[str],
-    verify_migration_results_fn: Callable[..., Any],
-) -> bool:
-    """Compare live schema to metadata (tables, columns, sequences, indexes)."""
-    logger = logging.getLogger(__name__)
-    logger.info("%s", "=" * 60)
-    logger.info("VERIFY — migration results")
-    logger.info("%s", "=" * 60)
-
-    verification_passed, verification_details = verify_migration_results_fn(db_engine, base, expected_tables)
-
-    if verification_details["tables_missing"]:
-        logger.error(
-            "VERIFICATION FAILED: %d table(s) still missing:",
-            len(verification_details["tables_missing"]),
-        )
-        for table_name in sorted(verification_details["tables_missing"]):
-            logger.error("  - %s", table_name)
-        return False
-    logger.info("All %d expected tables exist", len(expected_tables))
-
-    if verification_details["columns_missing"]:
-        logger.error("VERIFICATION FAILED: missing columns:")
-        for table_name, missing_cols in verification_details["columns_missing"].items():
-            logger.error(
-                "  - Table '%s': %s",
-                table_name,
-                ", ".join(sorted(missing_cols)),
-            )
-        return False
-    logger.info("All tables have expected columns")
-
-    if verification_details["sequences_missing"]:
-        logger.error("VERIFICATION FAILED: missing sequences:")
-        for table_name, missing_seqs in verification_details["sequences_missing"].items():
-            logger.error(
-                "  - Table '%s': %s",
-                table_name,
-                ", ".join(sorted(missing_seqs)),
-            )
-        return False
-    logger.info("All required sequences exist")
-
-    if verification_details["indexes_missing"]:
-        logger.error("VERIFICATION FAILED: missing indexes:")
-        for table_name, missing_idxs in verification_details["indexes_missing"].items():
-            logger.error(
-                "  - Table '%s': %s",
-                table_name,
-                ", ".join(sorted(missing_idxs)),
-            )
-        return False
-    logger.info("All expected indexes exist")
-
-    logger.info("%s", "=" * 60)
-    logger.info("VERIFICATION PASSED")
-    logger.info("%s", "=" * 60)
-    return verification_passed
+        logger.info("All expected tables exist in the database")
 
 
 def _prompt_yes_no(question: str, default_yes: bool) -> bool:
@@ -304,12 +207,7 @@ def _load_dump_import_module() -> Any:
 
 
 def _ensure_postgresql_for_migrations(db_url: str) -> bool:
-    """
-    If PostgreSQL is not reachable, try starting it (same as dump/import script).
-
-    Uses ``dump_import_postgres.ensure_postgresql_running`` (requires psycopg2
-    for the pre-check probe).
-    """
+    """If PostgreSQL is not reachable, try starting it."""
     logger = logging.getLogger(__name__)
     try:
         dip = _load_dump_import_module()
@@ -323,8 +221,8 @@ def _prompt_primary_mode() -> str:
     """Return 'migrations', 'import_pg', or 'quit'."""
     print()
     print("What do you want to do?")
-    print("  1) Create missing tables (init_db — same as app startup)")
-    print("  2) Import backup into PostgreSQL (mindgraph.postgresql.*.dump + .manifest.json in BACKUP_DIR)")
+    print("  1) Run Alembic migrations (alembic upgrade head)")
+    print("  2) Import backup into PostgreSQL (mindgraph.postgresql.*.dump)")
     print("  3) Quit")
     while True:
         choice = input("Enter 1, 2, or 3: ").strip()
@@ -340,14 +238,11 @@ def _prompt_primary_mode() -> str:
 def _load_database_modules() -> Dict[str, Any]:
     """Import DB stack after .env has been applied."""
     cfg = importlib.import_module("config.database")
-    sm = importlib.import_module("utils.migration.postgresql.schema_migration")
     return {
         "Base": cfg.Base,
         "DATABASE_URL": cfg.DATABASE_URL,
         "engine": cfg.engine,
         "init_db": cfg.init_db,
-        "check_database_status": sm.check_database_status,
-        "verify_migration_results": sm.verify_migration_results,
     }
 
 
@@ -368,53 +263,49 @@ def _connect_and_report(mods: Dict[str, Any], env_path: Path) -> bool:
     return True
 
 
-def _run_apply_flow(mods: Dict[str, Any], seed_orgs: bool) -> int:
-    """init_db path with optional post-verify."""
+def _run_apply_flow(mods: Dict[str, Any]) -> int:
+    """Run Alembic migrations and seed data via init_db()."""
     logger = logging.getLogger(__name__)
     base = mods["Base"]
-    _log_model_registration_summary(base)
-    _check_status(mods["engine"], base, mods["check_database_status"])
+    logger.info(
+        "Registered %d table(s) on Base.metadata",
+        len(base.metadata.tables),
+    )
+    _check_status(mods["engine"], base)
 
     print()
-    if not _prompt_yes_no("Proceed with applying migrations", default_yes=False):
+    if not _prompt_yes_no("Proceed with alembic upgrade head", default_yes=False):
         print("Cancelled.")
         return 0
 
     if mods["engine"].dialect.name == "postgresql":
         if not _ensure_public_schema_for_project_db(mods):
-            logger.error("Could not ensure schema public exists; fix the database and retry.")
+            logger.error("Could not ensure schema public; fix the database and retry.")
             return 1
 
     logger.info("%s", "=" * 60)
-    logger.info("APPLY — init_db() (same as application startup)")
+    logger.info("APPLY — init_db (alembic upgrade + seed)")
     logger.info("%s", "=" * 60)
 
     try:
-        mods["init_db"](seed_organizations=seed_orgs)
+        mods["init_db"](seed_organizations=True)
     except Exception as exc:
         logger.error("init_db() failed: %s", exc, exc_info=True)
         return 1
 
-    if not _prompt_yes_no("Run verification after apply", default_yes=True):
-        logger.info("Skipping verification.")
-        return 0
-
-    expected = set(base.metadata.tables.keys())
-    ok = _verify_results(mods["engine"], base, expected, mods["verify_migration_results"])
-    return 0 if ok else 1
+    logger.info("Migration and seeding completed successfully")
+    return 0
 
 
 def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
-    """
-    Create missing tables before pg_restore so the dump can load.
-
-    Uses init_db(seed_organizations=False): schema + migrations, no org seed
-    (restore supplies data).
-    """
+    """Create missing tables via Alembic before pg_restore."""
     logger = logging.getLogger(__name__)
     base = mods["Base"]
-    status = mods["check_database_status"](mods["engine"], base)
-    missing = status["missing_tables"]
+    inspector = inspect(mods["engine"])
+    existing = set(inspector.get_table_names())
+    expected = set(base.metadata.tables.keys())
+    missing = expected - existing
+
     if not missing:
         logger.info("Import precheck: all expected tables exist in the database")
         return True
@@ -429,11 +320,11 @@ def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
         logger.warning("  ... and %d more", len(missing) - 25)
 
     if not live:
-        logger.info("[DRY RUN] On execute, init_db() would run first to create missing tables.")
+        logger.info("[DRY RUN] On execute, init_db would run first to create tables.")
         return True
 
     if not _ensure_public_schema_for_project_db(mods):
-        logger.error("Could not ensure schema public exists; fix the database and retry.")
+        logger.error("Could not ensure schema public; fix the database and retry.")
         return False
 
     logger.info("Creating missing schema (init_db, seed_organizations=False) before pg_restore...")
@@ -443,11 +334,12 @@ def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
         logger.error("init_db() failed before import: %s", exc, exc_info=True)
         return False
 
-    status_after = mods["check_database_status"](mods["engine"], base)
-    still_missing = status_after["missing_tables"]
+    inspector_after = inspect(mods["engine"])
+    existing_after = set(inspector_after.get_table_names())
+    still_missing = expected - existing_after
     if still_missing:
         logger.error(
-            "After init_db, %d table(s) still missing: %s",
+            "After alembic upgrade, %d table(s) still missing: %s",
             len(still_missing),
             ", ".join(sorted(still_missing)[:15]),
         )
@@ -457,7 +349,7 @@ def _ensure_schema_before_pg_import(mods: Dict[str, Any], live: bool) -> bool:
 
 
 def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
-    """pg_restore from backup/ using manifest verification (dump_import_postgres)."""
+    """pg_restore from backup/ using manifest verification."""
     logger = logging.getLogger(__name__)
     if mods["engine"].dialect.name != "postgresql":
         logger.error(
@@ -500,18 +392,18 @@ def _run_pg_import_flow(mods: Dict[str, Any]) -> int:
 
 
 def _interactive_migration_flow(mods: Dict[str, Any]) -> int:
-    """After DB connect: create tables or import backup."""
+    """After DB connect: run alembic or import backup."""
     primary = _prompt_primary_mode()
     if primary == "quit":
         print("Goodbye.")
         return 0
     if primary == "import_pg":
         return _run_pg_import_flow(mods)
-    return _run_apply_flow(mods, seed_orgs=True)
+    return _run_apply_flow(mods)
 
 
 def main() -> int:
-    """Load ``.env`` automatically, then prompt for create tables vs import backup."""
+    """Load ``.env`` automatically, then prompt for alembic upgrade vs import backup."""
     print("=" * 60)
     print("MindGraph — database migration / PostgreSQL import")
     print("=" * 60)

@@ -497,6 +497,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': '校内协同',
   'mindgraphLanding.dialogSharedTitle': '共同协同',
   'mindgraphLanding.import': '导入',
+  'mindgraphLanding.inputPlaceholder': '描述你的图示，或从下方选择具体图示模板...',
   'mindgraphLanding.join': '加入',
   'mindgraphLanding.joinFailed': '加入失败',
   'mindgraphLanding.joinPresentationFailed': '加入演示失败',

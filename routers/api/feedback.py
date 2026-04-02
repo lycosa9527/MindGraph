@@ -78,7 +78,7 @@ async def submit_feedback(req: FeedbackRequest, request: Request):
                 user_id_from_token = payload.get("sub")
                 if user_id_from_token:
                     # Use cache for user lookup (with database fallback)
-                    current_user = user_cache.get_by_id(int(user_id_from_token))
+                    current_user = await user_cache.get_by_id(int(user_id_from_token))
                     if current_user:
                         user_id_from_db = current_user.id
                         user_name_from_db = current_user.name if hasattr(current_user, "name") else None

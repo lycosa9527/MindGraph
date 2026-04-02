@@ -38,12 +38,12 @@ async def schedule_live_spec_db_flush(code: str, diagram_id: str) -> None:
             last_ts = 0.0
     now = time.time()
     if now - last_ts >= LIVE_FLUSH_MAX_INTERVAL_SEC:
-        await asyncio.to_thread(flush_live_spec_to_db, code, diagram_id)
+        await flush_live_spec_to_db(code, diagram_id)
         return
 
     async def _run() -> None:
         await asyncio.sleep(LIVE_FLUSH_DEBOUNCE_SEC)
-        await asyncio.to_thread(flush_live_spec_to_db, code, diagram_id)
+        await flush_live_spec_to_db(code, diagram_id)
 
     async with _lock:
         old = _pending.pop(code, None)
@@ -53,7 +53,7 @@ async def schedule_live_spec_db_flush(code: str, diagram_id: str) -> None:
             task = asyncio.create_task(_run())
         except RuntimeError:
             # no running loop (should not happen in WS handler)
-            await asyncio.to_thread(flush_live_spec_to_db, code, diagram_id)
+            await flush_live_spec_to_db(code, diagram_id)
             return
         _pending[code] = task
 

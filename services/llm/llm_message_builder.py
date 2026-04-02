@@ -12,7 +12,7 @@ Proprietary License
 from typing import Dict, List, Optional, Any
 import logging
 
-from config.database import SessionLocal
+from config.database import AsyncSessionLocal
 from services.llm.rag_service import get_rag_service
 
 logger = logging.getLogger(__name__)
@@ -89,7 +89,7 @@ class LLMMessageBuilder:
         return prompt
 
     @staticmethod
-    def inject_rag_context(
+    async def inject_rag_context(
         messages: List[Dict[str, Any]],
         user_id: Optional[int],
         query: str,
@@ -112,21 +112,17 @@ class LLMMessageBuilder:
 
         try:
             rag_service = get_rag_service()
-            db = SessionLocal()
-            try:
-                # Check if user has knowledge base
-                if not rag_service.has_knowledge_base(db, user_id):
+            async with AsyncSessionLocal() as db:
+                if not await rag_service.has_knowledge_base(db, user_id):
                     return messages
 
-                # Retrieve context
-                context_chunks = rag_service.retrieve_context(
+                context_chunks = await rag_service.retrieve_context(
                     db=db, user_id=user_id, query=query, top_k=5, method="hybrid"
                 )
 
                 if not context_chunks:
                     return messages
 
-                # Enhance prompt with context
                 enhanced_prompt = rag_service.enhance_prompt(
                     _user_id=user_id,
                     prompt=query,
@@ -134,14 +130,12 @@ class LLMMessageBuilder:
                     max_context_length=2000,
                 )
 
-                # Update the last user message with enhanced prompt
                 for msg in reversed(messages):
                     if msg.get("role") == "user":
                         content = msg.get("content")
                         if isinstance(content, str):
                             msg["content"] = enhanced_prompt
                         elif isinstance(content, list):
-                            # Multimodal: update text content
                             for item in content:
                                 if item.get("type") == "text":
                                     item["text"] = enhanced_prompt
@@ -153,17 +147,13 @@ class LLMMessageBuilder:
                     len(context_chunks),
                 )
 
-            finally:
-                db.close()
-
         except Exception as e:
-            # If RAG fails, continue with original prompt
             logger.warning("[LLMMessageBuilder] RAG failed, using original prompt: %s", e)
 
         return messages
 
     @staticmethod
-    def build_with_rag(
+    async def build_with_rag(
         prompt: str = "",
         system_message: Optional[str] = None,
         messages: Optional[List[Dict[str, Any]]] = None,
@@ -185,17 +175,14 @@ class LLMMessageBuilder:
         Returns:
             List of message dicts with RAG context injected (if enabled)
         """
-        # Build messages
         chat_messages = LLMMessageBuilder.build_chat_messages(
             prompt=prompt, system_message=system_message, messages=messages
         )
 
-        # Extract query for RAG
         query = LLMMessageBuilder.extract_query_for_rag(messages, prompt)
 
-        # Inject RAG context if enabled
         if use_knowledge_base:
-            chat_messages = LLMMessageBuilder.inject_rag_context(
+            chat_messages = await LLMMessageBuilder.inject_rag_context(
                 messages=chat_messages,
                 user_id=user_id,
                 query=query,
@@ -205,7 +192,7 @@ class LLMMessageBuilder:
         return chat_messages
 
     @staticmethod
-    def enhance_prompt_for_streaming(prompt: str, user_id: Optional[int], use_knowledge_base: bool = True) -> str:
+    async def enhance_prompt_for_streaming(prompt: str, user_id: Optional[int], use_knowledge_base: bool = True) -> str:
         """
         Enhance prompt with RAG context for streaming requests.
 
@@ -225,21 +212,17 @@ class LLMMessageBuilder:
 
         try:
             rag_service = get_rag_service()
-            db = SessionLocal()
-            try:
-                # Check if user has knowledge base
-                if not rag_service.has_knowledge_base(db, user_id):
+            async with AsyncSessionLocal() as db:
+                if not await rag_service.has_knowledge_base(db, user_id):
                     return prompt
 
-                # Retrieve context
-                context_chunks = rag_service.retrieve_context(
+                context_chunks = await rag_service.retrieve_context(
                     db=db, user_id=user_id, query=prompt, top_k=5, method="hybrid"
                 )
 
                 if not context_chunks:
                     return prompt
 
-                # Enhance prompt with context
                 enhanced_prompt = rag_service.enhance_prompt(
                     _user_id=user_id,
                     prompt=prompt,
@@ -254,11 +237,7 @@ class LLMMessageBuilder:
 
                 return enhanced_prompt
 
-            finally:
-                db.close()
-
         except Exception as e:
-            # If RAG fails, continue with original prompt
             logger.warning(
                 "[LLMMessageBuilder] RAG failed for streaming, using original prompt: %s",
                 e,

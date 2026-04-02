@@ -1,4 +1,4 @@
-﻿"""
+"""
 Main Agent Prompts
 
 This module contains prompts used by the main agent for:

@@ -1,10 +1,9 @@
 """Message handlers for canvas collaboration WebSocket (reduces router complexity)."""
 
-import asyncio
 import json
 import logging
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional
 
 from fastapi import WebSocket
@@ -40,12 +39,12 @@ from utils.ws_limits import (
 logger = logging.getLogger(__name__)
 
 
-def build_participants_with_names(participant_ids: List[int]) -> List[Dict[str, Any]]:
+async def build_participants_with_names(participant_ids: List[int]) -> List[Dict[str, Any]]:
     """Build ``{user_id, username}`` entries for a list of participant ids."""
     out: List[Dict[str, Any]] = []
     for pid in participant_ids:
         if redis_user_cache:
-            participant_user = redis_user_cache.get_by_id(pid)
+            participant_user = await redis_user_cache.get_by_id(pid)
             if participant_user:
                 p_username = (
                     getattr(
@@ -84,7 +83,7 @@ async def _handle_ping(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
 async def _handle_join_repeat(ctx: CollabWsContext, _message: Dict[str, Any]) -> None:
     participant_ids = await workshop_service.get_participants(ctx.code)
     current_username = getattr(ctx.user, "username", None) or f"User {ctx.user.id}"
-    names = build_participants_with_names(participant_ids)
+    names = await build_participants_with_names(participant_ids)
     join_repeat: Dict[str, Any] = {
         "type": "joined",
         "user_id": ctx.user.id,
@@ -224,12 +223,8 @@ async def _handle_update(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
     redis = get_redis()
     if redis:
         try:
-            ttl_sec = await asyncio.to_thread(
-                get_workshop_redis_ttl_seconds,
-                ctx.diagram_id,
-            )
-            await asyncio.to_thread(
-                mutate_live_spec_after_ws_update,
+            ttl_sec = await get_workshop_redis_ttl_seconds(ctx.diagram_id)
+            await mutate_live_spec_after_ws_update(
                 redis,
                 ctx.code,
                 ctx.diagram_id,
@@ -250,7 +245,7 @@ async def _handle_update(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
         "type": "update",
         "diagram_id": ctx.diagram_id,
         "user_id": ctx.user.id,
-        "timestamp": message.get("timestamp") or datetime.utcnow().isoformat(),
+        "timestamp": message.get("timestamp") or datetime.now(UTC).isoformat(),
     }
 
     if nodes is not None or connections is not None:

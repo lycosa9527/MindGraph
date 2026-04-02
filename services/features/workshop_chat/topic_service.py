@@ -14,11 +14,12 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
-from sqlalchemy import and_, func
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, func, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.workshop_chat import (
@@ -37,8 +38,8 @@ class TopicService:
     """Lightweight topic (conversation) operations."""
 
     @staticmethod
-    def list_topics(
-        db: Session,
+    async def list_topics(
+        db: AsyncSession,
         channel_id: int,
         user_id: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
@@ -48,9 +49,13 @@ class TopicService:
         waterline (``ChannelMember.last_read_message_id``): only messages with
         id above that cursor count as unread, matching channel-level catch-up.
         """
-        topics = (
-            db.query(ChatTopic).filter(ChatTopic.channel_id == channel_id).order_by(ChatTopic.updated_at.desc()).all()
+        result = await db.execute(
+            select(ChatTopic)
+            .options(selectinload(ChatTopic.creator))
+            .where(ChatTopic.channel_id == channel_id)
+            .order_by(ChatTopic.updated_at.desc())
         )
+        topics = result.scalars().all()
         if not topics:
             return []
 
@@ -61,7 +66,7 @@ class TopicService:
             prefs,
             unread_pref_map,
             unread_no_pref_map,
-        ) = TopicService._topic_list_batch_data(
+        ) = await TopicService._topic_list_batch_data(
             db,
             channel_id,
             user_id,
@@ -85,8 +90,8 @@ class TopicService:
         ]
 
     @staticmethod
-    def _topic_list_batch_data(
-        db: Session,
+    async def _topic_list_batch_data(
+        db: AsyncSession,
         channel_id: int,
         user_id: Optional[int],
         topic_ids: List[int],
@@ -99,44 +104,41 @@ class TopicService:
     ]:
         waterline = 0
         if user_id:
-            member = (
-                db.query(ChannelMember)
-                .filter(
+            result = await db.execute(
+                select(ChannelMember).where(
                     ChannelMember.channel_id == channel_id,
                     ChannelMember.user_id == user_id,
                 )
-                .first()
             )
+            member = result.scalar_one_or_none()
             if member and member.last_read_message_id:
                 waterline = int(member.last_read_message_id)
 
-        msg_count_rows = (
-            db.query(ChatMessage.topic_id, sql_count(ChatMessage.id))
-            .filter(
+        mc_result = await db.execute(
+            select(ChatMessage.topic_id, sql_count(ChatMessage.id))
+            .where(
                 ChatMessage.topic_id.in_(topic_ids),
                 ChatMessage.is_deleted.is_(False),
             )
             .group_by(ChatMessage.topic_id)
-            .all()
         )
-        msg_counts = dict(msg_count_rows)
+        msg_counts = dict(mc_result.all())
 
         prefs: Dict[int, UserTopicPreference] = {}
         if user_id:
-            for row in (
-                db.query(UserTopicPreference)
-                .filter(
+            pref_result = await db.execute(
+                select(UserTopicPreference).where(
                     UserTopicPreference.user_id == user_id,
                     UserTopicPreference.topic_id.in_(topic_ids),
                 )
-                .all()
-            ):
+            )
+            for row in pref_result.scalars().all():
                 prefs[row.topic_id] = row
 
         unread_pref_map: Dict[int, int] = {}
         if user_id and prefs:
-            unread_pref_rows = (
-                db.query(
+            unread_pref_result = await db.execute(
+                select(
                     ChatMessage.topic_id,
                     sql_count(ChatMessage.id),
                 )
@@ -147,30 +149,28 @@ class TopicService:
                         UserTopicPreference.user_id == user_id,
                     ),
                 )
-                .filter(
+                .where(
                     ChatMessage.topic_id.in_(list(prefs.keys())),
                     ChatMessage.is_deleted.is_(False),
                     ChatMessage.created_at > UserTopicPreference.last_updated,
                 )
                 .group_by(ChatMessage.topic_id)
-                .all()
             )
-            unread_pref_map = dict(unread_pref_rows)
+            unread_pref_map = dict(unread_pref_result.all())
 
         topic_ids_no_pref = [tid for tid in topic_ids if tid not in prefs]
         unread_no_pref_map: Dict[int, int] = {}
         if topic_ids_no_pref:
-            no_pref_rows = (
-                db.query(ChatMessage.topic_id, sql_count(ChatMessage.id))
-                .filter(
+            no_pref_result = await db.execute(
+                select(ChatMessage.topic_id, sql_count(ChatMessage.id))
+                .where(
                     ChatMessage.topic_id.in_(topic_ids_no_pref),
                     ChatMessage.is_deleted.is_(False),
                     ChatMessage.id > waterline,
                 )
                 .group_by(ChatMessage.topic_id)
-                .all()
             )
-            unread_no_pref_map = dict(no_pref_rows)
+            unread_no_pref_map = dict(no_pref_result.all())
 
         return (
             waterline,
@@ -216,8 +216,8 @@ class TopicService:
         }
 
     @staticmethod
-    def create_topic(
-        db: Session,
+    async def create_topic(
+        db: AsyncSession,
         channel_id: int,
         title: str,
         created_by: int,
@@ -231,7 +231,7 @@ class TopicService:
             created_by=created_by,
         )
         db.add(topic)
-        db.commit()
+        await db.commit()
         logger.info(
             "[WorkshopChat] Topic '%s' created in channel %d by user %d",
             title,
@@ -248,14 +248,15 @@ class TopicService:
         }
 
     @staticmethod
-    def update_topic(
-        db: Session,
+    async def update_topic(
+        db: AsyncSession,
         topic_id: int,
         title: Optional[str] = None,
         description: Optional[str] = None,
     ) -> Optional[Dict[str, Any]]:
         """Update topic title or description."""
-        topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+        topic = result.scalar_one_or_none()
         if not topic:
             return None
 
@@ -264,8 +265,8 @@ class TopicService:
         if description is not None:
             topic.description = description
 
-        topic.updated_at = datetime.utcnow()
-        db.commit()
+        topic.updated_at = datetime.now(UTC)
+        await db.commit()
         return {
             "id": topic.id,
             "channel_id": topic.channel_id,
@@ -275,29 +276,34 @@ class TopicService:
         }
 
     @staticmethod
-    def get_topic(db: Session, topic_id: int) -> Optional[ChatTopic]:
+    async def get_topic(
+        db: AsyncSession,
+        topic_id: int,
+    ) -> Optional[ChatTopic]:
         """Get a topic by ID."""
-        return db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+        return result.scalar_one_or_none()
 
     @staticmethod
-    def move_topic(
-        db: Session,
+    async def move_topic(
+        db: AsyncSession,
         topic_id: int,
         target_channel_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Move a topic (and its messages) to a different channel."""
-        topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+        topic = result.scalar_one_or_none()
         if not topic:
             return None
         old_channel = topic.channel_id
         topic.channel_id = target_channel_id
-        topic.updated_at = datetime.utcnow()
+        topic.updated_at = datetime.now(UTC)
 
-        db.query(ChatMessage).filter(
-            ChatMessage.topic_id == topic_id,
-        ).update({"channel_id": target_channel_id}, synchronize_session=False)
+        await db.execute(
+            update(ChatMessage).where(ChatMessage.topic_id == topic_id).values(channel_id=target_channel_id)
+        )
 
-        db.commit()
+        await db.commit()
         logger.info(
             "[WorkshopChat] Topic %d moved from channel %d to %d",
             topic_id,
@@ -311,21 +317,22 @@ class TopicService:
         }
 
     @staticmethod
-    def delete_topic(db: Session, topic_id: int) -> bool:
+    async def delete_topic(db: AsyncSession, topic_id: int) -> bool:
         """Hard-delete a topic and its messages (cascade)."""
-        topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+        topic = result.scalar_one_or_none()
         if not topic:
             return False
-        db.delete(topic)
-        db.commit()
+        await db.delete(topic)
+        await db.commit()
         logger.info("[WorkshopChat] Topic %d deleted", topic_id)
         return True
 
     # ── Mark as read ─────────────────────────────────────────────
 
     @staticmethod
-    def mark_topic_read(
-        db: Session,
+    async def mark_topic_read(
+        db: AsyncSession,
         topic_id: int,
         user_id: int,
     ) -> Dict[str, Any]:
@@ -335,18 +342,18 @@ class TopicService:
         Advancing it to the latest message id in this topic clears those messages
         from the channel aggregate while per-topic unreads use ``last_updated``.
         """
-        topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+        topic = result.scalar_one_or_none()
         if not topic:
             return {"topic_id": topic_id, "marked_read": False}
 
-        pref = (
-            db.query(UserTopicPreference)
-            .filter(
+        pref_result = await db.execute(
+            select(UserTopicPreference).where(
                 UserTopicPreference.user_id == user_id,
                 UserTopicPreference.topic_id == topic_id,
             )
-            .first()
         )
+        pref = pref_result.scalar_one_or_none()
         if not pref:
             pref = UserTopicPreference(
                 user_id=user_id,
@@ -354,38 +361,36 @@ class TopicService:
                 visibility_policy="inherit",
             )
             db.add(pref)
-        pref.last_updated = datetime.utcnow()
+        pref.last_updated = datetime.now(UTC)
 
-        max_msg_id = (
-            db.query(func.max(ChatMessage.id))
-            .filter(
+        max_result = await db.execute(
+            select(func.max(ChatMessage.id)).where(
                 ChatMessage.topic_id == topic_id,
                 ChatMessage.is_deleted.is_(False),
             )
-            .scalar()
         )
+        max_msg_id = max_result.scalar()
         if max_msg_id:
-            member = (
-                db.query(ChannelMember)
-                .filter(
+            member_result = await db.execute(
+                select(ChannelMember).where(
                     ChannelMember.channel_id == topic.channel_id,
                     ChannelMember.user_id == user_id,
                 )
-                .first()
             )
+            member = member_result.scalar_one_or_none()
             if member:
                 current = member.last_read_message_id or 0
                 if max_msg_id > current:
                     member.last_read_message_id = max_msg_id
 
-        db.commit()
+        await db.commit()
         return {"topic_id": topic_id, "marked_read": True}
 
     # ── User topic visibility preferences ────────────────────────
 
     @staticmethod
-    def set_visibility(
-        db: Session,
+    async def set_visibility(
+        db: AsyncSession,
         topic_id: int,
         user_id: int,
         policy: str,
@@ -398,14 +403,13 @@ class TopicService:
         if policy not in valid:
             raise ValueError(f"Invalid policy: {policy}")
 
-        pref = (
-            db.query(UserTopicPreference)
-            .filter(
+        result = await db.execute(
+            select(UserTopicPreference).where(
                 UserTopicPreference.user_id == user_id,
                 UserTopicPreference.topic_id == topic_id,
             )
-            .first()
         )
+        pref = result.scalar_one_or_none()
         if not pref:
             pref = UserTopicPreference(
                 user_id=user_id,
@@ -415,27 +419,32 @@ class TopicService:
             db.add(pref)
         else:
             pref.visibility_policy = policy
-            pref.last_updated = datetime.utcnow()
-        db.commit()
+            pref.last_updated = datetime.now(UTC)
+        await db.commit()
         return {
             "topic_id": topic_id,
             "visibility_policy": pref.visibility_policy,
         }
 
     @staticmethod
-    def rename_topic(
-        db: Session,
+    async def rename_topic(
+        db: AsyncSession,
         topic_id: int,
         new_title: str,
     ) -> Optional[Dict[str, Any]]:
         """Rename a topic."""
-        topic = db.query(ChatTopic).filter(ChatTopic.id == topic_id).first()
+        result = await db.execute(select(ChatTopic).where(ChatTopic.id == topic_id))
+        topic = result.scalar_one_or_none()
         if not topic:
             return None
         topic.title = new_title[:MAX_TOPIC_TITLE_LENGTH]
-        topic.updated_at = datetime.utcnow()
-        db.commit()
-        logger.info("[WorkshopChat] Topic %d renamed to '%s'", topic_id, new_title)
+        topic.updated_at = datetime.now(UTC)
+        await db.commit()
+        logger.info(
+            "[WorkshopChat] Topic %d renamed to '%s'",
+            topic_id,
+            new_title,
+        )
         return {"id": topic.id, "title": topic.title}
 
 

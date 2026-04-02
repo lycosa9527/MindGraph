@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, Text, Index
 from sqlalchemy.dialects.postgresql import JSONB
@@ -39,7 +39,7 @@ class GeweGroupMember(Base):
     join_time = Column(DateTime, nullable=True, comment="Join time")
     last_updated = Column(
         DateTime,
-        default=datetime.utcnow,
+        default=lambda: datetime.now(UTC),
         nullable=False,
         index=True,
         comment="Last update timestamp",

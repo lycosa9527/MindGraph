@@ -16,8 +16,8 @@ Proprietary License
 import logging
 from typing import Any, Dict, List
 
-from sqlalchemy import and_, case, func, or_
-from sqlalchemy.orm import Session
+from sqlalchemy import and_, case, func, or_, select, update
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User
 from models.domain.workshop_chat import DirectMessage
@@ -37,7 +37,10 @@ class DirectMessageService:
     """1:1 direct message operations."""
 
     @staticmethod
-    def list_conversations(db: Session, user_id: int) -> List[Dict[str, Any]]:
+    async def list_conversations(
+        db: AsyncSession,
+        user_id: int,
+    ) -> List[Dict[str, Any]]:
         """List DM conversations with last message and unread count.
 
         One grouped query for aggregates + join for last row preview (not O(n)).
@@ -56,7 +59,7 @@ class DirectMessageService:
         )
 
         agg = (
-            db.query(
+            select(
                 other_party,
                 func.max(DirectMessage.id).label("last_msg_id"),
                 func.sum(
@@ -72,13 +75,13 @@ class DirectMessageService:
                     )
                 ).label("unread_count"),
             )
-            .filter(pair_scope)
+            .where(pair_scope)
             .group_by(other_party)
             .subquery()
         )
 
-        rows = (
-            db.query(
+        stmt = (
+            select(
                 agg.c.partner_id,
                 agg.c.unread_count,
                 DirectMessage.content,
@@ -89,8 +92,9 @@ class DirectMessageService:
             )
             .join(DirectMessage, DirectMessage.id == agg.c.last_msg_id)
             .outerjoin(User, User.id == agg.c.partner_id)
-            .all()
         )
+        result = await db.execute(stmt)
+        rows = result.all()
 
         conversations: List[Dict[str, Any]] = []
         for row in rows:
@@ -119,8 +123,8 @@ class DirectMessageService:
         return conversations
 
     @staticmethod
-    def get_messages(
-        db: Session,
+    async def get_messages(
+        db: AsyncSession,
         user_id: int,
         partner_id: int,
         anchor: int = 0,
@@ -137,28 +141,29 @@ class DirectMessageService:
         messages: List[DirectMessage] = []
 
         if num_before > 0:
-            before_q = db.query(DirectMessage).filter(
+            stmt = select(DirectMessage).where(
                 pair_filter,
                 DirectMessage.is_deleted.is_(False),
             )
             if anchor > 0:
-                before_q = before_q.filter(DirectMessage.id < anchor)
-            before_q = before_q.order_by(DirectMessage.id.desc()).limit(num_before)
-            messages.extend(reversed(before_q.all()))
+                stmt = stmt.where(DirectMessage.id < anchor)
+            stmt = stmt.order_by(DirectMessage.id.desc()).limit(num_before)
+            result = await db.execute(stmt)
+            messages.extend(reversed(result.scalars().all()))
 
         if num_after > 0 and anchor > 0:
-            after_rows = (
-                db.query(DirectMessage)
-                .filter(
+            stmt = (
+                select(DirectMessage)
+                .where(
                     pair_filter,
                     DirectMessage.is_deleted.is_(False),
                     DirectMessage.id >= anchor,
                 )
                 .order_by(DirectMessage.id.asc())
                 .limit(num_after)
-                .all()
             )
-            messages.extend(after_rows)
+            result = await db.execute(stmt)
+            messages.extend(result.scalars().all())
 
         return [
             {
@@ -176,8 +181,8 @@ class DirectMessageService:
         ]
 
     @staticmethod
-    def search_messages(
-        db: Session,
+    async def search_messages(
+        db: AsyncSession,
         user_id: int,
         partner_id: int,
         text: str,
@@ -197,15 +202,17 @@ class DirectMessageService:
             (DirectMessage.sender_id == user_id) & (DirectMessage.recipient_id == partner_id),
             (DirectMessage.sender_id == partner_id) & (DirectMessage.recipient_id == user_id),
         )
-        query = db.query(DirectMessage).filter(
+        stmt = select(DirectMessage).where(
             pair_filter,
             DirectMessage.is_deleted.is_(False),
             pred,
         )
         if rank_expr is not None:
-            rows = query.order_by(rank_expr.desc(), DirectMessage.id.desc()).limit(lim).all()
+            stmt = stmt.order_by(rank_expr.desc(), DirectMessage.id.desc()).limit(lim)
         else:
-            rows = query.order_by(DirectMessage.id.desc()).limit(lim).all()
+            stmt = stmt.order_by(DirectMessage.id.desc()).limit(lim)
+        result = await db.execute(stmt)
+        rows = result.scalars().all()
         return [
             {
                 "id": m.id,
@@ -222,19 +229,20 @@ class DirectMessageService:
         ]
 
     @staticmethod
-    def send(
-        db: Session,
+    async def send(
+        db: AsyncSession,
         sender_id: int,
         recipient_id: int,
         content: str,
         message_type: str = "text",
     ) -> Dict[str, Any]:
         """Send a direct message."""
-        sender = db.query(User).filter(User.id == sender_id).first()
+        row = await db.execute(select(User).where(User.id == sender_id))
+        sender = row.scalar_one_or_none()
         if not sender:
             raise ValueError("Sender not found")
         org_id = sender.organization_id
-        mention_ids = resolve_mentioned_user_ids(
+        mention_ids = await resolve_mentioned_user_ids(
             db,
             sender,
             org_id,
@@ -248,8 +256,8 @@ class DirectMessageService:
             mentioned_user_ids=mention_ids or None,
         )
         db.add(msg)
-        db.commit()
-        db.refresh(msg)
+        await db.commit()
+        await db.refresh(msg)
 
         return {
             "id": msg.id,
@@ -265,19 +273,23 @@ class DirectMessageService:
         }
 
     @staticmethod
-    def mark_read(db: Session, user_id: int, partner_id: int) -> int:
+    async def mark_read(
+        db: AsyncSession,
+        user_id: int,
+        partner_id: int,
+    ) -> int:
         """Mark all DMs from partner as read. Returns count updated."""
-        updated = (
-            db.query(DirectMessage)
-            .filter(
+        result = await db.execute(
+            update(DirectMessage)
+            .where(
                 DirectMessage.sender_id == partner_id,
                 DirectMessage.recipient_id == user_id,
                 DirectMessage.is_read.is_(False),
             )
-            .update({"is_read": True})
+            .values(is_read=True)
         )
-        db.commit()
-        return updated
+        await db.commit()
+        return result.rowcount
 
 
 dm_service = DirectMessageService()

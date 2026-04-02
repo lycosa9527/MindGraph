@@ -14,12 +14,13 @@ Proprietary License
 
 import logging
 import uuid
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
 from fastapi import UploadFile
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.workshop_chat import FileAttachment
 
@@ -61,7 +62,7 @@ class FileService:
 
     @staticmethod
     async def save_attachment(
-        db: Session,
+        db: AsyncSession,
         file: UploadFile,
         uploader_id: int,
         message_id: Optional[int] = None,
@@ -84,7 +85,7 @@ class FileService:
         if len(data) > MAX_FILE_SIZE:
             raise ValueError(f"File too large ({len(data)} bytes). Max {MAX_FILE_SIZE} bytes.")
 
-        now = datetime.utcnow()
+        now = datetime.now(UTC)
         sub_dir = STATIC_ROOT / str(now.year) / f"{now.month:02d}"
         sub_dir.mkdir(parents=True, exist_ok=True)
 
@@ -104,67 +105,61 @@ class FileService:
             file_path=relative_path,
         )
         db.add(attachment)
-        db.commit()
-        db.refresh(attachment)
+        await db.commit()
+        await db.refresh(attachment)
 
         return _format_attachment(attachment)
 
     @staticmethod
-    def get_message_attachments(
-        db: Session,
+    async def get_message_attachments(
+        db: AsyncSession,
         message_id: int,
     ) -> List[Dict[str, Any]]:
         """List attachments for a channel/topic message."""
-        rows = (
-            db.query(FileAttachment)
-            .filter(FileAttachment.message_id == message_id)
-            .order_by(FileAttachment.created_at)
-            .all()
+        result = await db.execute(
+            select(FileAttachment).where(FileAttachment.message_id == message_id).order_by(FileAttachment.created_at)
         )
+        rows = result.scalars().all()
         return [_format_attachment(a) for a in rows]
 
     @staticmethod
-    def get_dm_attachments(
-        db: Session,
+    async def get_dm_attachments(
+        db: AsyncSession,
         dm_id: int,
     ) -> List[Dict[str, Any]]:
         """List attachments for a direct message."""
-        rows = db.query(FileAttachment).filter(FileAttachment.dm_id == dm_id).order_by(FileAttachment.created_at).all()
+        result = await db.execute(
+            select(FileAttachment).where(FileAttachment.dm_id == dm_id).order_by(FileAttachment.created_at)
+        )
+        rows = result.scalars().all()
         return [_format_attachment(a) for a in rows]
 
     @staticmethod
-    def get_attachments_batch(
-        db: Session,
+    async def get_attachments_batch(
+        db: AsyncSession,
         message_ids: List[int],
     ) -> Dict[int, List[Dict[str, Any]]]:
         """Batch-fetch attachments keyed by message_id."""
         if not message_ids:
             return {}
-        rows = (
-            db.query(FileAttachment)
-            .filter(FileAttachment.message_id.in_(message_ids))
-            .order_by(FileAttachment.created_at)
-            .all()
+        result = await db.execute(
+            select(FileAttachment).where(FileAttachment.message_id.in_(message_ids)).order_by(FileAttachment.created_at)
         )
-        result: Dict[int, List[Dict[str, Any]]] = {}
+        rows = result.scalars().all()
+        batch_result: Dict[int, List[Dict[str, Any]]] = {}
         for att in rows:
             if att.message_id is not None:
-                result.setdefault(att.message_id, []).append(_format_attachment(att))
-        return result
+                batch_result.setdefault(att.message_id, []).append(_format_attachment(att))
+        return batch_result
 
     @staticmethod
-    def get_attachment(
-        db: Session,
+    async def get_attachment(
+        db: AsyncSession,
         attachment_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Get a single attachment by ID."""
-        att = (
-            db.query(FileAttachment)
-            .filter(
-                FileAttachment.id == attachment_id,
-            )
-            .first()
-        )
+        result = await db.execute(select(FileAttachment).where(FileAttachment.id == attachment_id))
+        att = result.scalars().first()
         if not att:
             return None
         return _format_attachment(att)

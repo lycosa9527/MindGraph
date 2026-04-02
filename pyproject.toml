@@ -54,6 +54,7 @@ ignore-patterns = [
     "^build/",
     "^.*\\.toml$",
     "^pyproject\\.toml$",
+    "^alembic/versions/",
 ]
 
 # Output format
@@ -109,6 +110,10 @@ good-names = [
     "y",
     "z",
     "SessionLocal",
+    "SyncSessionLocal",
+    "AsyncSessionLocal",
+    "_jwt_secret_cache",
+    "AES",
     "LIBRARY_MODULE",
     "DEBATEVERSE_MODULE",
     "COMMUNITY_MODULE",
@@ -130,6 +135,11 @@ good-names = [
     "_session_manager",
     "_registration_metrics",
     "_refresh_token_manager",
+    # Alembic migration module attributes (required names; not UPPER_CASE)
+    "revision",
+    "down_revision",
+    "branch_labels",
+    "depends_on",
 ]
 # Allow UPPER_CASE for class attributes (constants)
 class-attribute-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
@@ -166,10 +176,14 @@ disable = [
 ]
 
 [tool.pylint.typecheck]
-# Optional/runtime deps not always installed in CI lint env
+# Optional/runtime deps not always installed in CI lint env.
+# sqlalchemy uses heavy metaprogramming; func.* and mapped_column() members
+# cannot be statically resolved by pylint.
 ignored-modules = [
     "semchunk",
     "jieba3",
+    "sqlalchemy",
+    "alembic",
 ]
 
 # Ruff: formatter + linter (closest to ESLint/Prettier for Python). Run: ruff format . && ruff check --fix .

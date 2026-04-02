@@ -2,7 +2,7 @@
 SQLite-to-PostgreSQL Merge Service
 
 Analyse a legacy SQLite database, detect orphaned records, build
-user/org ID mappings (by phone / org-code), and merge data into the
+user/org ID mappings (by phone / org-name), and merge data into the
 running PostgreSQL instance without losing any existing PG records.
 
 Tables handled (in FK-safe order):
@@ -19,9 +19,9 @@ All Rights Reserved -- Proprietary License
 
 import logging
 import sqlite3
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, List, Optional, Set
+from typing import Any, Dict, List, Optional, Set, Tuple
 
 from sqlalchemy import text
 from sqlalchemy.engine import Engine
@@ -149,67 +149,16 @@ def _coerce_booleans(
             values[col] = bool(val)
 
 
-# ── SQLite orphan cleanup ────────────────────────────────────────────
-
-
-def cleanup_sqlite_orphans(sqlite_path: Path) -> Dict[str, int]:
-    """Delete orphaned records from a SQLite file and return counts."""
-    conn = sqlite3.connect(str(sqlite_path))
-    try:
-        return _cleanup_sqlite_orphans_impl(conn)
-    finally:
-        conn.close()
-
-
-def _cleanup_sqlite_orphans_impl(sq: sqlite3.Connection) -> Dict[str, int]:
-    cur = sq.cursor()
-    table_names = set(_sqlite_tables(sq).keys())
-    cleaned: Dict[str, int] = {}
-
-    cur.execute(
-        "DELETE FROM users WHERE organization_id IS NOT NULL AND organization_id NOT IN (SELECT id FROM organizations)"
-    )
-    if cur.rowcount > 0:
-        cleaned["users_nullified_missing_org"] = cur.rowcount
-
-    if "token_usage" in table_names:
-        cur.execute("DELETE FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)")
-        if cur.rowcount > 0:
-            cleaned["token_usage_deleted_missing_user"] = cur.rowcount
-
-        cur.execute(
-            "DELETE FROM token_usage "
-            "WHERE organization_id IS NOT NULL "
-            "AND organization_id NOT IN (SELECT id FROM organizations)"
-        )
-        if cur.rowcount > 0:
-            cleaned["token_usage_deleted_missing_org"] = cur.rowcount
-
-    if "dashboard_activities" in table_names:
-        cur.execute(
-            "DELETE FROM dashboard_activities WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)"
-        )
-        if cur.rowcount > 0:
-            cleaned["dashboard_deleted_missing_user"] = cur.rowcount
-
-    if "update_notification_dismissed" in table_names:
-        cur.execute(
-            "DELETE FROM update_notification_dismissed "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)"
-        )
-        if cur.rowcount > 0:
-            cleaned["dismissed_deleted_missing_user"] = cur.rowcount
-
-    sq.commit()
-
-    total = sum(cleaned.values())
-    logger.info(
-        "[SQLiteMerge] SQLite orphan cleanup: %d records removed (%s)",
-        total,
-        cleaned,
-    )
-    return cleaned
+def _build_insert_sql(
+    table: str,
+    col_names: List[str],
+    returning: bool = False,
+) -> str:
+    """Build a parameterised INSERT statement for the given columns."""
+    cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    placeholders = ", ".join(f":{c}" for c in col_names)
+    suffix = " RETURNING id" if returning else ""
+    return f'INSERT INTO "{table}" ({cols_sql}) VALUES ({placeholders}){suffix}'
 
 
 # ── analyse ──────────────────────────────────────────────────────────
@@ -225,12 +174,10 @@ def analyze_sqlite(
     Returns a dict with keys:
         sqlite_tables   -- {table: row_count}
         orphans         -- {description: count}
-        user_mapping    -- {sqlite_id: pg_id} for matched users
-        org_mapping     -- {sqlite_id: pg_id} for matched orgs
         new_users       -- count of users only in SQLite
         matched_users   -- count of users matched by phone
         new_orgs        -- count of orgs only in SQLite
-        matched_orgs    -- count of orgs matched by code
+        matched_orgs    -- count of orgs matched by name
         skipped_tables  -- list of skipped table names
         merge_preview   -- per-table {table: {"total": n, "new": n, "skip": n}}
     """
@@ -276,11 +223,11 @@ def _analyze_impl(
     cur.execute("SELECT id, phone FROM users")
     sq_users = cur.fetchall()
 
-    user_mapping: Dict[int, int] = {}
     new_user_ids: List[int] = []
+    matched_user_count = 0
     for sq_id, phone in sq_users:
         if phone in pg_phones:
-            user_mapping[sq_id] = pg_phones[phone]
+            matched_user_count += 1
         else:
             new_user_ids.append(sq_id)
 
@@ -289,11 +236,11 @@ def _analyze_impl(
     cur.execute("SELECT id, name FROM organizations")
     sq_orgs = cur.fetchall()
 
-    org_mapping: Dict[int, int] = {}
     new_org_ids: List[int] = []
+    matched_org_count = 0
     for sq_id, name in sq_orgs:
         if name in pg_names:
-            org_mapping[sq_id] = pg_names[name]
+            matched_org_count += 1
         else:
             new_org_ids.append(sq_id)
 
@@ -305,13 +252,13 @@ def _analyze_impl(
             merge_preview[table] = {
                 "total": total,
                 "new": len(new_org_ids),
-                "skip": len(org_mapping),
+                "skip": matched_org_count,
             }
         elif table == "users":
             merge_preview[table] = {
                 "total": total,
                 "new": len(new_user_ids),
-                "skip": len(user_mapping),
+                "skip": matched_user_count,
             }
         elif table == "token_usage":
             merge_preview[table] = {
@@ -327,12 +274,10 @@ def _analyze_impl(
     return {
         "sqlite_tables": table_counts,
         "orphans": orphans,
-        "user_mapping": user_mapping,
-        "org_mapping": org_mapping,
         "new_users": len(new_user_ids),
-        "matched_users": len(user_mapping),
+        "matched_users": matched_user_count,
         "new_orgs": len(new_org_ids),
-        "matched_orgs": len(org_mapping),
+        "matched_orgs": matched_org_count,
         "skipped_tables": skipped,
         "merge_preview": merge_preview,
     }
@@ -364,7 +309,7 @@ def _merge_impl(
 ) -> Dict[str, Any]:
     cur = sq.cursor()
     results: Dict[str, Dict[str, int]] = {}
-    started = datetime.utcnow()
+    started = datetime.now(tz=UTC)
 
     sq_table_names = set(_sqlite_tables(sq).keys())
 
@@ -445,10 +390,10 @@ def _merge_impl(
 
     # ── 6. update_notifications ──
     if "update_notifications" in sq_table_names:
-        results["update_notifications"] = _merge_simple_table(
+        results["update_notifications"] = _merge_update_notifications(
             sq,
             pg_engine,
-            "update_notifications",
+            org_map,
             bool_cols_cache.get("update_notifications", set()),
         )
 
@@ -464,7 +409,7 @@ def _merge_impl(
     # ── reset sequences ──
     _reset_sequences(pg_engine)
 
-    elapsed = (datetime.utcnow() - started).total_seconds()
+    elapsed = (datetime.now(tz=UTC) - started).total_seconds()
     logger.info("[SQLiteMerge] Merge completed in %.1fs", elapsed)
 
     return {
@@ -489,31 +434,31 @@ def _merge_organizations(
     cur = sq.cursor()
     sq_cols = _sqlite_columns(sq, "organizations")
 
-    inserted = 0
+    pending: List[Tuple[int, Dict[str, Any]]] = []
     for sq_id in new_org_sq_ids:
         cur.execute("SELECT * FROM organizations WHERE id = ?", (sq_id,))
         row = cur.fetchone()
         if row is None:
             continue
-
         values = {sq_cols[i]: row[i] for i in range(len(sq_cols))}
         values.pop("id")
         for col, default in _ORG_DEFAULT_COLUMNS.items():
             if col not in values:
                 values[col] = default
         _coerce_booleans(values, bool_cols)
+        pending.append((sq_id, values))
 
-        col_names = list(values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    if not pending:
+        return {"inserted": 0, "skipped": len(org_map)}
 
-        with pg_engine.begin() as conn:
-            result = conn.execute(
-                text(f"INSERT INTO organizations ({cols_sql}) VALUES ({placeholders}) RETURNING id"),
-                values,
-            )
-            new_pg_id = result.scalar()
-            org_map[sq_id] = new_pg_id
+    col_names = list(pending[0][1].keys())
+    insert_sql = text(_build_insert_sql("organizations", col_names, returning=True))
+    inserted = 0
+
+    with pg_engine.begin() as conn:
+        for sq_id, values in pending:
+            result = conn.execute(insert_sql, values)
+            org_map[sq_id] = result.scalar()
             inserted += 1
 
     logger.info(
@@ -537,9 +482,9 @@ def _merge_users(
 
     cur = sq.cursor()
     sq_cols = _sqlite_columns(sq, "users")
-    inserted = 0
     rejected = 0
 
+    pending: List[Tuple[int, Dict[str, Any]]] = []
     for sq_id in new_user_sq_ids:
         cur.execute("SELECT * FROM users WHERE id = ?", (sq_id,))
         row = cur.fetchone()
@@ -564,18 +509,23 @@ def _merge_users(
             continue
 
         _coerce_booleans(values, bool_cols)
+        pending.append((sq_id, values))
 
-        col_names = list(values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    if not pending:
+        return {
+            "inserted": 0,
+            "skipped": len(user_map),
+            "rejected": rejected,
+        }
 
-        with pg_engine.begin() as conn:
-            result = conn.execute(
-                text(f"INSERT INTO users ({cols_sql}) VALUES ({placeholders}) RETURNING id"),
-                values,
-            )
-            new_pg_id = result.scalar()
-            user_map[sq_id] = new_pg_id
+    col_names = list(pending[0][1].keys())
+    insert_sql = text(_build_insert_sql("users", col_names, returning=True))
+    inserted = 0
+
+    with pg_engine.begin() as conn:
+        for sq_id, values in pending:
+            result = conn.execute(insert_sql, values)
+            user_map[sq_id] = result.scalar()
             inserted += 1
 
     logger.info(
@@ -603,31 +553,35 @@ def _merge_api_keys(
     cur.execute("SELECT * FROM api_keys")
     rows = cur.fetchall()
 
-    inserted = 0
+    pending: List[Dict[str, Any]] = []
     skipped = 0
     for row in rows:
         values = {sq_cols[i]: row[i] for i in range(len(sq_cols))}
         if values.get("key") in existing_keys:
             skipped += 1
             continue
-
         values.pop("id")
         sq_org = values.get("organization_id")
         if sq_org is not None:
             values["organization_id"] = org_map.get(sq_org)
         _coerce_booleans(values, bool_cols)
+        pending.append(values)
 
-        col_names = list(values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    if not pending:
+        logger.info(
+            "[SQLiteMerge] api_keys: inserted=0, skipped=%d",
+            skipped,
+        )
+        return {"inserted": 0, "skipped": skipped}
 
-        with pg_engine.begin() as conn:
-            conn.execute(
-                text(f"INSERT INTO api_keys ({cols_sql}) VALUES ({placeholders})"),
-                values,
-            )
-            inserted += 1
+    col_names = list(pending[0].keys())
+    insert_sql = text(_build_insert_sql("api_keys", col_names))
 
+    with pg_engine.begin() as conn:
+        for values in pending:
+            conn.execute(insert_sql, values)
+
+    inserted = len(pending)
     logger.info(
         "[SQLiteMerge] api_keys: inserted=%d, skipped=%d",
         inserted,
@@ -684,13 +638,9 @@ def _merge_token_usage(
 
         if batch_values:
             col_names = list(batch_values[0].keys())
-            placeholders = ", ".join(f":{c}" for c in col_names)
-            cols_sql = ", ".join(f'"{c}"' for c in col_names)
+            insert_sql = text(_build_insert_sql("token_usage", col_names))
             with pg_engine.begin() as conn:
-                conn.execute(
-                    text(f"INSERT INTO token_usage ({cols_sql}) VALUES ({placeholders})"),
-                    batch_values,
-                )
+                conn.execute(insert_sql, batch_values)
             inserted += len(batch_values)
 
         rows = cur.fetchmany(batch_size)
@@ -712,15 +662,14 @@ def _merge_dashboard_activities(
 ) -> Dict[str, int]:
     cur = sq.cursor()
     cur.execute("SELECT COUNT(*) FROM dashboard_activities")
-    total = cur.fetchone()[0]
-    if total == 0:
+    if cur.fetchone()[0] == 0:
         return {"inserted": 0, "skipped": 0}
 
     sq_cols = _sqlite_columns(sq, "dashboard_activities")
     cur.execute("SELECT * FROM dashboard_activities")
     rows = cur.fetchall()
 
-    inserted = 0
+    pending: List[Dict[str, Any]] = []
     skipped = 0
     for row in rows:
         values = {sq_cols[i]: row[i] for i in range(len(sq_cols))}
@@ -732,62 +681,71 @@ def _merge_dashboard_activities(
                 continue
             values["user_id"] = user_map[sq_uid]
         _coerce_booleans(values, bool_cols)
+        pending.append(values)
 
-        col_names = list(values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    if not pending:
+        return {"inserted": 0, "skipped": skipped}
 
-        with pg_engine.begin() as conn:
-            conn.execute(
-                text(f"INSERT INTO dashboard_activities ({cols_sql}) VALUES ({placeholders})"),
-                values,
-            )
-            inserted += 1
+    col_names = list(pending[0].keys())
+    insert_sql = text(_build_insert_sql("dashboard_activities", col_names))
 
-    return {"inserted": inserted, "skipped": skipped}
+    with pg_engine.begin() as conn:
+        for values in pending:
+            conn.execute(insert_sql, values)
+
+    return {"inserted": len(pending), "skipped": skipped}
 
 
-def _merge_simple_table(
+def _merge_update_notifications(
     sq: sqlite3.Connection,
     pg_engine: Engine,
-    table_name: str,
+    org_map: Dict[int, Optional[int]],
     bool_cols: Set[str],
 ) -> Dict[str, int]:
-    """Merge a small table by checking if an id already exists in PG."""
+    """Merge update_notifications keeping original IDs (ON CONFLICT (id) DO NOTHING).
+
+    Remaps organization_id so org-targeted notifications point to the
+    correct live org after merge. Idempotent: re-running is safe.
+    """
     cur = sq.cursor()
-    cur.execute(f"SELECT COUNT(*) FROM [{table_name}]")
-    total = cur.fetchone()[0]
-    if total == 0:
+    cur.execute("SELECT COUNT(*) FROM update_notifications")
+    if cur.fetchone()[0] == 0:
         return {"inserted": 0, "skipped": 0}
 
-    sq_cols = _sqlite_columns(sq, table_name)
-    cur.execute(f"SELECT * FROM [{table_name}]")
+    sq_cols = _sqlite_columns(sq, "update_notifications")
+    cur.execute("SELECT * FROM update_notifications")
     rows = cur.fetchall()
-
-    with pg_engine.connect() as conn:
-        pg_ids = {r[0] for r in conn.execute(text(f'SELECT id FROM "{table_name}"'))}
 
     inserted = 0
     skipped = 0
-    for row in rows:
-        values = {sq_cols[i]: row[i] for i in range(len(sq_cols))}
-        if values.get("id") in pg_ids:
-            skipped += 1
-            continue
-        values.pop("id")
-        _coerce_booleans(values, bool_cols)
 
-        col_names = list(values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    with pg_engine.begin() as conn:
+        for row in rows:
+            values = {sq_cols[i]: row[i] for i in range(len(sq_cols))}
+            sq_org = values.get("organization_id")
+            if sq_org is not None:
+                values["organization_id"] = org_map.get(sq_org)
+            _coerce_booleans(values, bool_cols)
 
-        with pg_engine.begin() as conn:
-            conn.execute(
-                text(f'INSERT INTO "{table_name}" ({cols_sql}) VALUES ({placeholders})'),
+            col_names = list(values.keys())
+            cols_sql = ", ".join(f'"{c}"' for c in col_names)
+            placeholders = ", ".join(f":{c}" for c in col_names)
+            result = conn.execute(
+                text(
+                    f"INSERT INTO update_notifications ({cols_sql}) VALUES ({placeholders}) ON CONFLICT (id) DO NOTHING"
+                ),
                 values,
             )
-            inserted += 1
+            if result.rowcount > 0:
+                inserted += 1
+            else:
+                skipped += 1
 
+    logger.info(
+        "[SQLiteMerge] update_notifications: inserted=%d, skipped=%d",
+        inserted,
+        skipped,
+    )
     return {"inserted": inserted, "skipped": skipped}
 
 
@@ -799,15 +757,14 @@ def _merge_update_notification_dismissed(
 ) -> Dict[str, int]:
     cur = sq.cursor()
     cur.execute("SELECT COUNT(*) FROM update_notification_dismissed")
-    total = cur.fetchone()[0]
-    if total == 0:
+    if cur.fetchone()[0] == 0:
         return {"inserted": 0, "skipped": 0}
 
     sq_cols = _sqlite_columns(sq, "update_notification_dismissed")
     cur.execute("SELECT * FROM update_notification_dismissed")
     rows = cur.fetchall()
 
-    inserted = 0
+    pending: List[Dict[str, Any]] = []
     skipped = 0
     for row in rows:
         values = {sq_cols[i]: row[i] for i in range(len(sq_cols))}
@@ -820,21 +777,34 @@ def _merge_update_notification_dismissed(
                 continue
             values["user_id"] = pg_uid
         _coerce_booleans(values, bool_cols)
+        pending.append(values)
 
-        col_names = list(values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    if not pending:
+        return {"inserted": 0, "skipped": skipped}
 
-        try:
-            with pg_engine.begin() as conn:
-                conn.execute(
-                    text(f"INSERT INTO update_notification_dismissed ({cols_sql}) VALUES ({placeholders})"),
-                    values,
-                )
+    col_names = list(pending[0].keys())
+    cols_sql = ", ".join(f'"{c}"' for c in col_names)
+    placeholders = ", ".join(f":{c}" for c in col_names)
+    insert_sql = text(
+        f"INSERT INTO update_notification_dismissed ({cols_sql}) "
+        f"VALUES ({placeholders}) "
+        f"ON CONFLICT (user_id, version) DO NOTHING"
+    )
+
+    inserted = 0
+    with pg_engine.begin() as conn:
+        for values in pending:
+            result = conn.execute(insert_sql, values)
+            if result.rowcount > 0:
                 inserted += 1
-        except Exception:
-            skipped += 1
+            else:
+                skipped += 1
 
+    logger.info(
+        "[SQLiteMerge] update_notification_dismissed: inserted=%d, skipped=%d",
+        inserted,
+        skipped,
+    )
     return {"inserted": inserted, "skipped": skipped}
 
 
@@ -853,113 +823,31 @@ def _reset_sequences(pg_engine: Engine) -> None:
         "update_notification_dismissed",
     ]
     with pg_engine.begin() as conn:
-        for table in tables_with_serial:
-            try:
-                seq_name = f"{table}_id_seq"
-                conn.execute(text(f"SELECT setval('{seq_name}', COALESCE((SELECT MAX(id) FROM \"{table}\"), 1))"))
-            except Exception as exc:
-                logger.debug(
-                    "[SQLiteMerge] Could not reset sequence for %s: %s",
-                    table,
-                    exc,
-                )
-
-
-# ── PG orphan detection ─────────────────────────────────────────────
-
-
-def detect_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
-    """Detect orphaned FK references in the current PostgreSQL database."""
-    orphans: Dict[str, int] = {}
-    fk_checks = [
-        (
-            "users_missing_org",
-            "SELECT COUNT(*) FROM users "
-            "WHERE organization_id IS NOT NULL "
-            "AND organization_id NOT IN (SELECT id FROM organizations)",
-        ),
-        (
-            "token_usage_missing_user",
-            "SELECT COUNT(*) FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
-        ),
-        (
-            "token_usage_missing_org",
-            "SELECT COUNT(*) FROM token_usage "
-            "WHERE organization_id IS NOT NULL "
-            "AND organization_id NOT IN (SELECT id FROM organizations)",
-        ),
-        (
-            "dashboard_activities_missing_user",
-            "SELECT COUNT(*) FROM dashboard_activities "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)",
-        ),
-        (
-            "update_dismissed_missing_user",
-            "SELECT COUNT(*) FROM update_notification_dismissed "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)",
-        ),
-    ]
-    with pg_engine.connect() as conn:
-        for label, query in fk_checks:
-            try:
-                result = conn.execute(text(query))
-                count = result.scalar() or 0
-                if count > 0:
-                    orphans[label] = count
-            except Exception as exc:
-                logger.debug("[OrphanDetect] %s failed: %s", label, exc)
-    return orphans
-
-
-def cleanup_pg_orphans(pg_engine: Engine) -> Dict[str, int]:
-    """Delete or nullify orphaned FK references in PostgreSQL."""
-    cleaned: Dict[str, int] = {}
-    operations = [
-        (
-            "users_nullify_missing_org",
-            "UPDATE users SET organization_id = NULL "
-            "WHERE organization_id IS NOT NULL "
-            "AND organization_id NOT IN (SELECT id FROM organizations)",
-        ),
-        (
-            "token_usage_delete_missing_user",
-            "DELETE FROM token_usage WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
-        ),
-        (
-            "token_usage_nullify_missing_org",
-            "UPDATE token_usage SET organization_id = NULL "
-            "WHERE organization_id IS NOT NULL "
-            "AND organization_id NOT IN (SELECT id FROM organizations)",
-        ),
-        (
-            "dashboard_delete_missing_user",
-            "DELETE FROM dashboard_activities WHERE user_id IS NOT NULL AND user_id NOT IN (SELECT id FROM users)",
-        ),
-        (
-            "dismissed_delete_missing_user",
-            "DELETE FROM update_notification_dismissed "
-            "WHERE user_id IS NOT NULL "
-            "AND user_id NOT IN (SELECT id FROM users)",
-        ),
-    ]
-    with pg_engine.begin() as conn:
-        for label, query in operations:
-            try:
-                result = conn.execute(text(query))
-                affected = result.rowcount
-                if affected > 0:
-                    cleaned[label] = affected
-                    logger.info(
-                        "[OrphanCleanup] %s: %d rows affected",
-                        label,
-                        affected,
+        txn = conn.begin_nested()
+        try:
+            for table in tables_with_serial:
+                sp = conn.begin_nested()
+                try:
+                    seq_name = conn.execute(
+                        text("SELECT pg_get_serial_sequence(:tbl, 'id')"),
+                        {"tbl": table},
+                    ).scalar()
+                    if seq_name is None:
+                        sp.rollback()
+                        continue
+                    conn.execute(
+                        text(f'SELECT setval(:seq, COALESCE((SELECT MAX(id) FROM "{table}"), 1))'),
+                        {"seq": seq_name},
                     )
-            except Exception as exc:
-                logger.warning(
-                    "[OrphanCleanup] %s failed: %s",
-                    label,
-                    exc,
-                )
-    return cleaned
+                    sp.commit()
+                except Exception as exc:
+                    sp.rollback()
+                    logger.debug(
+                        "[SQLiteMerge] Could not reset sequence for %s: %s",
+                        table,
+                        exc,
+                    )
+            txn.commit()
+        except Exception:
+            txn.rollback()
+            raise

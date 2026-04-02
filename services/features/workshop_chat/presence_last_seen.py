@@ -9,24 +9,26 @@ Proprietary License
 from __future__ import annotations
 
 import logging
-from datetime import datetime
+from datetime import UTC, datetime
 
+from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.auth import User as UserModel
 
 logger = logging.getLogger(__name__)
 
 
-def record_workshop_last_seen(db: Session, user_id: int) -> None:
+async def record_workshop_last_seen(db: AsyncSession, user_id: int) -> None:
     """Set workshop_last_seen_at to now (UTC) for the given user."""
     try:
-        row = db.query(UserModel).filter(UserModel.id == user_id).first()
+        result = await db.execute(select(UserModel).where(UserModel.id == user_id))
+        row = result.scalar_one_or_none()
         if not row:
             return
-        row.workshop_last_seen_at = datetime.utcnow()
-        db.commit()
+        row.workshop_last_seen_at = datetime.now(UTC)
+        await db.commit()
     except SQLAlchemyError as exc:
         logger.debug("[WorkshopLastSeen] record failed user_id=%s: %s", user_id, exc)
-        db.rollback()
+        await db.rollback()

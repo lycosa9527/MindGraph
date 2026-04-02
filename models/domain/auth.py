@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import (
     Column,
@@ -21,11 +21,11 @@ from sqlalchemy import (
     Boolean,
     UniqueConstraint,
 )
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 
 
-Base = declarative_base()
+class Base(DeclarativeBase):
+    """Shared declarative base for all MindGraph ORM models."""
 
 
 class Organization(Base):
@@ -43,14 +43,14 @@ class Organization(Base):
     name = Column(String(200), nullable=False)  # e.g., "Demo School for Testing"
     display_name = Column(String(200), nullable=True)  # Custom text shown in sidebar (e.g. "MindGraph专业版")
     invitation_code = Column(String(50), nullable=True)  # For controlled registration
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Service subscription management
     expires_at = Column(DateTime, nullable=True)  # Service expiration date
     is_active = Column(Boolean, default=True)  # Active/locked status
 
     # Relationship
-    users = relationship("User", back_populates="organization")
+    users = relationship("User", back_populates="organization", lazy="selectin")
 
 
 class User(Base):
@@ -81,7 +81,7 @@ class User(Base):
     locked_until: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     last_login: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     workshop_last_seen_at: Mapped[datetime | None] = mapped_column(
         DateTime,
@@ -94,8 +94,14 @@ class User(Base):
     ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
 
     # Relationships
-    organization = relationship("Organization", back_populates="users")
-    diagrams = relationship("Diagram", back_populates="user", lazy="dynamic")
+    organization = relationship("Organization", back_populates="users", lazy="selectin")
+    diagrams = relationship(
+        "Diagram",
+        back_populates="user",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+        lazy="selectin",
+    )
 
 
 class APIKey(Base):
@@ -125,7 +131,7 @@ class APIKey(Base):
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
     last_used_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
@@ -159,7 +165,7 @@ class UpdateNotification(Base):
     # Targeting - optional organization filter
     organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
 
-    updated_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
 
 class UpdateNotificationDismissed(Base):
@@ -175,7 +181,7 @@ class UpdateNotificationDismissed(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     version = Column(String(50), nullable=False, index=True)
-    dismissed_at = Column(DateTime, default=datetime.utcnow)
+    dismissed_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Unique constraint: one dismiss record per user per version (prevents duplicates)
     __table_args__ = (UniqueConstraint("user_id", "version", name="uq_user_version_dismissed"),)

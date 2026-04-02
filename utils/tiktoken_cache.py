@@ -14,7 +14,7 @@ import json
 import logging
 import uuid
 from pathlib import Path
-from datetime import datetime
+from datetime import UTC, datetime
 from email.utils import parsedate_to_datetime
 import httpx
 
@@ -415,7 +415,7 @@ def _download_encoding_file(url: str, output_path: Path, metadata_file: Path) ->
             "etag": response.headers.get("ETag"),
             "last_modified": response.headers.get("Last-Modified"),
             "content_length": response.headers.get("Content-Length"),
-            "downloaded_at": datetime.utcnow().isoformat() + "Z",
+            "downloaded_at": datetime.now(tz=UTC).isoformat(),
         }
 
         with open(metadata_file, "w", encoding="utf-8") as f:

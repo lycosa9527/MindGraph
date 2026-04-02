@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Index
 
@@ -30,6 +30,6 @@ class UserActivityLog(Base):
     id = Column(Integer, primary_key=True, index=True)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     activity_type = Column(String(50), nullable=False, default="login")
-    created_at = Column(DateTime, default=datetime.utcnow, nullable=False, index=True)
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     __table_args__ = (Index("idx_user_activity_log_user_date", "user_id", "created_at"),)

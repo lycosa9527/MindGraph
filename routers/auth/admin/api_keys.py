@@ -12,15 +12,16 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import Dict, Any, List
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from sqlalchemy import func
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import sum as sa_sum
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User, APIKey
 from models.domain.messages import Messages
 from models.domain.token_usage import TokenUsage
@@ -36,30 +37,28 @@ router = APIRouter()
 
 
 @router.get("/admin/api_keys", dependencies=[Depends(require_admin)])
-def list_api_keys_admin(
+async def list_api_keys_admin(
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     _lang: str = Depends(get_language_dependency),
 ) -> List[Dict[str, Any]]:
     """List all API keys with usage stats (ADMIN ONLY)"""
-    keys = db.query(APIKey).order_by(APIKey.created_at.desc()).all()
+    keys = (await db.execute(select(APIKey).order_by(APIKey.created_at.desc()))).scalars().all()
 
-    # Get token usage for each API key using api_key_id
     token_stats_by_key = {}
 
     try:
-        # For each API key, get token usage where api_key_id matches
         for key in keys:
             key_token_stats = (
-                db.query(
-                    func.sum(TokenUsage.input_tokens).label("input_tokens"),
-                    func.sum(TokenUsage.output_tokens).label("output_tokens"),
-                    func.sum(TokenUsage.total_tokens).label("total_tokens"),
+                await db.execute(
+                    select(
+                        sa_sum(TokenUsage.input_tokens).label("input_tokens"),
+                        sa_sum(TokenUsage.output_tokens).label("output_tokens"),
+                        sa_sum(TokenUsage.total_tokens).label("total_tokens"),
+                    ).where(TokenUsage.api_key_id == key.id, TokenUsage.success)
                 )
-                .filter(TokenUsage.api_key_id == key.id, TokenUsage.success)
-                .first()
-            )
+            ).first()
 
             if key_token_stats:
                 token_stats_by_key[key.id] = {
@@ -75,7 +74,6 @@ def list_api_keys_admin(
                 }
     except (ImportError, Exception) as e:
         logger.debug("TokenUsage not available: %s", e)
-        # Set default empty stats for all keys
         for key in keys:
             token_stats_by_key[key.id] = {
                 "input_tokens": 0,
@@ -87,7 +85,6 @@ def list_api_keys_admin(
     for key in keys:
         token_stats = token_stats_by_key.get(key.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
 
-        # Convert UTC timestamps to Beijing time for display (using shared helper function)
         result.append(
             {
                 "id": key.id,
@@ -109,32 +106,30 @@ def list_api_keys_admin(
 
 
 @router.post("/admin/api_keys", dependencies=[Depends(require_admin)])
-def create_api_key_admin(
+async def create_api_key_admin(
     request_body: dict,
     _http_request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Create new API key (ADMIN ONLY)"""
     name = request_body.get("name")
     description = request_body.get("description", "")
     quota_limit = request_body.get("quota_limit")
-    expires_days = request_body.get("expires_days")  # Optional: days until expiration
+    expires_days = request_body.get("expires_days")
 
     if not name:
         error_msg = Messages.error("name_required", lang)
         raise HTTPException(status_code=400, detail=error_msg)
 
-    # Generate the API key
-    key = generate_api_key(name, description, quota_limit, db)
+    key = await db.run_sync(lambda session: generate_api_key(name, description, quota_limit, session))
 
-    # Update expiration if specified
     if expires_days:
-        key_record = db.query(APIKey).filter(APIKey.key == key).first()
+        key_record = (await db.execute(select(APIKey).where(APIKey.key == key))).scalars().first()
         if key_record:
-            key_record.expires_at = datetime.utcnow() + timedelta(days=expires_days)
-            db.commit()
+            key_record.expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
+            await db.commit()
 
     return {
         "message": Messages.success("api_key_created", lang),
@@ -146,21 +141,20 @@ def create_api_key_admin(
 
 
 @router.put("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
-def update_api_key_admin(
+async def update_api_key_admin(
     key_id: int,
     request_body: dict,
     _http_request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Update API key settings (ADMIN ONLY)"""
-    key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
+    key_record = (await db.execute(select(APIKey).where(APIKey.id == key_id))).scalars().first()
     if not key_record:
         error_msg = Messages.error("api_key_not_found", lang)
         raise HTTPException(status_code=404, detail=error_msg)
 
-    # Update fields if provided
     if "name" in request_body:
         key_record.name = request_body["name"]
     if "description" in request_body:
@@ -169,10 +163,10 @@ def update_api_key_admin(
         key_record.quota_limit = request_body["quota_limit"]
     if "is_active" in request_body:
         key_record.is_active = request_body["is_active"]
-    if "usage_count" in request_body:  # Allow resetting usage
+    if "usage_count" in request_body:
         key_record.usage_count = request_body["usage_count"]
 
-    db.commit()
+    await db.commit()
 
     return {
         "message": Messages.success("api_key_updated", lang),
@@ -187,42 +181,42 @@ def update_api_key_admin(
 
 
 @router.delete("/admin/api_keys/{key_id}", dependencies=[Depends(require_admin)])
-def delete_api_key_admin(
+async def delete_api_key_admin(
     key_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, str]:
     """Delete/revoke API key (ADMIN ONLY)"""
-    key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
+    key_record = (await db.execute(select(APIKey).where(APIKey.id == key_id))).scalars().first()
     if not key_record:
         error_msg = Messages.error("api_key_not_found", lang)
         raise HTTPException(status_code=404, detail=error_msg)
 
     key_name = key_record.name
-    db.delete(key_record)
-    db.commit()
+    await db.delete(key_record)
+    await db.commit()
 
     return {"message": f"API key '{key_name}' deleted successfully"}
 
 
 @router.put("/admin/api_keys/{key_id}/toggle", dependencies=[Depends(require_admin)])
-def toggle_api_key_admin(
+async def toggle_api_key_admin(
     key_id: int,
     _request: Request,
     _current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: str = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Toggle API key active status (ADMIN ONLY)"""
-    key_record = db.query(APIKey).filter(APIKey.id == key_id).first()
+    key_record = (await db.execute(select(APIKey).where(APIKey.id == key_id))).scalars().first()
     if not key_record:
         error_msg = Messages.error("api_key_not_found", lang)
         raise HTTPException(status_code=404, detail=error_msg)
 
     key_record.is_active = not key_record.is_active
-    db.commit()
+    await db.commit()
 
     if key_record.is_active:
         message = Messages.success("api_key_activated", lang, key_record.name)

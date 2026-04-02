@@ -17,9 +17,11 @@ import tempfile
 from typing import List
 
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import DocumentBatch, DocumentChunk
 from models.requests.requests_knowledge_space import ProcessSelectedRequest
@@ -42,7 +44,7 @@ router = APIRouter()
 async def upload_document(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Upload a document to user's knowledge space.
@@ -62,7 +64,7 @@ async def upload_document(
         file_type = service.processor.get_file_type(file.filename)
 
         # Upload document
-        document = service.upload_document(
+        document = await service.upload_document(
             file_name=file.filename,
             file_path=tmp_path,
             file_type=file_type,
@@ -97,7 +99,7 @@ async def upload_document(
 async def batch_upload_documents(
     files: List[UploadFile] = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Upload multiple documents in a batch.
@@ -129,7 +131,7 @@ async def batch_upload_documents(
             )
 
         # Upload batch
-        batch = service.batch_upload_documents(file_infos)
+        batch = await service.batch_upload_documents(file_infos)
 
         # Trigger background batch processing
         batch_process_documents_task.delay(current_user.id, batch.id)
@@ -156,19 +158,20 @@ async def batch_upload_documents(
 
 
 @router.get("/batches/{batch_id}")
-def get_batch_status(
+async def get_batch_status(
     batch_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get batch processing status.
 
     Requires authentication. Verifies ownership.
     """
-    batch = (
-        db.query(DocumentBatch).filter(DocumentBatch.id == batch_id, DocumentBatch.user_id == current_user.id).first()
+    result = await db.execute(
+        select(DocumentBatch).where(DocumentBatch.id == batch_id, DocumentBatch.user_id == current_user.id)
     )
+    batch = result.scalar_one_or_none()
 
     if not batch:
         raise HTTPException(status_code=404, detail="Batch not found")
@@ -185,14 +188,14 @@ def get_batch_status(
 
 
 @router.get("/documents")
-async def list_documents(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_documents(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_async_db)):
     """
     List all documents in user's knowledge space.
 
     Requires authentication. Automatically filters by user.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    documents = service.get_user_documents()
+    documents = await service.get_user_documents()
 
     return DocumentListResponse(
         documents=[
@@ -219,7 +222,7 @@ async def list_documents(current_user: User = Depends(get_current_user), db: Ses
 async def get_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get document details.
@@ -227,7 +230,7 @@ async def get_document(
     Requires authentication. Verifies ownership.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -250,7 +253,7 @@ async def update_document(
     document_id: int,
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Update a document with new file content.
@@ -268,7 +271,7 @@ async def update_document(
             tmp_path = tmp_file.name
 
         # Update document (triggers background reindexing)
-        document = service.update_document(document_id=document_id, file_path=tmp_path, file_name=file.filename)
+        document = await service.update_document(document_id=document_id, file_path=tmp_path, file_name=file.filename)
 
         # Trigger background update task
         update_document_task.delay(current_user.id, document.id)
@@ -303,7 +306,7 @@ async def update_document(
 async def delete_document(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a document and all associated data.
@@ -313,7 +316,7 @@ async def delete_document(
     service = KnowledgeSpaceService(db, current_user.id)
 
     try:
-        service.delete_document(document_id)
+        await service.delete_document(document_id)
         return {"message": "Document deleted successfully"}
     except ValueError as e:
         raise HTTPException(status_code=404, detail=str(e)) from e
@@ -331,7 +334,7 @@ async def delete_document(
 async def get_document_status(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get document processing status.
@@ -339,7 +342,7 @@ async def get_document_status(
     Requires authentication. Verifies ownership.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -355,12 +358,12 @@ async def get_document_status(
 
 
 @router.get("/documents/{document_id}/chunks")
-def get_document_chunks(
+async def get_document_chunks(
     document_id: int,
     page: int = 1,
     page_size: int = 20,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get chunks for a document with pagination.
@@ -368,23 +371,25 @@ def get_document_chunks(
     Requires authentication. Verifies ownership.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
 
-    # Get chunks with pagination
-    offset = (page - 1) * page_size
-    chunks = (
-        db.query(DocumentChunk)
-        .filter(DocumentChunk.document_id == document_id)
+    offset_val = (page - 1) * page_size
+    result = await db.execute(
+        select(DocumentChunk)
+        .where(DocumentChunk.document_id == document_id)
         .order_by(DocumentChunk.chunk_index)
-        .offset(offset)
+        .offset(offset_val)
         .limit(page_size)
-        .all()
     )
+    chunks = result.scalars().all()
 
-    total = db.query(DocumentChunk).filter(DocumentChunk.document_id == document_id).count()
+    count_result = await db.execute(
+        select(sa_count()).select_from(DocumentChunk).where(DocumentChunk.document_id == document_id)
+    )
+    total = count_result.scalar_one()
 
     return {
         "document_id": document_id,
@@ -407,14 +412,14 @@ def get_document_chunks(
 
 
 @router.post("/documents/start-processing")
-def start_processing(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def start_processing(current_user: User = Depends(get_current_user), db: AsyncSession = Depends(get_async_db)):
     """
     Manually trigger processing for all pending documents in user's knowledge space.
 
     Requires authentication. Processes all documents with status 'pending' or 'failed'.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    documents = service.get_user_documents()
+    documents = await service.get_user_documents()
 
     pending_docs = [doc for doc in documents if doc.status in ("pending", "failed")]
 
@@ -428,7 +433,7 @@ def start_processing(current_user: User = Depends(get_current_user), db: Session
             doc.status = "processing"
             doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
-            db.commit()
+            await db.commit()
 
             # Trigger background processing
             process_document_task.delay(current_user.id, doc.id)
@@ -447,10 +452,10 @@ def start_processing(current_user: User = Depends(get_current_user), db: Session
 
 
 @router.post("/documents/process-selected")
-def process_selected_documents(
+async def process_selected_documents(
     request: ProcessSelectedRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Process selected documents by their IDs.
@@ -459,7 +464,7 @@ def process_selected_documents(
     status 'pending' or 'failed'.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    documents = service.get_user_documents()
+    documents = await service.get_user_documents()
 
     # Filter to only user's documents that are pending/failed and in the selected list
     user_doc_ids = {doc.id for doc in documents}
@@ -481,7 +486,7 @@ def process_selected_documents(
             doc.status = "processing"
             doc.processing_progress = "queued"
             doc.processing_progress_percent = 0
-            db.commit()
+            await db.commit()
 
             # Trigger background processing
             process_document_task.delay(current_user.id, doc.id)

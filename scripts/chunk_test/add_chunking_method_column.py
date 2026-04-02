@@ -56,7 +56,7 @@ def migrate():
             )
             conn.commit()
         except Exception as e:
-            logger.warning(f"Index creation failed (may already exist): {e}")
+            logger.warning("Index creation failed (may already exist): %s", e)
 
         # Create composite index
         logger.info("Creating composite index on (document_id, chunking_method)...")
@@ -69,7 +69,7 @@ def migrate():
             )
             conn.commit()
         except Exception as e:
-            logger.warning(f"Composite index creation failed (may already exist): {e}")
+            logger.warning("Composite index creation failed (may already exist): %s", e)
 
         # Migrate data from meta_data JSON to column
         logger.info("Migrating data from meta_data to chunking_method column...")
@@ -108,7 +108,7 @@ def migrate():
             """)
             )
         else:
-            logger.warning(f"Unknown database dialect: {dialect}. Skipping data migration.")
+            logger.warning("Unknown database dialect: %s. Skipping data migration.", dialect)
             logger.info("Please manually migrate data from meta_data to chunking_method column.")
             conn.commit()
             return
@@ -123,7 +123,7 @@ def migrate():
         """)
         )
         migrated_count = result.scalar()
-        logger.info(f"Migrated {migrated_count} rows from meta_data to chunking_method column")
+        logger.info("Migrated %s rows from meta_data to chunking_method column", migrated_count)
 
         logger.info("Migration completed successfully!")
 
@@ -132,5 +132,5 @@ if __name__ == "__main__":
     try:
         migrate()
     except Exception as e:
-        logger.error(f"Migration failed: {e}", exc_info=True)
+        logger.error("Migration failed: %s", e, exc_info=True)
         sys.exit(1)

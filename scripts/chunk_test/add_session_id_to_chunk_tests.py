@@ -9,6 +9,7 @@ import importlib
 import logging
 import os
 import sys
+import traceback
 import uuid
 
 # Add project root to path before importing project modules
@@ -90,15 +91,13 @@ def add_session_id_column():
             updated_count += 1
 
         db.commit()
-        logger.info(f"Generated UUIDs for {updated_count} existing records")
+        logger.info("Generated UUIDs for %s existing records", updated_count)
 
         return True
 
     except Exception as e:
         db.rollback()
-        logger.error(f"Error adding session_id column: {e}")
-        import traceback
-
+        logger.error("Error adding session_id column: %s", e)
         traceback.print_exc()
         return False
     finally:

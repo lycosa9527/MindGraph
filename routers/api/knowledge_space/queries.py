@@ -15,9 +15,10 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import (
     KnowledgeQuery,
@@ -48,10 +49,10 @@ router = APIRouter()
 
 
 @router.post("/retrieval-test")
-def test_retrieval(
+async def test_retrieval(
     request: RetrievalTestRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Test retrieval functionality for user's knowledge space.
@@ -61,7 +62,7 @@ def test_retrieval(
     service = get_retrieval_test_service()
 
     try:
-        result = service.test_retrieval(
+        result = await service.test_retrieval(
             db=db,
             user_id=current_user.id,
             query=request.query,
@@ -82,7 +83,10 @@ def test_retrieval(
 
 
 @router.get("/queries/retrieval-test-history")
-def get_retrieval_test_history(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def get_retrieval_test_history(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Get retrieval test history for user.
 
@@ -90,26 +94,23 @@ def get_retrieval_test_history(current_user: User = Depends(get_current_user), d
     Requires authentication.
     """
     try:
-        # Get user's knowledge space
-        space = db.query(KnowledgeSpace).filter(KnowledgeSpace.user_id == current_user.id).first()
+        result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == current_user.id))
+        space = result.scalar_one_or_none()
 
         if not space:
             return RetrievalTestHistoryResponse(queries=[], total=0)
 
-        # Fetch retrieval test queries (most recent first)
-        # Only keep 10 most recent, so we only fetch 10
-        queries = (
-            db.query(KnowledgeQuery)
-            .filter(
+        result = await db.execute(
+            select(KnowledgeQuery)
+            .where(
                 KnowledgeQuery.space_id == space.id,
                 KnowledgeQuery.source == "retrieval_test",
             )
             .order_by(KnowledgeQuery.created_at.desc())
             .limit(10)
-            .all()
         )
+        queries = result.scalars().all()
 
-        # Convert to response format
         history_items = []
         for q in queries:
             history_items.append(
@@ -132,7 +133,7 @@ def get_retrieval_test_history(current_user: User = Depends(get_current_user), d
 
         return RetrievalTestHistoryResponse(
             queries=history_items,
-            total=len(history_items),  # Max 10
+            total=len(history_items),
         )
     except Exception as e:
         logger.error(
@@ -144,10 +145,10 @@ def get_retrieval_test_history(current_user: User = Depends(get_current_user), d
 
 
 @router.get("/queries/analytics")
-def get_query_analytics(
+async def get_query_analytics(
     days: int = 30,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get query performance analytics.
@@ -156,7 +157,7 @@ def get_query_analytics(
     """
     try:
         rag_service = get_rag_service()
-        analytics = rag_service.analyze_query_performance(db, current_user.id, days)
+        analytics = await rag_service.analyze_query_performance(db, current_user.id, days)
         return QueryAnalyticsResponse(**analytics)
     except Exception as e:
         logger.error(
@@ -168,24 +169,23 @@ def get_query_analytics(
 
 
 @router.post("/queries/{query_id}/feedback")
-def submit_query_feedback(
+async def submit_query_feedback(
     query_id: int,
     request: QueryFeedbackRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Submit feedback for a query result.
 
     Requires authentication. Verifies ownership.
     """
-    # Verify query ownership
-    query = (
-        db.query(KnowledgeQuery)
+    result = await db.execute(
+        select(KnowledgeQuery)
         .join(KnowledgeSpace)
-        .filter(KnowledgeQuery.id == query_id, KnowledgeSpace.user_id == current_user.id)
-        .first()
+        .where(KnowledgeQuery.id == query_id, KnowledgeSpace.user_id == current_user.id)
     )
+    query = result.scalar_one_or_none()
 
     if not query:
         raise HTTPException(status_code=404, detail="Query not found")
@@ -201,8 +201,8 @@ def submit_query_feedback(
             irrelevant_chunk_ids=request.irrelevant_chunk_ids,
         )
         db.add(feedback)
-        db.commit()
-        db.refresh(feedback)
+        await db.commit()
+        await db.refresh(feedback)
 
         return {
             "id": feedback.id,
@@ -217,15 +217,15 @@ def submit_query_feedback(
             query_id,
             e,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to submit feedback") from e
 
 
 @router.post("/query-templates")
-def create_query_template(
+async def create_query_template(
     request: QueryTemplateRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Create a query template.
@@ -233,7 +233,7 @@ def create_query_template(
     Requires authentication.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    space = service.create_knowledge_space()
+    space = await service.create_knowledge_space()
 
     try:
         template = QueryTemplate(
@@ -244,8 +244,8 @@ def create_query_template(
             parameters=request.parameters or {},
         )
         db.add(template)
-        db.commit()
-        db.refresh(template)
+        await db.commit()
+        await db.refresh(template)
 
         return QueryTemplateResponse(
             id=template.id,
@@ -259,26 +259,29 @@ def create_query_template(
         )
     except Exception as e:
         logger.error("[KnowledgeSpaceAPI] Failed to create query template: %s", e)
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to create template") from e
 
 
 @router.get("/query-templates")
-def list_query_templates(current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+async def list_query_templates(
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     List query templates for user.
 
     Requires authentication.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    space = service.create_knowledge_space()
+    space = await service.create_knowledge_space()
 
-    templates = (
-        db.query(QueryTemplate)
-        .filter(QueryTemplate.user_id == current_user.id, QueryTemplate.space_id == space.id)
+    result = await db.execute(
+        select(QueryTemplate)
+        .where(QueryTemplate.user_id == current_user.id, QueryTemplate.space_id == space.id)
         .order_by(QueryTemplate.usage_count.desc())
-        .all()
     )
+    templates = result.scalars().all()
 
     return {
         "templates": [

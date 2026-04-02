@@ -24,7 +24,7 @@ if env_path.exists():
                 key, _, value = line.partition("=")
                 os.environ.setdefault(key.strip(), value.strip().split("#")[0].strip())
 
-from config.database import SessionLocal
+from config.database import SyncSessionLocal
 from models.domain.auth import User
 from utils.auth.config import ADMIN_PHONES
 
@@ -42,7 +42,7 @@ def main():
     print(f"ADMIN_PHONES from .env: {admin_phones or '(empty)'}")
     print()
 
-    db = SessionLocal()
+    db = SyncSessionLocal()
     try:
         users = db.query(User).order_by(User.id).all()
         if not users:

@@ -393,4 +393,18 @@ export default {
   'admin.database.orphanCleanSuccess': '孤立記錄已清理',
   'admin.database.orphanCleanError': '孤立記錄清理失敗',
   'admin.database.cleanSqliteOrphans': '清理 SQLite 孤立記錄',
+
+  'admin.database.pgAnalyze': '分析',
+  'admin.database.pgAnalyzeError': '分析 PG 傾印失敗',
+  'admin.database.pgAnalysisResult': 'PG 傾印分析',
+  'admin.database.pgSkippedTables': '跳過的表',
+  'admin.database.pgStagingRows': '傾印行數',
+  'admin.database.pgLiveRows': '線上行數',
+  'admin.database.pgExecuteMerge': '合併到線上資料庫',
+  'admin.database.pgMergeConfirmTitle': '確認 PG 合併',
+  'admin.database.pgMergeConfirmMsg':
+    '此操作將把傾印中的資料合併到線上資料庫，現有記錄將被保留。是否繼續？',
+  'admin.database.pgMergeSuccess': 'PG 傾印合併成功',
+  'admin.database.pgMergeError': 'PG 傾印合併失敗',
+  'admin.database.pgMergeComplete': 'PG 合併完成',
 } as const

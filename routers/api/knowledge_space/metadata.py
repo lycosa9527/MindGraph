@@ -15,9 +15,9 @@ Proprietary License
 import logging
 
 from fastapi import APIRouter, HTTPException, Depends
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.requests.requests_knowledge_space import (
     MetadataUpdateRequest,
@@ -34,11 +34,11 @@ router = APIRouter()
 
 
 @router.patch("/documents/{document_id}/metadata")
-def update_document_metadata(
+async def update_document_metadata(
     document_id: int,
     request: MetadataUpdateRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Update document metadata (tags, category, custom fields).
@@ -46,7 +46,7 @@ def update_document_metadata(
     Requires authentication. Verifies ownership.
     """
     service = KnowledgeSpaceService(db, current_user.id)
-    document = service.get_document(document_id)
+    document = await service.get_document(document_id)
 
     if not document:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -68,8 +68,8 @@ def update_document_metadata(
             existing_custom.update(request.custom_fields)
             document.custom_fields = existing_custom
 
-        db.commit()
-        db.refresh(document)
+        await db.commit()
+        await db.refresh(document)
 
         return DocumentResponse(
             id=document.id,
@@ -90,15 +90,15 @@ def update_document_metadata(
             document_id,
             e,
         )
-        db.rollback()
+        await db.rollback()
         raise HTTPException(status_code=500, detail="Failed to update metadata") from e
 
 
 @router.get("/documents/{document_id}/versions")
-def get_document_versions(
+async def get_document_versions(
     document_id: int,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Get version history for a document.
@@ -108,7 +108,7 @@ def get_document_versions(
     service = KnowledgeSpaceService(db, current_user.id)
 
     try:
-        versions = service.get_document_versions(document_id)
+        versions = await service.get_document_versions(document_id)
         return VersionListResponse(
             versions=[
                 VersionResponse(
@@ -135,11 +135,11 @@ def get_document_versions(
 
 
 @router.post("/documents/{document_id}/rollback")
-def rollback_document(
+async def rollback_document(
     document_id: int,
     request: RollbackRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Rollback document to a previous version.
@@ -149,7 +149,7 @@ def rollback_document(
     service = KnowledgeSpaceService(db, current_user.id)
 
     try:
-        document = service.rollback_document(document_id, request.version_number)
+        document = await service.rollback_document(document_id, request.version_number)
         return DocumentResponse(
             id=document.id,
             file_name=document.file_name,

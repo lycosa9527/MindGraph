@@ -9,13 +9,13 @@ Proprietary License
 """
 
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from utils.auth import get_current_user
@@ -32,10 +32,10 @@ class DiagramExportLogRequest(BaseModel):
 
 
 @router.post("/activity/diagram_export")
-def log_diagram_export(
+async def log_diagram_export(
     _req: DiagramExportLogRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Log diagram export event for teacher usage analytics.
@@ -49,15 +49,15 @@ def log_diagram_export(
         log_entry = UserActivityLog(
             user_id=current_user.id,
             activity_type="diagram_export",
-            created_at=datetime.now(timezone.utc),
+            created_at=datetime.now(UTC),
         )
         db.add(log_entry)
-        db.commit()
+        await db.commit()
         return {"status": "logged"}
     except Exception as e:
         logger.debug("Failed to log diagram_export: %s", e)
         try:
-            db.rollback()
+            await db.rollback()
         except Exception as exc:
             logger.debug("Rollback after export log failure: %s", exc)
         return {"status": "error"}

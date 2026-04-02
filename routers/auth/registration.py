@@ -14,12 +14,13 @@ Proprietary License
 import asyncio
 import logging
 import time
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.messages import Messages, Language
 from models.domain.auth import User, Organization
 from models.requests.requests_auth import RegisterRequest, RegisterWithSMSRequest
@@ -57,7 +58,7 @@ async def register(
     request: RegisterRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -93,18 +94,17 @@ async def register(
         if captcha_error == "expired":
             error_msg = Messages.error("captcha_expired", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        elif captcha_error == "not_found":
+        if captcha_error == "not_found":
             error_msg = Messages.error("captcha_not_found", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        elif captcha_error == "incorrect":
+        if captcha_error == "incorrect":
             error_msg = Messages.error("captcha_incorrect", lang)
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
-        elif captcha_error == "database_locked":
+        if captcha_error == "database_locked":
             error_msg = Messages.error("captcha_database_unavailable", lang)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
-        else:
-            error_msg = Messages.error("captcha_verify_failed", lang)
-            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
+        error_msg = Messages.error("captcha_verify_failed", lang)
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     logger.debug("Captcha verified for registration: %s", request.phone)
 
@@ -127,11 +127,10 @@ async def register(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Use cache for org lookup (with database fallback)
-    org = org_cache.get_by_invitation_code(provided_invite)
+    org = await org_cache.get_by_invitation_code(provided_invite)
     if not org:
-        org = await asyncio.to_thread(
-            lambda: db.query(Organization).filter(Organization.invitation_code == provided_invite).first()
-        )
+        result = await db.execute(select(Organization).where(Organization.invitation_code == provided_invite))
+        org = result.scalar_one_or_none()
         if not org:
             duration = time.time() - start_time
             registration_metrics.record_failure("invitation_code_invalid", duration)
@@ -154,7 +153,7 @@ async def register(
     try:
         async with phone_registration_lock(request.phone):
             # Check if phone already exists (use cache with database fallback)
-            existing_user = user_cache.get_by_phone(request.phone)
+            existing_user = await user_cache.get_by_phone(request.phone)
             if existing_user:
                 duration = time.time() - start_time
                 registration_metrics.record_failure("phone_exists", duration)
@@ -167,11 +166,11 @@ async def register(
                 password_hash=hash_password(request.password),
                 name=request.name,
                 organization_id=org.id,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
-            await asyncio.to_thread(db.add, new_user)
+            db.add(new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
     except RuntimeError as e:
         # Lock acquisition failed - fall back to current behavior
@@ -300,7 +299,7 @@ async def register_with_sms(
     request: RegisterWithSMSRequest,
     http_request: Request,
     response: Response,
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -346,11 +345,10 @@ async def register_with_sms(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     # Use cache for org lookup (with database fallback)
-    org = org_cache.get_by_invitation_code(provided_invite)
+    org = await org_cache.get_by_invitation_code(provided_invite)
     if not org:
-        org = await asyncio.to_thread(
-            lambda: db.query(Organization).filter(Organization.invitation_code == provided_invite).first()
-        )
+        result = await db.execute(select(Organization).where(Organization.invitation_code == provided_invite))
+        org = result.scalar_one_or_none()
         if not org:
             duration = time.time() - start_time
             registration_metrics.record_failure("invitation_code_invalid", duration)
@@ -367,7 +365,7 @@ async def register_with_sms(
     try:
         async with phone_registration_lock(request.phone):
             # Check if phone already exists (use cache with database fallback)
-            existing_user = user_cache.get_by_phone(request.phone)
+            existing_user = await user_cache.get_by_phone(request.phone)
             if existing_user:
                 duration = time.time() - start_time
                 registration_metrics.record_failure("phone_exists", duration)
@@ -389,11 +387,11 @@ async def register_with_sms(
                 password_hash=hash_password(request.password),
                 name=request.name,
                 organization_id=org.id,
-                created_at=datetime.now(timezone.utc),
+                created_at=datetime.now(UTC),
             )
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
-            await asyncio.to_thread(db.add, new_user)
+            db.add(new_user)
             retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
     except RuntimeError as e:
         duration = time.time() - start_time

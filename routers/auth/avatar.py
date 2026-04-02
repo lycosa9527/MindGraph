@@ -3,9 +3,10 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from services.redis.cache.redis_user_cache import user_cache
@@ -619,10 +620,10 @@ async def get_avatars():
 
 
 @router.put("/avatar")
-def update_avatar(
+async def update_avatar(
     request: UpdateAvatarRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -635,19 +636,21 @@ def update_avatar(
         error_msg = Messages.error("avatar_not_found", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    user = db.query(User).filter(User.id == current_user.id).first()
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
     if not user:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
     user.avatar = request.avatar
 
     try:
-        db.commit()
+        await db.commit()
+        await db.refresh(user)
         user_cache.invalidate(user.id, user.phone)
         user_cache.cache_user(user)
         logger.info("User %s updated avatar to %s", user.id, user.avatar)
     except Exception as e:
-        db.rollback()
+        await db.rollback()
         logger.error("Failed to update avatar for user %s: %s", user.id, e)
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,

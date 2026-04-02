@@ -95,8 +95,10 @@ def download_playwright_browser_for_platform(target_platform):
         def show_progress(block_num, block_size, total_size):
             downloaded = block_num * block_size
             percent = min(downloaded * 100 / total_size, 100) if total_size > 0 else 0
+            dl_mb = downloaded / (1024 * 1024)
+            total_mb = total_size / (1024 * 1024)
             print(
-                f"\r    Downloading: {percent:.1f}% ({downloaded / (1024 * 1024):.1f}MB / {total_size / (1024 * 1024):.1f}MB)",
+                f"\r    Downloading: {percent:.1f}% ({dl_mb:.1f}MB / {total_mb:.1f}MB)",
                 end="",
                 flush=True,
             )
@@ -229,7 +231,7 @@ def package_platform_chromium(zip_path, platform_name, chromium_source_dir):
 
     # Add/update platform folder in zip
     with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
-        for root, dirs, files in os.walk(chromium_source_dir):
+        for root, _dirs, files in os.walk(chromium_source_dir):
             for file in files:
                 file_path = Path(root) / file
                 relative_path = file_path.relative_to(chromium_source_dir)
@@ -352,7 +354,7 @@ def package_chromium():
 
     # Add/update platform folder in zip
     with zipfile.ZipFile(zip_path, mode, zipfile.ZIP_DEFLATED, compresslevel=6) as zipf:
-        for root, dirs, files in os.walk(chromium_source_dir):
+        for root, _dirs, files in os.walk(chromium_source_dir):
             for file in files:
                 file_path = Path(root) / file
                 # Use platform-specific path: {platform_name}/...
@@ -401,5 +403,4 @@ def package_chromium():
 
 
 if __name__ == "__main__":
-    success = package_chromium()
-    sys.exit(0 if success else 1)
+    sys.exit(0 if package_chromium() else 1)

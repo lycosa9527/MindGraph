@@ -12,13 +12,14 @@ Proprietary License
 
 import logging
 import shutil
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
-from sqlalchemy.orm import Session
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import get_db
+from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.library import LibraryDocument
 from services.library import LibraryService
@@ -160,7 +161,10 @@ def _collect_disk_books(
 
 
 @router.get("/admin/scan")
-def scan_library_folders(current_user: User = Depends(require_admin), db: Session = Depends(get_db)):
+async def scan_library_folders(
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_async_db),
+):
     """
     Scan library storage directory and return all folder/document status (admin only).
 
@@ -178,7 +182,8 @@ def scan_library_folders(current_user: User = Depends(require_admin), db: Sessio
             detail=f"Library storage directory not found: {library_dir}",
         )
 
-    all_docs = db.query(LibraryDocument).filter(LibraryDocument.use_images.is_(True)).all()
+    result = await db.execute(select(LibraryDocument).where(LibraryDocument.use_images.is_(True)))
+    all_docs = result.scalars().all()
 
     docs_by_path, docs_by_folder = _build_doc_lookups(all_docs, library_dir, project_root)
     books, folders_seen = _collect_disk_books(library_dir, docs_by_path, docs_by_folder, project_root)
@@ -202,7 +207,7 @@ def scan_library_folders(current_user: User = Depends(require_admin), db: Sessio
             )
 
     return {
-        "scanned_at": datetime.utcnow().isoformat(),
+        "scanned_at": datetime.now(UTC).isoformat(),
         "storage_dir": str(library_dir),
         "books": books,
         "total": len(books),
@@ -210,9 +215,9 @@ def scan_library_folders(current_user: User = Depends(require_admin), db: Sessio
 
 
 @router.post("/admin/repair")
-def repair_library_paths(
+async def repair_library_paths(
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Fix stale pages_dir_path values stored in the database (admin only).
@@ -231,7 +236,8 @@ def repair_library_paths(
     library_dir = service.storage_dir
     project_root = Path.cwd()
 
-    all_docs = db.query(LibraryDocument).filter(LibraryDocument.use_images.is_(True)).all()
+    result = await db.execute(select(LibraryDocument).where(LibraryDocument.use_images.is_(True)))
+    all_docs = result.scalars().all()
 
     updated = 0
     skipped = 0
@@ -255,7 +261,7 @@ def repair_library_paths(
 
         try:
             doc.pages_dir_path = desired
-            doc.updated_at = datetime.utcnow()
+            doc.updated_at = datetime.now(UTC)
             updated += 1
         except Exception as exc:  # pylint: disable=broad-except
             logger.error("[Library] Repair failed for document %s: %s", doc.id, exc)
@@ -263,9 +269,9 @@ def repair_library_paths(
 
     if updated:
         try:
-            db.commit()
+            await db.commit()
         except Exception as exc:
-            db.rollback()
+            await db.rollback()
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to commit path repairs",
@@ -284,18 +290,19 @@ def repair_library_paths(
 
 
 @router.patch("/documents/{document_id}/visibility")
-def update_document_visibility(
+async def update_document_visibility(
     document_id: int,
     data: DocumentVisibilityUpdate,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Show or hide a library document (admin only).
 
     Sets is_active to the requested value and invalidates the document cache.
     """
-    document = db.query(LibraryDocument).filter(LibraryDocument.id == document_id).first()
+    result = await db.execute(select(LibraryDocument).where(LibraryDocument.id == document_id))
+    document = result.scalar_one_or_none()
 
     if not document:
         raise HTTPException(
@@ -304,12 +311,12 @@ def update_document_visibility(
         )
 
     document.is_active = data.is_active
-    document.updated_at = datetime.utcnow()
+    document.updated_at = datetime.now(UTC)
     try:
-        db.commit()
-        db.refresh(document)
+        await db.commit()
+        await db.refresh(document)
     except Exception as exc:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to update document visibility",
@@ -415,10 +422,10 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
 
 
 @router.post("/admin/rename-pages")
-def rename_book_pages(
+async def rename_book_pages(
     data: RenameRequest,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Rename page images in a book folder to sequential numbering (admin only).
@@ -498,10 +505,10 @@ def rename_book_pages(
 
 
 @router.post("/admin/documents/{document_id}/generate-cover")
-def generate_document_cover(
+async def generate_document_cover(
     document_id: int,
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Generate (or regenerate) cover image from the first page of a book (admin only).
@@ -539,14 +546,14 @@ _COVER_FILE_EXTENSIONS = (".jpg", ".jpeg", ".png", ".webp")
 
 
 @router.delete("/admin/documents/{document_id}")
-def delete_document_record(
+async def delete_document_record(
     document_id: int,
     delete_files: bool = Query(
         False,
         description="When True, also remove the book folder and all page images from disk",
     ),
     current_user: User = Depends(require_admin),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Delete a library document (admin only).
@@ -557,7 +564,8 @@ def delete_document_record(
     With delete_files=True: additionally deletes the entire book folder from disk
     (all page images).  This is a destructive, irreversible operation.
     """
-    document = db.query(LibraryDocument).filter(LibraryDocument.id == document_id).first()
+    result = await db.execute(select(LibraryDocument).where(LibraryDocument.id == document_id))
+    document = result.scalar_one_or_none()
 
     if not document:
         raise HTTPException(
@@ -568,11 +576,9 @@ def delete_document_record(
     service = LibraryService(db, user_id=current_user.id)
     deleted_folder = False
 
-    # Optionally delete the book folder from disk
     if delete_files and document.pages_dir_path:
         folder_path = resolve_library_path(document.pages_dir_path, service.storage_dir, Path.cwd())
         if folder_path and folder_path.exists() and folder_path.is_dir():
-            # Safety: must be a direct child of storage_dir
             try:
                 if folder_path.parent.resolve() == service.storage_dir.resolve():
                     shutil.rmtree(folder_path)
@@ -590,7 +596,6 @@ def delete_document_record(
                     detail=f"Could not delete book folder: {exc}",
                 ) from exc
 
-    # Best-effort cover file cleanup — failures are non-fatal
     for ext in _COVER_FILE_EXTENSIONS:
         candidate = service.covers_dir / f"{document_id}_cover{ext}"
         if candidate.exists():
@@ -603,10 +608,10 @@ def delete_document_record(
     service.invalidate_document_cache(document_id)
 
     try:
-        db.delete(document)
-        db.commit()
+        await db.delete(document)
+        await db.commit()
     except Exception as exc:
-        db.rollback()
+        await db.rollback()
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to delete document record",

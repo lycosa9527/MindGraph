@@ -21,7 +21,7 @@ from services.redis.session.redis_session_manager import (
 from utils.auth import decode_access_token
 
 
-def authenticate_websocket_user(
+async def authenticate_websocket_user(
     websocket: WebSocket,
 ) -> Tuple[Optional[Any], Optional[str]]:
     """
@@ -55,7 +55,7 @@ def authenticate_websocket_user(
     if session_mgr and not session_mgr.is_session_valid(user_id, token):
         return None, "Session expired"
 
-    user = redis_user_cache.get_by_id(user_id)
+    user = await redis_user_cache.get_by_id(user_id)
     if not user:
         return None, "User not found"
     return user, None

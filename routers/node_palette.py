@@ -15,11 +15,11 @@ Proprietary License
 
 import logging
 
-from datetime import datetime
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, HTTPException, Depends
 from fastapi.responses import StreamingResponse
-from sqlalchemy.orm import Session
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from agents.node_palette.brace_map_palette import get_brace_map_palette_generator
 from agents.node_palette.bridge_map_palette import get_bridge_map_palette_generator
@@ -33,7 +33,7 @@ from agents.node_palette.flow_map_palette import get_flow_map_palette_generator
 from agents.node_palette.mindmap_palette import get_mindmap_palette_generator
 from agents.node_palette.multi_flow_palette import get_multi_flow_palette_generator
 from agents.node_palette.tree_map_palette import get_tree_map_palette_generator
-from config.database import get_db
+from config.database import get_async_db
 from routers.node_palette_streaming import stream_node_palette
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
@@ -153,10 +153,10 @@ def _log_topic_and_firing(req: NodePaletteStartRequest, center_topic: str, sessi
 
 
 @router.post("/thinking_mode/node_palette/start")
-def start_node_palette(
+async def start_node_palette(
     req: NodePaletteStartRequest,
     current_user: User = Depends(get_current_user),
-    db: Session = Depends(get_db),
+    db: AsyncSession = Depends(get_async_db),
 ):
     """
     Initialize Node Palette and fire 3 LLMs concurrently (qwen, deepseek, doubao).
@@ -188,14 +188,14 @@ def start_node_palette(
             log_entry = UserActivityLog(
                 user_id=current_user.id,
                 activity_type="concept_generation",
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(UTC),
             )
             db.add(log_entry)
-            db.commit()
+            await db.commit()
         except Exception as e:
             logger.debug("Failed to log concept_generation: %s", e)
             try:
-                db.rollback()
+                await db.rollback()
             except Exception as exc:
                 logger.debug("Rollback after concept_generation log failure: %s", exc)
 

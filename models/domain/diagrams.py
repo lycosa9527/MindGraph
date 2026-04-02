@@ -12,7 +12,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Optional
 import uuid
 
@@ -40,7 +40,9 @@ class Diagram(Base):
     __tablename__ = "diagrams"
 
     id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid, index=True)
-    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
+    user_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
+    )
 
     # Metadata (queryable)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -69,13 +71,18 @@ class Diagram(Base):
     workshop_duration_preset: Mapped[Optional[str]] = mapped_column(String(16), nullable=True)
 
     # Timestamps
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
-    updated_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(UTC))
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC)
+    )
 
     # Relationships
-    user: Mapped["User"] = relationship("User", back_populates="diagrams")
+    user: Mapped["User"] = relationship("User", back_populates="diagrams", lazy="selectin")
     snapshots: Mapped[list["DiagramSnapshot"]] = relationship(
-        "DiagramSnapshot", back_populates="diagram", cascade="all, delete-orphan"
+        "DiagramSnapshot",
+        back_populates="diagram",
+        cascade="all, delete-orphan",
+        lazy="selectin",
     )
 
     # Composite index for efficient queries
