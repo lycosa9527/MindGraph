@@ -73,7 +73,11 @@ async def lock_account(user, db: AsyncSession) -> None:
         db: Async database session
     """
     user.locked_until = datetime.now(UTC) + timedelta(minutes=LOCKOUT_DURATION_MINUTES)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     # Invalidate and re-cache user (lock status changed)
     if _redis_available and _user_cache:
@@ -97,7 +101,11 @@ async def reset_failed_attempts(user, db: AsyncSession) -> None:
     user.failed_login_attempts = 0
     user.locked_until = None
     user.last_login = datetime.now(UTC)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     # Invalidate and re-cache user (lock status and last_login changed)
     if _redis_available and _user_cache:
@@ -117,7 +125,11 @@ async def increment_failed_attempts(user, db: AsyncSession) -> None:
         db: Async database session
     """
     user.failed_login_attempts += 1
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     if user.failed_login_attempts >= MAX_LOGIN_ATTEMPTS:
         await lock_account(user, db)

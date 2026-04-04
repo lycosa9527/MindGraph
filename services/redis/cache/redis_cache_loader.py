@@ -23,13 +23,14 @@ import logging
 import time
 import os
 import uuid
-from typing import Tuple, Optional
+from typing import Optional, Tuple
 
 from sqlalchemy import select
 
+from services.redis import keys as _keys
 from services.redis.cache.redis_user_cache import get_user_cache
 from services.redis.cache.redis_org_cache import get_org_cache
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_client import RedisOps, get_redis, is_redis_available
 from config.database import AsyncSessionLocal
 from models.domain.auth import User, Organization
 
@@ -50,8 +51,11 @@ logger = logging.getLogger(__name__)
 # TTL: 5 minutes (enough for cache loading, auto-release if worker crashes)
 # ============================================================================
 
-CACHE_LOADER_LOCK_KEY = "cache:loader:lock"
-CACHE_LOADER_LOCK_TTL = 300  # 5 minutes - enough for cache loading, auto-release on crash
+CACHE_LOADER_LOCK_KEY = _keys.CACHE_LOADER_LOCK
+CACHE_LOADER_LOCK_TTL = _keys.TTL_CACHE_LOADER_LOCK
+
+# Users/orgs loaded per DB round-trip during startup warm-up.
+_BATCH_SIZE = int(os.getenv("CACHE_LOADER_BATCH_SIZE", "500"))
 
 
 class _LockIdManager:
@@ -162,8 +166,7 @@ def release_cache_loader_lock() -> bool:
     try:
         worker_lock_id = _LockIdManager.get_lock_id()
 
-        # DELEX atomically deletes only if the stored value matches our lock ID.
-        result = redis_client.delex(CACHE_LOADER_LOCK_KEY, worker_lock_id)
+        result = RedisOps.compare_and_delete(CACHE_LOADER_LOCK_KEY, worker_lock_id)
 
         if result:
             logger.debug("[CacheLoader] Lock released (id=%s)", worker_lock_id)
@@ -182,116 +185,114 @@ def release_cache_loader_lock() -> bool:
 
 
 async def load_all_users_to_cache() -> Tuple[int, int]:
-    """
-    Load all users from database into Redis cache.
+    """Load all users from the database into Redis cache in batches.
+
+    Opens a fresh DB session per batch so no single session stays open for the
+    full table scan.  Batch size is tunable via CACHE_LOADER_BATCH_SIZE env var.
 
     Returns:
         Tuple of (success_count, error_count)
     """
     user_cache = get_user_cache()
+    success_count = 0
+    error_count = 0
+    offset = 0
 
     try:
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(select(User))
-            users = result.scalars().all()
-
-        total_count = len(users)
-
-        if total_count == 0:
-            logger.info("[CacheLoader] No users to load")
-            return 0, 0
-
-        logger.info("[CacheLoader] Loading %d users into cache...", total_count)
-
-        success_count = 0
-        error_count = 0
-
-        for user in users:
-            try:
-                user_cache.cache_user(user)
-                success_count += 1
-                if success_count % 100 == 0 or success_count == total_count:
-                    logger.debug(
-                        "[CacheLoader] Cached user %d/%d: ID %s",
-                        success_count,
-                        total_count,
-                        user.id,
-                    )
-            except Exception as e:
-                error_count += 1
-                logger.error(
-                    "[CacheLoader] Failed to cache user ID %s: %s",
-                    user.id,
-                    e,
-                    exc_info=True,
+        while True:
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(User).order_by(User.id).offset(offset).limit(_BATCH_SIZE)
                 )
+                batch = result.scalars().all()
 
-        logger.info("[CacheLoader] Loaded %d/%d users into cache", success_count, total_count)
-        if error_count > 0:
-            logger.warning("[CacheLoader] %d users failed to cache", error_count)
+            if not batch:
+                break
 
+            for user in batch:
+                try:
+                    user_cache.cache_user(user)
+                    success_count += 1
+                except Exception as exc:
+                    error_count += 1
+                    logger.error(
+                        "[CacheLoader] Failed to cache user ID %s: %s",
+                        user.id,
+                        exc,
+                        exc_info=True,
+                    )
+
+            logger.debug(
+                "[CacheLoader] Users cached: %d (offset %d)", success_count, offset
+            )
+            offset += len(batch)
+            if len(batch) < _BATCH_SIZE:
+                break
+
+        logger.info(
+            "[CacheLoader] Loaded %d users into cache (%d errors)", success_count, error_count
+        )
         return success_count, error_count
 
-    except Exception as e:
-        logger.error("[CacheLoader] Failed to load users from database: %s", e, exc_info=True)
-        return 0, 0
+    except Exception as exc:
+        logger.error("[CacheLoader] Failed to load users: %s", exc, exc_info=True)
+        return success_count, error_count
 
 
 async def load_all_orgs_to_cache() -> Tuple[int, int]:
-    """
-    Load all organizations from database into Redis cache.
+    """Load all organizations from the database into Redis cache in batches.
 
     Returns:
         Tuple of (success_count, error_count)
     """
     org_cache = get_org_cache()
+    success_count = 0
+    error_count = 0
+    offset = 0
 
     try:
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(select(Organization))
-            orgs = result.scalars().all()
-
-        total_count = len(orgs)
-
-        if total_count == 0:
-            logger.info("[CacheLoader] No organizations to load")
-            return 0, 0
-
-        logger.info("[CacheLoader] Loading %d organizations into cache...", total_count)
-
-        success_count = 0
-        error_count = 0
-
-        for org in orgs:
-            try:
-                org_cache.cache_org(org)
-                success_count += 1
-            except Exception as e:
-                error_count += 1
-                logger.error(
-                    "[CacheLoader] Failed to cache org ID %s: %s",
-                    org.id,
-                    e,
-                    exc_info=True,
+        while True:
+            async with AsyncSessionLocal() as db:
+                result = await db.execute(
+                    select(Organization)
+                    .order_by(Organization.id)
+                    .offset(offset)
+                    .limit(_BATCH_SIZE)
                 )
+                batch = result.scalars().all()
+
+            if not batch:
+                break
+
+            for org in batch:
+                try:
+                    org_cache.cache_org(org)
+                    success_count += 1
+                except Exception as exc:
+                    error_count += 1
+                    logger.error(
+                        "[CacheLoader] Failed to cache org ID %s: %s",
+                        org.id,
+                        exc,
+                        exc_info=True,
+                    )
+
+            offset += len(batch)
+            if len(batch) < _BATCH_SIZE:
+                break
 
         logger.info(
-            "[CacheLoader] Loaded %d/%d organizations into cache",
+            "[CacheLoader] Loaded %d organizations into cache (%d errors)",
             success_count,
-            total_count,
+            error_count,
         )
-        if error_count > 0:
-            logger.warning("[CacheLoader] %d organizations failed to cache", error_count)
-
         return success_count, error_count
 
-    except Exception as e:
+    except Exception as exc:
         logger.error(
-            "[CacheLoader] Failed to load organizations from database: %s",
-            e,
-            exc_info=True,
+            "[CacheLoader] Failed to load organizations: %s", exc, exc_info=True
         )
-        return 0, 0
+        return success_count, error_count
 
 
 async def reload_cache_from_database() -> bool:

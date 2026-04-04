@@ -196,6 +196,7 @@ def _seed_organizations_if_empty() -> None:
 _ALEMBIC_INI = str(Path(__file__).resolve().parent.parent / "alembic.ini")
 _MIGRATION_LOCK_KEY = "lock:mindgraph:alembic_migration"
 _MIGRATION_LOCK_TTL = 120
+_migration_lock_id: "str | None" = None
 
 
 def _run_alembic_upgrade() -> None:
@@ -254,6 +255,8 @@ def _acquire_migration_lock() -> bool:
     worker already holds the lock.  Falls back to True (run anyway) when
     Redis is unavailable (single-worker or dev setup).
     """
+    global _migration_lock_id  # pylint: disable=global-statement
+
     try:
         from services.redis.redis_client import get_redis, is_redis_available
     except ImportError:
@@ -266,7 +269,7 @@ def _acquire_migration_lock() -> bool:
     if redis is None:
         return True
 
-    lock_id = f"{os.getpid()}"
+    lock_id = f"{os.getpid()}:{os.urandom(4).hex()}"
     acquired = redis.set(
         _MIGRATION_LOCK_KEY,
         lock_id,
@@ -274,7 +277,8 @@ def _acquire_migration_lock() -> bool:
         ex=_MIGRATION_LOCK_TTL,
     )
     if acquired:
-        logger.info("[Database] Migration lock acquired (pid %s)", lock_id)
+        _migration_lock_id = lock_id
+        logger.info("[Database] Migration lock acquired (id %s)", lock_id)
         return True
 
     logger.info("[Database] Migration lock held by another worker — waiting for completion")
@@ -282,21 +286,32 @@ def _acquire_migration_lock() -> bool:
 
 
 def _release_migration_lock() -> None:
-    """Release the Redis migration lock."""
+    """Release the Redis migration lock using compare-and-delete.
+
+    Only deletes the key when its value matches the lock_id stored at
+    acquisition time, so a worker that outlasts its own TTL cannot
+    accidentally evict a lock legitimately held by a different worker.
+    """
+    global _migration_lock_id  # pylint: disable=global-statement
+
+    if not _migration_lock_id:
+        return
+
     try:
-        from services.redis.redis_client import get_redis, is_redis_available
+        from services.redis.redis_client import RedisOps, is_redis_available
     except ImportError:
+        _migration_lock_id = None
         return
 
     if not is_redis_available():
+        _migration_lock_id = None
         return
 
-    redis = get_redis()
-    if redis is None:
-        return
+    lock_id = _migration_lock_id
+    _migration_lock_id = None
 
     try:
-        redis.delete(_MIGRATION_LOCK_KEY)
+        RedisOps.compare_and_delete(_MIGRATION_LOCK_KEY, lock_id)
     except Exception as exc:
         logger.debug("[Database] Migration lock release (non-critical): %s", exc)
 
@@ -317,8 +332,12 @@ def _wait_for_migration_completion(expected_head: str) -> None:
                     current,
                 )
                 return
-        except Exception:
-            pass
+        except Exception as exc:
+            logger.debug(
+                "[Database] Migration poll DB error (attempt %d): %s",
+                attempt + 1,
+                exc,
+            )
         if attempt % 10 == 9:
             logger.debug(
                 "[Database] Still waiting for migration to complete (attempt %d)...",

@@ -27,6 +27,8 @@ from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 class Base(DeclarativeBase):
     """Shared declarative base for all MindGraph ORM models."""
 
+    id: object
+
 
 class Organization(Base):
     """
@@ -38,11 +40,11 @@ class Organization(Base):
 
     __tablename__ = "organizations"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     code = Column(String(50), unique=True, index=True, nullable=False)  # e.g., "DEMO-001"
     name = Column(String(200), nullable=False)  # e.g., "Demo School for Testing"
     display_name = Column(String(200), nullable=True)  # Custom text shown in sidebar (e.g. "MindGraph专业版")
-    invitation_code = Column(String(50), nullable=True)  # For controlled registration
+    invitation_code = Column(String(50), unique=True, nullable=True)  # For controlled registration
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Service subscription management
@@ -72,7 +74,9 @@ class User(Base):
     phone: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
-    organization_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("organizations.id", ondelete="SET NULL"), index=True, nullable=True
+    )
     avatar: Mapped[str | None] = mapped_column(String(50), nullable=True, default="🐈‍⬛")
     role: Mapped[str] = mapped_column(String(20), nullable=False, default="user")
 
@@ -136,7 +140,9 @@ class APIKey(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
 
     # Optional: Link to organization
-    organization_id: Mapped[int | None] = mapped_column(Integer, ForeignKey("organizations.id"), nullable=True)
+    organization_id: Mapped[int | None] = mapped_column(
+        Integer, ForeignKey("organizations.id", ondelete="SET NULL"), index=True, nullable=True
+    )
 
     def __repr__(self):
         return f"<APIKey {self.name}: {self.key[:12]}...>"

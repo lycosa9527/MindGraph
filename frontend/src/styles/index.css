@@ -405,8 +405,9 @@ body {
 .diagram-node-md {
   font-size: inherit;
   line-height: 1.35;
-  word-break: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
+  line-break: auto;
 }
 
 /*

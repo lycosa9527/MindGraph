@@ -25,6 +25,7 @@ Proprietary License
 from typing import Optional, Tuple
 import logging
 
+from services.redis import keys as _keys
 from services.redis.redis_client import is_redis_available, get_redis, RedisOps
 
 logger = logging.getLogger(__name__)
@@ -32,8 +33,8 @@ logger = logging.getLogger(__name__)
 # Key prefix for SMS verification codes
 SMS_PREFIX = "sms:verify:"
 
-# Default TTL for SMS codes (5 minutes)
-DEFAULT_SMS_TTL = 300
+# TTL sourced from central registry.
+DEFAULT_SMS_TTL = _keys.TTL_SMS
 
 
 class RedisSMSStorage:
@@ -116,44 +117,35 @@ class RedisSMSStorage:
             logger.warning("[SMS] Redis unavailable, cannot verify code")
             return False
 
-        redis_client = get_redis()
-        if not redis_client:
-            logger.warning("[SMS] Redis client unavailable, cannot verify code")
-            return False
-
         key = self._get_key(phone, purpose)
         phone_masked = phone[:3] + "***" + phone[-4:]
 
-        try:
-            # DELEX atomically deletes the key only if the current value
-            # matches the provided code — single round-trip, no Lua needed.
-            deleted = redis_client.delex(key, code)
+        deleted = RedisOps.compare_and_delete(key, code)
 
-            if deleted:
-                logger.info(
-                    "[SMS] Code verified and consumed for %s (purpose: %s)",
-                    phone_masked,
-                    purpose,
-                )
-                return True
+        if deleted:
+            logger.info(
+                "[SMS] Code verified and consumed for %s (purpose: %s)",
+                phone_masked,
+                purpose,
+            )
+            return True
 
-            # DELEX returned 0: either key missing or value mismatch.
-            # A single EXISTS check (instead of GET) avoids leaking the
-            # stored code into memory and eliminates the race window the
-            # old GET-after-Lua had.
-            if redis_client.exists(key):
-                logger.warning(
-                    "[SMS] Invalid code for %s (purpose: %s) - code preserved for retry",
-                    phone_masked,
-                    purpose,
-                )
-            else:
-                logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
-            return False
-
-        except Exception as exc:
-            logger.error("[SMS] DELEX verification failed: %s", exc)
-            return False
+        # compare_and_delete returned False: value mismatch or key missing.
+        # A single EXISTS distinguishes the two cases without reading the code.
+        redis_client = get_redis()
+        if redis_client:
+            try:
+                if redis_client.exists(key):
+                    logger.warning(
+                        "[SMS] Invalid code for %s (purpose: %s) - code preserved for retry",
+                        phone_masked,
+                        purpose,
+                    )
+                else:
+                    logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
+            except Exception as exc:
+                logger.debug("[SMS] exists check failed: %s", exc)
+        return False
 
     def check_exists(self, phone: str, purpose: str = "verification") -> bool:
         """

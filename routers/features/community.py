@@ -48,7 +48,14 @@ from routers.features.community_helpers import (
     save_thumbnail_from_upload,
     validate_and_parse_spec,
 )
-from services.redis.cache.redis_community_cache import invalidate_all, invalidate_post
+from services.redis.cache.redis_community_cache import (
+    get_cached_list,
+    get_cached_post,
+    invalidate_all,
+    invalidate_post,
+    set_cached_list,
+    set_cached_post,
+)
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -222,6 +229,28 @@ async def list_posts(
     if category:
         _validate_category(category)
 
+    # Try community list cache for non-personal feeds (mine=False).
+    # is_liked and can_edit are user-specific; we overlay them after the cache read.
+    if not mine:
+        cached_resp = get_cached_list(mine, type_filter, category, sort, page, page_size)
+        if cached_resp is not None:
+            post_ids_in_cache = [p["id"] for p in cached_resp.get("posts", [])]
+            liked_post_ids_cache: Set[str] = set()
+            if post_ids_in_cache:
+                liked_rows = (
+                    await db.execute(
+                        select(CommunityPostLike.post_id).where(
+                            CommunityPostLike.user_id == current_user.id,
+                            CommunityPostLike.post_id.in_(post_ids_in_cache),
+                        )
+                    )
+                ).all()
+                liked_post_ids_cache = {row[0] for row in liked_rows}
+            for post_item in cached_resp.get("posts", []):
+                post_item["is_liked"] = post_item["id"] in liked_post_ids_cache
+                post_item["can_edit"] = False
+            return cached_resp
+
     filters = []
     if mine:
         filters.append(CommunityPost.author_id == current_user.id)
@@ -265,13 +294,29 @@ async def list_posts(
 
     formatted = [await _format_post_response(p, current_user, db, liked_post_ids) for p in posts]
 
-    return {
+    response = {
         "posts": formatted,
         "total": total,
         "page": page,
         "page_size": page_size,
         "total_pages": (total + page_size - 1) // page_size,
     }
+
+    # Populate cache for non-personal feeds; strip user-specific fields before storing.
+    if not mine:
+        cacheable = {
+            "posts": [
+                {**p, "is_liked": False, "can_edit": False}
+                for p in formatted
+            ],
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "total_pages": response["total_pages"],
+        }
+        set_cached_list(mine, type_filter, category, sort, page, page_size, cacheable)
+
+    return response
 
 
 @router.post("/posts")
@@ -353,6 +398,21 @@ async def get_post(
     """Get a single post. Login required."""
     _validate_post_id(post_id)
 
+    # Try post cache first; is_liked and can_edit are user-specific so we overlay them.
+    cached_post = get_cached_post(post_id)
+    if cached_post is not None:
+        is_liked = False
+        result_like = await db.execute(
+            select(CommunityPostLike).where(
+                CommunityPostLike.post_id == post_id,
+                CommunityPostLike.user_id == current_user.id,
+            )
+        )
+        is_liked = result_like.scalar_one_or_none() is not None
+        cached_post["is_liked"] = is_liked
+        cached_post["can_edit"] = False
+        return cached_post
+
     result = await db.execute(
         select(CommunityPost)
         .options(joinedload(CommunityPost.author).joinedload(User.organization))
@@ -377,6 +437,10 @@ async def get_post(
     spec_json_path = COMMUNITY_THUMBNAIL_DIR / f"{post_id}.json"
     if spec_obj and not spec_json_path.exists():
         save_spec_json(post_id, spec_obj)
+
+    # Populate cache with non-user-specific data.
+    cacheable = {**resp, "is_liked": False, "can_edit": False}
+    set_cached_post(post_id, cacheable)
 
     return resp
 
@@ -690,8 +754,6 @@ async def delete_post(
     try:
         await db.execute(delete(CommunityPostComment).where(CommunityPostComment.post_id == post_id))
         await db.execute(delete(CommunityPostLike).where(CommunityPostLike.post_id == post_id))
-        delete_thumbnail(post_id)
-        delete_spec_json(post_id)
         await db.delete(post)
         await db.commit()
     except Exception as exc:
@@ -703,6 +765,16 @@ async def delete_post(
         ) from exc
 
     logger.info("[Community] User %s deleted post %s", current_user.id, post_id)
+
+    # Filesystem and cache cleanup runs after DB commit; failures are non-fatal.
+    try:
+        delete_thumbnail(post_id)
+    except Exception as exc:
+        logger.warning("[Community] Failed to delete thumbnail for post %s: %s", post_id, exc)
+    try:
+        delete_spec_json(post_id)
+    except Exception as exc:
+        logger.warning("[Community] Failed to delete spec JSON for post %s: %s", post_id, exc)
     invalidate_post(post_id)
     invalidate_all()
 

@@ -9,6 +9,7 @@ import { computed, ref } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
+import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -26,6 +27,12 @@ const { getNodeStyle } = useTheme({
 })
 
 const defaultStyle = computed(() => getNodeStyle('bubble'))
+
+const BUBBLE_BASE_MAX_WIDTH = 140
+const bubbleMaxWidth = computed(() => {
+  const label = (props.data.label as string) || ''
+  return `${computeScriptAwareMaxWidth(label, BUBBLE_BASE_MAX_WIDTH)}px`
+})
 
 const nodeStyle = computed(() => {
   const borderColor = props.data.style?.borderColor || defaultStyle.value.borderColor || '#000000'
@@ -74,7 +81,7 @@ function handleEditCancel() {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="140px"
+      :max-width="bubbleMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       text-class="px-3 py-2"

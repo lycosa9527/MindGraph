@@ -25,15 +25,14 @@ import logging
 from typing import Optional
 
 from services.redis.redis_client import RedisOps, get_redis, is_redis_available
+from services.redis import keys as _keys
 
 logger = logging.getLogger(__name__)
 
-COMMUNITY_VERSION_KEY = "community:version"
-COMMUNITY_LIST_PREFIX = "community:list:"
-COMMUNITY_POST_PREFIX = "community:post:"
-LIST_TTL_SECONDS = 60
-POST_TTL_SECONDS = 300
-VERSION_TTL_SECONDS = 86400  # 24 h safety net; refreshed on every increment
+COMMUNITY_VERSION_KEY = _keys.COMMUNITY_VERSION
+LIST_TTL_SECONDS = _keys.TTL_COMMUNITY_LIST
+POST_TTL_SECONDS = _keys.TTL_COMMUNITY_POST
+VERSION_TTL_SECONDS = _keys.TTL_COMMUNITY_VERSION
 
 
 def _list_cache_key(
@@ -43,11 +42,12 @@ def _list_cache_key(
     sort: str,
     page: int,
     page_size: int,
+    version: int,
 ) -> str:
-    """Build cache key for list endpoint."""
+    """Build versioned cache key for list endpoint."""
     parts = f"{mine}:{type_filter or ''}:{category or ''}:{sort}:{page}:{page_size}"
     h = hashlib.sha256(parts.encode()).hexdigest()[:16]
-    return f"{COMMUNITY_LIST_PREFIX}{h}"
+    return _keys.COMMUNITY_LIST.format(hash16=h, version=version)
 
 
 def get_version() -> int:
@@ -61,6 +61,9 @@ def get_version() -> int:
         val = redis.get(COMMUNITY_VERSION_KEY)
         return int(val) if val else 0
     except (ValueError, TypeError):
+        return 0
+    except Exception as exc:
+        logger.warning("[CommunityCache] Failed to read version: %s", exc)
         return 0
 
 
@@ -96,7 +99,7 @@ def get_cached_list(
     if mine or not is_redis_available():
         return None
     version = get_version()
-    key = f"{_list_cache_key(mine, type_filter, category, sort, page, page_size)}:v{version}"
+    key = _list_cache_key(mine, type_filter, category, sort, page, page_size, version)
     raw = RedisOps.get(key)
     if not raw:
         return None
@@ -120,7 +123,7 @@ def set_cached_list(
     if mine or not is_redis_available():
         return False
     version = get_version()
-    key = f"{_list_cache_key(mine, type_filter, category, sort, page, page_size)}:v{version}"
+    key = _list_cache_key(mine, type_filter, category, sort, page, page_size, version)
     try:
         return RedisOps.set_with_ttl(key, json.dumps(data), LIST_TTL_SECONDS)
     except Exception as e:
@@ -132,7 +135,7 @@ def get_cached_post(post_id: str) -> Optional[dict]:
     """Get cached single post. Returns None on miss or error."""
     if not is_redis_available():
         return None
-    key = f"{COMMUNITY_POST_PREFIX}{post_id}"
+    key = _keys.COMMUNITY_POST.format(post_id=post_id)
     raw = RedisOps.get(key)
     if not raw:
         return None
@@ -147,7 +150,7 @@ def set_cached_post(post_id: str, data: dict) -> bool:
     """Cache single post. Non-blocking."""
     if not is_redis_available():
         return False
-    key = f"{COMMUNITY_POST_PREFIX}{post_id}"
+    key = _keys.COMMUNITY_POST.format(post_id=post_id)
     try:
         return RedisOps.set_with_ttl(key, json.dumps(data), POST_TTL_SECONDS)
     except Exception as e:
@@ -159,7 +162,7 @@ def invalidate_post(post_id: str) -> None:
     """Invalidate cached post on update/delete."""
     if not is_redis_available():
         return
-    key = f"{COMMUNITY_POST_PREFIX}{post_id}"
+    key = _keys.COMMUNITY_POST.format(post_id=post_id)
     RedisOps.delete(key)
     logger.debug("[CommunityCache] Invalidated post %s", post_id)
 

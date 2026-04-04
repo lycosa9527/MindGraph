@@ -17,8 +17,9 @@ import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import selectinload, joinedload
 from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import get_async_db
@@ -109,15 +110,27 @@ def require_organization(user: User):
         )
 
 
-async def format_diagram_response(diagram: SharedDiagram, user_id: int, db: AsyncSession) -> dict:
-    """Format a SharedDiagram for API response"""
-    result = await db.execute(
-        select(SharedDiagramLike).where(
-            SharedDiagramLike.diagram_id == diagram.id,
-            SharedDiagramLike.user_id == user_id,
+async def format_diagram_response(
+    diagram: SharedDiagram,
+    user_id: int,
+    db: AsyncSession,
+    liked_ids: Optional[set] = None,
+) -> dict:
+    """Format a SharedDiagram for API response.
+
+    Pass ``liked_ids`` (a pre-loaded set of diagram IDs liked by ``user_id``)
+    to avoid an extra SELECT per diagram on list endpoints.
+    """
+    if liked_ids is not None:
+        is_liked = diagram.id in liked_ids
+    else:
+        result = await db.execute(
+            select(SharedDiagramLike).where(
+                SharedDiagramLike.diagram_id == diagram.id,
+                SharedDiagramLike.user_id == user_id,
+            )
         )
-    )
-    is_liked = result.scalar_one_or_none() is not None
+        is_liked = result.scalar_one_or_none() is not None
 
     return {
         "id": diagram.id,
@@ -162,7 +175,7 @@ async def list_shared_diagrams(
     """
     require_organization(current_user)
 
-    stmt = select(SharedDiagram).where(
+    stmt = select(SharedDiagram).options(selectinload(SharedDiagram.author)).where(
         SharedDiagram.organization_id == current_user.organization_id,
         SharedDiagram.is_active.is_(True),
     )
@@ -186,9 +199,23 @@ async def list_shared_diagrams(
     result = await db.execute(stmt.offset((page - 1) * page_size).limit(page_size))
     diagrams = result.scalars().all()
 
+    # Batch-load likes for this user to avoid N+1 (one SELECT per diagram).
+    liked_ids: set = set()
+    if diagrams:
+        diagram_ids = [d.id for d in diagrams]
+        liked_rows = (
+            await db.execute(
+                select(SharedDiagramLike.diagram_id).where(
+                    SharedDiagramLike.user_id == current_user.id,
+                    SharedDiagramLike.diagram_id.in_(diagram_ids),
+                )
+            )
+        ).all()
+        liked_ids = {row[0] for row in liked_rows}
+
     posts = []
     for diagram in diagrams:
-        posts.append(await format_diagram_response(diagram, current_user.id, db))
+        posts.append(await format_diagram_response(diagram, current_user.id, db, liked_ids))
 
     return {
         "posts": posts,
@@ -225,8 +252,12 @@ async def create_shared_diagram(
     )
 
     db.add(diagram)
-    await db.commit()
-    await db.refresh(diagram)
+    try:
+        await db.commit()
+        await db.refresh(diagram)
+    except Exception:
+        await db.rollback()
+        raise
 
     logger.info(
         "User %s shared diagram '%s' in org %s",
@@ -266,8 +297,16 @@ async def get_shared_diagram(
     if not diagram:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
-    diagram.views_count += 1
-    await db.commit()
+    await db.execute(
+        update(SharedDiagram)
+        .where(SharedDiagram.id == post_id)
+        .values(views_count=SharedDiagram.views_count + 1)
+    )
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     response = await format_diagram_response(diagram, current_user.id, db)
     response["diagram_data"] = diagram.diagram_data
@@ -309,7 +348,11 @@ async def delete_shared_diagram(
         )
 
     diagram.is_active = False
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     logger.info("User %s deleted shared diagram %s", current_user.id, post_id)
 
@@ -351,7 +394,11 @@ async def toggle_like(
 
     if existing_like:
         await db.delete(existing_like)
-        diagram.likes_count = max(0, diagram.likes_count - 1)
+        await db.execute(
+            update(SharedDiagram)
+            .where(SharedDiagram.id == post_id)
+            .values(likes_count=func.greatest(SharedDiagram.likes_count - 1, 0))
+        )
         is_liked = False
     else:
         like = SharedDiagramLike(
@@ -360,12 +407,25 @@ async def toggle_like(
             created_at=datetime.now(UTC),
         )
         db.add(like)
-        diagram.likes_count += 1
+        await db.execute(
+            update(SharedDiagram)
+            .where(SharedDiagram.id == post_id)
+            .values(likes_count=SharedDiagram.likes_count + 1)
+        )
         is_liked = True
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
-    return {"is_liked": is_liked, "likes_count": diagram.likes_count}
+    # Re-fetch the authoritative count after the atomic update.
+    result = await db.execute(
+        select(SharedDiagram.likes_count).where(SharedDiagram.id == post_id)
+    )
+    likes_count = result.scalar_one_or_none() or 0
+    return {"is_liked": is_liked, "likes_count": likes_count}
 
 
 @router.get("/posts/{post_id}/comments")
@@ -395,6 +455,7 @@ async def list_comments(
 
     comment_stmt = (
         select(SharedDiagramComment)
+        .options(joinedload(SharedDiagramComment.user))
         .where(
             SharedDiagramComment.diagram_id == post_id,
             SharedDiagramComment.is_active.is_(True),
@@ -406,7 +467,7 @@ async def list_comments(
     total = count_result.scalar_one()
 
     result = await db.execute(comment_stmt.offset((page - 1) * page_size).limit(page_size))
-    comments = result.scalars().all()
+    comments = result.unique().scalars().all()
 
     return {
         "comments": [
@@ -460,9 +521,17 @@ async def create_comment(
     )
 
     db.add(comment)
-    diagram.comments_count += 1
-    await db.commit()
-    await db.refresh(comment)
+    await db.execute(
+        update(SharedDiagram)
+        .where(SharedDiagram.id == post_id)
+        .values(comments_count=SharedDiagram.comments_count + 1)
+    )
+    try:
+        await db.commit()
+        await db.refresh(comment)
+    except Exception:
+        await db.rollback()
+        raise
 
     return {
         "message": "Comment added successfully",
@@ -526,9 +595,17 @@ async def delete_comment(
         )
 
     comment.is_active = False
-    diagram.comments_count = max(0, diagram.comments_count - 1)
+    await db.execute(
+        update(SharedDiagram)
+        .where(SharedDiagram.id == post_id)
+        .values(comments_count=func.greatest(SharedDiagram.comments_count - 1, 0))
+    )
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     logger.info(
         "User %s deleted comment %s on diagram %s",

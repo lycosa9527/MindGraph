@@ -61,6 +61,23 @@ class GeweGroupMemberDB:
         Returns:
             Number of members saved
         """
+        # Bulk-load all existing members for this group in one query to avoid N+1.
+        existing_result = await self.db.execute(
+            select(GeweGroupMember).where(
+                and_(GeweGroupMember.app_id == app_id, GeweGroupMember.group_wxid == group_wxid)
+            )
+        )
+        existing_by_wxid = {m.member_wxid: m for m in existing_result.scalars().all()}
+
+        _SKIP_KEYS = frozenset([
+            "wxid", "Wxid", "UserName",
+            "nickname", "NickName",
+            "display_name", "DisplayName",
+            "avatar", "BigHeadImgUrl", "SmallHeadImgUrl", "HeadImgUrl",
+            "InviterUserName", "inviter_wxid",
+            "join_time",
+        ])
+
         saved_count = 0
         for member in members:
             member_wxid = member.get("wxid") or member.get("Wxid") or member.get("UserName") or ""
@@ -78,7 +95,6 @@ class GeweGroupMemberDB:
                 )
                 inviter_wxid = member.get("InviterUserName") or member.get("inviter_wxid")
 
-                # Extract join_time if available
                 join_time = None
                 if member.get("join_time"):
                     if isinstance(member["join_time"], datetime):
@@ -86,42 +102,10 @@ class GeweGroupMemberDB:
                     elif isinstance(member["join_time"], (int, float)):
                         join_time = datetime.fromtimestamp(member["join_time"])
 
-                # Store extra data as JSON
-                extra_data = {}
-                for key, value in member.items():
-                    if key not in [
-                        "wxid",
-                        "Wxid",
-                        "UserName",
-                        "nickname",
-                        "NickName",
-                        "display_name",
-                        "DisplayName",
-                        "avatar",
-                        "BigHeadImgUrl",
-                        "SmallHeadImgUrl",
-                        "HeadImgUrl",
-                        "InviterUserName",
-                        "inviter_wxid",
-                        "join_time",
-                    ]:
-                        extra_data[key] = value
-
-                # JSONB column accepts dict directly.
+                extra_data = {k: v for k, v in member.items() if k not in _SKIP_KEYS}
                 extra_data_val = extra_data if extra_data else None
 
-                existing = (
-                    await self.db.execute(
-                        select(GeweGroupMember).where(
-                            and_(
-                                GeweGroupMember.app_id == app_id,
-                                GeweGroupMember.group_wxid == group_wxid,
-                                GeweGroupMember.member_wxid == member_wxid,
-                            )
-                        )
-                    )
-                ).scalar_one_or_none()
-
+                existing = existing_by_wxid.get(member_wxid)
                 if existing:
                     existing.nickname = nickname
                     existing.display_name = display_name
@@ -175,6 +159,7 @@ class GeweGroupMemberDB:
         except Exception as e:
             logger.error("Failed to commit group members: %s", e, exc_info=True)
             await self.db.rollback()
+            return 0
 
         return saved_count
 

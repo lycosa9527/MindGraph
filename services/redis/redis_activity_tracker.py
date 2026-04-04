@@ -34,6 +34,7 @@ import asyncio
 
 from services.auth.ip_geolocation import get_geolocation_service
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
+from services.redis import keys as _keys
 from services.redis.redis_client import is_redis_available, get_redis
 
 
@@ -48,13 +49,13 @@ def get_beijing_now() -> datetime:
     return datetime.now(BEIJING_TIMEZONE)
 
 
-# Key prefixes
-SESSION_PREFIX = "activity:session:"
-USER_SESSIONS_PREFIX = "activity:user:"
-HISTORY_KEY = "activity:history"
+# Key fragments derived from central registry so changes to keys.py propagate here.
+SESSION_PREFIX = _keys.ACTIVITY_SESSION.split("{", maxsplit=1)[0]       # "activity:session:"
+USER_SESSIONS_PREFIX = _keys.ACTIVITY_USER.split("{", maxsplit=1)[0]    # "activity:user:"
+HISTORY_KEY = _keys.ACTIVITY_HISTORY
 
 # Configuration
-SESSION_TTL = 1800  # 30 minutes session timeout
+SESSION_TTL = _keys.TTL_ACTIVITY_SESSION
 MAX_HISTORY = 1000  # Keep last 1000 activities
 
 
@@ -644,7 +645,7 @@ class RedisActivityTracker:
             cursor = 0
 
             while True:
-                cursor, keys = redis.scan(cursor, match=f"{SESSION_PREFIX}*", count=100)
+                cursor, keys = redis.scan(cursor, match=_keys.ACTIVITY_SESSION_PATTERN, count=100)
 
                 for key in keys:
                     session_data = redis.hgetall(key)
@@ -805,22 +806,26 @@ class RedisActivityTracker:
             return self._memory_get_stats()
 
         try:
-            # Count session keys
-            session_count = 0
-            user_ids = set()
+            # Collect all session keys first, then batch-fetch user_id in one pipeline.
+            all_keys = []
             cursor = 0
-
             while True:
-                cursor, keys = redis.scan(cursor, match=f"{SESSION_PREFIX}*", count=100)
-                session_count += len(keys)
-
-                for key in keys:
-                    user_id = redis.hget(key, "user_id")
-                    if user_id:
-                        user_ids.add(user_id)
-
+                cursor, keys = redis.scan(cursor, match=_keys.ACTIVITY_SESSION_PATTERN, count=100)
+                all_keys.extend(keys)
                 if cursor == 0:
                     break
+
+            session_count = len(all_keys)
+            user_ids: set = set()
+
+            if all_keys:
+                pipe = redis.pipeline()
+                for key in all_keys:
+                    pipe.hget(key, "user_id")
+                results = pipe.execute()
+                for uid in results:
+                    if uid:
+                        user_ids.add(uid)
 
             history_count = redis.llen(HISTORY_KEY) or 0
 
@@ -833,8 +838,8 @@ class RedisActivityTracker:
                 "timestamp": get_beijing_now().isoformat(),
             }
 
-        except Exception as e:
-            logger.error("[ActivityTracker] Redis error getting stats: %s", e)
+        except Exception as exc:
+            logger.error("[ActivityTracker] Redis error getting stats: %s", exc)
             return self._memory_get_stats()
 
     def _memory_get_stats(self) -> Dict:

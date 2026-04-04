@@ -25,6 +25,7 @@ import {
   measureRenderedDiagramLabelHeight,
   measureTextWidth,
 } from './textMeasurement'
+import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
 interface BraceNode {
@@ -39,8 +40,8 @@ const BRACE_SUBPART_FONT_SIZE = 12
 const BRACE_TOPIC_PADDING_X = 48 + 6 // px-6 (24*2) + border (3*2)
 const BRACE_PILL_PADDING_X = 40 + 4 // px-5 (20*2) + border (2*2)
 const BRACE_MAX_NODE_WIDTH = 280
-const BRACE_NODE_MAX_TEXT_WIDTH = 240
-const BRACE_TOPIC_MAX_TEXT_WIDTH = 300
+const BRACE_NODE_BASE_MAX_TEXT_WIDTH = 240
+const BRACE_TOPIC_BASE_MAX_TEXT_WIDTH = 300
 
 function getBraceFontSize(depth: number): number {
   if (depth === 0) return BRACE_TOPIC_FONT_SIZE
@@ -80,7 +81,8 @@ function estimateBraceNodeHeight(text: string, depth: number): number {
   if (!trimmed || typeof document === 'undefined') return DEFAULT_NODE_HEIGHT
 
   const fontSize = getBraceFontSize(depth)
-  const maxTextWidth = depth === 0 ? BRACE_TOPIC_MAX_TEXT_WIDTH : BRACE_NODE_MAX_TEXT_WIDTH
+  const baseMaxW = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
+  const maxTextWidth = computeScriptAwareMaxWidth(trimmed, baseMaxW)
   const paddingY = depth === 0 ? 32 : 16
 
   if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {

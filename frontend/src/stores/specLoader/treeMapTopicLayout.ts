@@ -15,9 +15,10 @@ import {
   measureRenderedDiagramLabelWidth,
   measureTextDimensions,
 } from './textMeasurement'
+import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 
-/** Matches TopicNode InlineEditableText max-width for topic */
-export const TREE_MAP_TOPIC_TEXT_MAX_WIDTH = 300
+/** Base max-width for topic text (adapts per-script via computeScriptAwareMaxWidth) */
+export const TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH = 300
 /** Matches tree_map theme topic font (getNodeStyle topic fallback 18) */
 export const TREE_MAP_TOPIC_FONT_SIZE = 18
 /** Matches TopicNode px-6 / py-4 */
@@ -30,13 +31,14 @@ export function measureTreeMapTopicDimensions(text: string): { width: number; he
   const t = (text || '').trim() || ' '
   const b = TREE_MAP_TOPIC_BORDER_WIDTH
   const measureOpts = { fontWeight: 'bold' as const }
+  const adaptiveMaxW = computeScriptAwareMaxWidth(t, TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH)
 
   if (diagramLabelLikelyNeedsRenderedMeasure(t)) {
     const contentW = measureRenderedDiagramLabelWidth(t, TREE_MAP_TOPIC_FONT_SIZE, measureOpts)
     const contentH = measureRenderedDiagramLabelHeight(
       t,
       TREE_MAP_TOPIC_FONT_SIZE,
-      TREE_MAP_TOPIC_TEXT_MAX_WIDTH,
+      adaptiveMaxW,
       measureOpts
     )
     return {
@@ -55,7 +57,7 @@ export function measureTreeMapTopicDimensions(text: string): { width: number; he
     fontWeight: 'bold',
     paddingX: TREE_MAP_TOPIC_PADDING_X,
     paddingY: TREE_MAP_TOPIC_PADDING_Y,
-    maxWidth: TREE_MAP_TOPIC_TEXT_MAX_WIDTH,
+    maxWidth: adaptiveMaxW,
   })
   return {
     width: Math.max(dims.width + 2 * b, NODE_MIN_DIMENSIONS.topic.minWidth),

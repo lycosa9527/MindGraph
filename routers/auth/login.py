@@ -206,7 +206,7 @@ async def login(
     result = await db.execute(select(User).where(User.id == cached_user.id))
     db_user = result.scalar_one_or_none()
     if db_user:
-        reset_failed_attempts(db_user, db)
+        await reset_failed_attempts(db_user, db)
         user = db_user
     else:
         user = cached_user
@@ -288,7 +288,7 @@ async def login(
     )
 
     # Track user activity
-    track_user_activity(user, "login", {"method": "captcha", "org": org_name}, http_request, db)
+    await track_user_activity(user, "login", {"method": "captcha", "org": org_name}, http_request, db)
 
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(user.id)
@@ -362,7 +362,7 @@ async def login_with_sms(
     db_user = result.scalar_one_or_none()
     if db_user:
         # Reset any failed attempts (SMS login is verified)
-        reset_failed_attempts(db_user, db)
+        await reset_failed_attempts(db_user, db)
         user = db_user
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
@@ -429,7 +429,7 @@ async def login_with_sms(
     )
 
     # Track user activity
-    track_user_activity(user, "login", {"method": "sms", "org": org_name}, http_request, db)
+    await track_user_activity(user, "login", {"method": "sms", "org": org_name}, http_request, db)
 
     # Preload diagram list for instant library access (fire-and-forget)
     _preload_user_diagrams(user.id)
@@ -511,8 +511,12 @@ async def verify_demo(
                     created_at=datetime.now(UTC),
                 )
                 db.add(org)
-                await db.commit()
-                await db.refresh(org)
+                try:
+                    await db.commit()
+                    await db.refresh(org)
+                except Exception:
+                    await db.rollback()
+                    raise
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 # Cache the newly created org (non-blocking)
                 try:
@@ -537,8 +541,12 @@ async def verify_demo(
                 created_at=datetime.now(UTC),
             )
             db.add(auth_user)
-            await db.commit()
-            await db.refresh(auth_user)
+            try:
+                await db.commit()
+                await db.refresh(auth_user)
+            except Exception:
+                await db.rollback()
+                raise
             logger.info("Created new %s user: %s", AUTH_MODE, user_phone)
 
             # Cache the newly created user and org (non-blocking)

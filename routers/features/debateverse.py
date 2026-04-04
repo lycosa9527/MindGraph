@@ -410,7 +410,11 @@ async def stream_debater_response(
 
                     if audio_file:
                         message.audio_url = f"/static/debateverse_audio/{audio_filename}"
-                        await db.commit()
+                        try:
+                            await db.commit()
+                        except Exception as commit_err:
+                            await db.rollback()
+                            logger.error("[DEBATEVERSE] Failed to save audio_url: %s", commit_err)
 
                         yield f"data: {json.dumps({'type': 'audio_url', 'url': message.audio_url})}\n\n"
                         logger.info(
@@ -419,13 +423,25 @@ async def stream_debater_response(
                             message.audio_url,
                         )
                     else:
-                        await db.commit()
+                        try:
+                            await db.commit()
+                        except Exception as commit_err:
+                            await db.rollback()
+                            logger.error("[DEBATEVERSE] Failed to commit TTS fallback: %s", commit_err)
                         logger.warning("[DEBATEVERSE] TTS generation failed for message %s", message.id)
                 except Exception as tts_error:
                     logger.error("[DEBATEVERSE] TTS error: %s", tts_error, exc_info=True)
-                    await db.commit()
+                    try:
+                        await db.commit()
+                    except Exception as commit_err:
+                        await db.rollback()
+                        logger.error("[DEBATEVERSE] Failed to commit after TTS error: %s", commit_err)
             else:
-                await db.commit()
+                try:
+                    await db.commit()
+                except Exception as commit_err:
+                    await db.rollback()
+                    logger.error("[DEBATEVERSE] Failed to commit message: %s", commit_err)
 
             yield f"data: {json.dumps({'type': 'done'})}\n\n"
 
@@ -698,7 +714,11 @@ async def send_user_message(
         message_type=message_type,
     )
     db.add(message)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     logger.info("User %s sent message in session %s", current_user.id, session_id)
 

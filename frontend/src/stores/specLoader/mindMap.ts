@@ -20,6 +20,7 @@ import {
   measureRenderedDiagramLabelHeight,
   measureTextDimensions,
 } from './textMeasurement'
+import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
 interface MindMapBranch {
@@ -32,10 +33,13 @@ function getBranchText(branch: { text?: string; label?: string }): string {
   return (branch.text ?? branch.label ?? '') as string
 }
 
+const BRANCH_BASE_MAX_TEXT_WIDTH = 200
+
 /**
  * Estimate rendered BranchNode width from text content.
- * BranchNode auto-sizes: min-width 80px, InlineEditableText max-width 150px,
- * plus px-4 padding (32px) and border (~6px). CJK chars ~16px, Latin ~9px at 16px font.
+ * BranchNode auto-sizes: min-width 80px, max-width adapts to script via
+ * computeScriptAwareMaxWidth, plus px-4 padding (32px) and border (~6px).
+ * CJK chars ~16px, Latin ~9px at 16px font.
  */
 function estimateNodeWidth(text: string): number {
   if (!text) return DEFAULT_NODE_WIDTH
@@ -44,7 +48,7 @@ function estimateNodeWidth(text: string): number {
   const cjkCount = cjkMatches ? cjkMatches.length : 0
   const otherCount = text.length - cjkCount
   const rawTextWidth = cjkCount * 16 + otherCount * 9
-  const maxTextWidth = 150
+  const maxTextWidth = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
   const nodeHorizontalExtra = 38
   const minNodeWidth = 80
   const textWidth = Math.min(rawTextWidth, maxTextWidth)
@@ -57,14 +61,14 @@ const BRANCH_PADDING_Y = 16
 /**
  * Measure rendered BranchNode height using DOM measurement.
  * Uses measureTextDimensions with CSS params matching BranchNode + InlineEditableText:
- * font 16px normal, text wraps at maxWidth 150px (content-box on the span),
+ * font 16px normal, text wraps at script-aware maxWidth,
  * then add BranchNode py-2 (16px) and border 3px x 2 (6px). Enforce min-height 36px.
  * For KaTeX labels the rendered DOM height is measured directly.
  */
 function measureBranchNodeHeight(text: string): number {
   if (!text) return BRANCH_NODE_HEIGHT
   const branchFontSize = 16
-  const maxTextWidth = 150
+  const maxTextWidth = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
     const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
@@ -82,10 +86,13 @@ function measureBranchNodeHeight(text: string): number {
 const TOPIC_CJK_REGEX =
   /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF\u3040-\u309F\u30A0-\u30FF\uAC00-\uD7AF]/g
 
+const TOPIC_BASE_MAX_TEXT_WIDTH = 300
+
 /**
  * Estimate rendered TopicNode width from text content.
- * TopicNode: CSS min-width 120px, InlineEditableText max-width 300px,
- * pill padding px-6 = 24px each side (48px total), default border 3px each side (6px total).
+ * TopicNode: CSS min-width 120px, InlineEditableText max-width adapts via
+ * computeScriptAwareMaxWidth, pill padding px-6 = 24px each side (48px total),
+ * default border 3px each side (6px total).
  * 18px bold font: CJK ideographs ~19px, hiragana/katakana ~17px, Latin ~11px.
  *
  * When text wraps, CSS `width: fit-content` sizes to the widest line (≤ max-width),
@@ -99,7 +106,7 @@ export function estimateTopicNodeWidth(text: string): number {
   const cjkCharWidth = 19
   const latinCharWidth = 11
   const rawTextWidth = cjkCount * cjkCharWidth + otherCount * latinCharWidth
-  const maxTextWidth = 300
+  const maxTextWidth = computeScriptAwareMaxWidth(text, TOPIC_BASE_MAX_TEXT_WIDTH)
   const topicPaddingX = 48
   const topicBorderX = 6
   const minTopicWidth = DEFAULT_NODE_WIDTH
@@ -120,13 +127,13 @@ export function estimateTopicNodeWidth(text: string): number {
  * Estimate rendered TopicNode height from text content.
  * TopicNode: CSS min-height ~50px (DEFAULT_NODE_HEIGHT), py-4 = 16px each side (32px total),
  * border 3px each side (6px total), 18px bold font with Tailwind line-height 1.5 = 27px/line.
- * Text wraps at InlineEditableText max-width 300px.
+ * Text wraps at script-aware maxWidth.
  * For KaTeX labels the rendered DOM height is measured directly.
  */
 export function estimateTopicNodeHeight(text: string): number {
   if (!text) return DEFAULT_NODE_HEIGHT
   const topicFontSize = 18
-  const maxTextWidth = 300
+  const maxTextWidth = computeScriptAwareMaxWidth(text, TOPIC_BASE_MAX_TEXT_WIDTH)
   const paddingY = 32
   const borderY = 6
 

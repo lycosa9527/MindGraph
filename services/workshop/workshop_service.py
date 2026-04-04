@@ -187,7 +187,11 @@ class WorkshopService:
         code = diagram.workshop_code
         purge_workshop_redis_keys(redis, code)
         clear_workshop_session_fields(diagram)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         logger.info(
             "[WorkshopService] Cleared expired workshop for diagram %s",
             diagram.id,
@@ -322,7 +326,11 @@ class WorkshopService:
                 diagram.workshop_started_at = started_at
                 diagram.workshop_expires_at = expires_at
                 diagram.workshop_duration_preset = duration
-                await db.commit()
+                try:
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
+                    raise
 
                 redis.setex(
                     session_key(code),
@@ -387,7 +395,11 @@ class WorkshopService:
                 await flush_live_spec_to_db(code, diagram_id)
 
                 clear_workshop_session_fields(diagram)
-                await db.commit()
+                try:
+                    await db.commit()
+                except Exception:
+                    await db.rollback()
+                    raise
 
                 redis = get_redis()
                 if redis:

@@ -27,18 +27,15 @@ import hashlib
 import logging
 import time
 
+from services.redis import keys as _keys
 from services.redis.redis_client import is_redis_available, RedisOps
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 
 
 logger = logging.getLogger(__name__)
 
-# Key prefixes
-TOKEN_USED_PREFIX = "bayi:token:used:"
-TOKEN_VALID_PREFIX = "bayi:token:valid:"
-
-# TTL matches token expiration (5 minutes)
-TOKEN_TTL = 300  # 5 minutes = 300 seconds
+# TTL sourced from central registry.
+TOKEN_TTL = _keys.TTL_BAYI_TOKEN
 
 # Rate limiting configuration
 RATE_LIMIT_MAX_ATTEMPTS = 10  # 10 attempts per 5 minutes
@@ -90,7 +87,7 @@ class BayiTokenTracker:
             return False
 
         token_hash = self._hash_token(token)
-        key = f"{TOKEN_USED_PREFIX}{token_hash}"
+        key = _keys.BAYI_TOKEN_USED.format(sha256=token_hash)
 
         try:
             # Check if token hash exists in Redis
@@ -118,7 +115,7 @@ class BayiTokenTracker:
             return False
 
         token_hash = self._hash_token(token)
-        key = f"{TOKEN_USED_PREFIX}{token_hash}"
+        key = _keys.BAYI_TOKEN_USED.format(sha256=token_hash)
 
         try:
             # Store token hash with TTL (matches token expiration)
@@ -146,7 +143,7 @@ class BayiTokenTracker:
             return None
 
         token_hash = self._hash_token(token)
-        key = f"{TOKEN_VALID_PREFIX}{token_hash}"
+        key = _keys.BAYI_TOKEN_VALID.format(sha256=token_hash)
 
         try:
             cached = RedisOps.get(key)
@@ -176,7 +173,7 @@ class BayiTokenTracker:
             return False
 
         token_hash = self._hash_token(token)
-        key = f"{TOKEN_VALID_PREFIX}{token_hash}"
+        key = _keys.BAYI_TOKEN_VALID.format(sha256=token_hash)
 
         try:
             # Cache validation result with TTL (matches token expiration)

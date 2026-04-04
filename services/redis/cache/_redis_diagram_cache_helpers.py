@@ -11,38 +11,26 @@ Proprietary License
 
 import logging
 import os
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, List, Tuple
 
 from sqlalchemy import select
 from sqlalchemy.sql.functions import count as sa_count
 
 from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
+from services.redis import keys as _keys
 
 logger = logging.getLogger(__name__)
 
-CACHE_TTL = int(os.getenv("DIAGRAM_CACHE_TTL", "604800"))
+CACHE_TTL = _keys.TTL_DIAGRAM
 SYNC_INTERVAL = float(os.getenv("DIAGRAM_SYNC_INTERVAL", "300"))
 SYNC_BATCH_SIZE = int(os.getenv("DIAGRAM_SYNC_BATCH_SIZE", "100"))
 MAX_PER_USER = int(os.getenv("DIAGRAM_MAX_PER_USER", "20"))
 MAX_SPEC_SIZE_KB = int(os.getenv("DIAGRAM_MAX_SPEC_SIZE_KB", "500"))
 
-DIAGRAM_KEY = "diagram:{user_id}:{diagram_id}"
-USER_META_KEY = "diagrams:user:{user_id}:meta"
-USER_LIST_KEY = "diagrams:user:{user_id}:list"
-STATS_KEY = "diagrams:stats"
-DIRTY_SET_KEY = "diagrams:dirty"
-
-
-def _redis_json_get(redis_client: Any, key: str) -> Optional[Dict[str, Any]]:
-    """Retrieve diagram data using RedisJSON (JSON.GET). Returns None on miss or error."""
-    try:
-        result = redis_client.json().get(key, "$")
-        if result:
-            return result[0]
-    except Exception as exc:
-        logger.debug("[DiagramCache] JSON.GET failed for %s: %s", key, exc)
-    return None
+DIAGRAM_KEY = _keys.DIAGRAM
+USER_META_KEY = _keys.DIAGRAMS_USER_META
+USER_LIST_KEY = _keys.DIAGRAMS_USER_LIST
 
 
 def _redis_json_set_paths(

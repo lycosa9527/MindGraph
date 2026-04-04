@@ -12,11 +12,12 @@ from typing import Dict, Optional
 
 from models.domain.feature_org_access import FeatureOrgAccessEntry
 from services.redis.redis_client import RedisOps, is_redis_available
+from services.redis import keys as _keys
 
 logger = logging.getLogger(__name__)
 
-CACHE_KEY = "cache:feature_org_access:v1"
-CACHE_TTL_SECONDS = 86400
+CACHE_KEY = _keys.FEATURE_ORG_ACCESS
+CACHE_TTL_SECONDS = _keys.TTL_FEATURE_ACCESS
 
 
 def _deserialize(text: str) -> Optional[Dict[str, FeatureOrgAccessEntry]]:

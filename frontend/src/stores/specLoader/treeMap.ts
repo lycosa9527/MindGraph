@@ -20,6 +20,7 @@ import {
 } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { measureTextDimensions } from '@/stores/specLoader/textMeasurement'
+import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { Connection, DiagramNode } from '@/types'
 
 import { measureTreeMapTopicDimensions, treeMapTopicPositionFromLayout } from './treeMapTopicLayout'
@@ -31,8 +32,8 @@ const TREE_MAP_BRANCH_FONT_SIZE = 16
 const TREE_MAP_NODE_PADDING_X = 32
 /** Vertical padding inside node (py-2 = 8px each side) */
 const TREE_MAP_NODE_PADDING_Y = 8
-/** Max width for leaf text wrap (matches InlineEditableText max-width) */
-const TREE_MAP_LEAF_MAX_WIDTH = 150
+/** Base max width for leaf text wrap (adapts per-script via computeScriptAwareMaxWidth) */
+const TREE_MAP_LEAF_BASE_MAX_WIDTH = 150
 /** Border width for category nodes (theme branchStrokeWidth) - add to measured width for layout */
 const TREE_MAP_CATEGORY_BORDER = 1.5
 /** Border width for leaf nodes (theme leafStrokeWidth) - add to measured width for layout */
@@ -96,10 +97,11 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
     }
     const groupDimsList: GroupDims[] = []
     categories.forEach((category, _catIndex) => {
+      const catMaxW = computeScriptAwareMaxWidth(category.text, TREE_MAP_LEAF_BASE_MAX_WIDTH)
       const catDims = measureTextDimensions(category.text, TREE_MAP_BRANCH_FONT_SIZE, {
         paddingX: TREE_MAP_NODE_PADDING_X / 2,
         paddingY: TREE_MAP_NODE_PADDING_Y,
-        maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+        maxWidth: catMaxW,
       })
       const catWidth = Math.max(
         catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
@@ -111,10 +113,11 @@ export function loadTreeMapSpec(spec: Record<string, unknown>): SpecLoaderResult
       const leafHeights: number[] = []
       let maxW = catWidth
       leaves.forEach((leaf) => {
+        const leafMaxW = computeScriptAwareMaxWidth(leaf.text, TREE_MAP_LEAF_BASE_MAX_WIDTH)
         const leafDims = measureTextDimensions(leaf.text, TREE_MAP_BRANCH_FONT_SIZE, {
           paddingX: TREE_MAP_NODE_PADDING_X / 2,
           paddingY: TREE_MAP_NODE_PADDING_Y,
-          maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+          maxWidth: leafMaxW,
         })
         const leafW = Math.max(
           leafDims.width + 2 * TREE_MAP_LEAF_BORDER,
@@ -289,11 +292,12 @@ export function recalculateTreeMapLayout(
     const catNode = nodes.find((n) => n.id === catId)
     const catText = catNode?.text ?? ''
 
+    const catAdaptiveMaxW = computeScriptAwareMaxWidth(catText, TREE_MAP_LEAF_BASE_MAX_WIDTH)
     const catBox = resolveTreeMapBox(catId, nodeDimensions, () => {
       const catDims = measureTextDimensions(catText, TREE_MAP_BRANCH_FONT_SIZE, {
         paddingX: TREE_MAP_NODE_PADDING_X / 2,
         paddingY: TREE_MAP_NODE_PADDING_Y,
-        maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+        maxWidth: catAdaptiveMaxW,
       })
       const catWidth = Math.max(
         catDims.width + 2 * TREE_MAP_CATEGORY_BORDER,
@@ -322,11 +326,12 @@ export function recalculateTreeMapLayout(
     leafNodes.forEach((leaf) => {
       const leafId = leaf.id ?? ''
       const leafText = leaf.text ?? ''
+      const leafAdaptiveMaxW = computeScriptAwareMaxWidth(leafText, TREE_MAP_LEAF_BASE_MAX_WIDTH)
       const leafBox = resolveTreeMapBox(leafId, nodeDimensions, () => {
         const leafDims = measureTextDimensions(leafText, TREE_MAP_BRANCH_FONT_SIZE, {
           paddingX: TREE_MAP_NODE_PADDING_X / 2,
           paddingY: TREE_MAP_NODE_PADDING_Y,
-          maxWidth: TREE_MAP_LEAF_MAX_WIDTH,
+          maxWidth: leafAdaptiveMaxW,
         })
         const leafW = Math.max(
           leafDims.width + 2 * TREE_MAP_LEAF_BORDER,

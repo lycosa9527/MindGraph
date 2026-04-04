@@ -258,10 +258,9 @@ async def _handle_subscribe_channels(
     if not channel_ids:
         return
     async with AsyncSessionLocal() as db:
-        valid_ids = []
-        for cid in channel_ids:
-            if await channel_service.is_channel_member(db, cid, user.id):
-                valid_ids.append(cid)
+        # Batch membership check: single SELECT instead of one per channel.
+        member_ids = await channel_service.get_user_member_channel_ids(db, user.id, channel_ids)
+    valid_ids = [cid for cid in channel_ids if cid in member_ids]
     chat_ws_manager.subscribe_channels(user.id, valid_ids)
 
 

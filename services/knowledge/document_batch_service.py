@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 from typing import List, Dict, Any
 
-from sqlalchemy import select
+from sqlalchemy import select, update
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.knowledge_space import KnowledgeDocument, DocumentBatch
@@ -74,8 +74,12 @@ async def batch_upload_documents(
         failed_count=0,
     )
     db.add(batch)
-    await db.commit()
-    await db.refresh(batch)
+    try:
+        await db.commit()
+        await db.refresh(batch)
+    except Exception:
+        await db.rollback()
+        raise
 
     user_dir = storage_dir / str(user_id)
     user_dir.mkdir(parents=True, exist_ok=True)
@@ -104,7 +108,11 @@ async def batch_upload_documents(
         document.file_path = str(final_path)
         documents.append(document)
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     logger.info(
         "[KnowledgeSpace] Created batch %s with %s documents for user %s",
@@ -128,6 +136,16 @@ async def update_batch_progress(
         completed: Number of completed documents (increment)
         failed: Number of failed documents (increment)
     """
+    await db.execute(
+        update(DocumentBatch)
+        .where(DocumentBatch.id == batch_id, DocumentBatch.user_id == user_id)
+        .values(
+            completed_count=DocumentBatch.completed_count + completed,
+            failed_count=DocumentBatch.failed_count + failed,
+        )
+    )
+    await db.flush()
+
     result = await db.execute(
         select(DocumentBatch).where(DocumentBatch.id == batch_id, DocumentBatch.user_id == user_id)
     )
@@ -137,17 +155,14 @@ async def update_batch_progress(
         logger.warning("[KnowledgeSpace] Batch %s not found for user %s", batch_id, user_id)
         return
 
-    batch.completed_count += completed
-    batch.failed_count += failed
-
-    if batch.completed_count + batch.failed_count >= batch.total_count:
-        if batch.failed_count == 0:
-            batch.status = "completed"
-        elif batch.completed_count == 0:
-            batch.status = "failed"
-        else:
-            batch.status = "completed"
+    processed = batch.completed_count + batch.failed_count
+    if processed >= batch.total_count:
+        batch.status = "failed" if batch.completed_count == 0 else "completed"
     else:
         batch.status = "processing"
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise

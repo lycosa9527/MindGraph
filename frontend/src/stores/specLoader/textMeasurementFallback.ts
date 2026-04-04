@@ -152,3 +152,36 @@ function isLatinCyrillicGreekChar(cp: number): boolean {
   if (cp >= 0x2c60 && cp <= 0x2c7f) return true
   return false
 }
+
+const LATIN_BASELINE_EM = 0.55
+const MAX_SCRIPT_SCALE = 1.5
+
+/**
+ * Adapt maxWidth so that visually similar line lengths are produced regardless of script.
+ *
+ * Latin characters average ~0.55 em, CJK ~1.0 em.  A fixed 150 px maxWidth fits ~17 Latin
+ * chars per line but only ~9 CJK chars.  This function scales the base width up for
+ * wide-character text (capped at 1.5×) so both scripts get a comfortable column width.
+ *
+ * Pure Latin  → scale 1.0  (e.g. 150 → 150)
+ * Pure CJK   → scale ~1.5 (e.g. 150 → 225)
+ * Mixed      → proportional interpolation
+ */
+export function computeScriptAwareMaxWidth(text: string, baseMaxWidthPx: number): number {
+  const t = (text || '').trim()
+  if (!t.length) return baseMaxWidthPx
+  let totalEm = 0
+  let glyphCount = 0
+  for (const c of t) {
+    const cp = c.codePointAt(0) ?? 0
+    const w = emWidthForCodePoint(cp)
+    if (w > 0) {
+      totalEm += w
+      glyphCount++
+    }
+  }
+  if (glyphCount === 0) return baseMaxWidthPx
+  const avgEm = totalEm / glyphCount
+  const scale = Math.min(MAX_SCRIPT_SCALE, Math.max(1.0, avgEm / LATIN_BASELINE_EM))
+  return Math.round(baseMaxWidthPx * scale)
+}

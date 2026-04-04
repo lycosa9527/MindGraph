@@ -10,10 +10,10 @@ Proprietary License
 
 import logging
 import re
-from typing import Optional, List, Dict, Any, TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import func, select, update
 from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
@@ -22,10 +22,8 @@ from models.domain.library import (
     LibraryDanmaku,
     LibraryDanmakuLike,
     LibraryDanmakuReply,
+    LibraryDocument,
 )
-
-if TYPE_CHECKING:
-    from models.domain.library import LibraryDocument
 
 logger = logging.getLogger(__name__)
 
@@ -315,7 +313,11 @@ class LibraryDanmakuMixin:
         )
 
         self.db.add(danmaku)
-        document.comments_count += 1
+        await self.db.execute(
+            update(LibraryDocument)
+            .where(LibraryDocument.id == document_id)
+            .values(comments_count=LibraryDocument.comments_count + 1)
+        )
         try:
             await self.db.commit()
             await self.db.refresh(danmaku)
@@ -517,10 +519,11 @@ class LibraryDanmakuMixin:
         danmaku.is_active = False
         danmaku.updated_at = datetime.now(UTC)
 
-        document = danmaku.document
-        if document:
-            document.comments_count = max(0, document.comments_count - 1)
-
+        await self.db.execute(
+            update(LibraryDocument)
+            .where(LibraryDocument.id == danmaku.document_id)
+            .values(comments_count=func.greatest(LibraryDocument.comments_count - 1, 0))
+        )
         try:
             await self.db.commit()
         except Exception:

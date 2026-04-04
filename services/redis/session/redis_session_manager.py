@@ -31,22 +31,19 @@ import time
 from typing import Optional, Dict, Any
 from datetime import UTC, datetime
 
+from services.redis import keys as _keys
 from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
 logger = logging.getLogger(__name__)
 
-# Key prefixes
-SESSION_PREFIX = "session:user:"
-SESSION_SET_PREFIX = "session:user:set:"  # For multiple concurrent sessions (bayi IP whitelist)
-INVALIDATION_NOTIFICATION_PREFIX = "session_invalidated:"
+# Session TTL / limit constants (key patterns come from _keys).
 
-# TTL for access token sessions (1 hour with refresh tokens)
+# TTL constants sourced from central registry.
 ACCESS_TOKEN_EXPIRY_MINUTES = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60"))
-SESSION_TTL_SECONDS = ACCESS_TOKEN_EXPIRY_MINUTES * 60
+SESSION_TTL_SECONDS = _keys.TTL_ACCESS_SESSION
 
-# TTL for refresh tokens (7 days)
 REFRESH_TOKEN_EXPIRY_DAYS = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7"))
-REFRESH_TOKEN_TTL_SECONDS = REFRESH_TOKEN_EXPIRY_DAYS * 24 * 3600
+REFRESH_TOKEN_TTL_SECONDS = _keys.TTL_REFRESH_TOKEN
 
 # Maximum concurrent sessions per user (default: 2 devices)
 MAX_CONCURRENT_SESSIONS = int(os.getenv("MAX_CONCURRENT_SESSIONS", "2"))
@@ -58,18 +55,95 @@ def _hash_token(token: str) -> str:
 
 
 def _get_session_key(user_id: int) -> str:
-    """Get Redis key for user session (single session mode)."""
-    return f"{SESSION_PREFIX}{user_id}"
+    return _keys.SESSION_USER.format(user_id=user_id)
 
 
 def _get_session_set_key(user_id: int) -> str:
-    """Get Redis key for user session set (multiple concurrent sessions mode)."""
-    return f"{SESSION_SET_PREFIX}{user_id}"
+    return _keys.SESSION_USER_SET.format(user_id=user_id)
 
 
 def _get_invalidation_notification_key(user_id: int, token_hash: str) -> str:
-    """Get Redis key for invalidation notification."""
-    return f"{INVALIDATION_NOTIFICATION_PREFIX}{user_id}:{token_hash}"
+    return _keys.SESSION_INVALIDATED.format(user_id=user_id, token_hash=token_hash)
+
+
+# ---------------------------------------------------------------------------
+# Atomic Lua script for store_session (allow_multiple=True path).
+#
+# Runs entirely on the Redis server in a single round-trip, eliminating the
+# race window between the pipeline SCARD read and the follow-up SMEMBERS +
+# eviction that the old multi-step Python approach had.
+#
+# KEYS[1]  session set key
+# ARGV[1]  new token entry  "timestamp:device_hash:token_hash"
+# ARGV[2]  session TTL (seconds)
+# ARGV[3]  max concurrent sessions
+# ARGV[4]  device hash (empty string when not provided)
+# ARGV[5]  current time (float as string)
+# Returns  list of evicted session entries (Python creates notifications for them)
+# ---------------------------------------------------------------------------
+_STORE_SESSION_LUA = """
+local key      = KEYS[1]
+local entry    = ARGV[1]
+local ttl      = tonumber(ARGV[2])
+local max_s    = tonumber(ARGV[3])
+local dev      = ARGV[4]
+local now      = tonumber(ARGV[5])
+
+-- 1. Remove expired (stale) sessions.
+local all = redis.call('SMEMBERS', key)
+for _, e in ipairs(all) do
+    local c = string.find(e, ':')
+    if c then
+        local ts = tonumber(string.sub(e, 1, c - 1))
+        if ts and (now - ts) > ttl then
+            redis.call('SREM', key, e)
+        end
+    end
+end
+
+-- 2. Revoke any existing session from the same device.
+if dev ~= '' then
+    local rem = redis.call('SMEMBERS', key)
+    for _, e in ipairs(rem) do
+        local c1 = string.find(e, ':')
+        if c1 then
+            local rest = string.sub(e, c1 + 1)
+            local c2   = string.find(rest, ':')
+            local edev = c2 and string.sub(rest, 1, c2 - 1) or rest
+            if edev == dev then
+                redis.call('SREM', key, e)
+            end
+        end
+    end
+end
+
+-- 3. Add new token and refresh TTL.
+redis.call('SADD',   key, entry)
+redis.call('EXPIRE', key, ttl)
+
+-- 4. Evict oldest sessions when over the limit.
+local count   = redis.call('SCARD', key)
+local evicted = {}
+if count > max_s then
+    local cur = redis.call('SMEMBERS', key)
+    table.sort(cur, function(a, b)
+        local ca = string.find(a, ':')
+        local cb = string.find(b, ':')
+        local ta = ca and tonumber(string.sub(a, 1, ca - 1)) or 0
+        local tb = cb and tonumber(string.sub(b, 1, cb - 1)) or 0
+        return ta < tb
+    end)
+    local to_remove = count - max_s
+    for i = 1, to_remove do
+        if cur[i] then
+            redis.call('SREM', key, cur[i])
+            evicted[#evicted + 1] = cur[i]
+        end
+    end
+end
+
+return evicted
+"""
 
 
 class RedisSessionManager:
@@ -125,62 +199,6 @@ class RedisSessionManager:
         # Unknown format
         return 0.0, "", session_entry
 
-    def _revoke_existing_device_sessions(self, user_id: int, device_hash: str, redis, session_set_key: str) -> int:
-        """
-        Revoke any existing access token sessions for the same device.
-
-        This prevents session accumulation when a user logs in multiple times
-        from the same device. Each device should only have one active session.
-
-        Uses Redis pipeline for atomic operations.
-
-        Args:
-            user_id: User ID
-            device_hash: Device fingerprint hash
-            redis: Redis connection
-            session_set_key: Redis key for session set
-
-        Returns:
-            Number of sessions revoked
-        """
-        if not device_hash:
-            return 0
-
-        try:
-            if not redis.exists(session_set_key):
-                return 0
-
-            all_sessions = redis.smembers(session_set_key)
-            sessions_to_revoke = []
-
-            for session_entry in all_sessions:
-                _, entry_device_hash, _ = self._parse_session_entry(session_entry)
-                if entry_device_hash == device_hash:
-                    sessions_to_revoke.append(session_entry)
-
-            if sessions_to_revoke:
-                # Use pipeline for atomic removal
-                pipe = redis.pipeline()
-                for session_entry in sessions_to_revoke:
-                    pipe.srem(session_set_key, session_entry)
-                pipe.execute()
-                logger.debug(
-                    "[Session] Revoked %s old session(s) for device relogin: user=%s",
-                    len(sessions_to_revoke),
-                    user_id,
-                )
-
-            return len(sessions_to_revoke)
-
-        except Exception as e:
-            logger.error(
-                "[Session] Error revoking device sessions for user %s: %s",
-                user_id,
-                e,
-                exc_info=True,
-            )
-            return 0
-
     def store_session(
         self,
         user_id: int,
@@ -194,7 +212,8 @@ class RedisSessionManager:
         Supports multiple concurrent sessions up to MAX_CONCURRENT_SESSIONS.
         When the limit is exceeded, oldest sessions are automatically removed.
 
-        Uses Redis pipeline for atomic operations to prevent race conditions.
+        Uses an atomic Lua script (single round-trip) to eliminate the race
+        window between reading the session count and evicting old entries.
 
         Args:
             user_id: User ID
@@ -205,9 +224,8 @@ class RedisSessionManager:
         Returns:
             True if stored successfully, False otherwise
         """
-        # DEBUG: Log entry point with all parameters
         device_hash_preview = device_hash[:8] if device_hash else "none"
-        logger.info(
+        logger.debug(
             "[Session] store_session called: user=%s, device_hash=%s..., allow_multiple=%s",
             user_id,
             device_hash_preview,
@@ -229,10 +247,9 @@ class RedisSessionManager:
                 return False
 
             if allow_multiple:
-                # Multiple concurrent sessions mode: Use Redis SET with timestamp tracking
                 session_set_key = _get_session_set_key(user_id)
 
-                # Clean up old single-key format if it exists (migration)
+                # Migration: remove legacy single-session key if present.
                 old_session_key = _get_session_key(user_id)
                 if redis.exists(old_session_key):
                     redis.delete(old_session_key)
@@ -241,148 +258,42 @@ class RedisSessionManager:
                         user_id,
                     )
 
-                # DEBUG: Log existing sessions before any operations
-                existing_sessions_before = redis.smembers(session_set_key) if redis.exists(session_set_key) else set()
-                logger.info(
-                    "[Session] Before store: user=%s, existing_sessions=%s, max=%s",
-                    user_id,
-                    len(existing_sessions_before),
-                    MAX_CONCURRENT_SESSIONS,
-                )
-                for idx, sess in enumerate(existing_sessions_before):
-                    ts, dh, th = self._parse_session_entry(sess)
-                    device_preview = dh[:8] if dh else "none"
-                    token_preview = th[:8]
-                    age_seconds = time.time() - ts
-                    logger.debug(
-                        "[Session]   Existing[%s]: device=%s..., token=%s..., age=%.0fs",
-                        idx,
-                        device_preview,
-                        token_preview,
-                        age_seconds,
-                    )
-
-                # Revoke any existing sessions from the same device first
-                # This prevents session accumulation from repeated logins on the same device
-                if device_hash:
-                    revoked = self._revoke_existing_device_sessions(user_id, device_hash, redis, session_set_key)
-                    device_preview = device_hash[:8]
-                    logger.info(
-                        "[Session] Revoked %s existing session(s) for same device: user=%s, device=%s...",
-                        revoked,
-                        user_id,
-                        device_preview,
-                    )
-
-                # Store token with timestamp and device hash for ordering and identification
-                # Token format: timestamp:device_hash:token_hash
                 current_time = time.time()
                 token_entry = f"{current_time}:{device_hash}:{token_hash}"
 
-                # Get existing sessions for cleanup
-                all_sessions = redis.smembers(session_set_key) if redis.exists(session_set_key) else set()
-                stale_sessions = []
-
-                for session_entry in all_sessions:
-                    entry_time, _, _ = self._parse_session_entry(session_entry)
-                    if entry_time > 0 and current_time - entry_time > SESSION_TTL_SECONDS:
-                        stale_sessions.append(session_entry)
-
-                if stale_sessions:
-                    logger.info(
-                        "[Session] Found %s stale session(s) to cleanup for user %s",
-                        len(stale_sessions),
-                        user_id,
+                try:
+                    evicted_entries = redis.eval(
+                        _STORE_SESSION_LUA,
+                        1,
+                        session_set_key,
+                        token_entry,
+                        str(SESSION_TTL_SECONDS),
+                        str(MAX_CONCURRENT_SESSIONS),
+                        device_hash,
+                        str(current_time),
                     )
-
-                # Use pipeline for atomic add + cleanup + TTL
-                pipe = redis.pipeline()
-
-                # Remove stale sessions
-                for stale_entry in stale_sessions:
-                    pipe.srem(session_set_key, stale_entry)
-
-                # Add new token
-                pipe.sadd(session_set_key, token_entry)
-
-                # Set TTL
-                pipe.expire(session_set_key, SESSION_TTL_SECONDS)
-
-                # Get count after operations
-                pipe.scard(session_set_key)
-
-                # Execute pipeline atomically
-                results = pipe.execute()
-                session_count = results[-1]  # Last result is scard
-
-                logger.info(
-                    "[Session] After add: user=%s, session_count=%s, max=%s, stale_removed=%s",
-                    user_id,
-                    session_count,
-                    MAX_CONCURRENT_SESSIONS,
-                    len(stale_sessions),
-                )
-
-                # Check if we exceed max concurrent sessions
-                if session_count > MAX_CONCURRENT_SESSIONS:
-                    logger.info(
-                        "[Session] LIMIT EXCEEDED: user=%s, count=%s, max=%s - will remove oldest",
+                except Exception as lua_exc:
+                    logger.error(
+                        "[Session] Atomic store_session failed for user %s: %s",
                         user_id,
-                        session_count,
+                        lua_exc,
+                    )
+                    return False
+
+                for evicted_entry in (evicted_entries or []):
+                    _, _, evicted_token_hash = self._parse_session_entry(evicted_entry)
+                    if evicted_token_hash:
+                        self.create_invalidation_notification(user_id, evicted_token_hash)
+
+                if evicted_entries:
+                    logger.info(
+                        "[Session] Evicted %s oldest session(s) for user %s (limit: %s)",
+                        len(evicted_entries),
+                        user_id,
                         MAX_CONCURRENT_SESSIONS,
                     )
 
-                    # Get all sessions and sort by timestamp (oldest first)
-                    all_sessions = redis.smembers(session_set_key)
-                    # Sort by timestamp (entries are timestamp:device_hash:token_hash)
-                    sorted_sessions = sorted(all_sessions, key=lambda x: self._parse_session_entry(x)[0])
-
-                    # Use pipeline for atomic removal of excess sessions
-                    sessions_to_remove = session_count - MAX_CONCURRENT_SESSIONS
-                    old_sessions_to_notify = []
-
-                    remove_pipe = redis.pipeline()
-                    for i in range(sessions_to_remove):
-                        old_session = sorted_sessions[i]
-                        remove_pipe.srem(session_set_key, old_session)
-                        # Collect token hashes for notifications
-                        old_ts, old_dh, old_token_hash = self._parse_session_entry(old_session)
-                        old_sessions_to_notify.append(old_token_hash)
-                        old_device_preview = old_dh[:8] if old_dh else "none"
-                        old_token_preview = old_token_hash[:8]
-                        old_age = current_time - old_ts
-                        logger.info(
-                            "[Session] Removing session[%s]: user=%s, device=%s..., token=%s..., age=%.0fs",
-                            i,
-                            user_id,
-                            old_device_preview,
-                            old_token_preview,
-                            old_age,
-                        )
-
-                    # Execute removals atomically
-                    remove_pipe.execute()
-
-                    # Create invalidation notifications (outside pipeline as they use different keys)
-                    for old_token_hash in old_sessions_to_notify:
-                        self.create_invalidation_notification(user_id, old_token_hash)
-                        token_preview = old_token_hash[:8]
-                        logger.info(
-                            "[Session] Created invalidation notification: user=%s, token=%s...",
-                            user_id,
-                            token_preview,
-                        )
-
-                    session_count = MAX_CONCURRENT_SESSIONS
-
-                final_device_preview = device_hash[:8] if device_hash else "none"
-                logger.info(
-                    "[Session] store_session complete: user=%s, final_count=%s/%s, device=%s...",
-                    user_id,
-                    session_count,
-                    MAX_CONCURRENT_SESSIONS,
-                    final_device_preview,
-                )
+                logger.debug("[Session] Stored session for user %s", user_id)
                 return True
             else:
                 # Single session mode: Use single key-value (legacy mode)
@@ -445,9 +356,8 @@ class RedisSessionManager:
         Returns:
             True if deleted successfully, False otherwise
         """
-        # DEBUG: Log entry point
         token_hint = _hash_token(token)[:8] if token else "all"
-        logger.info("[Session] delete_session called: user=%s, token=%s...", user_id, token_hint)
+        logger.debug("[Session] delete_session called: user=%s, token=%s...", user_id, token_hint)
 
         if not self._use_redis():
             logger.info(
@@ -469,7 +379,7 @@ class RedisSessionManager:
             session_set_key = _get_session_set_key(user_id)
             if redis.exists(session_set_key):
                 existing_count = redis.scard(session_set_key)
-                logger.info(
+                logger.debug(
                     "[Session] delete_session: user=%s, existing_sessions=%s",
                     user_id,
                     existing_count,
@@ -863,11 +773,6 @@ class RedisSessionManager:
 # Refresh Token Storage
 # ============================================================================
 
-# Key prefixes for refresh tokens
-REFRESH_TOKEN_PREFIX = "refresh:"
-REFRESH_TOKEN_USER_SET_PREFIX = "refresh:user:"
-REFRESH_TOKEN_LOOKUP_PREFIX = "refresh:lookup:"  # Reverse lookup: token_hash -> user_id
-
 
 class RefreshTokenManager:
     """
@@ -889,16 +794,13 @@ class RefreshTokenManager:
         return is_redis_available()
 
     def _get_token_key(self, user_id: int, token_hash: str) -> str:
-        """Get Redis key for a specific refresh token."""
-        return f"{REFRESH_TOKEN_PREFIX}{user_id}:{token_hash}"
+        return _keys.REFRESH_TOKEN.format(user_id=user_id, token_hash=token_hash)
 
     def _get_user_tokens_key(self, user_id: int) -> str:
-        """Get Redis key for user's token set."""
-        return f"{REFRESH_TOKEN_USER_SET_PREFIX}{user_id}"
+        return _keys.REFRESH_USER_SET.format(user_id=user_id)
 
     def _get_lookup_key(self, token_hash: str) -> str:
-        """Get Redis key for reverse lookup (token_hash -> user_id)."""
-        return f"{REFRESH_TOKEN_LOOKUP_PREFIX}{token_hash}"
+        return _keys.REFRESH_LOOKUP.format(token_hash=token_hash)
 
     def find_user_id_from_token(self, token_hash: str) -> Optional[int]:
         """

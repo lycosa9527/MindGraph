@@ -23,11 +23,11 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import AsyncSessionLocal
-from models.domain.auth import User, APIKey
+from models.domain.auth import User
 from .config import AUTH_MODE, JWT_ALGORITHM
 from .jwt_secret import get_jwt_secret
 from .tokens import security, api_key_header, decode_access_token
-from .api_keys import validate_api_key, track_api_key_usage
+from .api_keys import validate_api_key, track_api_key_usage, get_api_key_record
 from .enterprise_mode import get_enterprise_user
 
 logger = logging.getLogger(__name__)
@@ -85,7 +85,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     """
     # Enterprise Mode: Skip authentication, return enterprise user
     if AUTH_MODE == "enterprise":
-        return get_enterprise_user()
+        return await get_enterprise_user()
 
     # Standard, Demo, and Bayi Mode: Validate JWT token
     token = None
@@ -313,8 +313,7 @@ async def get_current_user_or_api_key(
     if api_key:
         async with AsyncSessionLocal() as db:
             if await validate_api_key(api_key, db):
-                result = await db.execute(select(APIKey).where(APIKey.key == api_key))
-                key_record = result.scalar_one_or_none()
+                key_record = await get_api_key_record(api_key, db)
 
                 if key_record:
                     if request and hasattr(request, "state"):

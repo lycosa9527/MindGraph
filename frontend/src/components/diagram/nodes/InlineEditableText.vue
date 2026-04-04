@@ -768,11 +768,15 @@ onUnmounted(() => {
   box-sizing: border-box;
 }
 
-/* Wrap mode: matches measurement element (word-break + overflow-wrap) for consistent layout */
+/* Wrap mode: matches measurement element for consistent layout.
+   word-break:normal keeps Latin words intact and lets CJK break between characters naturally.
+   overflow-wrap:break-word only splits a word when it alone exceeds the line.
+   line-break:auto applies language-aware rules (e.g. CJK punctuation kinsoku). */
 .inline-edit-display--wrap {
   white-space: pre-wrap;
-  word-break: break-word;
+  word-break: normal;
   overflow-wrap: break-word;
+  line-break: auto;
 }
 
 /* Truncate mode: single line with ellipsis */

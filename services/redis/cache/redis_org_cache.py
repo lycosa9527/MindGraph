@@ -37,14 +37,9 @@ from models.domain.auth import Organization
 
 logger = logging.getLogger(__name__)
 
-# Redis key prefixes
-ORG_KEY_PREFIX = "org:"
-ORG_CODE_INDEX_PREFIX = "org:code:"
-ORG_INVITE_INDEX_PREFIX = "org:invite:"
+from services.redis import keys as _keys
 
-# Safety TTL: keys are refreshed on every cache_org() call; 24 h prevents
-# orphaned keys from consuming memory indefinitely if invalidation misses.
-ORG_CACHE_TTL = 86400  # 24 hours
+ORG_CACHE_TTL = _keys.TTL_ORG
 
 
 class OrganizationCache:
@@ -181,7 +176,7 @@ class OrganizationCache:
             return await self._load_from_database(org_id=org_id)
 
         try:
-            key = f"{ORG_KEY_PREFIX}{org_id}"
+            key = _keys.ORG_BY_ID.format(org_id=org_id)
             cached = RedisOps.hash_get_all(key)
 
             if cached:
@@ -205,11 +200,11 @@ class OrganizationCache:
                             exc,
                         )
                     return await self._load_from_database(org_id=org_id)
-        except Exception as e:
+        except Exception as exc:
             logger.warning(
                 "[OrgCache] Redis error for org ID %s, falling back to database: %s",
                 org_id,
-                e,
+                exc,
             )
             return await self._load_from_database(org_id=org_id)
 
@@ -234,7 +229,7 @@ class OrganizationCache:
             return await self._load_from_database(code=code)
 
         try:
-            index_key = f"{ORG_CODE_INDEX_PREFIX}{code}"
+            index_key = _keys.ORG_BY_CODE.format(code=code)
             org_id_str = RedisOps.get(index_key)
 
             if org_id_str:
@@ -282,7 +277,7 @@ class OrganizationCache:
             return await self._load_from_database(invite_code=invite_code)
 
         try:
-            index_key = f"{ORG_INVITE_INDEX_PREFIX}{invite_code}"
+            index_key = _keys.ORG_BY_INVITE.format(invite_code=invite_code)
             org_id_str = RedisOps.get(index_key)
 
             if org_id_str:
@@ -346,7 +341,7 @@ class OrganizationCache:
             org_code = getattr(org, "code", None)
             org_invite = getattr(org, "invitation_code", None)
 
-            org_key = f"{ORG_KEY_PREFIX}{org_id}"
+            org_key = _keys.ORG_BY_ID.format(org_id=org_id)
 
             pipe = redis_client.pipeline()
             # DELETE before HSET to clear any stale key with wrong type.
@@ -354,10 +349,10 @@ class OrganizationCache:
             pipe.hset(org_key, mapping=org_dict)
             pipe.expire(org_key, ORG_CACHE_TTL)
             if org_code:
-                pipe.set(f"{ORG_CODE_INDEX_PREFIX}{org_code}", str(org_id), ex=ORG_CACHE_TTL)
+                pipe.set(_keys.ORG_BY_CODE.format(code=org_code), str(org_id), ex=ORG_CACHE_TTL)
             if org_invite:
                 pipe.set(
-                    f"{ORG_INVITE_INDEX_PREFIX}{org_invite}",
+                    _keys.ORG_BY_INVITE.format(invite_code=org_invite),
                     str(org_id),
                     ex=ORG_CACHE_TTL,
                 )
@@ -402,11 +397,11 @@ class OrganizationCache:
             return False
 
         try:
-            keys_to_delete = [f"{ORG_KEY_PREFIX}{org_id}"]
+            keys_to_delete = [_keys.ORG_BY_ID.format(org_id=org_id)]
             if code:
-                keys_to_delete.append(f"{ORG_CODE_INDEX_PREFIX}{code}")
+                keys_to_delete.append(_keys.ORG_BY_CODE.format(code=code))
             if invite_code:
-                keys_to_delete.append(f"{ORG_INVITE_INDEX_PREFIX}{invite_code}")
+                keys_to_delete.append(_keys.ORG_BY_INVITE.format(invite_code=invite_code))
 
             redis_client.delete(*keys_to_delete)
             logger.info("[OrgCache] Invalidated cache for org ID %s", org_id)

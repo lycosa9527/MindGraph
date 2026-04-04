@@ -31,7 +31,7 @@ async def get_feature_org_access_admin(
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Admin access required",
         )
-    data = await db.run_sync(load_feature_org_access_session)
+    data = await load_feature_org_access_session(db)
     logger.info("Admin %s read feature org access (%d keys)", current_user.phone, len(data))
     return data
 
@@ -49,7 +49,7 @@ async def put_feature_org_access_admin(
             detail="Admin access required",
         )
     try:
-        await db.run_sync(lambda session: replace_feature_org_access(session, body))
+        await replace_feature_org_access(db, body)
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

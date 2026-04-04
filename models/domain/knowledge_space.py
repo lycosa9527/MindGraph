@@ -86,6 +86,9 @@ class KnowledgeSpace(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    queries = relationship("KnowledgeQuery", back_populates="space", lazy="selectin")
+    query_templates = relationship("QueryTemplate", back_populates="space", lazy="selectin")
+    evaluation_datasets = relationship("EvaluationDataset", back_populates="space", lazy="selectin")
 
     def __repr__(self):
         return f"<KnowledgeSpace user_id={self.user_id}>"
@@ -162,6 +165,32 @@ class KnowledgeDocument(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    batch = relationship(
+        "DocumentBatch",
+        back_populates="documents",
+        foreign_keys="[KnowledgeDocument.batch_id]",
+        lazy="selectin",
+    )
+    versions = relationship(
+        "DocumentVersion",
+        back_populates="document",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    outgoing_relationships = relationship(
+        "DocumentRelationship",
+        back_populates="source_document",
+        foreign_keys="[DocumentRelationship.source_document_id]",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    incoming_relationships = relationship(
+        "DocumentRelationship",
+        back_populates="target_document",
+        foreign_keys="[DocumentRelationship.target_document_id]",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     # Constraints and indexes for metadata filtering
     __table_args__ = (
@@ -207,6 +236,18 @@ class DocumentChunk(Base):
 
     # Relationships
     document = relationship("KnowledgeDocument", back_populates="chunks", lazy="selectin")
+    attachments = relationship(
+        "ChunkAttachment",
+        back_populates="chunk",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    child_chunks = relationship(
+        "ChildChunk",
+        back_populates="parent_chunk",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
 
     # Indexes for efficient queries (id index from index=True; used for Qdrant lookup)
     __table_args__ = (Index("ix_document_chunks_document_id_chunk_index", "document_id", "chunk_index"),)
@@ -297,7 +338,14 @@ class KnowledgeQuery(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    space = relationship("KnowledgeSpace", backref="queries", lazy="selectin")
+    space = relationship("KnowledgeSpace", back_populates="queries", lazy="selectin")
+    feedbacks = relationship(
+        "QueryFeedback",
+        back_populates="query",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+    )
+    evaluation_results = relationship("EvaluationResult", back_populates="query", lazy="selectin")
 
     # Indexes for analytics queries
     __table_args__ = (
@@ -342,7 +390,7 @@ class ChunkAttachment(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    chunk = relationship("DocumentChunk", backref="attachments", lazy="selectin")
+    chunk = relationship("DocumentChunk", back_populates="attachments", lazy="selectin")
 
     # Indexes
     __table_args__ = (Index("ix_chunk_attachments_chunk_id_position", "chunk_id", "position"),)
@@ -389,7 +437,7 @@ class ChildChunk(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    parent_chunk = relationship("DocumentChunk", backref="child_chunks", lazy="selectin")
+    parent_chunk = relationship("DocumentChunk", back_populates="child_chunks", lazy="selectin")
 
     # Indexes
     __table_args__ = (Index("ix_child_chunks_parent_position", "parent_chunk_id", "position"),)
@@ -431,7 +479,12 @@ class DocumentBatch(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    documents = relationship("KnowledgeDocument", backref="batch", lazy="selectin")
+    documents = relationship(
+        "KnowledgeDocument",
+        back_populates="batch",
+        foreign_keys="[KnowledgeDocument.batch_id]",
+        lazy="selectin",
+    )
 
     def __repr__(self):
         return (
@@ -473,7 +526,7 @@ class DocumentVersion(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    document = relationship("KnowledgeDocument", backref="versions", lazy="selectin")
+    document = relationship("KnowledgeDocument", back_populates="versions", lazy="selectin")
 
     # Constraints
     __table_args__ = (
@@ -525,7 +578,7 @@ class QueryFeedback(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC), nullable=False, index=True)
 
     # Relationships
-    query = relationship("KnowledgeQuery", backref="feedbacks", lazy="selectin")
+    query = relationship("KnowledgeQuery", back_populates="feedbacks", lazy="selectin")
 
     def __repr__(self):
         return f"<QueryFeedback id={self.id} query_id={self.query_id} type={self.feedback_type}>"
@@ -563,7 +616,7 @@ class QueryTemplate(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    space = relationship("KnowledgeSpace", backref="query_templates", lazy="selectin")
+    space = relationship("KnowledgeSpace", back_populates="query_templates", lazy="selectin")
 
     def __repr__(self):
         return f"<QueryTemplate id={self.id} name={self.name} usage={self.usage_count}>"
@@ -611,13 +664,13 @@ class DocumentRelationship(Base):
     source_document = relationship(
         "KnowledgeDocument",
         foreign_keys=[source_document_id],
-        backref="outgoing_relationships",
+        back_populates="outgoing_relationships",
         lazy="selectin",
     )
     target_document = relationship(
         "KnowledgeDocument",
         foreign_keys=[target_document_id],
-        backref="incoming_relationships",
+        back_populates="incoming_relationships",
         lazy="selectin",
     )
 
@@ -675,7 +728,7 @@ class EvaluationDataset(Base):
     updated_at = Column(DateTime, default=lambda: datetime.now(UTC), onupdate=lambda: datetime.now(UTC), nullable=False)
 
     # Relationships
-    space = relationship("KnowledgeSpace", backref="evaluation_datasets", lazy="selectin")
+    space = relationship("KnowledgeSpace", back_populates="evaluation_datasets", lazy="selectin")
     results = relationship(
         "EvaluationResult",
         back_populates="dataset",
@@ -722,7 +775,7 @@ class EvaluationResult(Base):
 
     # Relationships
     dataset = relationship("EvaluationDataset", back_populates="results", lazy="selectin")
-    query = relationship("KnowledgeQuery", backref="evaluation_results", lazy="selectin")
+    query = relationship("KnowledgeQuery", back_populates="evaluation_results", lazy="selectin")
 
     def __repr__(self):
         return f"<EvaluationResult id={self.id} dataset_id={self.dataset_id} method={self.method}>"

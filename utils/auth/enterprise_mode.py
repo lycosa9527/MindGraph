@@ -17,8 +17,9 @@ import logging
 from datetime import UTC, datetime
 
 from fastapi import HTTPException, status
+from sqlalchemy import select
 
-from config.database import SyncSessionLocal
+from config.database import AsyncSessionLocal
 from models.domain.auth import User, Organization
 from .config import ENTERPRISE_DEFAULT_ORG_CODE, ENTERPRISE_DEFAULT_USER_PHONE
 from .password import hash_password
@@ -41,7 +42,7 @@ except ImportError:
     pass
 
 
-def get_enterprise_user() -> User:
+async def get_enterprise_user() -> User:
     """
     Get or create the enterprise mode user.
 
@@ -54,19 +55,23 @@ def get_enterprise_user() -> User:
     Raises:
         HTTPException: If enterprise organization not found
     """
-    db = SyncSessionLocal()
-    try:
-        org = db.query(Organization).filter(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE).first()
+    async with AsyncSessionLocal() as db:
+        result = await db.execute(
+            select(Organization).where(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE)
+        )
+        org = result.scalar_one_or_none()
         if not org:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found",
             )
 
-        user = db.query(User).filter(User.phone == ENTERPRISE_DEFAULT_USER_PHONE).first()
+        result = await db.execute(
+            select(User).where(User.phone == ENTERPRISE_DEFAULT_USER_PHONE)
+        )
+        user = result.scalar_one_or_none()
 
         if not user:
-            # Auto-create enterprise user
             user = User(
                 phone=ENTERPRISE_DEFAULT_USER_PHONE,
                 password_hash=hash_password("ent-no-pwd"),
@@ -75,10 +80,12 @@ def get_enterprise_user() -> User:
                 created_at=datetime.now(tz=UTC),
             )
             db.add(user)
-            db.commit()
-            db.refresh(user)
+            try:
+                await db.commit()
+                await db.refresh(user)
+            except Exception:
+                await db.rollback()
+                raise
             logger.info("Created enterprise mode user")
 
         return user
-    finally:
-        db.close()

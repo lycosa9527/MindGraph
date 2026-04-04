@@ -180,7 +180,9 @@ onUnmounted(() => {
           class="inline-rec-fraction inline-flex w-max min-w-0 max-w-[11rem] shrink-0 flex-col items-stretch gap-0.5"
         >
           <span
+            dir="auto"
             class="text-center text-blue-600 dark:text-blue-400 leading-snug text-[11px] break-words"
+            style="line-break: auto"
             >{{ row.pair.top }}</span
           >
           <div
@@ -188,7 +190,9 @@ onUnmounted(() => {
             aria-hidden="true"
           />
           <span
+            dir="auto"
             class="text-center text-amber-600 dark:text-amber-400 leading-snug text-[11px] break-words"
+            style="line-break: auto"
             >{{ row.pair.bottom }}</span
           >
           <span

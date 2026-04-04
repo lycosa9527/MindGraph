@@ -68,35 +68,41 @@ class GeweMessageDB:
         Returns:
             True if saved successfully, False otherwise
         """
+        # Check for duplicate using Redis (similar to xxxbot-pad's deduplication)
+        message_key = f"gewe_msg:{app_id}:{msg_id}"
         try:
-            # Check for duplicate using Redis (similar to xxxbot-pad's deduplication)
-            message_key = f"gewe_msg:{app_id}:{msg_id}"
             if self._redis.exists(message_key):
                 logger.debug("Duplicate message detected: %s", message_key)
                 return False
+        except Exception as e:
+            logger.warning("Redis dedup check failed, proceeding without dedup: %s", e)
 
-            # Save to database
-            message = GeweMessage(
-                app_id=app_id,
-                msg_id=msg_id,
-                sender_wxid=sender_wxid,
-                from_wxid=from_wxid,
-                msg_type=msg_type,
-                content=content or "",
-                is_group=is_group,
-                timestamp=datetime.now(UTC),
-            )
-            self.db.add(message)
+        # Save to database
+        message = GeweMessage(
+            app_id=app_id,
+            msg_id=msg_id,
+            sender_wxid=sender_wxid,
+            from_wxid=from_wxid,
+            msg_type=msg_type,
+            content=content or "",
+            is_group=is_group,
+            timestamp=datetime.now(UTC),
+        )
+        self.db.add(message)
+        try:
             await self.db.commit()
-
-            # Mark as processed in Redis (24 hour TTL)
-            self._redis.set_with_ttl(message_key, "1", 86400)
-
-            return True
         except Exception as e:
             logger.error("Failed to save message: %s", e, exc_info=True)
             await self.db.rollback()
             return False
+
+        # Mark as processed in Redis (24 hour TTL) — non-fatal if it fails.
+        try:
+            self._redis.set_with_ttl(message_key, "1", 86400)
+        except Exception as e:
+            logger.warning("Failed to mark message in Redis: %s", e)
+
+        return True
 
     async def get_messages(
         self,

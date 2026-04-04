@@ -136,34 +136,109 @@ class GeweContactDB:
 
     async def save_contacts_batch(self, app_id: str, contacts: List[Dict[str, Any]]) -> int:
         """
-        Save multiple contacts in batch.
+        Save multiple contacts in a single transaction.
+
+        Replaces N individual save_contact() calls (each with its own commit) with
+        a bulk SELECT + upsert pattern and a single commit.
 
         Args:
             app_id: Gewe app ID
             contacts: List of contact dictionaries
 
         Returns:
-            Number of contacts saved
+            Number of contacts successfully staged for save
         """
-        saved_count = 0
+        # Filter out entries without a wxid.
+        valid = []
         for contact in contacts:
             wxid = contact.get("wxid") or contact.get("Wxid") or ""
-            if not wxid:
-                continue
+            if wxid:
+                valid.append((wxid, contact))
 
-            if await self.save_contact(
-                app_id=app_id,
-                wxid=wxid,
-                nickname=contact.get("nickname") or contact.get("NickName"),
-                remark=contact.get("remark") or contact.get("Remark"),
-                avatar=contact.get("avatar") or contact.get("BigHeadImgUrl") or contact.get("SmallHeadImgUrl"),
-                alias=contact.get("alias") or contact.get("Alias"),
-                contact_type=contact.get("type"),
-                region=contact.get("region"),
-                extra_data=contact,
-            ):
+        if not valid:
+            return 0
+
+        wxids = [wxid for wxid, _ in valid]
+
+        # Bulk-load existing contacts in one query.
+        existing_result = await self.db.execute(
+            select(GeweContact).where(
+                and_(GeweContact.app_id == app_id, GeweContact.wxid.in_(wxids))
+            )
+        )
+        existing_by_wxid = {c.wxid: c for c in existing_result.scalars().all()}
+
+        saved_count = 0
+        invalidate_wxids = []
+        for wxid, contact in valid:
+            try:
+                nickname = contact.get("nickname") or contact.get("NickName")
+                remark = contact.get("remark") or contact.get("Remark")
+                avatar = (
+                    contact.get("avatar")
+                    or contact.get("BigHeadImgUrl")
+                    or contact.get("SmallHeadImgUrl")
+                )
+                alias = contact.get("alias") or contact.get("Alias")
+                contact_type = contact.get("type")
+                region = contact.get("region")
+
+                if not contact_type:
+                    if wxid.endswith("@chatroom"):
+                        contact_type = "group"
+                    elif wxid.startswith("gh_"):
+                        contact_type = "official"
+                    else:
+                        contact_type = "friend"
+
+                existing = existing_by_wxid.get(wxid)
+                if existing:
+                    existing.nickname = nickname
+                    existing.remark = remark
+                    existing.avatar = avatar
+                    existing.alias = alias
+                    existing.contact_type = contact_type
+                    existing.region = region
+                    existing.extra_data = contact
+                    existing.last_updated = datetime.now(UTC)
+                else:
+                    self.db.add(
+                        GeweContact(
+                            app_id=app_id,
+                            wxid=wxid,
+                            nickname=nickname,
+                            remark=remark,
+                            avatar=avatar,
+                            alias=alias,
+                            contact_type=contact_type,
+                            region=region,
+                            extra_data=contact,
+                            last_updated=datetime.now(UTC),
+                        )
+                    )
+
                 saved_count += 1
+                invalidate_wxids.append(wxid)
+            except Exception as exc:
+                logger.warning("Failed to stage contact %s: %s", wxid, exc)
 
+        try:
+            await self.db.commit()
+        except Exception as exc:
+            logger.error("Failed to commit contacts batch: %s", exc, exc_info=True)
+            await self.db.rollback()
+            return 0
+
+        # Invalidate Redis cache entries after the commit.
+        if is_redis_available() and invalidate_wxids:
+            for wxid in invalidate_wxids:
+                try:
+                    cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
+                    self._redis.delete(cache_key)
+                except Exception as exc:
+                    logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, exc)
+
+        logger.info("Saved %d contacts in batch for app %s", saved_count, app_id)
         return saved_count
 
     async def get_contact(self, app_id: str, wxid: str) -> Optional[Dict[str, Any]]:

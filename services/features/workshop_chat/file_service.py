@@ -105,8 +105,12 @@ class FileService:
             file_path=relative_path,
         )
         db.add(attachment)
-        await db.commit()
-        await db.refresh(attachment)
+        try:
+            await db.commit()
+            await db.refresh(attachment)
+        except Exception:
+            await db.rollback()
+            raise
 
         return _format_attachment(attachment)
 

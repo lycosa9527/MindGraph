@@ -123,13 +123,17 @@ async def create_api_key_admin(
         error_msg = Messages.error("name_required", lang)
         raise HTTPException(status_code=400, detail=error_msg)
 
-    key = await db.run_sync(lambda session: generate_api_key(name, description, quota_limit, session))
+    key = await generate_api_key(name, description, quota_limit, db)
 
     if expires_days:
         key_record = (await db.execute(select(APIKey).where(APIKey.key == key))).scalars().first()
         if key_record:
             key_record.expires_at = datetime.now(timezone.utc) + timedelta(days=expires_days)
-            await db.commit()
+            try:
+                await db.commit()
+            except Exception:
+                await db.rollback()
+                raise
 
     return {
         "message": Messages.success("api_key_created", lang),
@@ -166,7 +170,11 @@ async def update_api_key_admin(
     if "usage_count" in request_body:
         key_record.usage_count = request_body["usage_count"]
 
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     return {
         "message": Messages.success("api_key_updated", lang),
@@ -196,7 +204,11 @@ async def delete_api_key_admin(
 
     key_name = key_record.name
     await db.delete(key_record)
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     return {"message": f"API key '{key_name}' deleted successfully"}
 
@@ -216,7 +228,11 @@ async def toggle_api_key_admin(
         raise HTTPException(status_code=404, detail=error_msg)
 
     key_record.is_active = not key_record.is_active
-    await db.commit()
+    try:
+        await db.commit()
+    except Exception:
+        await db.rollback()
+        raise
 
     if key_record.is_active:
         message = Messages.success("api_key_activated", lang, key_record.name)

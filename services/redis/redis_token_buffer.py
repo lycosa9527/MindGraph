@@ -21,14 +21,15 @@ from sqlalchemy import insert as sa_insert
 
 from config.database import AsyncSessionLocal, check_disk_space
 from models.domain.token_usage import TokenUsage
+from services.redis import keys as _keys
 from services.redis.redis_client import is_redis_available, get_redis
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
 
 logger = logging.getLogger(__name__)
 
-# Redis keys
-STREAM_KEY = "tokens:stream"
-STATS_KEY = "tokens:stats"
+# Redis keys sourced from central registry.
+STREAM_KEY = _keys.TOKENS_STREAM
+STATS_KEY = _keys.TOKENS_STATS
 CONSUMER_GROUP = "token_flush_workers"
 CONSUMER_NAME = f"worker_{os.getpid()}"
 
@@ -37,6 +38,9 @@ BATCH_SIZE = int(os.getenv("TOKEN_TRACKER_BATCH_SIZE", "1000"))
 BATCH_INTERVAL = float(os.getenv("TOKEN_TRACKER_BATCH_INTERVAL", "300"))  # 5 minutes
 MAX_BUFFER_SIZE = int(os.getenv("TOKEN_TRACKER_MAX_BUFFER_SIZE", "10000"))
 WORKER_CHECK_INTERVAL = 30.0  # Check every 30 seconds
+# Stream entries delivered more than this many times are considered poison pills
+# and are acknowledged + dropped to prevent infinite retry loops.
+MAX_STREAM_DELIVERY_COUNT = int(os.getenv("TOKEN_TRACKER_MAX_DELIVERY_COUNT", "5"))
 
 
 class RedisTokenBuffer:
@@ -256,6 +260,11 @@ class RedisTokenBuffer:
                                 uid,
                                 stats_err,
                             )
+                    try:
+                        await db.commit()
+                    except Exception as commit_err:
+                        await db.rollback()
+                        logger.warning("[TokenBuffer] Stats commit failed: %s", commit_err)
 
                 except Exception as exc:
                     await db.rollback()
@@ -295,6 +304,37 @@ class RedisTokenBuffer:
                         raw_entries = pending[1] if pending and len(pending) > 1 else []
                     except Exception:
                         raw_entries = []
+
+                    # Dead-letter check: drop entries that exceeded max delivery count.
+                    if raw_entries:
+                        try:
+                            pending_info = redis.xpending_range(
+                                STREAM_KEY,
+                                CONSUMER_GROUP,
+                                min="-",
+                                max="+",
+                                count=len(raw_entries),
+                            )
+                            delivery_counts = {
+                                entry["message_id"]: entry["times_delivered"]
+                                for entry in pending_info
+                            }
+                            dead_letters = [
+                                eid
+                                for eid, _ in raw_entries
+                                if delivery_counts.get(eid, 0) > MAX_STREAM_DELIVERY_COUNT
+                            ]
+                            if dead_letters:
+                                logger.error(
+                                    "[TokenBuffer] Dropping %s poison stream entries (delivery count > %s)",
+                                    len(dead_letters),
+                                    MAX_STREAM_DELIVERY_COUNT,
+                                )
+                                self._ack_records(dead_letters)
+                                dead_set = set(dead_letters)
+                                raw_entries = [(eid, fields) for eid, fields in raw_entries if eid not in dead_set]
+                        except Exception as dlq_exc:
+                            logger.debug("[TokenBuffer] Dead-letter check failed: %s", dlq_exc)
 
                     remaining = count - len(raw_entries)
                     if remaining > 0:

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.71.0] - 2026-04-04
+
+### Added
+- **Alembic revision `0004`** (`alembic/versions/0004_auth_fk_indexes.py`): Indexes on `users.organization_id` and `api_keys.organization_id`; `ON DELETE SET NULL` on both organization FKs so org deletion does not block; database-level `UNIQUE` on `organizations.invitation_code` (aligned with the ORM).
+- **`services/redis/keys.py`**: Single registry for Redis key patterns and TTL constants consumed by cache and session modules.
+- **`services/redis/cache/redis_api_key_cache.py`**: Cache-aside Redis layer for API key validation (JSON payload by SHA-256 key fragment, 5-minute TTL) plus Redis `INCR` usage counters to cut Postgres load on authenticated API-key traffic.
+
+### Changed
+- **`models/domain/auth.py`**: `invitation_code` unique at the model; `User.organization_id` and `APIKey.organization_id` use `ondelete="SET NULL"` and are indexed to match migration and query patterns.
+- **`models/domain/knowledge_space.py`**: Replaced `backref` usage with explicit `back_populates` graphs (knowledge space ↔ queries/templates/evaluation datasets; documents ↔ batch, versions, relationships; chunks ↔ attachments/child chunks; query ↔ feedback/results, etc.) with consistent `lazy="selectin"` / cascade where appropriate.
+- **`utils/auth/api_keys.py`**: Redis-first validation path with graceful fallback to Postgres; cache population and invalidation hooks on quota/usage updates; admin router and related paths updated to stay consistent.
+- **Redis stack** (`redis_client.py`, `redis_session_manager.py`, `redis_cache_loader.py`, `redis_*` helpers, SMS/token/bayi/distributed-lock/activity modules): Refactored to use shared `keys` constants, clearer connection usage, and streamlined session refresh/invalidation behaviour.
+- **Repository and services** (`repositories/base.py`, `services/feature_access/repository.py`, `document_batch_service.py`, `tasks/knowledge_space_tasks.py`, Gewe DB modules, library mixins, workshop chat channel/file services, `workshop_service.py`): Async/typing and Redis-aware paths aligned with the cache and auth changes.
+- **Routers** (`routers/core/pages.py`, `community.py`, `debateverse.py`, `library/admin.py`, `school_zone.py`, `workshop_chat_ws.py`, auth login/admin): Adjusted for updated dependencies and behaviour.
+- **Auth utilities** (`account_lockout.py`, `authentication.py`, `enterprise_mode.py`): Minor alignment with the session and cache updates.
+- **Frontend diagram UX** (`BraceNode.vue`, `BranchNode.vue`, `BubbleNode.vue`, `TopicNode.vue`, `InlineEditableText.vue`, concept-map and recommendation pickers, `NodePalettePanel.vue`, `RootConceptModal.vue`): Small layout/editing and picker refinements.
+- **Spec loaders** (`braceMap.ts`, `mindMap.ts`, `treeMap.ts`, `treeMapTopicLayout.ts`, `textMeasurement.ts`, `textMeasurementFallback.ts`) and **`frontend/src/styles/index.css`**: Measurement/layout tweaks for diagram types.
+
 ## [5.70.0] - 2026-04-02
 
 ### Added

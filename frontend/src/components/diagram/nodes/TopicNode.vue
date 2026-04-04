@@ -12,6 +12,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore } from '@/stores'
+import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -206,6 +207,14 @@ const nodeStyle = computed(() => {
   return baseStyle
 })
 
+const TOPIC_BASE_MAX_WIDTH = 300
+
+const topicMaxWidth = computed(() => {
+  if (isFlowMap.value) return 'none'
+  const label = (props.data.label as string) || ''
+  return `${computeScriptAwareMaxWidth(label, TOPIC_BASE_MAX_WIDTH)}px`
+})
+
 // Inline editing state
 const isEditing = ref(false)
 
@@ -313,7 +322,7 @@ function handleWidthChange(width: number) {
       :node-id="id"
       :is-editing="isEditing"
       :readonly="data.hidden === true"
-      :max-width="isFlowMap ? 'none' : '300px'"
+      :max-width="topicMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       render-markdown

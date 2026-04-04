@@ -37,14 +37,9 @@ from services.redis.redis_client import is_redis_available, RedisOps, get_redis
 
 logger = logging.getLogger(__name__)
 
-# Redis key prefixes
-USER_KEY_PREFIX = "user:"
-USER_PHONE_INDEX_PREFIX = "user:phone:"
+from services.redis import keys as _keys
 
-# Safety TTL: keys are refreshed on every cache_user() call and on login,
-# so 24 h is a generous upper bound that prevents orphaned keys from
-# consuming memory indefinitely if invalidation misses.
-USER_CACHE_TTL = 86400  # 24 hours
+USER_CACHE_TTL = _keys.TTL_USER
 
 
 class UserCache:
@@ -186,7 +181,7 @@ class UserCache:
             return await self._load_from_database(user_id=user_id)
 
         try:
-            key = f"{USER_KEY_PREFIX}{user_id}"
+            key = _keys.USER_BY_ID.format(user_id=user_id)
             cached = RedisOps.hash_get_all(key)
 
             if cached:
@@ -210,11 +205,11 @@ class UserCache:
                             exc,
                         )
                     return await self._load_from_database(user_id=user_id)
-        except Exception as e:
+        except Exception as exc:
             logger.warning(
                 "[UserCache] Redis error for user ID %s, falling back to database: %s",
                 user_id,
-                e,
+                exc,
             )
             return await self._load_from_database(user_id=user_id)
 
@@ -240,7 +235,7 @@ class UserCache:
             return await self._load_from_database(phone=phone)
 
         try:
-            index_key = f"{USER_PHONE_INDEX_PREFIX}{phone}"
+            index_key = _keys.USER_BY_PHONE.format(phone=phone)
             user_id_str = RedisOps.get(index_key)
 
             if user_id_str:
@@ -296,7 +291,7 @@ class UserCache:
 
         try:
             user_dict = self._serialize_user(user)
-            user_key = f"{USER_KEY_PREFIX}{user.id}"
+            user_key = _keys.USER_BY_ID.format(user_id=user.id)
 
             pipe = redis_client.pipeline()
             # DELETE before HSET to clear any stale key with wrong type.
@@ -304,7 +299,7 @@ class UserCache:
             pipe.hset(user_key, mapping=user_dict)
             pipe.expire(user_key, USER_CACHE_TTL)
             if user.phone:
-                phone_index_key = f"{USER_PHONE_INDEX_PREFIX}{user.phone}"
+                phone_index_key = _keys.USER_BY_PHONE.format(phone=user.phone)
                 pipe.set(phone_index_key, str(user.id), ex=USER_CACHE_TTL)
             pipe.execute()
 
@@ -340,10 +335,10 @@ class UserCache:
             return False
 
         try:
-            user_key = f"{USER_KEY_PREFIX}{user_id}"
+            user_key = _keys.USER_BY_ID.format(user_id=user_id)
             keys_to_delete = [user_key]
             if phone:
-                keys_to_delete.append(f"{USER_PHONE_INDEX_PREFIX}{phone}")
+                keys_to_delete.append(_keys.USER_BY_PHONE.format(phone=phone))
 
             redis_client.delete(*keys_to_delete)
 

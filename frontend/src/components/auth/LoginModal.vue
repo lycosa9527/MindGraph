@@ -21,10 +21,15 @@ import { useLoginModal } from '@/composables/auth/useLoginModal'
 const props = defineProps<{
   visible: boolean
   /**
-   * `/auth`: no full-screen scrim — page background stays fully visible; backdrop dismiss still works.
+   * `/auth`: no full-screen scrim — page background stays fully visible.
    * Default uses a dark scrim (`stone-900/70`) for session-expired and other overlays.
    */
   lightBackdrop?: boolean
+  /**
+   * When true, clicking outside the modal does nothing (no backdrop dismiss).
+   * Use on dedicated auth pages where dismissing the modal has no sensible fallback.
+   */
+  persistent?: boolean
 }>()
 
 const emit = defineEmits<{

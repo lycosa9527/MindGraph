@@ -29,6 +29,7 @@ import os
 import types
 import uuid
 
+from services.redis import keys as _keys
 from services.redis.redis_client import is_redis_available, get_redis
 
 if TYPE_CHECKING:
@@ -37,7 +38,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 # Redis key for IP whitelist Set
-WHITELIST_KEY = "bayi:ip_whitelist"
+WHITELIST_KEY = _keys.BAYI_IP_WHITELIST
 
 # ============================================================================
 # DISTRIBUTED LOCK FOR MULTI-WORKER COORDINATION
@@ -54,8 +55,8 @@ WHITELIST_KEY = "bayi:ip_whitelist"
 # TTL: 5 minutes (enough for loading, auto-release if worker crashes)
 # ============================================================================
 
-WHITELIST_LOAD_LOCK_KEY = "bayi:whitelist:load:lock"
-WHITELIST_LOAD_LOCK_TTL = 300  # 5 minutes - enough for loading, auto-release on crash
+WHITELIST_LOAD_LOCK_KEY = _keys.BAYI_WHITELIST_LOCK
+WHITELIST_LOAD_LOCK_TTL = _keys.TTL_BAYI_WHITELIST_LOCK
 
 
 class AuthModuleLoader:

@@ -256,7 +256,11 @@ onMounted(async () => {
             draggable="true"
             @dragstart="handleDragStart($event, suggestion)"
           >
-            <span class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words">
+            <span
+              dir="auto"
+              class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words"
+              style="line-break: auto"
+            >
               {{ suggestion.text }}
             </span>
           </div>

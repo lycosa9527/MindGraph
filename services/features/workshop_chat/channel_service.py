@@ -294,7 +294,11 @@ class ChannelService:
             current = member.last_read_message_id or 0
             if max_msg_id > current:
                 member.last_read_message_id = max_msg_id
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         return {
             "marked": True,
             "last_read_message_id": member.last_read_message_id,
@@ -351,7 +355,11 @@ class ChannelService:
             role="owner",
         )
         db.add(owner_member)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
 
         logger.info(
             "[WorkshopChat] Channel '%s' (parent=%s) created by user %d in org %d",
@@ -410,7 +418,11 @@ class ChannelService:
         if is_resolved is not None:
             channel.is_resolved = is_resolved
         channel.updated_at = datetime.now(UTC)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         return {
             "id": channel.id,
             "name": channel.name,
@@ -435,7 +447,11 @@ class ChannelService:
             return False
         channel.is_archived = True
         channel.updated_at = datetime.now(UTC)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         logger.info("[WorkshopChat] Channel %d archived", channel_id)
         return True
 
@@ -462,7 +478,11 @@ class ChannelService:
                 role="member",
             )
         )
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         logger.info(
             "[WorkshopChat] User %d joined channel %d",
             user_id,
@@ -487,7 +507,11 @@ class ChannelService:
         if not member:
             return False
         await db.delete(member)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         logger.info(
             "[WorkshopChat] User %d left channel %d",
             user_id,
@@ -538,6 +562,26 @@ class ChannelService:
         return result.scalar_one_or_none() is not None
 
     @staticmethod
+    async def get_user_member_channel_ids(
+        db: AsyncSession,
+        user_id: int,
+        channel_ids: List[int],
+    ) -> set:
+        """Return the subset of ``channel_ids`` where ``user_id`` is a member.
+
+        Single SQL query instead of one per channel.
+        """
+        if not channel_ids:
+            return set()
+        result = await db.execute(
+            select(ChannelMember.channel_id).where(
+                ChannelMember.user_id == user_id,
+                ChannelMember.channel_id.in_(channel_ids),
+            )
+        )
+        return {row[0] for row in result.all()}
+
+    @staticmethod
     async def get_channel(
         db: AsyncSession,
         channel_id: int,
@@ -579,7 +623,11 @@ class ChannelService:
         """Toggle mute state for a user's channel subscription."""
         member = await ChannelService._get_membership(db, channel_id, user_id)
         member.is_muted = not member.is_muted
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         return {"channel_id": channel_id, "is_muted": member.is_muted}
 
     @staticmethod
@@ -591,7 +639,11 @@ class ChannelService:
         """Toggle pin-to-top state for a user's channel subscription."""
         member = await ChannelService._get_membership(db, channel_id, user_id)
         member.pin_to_top = not member.pin_to_top
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         return {"channel_id": channel_id, "pin_to_top": member.pin_to_top}
 
     @staticmethod
@@ -611,7 +663,11 @@ class ChannelService:
             member.desktop_notifications = desktop_notifications
         if email_notifications is not None:
             member.email_notifications = email_notifications
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         return {
             "channel_id": channel_id,
             "color": member.color,
@@ -646,7 +702,11 @@ class ChannelService:
             channel.is_default = is_default
 
         channel.updated_at = datetime.now(UTC)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         return {
             "id": channel.id,
             "channel_type": channel.channel_type,
@@ -674,9 +734,13 @@ class ChannelService:
         got = list(ordered_ids)
         if set(got) != expected or len(got) != len(expected):
             return False
+        # Bulk-load all channels in one query instead of one SELECT per item.
+        bulk_result = await db.execute(
+            select(ChatChannel).where(ChatChannel.id.in_(got))
+        )
+        cid_to_channel = {ch.id: ch for ch in bulk_result.scalars().all()}
         for idx, cid in enumerate(got):
-            ch_result = await db.execute(select(ChatChannel).where(ChatChannel.id == cid))
-            channel = ch_result.scalar_one_or_none()
+            channel = cid_to_channel.get(cid)
             if not channel:
                 return False
             channel.display_order = idx
@@ -772,7 +836,11 @@ class ChannelService:
             role="owner",
         )
         db.add(owner_member)
-        await db.commit()
+        try:
+            await db.commit()
+        except Exception:
+            await db.rollback()
+            raise
         logger.info(
             "[WorkshopChat] Channel %d duplicated as %d by user %d",
             source_channel_id,

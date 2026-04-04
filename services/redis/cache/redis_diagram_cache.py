@@ -46,7 +46,6 @@ from services.redis.cache._redis_diagram_cache_helpers import (
     DIAGRAM_KEY,
     USER_META_KEY,
     USER_LIST_KEY,
-    DIRTY_SET_KEY,
 )
 from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
@@ -758,16 +757,6 @@ class RedisDiagramCache:
                 "max_spec_size_kb": MAX_SPEC_SIZE_KB,
             },
         }
-
-        # Add Redis stats
-        if self._use_redis():
-            redis = get_redis()
-            if redis:
-                try:
-                    dirty_count = redis.scard(DIRTY_SET_KEY)
-                    stats["dirty_count"] = dirty_count or 0
-                except Exception as exc:
-                    logger.debug("Redis dirty set count retrieval failed: %s", exc)
 
         return stats
 

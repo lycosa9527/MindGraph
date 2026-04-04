@@ -59,6 +59,7 @@ onBeforeUnmount(() => {
     <LoginModal
       v-model:visible="showLoginModal"
       light-backdrop
+      persistent
       @success="onLoginSuccess"
     />
   </div>

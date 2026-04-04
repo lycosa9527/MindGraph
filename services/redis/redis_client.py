@@ -24,6 +24,7 @@ Proprietary License
 import os
 import time
 import logging
+import warnings
 from typing import Optional, Any, Dict, List, Callable, TypeVar
 
 try:
@@ -196,7 +197,7 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
     version_tuple = _parse_redis_version(redis_version)
 
     if version_tuple >= (8, 6, 0):
-        policy = os.getenv("REDIS_EVICTION_POLICY", "volatile-lrm")
+        policy = os.getenv("REDIS_EVICTION_POLICY", "volatile-lru")
         try:
             redis_client.config_set("maxmemory-policy", policy)
             logger.info("[Redis] Eviction policy set to '%s'", policy)
@@ -215,7 +216,7 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
             )
     else:
         logger.debug(
-            "[Redis] Version %s < 8.6 — skipping volatile-lrm and key-memory-histograms",
+            "[Redis] Version %s < 8.6 — skipping volatile-lru and key-memory-histograms",
             redis_version,
         )
 
@@ -541,6 +542,46 @@ class RedisOperations:
         if not _RedisState.is_available() or not redis_client:
             return 0
         return redis_client.hdel(key, *fields) or 0
+
+    # ========================================================================
+    # Atomic Operations
+    # ========================================================================
+
+    @staticmethod
+    def compare_and_delete(key: str, expected_value: str) -> bool:
+        """Atomically delete ``key`` only when its value equals ``expected_value``.
+
+        Tries DELEX (Redis >= 8.4) first.  Falls back to an equivalent
+        single-round-trip Lua script so behaviour is identical across all
+        Redis versions in production.
+
+        Returns True if the key was deleted, False if value did not match or
+        the key did not exist.
+        """
+        redis_client = _RedisState.get_client()
+        if not _RedisState.is_available() or not redis_client:
+            return False
+        try:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore", UserWarning)
+                return bool(redis_client.delex(key, expected_value))
+        except (redis.ConnectionError, redis.TimeoutError) as exc:  # type: ignore[union-attr]
+            logger.warning("[Redis] compare_and_delete connection error for %s: %s", key[:20], exc)
+            return False
+        except Exception:
+            pass  # DELEX not supported — fall through to Lua CAS
+        try:
+            result = redis_client.eval(
+                "if redis.call('get',KEYS[1])==ARGV[1] then"
+                " return redis.call('del',KEYS[1]) else return 0 end",
+                1,
+                key,
+                expected_value,
+            )
+            return bool(result)
+        except Exception as exc:
+            logger.warning("[Redis] compare_and_delete failed for %s: %s", key[:20], exc)
+            return False
 
     # ========================================================================
     # Utility Operations

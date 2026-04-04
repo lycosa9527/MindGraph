@@ -16,8 +16,9 @@ from datetime import UTC, datetime
 import time
 
 from PIL import Image
-from sqlalchemy import func, or_, select
+from sqlalchemy import func, or_, select, update
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from models.domain.library import LibraryDocument
 from services.library.library_path_utils import (
@@ -78,12 +79,13 @@ class LibraryDocumentMixin:
 
         result = await self.db.execute(
             select(LibraryDocument)
+            .options(joinedload(LibraryDocument.uploader))
             .where(*conditions)
             .order_by(LibraryDocument.created_at.desc())
             .offset((page - 1) * page_size)
             .limit(page_size)
         )
-        documents = result.scalars().all()
+        documents = result.unique().scalars().all()
 
         return {
             "documents": [
@@ -273,17 +275,16 @@ class LibraryDocumentMixin:
             document_id: Document ID
         """
         try:
-            document = await self.get_document(document_id)
-            if document:
-                document.views_count = cast(int, document.views_count) + 1
-                await self.db.commit()
-                logger.debug(
-                    "[Library] Document view incremented",
-                    extra={
-                        "document_id": document_id,
-                        "views_count": document.views_count,
-                    },
-                )
+            await self.db.execute(
+                update(LibraryDocument)
+                .where(LibraryDocument.id == document_id)
+                .values(views_count=LibraryDocument.views_count + 1)
+            )
+            await self.db.commit()
+            logger.debug(
+                "[Library] Document view incremented",
+                extra={"document_id": document_id},
+            )
         except Exception:
             await self.db.rollback()
             raise

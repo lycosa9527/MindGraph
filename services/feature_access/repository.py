@@ -111,5 +111,8 @@ async def replace_feature_org_access(db: AsyncSession, data: Dict[str, FeatureOr
     except Exception:
         await db.rollback()
         raise
-    redis_feature_org_access_cache.set_cached_map(data)
+    try:
+        redis_feature_org_access_cache.set_cached_map(data)
+    except Exception as exc:
+        logger.warning("Failed to update feature org access cache after commit: %s", exc)
     logger.info("Replaced feature org access rules (%d features)", len(data))

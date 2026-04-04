@@ -14,6 +14,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores/diagram'
+import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -46,6 +47,8 @@ const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 // Check if this is a tree map (needs vertical handles)
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 
+const BRANCH_BASE_MAX_WIDTH = 200
+
 const textMaxWidth = computed(() => {
   if (isTreeMap.value && props.data.style?.width != null) {
     const px = Number(props.data.style.width)
@@ -54,7 +57,8 @@ const textMaxWidth = computed(() => {
   if (props.data.diagramType === 'bridge_map') {
     return 'min(420px, 88vw)'
   }
-  return '200px'
+  const label = (props.data.label as string) || ''
+  return `${computeScriptAwareMaxWidth(label, BRANCH_BASE_MAX_WIDTH)}px`
 })
 
 // Check if this is a bridge map node (should be text-only, including first pair)

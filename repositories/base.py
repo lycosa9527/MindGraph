@@ -2,6 +2,11 @@
 
 Provides reusable async operations for any SQLAlchemy model so that
 domain repositories only need to declare model-specific queries.
+
+Write methods are flush-only by default so that multiple repository calls can
+participate in a single transaction managed by the caller.  Pass
+``commit=True`` only when the repository is the sole owner of the transaction
+(e.g. standalone background tasks).
 """
 
 from typing import Any, Generic, Optional, Sequence, Type, TypeVar
@@ -19,6 +24,16 @@ class BaseRepository(Generic[ModelT]):
     """Thin async wrapper around common SQLAlchemy 2.0 operations."""
 
     model: Type[ModelT]
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        # Only concrete classes (those with model in their own __dict__) are
+        # checked; generic or abstract intermediates are allowed to skip it.
+        if "model" in cls.__dict__ and not isinstance(cls.__dict__["model"], type):
+            raise TypeError(
+                f"{cls.__name__}.model must be a SQLAlchemy model class, "
+                f"got {type(cls.__dict__['model'])!r}"
+            )
 
     def __init__(self, session: AsyncSession) -> None:
         self.session = session
@@ -54,57 +69,79 @@ class BaseRepository(Generic[ModelT]):
         return result.scalar_one()
 
     async def exists(self, *filters: Any) -> bool:
-        stmt = select(func.count()).select_from(self.model).where(*filters)
-        result = await self.session.execute(stmt)
-        return result.scalar_one() > 0
+        subq = select(self.model).where(*filters).exists()
+        result = await self.session.execute(select(subq))
+        return bool(result.scalar_one())
 
     # -- writes --------------------------------------------------------------
 
-    async def create(self, obj: ModelT, *, flush: bool = False) -> ModelT:
+    async def create(self, obj: ModelT, *, commit: bool = False) -> ModelT:
         self.session.add(obj)
-        if flush:
-            await self.session.flush()
-        else:
+        if commit:
             await self.session.commit()
             await self.session.refresh(obj)
+        else:
+            await self.session.flush()
         return obj
 
-    async def create_many(self, objects: Sequence[ModelT], *, flush: bool = False) -> Sequence[ModelT]:
+    async def create_many(
+        self, objects: Sequence[ModelT], *, commit: bool = False
+    ) -> Sequence[ModelT]:
         self.session.add_all(objects)
-        if flush:
-            await self.session.flush()
-        else:
+        if commit:
             await self.session.commit()
+            for obj in objects:
+                await self.session.refresh(obj)
+        else:
+            await self.session.flush()
         return objects
 
-    async def update_by_id(self, record_id: int, **values: Any) -> Optional[ModelT]:
+    async def update_by_id(
+        self, record_id: int, *, commit: bool = False, **values: Any
+    ) -> Optional[ModelT]:
         stmt = (
             update(self.model)
-            .where(self.model.id == record_id)  # type: ignore[attr-defined]
+            .where(self.model.id == record_id)
             .values(**values)
+            .returning(self.model)  # type: ignore[attr-defined]
         )
-        await self.session.execute(stmt)
-        await self.session.commit()
-        return await self.get_by_id(record_id)
+        result = await self.session.execute(stmt)
+        obj = result.scalars().one_or_none()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
+        return obj
 
-    async def bulk_update(self, *filters: Any, **values: Any) -> int:
+    async def bulk_update(
+        self, *filters: Any, commit: bool = False, **values: Any
+    ) -> int:
         stmt = update(self.model).where(*filters).values(**values)
         result = await self.session.execute(stmt)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         return result.rowcount  # type: ignore[return-value]
 
-    async def delete_by_id(self, record_id: int) -> bool:
+    async def delete_by_id(self, record_id: int, *, commit: bool = False) -> bool:
         stmt = delete(self.model).where(
-            self.model.id == record_id  # type: ignore[attr-defined]
+            self.model.id == record_id
         )
         result = await self.session.execute(stmt)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         return result.rowcount > 0  # type: ignore[operator]
 
-    async def bulk_delete(self, *filters: Any) -> int:
+    async def bulk_delete(self, *filters: Any, commit: bool = False) -> int:
         stmt = delete(self.model).where(*filters)
         result = await self.session.execute(stmt)
-        await self.session.commit()
+        if commit:
+            await self.session.commit()
+        else:
+            await self.session.flush()
         return result.rowcount  # type: ignore[return-value]
 
     # -- helpers -------------------------------------------------------------

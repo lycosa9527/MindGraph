@@ -13,7 +13,10 @@ type LoginModalEmit = {
   (e: 'success'): void
 }
 
-export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit) {
+export function useLoginModal(
+  props: { visible: boolean; persistent?: boolean },
+  emit: LoginModalEmit,
+) {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
   const { t } = useLanguage()
@@ -457,6 +460,9 @@ export function useLoginModal(props: { visible: boolean }, emit: LoginModalEmit)
   }
 
   function handleBackdropClick(event: MouseEvent) {
+    if (props.persistent) {
+      return
+    }
     if (event.target === event.currentTarget) {
       closeModal()
     }

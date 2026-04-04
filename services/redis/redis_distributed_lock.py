@@ -29,12 +29,13 @@ import asyncio
 from typing import Optional
 from contextlib import asynccontextmanager
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis import keys as _keys
+from services.redis.redis_client import RedisOps, get_redis, is_redis_available
 
 logger = logging.getLogger(__name__)
 
-# Lock configuration
-DEFAULT_LOCK_TTL = 10  # seconds - enough for registration, auto-releases on crash
+# Lock configuration sourced from central registry.
+DEFAULT_LOCK_TTL = _keys.TTL_LOCK_DEFAULT
 DEFAULT_MAX_RETRIES = 5  # Increased from 3 to match commit_user_with_retry retries
 DEFAULT_RETRY_BASE_DELAY = 0.1  # seconds
 
@@ -75,7 +76,7 @@ class DistributedLock:
             retry_base_delay: Base delay for exponential backoff (seconds)
         """
         self.resource = resource
-        self.lock_key = f"lock:{resource}"
+        self.lock_key = _keys.LOCK.format(resource=resource)
         self.ttl = ttl
         self.max_retries = max_retries
         self.retry_base_delay = retry_base_delay
@@ -187,9 +188,9 @@ class DistributedLock:
             return False
 
         try:
-            # DELEX (Redis >= 8.4): atomically deletes the key only if its value matches
-            # lock_id, replacing the Lua compare-and-delete script with a single command.
-            result = await asyncio.to_thread(redis.delex, self.lock_key, self.lock_id)
+            result = await asyncio.to_thread(
+                RedisOps.compare_and_delete, self.lock_key, self.lock_id
+            )
 
             if result:
                 self._acquired = False
@@ -225,9 +226,8 @@ class DistributedLock:
         return False  # Don't suppress exceptions
 
 
-STARTUP_SMS_NOTIFICATION_LOCK_KEY = "lock:mindgraph:lifespan:startup_sms"
-# Safety net if a worker dies before release; caller releases immediately after send.
-STARTUP_SMS_NOTIFICATION_LOCK_TTL = 120
+STARTUP_SMS_NOTIFICATION_LOCK_KEY = _keys.LOCK_STARTUP_SMS
+STARTUP_SMS_NOTIFICATION_LOCK_TTL = _keys.TTL_LOCK_STARTUP
 
 
 async def acquire_startup_sms_notification_lock() -> Optional[str]:
@@ -286,7 +286,7 @@ async def release_startup_sms_notification_lock(lock_id: str) -> None:
         return
     try:
         await asyncio.to_thread(
-            redis.delex,
+            RedisOps.compare_and_delete,
             STARTUP_SMS_NOTIFICATION_LOCK_KEY,
             lock_id,
         )

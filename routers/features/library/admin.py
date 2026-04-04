@@ -574,6 +574,18 @@ async def delete_document_record(
         )
 
     service = LibraryService(db, user_id=current_user.id)
+
+    # Commit the DB deletion first; only clean up disk/cache after the record is gone.
+    try:
+        await db.delete(document)
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to delete document record",
+        ) from exc
+
     deleted_folder = False
 
     if delete_files and document.pages_dir_path:
@@ -591,10 +603,6 @@ async def delete_document_record(
                     )
             except OSError as exc:
                 logger.error("[Library] Could not remove book folder %s: %s", folder_path, exc)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail=f"Could not delete book folder: {exc}",
-                ) from exc
 
     for ext in _COVER_FILE_EXTENSIONS:
         candidate = service.covers_dir / f"{document_id}_cover{ext}"
@@ -605,17 +613,10 @@ async def delete_document_record(
                 logger.warning("[Library] Could not remove cover file %s: %s", candidate, exc)
             break
 
-    service.invalidate_document_cache(document_id)
-
     try:
-        await db.delete(document)
-        await db.commit()
+        service.invalidate_document_cache(document_id)
     except Exception as exc:
-        await db.rollback()
-        raise HTTPException(
-            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to delete document record",
-        ) from exc
+        logger.warning("[Library] Cache invalidation failed for %s: %s", document_id, exc)
 
     logger.info(
         "[Library] Document deleted",

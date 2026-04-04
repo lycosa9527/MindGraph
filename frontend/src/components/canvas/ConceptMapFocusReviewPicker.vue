@@ -137,9 +137,12 @@ onUnmounted(() => {
             class="font-mono text-xs font-semibold tabular-nums text-blue-600 dark:text-blue-400 shrink-0 pt-0.5"
             >0</span
           >
-          <span class="min-w-0 flex-1 text-gray-800 dark:text-gray-100 break-words">{{
-            t('conceptMapPicker.currentFocusQuestion')
-          }}</span>
+          <span
+            dir="auto"
+            class="min-w-0 flex-1 text-gray-800 dark:text-gray-100 break-words"
+            style="line-break: auto"
+            >{{ t('conceptMapPicker.currentFocusQuestion') }}</span
+          >
         </button>
         <button
           v-for="(row, idx) in visibleRows"
@@ -159,7 +162,9 @@ onUnmounted(() => {
             >{{ idx + 1 }}</span
           >
           <span
+            dir="auto"
             class="min-w-0 flex-1 text-gray-800 dark:text-gray-100 break-words whitespace-normal"
+            style="line-break: auto"
             >{{ row.text }}</span
           >
         </button>

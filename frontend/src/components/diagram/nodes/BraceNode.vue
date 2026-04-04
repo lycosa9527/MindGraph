@@ -13,6 +13,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -27,6 +28,12 @@ useNodeDimensions(braceNodeRef, props.id)
 // Get theme defaults matching old StyleManager
 const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
+})
+
+const BRACE_NODE_BASE_MAX_WIDTH = 240
+const braceNodeMaxWidth = computed(() => {
+  const label = (props.data.label as string) || ''
+  return `${computeScriptAwareMaxWidth(label, BRACE_NODE_BASE_MAX_WIDTH)}px`
 })
 
 const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
@@ -158,7 +165,7 @@ function handleBranchMovePointerUp(): void {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      max-width="240px"
+      :max-width="braceNodeMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       render-markdown

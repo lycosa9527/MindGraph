@@ -180,8 +180,13 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             created_at=datetime.now(UTC),
                         )
                         db.add(bayi_user)
-                        await db.commit()
-                        await db.refresh(bayi_user)
+                        try:
+                            await db.commit()
+                            await db.refresh(bayi_user)
+                        except Exception as user_err:
+                            await db.rollback()
+                            logger.error("Failed to create bayi IP user: %s", user_err)
+                            return RedirectResponse(url="/demo", status_code=303)
                         logger.info("Created shared bayi IP user: %s", user_phone)
                         try:
                             user_cache.cache_user(bayi_user)
@@ -373,8 +378,12 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     created_at=datetime.now(UTC),
                 )
                 db.add(org)
-                await db.commit()
-                await db.refresh(org)
+                try:
+                    await db.commit()
+                    await db.refresh(org)
+                except Exception:
+                    await db.rollback()
+                    raise
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 try:
                     org_cache.cache_org(org)

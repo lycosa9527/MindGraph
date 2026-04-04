@@ -501,7 +501,9 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               <!-- Paired format (A over B): double bubble differences (incl. parsed text) or bridge pairs -->
               <div
                 v-if="showPairedCardRows(suggestion)"
+                dir="auto"
                 class="flex flex-col gap-1 text-sm min-w-0 flex-1"
+                style="line-break: auto"
               >
                 <div class="text-gray-700 dark:text-gray-300">
                   <span class="font-medium text-blue-600 dark:text-blue-400">
@@ -519,7 +521,9 @@ function getDisplayText(suggestion: NodeSuggestion): string {
               <!-- Similarities or fallback: plain text -->
               <span
                 v-else
+                dir="auto"
                 class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words"
+                style="line-break: auto"
               >
                 {{ getDisplayText(suggestion) }}
               </span>

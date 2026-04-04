@@ -62,8 +62,9 @@ function getMeasureEl(fontFamily?: string): HTMLDivElement {
     'visibility:hidden',
     'pointer-events:none',
     'white-space:pre-wrap',
-    'word-break:break-word',
+    'word-break:normal',
     'overflow-wrap:break-word',
+    'line-break:auto',
     'text-align:center',
     'line-height:1.4',
     'box-sizing:border-box',
@@ -380,7 +381,7 @@ export function measureTextDimensions(
     el.style.maxWidth = `${options.maxWidth}px`
     el.style.width = 'max-content'
     el.style.whiteSpace = 'pre-wrap'
-    el.style.wordBreak = 'break-word'
+    el.style.wordBreak = 'normal'
   } else {
     el.style.width = 'max-content'
     el.style.whiteSpace = 'nowrap'
