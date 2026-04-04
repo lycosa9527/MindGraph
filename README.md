@@ -2,10 +2,10 @@
 
 AI-powered diagram generation platform. Transform natural language into professional visual diagrams with support for Thinking Maps, Mind Maps, and Concept Maps.
 
-[![Python](https://img.shields.io/badge/Python-3.8+-blue.svg)](https://www.python.org/downloads/)
+[![Python](https://img.shields.io/badge/Python-3.13+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.104+-green.svg)](https://fastapi.tiangolo.com/)
 [![Vue](https://img.shields.io/badge/Vue-3.5+-42b883.svg)](https://vuejs.org/)
-[![Version](https://img.shields.io/badge/Version-5.33.0-brightgreen.svg)](CHANGELOG.md)
+[![Version](https://img.shields.io/badge/Version-5.71.0-brightgreen.svg)](CHANGELOG.md)
 
 ---
 
@@ -14,23 +14,53 @@ AI-powered diagram generation platform. Transform natural language into professi
 **Diagram Types**
 
 - **Thinking Maps** (8 types): Circle, Bubble, Double Bubble, Tree, Brace, Flow, Multi-Flow, Bridge
-- **Mind Map**: Radial brainstorming and concept organization
-- **Concept Map**: Relationship mapping with AI-generated labels
+- **Tree Map**: Center-aligned vertical group layout with DOM-measured adaptive column widths
+- **Mind Map**: Radial brainstorming with DOM-measured branch layout and drag-to-reparent
+- **Concept Map**: Relationship mapping with AI-generated labels, focus questions, and root concept suggestions
 
 **AI Capabilities**
 
 - Natural language to diagram generation
 - Node Palette: AI-suggested nodes with streaming
-- Auto-complete for context-aware diagram completion
-- Multi-LLM support: Qwen, DeepSeek, Kimi, Doubao
-- Bilingual: Chinese and English
+- Inline AI Recommendations: double-click any node for context-aware auto-completion (all diagram types)
+- Concept Map focus question validation and SSE suggestion streams
+- Multi-LLM support: Qwen, DeepSeek, Kimi, Doubao (Volcengine)
+- Output in 149+ languages (ISO/BCP-47, filterable prompt-language picker)
 
-**Platform**
+**Canvas Editor**
 
-- Interactive canvas editor with export (PNG, SVG, PDF, JSON)
+- Interactive canvas with export (PNG, SVG, PDF, JSON)
+- KaTeX math rendering in diagram labels (mhchem for chemistry notation)
+- Branch drag-and-drop (long-press to reparent or swap nodes)
+- Presentation mode with laser pointer, spotlight, highlighter, and pen tools
+- Auto-save with dirty/saving indicators and relative timestamps
+- Diagram snapshots: up to 10 point-in-time versions per diagram with click-to-recall
+- Text alignment and rich text-style toolbar
+- Mobile web shell (`/m/*`) with touch pinch-zoom and pane pan
+
+**Collaboration & Platform**
+
+- Online canvas collaboration (WebSocket, Redis live-spec merge)
+- Workshop Chat (教研坊): school-scoped real-time channels, topics, DMs, reactions, and file attachments
+- International landing page with Chinese / International UI version toggle
 - Knowledge Space (RAG) for document management and retrieval
 - Library with image-based document viewing
-- JWT and API key authentication
+- DebateVerse and AskOnce AI features
+- School Zone and teacher usage tracking
+
+**Internationalization**
+
+- Full UI in 60+ languages (tier-1: zh, en; tier-2: 50+ bundled locales including RTL Dhivehi)
+- Interface language picker with parity-checked bundles
+- Prompt output language independent of UI language
+
+**Security & Auth**
+
+- JWT and API key authentication with Redis cache-aside (5-minute TTL, SHA-256 fingerprinting)
+- Captcha on password change; sessions revoked on password update
+- Per-feature organization/user access rules (DB-backed, Redis-cached)
+- OpenAPI schema served only when `DEBUG=True`
+- Health endpoints require JWT; SSE errors do not expose stack traces
 
 ---
 
@@ -38,9 +68,9 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 | Layer | Technologies |
 |-------|--------------|
-| **Frontend** | Vue 3.5, TypeScript, Vite 7, Tailwind CSS 4, Pinia, Vue Flow |
-| **Backend** | Python 3.13, FastAPI, Uvicorn |
-| **Data** | PostgreSQL / SQLite, Redis, Qdrant |
+| **Frontend** | Vue 3.5, TypeScript, Vite 7, Tailwind CSS 4, Pinia, Vue Flow, KaTeX |
+| **Backend** | Python 3.13, FastAPI, Uvicorn, Alembic |
+| **Data** | PostgreSQL (JSONB), SQLite, Redis 8+, Qdrant |
 | **AI** | LangGraph, Dashscope (Qwen), Volcengine (Doubao, DeepSeek, Kimi) |
 
 ---
@@ -49,10 +79,11 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 ### Prerequisites
 
-- Python 3.8+ (recommended: 3.13)
+- Python 3.13+
 - Node.js 18+
-- Redis 7.0+
+- Redis 7.0+ (8.6+ recommended for key-memory histograms and VSET)
 - Qdrant (for Knowledge Space)
+- PostgreSQL (recommended) or SQLite
 
 ### Installation
 
@@ -60,15 +91,18 @@ AI-powered diagram generation platform. Transform natural language into professi
 git clone https://github.com/lycosa9527/MindGraph.git
 cd MindGraph
 
-# Backend: install dependencies and Playwright browsers
-python scripts/setup/setup.py
+# Backend: install dependencies, Redis, PostgreSQL, Qdrant, Playwright, and Tesseract OCR
+sudo python scripts/setup/setup.py
+
+# Optional: install dashboard assets (ECharts, China GeoJSON, ip2region)
+python scripts/setup/dashboard_install.py
 
 # Frontend
 cd frontend && npm install && npm run build && cd ..
 
 # Configuration
 cp env.example .env
-# Edit .env: set QWEN_API_KEY, REDIS_URL, QDRANT_HOST
+# Edit .env: set QWEN_API_KEY, REDIS_URL, QDRANT_HOST, DATABASE_URL
 ```
 
 ### Run
@@ -77,20 +111,24 @@ cp env.example .env
 python main.py
 ```
 
+Database schema migrations (Alembic) run automatically on startup.
+
 Default: `http://localhost:9527`
 
 ### Key Routes
 
 | Route | Description |
 |-------|-------------|
-| `/` | Redirects to MindMate |
-| `/mindmate` | AI chat and landing |
+| `/` | Redirects based on UI version |
+| `/mindmate` | AI chat and landing (Chinese version) |
 | `/mindgraph` | Diagram gallery |
 | `/canvas` | Interactive diagram editor |
 | `/knowledge-space` | RAG document management |
 | `/library` | Document library |
-| `/admin` | Admin panel (API keys, users) |
+| `/workshop-chat` | Workshop Chat — real-time teacher collaboration |
+| `/admin` | Admin panel (API keys, users, features, database) |
 | `/docs` | API docs (when `DEBUG=True`) |
+| `/m/*` | Mobile web shell |
 
 ---
 
@@ -102,11 +140,13 @@ Required environment variables:
 QWEN_API_KEY=your-api-key
 REDIS_URL=redis://localhost:6379/0
 QDRANT_HOST=localhost:6333   # For Knowledge Space
+DATABASE_URL=postgresql+asyncpg://user:pass@localhost/mindgraph
 PORT=9527
 DEBUG=False
+AUTH_MODE=jwt   # or: enterprise (disables JWT validation, isolated networks only)
 ```
 
-See `env.example` for full options.
+See `env.example` for full options including feature flags (`FEATURE_WORKSHOP_CHAT`, `FEATURE_LIBRARY`, etc.) and multi-worker settings.
 
 ---
 

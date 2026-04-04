@@ -195,7 +195,7 @@ CORE_DEPENDENCIES = {
 
 PROGRESS_BAR_LENGTH = 30
 MAX_LINE_LENGTH = 100
-SETUP_STEPS = 8
+SETUP_STEPS = 9
 
 REQUIRED_LOG_FILES = ["uvicorn_access.log", "uvicorn_error.log", "app.log", "agent.log"]
 
@@ -2255,6 +2255,154 @@ def cleanup_temp_files() -> None:
         print(f"[WARNING] Could not clean up temporary files: {e}")
 
 
+def _read_env_database_url(project_root: Path) -> Optional[str]:
+    """Return DATABASE_URL from <project_root>/.env, or None if absent/unset."""
+    env_file = project_root / ".env"
+    if not env_file.exists():
+        return None
+    for raw_line in env_file.read_text(encoding="utf-8").splitlines():
+        line = raw_line.strip()
+        if line.startswith("#") or "=" not in line:
+            continue
+        key, _, value = line.partition("=")
+        if key.strip() == "DATABASE_URL":
+            return value.strip().strip("'\"")
+    return None
+
+
+def _parse_database_url(url: str) -> Optional[Dict[str, str]]:
+    """Parse a PostgreSQL DATABASE_URL into its connection components."""
+    normalised = re.sub(r"^postgresql\+\w+://", "postgresql://", url)
+    pattern = re.compile(
+        r"postgresql://(?:(?P<user>[^:@/]+)(?::(?P<password>[^@/]*))?@)?"
+        r"(?P<host>[^:/]+)(?::(?P<port>\d+))?/(?P<dbname>[^?#]+)"
+    )
+    match = pattern.match(normalised)
+    if not match:
+        return None
+    return {
+        "user": match.group("user") or "postgres",
+        "password": match.group("password") or "",
+        "host": match.group("host") or "localhost",
+        "port": match.group("port") or "5432",
+        "dbname": match.group("dbname"),
+    }
+
+
+def _ensure_postgres_database_exists(db_parts: Dict[str, str]) -> bool:
+    """Create the PostgreSQL database if it does not already exist.
+
+    Uses the ``psql`` client binary.  Returns True when the database is
+    confirmed to exist (created now or already present), False on error.
+    """
+    user = db_parts["user"]
+    host = db_parts["host"]
+    port = db_parts["port"]
+    dbname = db_parts["dbname"]
+    password = db_parts.get("password", "")
+
+    psql_base = ["psql", "-U", user, "-h", host, "-p", port, "-d", "postgres"]
+    env = os.environ.copy()
+    if password:
+        env["PGPASSWORD"] = password
+
+    # Check if the DB already exists
+    try:
+        check = subprocess.run(
+            psql_base + ["-tAc", f"SELECT 1 FROM pg_database WHERE datname='{dbname}'"],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=10,
+        )
+        if check.returncode == 0 and check.stdout.strip() == "1":
+            print(f"    [INFO] Database '{dbname}' already exists")
+            return True
+    except FileNotFoundError:
+        print("    [WARNING] psql not found in PATH — cannot create database automatically")
+        return False
+    except subprocess.TimeoutExpired:
+        print("    [WARNING] psql timed out while checking for database existence")
+        return False
+
+    # Create the database
+    try:
+        create = subprocess.run(
+            psql_base + ["-c", f'CREATE DATABASE "{dbname}"'],
+            env=env,
+            capture_output=True,
+            text=True,
+            timeout=15,
+        )
+        if create.returncode == 0:
+            print(f"    [SUCCESS] Created database '{dbname}'")
+            return True
+        stderr = (create.stderr or "").lower()
+        if "already exists" in stderr:
+            print(f"    [INFO] Database '{dbname}' already exists")
+            return True
+        print(f"    [WARNING] CREATE DATABASE failed: {create.stderr.strip()}")
+        return False
+    except subprocess.TimeoutExpired:
+        print("    [WARNING] psql timed out while creating database")
+        return False
+
+
+def setup_database_schema(project_root: Path) -> bool:
+    """Initialize the PostgreSQL schema via Alembic and seed initial data.
+
+    Reads ``DATABASE_URL`` from ``<project_root>/.env``.  If the URL targets
+    PostgreSQL, this function:
+
+    1. Creates the database if it does not yet exist (using ``psql``).
+    2. Imports ``config.database.init_db`` and runs Alembic ``upgrade head``
+       plus organization seeding.
+
+    Skips gracefully when ``.env`` is absent, ``DATABASE_URL`` is unset, or
+    the URL targets a non-PostgreSQL dialect.  Returns True on success.
+    """
+    db_url = _read_env_database_url(project_root)
+    if not db_url:
+        print(
+            "    [INFO] No DATABASE_URL found in .env — skipping schema init"
+            " (migrations run automatically on first 'python main.py')"
+        )
+        return False
+
+    if not db_url.startswith("postgresql"):
+        dialect = db_url.split(":")[0] if ":" in db_url else db_url
+        print(f"    [INFO] DATABASE_URL uses '{dialect}' — skipping PostgreSQL schema init")
+        return False
+
+    db_parts = _parse_database_url(db_url)
+    if not db_parts:
+        print("    [WARNING] Could not parse DATABASE_URL — skipping schema init")
+        return False
+
+    print(
+        f"    [INFO] Target: {db_parts['host']}:{db_parts['port']}"
+        f"/{db_parts['dbname']} (user: {db_parts['user']})"
+    )
+
+    if not _ensure_postgres_database_exists(db_parts):
+        print("    [WARNING] Could not ensure database exists — skipping Alembic migration")
+        print("    [INFO] Migrations will run automatically when 'python main.py' starts")
+        return False
+
+    print("    [INFO] Running Alembic migrations and seeding organizations...")
+    try:
+        # config.database is importable because Python deps were installed in the
+        # previous step and sys.path already contains the project root.
+        from config.database import init_db  # pylint: disable=import-outside-toplevel
+        init_db(seed_organizations=True)
+        print("    [SUCCESS] Database schema initialized and seeded")
+        return True
+    except Exception as exc:  # pylint: disable=broad-except
+        print(f"    [WARNING] Schema initialization failed: {exc}")
+        print("    [INFO] Migrations will run automatically when 'python main.py' starts")
+        return False
+
+
 def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
     """Print a formatted setup summary"""
     print("\n[INFO] Setup Summary:")
@@ -2273,6 +2421,11 @@ def print_setup_summary(setup_summary: Dict[str, bool]) -> None:
         print("    ✅ PostgreSQL - Client/service present or installed")
     else:
         print("    ⏭️  PostgreSQL - Not verified (install or use SQLite)")
+
+    if setup_summary.get("db_init"):
+        print("    ✅ Database schema - Alembic migrations applied and seeded")
+    else:
+        print("    ⏭️  Database schema - Skipped (will run automatically on first start)")
 
     if setup_summary["python_deps"]:
         print("    ✅ Python dependencies - Installed/Updated")
@@ -2403,6 +2556,7 @@ def main() -> None:
         "tesseract": False,
         "redis": False,
         "postgres": False,
+        "db_init": False,
         "qdrant": False,
     }
 
@@ -2430,8 +2584,13 @@ def main() -> None:
         if install_python_dependencies():
             setup_summary["python_deps"] = True
 
-        # Step 5: Qdrant vector server (Linux + sudo; docs/QDRANT_SETUP.md)
-        print(f"\n[STEP 5/{SETUP_STEPS}] Qdrant vector database (Knowledge Space)...")
+        # Step 5: Database schema initialization (Alembic + seed)
+        print(f"\n[STEP 5/{SETUP_STEPS}] Database schema initialization...")
+        if setup_database_schema(Path(project_root)):
+            setup_summary["db_init"] = True
+
+        # Step 6: Qdrant vector server (Linux + sudo; docs/QDRANT_SETUP.md)
+        print(f"\n[STEP 6/{SETUP_STEPS}] Qdrant vector database (Knowledge Space)...")
         if install_qdrant_via_documented_flow(
             project_root,
             skip=skip_qdrant,
@@ -2439,8 +2598,8 @@ def main() -> None:
         ):
             setup_summary["qdrant"] = True
 
-        # Step 6: Install Playwright
-        print(f"\n[STEP 6/{SETUP_STEPS}] Playwright browser...")
+        # Step 7: Install Playwright
+        print(f"\n[STEP 7/{SETUP_STEPS}] Playwright browser...")
 
         # First, try to extract from zip if available (fastest option)
         chromium_from_zip = False
@@ -2474,15 +2633,15 @@ def main() -> None:
                     print(f"[WARNING] Offline Chromium setup skipped: {e}")
                     print("[INFO] You can run this manually later if needed")
 
-        # Step 7: Setup logging and data directories
-        print(f"\n[STEP 7/{SETUP_STEPS}] Directory setup...")
+        # Step 8: Setup logging and data directories
+        print(f"\n[STEP 8/{SETUP_STEPS}] Directory setup...")
         if setup_logs_directory():
             setup_summary["logs"] = True
         setup_data_directory()
         setup_application_directories()
 
-        # Step 8: Comprehensive verification
-        print(f"\n[STEP 8/{SETUP_STEPS}] System verification...")
+        # Step 9: Comprehensive verification
+        print(f"\n[STEP 9/{SETUP_STEPS}] System verification...")
         verify_dependencies()
         verify_tesseract_ocr()
         verify_redis_postgres_hints()
