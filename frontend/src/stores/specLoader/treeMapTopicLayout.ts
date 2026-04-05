@@ -14,11 +14,12 @@ import {
   measureRenderedDiagramLabelHeight,
   measureRenderedDiagramLabelWidth,
   measureTextDimensions,
+  measureTextWidth,
 } from './textMeasurement'
-import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 
-/** Base max-width for topic text (adapts per-script via computeScriptAwareMaxWidth) */
+/** Max text width cap for topic (matches TopicNode.vue TOPIC_MAX_TEXT_WIDTH) */
 export const TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH = 300
+const BALANCE_PADDING = 5
 /** Matches tree_map theme topic font (getNodeStyle topic fallback 18) */
 export const TREE_MAP_TOPIC_FONT_SIZE = 18
 /** Matches TopicNode px-6 / py-4 */
@@ -27,11 +28,20 @@ export const TREE_MAP_TOPIC_PADDING_Y = 16
 /** Matches theme topicStrokeWidth */
 export const TREE_MAP_TOPIC_BORDER_WIDTH = 3
 
+function computeBalancedMaxWidth(text: string): number {
+  const cap = TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH
+  if (typeof document === 'undefined') return cap
+  const tw = measureTextWidth(text, TREE_MAP_TOPIC_FONT_SIZE, { fontWeight: 'bold' })
+  if (tw <= cap) return cap
+  const numLines = Math.ceil(tw / cap)
+  return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, cap)
+}
+
 export function measureTreeMapTopicDimensions(text: string): { width: number; height: number } {
   const t = (text || '').trim() || ' '
   const b = TREE_MAP_TOPIC_BORDER_WIDTH
   const measureOpts = { fontWeight: 'bold' as const }
-  const adaptiveMaxW = computeScriptAwareMaxWidth(t, TREE_MAP_TOPIC_TEXT_BASE_MAX_WIDTH)
+  const adaptiveMaxW = computeBalancedMaxWidth(t)
 
   if (diagramLabelLikelyNeedsRenderedMeasure(t)) {
     const contentW = measureRenderedDiagramLabelWidth(t, TREE_MAP_TOPIC_FONT_SIZE, measureOpts)

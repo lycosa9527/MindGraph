@@ -13,9 +13,8 @@ import type { DiagramNode } from '@/types'
 
 import {
   CONTEXT_FONT_SIZE,
-  computeMinDiameterForNoWrap,
   computeTopicRadiusForCircleMap,
-  prefersNoWrapWidthFitForCircleMap,
+  measureTextWidth,
 } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
 
@@ -170,26 +169,60 @@ export function getTopicCircleDiameter(text: string): number {
  * @param isTopic - Whether this is a topic node (larger) or context node
  * @returns Diameter in pixels
  */
+export const CONTEXT_MAX_TEXT_WIDTH = 140
+const CONTEXT_PADDING_X = 16
+const CONTEXT_PADDING_Y = 8
+const CONTEXT_BORDER_SLACK = 24
+const MIN_CONTEXT_DIAMETER = 70
+
+/**
+ * Estimate circle diameter for a context node, accounting for text wrapping.
+ * Mirrors the brace-map pattern: fixed max text width → balanced lines →
+ * compute text-block diagonal → add border/slack for final circle diameter.
+ */
+export function estimateContextCircleDiameter(text: string): number {
+  const trimmed = (text || '').trim()
+  if (!trimmed) return MIN_CONTEXT_DIAMETER
+
+  if (typeof document === 'undefined') {
+    const rough = trimmed.length * 8
+    if (rough <= CONTEXT_MAX_TEXT_WIDTH) {
+      return Math.max(MIN_CONTEXT_DIAMETER, rough + CONTEXT_BORDER_SLACK)
+    }
+    return MIN_CONTEXT_DIAMETER + 60
+  }
+
+  const singleLineW = measureTextWidth(trimmed, CONTEXT_FONT_SIZE)
+  const lineHeight = CONTEXT_FONT_SIZE * 1.5
+
+  let contentW: number
+  let contentH: number
+  if (singleLineW <= CONTEXT_MAX_TEXT_WIDTH) {
+    contentW = singleLineW + CONTEXT_PADDING_X
+    contentH = lineHeight + CONTEXT_PADDING_Y
+  } else {
+    const numLines = Math.ceil(singleLineW / CONTEXT_MAX_TEXT_WIDTH)
+    const balancedW = Math.ceil(singleLineW / numLines)
+    contentW = balancedW + CONTEXT_PADDING_X
+    contentH = numLines * lineHeight + CONTEXT_PADDING_Y
+  }
+
+  const diagonal = Math.ceil(Math.sqrt(contentW * contentW + contentH * contentH))
+  return Math.max(MIN_CONTEXT_DIAMETER, diagonal + CONTEXT_BORDER_SLACK)
+}
+
 export function calculateAdaptiveCircleSize(text: string, isTopic: boolean = false): number {
   const MIN_TOPIC = 120
-  const MIN_CONTEXT = 70
-  const MAX_CONTEXT = 200
 
   if (!text || !text.trim()) {
-    return isTopic ? MIN_TOPIC : MIN_CONTEXT
+    return isTopic ? MIN_TOPIC : MIN_CONTEXT_DIAMETER
   }
 
   if (isTopic) {
     return getTopicCircleDiameter(text)
   }
 
-  if (prefersNoWrapWidthFitForCircleMap(text)) {
-    const d = computeMinDiameterForNoWrap(text.trim(), CONTEXT_FONT_SIZE, false)
-    return Math.max(MIN_CONTEXT, Math.min(d, MAX_CONTEXT))
-  }
-
-  const d = computeMinDiameterForNoWrap(text.trim(), CONTEXT_FONT_SIZE, false)
-  return Math.max(MIN_CONTEXT, Math.min(d, MAX_CONTEXT))
+  return estimateContextCircleDiameter(text)
 }
 
 /** Gap between topic and context ring (px). Larger = more space between center and middle layer. */
@@ -255,7 +288,7 @@ export function calculateCircleMapLayout(
   } else {
     let maxRadius = DEFAULT_CONTEXT_RADIUS
     for (const t of contextTexts) {
-      const d = computeMinDiameterForNoWrap(t || ' ', CONTEXT_FONT_SIZE, false)
+      const d = estimateContextCircleDiameter(t || ' ')
       maxRadius = Math.max(maxRadius, d / 2)
     }
     uniformContextR = maxRadius

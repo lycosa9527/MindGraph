@@ -19,6 +19,7 @@ import {
   diagramLabelLikelyNeedsRenderedMeasure,
   measureRenderedDiagramLabelHeight,
   measureTextDimensions,
+  measureTextWidth,
 } from './textMeasurement'
 import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
@@ -34,25 +35,47 @@ function getBranchText(branch: { text?: string; label?: string }): string {
 }
 
 const BRANCH_BASE_MAX_TEXT_WIDTH = 200
+const BALANCE_PADDING = 5
+
+function computeBalancedMaxWidth(
+  text: string,
+  wrapThreshold: number,
+  baseCap: number,
+  fontSize: number,
+  fontWeight = 'normal'
+): number {
+  if (typeof document === 'undefined') return wrapThreshold
+  const tw = measureTextWidth(text, fontSize, { fontWeight })
+  if (tw <= wrapThreshold) return wrapThreshold
+  const numLines = Math.ceil(tw / baseCap)
+  return Math.min(Math.ceil(tw / numLines) + BALANCE_PADDING, baseCap)
+}
 
 /**
  * Estimate rendered BranchNode width from text content.
- * BranchNode auto-sizes: min-width 80px, max-width adapts to script via
- * computeScriptAwareMaxWidth, plus px-4 padding (32px) and border (~6px).
- * CJK chars ~16px, Latin ~9px at 16px font.
+ * Uses DOM-based measureTextWidth for accuracy, with balanced-width
+ * approximation matching CSS text-wrap: balance in BranchNode.vue.
  */
 function estimateNodeWidth(text: string): number {
   if (!text) return DEFAULT_NODE_WIDTH
-  const cjkRegex = /[\u4E00-\u9FFF\u3400-\u4DBF\uF900-\uFAFF]/g
-  const cjkMatches = text.match(cjkRegex)
-  const cjkCount = cjkMatches ? cjkMatches.length : 0
-  const otherCount = text.length - cjkCount
-  const rawTextWidth = cjkCount * 16 + otherCount * 9
-  const maxTextWidth = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
+  const branchFontSize = 16
   const nodeHorizontalExtra = 38
   const minNodeWidth = 80
-  const textWidth = Math.min(rawTextWidth, maxTextWidth)
-  return Math.max(minNodeWidth, textWidth + nodeHorizontalExtra)
+
+  if (typeof document === 'undefined') {
+    return Math.max(minNodeWidth, text.length * 9 + nodeHorizontalExtra)
+  }
+
+  const fullWidth = measureTextWidth(text, branchFontSize)
+  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
+  let effectiveTextWidth = fullWidth
+  if (fullWidth > wrapThreshold) {
+    const numLines = Math.ceil(fullWidth / BRANCH_BASE_MAX_TEXT_WIDTH)
+    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
+    effectiveTextWidth = Math.min(effectiveTextWidth, BRANCH_BASE_MAX_TEXT_WIDTH)
+  }
+
+  return Math.max(minNodeWidth, effectiveTextWidth + nodeHorizontalExtra)
 }
 
 const BRANCH_BORDER_Y = 6
@@ -60,15 +83,16 @@ const BRANCH_PADDING_Y = 16
 
 /**
  * Measure rendered BranchNode height using DOM measurement.
- * Uses measureTextDimensions with CSS params matching BranchNode + InlineEditableText:
- * font 16px normal, text wraps at script-aware maxWidth,
+ * Uses measureTextDimensions with balanced max-width matching BranchNode + InlineEditableText:
+ * font 16px normal, text wraps at balanced max-width (CSS text-wrap: balance),
  * then add BranchNode py-2 (16px) and border 3px x 2 (6px). Enforce min-height 36px.
  * For KaTeX labels the rendered DOM height is measured directly.
  */
 function measureBranchNodeHeight(text: string): number {
   if (!text) return BRANCH_NODE_HEIGHT
   const branchFontSize = 16
-  const maxTextWidth = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
+  const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
+  const maxTextWidth = computeBalancedMaxWidth(text, wrapThreshold, BRANCH_BASE_MAX_TEXT_WIDTH, branchFontSize)
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
     const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
@@ -90,50 +114,44 @@ const TOPIC_BASE_MAX_TEXT_WIDTH = 300
 
 /**
  * Estimate rendered TopicNode width from text content.
- * TopicNode: CSS min-width 120px, InlineEditableText max-width adapts via
- * computeScriptAwareMaxWidth, pill padding px-6 = 24px each side (48px total),
- * default border 3px each side (6px total).
- * 18px bold font: CJK ideographs ~19px, hiragana/katakana ~17px, Latin ~11px.
- *
- * When text wraps, CSS `width: fit-content` sizes to the widest line (≤ max-width),
- * not to max-width itself. We calculate the actual wrapped line width.
+ * Uses DOM-based measureTextWidth with balanced-width approximation
+ * matching CSS text-wrap: balance in TopicNode.vue (cap=300px).
  */
 export function estimateTopicNodeWidth(text: string): number {
   if (!text) return DEFAULT_NODE_WIDTH
-  const cjkMatches = text.match(TOPIC_CJK_REGEX)
-  const cjkCount = cjkMatches ? cjkMatches.length : 0
-  const otherCount = text.length - cjkCount
-  const cjkCharWidth = 19
-  const latinCharWidth = 11
-  const rawTextWidth = cjkCount * cjkCharWidth + otherCount * latinCharWidth
-  const maxTextWidth = computeScriptAwareMaxWidth(text, TOPIC_BASE_MAX_TEXT_WIDTH)
+  const topicFontSize = 18
   const topicPaddingX = 48
   const topicBorderX = 6
   const minTopicWidth = DEFAULT_NODE_WIDTH
 
-  let textWidth: number
-  if (rawTextWidth <= maxTextWidth) {
-    textWidth = rawTextWidth
-  } else {
-    const avgCharWidth = rawTextWidth / text.length
-    const charsPerLine = Math.floor(maxTextWidth / avgCharWidth)
-    textWidth = Math.min(charsPerLine * avgCharWidth, maxTextWidth)
+  if (typeof document === 'undefined') {
+    const cjkMatches = text.match(TOPIC_CJK_REGEX)
+    const cjkCount = cjkMatches ? cjkMatches.length : 0
+    const otherCount = text.length - cjkCount
+    const rawWidth = cjkCount * 19 + otherCount * 11
+    return Math.max(minTopicWidth, Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicPaddingX + topicBorderX)
   }
 
-  return Math.max(minTopicWidth, textWidth + topicPaddingX + topicBorderX)
+  const fullWidth = measureTextWidth(text, topicFontSize, { fontWeight: 'bold' })
+  let effectiveTextWidth = fullWidth
+  if (fullWidth > TOPIC_BASE_MAX_TEXT_WIDTH) {
+    const numLines = Math.ceil(fullWidth / TOPIC_BASE_MAX_TEXT_WIDTH)
+    effectiveTextWidth = Math.ceil(fullWidth / numLines) + BALANCE_PADDING
+    effectiveTextWidth = Math.min(effectiveTextWidth, TOPIC_BASE_MAX_TEXT_WIDTH)
+  }
+
+  return Math.max(minTopicWidth, effectiveTextWidth + topicPaddingX + topicBorderX)
 }
 
 /**
  * Estimate rendered TopicNode height from text content.
- * TopicNode: CSS min-height ~50px (DEFAULT_NODE_HEIGHT), py-4 = 16px each side (32px total),
- * border 3px each side (6px total), 18px bold font with Tailwind line-height 1.5 = 27px/line.
- * Text wraps at script-aware maxWidth.
+ * Uses balanced max-width matching CSS text-wrap: balance in TopicNode.vue.
  * For KaTeX labels the rendered DOM height is measured directly.
  */
 export function estimateTopicNodeHeight(text: string): number {
   if (!text) return DEFAULT_NODE_HEIGHT
   const topicFontSize = 18
-  const maxTextWidth = computeScriptAwareMaxWidth(text, TOPIC_BASE_MAX_TEXT_WIDTH)
+  const maxTextWidth = computeBalancedMaxWidth(text, TOPIC_BASE_MAX_TEXT_WIDTH, TOPIC_BASE_MAX_TEXT_WIDTH, topicFontSize, 'bold')
   const paddingY = 32
   const borderY = 6
 
@@ -144,14 +162,14 @@ export function estimateTopicNodeHeight(text: string): number {
     return Math.max(DEFAULT_NODE_HEIGHT, Math.ceil(contentH + paddingY + borderY))
   }
 
-  const cjkMatches = text.match(TOPIC_CJK_REGEX)
-  const cjkCount = cjkMatches ? cjkMatches.length : 0
-  const otherCount = text.length - cjkCount
-  const cjkCharWidth = 19
-  const latinCharWidth = 11
-  const rawTextWidth = cjkCount * cjkCharWidth + otherCount * latinCharWidth
+  const { height: textHeight } = measureTextDimensions(text, topicFontSize, {
+    fontWeight: 'bold',
+    maxWidth: maxTextWidth,
+    paddingX: 0,
+    paddingY: 0,
+  })
   const lineHeight = 27
-  const numLines = Math.max(1, Math.ceil(rawTextWidth / maxTextWidth))
+  const numLines = Math.max(1, Math.ceil(textHeight / lineHeight))
   return Math.max(DEFAULT_NODE_HEIGHT, numLines * lineHeight + paddingY + borderY)
 }
 

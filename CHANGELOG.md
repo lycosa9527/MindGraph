@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.72.0] - 2026-04-05
+
+### Added
+- **`InlineEditableText.vue` — `autoWrap` prop**: When enabled, bypasses the JS single-line heuristic (`shouldPreferSingleLineNoWrap`) and delegates line-breaking entirely to the browser via CSS `text-wrap: balance`. `maxWidth` acts as a safety cap only. Adds `.inline-edit-display--auto-wrap` CSS class and sets `line-height: 1.4` on the display element.
+- **`utils.ts` — `estimateContextCircleDiameter`**: New DOM-based context-circle sizing that computes a balanced line layout (single-line width vs. `CONTEXT_MAX_TEXT_WIDTH` cap), then derives the required circle diameter from the content diagonal rather than a fixed max. Exports `CONTEXT_MAX_TEXT_WIDTH = 140`.
+- **`textMeasurementFallback.ts` — Southeast-Asian script support**: Added `isSoutheastAsianChar` covering Thai (U+0E00–0E7F), Lao (U+0E80–0EFF), Khmer (U+1780–17FF), and Myanmar (U+1000–109F); when ≥ 30 % of glyphs are South-East Asian the `computeScriptAwareMaxWidth` scale floor is raised to 1.3.
+
+### Changed
+- **All diagram node components** (`BraceNode.vue`, `BranchNode.vue`, `BubbleNode.vue`, `CircleNode.vue`, `FlowNode.vue`, `FlowSubstepNode.vue`, `TopicNode.vue`): Replaced `computeScriptAwareMaxWidth` with DOM-based `measureTextWidth` for computing the balanced container width. Each node now calculates the number of expected lines and passes a narrowed `maxWidth` to `InlineEditableText`, while setting `auto-wrap` so the browser handles the actual breaking via CSS; no more character-counting CJK/Latin heuristics in node template logic.
+- **`circleMap.ts`**: Switched context-node sizing to `estimateContextCircleDiameter` (replaces `computeMinDiameterForNoWrap`); removed hard-coded `noWrap: true` from context node styles; added `estimatedWidth` / `estimatedHeight` fields to topic and context node `data` objects.
+- **`braceMap.ts`**: Increased `BRACE_NODE_BASE_MAX_TEXT_WIDTH` 240 → 350 and `BRACE_MAX_NODE_WIDTH` 280 → 400; width estimation now applies a balanced-line approximation (mirrors `text-wrap: balance`) instead of simply clamping to max; removed `computeScriptAwareMaxWidth` dependency.
+- **`mindMap.ts`**: Branch and topic width/height estimation refactored to use DOM `measureTextWidth` with balanced-line logic (`computeBalancedMaxWidth`) instead of CJK character-count heuristics; server-side rendering falls back to approximate character widths.
+- **`treeMapTopicLayout.ts`**: Switched from `computeScriptAwareMaxWidth` to `computeBalancedMaxWidth` (DOM-based) for topic width in tree maps.
+- **`multiFlowMap.ts`**: Simplified cause/effect column width calculation to use `computeFlowNodeWidth` (text measurement only); removed DOM-measured Pinia widths from the width-uniformity pass to prevent stale font-load timing from locking in wrong widths.
+- **`treeMap.ts`**: `resolveTreeMapBox` now prefers the computed (text-measurement) width and uses the Pinia-measured height when available, preventing stale or zero-height values from breaking layout.
+- **`CircleNode.vue` — diagonal-based markdown sizing**: `measureRenderedMarkdownAndReport` uses `sqrt(w² + h²)` (content diagonal) instead of `max(w, h)` so that rendered markdown/KaTeX correctly fills tall circular containers; ResizeObserver now targets both `.diagram-node-md` and `.inline-edit-display`.
+- **`server_launcher.py`**: Removed SQLite-to-PostgreSQL migration import and startup execution block; the legacy `data_migration.migrate_sqlite_to_postgresql` check is no longer performed at launch.
+
 ## [5.71.0] - 2026-04-04
 
 ### Added

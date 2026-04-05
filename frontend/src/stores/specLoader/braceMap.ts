@@ -25,7 +25,6 @@ import {
   measureRenderedDiagramLabelHeight,
   measureTextWidth,
 } from './textMeasurement'
-import { computeScriptAwareMaxWidth } from './textMeasurementFallback'
 import type { SpecLoaderResult } from './types'
 
 interface BraceNode {
@@ -39,8 +38,8 @@ const BRACE_PART_FONT_SIZE = 16
 const BRACE_SUBPART_FONT_SIZE = 12
 const BRACE_TOPIC_PADDING_X = 48 + 6 // px-6 (24*2) + border (3*2)
 const BRACE_PILL_PADDING_X = 40 + 4 // px-5 (20*2) + border (2*2)
-const BRACE_MAX_NODE_WIDTH = 280
-const BRACE_NODE_BASE_MAX_TEXT_WIDTH = 240
+const BRACE_MAX_NODE_WIDTH = 400
+const BRACE_NODE_BASE_MAX_TEXT_WIDTH = 350
 const BRACE_TOPIC_BASE_MAX_TEXT_WIDTH = 300
 
 function getBraceFontSize(depth: number): number {
@@ -53,6 +52,7 @@ function estimateBraceNodeWidth(text: string, depth: number): number {
   const trimmed = (text || '').trim()
   const fontSize = getBraceFontSize(depth)
   const paddingX = depth === 0 ? BRACE_TOPIC_PADDING_X : BRACE_PILL_PADDING_X
+  const maxTextW = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
 
   let textWidth = 0
   if (typeof document !== 'undefined') {
@@ -62,7 +62,15 @@ function estimateBraceNodeWidth(text: string, depth: number): number {
     }
   }
 
-  const width = Math.ceil(textWidth + paddingX)
+  // Approximate CSS text-wrap: balance — when text wraps, lines are
+  // roughly equal width, so the rendered width is narrower than max-width.
+  let effectiveTextWidth = textWidth
+  if (textWidth > maxTextW) {
+    const numLines = Math.ceil(textWidth / maxTextW)
+    effectiveTextWidth = Math.ceil(textWidth / numLines)
+  }
+
+  const width = Math.ceil(effectiveTextWidth + paddingX)
   return Math.max(
     NODE_MIN_DIMENSIONS.brace.minWidth,
     Math.min(BRACE_MAX_NODE_WIDTH, width || DEFAULT_NODE_WIDTH)
@@ -71,8 +79,8 @@ function estimateBraceNodeWidth(text: string, depth: number): number {
 
 /**
  * Estimate node height accounting for text wrapping and KaTeX formulas.
- * InlineEditableText max-width is 240px (brace) / 300px (topic).
- * When measured text exceeds that, lines wrap and height grows.
+ * Uses fixed max text width per depth level. CSS text-wrap: balance
+ * handles actual line breaking; this is a layout-pass approximation.
  * For KaTeX labels the rendered DOM height is measured directly so the
  * layout doesn't rely on inaccurate plain-text heuristics.
  */
@@ -81,8 +89,7 @@ function estimateBraceNodeHeight(text: string, depth: number): number {
   if (!trimmed || typeof document === 'undefined') return DEFAULT_NODE_HEIGHT
 
   const fontSize = getBraceFontSize(depth)
-  const baseMaxW = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
-  const maxTextWidth = computeScriptAwareMaxWidth(trimmed, baseMaxW)
+  const maxTextWidth = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
   const paddingY = depth === 0 ? 32 : 16
 
   if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {

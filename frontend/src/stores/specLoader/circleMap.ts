@@ -9,9 +9,9 @@ import { DEFAULT_CONTEXT_RADIUS } from '@/composables/diagrams/layoutConfig'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import type { Connection, DiagramNode } from '@/types'
 
-import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE, computeMinDiameterForNoWrap } from './textMeasurement'
+import { CONTEXT_FONT_SIZE, TOPIC_FONT_SIZE } from './textMeasurement'
 import type { SpecLoaderResult } from './types'
-import { calculateCircleMapLayout } from './utils'
+import { calculateCircleMapLayout, estimateContextCircleDiameter } from './utils'
 
 /**
  * Recalculate circle map layout from existing nodes.
@@ -54,7 +54,7 @@ export function recalculateCircleMapLayout(
       const r =
         measured && measured.width > 0 && measured.height > 0
           ? Math.max(measured.width, measured.height) / 2
-          : computeMinDiameterForNoWrap(node.text || ' ', CONTEXT_FONT_SIZE, false) / 2
+          : estimateContextCircleDiameter(node.text || ' ') / 2
       maxR = Math.max(maxR, r)
     }
     uniformContextROverride = maxR
@@ -117,7 +117,6 @@ export function recalculateCircleMapLayout(
         ...(node.style || {}),
         size: uniformContextDiameter,
         fontSize: CONTEXT_FONT_SIZE,
-        noWrap: true,
         backgroundColor: color.fill,
         borderColor: color.border,
       }
@@ -175,6 +174,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       x: Math.round(layout.centerX - layout.topicR),
       y: Math.round(layout.centerY - layout.topicR),
     },
+    data: { estimatedWidth: topicSize, estimatedHeight: topicSize },
     style: { size: topicSize, fontSize: TOPIC_FONT_SIZE, noWrap: true },
   })
 
@@ -196,11 +196,14 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
         text: ctx,
         type: 'bubble',
         position: { x, y },
-        data: { groupIndex: index },
+        data: {
+          groupIndex: index,
+          estimatedWidth: uniformContextDiameter,
+          estimatedHeight: uniformContextDiameter,
+        },
         style: {
           size: uniformContextDiameter,
           fontSize: CONTEXT_FONT_SIZE,
-          noWrap: true,
           backgroundColor: color.fill,
           borderColor: color.border,
         },

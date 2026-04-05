@@ -12,7 +12,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore } from '@/stores'
-import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -207,12 +207,22 @@ const nodeStyle = computed(() => {
   return baseStyle
 })
 
-const TOPIC_BASE_MAX_WIDTH = 300
+const TOPIC_MAX_TEXT_WIDTH = 300
+const BALANCE_PADDING = 5
 
 const topicMaxWidth = computed(() => {
-  if (isFlowMap.value) return 'none'
-  const label = (props.data.label as string) || ''
-  return `${computeScriptAwareMaxWidth(label, TOPIC_BASE_MAX_WIDTH)}px`
+  const label = ((props.data.label as string) || '').trim()
+  if (!label) return `${TOPIC_MAX_TEXT_WIDTH}px`
+
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 18
+  const fontWeight = String(nodeStyle.value.fontWeight || 'bold')
+  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
+
+  if (textWidth <= TOPIC_MAX_TEXT_WIDTH) return `${TOPIC_MAX_TEXT_WIDTH}px`
+
+  const numLines = Math.ceil(textWidth / TOPIC_MAX_TEXT_WIDTH)
+  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
+  return `${Math.min(balancedWidth, TOPIC_MAX_TEXT_WIDTH)}px`
 })
 
 // Inline editing state
@@ -325,6 +335,7 @@ function handleWidthChange(width: number) {
       :max-width="topicMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
+      auto-wrap
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"

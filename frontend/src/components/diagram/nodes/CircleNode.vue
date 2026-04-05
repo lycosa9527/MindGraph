@@ -22,7 +22,11 @@ import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
 import { TOPIC_FONT_SIZE } from '@/stores/specLoader/textMeasurement'
-import { calculateAdaptiveCircleSize, getTopicCircleDiameter } from '@/stores/specLoader/utils'
+import {
+  CONTEXT_MAX_TEXT_WIDTH,
+  calculateAdaptiveCircleSize,
+  getTopicCircleDiameter,
+} from '@/stores/specLoader/utils'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -48,24 +52,31 @@ const { reportDimensions } = useNodeDimensions(circleNodeRef, props.id, {
 
 let markdownResizeObserver: ResizeObserver | null = null
 
+function findContentElement(): HTMLElement | null {
+  const root = circleNodeRef.value
+  if (!root) return null
+  return (
+    (root.querySelector('.diagram-node-md') as HTMLElement | null) ??
+    (root.querySelector('.inline-edit-display') as HTMLElement | null)
+  )
+}
+
 function measureRenderedMarkdownAndReport(): void {
   if (!useIntrinsicMdMeasure) {
     reportDimensions()
     return
   }
-  const root = circleNodeRef.value
-  if (!root) return
-  const md = root.querySelector('.diagram-node-md') as HTMLElement | null
-  if (!md) {
+  const el = findContentElement()
+  if (!el) {
     reportDimensions()
     return
   }
-  const w = Math.max(md.scrollWidth, md.clientWidth)
-  const h = Math.max(md.scrollHeight, md.clientHeight)
-  const content = Math.max(w, h)
+  const w = Math.max(el.scrollWidth, el.clientWidth)
+  const h = Math.max(el.scrollHeight, el.clientHeight)
+  const diagonal = Math.ceil(Math.sqrt(w * w + h * h))
   const borderTotal = isTopicNode.value ? topicBorderPx * 2 : contextBorderPx * 2
   const innerSlack = isTopicNode.value ? 28 : 20
-  const d = Math.ceil(Math.max(40, content + borderTotal + innerSlack))
+  const d = Math.ceil(Math.max(40, diagonal + borderTotal + innerSlack))
   diagramStore.setNodeDimensions(props.id, d, d)
 }
 
@@ -92,14 +103,12 @@ function teardownMarkdownObserver(): void {
 function setupMarkdownObserver(): void {
   teardownMarkdownObserver()
   if (!useIntrinsicMdMeasure || typeof ResizeObserver === 'undefined') return
-  const root = circleNodeRef.value
-  if (!root) return
-  const md = root.querySelector('.diagram-node-md')
-  if (!md) return
+  const el = findContentElement()
+  if (!el) return
   markdownResizeObserver = new ResizeObserver(() => {
     measureRenderedMarkdownAndReport()
   })
-  markdownResizeObserver.observe(md)
+  markdownResizeObserver.observe(el)
 }
 
 watch(
@@ -175,10 +184,14 @@ const circleSize = computed(() => {
   return calculateAdaptiveCircleSize(text, isTopicNode.value)
 })
 
-// Symmetric inner width for text: circleSize or capsule width minus both borders (topic 3px, context 2px)
 const textMaxWidth = computed(() => {
-  const size = isCapsuleNode.value ? capsuleWidth.value : circleSize.value
-  return size - 2 * (isTopicNode.value ? topicBorderPx : contextBorderPx)
+  if (isTopicNode.value) {
+    return circleSize.value - 2 * topicBorderPx
+  }
+  if (isCapsuleNode.value) {
+    return capsuleWidth.value - 2 * contextBorderPx
+  }
+  return CONTEXT_MAX_TEXT_WIDTH
 })
 
 // Circle Map colors matching old JS bubble-map-renderer.js THEME
@@ -344,12 +357,8 @@ function handleBranchMovePointerUp(): void {
         :text-class="isTopicNode ? 'py-2' : 'px-2 py-1'"
         :full-width="isTopicNode"
         :center-block-in-circle="isCircularTopic"
-        :no-wrap="
-          diagramStore.type === 'circle_map' ||
-          diagramStore.type === 'bubble_map' ||
-          diagramStore.type === 'double_bubble_map' ||
-          !!data.style?.noWrap
-        "
+        :no-wrap="!!data.style?.noWrap"
+        auto-wrap
         :truncate="false"
         render-markdown
         @save="handleTextSave"

@@ -14,6 +14,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores/diagram'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
@@ -47,9 +48,11 @@ const defaultStyle = computed(() => getNodeStyle(themeNodeType.value))
 // Check if this is a tree map (needs vertical handles)
 const isTreeMap = computed(() => props.data.diagramType === 'tree_map')
 
-const BRANCH_BASE_MAX_WIDTH = 200
+const BRANCH_MAX_TEXT_WIDTH = 200
+const BALANCE_PADDING = 5
 
 const textMaxWidth = computed(() => {
+  const label = ((props.data.label as string) || '').trim()
   if (isTreeMap.value && props.data.style?.width != null) {
     const px = Number(props.data.style.width)
     return `${Math.max(60, px - 32)}px`
@@ -57,9 +60,24 @@ const textMaxWidth = computed(() => {
   if (props.data.diagramType === 'bridge_map') {
     return 'min(420px, 88vw)'
   }
-  const label = (props.data.label as string) || ''
-  return `${computeScriptAwareMaxWidth(label, BRANCH_BASE_MAX_WIDTH)}px`
+
+  if (!label) return `${BRANCH_MAX_TEXT_WIDTH}px`
+
+  const wrapThreshold = computeScriptAwareMaxWidth(label, BRANCH_MAX_TEXT_WIDTH)
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 16
+  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
+  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
+
+  if (textWidth <= wrapThreshold) {
+    return `${wrapThreshold}px`
+  }
+
+  const numLines = Math.ceil(textWidth / BRANCH_MAX_TEXT_WIDTH)
+  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
+  return `${Math.min(balancedWidth, BRANCH_MAX_TEXT_WIDTH)}px`
 })
+
+const useAutoWrap = computed(() => !isTreeMap.value && !isBridgeMap.value)
 
 // Check if this is a bridge map node (should be text-only, including first pair)
 const isBridgeMap = computed(() => props.data.diagramType === 'bridge_map')
@@ -233,6 +251,7 @@ function handleEditCancel() {
       :max-width="textMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
+      :auto-wrap="useAutoWrap"
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"

@@ -26,13 +26,6 @@ except ImportError:
     LOGGING_CONFIG = None
 
 try:
-    from utils.migration.sqlite_to_postgresql.data_migration import (
-        migrate_sqlite_to_postgresql,
-    )
-except ImportError:
-    migrate_sqlite_to_postgresql = None
-
-try:
     import main as main_module
 except ImportError:
     main_module = None
@@ -193,34 +186,6 @@ def run_server() -> None:
                 logger.debug("[POSTGRESQL] ✓ PostgreSQL server started as subprocess")
             else:
                 logger.debug("[POSTGRESQL] ✓ PostgreSQL server is running (external or systemd service)")
-
-            # Run data migration from SQLite to PostgreSQL if needed
-            logger.debug("[Migration] Checking for SQLite to PostgreSQL migration...")
-            try:
-                if migrate_sqlite_to_postgresql is None:
-                    print("[ERROR] Migration module not available")
-                    print("        Application cannot start without successful migration check.")
-                    sys.exit(1)
-                success, error, stats = migrate_sqlite_to_postgresql()
-                if not success:
-                    if error:
-                        print(f"[ERROR] Migration failed: {error}")
-                        print("        Application cannot start without successful migration.")
-                        sys.exit(1)
-                elif stats:
-                    logger.debug("[Migration] Migration completed successfully")
-                    logger.debug(
-                        "[Migration] Tables migrated: %s",
-                        stats.get("tables_migrated", 0),
-                    )
-                    logger.debug("[Migration] Total records: %s", stats.get("total_records", 0))
-                else:
-                    logger.debug("[Migration] No migration needed (already migrated or no SQLite database)")
-            except Exception as e:
-                print(f"[ERROR] Migration check failed: {e}")
-                traceback.print_exc()
-                print("        Application cannot start without successful migration check.")
-                sys.exit(1)
 
         # 3. Qdrant (REQUIRED only if Knowledge Space feature is enabled)
         qdrant_server = None

@@ -9,7 +9,7 @@ import { computed, ref } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
-import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -28,10 +28,22 @@ const { getNodeStyle } = useTheme({
 
 const defaultStyle = computed(() => getNodeStyle('bubble'))
 
-const BUBBLE_BASE_MAX_WIDTH = 140
+const BUBBLE_MAX_TEXT_WIDTH = 140
+const BALANCE_PADDING = 5
+
 const bubbleMaxWidth = computed(() => {
-  const label = (props.data.label as string) || ''
-  return `${computeScriptAwareMaxWidth(label, BUBBLE_BASE_MAX_WIDTH)}px`
+  const label = ((props.data.label as string) || '').trim()
+  if (!label) return `${BUBBLE_MAX_TEXT_WIDTH}px`
+
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 14
+  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
+  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
+
+  if (textWidth <= BUBBLE_MAX_TEXT_WIDTH) return `${BUBBLE_MAX_TEXT_WIDTH}px`
+
+  const numLines = Math.ceil(textWidth / BUBBLE_MAX_TEXT_WIDTH)
+  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
+  return `${Math.min(balancedWidth, BUBBLE_MAX_TEXT_WIDTH)}px`
 })
 
 const nodeStyle = computed(() => {
@@ -85,6 +97,7 @@ function handleEditCancel() {
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       text-class="px-3 py-2"
+      auto-wrap
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"

@@ -17,6 +17,7 @@ import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
 import { useDiagramStore } from '@/stores'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -111,6 +112,26 @@ const nodeStyle = computed(() => {
   }
 
   return baseStyle
+})
+
+const FLOW_MAX_TEXT_WIDTH = 250
+const BALANCE_PADDING = 5
+
+const flowMaxWidth = computed(() => {
+  if (!isPillShape.value) return '200px'
+
+  const label = ((props.data.label as string) || '').trim()
+  if (!label) return `${FLOW_MAX_TEXT_WIDTH}px`
+
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 13
+  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
+  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
+
+  if (textWidth <= FLOW_MAX_TEXT_WIDTH) return `${FLOW_MAX_TEXT_WIDTH}px`
+
+  const numLines = Math.ceil(textWidth / FLOW_MAX_TEXT_WIDTH)
+  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
+  return `${Math.min(balancedWidth, FLOW_MAX_TEXT_WIDTH)}px`
 })
 
 // Inline editing state
@@ -268,10 +289,11 @@ function handleBranchMovePointerUp(): void {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      :max-width="isPillShape ? 'none' : '200px'"
+      :max-width="flowMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isPillShape"
+      :auto-wrap="isPillShape"
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"

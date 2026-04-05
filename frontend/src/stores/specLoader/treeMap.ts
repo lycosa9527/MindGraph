@@ -234,11 +234,12 @@ function resolveTreeMapBox(
   nodeDimensions: Record<string, { width: number; height: number }>,
   measure: () => { width: number; height: number }
 ): { width: number; height: number } {
-  const m = nodeDimensions[nodeId]
-  if (m && m.width > 0 && m.height > 0) {
-    return { width: m.width, height: m.height }
+  const measured = measure()
+  const pinia = nodeDimensions[nodeId]
+  if (!pinia || pinia.height <= 0) {
+    return measured
   }
-  return measure()
+  return { width: measured.width, height: pinia.height }
 }
 
 interface TreeMapGroupDims {
@@ -432,10 +433,11 @@ export function recalculateTreeMapLayout(
 
   const dimLabel = byId.get('dimension-label')
   if (dimLabel) {
-    const labelWidth = resolveTreeMapBox('dimension-label', nodeDimensions, () => ({
-      width: NODE_MIN_DIMENSIONS.label.minWidth,
-      height: NODE_MIN_DIMENSIONS.label.minHeight,
-    })).width
+    const piniaDim = nodeDimensions['dimension-label']
+    const labelWidth =
+      piniaDim && piniaDim.width > 0
+        ? piniaDim.width
+        : NODE_MIN_DIMENSIONS.label.minWidth
     byId.set('dimension-label', {
       ...dimLabel,
       position: {

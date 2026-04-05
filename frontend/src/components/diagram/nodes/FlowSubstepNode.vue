@@ -12,6 +12,7 @@ import { Handle, Position } from '@vue-flow/core'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -57,6 +58,26 @@ const nodeStyle = computed(() => {
     }
   }
   return baseStyle
+})
+
+const SUBSTEP_MAX_TEXT_WIDTH = 180
+const BALANCE_PADDING = 5
+
+const substepMaxWidth = computed(() => {
+  if (!isFlowMap.value) return '140px'
+
+  const label = ((props.data.label as string) || '').trim()
+  if (!label) return `${SUBSTEP_MAX_TEXT_WIDTH}px`
+
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 12
+  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
+  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
+
+  if (textWidth <= SUBSTEP_MAX_TEXT_WIDTH) return `${SUBSTEP_MAX_TEXT_WIDTH}px`
+
+  const numLines = Math.ceil(textWidth / SUBSTEP_MAX_TEXT_WIDTH)
+  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
+  return `${Math.min(balancedWidth, SUBSTEP_MAX_TEXT_WIDTH)}px`
 })
 
 // Inline editing state
@@ -131,10 +152,11 @@ function handleBranchMovePointerUp(): void {
       :readonly="data.hidden === true"
       :node-id="id"
       :is-editing="isEditing"
-      :max-width="isFlowMap ? 'none' : '140px'"
+      :max-width="substepMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       :truncate="!isFlowMap"
+      :auto-wrap="isFlowMap"
       render-markdown
       @save="handleTextSave"
       @cancel="handleEditCancel"

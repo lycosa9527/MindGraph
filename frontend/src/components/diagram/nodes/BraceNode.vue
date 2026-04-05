@@ -13,7 +13,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { getMindmapBranchColor } from '@/config/mindmapColors'
-import { computeScriptAwareMaxWidth } from '@/stores/specLoader/textMeasurementFallback'
+import { measureTextWidth } from '@/stores/specLoader/textMeasurement'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { DIAGRAM_NODE_FONT_STACK } from '@/utils/diagramNodeFontStack'
@@ -30,11 +30,8 @@ const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
 })
 
-const BRACE_NODE_BASE_MAX_WIDTH = 240
-const braceNodeMaxWidth = computed(() => {
-  const label = (props.data.label as string) || ''
-  return `${computeScriptAwareMaxWidth(label, BRACE_NODE_BASE_MAX_WIDTH)}px`
-})
+const BRACE_NODE_MAX_TEXT_WIDTH = 350
+const BALANCE_PADDING = 5
 
 const isWholeNode = computed(() => props.data.originalNode?.type === 'topic')
 const _isPart = computed(() => !isWholeNode.value && !props.data.parentId)
@@ -91,6 +88,25 @@ const nodeStyle = computed(() => {
     }),
     borderRadius: usePillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
   }
+})
+
+// Compute the optimal container width so the pill matches balanced text.
+// JS only determines the container size; CSS text-wrap: balance handles line breaking.
+const braceNodeMaxWidth = computed(() => {
+  const label = ((props.data.label as string) || '').trim()
+  if (!label) return `${BRACE_NODE_MAX_TEXT_WIDTH}px`
+
+  const fontSize = parseFloat(nodeStyle.value.fontSize as string) || 14
+  const fontWeight = String(nodeStyle.value.fontWeight || 'normal')
+  const textWidth = measureTextWidth(label, fontSize, { fontWeight })
+
+  if (textWidth <= BRACE_NODE_MAX_TEXT_WIDTH) {
+    return `${BRACE_NODE_MAX_TEXT_WIDTH}px`
+  }
+
+  const numLines = Math.ceil(textWidth / BRACE_NODE_MAX_TEXT_WIDTH)
+  const balancedWidth = Math.ceil(textWidth / numLines) + BALANCE_PADDING
+  return `${Math.min(balancedWidth, BRACE_NODE_MAX_TEXT_WIDTH)}px`
 })
 
 // Inline editing state
@@ -169,6 +185,7 @@ function handleBranchMovePointerUp(): void {
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"
       render-markdown
+      auto-wrap
       @save="handleTextSave"
       @cancel="handleEditCancel"
       @edit-start="isEditing = true"

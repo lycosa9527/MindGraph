@@ -155,6 +155,15 @@ function isLatinCyrillicGreekChar(cp: number): boolean {
 
 const LATIN_BASELINE_EM = 0.55
 const MAX_SCRIPT_SCALE = 1.5
+const SOUTHEAST_ASIAN_MIN_SCALE = 1.3
+
+function isSoutheastAsianChar(cp: number): boolean {
+  if (cp >= 0x0e00 && cp <= 0x0e7f) return true
+  if (cp >= 0x0e80 && cp <= 0x0eff) return true
+  if (cp >= 0x1780 && cp <= 0x17ff) return true
+  if (cp >= 0x1000 && cp <= 0x109f) return true
+  return false
+}
 
 /**
  * Adapt maxWidth so that visually similar line lengths are produced regardless of script.
@@ -165,6 +174,7 @@ const MAX_SCRIPT_SCALE = 1.5
  *
  * Pure Latin  → scale 1.0  (e.g. 150 → 150)
  * Pure CJK   → scale ~1.5 (e.g. 150 → 225)
+ * Southeast Asian (Thai/Lao/Khmer/Myanmar) → min scale 1.3
  * Mixed      → proportional interpolation
  */
 export function computeScriptAwareMaxWidth(text: string, baseMaxWidthPx: number): number {
@@ -172,16 +182,25 @@ export function computeScriptAwareMaxWidth(text: string, baseMaxWidthPx: number)
   if (!t.length) return baseMaxWidthPx
   let totalEm = 0
   let glyphCount = 0
+  let seaCount = 0
   for (const c of t) {
     const cp = c.codePointAt(0) ?? 0
     const w = emWidthForCodePoint(cp)
     if (w > 0) {
       totalEm += w
       glyphCount++
+      if (isSoutheastAsianChar(cp)) {
+        seaCount++
+      }
     }
   }
   if (glyphCount === 0) return baseMaxWidthPx
   const avgEm = totalEm / glyphCount
-  const scale = Math.min(MAX_SCRIPT_SCALE, Math.max(1.0, avgEm / LATIN_BASELINE_EM))
+  let scale = Math.min(MAX_SCRIPT_SCALE, Math.max(1.0, avgEm / LATIN_BASELINE_EM))
+
+  if (seaCount / glyphCount > 0.3) {
+    scale = Math.max(scale, SOUTHEAST_ASIAN_MIN_SCALE)
+  }
+
   return Math.round(baseMaxWidthPx * scale)
 }

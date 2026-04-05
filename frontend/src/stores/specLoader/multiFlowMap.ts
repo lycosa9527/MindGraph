@@ -54,13 +54,14 @@ function computeFlowNodeWidth(text: string): number {
  *
  * @param nodes - Current diagram nodes
  * @param topicNodeWidth - Optional actual width of topic node (for dynamic width adjustment)
- * @param nodeWidths - Optional map of nodeId -> width for visual balance
+ * @param _nodeWidths - Unused, kept for call-site compatibility
+ * @param nodeDimensions - DOM-measured node dimensions (height used for vertical stacking)
  * @returns Recalculated nodes with updated positions and sequential IDs
  */
 export function recalculateMultiFlowMapLayout(
   nodes: DiagramNode[],
   topicNodeWidth: number | null = null,
-  nodeWidths: Record<string, number> = {},
+  _nodeWidths: Record<string, number> = {},
   nodeDimensions: Record<string, { width: number; height: number }> = {}
 ): DiagramNode[] {
   if (!Array.isArray(nodes) || nodes.length === 0) {
@@ -100,30 +101,20 @@ export function recalculateMultiFlowMapLayout(
     return pinia ?? DEFAULT_NODE_HEIGHT
   }
 
-  // Use actual DOM-measured topic width, then explicit topicNodeWidth, then default
-  const measuredTopicW = nodeDimensions['event']?.width
-  const actualTopicWidth = measuredTopicW ?? topicNodeWidth ?? MULTI_FLOW_MAP_TOPIC_WIDTH
+  const actualTopicWidth = topicNodeWidth ?? MULTI_FLOW_MAP_TOPIC_WIDTH
 
-  // Calculate uniform width for visual balance
-  // Find max width among all cause and effect nodes
-  // Use stored width when available (after user edit), otherwise compute from text
+  // Calculate uniform width for visual balance using text measurement.
+  // Pinia DOM widths are NOT used for width because font-loading timing can
+  // capture stale/wrong widths that lock in via the style.width feedback loop.
   let maxCauseWidth = nodeWidth
   let maxEffectWidth = nodeWidth
 
-  causeNodes.forEach((node, index) => {
-    const newId = `cause-${index}`
-    const measured = nodeDimensions[newId]?.width ?? nodeDimensions[node.id || '']?.width
-    const storedWidth = nodeWidths[newId] || nodeWidths[node.id || '']
-    const width = measured ?? storedWidth ?? computeFlowNodeWidth(node.text ?? '')
-    maxCauseWidth = Math.max(maxCauseWidth, width)
+  causeNodes.forEach((node) => {
+    maxCauseWidth = Math.max(maxCauseWidth, computeFlowNodeWidth(node.text ?? ''))
   })
 
-  effectNodes.forEach((node, index) => {
-    const newId = `effect-${index}`
-    const measured = nodeDimensions[newId]?.width ?? nodeDimensions[node.id || '']?.width
-    const storedWidth = nodeWidths[newId] || nodeWidths[node.id || '']
-    const width = measured ?? storedWidth ?? computeFlowNodeWidth(node.text ?? '')
-    maxEffectWidth = Math.max(maxEffectWidth, width)
+  effectNodes.forEach((node) => {
+    maxEffectWidth = Math.max(maxEffectWidth, computeFlowNodeWidth(node.text ?? ''))
   })
 
   // Use the maximum of both columns for visual balance

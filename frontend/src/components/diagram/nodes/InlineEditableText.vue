@@ -67,6 +67,12 @@ const props = withDefaults(
      * circle/bubble-style nodes.
      */
     renderMarkdown?: boolean
+    /**
+     * When true, always use CSS-driven wrapping (text-wrap: balance) instead of the
+     * JS-based shouldPreferSingleLineNoWrap heuristic. The browser handles line
+     * breaking natively; maxWidth acts as a safety cap only.
+     */
+    autoWrap?: boolean
   }>(),
   {
     isEditing: false,
@@ -86,6 +92,7 @@ const props = withDefaults(
     textDecoration: 'none',
     mutedTailSplit: null,
     renderMarkdown: false,
+    autoWrap: false,
   }
 )
 
@@ -232,6 +239,7 @@ onMounted(() => {
 
 const shouldPreventWrap = computed(() => {
   if (props.noWrap || props.truncate) return false
+  if (props.autoWrap) return false
   const textToCheck = localIsEditing.value ? editText.value : props.text
   const maxWidthPx = parseInt(props.maxWidth, 10) || 200
   return shouldPreferSingleLineNoWrap(textToCheck || ' ', maxWidthPx, displayFontSizePx.value, {
@@ -639,6 +647,7 @@ onUnmounted(() => {
             : shouldPreventWrap
               ? 'whitespace-nowrap'
               : 'inline-edit-display--wrap',
+        autoWrap ? 'inline-edit-display--auto-wrap' : '',
       ]"
       :style="{
         maxWidth: maxWidth,
@@ -740,6 +749,7 @@ onUnmounted(() => {
   cursor: text;
   user-select: none;
   text-decoration: inherit;
+  line-height: 1.4;
 }
 
 .inline-edit-muted-suffix {
@@ -777,6 +787,12 @@ onUnmounted(() => {
   word-break: normal;
   overflow-wrap: break-word;
   line-break: auto;
+}
+
+/* Auto-wrap mode: browser-native balanced wrapping (CSS text-wrap: balance).
+   No JS width heuristic — the browser decides optimal line breaks. */
+.inline-edit-display--auto-wrap {
+  text-wrap: balance;
 }
 
 /* Truncate mode: single line with ellipsis */
