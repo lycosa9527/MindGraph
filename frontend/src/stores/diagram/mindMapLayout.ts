@@ -6,6 +6,11 @@ import {
   DEFAULT_NODE_WIDTH,
   MINDMAP_SIBLING_GAP,
 } from '@/composables/diagrams/layoutConfig'
+import {
+  estimateNodeWidth as estimateBranchWidth,
+  estimateTopicNodeWidth,
+  measureBranchNodeHeight,
+} from '@/stores/specLoader/mindMap'
 import type { Connection, DiagramNode } from '@/types'
 
 import type { DiagramContext } from './types'
@@ -83,9 +88,11 @@ function parseNodeId(id: string): ParsedNodeId | null {
 }
 
 function getNodeWidth(node: DiagramNode, nodeWidths: Record<string, number>): number {
-  return (
-    nodeWidths[node.id] ?? (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
-  )
+  const measured = nodeWidths[node.id]
+  const freshEstimate = estimateBranchWidth(node.text ?? '')
+  const stored = (node.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
+  const estimated = Math.max(stored, freshEstimate)
+  return measured !== undefined ? Math.max(measured, estimated) : estimated
 }
 
 function getNodeHeight(
@@ -93,11 +100,12 @@ function getNodeHeight(
   nodeMap: Map<string, DiagramNode>,
   nodeHeights: Record<string, number>
 ): number {
-  return (
-    nodeHeights[nodeId] ??
-    (nodeMap.get(nodeId)?.data?.estimatedHeight as number | undefined) ??
-    DEFAULT_NODE_HEIGHT
-  )
+  const measured = nodeHeights[nodeId]
+  const node = nodeMap.get(nodeId)
+  const freshEstimate = node?.text ? measureBranchNodeHeight(node.text) : DEFAULT_NODE_HEIGHT
+  const stored = (node?.data?.estimatedHeight as number | undefined) ?? DEFAULT_NODE_HEIGHT
+  const estimated = Math.max(stored, freshEstimate)
+  return measured !== undefined ? Math.max(measured, estimated) : estimated
 }
 
 export interface MindMapColumnResult {
@@ -126,13 +134,16 @@ export function recalculateMindMapColumnPositions(
   const topicNode = nodes.find((n) => n.id === 'topic')
   if (!topicNode?.position) return { nodes, gaps: { left: 0, right: 0 } }
 
-  const estimatedTopicWidth =
+  const storedEstimate =
     (topicNode.data?.estimatedWidth as number | undefined) ?? DEFAULT_NODE_WIDTH
+  const freshEstimate = estimateTopicNodeWidth(topicNode.text ?? '')
+  const bestEstimate = Math.max(storedEstimate, freshEstimate)
 
-  const effectiveTopicWidth = topicWidth ?? estimatedTopicWidth
+  const effectiveTopicWidth =
+    topicWidth != null ? Math.max(topicWidth, freshEstimate) : bestEstimate
   const gap = DEFAULT_MINDMAP_RANK_SEPARATION
 
-  const centerX = topicNode.position.x + estimatedTopicWidth / 2
+  const centerX = topicNode.position.x + effectiveTopicWidth / 2
 
   // Group branch nodes by side and depth, collecting their widths
   const rightMaxWidths = new Map<number, number>()

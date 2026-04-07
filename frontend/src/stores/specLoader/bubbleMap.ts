@@ -73,14 +73,14 @@ export function recalculateBubbleMapLayout(
   const result: DiagramNode[] = []
 
   if (topicNode) {
+    const { noWrap: _noWrap, ...restStyle } = topicNode.style ?? {}
     result.push({
       ...topicNode,
       position: { x: Math.round(centerX - topicR), y: Math.round(centerY - topicR) },
       style: {
-        ...topicNode.style,
+        ...restStyle,
         size: topicR * 2,
         fontSize: TOPIC_FONT_SIZE,
-        noWrap: true,
       },
     })
   }
@@ -149,7 +149,6 @@ export function loadBubbleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
     style: {
       size: topicR * 2,
       fontSize: TOPIC_FONT_SIZE,
-      noWrap: true,
     },
   })
 

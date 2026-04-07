@@ -55,6 +55,7 @@ const nodeStyle = computed(() => {
       width: 'max-content',
       minWidth: '120px',
       minHeight: '48px',
+      maxWidth: '230px',
     }
   }
   return baseStyle

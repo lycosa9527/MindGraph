@@ -185,6 +185,7 @@ const nodeStyle = computed(() => {
       width: 'max-content',
       minWidth: '120px',
       minHeight: '48px',
+      maxWidth: '400px',
     }
   }
 
@@ -201,6 +202,14 @@ const nodeStyle = computed(() => {
             minHeight: `${props.data.style.height}px`,
           }
         : {}),
+    }
+  }
+
+  // Brace map / mind map: hard-cap width so the pill never exceeds the layout algorithm's maximum
+  if (isBraceMap.value || isMindMap.value) {
+    return {
+      ...baseStyle,
+      maxWidth: '400px',
     }
   }
 

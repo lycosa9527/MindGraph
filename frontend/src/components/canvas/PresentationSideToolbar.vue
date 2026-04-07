@@ -6,6 +6,7 @@ import { ElButton, ElTooltip } from 'element-plus'
 
 import {
   Brush,
+  Keyboard,
   Maximize2,
   MousePointer2,
   PenLine,
@@ -23,6 +24,7 @@ const sideRailStyle = { zIndex: PRESENTATION_Z.SIDE_RAIL } as const
 
 const props = defineProps<{
   activeTool: PresentationToolId
+  virtualKeyboardOpen?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -30,6 +32,7 @@ const emit = defineEmits<{
   (e: 'clearHighlighter'): void
   (e: 'fit'): void
   (e: 'exit'): void
+  (e: 'toggleVirtualKeyboard'): void
 }>()
 
 const { t } = useLanguage()
@@ -126,6 +129,22 @@ function toolClass(tool: PresentationToolId): string {
             @click="emit('selectTool', 'timer')"
           >
             <Timer class="h-5 w-5 shrink-0" />
+          </ElButton>
+        </ElTooltip>
+      </div>
+
+      <div class="presentation-tool-slot flex h-10 w-full items-center justify-center">
+        <ElTooltip
+          :content="t('canvas.toolbar.moreAppVirtualKeyboard')"
+          placement="left"
+        >
+          <ElButton
+            text
+            size="small"
+            :class="props.virtualKeyboardOpen ? 'presentation-tool-btn is-active' : 'presentation-tool-btn'"
+            @click="emit('toggleVirtualKeyboard')"
+          >
+            <Keyboard class="h-5 w-5 shrink-0" />
           </ElButton>
         </ElTooltip>
       </div>

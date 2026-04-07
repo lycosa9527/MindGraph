@@ -39,6 +39,14 @@ const diagramStore = useDiagramStore()
 const topicBorderPx = 3
 const contextBorderPx = 2
 
+/**
+ * Fixed wrap threshold for circle_map topic text. Using `circleSize - borders` would
+ * create a circular dependency: large initial estimate → no wrap → stays large.
+ * A fixed cap forces text to wrap, and measureRenderedMarkdownAndReport then grows
+ * the circle to fit the wrapped content.
+ */
+const CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH = 200
+
 /** Pinia layout sizes from `.diagram-node-md` (post–KaTeX) instead of the fixed-size root circle. */
 const useIntrinsicMdMeasure =
   props.data.diagramType === 'circle_map' ||
@@ -186,6 +194,9 @@ const circleSize = computed(() => {
 
 const textMaxWidth = computed(() => {
   if (isTopicNode.value) {
+    if (diagramStore.type === 'circle_map' || diagramStore.type === 'bubble_map') {
+      return CIRCLE_MAP_TOPIC_MAX_TEXT_WIDTH
+    }
     return circleSize.value - 2 * topicBorderPx
   }
   if (isCapsuleNode.value) {

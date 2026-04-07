@@ -26,9 +26,16 @@ import CanvasToolbarMoreAppsDropdown from './CanvasToolbarMoreAppsDropdown.vue'
 import CanvasToolbarStyleDropdown from './CanvasToolbarStyleDropdown.vue'
 import CanvasToolbarTextDropdown from './CanvasToolbarTextDropdown.vue'
 import CanvasToolbarUndoRedo from './CanvasToolbarUndoRedo.vue'
+import CanvasVirtualKeyboardPanel from './CanvasVirtualKeyboardPanel.vue'
 
-/** When true, flatter styles for use inside CanvasTopBar (single merged chrome row). */
-const props = withDefaults(defineProps<{ embedded?: boolean }>(), { embedded: false })
+/**
+ * When true, flatter styles for use inside CanvasTopBar (single merged chrome row).
+ * When embedded, `compactToolbar` is driven by CanvasTopBar (two-tier bar width breakpoints).
+ */
+const props = withDefaults(defineProps<{ embedded?: boolean; compactToolbar?: boolean }>(), {
+  embedded: false,
+  compactToolbar: false,
+})
 
 const { t } = useLanguage()
 const notify = useNotifications()
@@ -85,6 +92,7 @@ const {
   isAIGenerating,
   isConceptMap,
   moreApps,
+  virtualKeyboardOpen,
   handleAIGenerate,
   handleConceptGeneration,
   handleMoreAppItem,
@@ -149,7 +157,7 @@ function handleToggleOrientation() {
     :class="props.embedded ? 'max-w-none' : 'max-w-[min(100vw-1rem,1200px)]'"
   >
     <div
-      class="flex items-center justify-center w-full overflow-x-auto"
+      class="flex items-center justify-center w-full min-w-0 overflow-x-auto"
       :class="
         props.embedded
           ? 'rounded-lg p-1 bg-transparent'
@@ -171,6 +179,7 @@ function handleToggleOrientation() {
         <div class="divider" />
 
         <CanvasToolbarAddDelete
+          :compact="compactToolbar"
           :is-multi-flow-map="isMultiFlowMap"
           :is-bridge-map="isBridgeMap"
           :add-cause-label="t('canvas.toolbar.addCause')"
@@ -210,6 +219,7 @@ function handleToggleOrientation() {
           v-if="isFlowMap"
           :content="t('canvas.toolbar.toggleDirection')"
           placement="bottom"
+          :disabled="!compactToolbar"
         >
           <ElButton
             text
@@ -217,13 +227,14 @@ function handleToggleOrientation() {
             @click="handleToggleOrientation"
           >
             <ArrowDownUp class="w-4 h-4 text-blue-500" />
-            <span>{{ t('canvas.toolbar.directionLabel') }}</span>
+            <span v-if="!compactToolbar">{{ t('canvas.toolbar.directionLabel') }}</span>
           </ElButton>
         </ElTooltip>
 
         <div class="divider" />
 
         <CanvasToolbarStyleDropdown
+          :compact="compactToolbar"
           :style-menu-label="t('canvas.toolbar.styleMenu')"
           :presets-label="t('canvas.toolbar.presetsLabel')"
           :wireframe-label="t('canvas.toolbar.wireframe')"
@@ -234,6 +245,7 @@ function handleToggleOrientation() {
         />
 
         <CanvasToolbarTextDropdown
+          :compact="compactToolbar"
           :text-style-menu-label="t('canvas.toolbar.textStyleMenu')"
           :format-label="t('canvas.toolbar.formatLabel')"
           :align-label="t('canvas.toolbar.alignLabel')"
@@ -264,6 +276,7 @@ function handleToggleOrientation() {
         />
 
         <CanvasToolbarBackgroundDropdown
+          :compact="compactToolbar"
           :bg-menu-label="t('canvas.toolbar.bgMenu')"
           :bg-color-label="t('canvas.toolbar.bgColorLabel')"
           :opacity-label="t('canvas.toolbar.opacityLabel')"
@@ -275,6 +288,7 @@ function handleToggleOrientation() {
         />
 
         <CanvasToolbarBorderDropdown
+          :compact="compactToolbar"
           :border-menu-label="t('canvas.toolbar.borderMenu')"
           :color-label="t('canvas.toolbar.colorLabel')"
           :border-width-label="t('canvas.toolbar.borderWidthLabel')"
@@ -289,6 +303,7 @@ function handleToggleOrientation() {
         />
 
         <CanvasToolbarAiSection
+          :compact="compactToolbar"
           :is-concept-map="isConceptMap"
           :is-a-i-generating="isAIGenerating"
           :ai-blocked-by-collab="aiBlockedByCollab"
@@ -302,6 +317,7 @@ function handleToggleOrientation() {
         <div class="divider" />
 
         <CanvasToolbarMoreAppsDropdown
+          :compact="compactToolbar"
           :more-apps-label="t('canvas.toolbar.moreApps')"
           :apps="moreApps"
           @select-app="handleMoreAppItem"
@@ -313,6 +329,8 @@ function handleToggleOrientation() {
       v-model="mathInsertDialogOpen"
       @confirm="handleMathInsertConfirm"
     />
+
+    <CanvasVirtualKeyboardPanel v-model="virtualKeyboardOpen" />
   </div>
 </template>
 

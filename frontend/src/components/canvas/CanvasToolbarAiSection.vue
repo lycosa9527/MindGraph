@@ -1,16 +1,20 @@
 <script setup lang="ts">
-import { ElButton } from 'element-plus'
+import { ElButton, ElTooltip } from 'element-plus'
 
 import { Sparkles, Wand2 } from 'lucide-vue-next'
 
-defineProps<{
-  isConceptMap: boolean
-  isAIGenerating: boolean
-  aiBlockedByCollab: boolean
-  conceptGenerationLabel: string
-  aiGenerateLabel: string
-  aiGeneratingLabel: string
-}>()
+withDefaults(
+  defineProps<{
+    compact?: boolean
+    isConceptMap: boolean
+    isAIGenerating: boolean
+    aiBlockedByCollab: boolean
+    conceptGenerationLabel: string
+    aiGenerateLabel: string
+    aiGeneratingLabel: string
+  }>(),
+  { compact: false }
+)
 
 const emit = defineEmits<{
   conceptGeneration: []
@@ -21,32 +25,44 @@ const emit = defineEmits<{
 <template>
   <template v-if="isConceptMap">
     <div class="divider" />
-    <ElButton
-      type="primary"
-      size="small"
-      class="ai-btn"
-      @click="emit('conceptGeneration')"
+    <ElTooltip
+      :content="conceptGenerationLabel"
+      placement="bottom"
+      :disabled="!compact"
     >
-      <Sparkles class="w-4 h-4" />
-      <span>{{ conceptGenerationLabel }}</span>
-    </ElButton>
+      <ElButton
+        type="primary"
+        size="small"
+        class="ai-btn"
+        @click="emit('conceptGeneration')"
+      >
+        <Sparkles class="w-4 h-4" />
+        <span v-if="!compact">{{ conceptGenerationLabel }}</span>
+      </ElButton>
+    </ElTooltip>
   </template>
   <template v-else>
     <div class="divider" />
-    <ElButton
-      type="primary"
-      size="small"
-      class="ai-btn"
-      :class="{ 'ai-btn--generating': isAIGenerating }"
-      :disabled="isAIGenerating || aiBlockedByCollab"
-      @click="emit('aiGenerate')"
+    <ElTooltip
+      :content="isAIGenerating ? aiGeneratingLabel : aiGenerateLabel"
+      placement="bottom"
+      :disabled="!compact"
     >
-      <Wand2
-        class="w-4 h-4 shrink-0"
-        :class="isAIGenerating ? 'opacity-30' : ''"
-        aria-hidden="true"
-      />
-      <span>{{ isAIGenerating ? aiGeneratingLabel : aiGenerateLabel }}</span>
-    </ElButton>
+      <ElButton
+        type="primary"
+        size="small"
+        class="ai-btn"
+        :class="{ 'ai-btn--generating': isAIGenerating }"
+        :disabled="isAIGenerating || aiBlockedByCollab"
+        @click="emit('aiGenerate')"
+      >
+        <Wand2
+          class="w-4 h-4 shrink-0"
+          :class="isAIGenerating ? 'opacity-30' : ''"
+          aria-hidden="true"
+        />
+        <span v-if="!compact">{{ isAIGenerating ? aiGeneratingLabel : aiGenerateLabel }}</span>
+      </ElButton>
+    </ElTooltip>
   </template>
 </template>

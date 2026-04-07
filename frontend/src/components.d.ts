@@ -48,6 +48,7 @@ declare module 'vue' {
     CanvasToolbarTextDropdown: typeof import('./components/canvas/CanvasToolbarTextDropdown.vue')['default']
     CanvasToolbarUndoRedo: typeof import('./components/canvas/CanvasToolbarUndoRedo.vue')['default']
     CanvasTopBar: typeof import('./components/canvas/CanvasTopBar.vue')['default']
+    CanvasVirtualKeyboardPanel: typeof import('./components/canvas/CanvasVirtualKeyboardPanel.vue')['default']
     ChangePasswordModal: typeof import('./components/auth/ChangePasswordModal.vue')['default']
     ChangePhoneModal: typeof import('./components/auth/ChangePhoneModal.vue')['default']
     ChannelActionsPopover: typeof import('./components/workshop-chat/ChannelActionsPopover.vue')['default']

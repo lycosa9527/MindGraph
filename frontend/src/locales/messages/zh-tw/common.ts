@@ -101,7 +101,7 @@ export default {
   'meta.pageTitle.workshopChat': '工作坊聊天',
   'publicDashboard.networkError': '網絡錯誤，加載儀表盤失敗',
   'settings.language.interface': '界面語言',
-  'settings.language.matchPrompt': '提示詞語言與界面語言保持一致',
+  'settings.language.matchPrompt': 'AI助手語言、介面和虛擬鍵盤語言一致',
   'settings.language.prompt': 'AI助手語言',
   'settings.language.promptSelectPlaceholder': '搜索語言…',
   'settings.language.supportsCount': '支援 {n} 種語言',

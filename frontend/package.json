@@ -1,7 +1,7 @@
 {
   "name": "mindgraph-frontend",
   "private": true,
-  "version": "5.71.0",
+  "version": "5.73.0",
   "type": "module",
   "scripts": {
     "sync-version": "npx tsx scripts/sync-version.ts",
@@ -23,6 +23,7 @@
     "i18n:translate-from-en": "npx tsx scripts/translate-ui-locales-from-en.ts",
     "i18n:check-prompts": "cd .. && python scripts/check_prompt_output_languages_sync.py",
     "i18n:check": "npm run i18n:check-keys && npm run i18n:check-prompts",
+    "i18n:verify-keyboard": "npx tsx scripts/verify-keyboard-layout-map.ts",
     "fix": "npm run lint:fix && npm run format"
   },
   "dependencies": {
@@ -77,6 +78,8 @@
     "mitt": "^3.0.1",
     "page-flip": "^2.0.0",
     "pinia": "^3.0.4",
+    "simple-keyboard": "^3.8.125",
+    "simple-keyboard-layouts": "^3.4.188",
     "vue": "^3.5.13",
     "vue-danmaku": "^2.0.4",
     "vue-i18n": "^11.3.0",

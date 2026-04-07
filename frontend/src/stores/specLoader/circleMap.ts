@@ -86,7 +86,6 @@ export function recalculateCircleMapLayout(
       ...(topicNode.style || {}),
       size: topicSize,
       fontSize: TOPIC_FONT_SIZE,
-      noWrap: true,
     }
     result.push({
       id: 'topic',
@@ -175,7 +174,7 @@ export function loadCircleMapSpec(spec: Record<string, unknown>): SpecLoaderResu
       y: Math.round(layout.centerY - layout.topicR),
     },
     data: { estimatedWidth: topicSize, estimatedHeight: topicSize },
-    style: { size: topicSize, fontSize: TOPIC_FONT_SIZE, noWrap: true },
+    style: { size: topicSize, fontSize: TOPIC_FONT_SIZE },
   })
 
   if (nodeCount > 0) {

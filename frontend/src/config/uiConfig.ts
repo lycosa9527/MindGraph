@@ -26,6 +26,15 @@ export const PRESENTATION_Z = {
   TIMER_OVERLAY: 100_150,
 } as const
 
+/**
+ * Canvas overlays Teleported to `body` (virtual keyboard, etc.).
+ * Element Plus dropdowns/popovers are typically ~2000–3000; stay in that band, below `ElMessageBox` when possible.
+ */
+export const CANVAS_OVERLAY_Z = {
+  /** Virtual keyboard panel fixed above safe area */
+  VIRTUAL_KEYBOARD: 2040,
+} as const
+
 // ============================================================================
 // Panel Dimensions (Tailwind-based)
 // ============================================================================
@@ -148,6 +157,13 @@ export const FIT_PADDING = {
  * Use these for :style bindings or scoped CSS so layout stays consistent and adaptive.
  */
 export const CANVAS_TOP_BAR = {
+  /**
+   * Two-tier compact chrome from `.canvas-top-bar` width (ResizeObserver).
+   * 1) Below RIGHT_ACTIONS: MindMate / reset / export go icon-only first.
+   * 2) Below TOOLBAR: editing toolbar labels hide (narrower still).
+   */
+  COMPACT_RIGHT_ACTIONS_BREAKPOINT_PX: 1100,
+  COMPACT_TOOLBAR_BREAKPOINT_PX: 896,
   /** Left column (back + filename + auto-save): cap width so center toolbar keeps space */
   LEFT_CLUSTER_MAX_WIDTH: 'min(46vw, 17.5rem)',
   /** Auto-save line next to filename */

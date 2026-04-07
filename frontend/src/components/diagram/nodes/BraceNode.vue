@@ -87,6 +87,7 @@ const nodeStyle = computed(() => {
       backgroundColor,
     }),
     borderRadius: usePillShape.value ? '9999px' : `${props.data.style?.borderRadius || 6}px`,
+    maxWidth: '400px',
   }
 })
 

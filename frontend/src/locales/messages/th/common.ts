@@ -102,7 +102,7 @@ export default {
   'meta.pageTitle.workshopChat': 'แชทเวิร์กช็อป',
   'publicDashboard.networkError': 'ข้อผิดพลาดของเครือข่าย ไม่สามารถโหลดแดชบอร์ด',
   'settings.language.interface': 'ภาษาอินเทอร์เฟซ',
-  'settings.language.matchPrompt': 'ให้ภาษาคำสั่งตรงกับภาษาอินเทอร์เฟซ',
+  'settings.language.matchPrompt': 'Keep AI assistant, interface and virtual keyboard language in sync',
   'settings.language.prompt': 'ภาษา AI / คำสั่ง',
   'settings.language.promptSelectPlaceholder': 'ค้นหาภาษา…',
   'settings.language.supportsCount': 'Supports {n} languages',

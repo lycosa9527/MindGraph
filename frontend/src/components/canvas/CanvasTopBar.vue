@@ -52,6 +52,20 @@ import type { DiagramType } from '@/types'
 
 const notify = useNotifications()
 
+const topBarRootRef = ref<HTMLElement | null>(null)
+/** Icon-only for MindMate / reset / export (first tier — wider breakpoint). */
+const compactTopBarActions = ref(false)
+/** Icon-only editing toolbar labels (second tier — narrower breakpoint). */
+const compactCanvasToolbar = ref(false)
+
+let topBarResizeObserver: ResizeObserver | null = null
+
+function updateCompactFromTopBarWidth(width: number): void {
+  const w = width > 0 ? width : 0
+  compactTopBarActions.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_RIGHT_ACTIONS_BREAKPOINT_PX
+  compactCanvasToolbar.value = w > 0 && w < CANVAS_TOP_BAR.COMPACT_TOOLBAR_BREAKPOINT_PX
+}
+
 const props = defineProps<{
   autoSavedStatus?: string | null
   slotFullAndNewDiagram?: boolean
@@ -186,6 +200,8 @@ watch(
 
 // Cleanup watcher on unmount
 onUnmounted(() => {
+  topBarResizeObserver?.disconnect()
+  topBarResizeObserver = null
   disconnect()
   eventBus.removeAllListenersForOwner('CanvasTopBar')
 })
@@ -218,6 +234,16 @@ onMounted(() => {
   }
   // Fetch diagrams to get current slot count
   savedDiagramsStore.fetchDiagrams()
+
+  const root = topBarRootRef.value
+  if (root) {
+    topBarResizeObserver = new ResizeObserver((entries) => {
+      const w = entries[0]?.contentRect.width ?? 0
+      updateCompactFromTopBarWidth(w)
+    })
+    updateCompactFromTopBarWidth(root.getBoundingClientRect().width)
+    topBarResizeObserver.observe(root)
+  }
 })
 
 // Watch for topic node text changes and auto-update title
@@ -337,6 +363,7 @@ async function handleReset() {
 
 <template>
   <div
+    ref="topBarRootRef"
     class="canvas-top-bar relative w-full min-h-12 px-2 sm:px-3 grid grid-cols-[minmax(0,1fr)_auto_minmax(0,1fr)] items-center gap-x-1 sm:gap-x-2 shrink-0 border-b border-gray-200/80 dark:border-gray-600/80 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md"
   >
     <!-- Col 1: back + title + auto-save -->
@@ -406,7 +433,10 @@ async function handleReset() {
 
     <!-- Col 2: editing toolbar — viewport-centered (equal 1fr side columns) -->
     <div class="min-w-0 flex justify-center items-center self-center overflow-x-auto px-0.5 z-[5]">
-      <CanvasToolbar embedded />
+      <CanvasToolbar
+        embedded
+        :compact-toolbar="compactCanvasToolbar"
+      />
     </div>
 
     <!-- Col 3: snapshots + workshop participants + actions -->
@@ -506,6 +536,7 @@ async function handleReset() {
         <ElTooltip
           :content="t('canvas.topBar.teachingDesign')"
           placement="bottom"
+          :disabled="!compactTopBarActions"
         >
           <ElButton
             class="mindmate-button"
@@ -514,13 +545,14 @@ async function handleReset() {
             :aria-label="t('canvas.topBar.teachingDesign')"
             @click="handleOpenMindmate"
           >
-            <span class="hidden sm:inline">{{ t('canvas.topBar.teachingDesign') }}</span>
+            <span v-if="!compactTopBarActions">{{ t('canvas.topBar.teachingDesign') }}</span>
           </ElButton>
         </ElTooltip>
 
         <ElTooltip
           :content="t('canvas.topBar.resetTemplate')"
           placement="bottom"
+          :disabled="!compactTopBarActions"
         >
           <ElButton
             class="reset-button"
@@ -529,54 +561,62 @@ async function handleReset() {
             :aria-label="t('canvas.topBar.reset')"
             @click="handleReset"
           >
-            <span class="hidden sm:inline">{{ t('canvas.topBar.reset') }}</span>
+            <span v-if="!compactTopBarActions">{{ t('canvas.topBar.reset') }}</span>
           </ElButton>
         </ElTooltip>
 
-        <ElDropdown
-          trigger="click"
-          @command="handleExportCommand"
+        <ElTooltip
+          :content="t('canvas.topBar.export')"
+          placement="bottom"
+          :disabled="!compactTopBarActions"
         >
-          <ElButton
-            class="export-button"
-            size="small"
-            :icon="Download"
-            :aria-label="t('canvas.topBar.export')"
-          >
-            <span class="hidden sm:inline">{{ t('canvas.topBar.export') }}</span>
-          </ElButton>
-          <template #dropdown>
-            <ElDropdownMenu>
-              <ElDropdownItem command="png">
-                <ImageDown class="w-4 h-4 mr-2 text-emerald-500" />
-                {{ t('canvas.topBar.exportPng') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="svg">
-                <FileImage class="w-4 h-4 mr-2 text-violet-500" />
-                {{ t('canvas.topBar.exportSvg') }}
-              </ElDropdownItem>
-              <ElDropdownItem command="pdf">
-                <FileText class="w-4 h-4 mr-2 text-red-500" />
-                {{ t('canvas.topBar.exportPdf') }}
-              </ElDropdownItem>
-              <ElDropdownItem
-                divided
-                command="json"
+          <span class="inline-flex">
+            <ElDropdown
+              trigger="click"
+              @command="handleExportCommand"
+            >
+              <ElButton
+                class="export-button"
+                size="small"
+                :icon="Download"
+                :aria-label="t('canvas.topBar.export')"
               >
-                <FileJson class="w-4 h-4 mr-2 text-amber-500" />
-                {{ t('canvas.topBar.exportJson') }}
-              </ElDropdownItem>
-              <ElDropdownItem
-                v-if="featureCommunity && authStore.isAuthenticated"
-                divided
-                command="community"
-              >
-                <Share2 class="w-4 h-4 mr-2 text-rose-500" />
-                {{ t('canvas.topBar.shareCommunity') }}
-              </ElDropdownItem>
-            </ElDropdownMenu>
-          </template>
-        </ElDropdown>
+                <span v-if="!compactTopBarActions">{{ t('canvas.topBar.export') }}</span>
+              </ElButton>
+              <template #dropdown>
+                <ElDropdownMenu>
+                  <ElDropdownItem command="png">
+                    <ImageDown class="w-4 h-4 mr-2 text-emerald-500" />
+                    {{ t('canvas.topBar.exportPng') }}
+                  </ElDropdownItem>
+                  <ElDropdownItem command="svg">
+                    <FileImage class="w-4 h-4 mr-2 text-violet-500" />
+                    {{ t('canvas.topBar.exportSvg') }}
+                  </ElDropdownItem>
+                  <ElDropdownItem command="pdf">
+                    <FileText class="w-4 h-4 mr-2 text-red-500" />
+                    {{ t('canvas.topBar.exportPdf') }}
+                  </ElDropdownItem>
+                  <ElDropdownItem
+                    divided
+                    command="json"
+                  >
+                    <FileJson class="w-4 h-4 mr-2 text-amber-500" />
+                    {{ t('canvas.topBar.exportJson') }}
+                  </ElDropdownItem>
+                  <ElDropdownItem
+                    v-if="featureCommunity && authStore.isAuthenticated"
+                    divided
+                    command="community"
+                  >
+                    <Share2 class="w-4 h-4 mr-2 text-rose-500" />
+                    {{ t('canvas.topBar.shareCommunity') }}
+                  </ElDropdownItem>
+                </ElDropdownMenu>
+              </template>
+            </ElDropdown>
+          </span>
+        </ElTooltip>
       </div>
     </div>
 

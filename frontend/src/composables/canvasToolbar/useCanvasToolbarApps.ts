@@ -1,6 +1,6 @@
-import { type ComputedRef, computed, inject } from 'vue'
+import { type ComputedRef, computed, inject, ref, watch } from 'vue'
 
-import { Camera, Layers, LayoutGrid, type LucideIcon, Package } from 'lucide-vue-next'
+import { Camera, Keyboard, Layers, LayoutGrid, type LucideIcon, Package } from 'lucide-vue-next'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -8,6 +8,7 @@ import { useNotifications } from '@/composables/core/useNotifications'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { useUIStore } from '@/stores/ui'
 
 export type MoreAppHandlerKey = 'concept_map_modes'
 
@@ -19,12 +20,13 @@ export type MoreAppItem = {
   iconBg: string
   iconColor: string
   handlerKey?: MoreAppHandlerKey
-  appKey?: 'waterfall' | 'learning_sheet' | 'snapshot'
+  appKey?: 'waterfall' | 'learning_sheet' | 'snapshot' | 'virtual_keyboard'
 }
 
 export function useCanvasToolbarApps() {
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
+  const uiStore = useUIStore()
   const { t } = useLanguage()
   const notify = useNotifications()
   const { isGenerating: isAIGenerating, autoComplete, validateForAutoComplete } = useAutoComplete()
@@ -48,6 +50,17 @@ export function useCanvasToolbarApps() {
   })
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
+
+  const virtualKeyboardOpen = ref(false)
+
+  watch(
+    () => uiStore.uiVersion,
+    (v) => {
+      if (v !== 'international') {
+        virtualKeyboardOpen.value = false
+      }
+    }
+  )
 
   const moreApps = computed((): MoreAppItem[] => {
     const conceptMapModesRow: MoreAppItem = {
@@ -85,6 +98,18 @@ export function useCanvasToolbarApps() {
         iconBg: 'bg-amber-100',
         iconColor: 'text-amber-600',
       },
+      ...(uiStore.uiVersion === 'international'
+        ? [
+            {
+              appKey: 'virtual_keyboard' as const,
+              name: t('canvas.toolbar.moreAppVirtualKeyboard'),
+              icon: Keyboard,
+              desc: t('canvas.toolbar.moreAppVirtualKeyboardDesc'),
+              iconBg: 'bg-slate-100',
+              iconColor: 'text-slate-600',
+            },
+          ]
+        : []),
     ]
     const withoutWaterfall = isConceptMap.value
       ? apps.filter((a) => a.appKey !== 'waterfall')
@@ -189,6 +214,10 @@ export function useCanvasToolbarApps() {
       eventBus.emit('snapshot:requested', {})
       return
     }
+    if (app.appKey === 'virtual_keyboard') {
+      virtualKeyboardOpen.value = !virtualKeyboardOpen.value
+      return
+    }
     notify.info(t('canvas.toolbar.featureInDevelopment', { name: app.name }))
   }
 
@@ -197,6 +226,7 @@ export function useCanvasToolbarApps() {
     isAIGenerating,
     isConceptMap,
     moreApps,
+    virtualKeyboardOpen,
     handleAIGenerate,
     handleConceptGeneration,
     handleMoreAppItem,

@@ -56,7 +56,7 @@ function computeBalancedMaxWidth(
  * Uses DOM-based measureTextWidth for accuracy, with balanced-width
  * approximation matching CSS text-wrap: balance in BranchNode.vue.
  */
-function estimateNodeWidth(text: string): number {
+export function estimateNodeWidth(text: string): number {
   if (!text) return DEFAULT_NODE_WIDTH
   const branchFontSize = 16
   const nodeHorizontalExtra = 38
@@ -88,7 +88,7 @@ const BRANCH_PADDING_Y = 16
  * then add BranchNode py-2 (16px) and border 3px x 2 (6px). Enforce min-height 36px.
  * For KaTeX labels the rendered DOM height is measured directly.
  */
-function measureBranchNodeHeight(text: string): number {
+export function measureBranchNodeHeight(text: string): number {
   if (!text) return BRANCH_NODE_HEIGHT
   const branchFontSize = 16
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)

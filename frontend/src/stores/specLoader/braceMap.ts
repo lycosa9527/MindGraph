@@ -56,10 +56,8 @@ function estimateBraceNodeWidth(text: string, depth: number): number {
 
   let textWidth = 0
   if (typeof document !== 'undefined') {
-    textWidth = measureTextWidth(trimmed || ' ', fontSize)
-    if (depth === 0) {
-      textWidth *= 1.08
-    }
+    const fontWeight = depth === 0 ? 'bold' : 'normal'
+    textWidth = measureTextWidth(trimmed || ' ', fontSize, { fontWeight })
   }
 
   // Approximate CSS text-wrap: balance — when text wraps, lines are
@@ -171,12 +169,15 @@ function computeColumnLayout(
     else childrenMap.set(e.source, [e.target])
   }
 
-  const getW = (id: string): number =>
-    nodeDimensions[id]?.width ?? nodeMap.get(id)?.width ?? DEFAULT_NODE_WIDTH
+  const getW = (id: string): number => {
+    const measured = nodeDimensions[id]?.width
+    const estimated = nodeMap.get(id)?.width ?? DEFAULT_NODE_WIDTH
+    return measured !== undefined ? Math.max(measured, estimated) : estimated
+  }
   const getH = (id: string): number => {
-    const pinia = nodeDimensions[id]?.height
-    const est = nodeMap.get(id)?.height
-    return pinia ?? est ?? DEFAULT_NODE_HEIGHT
+    const measured = nodeDimensions[id]?.height
+    const estimated = nodeMap.get(id)?.height ?? DEFAULT_NODE_HEIGHT
+    return measured !== undefined ? Math.max(measured, estimated) : estimated
   }
 
   // --- X: column positions (left-aligned per depth) ---

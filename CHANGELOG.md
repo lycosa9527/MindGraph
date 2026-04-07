@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.73.0] - 2026-04-07
+
+### Added
+- **Canvas virtual keyboard** (`CanvasVirtualKeyboardPanel.vue`): On-screen keyboard using `simple-keyboard` and `simple-keyboard-layouts`, scoped to focused plain `input`/`textarea` (e.g. node labels, title); respects RTL UI locales; Escape closes; first-open hint via notifications.
+- **`keyboardLayoutForUiLocale.ts`**: Maps MindGraph UI locales to keyboard layout presets (Arabic, Chinese, Japanese, Korean, Thai, etc.) with English fallback for unmapped codes.
+- **`uiConfig.ts` — `CANVAS_OVERLAY_Z`**: Z-index ladder for Teleported canvas overlays (virtual keyboard below typical Element Plus chrome).
+- **`scripts/verify-keyboard-layout-map.ts`**: CI-style check that keyboard layout locale mapping stays aligned with supported UI locales (`npm run i18n:verify-keyboard`).
+
+### Changed
+- **Canvas chrome** (`CanvasToolbar*.vue`, `CanvasTopBar.vue`, `PresentationSideToolbar.vue`, `CanvasPage.vue`): Toolbar, dropdowns, AI section, and presentation rail refinements; virtual keyboard wiring and related composable/config updates (`useCanvasToolbarApps.ts`).
+- **Diagram nodes** (`BraceNode.vue`, `CircleNode.vue`, `FlowNode.vue`, `FlowSubstepNode.vue`, `TopicNode.vue`): Layout and editing tweaks aligned with recent canvas and measurement behavior.
+- **Spec loaders** (`braceMap.ts`, `bubbleMap.ts`, `circleMap.ts`, `flowMap.ts`, `mindMap.ts`) and **`mindMapLayout.ts`**: Loader and layout store adjustments.
+- **i18n**: `en`/`zh` canvas and common strings plus broad `common` bundle updates across locales for new UI copy.
+
 ## [5.72.0] - 2026-04-05
 
 ### Added

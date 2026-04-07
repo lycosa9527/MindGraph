@@ -128,6 +128,9 @@ const {
   resetPresentationStateOnLeave,
 } = useCanvasPagePresentation()
 
+/** Presentation rail virtual keyboard toggle (mirrors toolbar keyboard state). */
+const virtualKeyboardOpen = ref(false)
+
 const {
   workshopCode,
   activeEditors,
@@ -586,10 +589,12 @@ onUnmounted(() => {
     <PresentationSideToolbar
       v-if="presentationRailOpen && presentationTool !== 'timer'"
       :active-tool="presentationTool"
+      :virtual-keyboard-open="virtualKeyboardOpen"
       @selectTool="presentationTool = $event"
       @clearHighlighter="presentationHighlightStrokes = []"
       @fit="handleFitToScreen"
       @exit="handleStartPresentation"
+      @toggleVirtualKeyboard="virtualKeyboardOpen = !virtualKeyboardOpen"
     />
 
     <CanvasChrome>

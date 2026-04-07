@@ -26,6 +26,10 @@ const FLOW_NODE_PADDING_X = 40
 /** Topic node: px-6 = 24px each side; fontWeight bold for accurate measurement */
 const FLOW_TOPIC_FONT_SIZE = 18
 const FLOW_TOPIC_PADDING_X = 48
+const FLOW_MAX_TEXT_WIDTH = 250
+const FLOW_TOPIC_MAX_TEXT_WIDTH = 300
+const FLOW_SUBSTEP_MAX_TEXT_WIDTH = 180
+const FLOW_BALANCE_PADDING = 5
 
 interface FlowSubstepEntry {
   step: string
@@ -39,6 +43,44 @@ interface FlowSubstepEntry {
  * @returns SpecLoaderResult with nodes and connections
  */
 const FLOW_TOPIC_NODE_ID = 'flow-topic'
+
+function estimateFlowRenderedWidth(
+  text: string,
+  fontSize: number,
+  maxTextWidth: number,
+  paddingX: number,
+  fontWeight: string = 'normal'
+): number {
+  const trimmed = (text || '').trim()
+  if (!trimmed || typeof document === 'undefined') return FLOW_MAP_PILL_WIDTH
+
+  const singleLineWidth = measureTextWidth(trimmed, fontSize, { fontWeight })
+
+  let effectiveTextWidth: number
+  if (singleLineWidth <= maxTextWidth) {
+    effectiveTextWidth = singleLineWidth
+  } else {
+    const numLines = Math.ceil(singleLineWidth / maxTextWidth)
+    const balancedWidth = Math.ceil(singleLineWidth / numLines) + FLOW_BALANCE_PADDING
+    effectiveTextWidth = Math.min(balancedWidth, maxTextWidth)
+  }
+
+  return Math.max(FLOW_MAP_PILL_WIDTH, effectiveTextWidth + paddingX)
+}
+
+function getEffectiveFlowWidth(
+  nodeId: string,
+  text: string,
+  fontSize: number,
+  maxTextWidth: number,
+  paddingX: number,
+  nodeDimensions: Record<string, { width: number; height: number }>,
+  fontWeight: string = 'normal'
+): number {
+  const measured = nodeDimensions[nodeId]?.width
+  const estimated = estimateFlowRenderedWidth(text, fontSize, maxTextWidth, paddingX, fontWeight)
+  return measured !== undefined ? Math.max(measured, estimated) : estimated
+}
 
 /**
  * Get centered position for flow map topic in vertical layout.
@@ -59,11 +101,10 @@ export function getFlowTopicCenteredPosition(
 
 /**
  * Post-render layout correction for flow maps.
- * Uses actual DOM-measured node dimensions from Pinia to center-align the topic
- * node with the step column, since node sizes are only known after the first render.
- *
- * Horizontal layout: corrects topic Y so its center matches step nodes' center Y.
- * Vertical layout:   corrects topic X so its center matches step column's center X.
+ * Uses actual DOM-measured node dimensions from Pinia to:
+ * - Horizontal layout: correct topic Y so its center matches step nodes' center Y.
+ * - Vertical layout: restack step (and substep) nodes using measured heights to
+ *   prevent overlaps when text wraps, then correct topic X to stay centered.
  */
 export function recalculateFlowMapLayout(
   nodes: DiagramNode[],
@@ -93,13 +134,197 @@ export function recalculateFlowMapLayout(
   const topicIndex = result.findIndex((n) => n.id === FLOW_TOPIC_NODE_ID)
 
   if (orientation === 'horizontal') {
-    const stepCenterY = firstStep.position.y + firstStepDims.height / 2
-    const correctedY = Math.round(stepCenterY - topicDims.height / 2)
-    result[topicIndex] = {
-      ...result[topicIndex],
-      position: { x: topicNode.position.x, y: correctedY },
+    const orderedSteps = result
+      .filter((n) => n.type === 'flow')
+      .sort((a, b) => {
+        const ga = ((a.data as Record<string, unknown>)?.groupIndex as number) ?? 0
+        const gb = ((b.data as Record<string, unknown>)?.groupIndex as number) ?? 0
+        return ga - gb
+      })
+    const substepNodesH = result.filter((n) => n.type === 'flowSubstep')
+
+    const groupInfos = orderedSteps.map((stepNode) => {
+      const groupIdx =
+        ((stepNode.data as Record<string, unknown>)?.groupIndex as number) ?? 0
+      const stepW = getEffectiveFlowWidth(
+        stepNode.id,
+        stepNode.text ?? '',
+        FLOW_STEP_FONT_SIZE,
+        FLOW_MAX_TEXT_WIDTH,
+        FLOW_NODE_PADDING_X,
+        nodeDimensions
+      )
+      const groupSubsteps = substepNodesH.filter((n) =>
+        n.id.startsWith(`flow-substep-${groupIdx}-`)
+      )
+      const maxSubW = groupSubsteps.reduce((maxW, sub) => {
+        const subW = getEffectiveFlowWidth(
+          sub.id,
+          sub.text ?? '',
+          FLOW_SUBSTEP_FONT_SIZE,
+          FLOW_SUBSTEP_MAX_TEXT_WIDTH,
+          FLOW_NODE_PADDING_X,
+          nodeDimensions
+        )
+        return Math.max(maxW, subW)
+      }, 0)
+
+      return { stepNode, stepW, groupSubsteps, footprintWidth: Math.max(stepW, maxSubW) }
+    })
+
+    const topicEstW = estimateFlowRenderedWidth(
+      topicNode.text ?? '',
+      FLOW_TOPIC_FONT_SIZE,
+      FLOW_TOPIC_MAX_TEXT_WIDTH,
+      FLOW_TOPIC_PADDING_X,
+      'bold'
+    )
+    const effectiveTopicW = Math.max(topicDims.width, topicEstW)
+
+    const referenceCenterY = DEFAULT_CENTER_Y
+    let curX = topicNode.position.x + effectiveTopicW + FLOW_TOPIC_TO_STEP_GAP
+    groupInfos.forEach((group) => {
+      const centerX = curX + group.footprintWidth / 2
+      const stepX = Math.round(centerX - group.stepW / 2)
+      const stepH = nodeDimensions[group.stepNode.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+      const stepY = Math.round(referenceCenterY - stepH / 2)
+      const stepIdx = result.findIndex((n) => n.id === group.stepNode.id)
+      result[stepIdx] = {
+        ...result[stepIdx],
+        position: { x: stepX, y: stepY },
+      }
+
+      const sortedSubsteps = [...group.groupSubsteps].sort((a, b) => {
+        const aIdx = parseInt(a.id.split('-').pop() ?? '0')
+        const bIdx = parseInt(b.id.split('-').pop() ?? '0')
+        return aIdx - bIdx
+      })
+      let subY = stepY + stepH + FLOW_SUBSTEP_OFFSET_X
+      sortedSubsteps.forEach((sub) => {
+        const subW = getEffectiveFlowWidth(
+          sub.id,
+          sub.text ?? '',
+          FLOW_SUBSTEP_FONT_SIZE,
+          FLOW_SUBSTEP_MAX_TEXT_WIDTH,
+          FLOW_NODE_PADDING_X,
+          nodeDimensions
+        )
+        const subX = Math.round(centerX - subW / 2)
+        const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+        const subIdx = result.findIndex((n) => n.id === sub.id)
+        result[subIdx] = {
+          ...result[subIdx],
+          position: { x: subX, y: subY },
+        }
+        subY += subH + FLOW_SUBSTEP_SPACING
+      })
+
+      curX += group.footprintWidth + FLOW_MIN_STEP_SPACING
+    })
+
+    const firstOrderedStep = orderedSteps[0]
+    const firstOrderedStepDims = firstOrderedStep
+      ? nodeDimensions[firstOrderedStep.id]
+      : undefined
+    if (firstOrderedStep && firstOrderedStepDims) {
+      const firstStepResultNode = result.find((n) => n.id === firstOrderedStep.id)
+      const stepPos = firstStepResultNode?.position
+      if (stepPos) {
+        const stepCenterY = stepPos.y + firstOrderedStepDims.height / 2
+        const correctedY = Math.round(stepCenterY - topicDims.height / 2)
+        result[topicIndex] = {
+          ...result[topicIndex],
+          position: { x: topicNode.position.x, y: correctedY },
+        }
+      }
     }
   } else {
+    // Restack step groups from top to bottom using measured heights so that
+    // text-wrapped (taller) nodes don't overlap the ones beneath them.
+    const substepNodes = result.filter((n) => n.type === 'flowSubstep')
+    const orderedSteps = result
+      .filter((n) => n.type === 'flow')
+      .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+
+    let currentY = orderedSteps[0]?.position?.y ?? firstStep.position.y
+
+    orderedSteps.forEach((stepNode, stepOrder) => {
+      const stepDims = nodeDimensions[stepNode.id]
+      const stepH = stepDims?.height ?? FLOW_MAP_PILL_HEIGHT
+
+      // Substep IDs are flow-substep-{stepIndex}-{i}; stepIndex == position in
+      // the original sorted order so we can match them without needing connections.
+      const groupSubsteps = substepNodes
+        .filter((n) => n.id.startsWith(`flow-substep-${stepOrder}-`))
+        .sort((a, b) => (a.position?.y ?? 0) - (b.position?.y ?? 0))
+
+      if (groupSubsteps.length > 0) {
+        let substepColumnH = 0
+        groupSubsteps.forEach((sub, i) => {
+          const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+          substepColumnH += subH + (i > 0 ? FLOW_SUBSTEP_SPACING : 0)
+        })
+
+        const groupH = Math.max(stepH, substepColumnH)
+        const stepY = Math.round(currentY + Math.max(0, (substepColumnH - stepH) / 2))
+        const stepResultIdx = result.findIndex((n) => n.id === stepNode.id)
+        const stepPrevPos = result[stepResultIdx].position
+        result[stepResultIdx] = {
+          ...result[stepResultIdx],
+          position: { x: stepPrevPos?.x ?? 0, y: stepY },
+        }
+
+        let subY = Math.round(currentY + Math.max(0, (stepH - substepColumnH) / 2))
+        groupSubsteps.forEach((sub) => {
+          const subH = nodeDimensions[sub.id]?.height ?? FLOW_MAP_PILL_HEIGHT
+          const subResultIdx = result.findIndex((n) => n.id === sub.id)
+          const subPrevPos = result[subResultIdx].position
+          result[subResultIdx] = {
+            ...result[subResultIdx],
+            position: { x: subPrevPos?.x ?? 0, y: subY },
+          }
+          subY += subH + FLOW_SUBSTEP_SPACING
+        })
+
+        currentY += groupH + FLOW_GROUP_GAP + FLOW_MIN_STEP_SPACING
+      } else {
+        const stepResultIdx = result.findIndex((n) => n.id === stepNode.id)
+        const loneStepPrevPos = result[stepResultIdx].position
+        result[stepResultIdx] = {
+          ...result[stepResultIdx],
+          position: { x: loneStepPrevPos?.x ?? 0, y: currentY },
+        }
+        currentY += stepH + FLOW_MIN_STEP_SPACING
+      }
+    })
+
+    orderedSteps.forEach((stepNode, stepOrder) => {
+      const stepResultNode = result.find((n) => n.id === stepNode.id)
+      if (!stepResultNode) return
+      const stepW = getEffectiveFlowWidth(
+        stepNode.id,
+        stepNode.text ?? '',
+        FLOW_STEP_FONT_SIZE,
+        FLOW_MAX_TEXT_WIDTH,
+        FLOW_NODE_PADDING_X,
+        nodeDimensions
+      )
+      const substepBaseX =
+        (stepResultNode.position?.x ?? 0) + stepW + FLOW_SUBSTEP_OFFSET_X
+
+      const groupSubs = substepNodes.filter((n) =>
+        n.id.startsWith(`flow-substep-${stepOrder}-`)
+      )
+      groupSubs.forEach((sub) => {
+        const subResultIdx = result.findIndex((n) => n.id === sub.id)
+        const subHorizPrevPos = result[subResultIdx].position
+        result[subResultIdx] = {
+          ...result[subResultIdx],
+          position: { x: substepBaseX, y: subHorizPrevPos?.y ?? 0 },
+        }
+      })
+    })
+
     const stepCenterX = firstStep.position.x + firstStepDims.width / 2
     const correctedX = Math.round(stepCenterX - topicDims.width / 2)
     result[topicIndex] = {
