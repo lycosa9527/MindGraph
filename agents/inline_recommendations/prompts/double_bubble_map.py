@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note, THINKING_APPROACH
+from ._common import append_batch_note, is_chinese_inline_prompt_language, THINKING_APPROACH, thinking_locale_key
 
 
 def build_double_bubble_similarities_prompt(
@@ -17,10 +17,10 @@ def build_double_bubble_similarities_prompt(
     right = (context.get("right_topic") or "").strip()
     sim_texts = context.get("similarity_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["double_bubble_map"][language]
+    thinking = THINKING_APPROACH["double_bubble_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topics_ctx = f"左主题：{left}，右主题：{right}" if left and right else "主题未设置"
         prompt = f"""用户正在创建双气泡图。{topics_ctx}
 
@@ -74,10 +74,10 @@ def build_double_bubble_differences_prompt(
     right = (context.get("right_topic") or "").strip()
     diff_texts = context.get("difference_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["double_bubble_map"][language]
+    thinking = THINKING_APPROACH["double_bubble_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topics_ctx = f"左主题：{left}，右主题：{right}" if left and right else "主题未设置"
         prompt = f"""用户正在创建双气泡图。{topics_ctx}
 

@@ -38,7 +38,7 @@ def output_language_instruction(lang: str) -> str:
             "（含 JSON 字符串值、标签、说明、枚举等）。\n"
             "Output language: **Simplified Chinese** for all user-visible text."
         )
-    if normalized == "zh-hant":
+    if normalized in ("zh-hant", "zh-tw"):
         return (
             f"{separator}"
             "【輸出語言】請使用**繁體中文**撰寫全部面向使用者的文字"

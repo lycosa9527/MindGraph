@@ -22,6 +22,7 @@ declare module 'vue' {
     AdminTrendChartModal: typeof import('./components/admin/AdminTrendChartModal.vue')['default']
     AdminUsersTab: typeof import('./components/admin/AdminUsersTab.vue')['default']
     AIModelSelector: typeof import('./components/canvas/AIModelSelector.vue')['default']
+    ApiTokenModal: typeof import('./components/auth/ApiTokenModal.vue')['default']
     AppSidebar: typeof import('./components/sidebar/AppSidebar.vue')['default']
     AppSidebarAccountFooter: typeof import('./components/sidebar/AppSidebarAccountFooter.vue')['default']
     AppSidebarNav: typeof import('./components/sidebar/AppSidebarNav.vue')['default']

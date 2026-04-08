@@ -29,6 +29,11 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
 )
 from utils.auth import get_current_user
+from utils.chinese_language_policy import (
+    collect_inline_recommendation_text_blobs,
+    effective_language_for_thinking_user,
+    is_chinese_ui_error_language,
+)
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
@@ -45,6 +50,9 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     chunk_count = 0
     rec_count = 0
     error_yielded = False
+    raw_lang = (getattr(req, "language", None) or "en").strip().lower()
+    text_blobs = collect_inline_recommendation_text_blobs(req)
+    effective_lang = effective_language_for_thinking_user(user, raw_lang, *text_blobs)
     try:
         options = {
             "user_id": user_id,
@@ -61,7 +69,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
             nodes=req.nodes or [],
             connections=req.connections,
             current_node_id=req.node_id,
-            language=req.language or "en",
+            language=effective_lang,
             count=getattr(req, "count", 15),
             models=models,
             options=options,
@@ -78,31 +86,43 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     except LLMContentFilterError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
-            "无法处理您的请求。" if req.language == "zh" else "Content could not be processed."
+            "无法处理您的请求。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "Content could not be processed."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMRateLimitError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
-            "AI服务繁忙，请稍后重试。" if req.language == "zh" else "AI service busy. Please retry."
+            "AI服务繁忙，请稍后重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "AI service busy. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMTimeoutError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
-            "请求超时，请重试。" if req.language == "zh" else "Request timed out. Please retry."
+            "请求超时，请重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "Request timed out. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMServiceError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
-            "AI服务错误，请稍后重试。" if req.language == "zh" else "AI service error. Please retry."
+            "AI服务错误，请稍后重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "AI service error. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except Exception as e:
         error_yielded = True
         logger.error("[InlineRec] Stream error: %s", str(e), exc_info=True)
-        msg = "请求失败，请重试。" if getattr(req, "language", "en") == "zh" else "Request failed. Please retry."
+        msg = (
+            "请求失败，请重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "Request failed. Please retry."
+        )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     finally:
         logger.debug(

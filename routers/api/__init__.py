@@ -21,6 +21,7 @@ from config.settings import config as app_config
 from . import (
     activity,
     diagram_generation,
+    diagram_node_ops,
     png_export,
     sse_streaming,
     llm_operations,
@@ -62,6 +63,7 @@ router.include_router(dify_files.router)
 router.include_router(dify_conversations.router)
 router.include_router(image_proxy.router)
 router.include_router(diagrams.router)
+router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)
 
 # Knowledge Space router (has its own prefix)

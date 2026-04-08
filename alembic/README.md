@@ -94,7 +94,7 @@ alembic/
 ├── env.py              # Runtime environment (engine, metadata)
 ├── script.py.mako      # Template for new migration files
 ├── versions/           # Migration scripts (ordered by revision chain)
-│   ├── 0001_baseline_schema.py
-│   └── 0002_post_baseline_indexes.py
+│   ├── rev_0001_baseline_schema.py
+│   └── rev_0002_post_baseline_indexes.py
 └── README.md           # This file
 ```

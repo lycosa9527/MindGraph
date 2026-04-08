@@ -303,6 +303,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
         return {
             "id": current_user.id,
             "phone": current_user.phone,
+            "email": getattr(current_user, "email", None),
             "name": current_user.name,
             "avatar": current_user.avatar or "🐈‍⬛",
             "role": role,
@@ -317,6 +318,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "ui_language": getattr(current_user, "ui_language", None),
             "prompt_language": getattr(current_user, "prompt_language", None),
             "ui_version": getattr(current_user, "ui_version", None),
+            "allows_simplified_chinese": getattr(current_user, "allows_simplified_chinese", True),
         }
     except Exception as me_error:
         logger.error("Error in /me endpoint: %s", me_error, exc_info=True)

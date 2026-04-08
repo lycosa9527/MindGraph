@@ -32,10 +32,13 @@ export function useLoginModal(
   })
 
   const registerForm = ref({
+    registrationEmail: '',
     phone: '',
     password: '',
     name: '',
     invitationCode: '',
+    emailCode: '',
+    outsideMainlandAcknowledged: false,
     captcha: '',
   })
 
@@ -61,6 +64,20 @@ export function useLoginModal(
   const smsCountdown = ref(0)
   const smsCountdownTimer = ref<ReturnType<typeof setInterval> | null>(null)
   const smsSent = ref(false)
+
+  const emailSending = ref(false)
+  const emailCountdown = ref(0)
+  const emailCountdownTimer = ref<ReturnType<typeof setInterval> | null>(null)
+
+  const isOverseasRegister = computed(() => {
+    const e = registerForm.value.registrationEmail.trim()
+    return e.includes('@') && /\.[a-z0-9-]+$/i.test(e.split('@')[1] ?? '')
+  })
+
+  const forgotUsesEmail = computed(() => {
+    const id = forgotForm.value.phone.trim()
+    return id.includes('@')
+  })
 
   const isLoading = ref(false)
   const showPassword = ref(false)
@@ -89,18 +106,45 @@ export function useLoginModal(
 
   function resetAllForms() {
     loginForm.value = { phone: '', password: '', captcha: '' }
-    registerForm.value = { phone: '', password: '', name: '', invitationCode: '', captcha: '' }
+    registerForm.value = {
+      registrationEmail: '',
+      phone: '',
+      password: '',
+      name: '',
+      invitationCode: '',
+      emailCode: '',
+      outsideMainlandAcknowledged: false,
+      captcha: '',
+    }
     smsLoginForm.value = { phone: '', captcha: '', smsCode: '' }
     forgotForm.value = { phone: '', captcha: '', smsCode: '', newPassword: '', confirmPassword: '' }
     showPassword.value = false
     showConfirmPassword.value = false
     smsSent.value = false
     smsCountdown.value = 0
+    emailCountdown.value = 0
     if (smsCountdownTimer.value) {
       clearInterval(smsCountdownTimer.value)
       smsCountdownTimer.value = null
     }
+    if (emailCountdownTimer.value) {
+      clearInterval(emailCountdownTimer.value)
+      emailCountdownTimer.value = null
+    }
   }
+
+  watch(isOverseasRegister, (on) => {
+    if (on) {
+      registerForm.value.phone = ''
+      registerForm.value.invitationCode = ''
+      if (uiStore.language === 'zh') {
+        uiStore.setLanguage('en')
+      }
+    } else {
+      registerForm.value.emailCode = ''
+      registerForm.value.outsideMainlandAcknowledged = false
+    }
+  })
 
   function switchLoginRegisterTab(tab: 'login' | 'register') {
     activeTab.value = tab
@@ -182,6 +226,10 @@ export function useLoginModal(
       clearInterval(smsCountdownTimer.value)
       smsCountdownTimer.value = null
     }
+    if (emailCountdownTimer.value) {
+      clearInterval(emailCountdownTimer.value)
+      emailCountdownTimer.value = null
+    }
   })
 
   async function handleLogin() {
@@ -203,12 +251,23 @@ export function useLoginModal(
     isLoading.value = true
 
     try {
-      const result = await authStore.login({
-        phone: loginForm.value.phone,
-        password: loginForm.value.password,
-        captcha: loginForm.value.captcha,
-        captcha_id: captchaId.value,
-      })
+      const id = loginForm.value.phone.trim()
+      const isEmailLogin = id.includes('@')
+      const result = await authStore.login(
+        isEmailLogin
+          ? {
+              email: id,
+              password: loginForm.value.password,
+              captcha: loginForm.value.captcha,
+              captcha_id: captchaId.value,
+            }
+          : {
+              phone: id,
+              password: loginForm.value.password,
+              captcha: loginForm.value.captcha,
+              captcha_id: captchaId.value,
+            }
+      )
 
       if (result.success) {
         const userName = result.user?.username || ''
@@ -241,17 +300,72 @@ export function useLoginModal(
     }
   }
 
-  async function handleRegister() {
-    if (
-      !registerForm.value.phone ||
-      !registerForm.value.password ||
-      !registerForm.value.name ||
-      !registerForm.value.invitationCode
-    ) {
-      notify.warning(t('auth.modal.fillRequired'))
+  function startEmailCountdown() {
+    emailCountdown.value = 60
+    if (emailCountdownTimer.value) {
+      clearInterval(emailCountdownTimer.value)
+      emailCountdownTimer.value = null
+    }
+    emailCountdownTimer.value = setInterval(() => {
+      emailCountdown.value--
+      if (emailCountdown.value <= 0 && emailCountdownTimer.value) {
+        clearInterval(emailCountdownTimer.value)
+        emailCountdownTimer.value = null
+      }
+    }, 1000)
+  }
+
+  async function sendRegisterEmailCode() {
+    const email = registerForm.value.registrationEmail.trim()
+    if (!email || !isOverseasRegister.value) {
+      notify.warning(t('auth.modal.educationEmailInvalid'))
+      return
+    }
+    if (!registerForm.value.captcha || registerForm.value.captcha.length !== 4) {
+      notify.warning(t('auth.modal.enterCaptchaFirst'))
+      return
+    }
+    if (!captchaId.value) {
+      notify.warning(t('auth.modal.waitCaptchaLoad'))
+      return
+    }
+    if (emailCountdown.value > 0) {
       return
     }
 
+    emailSending.value = true
+    try {
+      const response = await fetch('/api/auth/email/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          purpose: 'register',
+          captcha: registerForm.value.captcha,
+          captcha_id: captchaId.value,
+        }),
+      })
+      const data = await response.json().catch(() => ({}))
+      if (response.ok) {
+        notify.success(t('auth.modal.emailCodeSent'))
+        startEmailCountdown()
+      } else {
+        notify.error(
+          typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed')
+        )
+        registerForm.value.captcha = ''
+        void refreshCaptcha()
+      }
+    } catch {
+      notify.error(t('auth.modal.networkRegisterError'))
+      registerForm.value.captcha = ''
+      void refreshCaptcha()
+    } finally {
+      emailSending.value = false
+    }
+  }
+
+  async function handleRegister() {
     if (registerForm.value.password.length < 8) {
       notify.warning(t('auth.modal.passwordMin8'))
       return
@@ -259,6 +373,69 @@ export function useLoginModal(
 
     if (!registerForm.value.captcha || registerForm.value.captcha.length !== 4) {
       notify.warning(t('auth.modal.enter4DigitCaptcha'))
+      return
+    }
+
+    if (!captchaId.value) {
+      notify.warning(t('auth.modal.waitCaptchaLoad'))
+      return
+    }
+
+    if (isOverseasRegister.value) {
+      const email = registerForm.value.registrationEmail.trim()
+      if (!email || !registerForm.value.emailCode || registerForm.value.emailCode.length !== 6) {
+        notify.warning(t('auth.modal.fillRequired'))
+        return
+      }
+      if (!registerForm.value.outsideMainlandAcknowledged) {
+        notify.warning(t('auth.modal.acknowledgeOverseasRequired'))
+        return
+      }
+
+      isLoading.value = true
+      try {
+        const response = await fetch('/api/auth/register-overseas', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email,
+            password: registerForm.value.password,
+            name: registerForm.value.name,
+            email_code: registerForm.value.emailCode,
+            captcha: registerForm.value.captcha,
+            captcha_id: captchaId.value,
+            outside_mainland_acknowledged: true,
+          }),
+        })
+        const data = await response.json().catch(() => ({}))
+        if (response.ok) {
+          notify.success(t('auth.modal.registerSuccess'))
+          switchLoginRegisterTab('login')
+          loginForm.value.phone = email
+        } else {
+          notify.error(
+            typeof data.detail === 'string' ? data.detail : t('auth.modal.registerFailed')
+          )
+          registerForm.value.captcha = ''
+          void refreshCaptcha()
+        }
+      } catch {
+        notify.error(t('auth.modal.networkRegisterError'))
+        registerForm.value.captcha = ''
+        void refreshCaptcha()
+      } finally {
+        isLoading.value = false
+      }
+      return
+    }
+
+    if (
+      !registerForm.value.phone ||
+      !registerForm.value.password ||
+      !registerForm.value.name ||
+      !registerForm.value.invitationCode
+    ) {
+      notify.warning(t('auth.modal.fillRequired'))
       return
     }
 
@@ -302,7 +479,7 @@ export function useLoginModal(
   async function sendSmsCode(type: 'login' | 'reset') {
     const form = type === 'login' ? smsLoginForm.value : forgotForm.value
 
-    if (!form.phone || form.phone.length !== 11) {
+    if (!form.phone || !form.phone.trim()) {
       notify.warning(t('auth.modal.phone11Digits'))
       return
     }
@@ -312,30 +489,79 @@ export function useLoginModal(
       return
     }
 
+    if (!captchaId.value) {
+      notify.warning(t('auth.modal.waitCaptchaLoad'))
+      return
+    }
+
+    const trimmed = form.phone.trim()
+    const useEmail = type === 'reset' && trimmed.includes('@')
+
+    if (type === 'login' && trimmed.length !== 11) {
+      notify.warning(t('auth.modal.phone11Digits'))
+      return
+    }
+
+    if (useEmail) {
+      const simple = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+      if (!simple.test(trimmed)) {
+        notify.warning(t('auth.modal.educationEmailInvalid'))
+        return
+      }
+    } else if (type === 'reset' && trimmed.length !== 11) {
+      notify.warning(t('auth.modal.phone11Digits'))
+      return
+    }
+
     smsSending.value = true
 
     try {
-      const endpoint = type === 'login' ? '/api/auth/sms/send-login' : '/api/auth/sms/send-reset'
-      const response = await fetch(endpoint, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: form.phone,
-          captcha: form.captcha,
-          captcha_id: captchaId.value,
-        }),
-      })
-
-      const data = await response.json()
-
-      if (response.ok) {
-        notify.success(t('auth.modal.smsSentSuccess'))
-        smsSent.value = true
-        startCountdown()
+      if (useEmail) {
+        const response = await fetch('/api/auth/email/send', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            email: trimmed,
+            purpose: 'reset_password',
+            captcha: form.captcha,
+            captcha_id: captchaId.value,
+          }),
+        })
+        const data = await response.json().catch(() => ({}))
+        if (response.ok) {
+          notify.success(t('auth.modal.emailCodeSent'))
+          smsSent.value = true
+          startCountdown()
+        } else {
+          notify.error(
+            typeof data.detail === 'string' ? data.detail : t('auth.modal.emailSendFailed')
+          )
+          form.captcha = ''
+          void refreshCaptcha()
+        }
       } else {
-        notify.error(data.detail || t('auth.modal.smsSendFailed'))
-        form.captcha = ''
-        void refreshCaptcha()
+        const endpoint = type === 'login' ? '/api/auth/sms/send-login' : '/api/auth/sms/send-reset'
+        const response = await fetch(endpoint, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            phone: form.phone,
+            captcha: form.captcha,
+            captcha_id: captchaId.value,
+          }),
+        })
+
+        const data = await response.json()
+
+        if (response.ok) {
+          notify.success(t('auth.modal.smsSentSuccess'))
+          smsSent.value = true
+          startCountdown()
+        } else {
+          notify.error(data.detail || t('auth.modal.smsSendFailed'))
+          form.captcha = ''
+          void refreshCaptcha()
+        }
       }
     } catch (error) {
       console.error('SMS error:', error)
@@ -432,22 +658,35 @@ export function useLoginModal(
     isLoading.value = true
 
     try {
-      const response = await fetch('/api/auth/reset-password', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: forgotForm.value.phone,
-          sms_code: forgotForm.value.smsCode,
-          new_password: forgotForm.value.newPassword,
-        }),
-      })
+      const trimmed = forgotForm.value.phone.trim()
+      const useEmail = trimmed.includes('@')
+
+      const response = useEmail
+        ? await fetch('/api/auth/reset-password-email', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: trimmed,
+              email_code: forgotForm.value.smsCode,
+              new_password: forgotForm.value.newPassword,
+            }),
+          })
+        : await fetch('/api/auth/reset-password', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: forgotForm.value.phone,
+              sms_code: forgotForm.value.smsCode,
+              new_password: forgotForm.value.newPassword,
+            }),
+          })
 
       const data = await response.json()
 
       if (response.ok) {
         notify.success(t('auth.modal.resetSuccess'))
         backToLogin()
-        loginForm.value.phone = forgotForm.value.phone
+        loginForm.value.phone = trimmed
       } else {
         notify.error(data.detail || t('auth.modal.resetFailed'))
       }
@@ -483,6 +722,10 @@ export function useLoginModal(
     smsSending,
     smsCountdown,
     smsSent,
+    emailSending,
+    emailCountdown,
+    isOverseasRegister,
+    forgotUsesEmail,
     isLoading,
     showPassword,
     showConfirmPassword,
@@ -496,6 +739,7 @@ export function useLoginModal(
     refreshCaptcha,
     handleLogin,
     handleRegister,
+    sendRegisterEmailCode,
     sendSmsCode,
     handleSmsLogin,
     handleResetPassword,

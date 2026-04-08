@@ -13,6 +13,7 @@ import { Close } from '@element-plus/icons-vue'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores'
 
+import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
@@ -38,6 +39,7 @@ const isVisible = computed({
 const showAvatarModal = ref(false)
 const showChangePhoneModal = ref(false)
 const showChangePasswordModal = ref(false)
+const showApiTokenModal = ref(false)
 
 // Get user data
 const userName = computed(() => authStore.user?.username || '')
@@ -212,7 +214,14 @@ function handlePhoneChangeSuccess() {
             </div>
 
             <!-- Footer -->
-            <div class="px-8 pb-8 flex justify-end">
+            <div class="px-8 pb-8 flex justify-end gap-3">
+              <button
+                type="button"
+                class="py-2 px-5 rounded-full border border-stone-300 text-stone-600 text-sm font-medium hover:border-stone-400 hover:text-stone-800 transition-all"
+                @click="showApiTokenModal = true"
+              >
+                API Token
+              </button>
               <button
                 class="py-2 px-6 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all"
                 @click="closeModal"
@@ -238,6 +247,8 @@ function handlePhoneChangeSuccess() {
     />
 
     <ChangePasswordModal v-model:visible="showChangePasswordModal" />
+
+    <ApiTokenModal v-model:visible="showApiTokenModal" />
   </Teleport>
 </template>
 

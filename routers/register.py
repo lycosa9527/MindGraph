@@ -126,6 +126,20 @@ def register_routers(app: FastAPI) -> None:
     app.include_router(pages)
     app.include_router(cache)
     app.include_router(api.router)
+
+    if config.FEATURE_MCP_HTTP:
+        try:
+            from services.mcp.mount import mount_mindgraph_mcp
+
+            mount_mindgraph_mcp(app)
+            logger.info("[RouterRegistration] MCP Streamable HTTP mounted at /api/mcp")
+        except Exception as exc:
+            logger.warning(
+                "[RouterRegistration] MCP mount failed (FEATURE_MCP_HTTP=True): %s",
+                exc,
+                exc_info=True,
+            )
+
     app.include_router(node_palette.router)  # Node Palette endpoints
     app.include_router(relationship_labels.router)  # Relationship labels (concept map)
     app.include_router(inline_recommendations.router)  # Inline recommendations (mindmap, flow, etc.)

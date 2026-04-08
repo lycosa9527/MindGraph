@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note, THINKING_APPROACH
+from ._common import append_batch_note, is_chinese_inline_prompt_language, THINKING_APPROACH, thinking_locale_key
 
 
 def build_circle_observations_prompt(
@@ -16,10 +16,10 @@ def build_circle_observations_prompt(
     topic = (context.get("topic") or "").strip()
     context_texts = context.get("context_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["circle_map"][language]
+    thinking = THINKING_APPROACH["circle_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"主题：{topic}" if topic else "主题未设置"
         prompt = f"""用户正在创建圆圈图。{topic_ctx}
 

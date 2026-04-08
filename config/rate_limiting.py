@@ -229,6 +229,120 @@ class RateLimitingConfigMixin:
         return val.lower() == "true"
 
     @property
+    def EMAIL_MAX_CONCURRENT_REQUESTS(self):
+        """Email (SES) maximum concurrent API requests"""
+        try:
+            return int(self._get_cached_value("EMAIL_MAX_CONCURRENT_REQUESTS", "10"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_MAX_CONCURRENT_REQUESTS, using 10")
+            return 10
+
+    @property
+    def EMAIL_QPM_LIMIT(self):
+        """Email (SES) queries per minute limit"""
+        try:
+            return int(self._get_cached_value("EMAIL_QPM_LIMIT", "100"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_QPM_LIMIT, using 100")
+            return 100
+
+    @property
+    def EMAIL_RATE_LIMITING_ENABLED(self):
+        """Enable/disable email (SES) rate limiting"""
+        val = self._get_cached_value("EMAIL_RATE_LIMITING_ENABLED", "true")
+        return val.lower() == "true"
+
+    @property
+    def EMAIL_VERIFY_MAX_ATTEMPTS_PER_COMBO(self):
+        """Max POST /email/verify attempts per normalized email+purpose in the window (anti brute-force)."""
+        try:
+            return int(self._get_cached_value("EMAIL_VERIFY_MAX_ATTEMPTS_PER_COMBO", "25"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_VERIFY_MAX_ATTEMPTS_PER_COMBO, using 25")
+            return 25
+
+    @property
+    def EMAIL_VERIFY_WINDOW_MINUTES(self):
+        """Sliding window for email verify rate limits (minutes)."""
+        try:
+            return int(self._get_cached_value("EMAIL_VERIFY_WINDOW_MINUTES", "15"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_VERIFY_WINDOW_MINUTES, using 15")
+            return 15
+
+    @property
+    def EMAIL_VERIFY_MAX_ATTEMPTS_PER_IP(self):
+        """Max POST /email/verify attempts per client IP in the window."""
+        try:
+            return int(self._get_cached_value("EMAIL_VERIFY_MAX_ATTEMPTS_PER_IP", "150"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_VERIFY_MAX_ATTEMPTS_PER_IP, using 150")
+            return 150
+
+    @property
+    def EMAIL_SEND_WINDOW_MINUTES(self):
+        """Sliding window for POST /email/send per-IP rate limit (minutes)."""
+        try:
+            return int(self._get_cached_value("EMAIL_SEND_WINDOW_MINUTES", "15"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_SEND_WINDOW_MINUTES, using 15")
+            return 15
+
+    @property
+    def EMAIL_SEND_MAX_ATTEMPTS_PER_IP(self):
+        """Max POST /email/send attempts per client IP in the window (anti abuse)."""
+        try:
+            return int(self._get_cached_value("EMAIL_SEND_MAX_ATTEMPTS_PER_IP", "40"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid EMAIL_SEND_MAX_ATTEMPTS_PER_IP, using 40")
+            return 40
+
+    @property
+    def SMS_SEND_WINDOW_MINUTES(self):
+        """Sliding window for POST /sms/send per-IP rate limit (minutes)."""
+        try:
+            return int(self._get_cached_value("SMS_SEND_WINDOW_MINUTES", "15"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_SEND_WINDOW_MINUTES, using 15")
+            return 15
+
+    @property
+    def SMS_SEND_MAX_ATTEMPTS_PER_IP(self):
+        """Max POST /sms/send attempts per client IP in the window (anti abuse)."""
+        try:
+            return int(self._get_cached_value("SMS_SEND_MAX_ATTEMPTS_PER_IP", "40"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_SEND_MAX_ATTEMPTS_PER_IP, using 40")
+            return 40
+
+    @property
+    def SMS_VERIFY_MAX_ATTEMPTS_PER_COMBO(self):
+        """Max POST /sms/verify attempts per phone+purpose in the window (anti brute-force)."""
+        try:
+            return int(self._get_cached_value("SMS_VERIFY_MAX_ATTEMPTS_PER_COMBO", "25"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_VERIFY_MAX_ATTEMPTS_PER_COMBO, using 25")
+            return 25
+
+    @property
+    def SMS_VERIFY_WINDOW_MINUTES(self):
+        """Sliding window for SMS verify rate limits (minutes)."""
+        try:
+            return int(self._get_cached_value("SMS_VERIFY_WINDOW_MINUTES", "15"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_VERIFY_WINDOW_MINUTES, using 15")
+            return 15
+
+    @property
+    def SMS_VERIFY_MAX_ATTEMPTS_PER_IP(self):
+        """Max POST /sms/verify attempts per client IP in the window."""
+        try:
+            return int(self._get_cached_value("SMS_VERIFY_MAX_ATTEMPTS_PER_IP", "150"))
+        except (ValueError, TypeError):
+            logger.warning("Invalid SMS_VERIFY_MAX_ATTEMPTS_PER_IP, using 150")
+            return 150
+
+    @property
     def DASHBOARD_MAX_CONCURRENT_SSE_CONNECTIONS(self):
         """Maximum concurrent SSE connections per IP for dashboard (default: 2)"""
         try:

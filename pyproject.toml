@@ -44,7 +44,7 @@ markers = [
 [tool.pylint.main]
 # Ensure project root is in path for import resolution (fixes E1123 on agent_graph_workflow_with_styles)
 init-hook = 'import sys; import os; sys.path.insert(0, os.getcwd())'
-# Exclude patterns
+# Exclude patterns (numeric Alembic revision filenames are not snake_case module names)
 ignore-patterns = [
     "^venv/",
     "^.venv/",
@@ -55,6 +55,10 @@ ignore-patterns = [
     "^.*\\.toml$",
     "^pyproject\\.toml$",
     "^alembic/versions/",
+]
+# Pylint 3+: directory paths to skip (ensures migration files are not linted when ignore-patterns is ignored)
+ignore-paths = [
+    "alembic/versions",
 ]
 
 # Output format
@@ -135,6 +139,8 @@ good-names = [
     "_session_manager",
     "_registration_metrics",
     "_refresh_token_manager",
+    "_redis_available",
+    "_user_cache",
     # Alembic migration module attributes (required names; not UPPER_CASE)
     "revision",
     "down_revision",
@@ -184,6 +190,8 @@ ignored-modules = [
     "jieba3",
     "sqlalchemy",
     "alembic",
+    "geoip2",
+    "opencc",
 ]
 
 # Ruff: formatter + linter (closest to ESLint/Prettier for Python). Run: ruff format . && ruff check --fix .

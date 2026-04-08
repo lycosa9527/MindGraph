@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note, THINKING_APPROACH
+from ._common import append_batch_note, is_chinese_inline_prompt_language, THINKING_APPROACH, thinking_locale_key
 
 
 def build_multi_flow_causes_prompt(
@@ -16,10 +16,10 @@ def build_multi_flow_causes_prompt(
     event = (context.get("event") or "").strip()
     cause_texts = context.get("cause_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["multi_flow_map"][language]
+    thinking = THINKING_APPROACH["multi_flow_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         event_ctx = f"事件：{event}" if event else "事件未设置"
         prompt = f"""用户正在创建复流程图。{event_ctx}
 
@@ -72,10 +72,10 @@ def build_multi_flow_effects_prompt(
     event = (context.get("event") or "").strip()
     effect_texts = context.get("effect_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["multi_flow_map"][language]
+    thinking = THINKING_APPROACH["multi_flow_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         event_ctx = f"事件：{event}" if event else "事件未设置"
         prompt = f"""用户正在创建复流程图。{event_ctx}
 

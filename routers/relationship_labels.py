@@ -35,6 +35,11 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
 )
 from utils.auth import get_current_user
+from utils.chinese_language_policy import (
+    collect_relationship_label_text_blobs,
+    effective_language_for_thinking_user,
+    is_chinese_ui_error_language,
+)
 
 router = APIRouter(tags=["thinking"])
 logger = logging.getLogger(__name__)
@@ -49,6 +54,9 @@ async def _stream_labels(req, user: User | None, is_next: bool):
         "/thinking_mode/relationship_labels/next_batch" if is_next else "/thinking_mode/relationship_labels/start"
     )
     chunk_count = 0
+    raw_lang = (getattr(req, "language", None) or "en").strip().lower()
+    text_blobs = collect_relationship_label_text_blobs(req)
+    effective_lang = effective_language_for_thinking_user(user, raw_lang, *text_blobs)
     try:
         async for chunk in generator.generate_batch(
             session_id=req.session_id,
@@ -56,7 +64,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             concept_b=req.concept_b,
             topic=req.topic or "",
             link_direction=req.link_direction,
-            language=req.language or "en",
+            language=effective_lang,
             user_id=user_id,
             organization_id=org_id,
             endpoint_path=endpoint,
@@ -65,27 +73,39 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             yield f"data: {json.dumps(chunk)}\n\n"
     except LLMContentFilterError as e:
         msg = getattr(e, "user_message", None) or (
-            "无法处理您的请求。" if req.language == "zh" else "Content could not be processed."
+            "无法处理您的请求。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "Content could not be processed."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMRateLimitError as e:
         msg = getattr(e, "user_message", None) or (
-            "AI服务繁忙，请稍后重试。" if req.language == "zh" else "AI service busy. Please retry."
+            "AI服务繁忙，请稍后重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "AI service busy. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMTimeoutError as e:
         msg = getattr(e, "user_message", None) or (
-            "请求超时，请重试。" if req.language == "zh" else "Request timed out. Please retry."
+            "请求超时，请重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "Request timed out. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMServiceError as e:
         msg = getattr(e, "user_message", None) or (
-            "AI服务错误，请稍后重试。" if req.language == "zh" else "AI service error. Please retry."
+            "AI服务错误，请稍后重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "AI service error. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except Exception as e:
         logger.error("[RelLabels] Stream error: %s", str(e), exc_info=True)
-        msg = "请求失败，请重试。" if req.language == "zh" else "Request failed. Please retry."
+        msg = (
+            "请求失败，请重试。"
+            if is_chinese_ui_error_language(effective_lang)
+            else "Request failed. Please retry."
+        )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     finally:
         if chunk_count == 0:

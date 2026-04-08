@@ -15,6 +15,17 @@ Proprietary License
 from typing import Any, Dict, List, Optional
 
 
+def is_chinese_inline_prompt_language(language: str) -> bool:
+    """Chinese prompt body branch (Simplified copy); output script set via output_language_instruction."""
+    lo = (language or "").strip().lower()
+    return lo in ("zh", "zh-tw", "zh-hant")
+
+
+def thinking_locale_key(language: str) -> str:
+    """Map API language to THINKING_APPROACH keys (zh or en only)."""
+    return "zh" if is_chinese_inline_prompt_language(language) else "en"
+
+
 def get_context_desc(educational_context: Optional[Dict[str, Any]]) -> str:
     """Derive context_desc from educational_context for prompt enrichment."""
     if not educational_context:
@@ -87,12 +98,12 @@ def append_batch_note(
     if batch_num <= 1:
         return prompt
     if existing:
-        if language == "zh":
+        if is_chinese_inline_prompt_language(language):
             prompt += f"\n\n已生成：{', '.join(existing[:20])}\n请生成不同的推荐。"
         else:
             prompt += f"\n\nAlready generated: {', '.join(existing[:20])}\nGenerate different recommendations."
     else:
-        if language == "zh":
+        if is_chinese_inline_prompt_language(language):
             prompt += f"\n\n第{batch_num}批。确保多样性。"
         else:
             prompt += f"\n\nBatch {batch_num}. Ensure diversity."

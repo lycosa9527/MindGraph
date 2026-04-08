@@ -150,7 +150,7 @@ async def update_user_role(
         ) from e
 
     try:
-        user_cache.invalidate(user_id, user.phone)
+        user_cache.invalidate(user_id, user.phone, getattr(user, "email", None))
         user_cache.cache_user(user)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate/cache user %s: %s", user_id, e)

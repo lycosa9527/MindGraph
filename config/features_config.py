@@ -231,6 +231,15 @@ class FeaturesConfigMixin:
         return frozenset(result)
 
     @property
+    def FEATURE_MCP_HTTP(self):
+        """Expose Model Context Protocol (Streamable HTTP) at /api/mcp.
+
+        Disabled by default. Set FEATURE_MCP_HTTP=True in .env to enable.
+        Clients use the same mgat_ token and X-MG-Account headers as the REST API.
+        """
+        return self._get_cached_value("FEATURE_MCP_HTTP", "False").lower() == "true"
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value("AI_ASSISTANT_NAME", "MindMate AI")

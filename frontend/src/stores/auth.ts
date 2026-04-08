@@ -116,6 +116,12 @@ export const useAuthStore = defineStore('auth', () => {
         }
       }
     }
+
+    if (user.value) {
+      useUIStore().setLanguagePolicyAllowZh(user.value.allowsSimplifiedChinese !== false)
+    } else {
+      useUIStore().setLanguagePolicyAllowZh(true)
+    }
   }
 
   function setToken(newToken: string): void {
@@ -141,9 +147,26 @@ export const useAuthStore = defineStore('auth', () => {
     const orgDisplayName = orgIsObject && org.display_name ? org.display_name : undefined
     const displayLabel = orgDisplayName || orgName || backendUser.schoolName || ''
 
+    const allowsZh = backendUser.allows_simplified_chinese !== false
+    let uiLang = backendUser.ui_language ?? null
+    let promptLang = backendUser.prompt_language ?? null
+    if (!allowsZh) {
+      if ((uiLang || '').toLowerCase() === 'zh') {
+        uiLang = 'en'
+      }
+      if ((promptLang || '').toLowerCase() === 'zh') {
+        promptLang = 'en'
+      }
+    }
+
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
-      username: backendUser.name || backendUser.username || backendUser.phone || '',
+      username:
+        backendUser.name ||
+        backendUser.username ||
+        backendUser.phone ||
+        backendUser.email ||
+        '',
       phone: backendUser.phone || backendUser.user?.phone || '',
       email: backendUser.email,
       role: backendUser.role || 'user',
@@ -152,9 +175,10 @@ export const useAuthStore = defineStore('auth', () => {
       avatar,
       createdAt: backendUser.created_at || backendUser.createdAt,
       lastLogin: backendUser.last_login || backendUser.lastLogin,
-      uiLanguage: backendUser.ui_language ?? null,
-      promptLanguage: backendUser.prompt_language ?? null,
+      uiLanguage: uiLang,
+      promptLanguage: promptLang,
       uiVersion: backendUser.ui_version ?? null,
+      allowsSimplifiedChinese: allowsZh,
     }
   }
 
@@ -206,6 +230,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
     useFeatureFlagsStore().markStale()
 
+    useUIStore().setLanguagePolicyAllowZh(normalizedUser.allowsSimplifiedChinese !== false)
     applyUserLanguageFromProfile(normalizedUser)
   }
 
@@ -281,15 +306,26 @@ export const useAuthStore = defineStore('auth', () => {
     localStorage.removeItem(MODE_KEY)
     localStorage.removeItem('access_token')
     stopSessionMonitoring()
+    useUIStore().setLanguagePolicyAllowZh(true)
   }
 
   async function login(credentials: LoginCredentials): Promise<LoginResponse> {
     loading.value = true
     try {
+      const payload: Record<string, string> = {
+        password: credentials.password,
+        captcha: credentials.captcha ?? '',
+        captcha_id: credentials.captcha_id ?? '',
+      }
+      if (credentials.email) {
+        payload.email = credentials.email
+      } else {
+        payload.phone = credentials.phone ?? ''
+      }
       const response = await fetch(`${API_BASE}/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(credentials),
+        body: JSON.stringify(payload),
         credentials: 'same-origin',
       })
 

@@ -5,9 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.74.0] - 2026-04-09
+
+### Added
+- **Alembic**: `rev_0005_user_api_tokens`, `rev_0006_user_email_overseas_registration`, `rev_0007_user_email_login_cn_whitelist`; baseline revisions renamed to `rev_0001` / `rev_0002` / `rev_0004` naming.
+- **Email and registration**: `routers/auth/email.py`, `registration_overseas.py`, `personal_token.py`; AWS SES (`ses_service.py`), email middleware, Redis-backed email storage; GeoIP country helper (`geoip_country.py`); disposable-domain list `data/kikobeats_free_email_domains.json`; `utils/email_validation.py` and `utils/chinese_language_policy.py` for signup/login rules.
+- **User API tokens**: `models/domain/user_api_token.py`, `utils/auth/user_tokens.py`, `redis_user_token_cache.py`; token flows aligned with auth routers and preferences.
+- **MCP** (`services/mcp/`): scaffolding for MCP-related integration.
+- **SWOT academic** (`services/auth/swot_academic.py`, `scripts/swot/`, `scripts/update_swot_upstream.*`): upstream sync helpers and tests (`tests/services/test_swot_academic.py`).
+- **Tests**: `tests/services/test_geoip_country.py`, `test_redis_user_cache_whitelist.py`, `tests/models/` additions.
+
+### Changed
+- **Auth stack**: Session, login, password, phone, SMS, avatar, preferences, admin org/user/role routes; `models/domain/auth.py`, `messages.py`, `requests_auth.py`; password security, account lockout, authentication and token utilities; HTTP middleware and registration metrics; Redis `keys` and `redis_user_cache` behavior.
+- **Frontend auth and account**: `LoginModal.vue`, `AccountInfoModal.vue`, `ApiTokenModal.vue`, `LanguageSettingsModal.vue`, mobile account page, auth store and types, layouts, `components.d.ts`, `locales` (`en`/`zh` auth).
+- **Inline AI**: Prompt modules for all diagram types in `agents/inline_recommendations/prompts/` plus `utils/prompt_locale.py`; `inline_recommendations` and `node_palette_streaming` routers; `relationship_labels` generator and router.
+- **Config**: `config/features_config.py`, `config/rate_limiting.py`, `env.example`, `.gitignore`.
+
 ## [5.73.0] - 2026-04-07
 
 ### Added
+- **OpenClaw user API token** (`mgat_`): `user_api_tokens` model + Alembic migration; Redis cache keyed by token hash; `validate_user_token` with `Authorization: Bearer` + `X-MG-Account` (phone) binding; `POST/GET/DELETE /api/auth/api-token` (session mints token; rate-limited POST); `ApiTokenModal.vue` + **API Token** entry in `AccountInfoModal.vue`.
+- **Diagram node ops API** (`diagram_node_ops.py`): `PATCH /api/diagrams/{id}/nodes` (spec replace or structured add/update/delete) and `GET /api/diagrams/{id}/png` (screenshot + signed URL; rate-limited).
+- **OpenClaw skill** (`openclaw/skills/mindgraph/SKILL.md`, `README.md`): env vars, auth headers, generate/save/patch/recommendations flow; publish instructions for ClawHub.
 - **Canvas virtual keyboard** (`CanvasVirtualKeyboardPanel.vue`): On-screen keyboard using `simple-keyboard` and `simple-keyboard-layouts`, scoped to focused plain `input`/`textarea` (e.g. node labels, title); respects RTL UI locales; Escape closes; first-open hint via notifications.
 - **`keyboardLayoutForUiLocale.ts`**: Maps MindGraph UI locales to keyboard layout presets (Arabic, Chinese, Japanese, Korean, Thai, etc.) with English fallback for unmapped codes.
 - **`uiConfig.ts` — `CANVAS_OVERLAY_Z`**: Z-index ladder for Teleported canvas overlays (virtual keyboard below typical Element Plus chrome).
@@ -40,7 +59,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.71.0] - 2026-04-04
 
 ### Added
-- **Alembic revision `0004`** (`alembic/versions/0004_auth_fk_indexes.py`): Indexes on `users.organization_id` and `api_keys.organization_id`; `ON DELETE SET NULL` on both organization FKs so org deletion does not block; database-level `UNIQUE` on `organizations.invitation_code` (aligned with the ORM).
+- **Alembic revision `0004`** (`alembic/versions/rev_0004_auth_fk_indexes.py`): Indexes on `users.organization_id` and `api_keys.organization_id`; `ON DELETE SET NULL` on both organization FKs so org deletion does not block; database-level `UNIQUE` on `organizations.invitation_code` (aligned with the ORM).
 - **`services/redis/keys.py`**: Single registry for Redis key patterns and TTL constants consumed by cache and session modules.
 - **`services/redis/cache/redis_api_key_cache.py`**: Cache-aside Redis layer for API key validation (JSON payload by SHA-256 key fragment, 5-minute TTL) plus Redis `INCR` usage counters to cut Postgres load on authenticated API-key traffic.
 

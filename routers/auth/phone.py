@@ -230,9 +230,10 @@ async def change_phone(
     # Commit with retry for database lock handling
     await commit_user_with_retry(db, current_user)
 
-    # Invalidate cache for both old and new phone
-    user_cache.invalidate(current_user.id, old_phone)
-    user_cache.invalidate(current_user.id, new_phone)
+    # Invalidate cache for both old and new phone (and email index if present)
+    user_email = getattr(current_user, "email", None)
+    user_cache.invalidate(current_user.id, old_phone, user_email)
+    user_cache.invalidate(current_user.id, new_phone, user_email)
 
     # Re-cache user with new phone
     user_cache.cache_user(current_user)

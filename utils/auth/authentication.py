@@ -14,6 +14,7 @@ import logging
 import os
 import time
 from datetime import UTC, datetime
+from types import SimpleNamespace
 from typing import Optional
 
 from fastapi import Depends, HTTPException, Request, status
@@ -33,11 +34,13 @@ from .enterprise_mode import get_enterprise_user
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_redis_available = False
-_get_session_manager = None
-_hash_token = None
-_user_cache = None
-_org_cache = None
+_redis = SimpleNamespace(
+    available=False,
+    get_session_manager=None,
+    hash_token=None,
+    user_cache=None,
+    org_cache=None,
+)
 
 try:
     from services.redis.session.redis_session_manager import (
@@ -47,11 +50,11 @@ try:
     from services.redis.cache.redis_user_cache import user_cache
     from services.redis.cache.redis_org_cache import org_cache
 
-    _redis_available = True
-    _get_session_manager = get_session_manager
-    _hash_token = redis_hash_token
-    _user_cache = user_cache
-    _org_cache = org_cache
+    _redis.available = True
+    _redis.get_session_manager = get_session_manager
+    _redis.hash_token = redis_hash_token
+    _redis.user_cache = user_cache
+    _redis.org_cache = org_cache
 except ImportError:
     pass
 
@@ -103,6 +106,12 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
             detail="JWT token required for this endpoint",
         )
 
+    if token.startswith("mgat_"):
+        from utils.auth.user_tokens import validate_user_token
+
+        account_number = request.headers.get("X-MG-Account", "").strip()
+        return await validate_user_token(token, account_number)
+
     payload = decode_access_token(token)
 
     user_id = payload.get("sub")
@@ -111,24 +120,24 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token payload")
 
     # Session validation: Check if session exists in Redis
-    if not _redis_available:
+    if not _redis.available:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Redis is required for session validation",
         )
-    if _get_session_manager is None:
+    if _redis.get_session_manager is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Session manager not available",
         )
-    if _hash_token is None:
+    if _redis.hash_token is None:
         raise HTTPException(
             status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
             detail="Token hashing not available",
         )
 
-    session_manager = _get_session_manager()
-    token_hash = _hash_token(token)
+    session_manager = _redis.get_session_manager()
+    token_hash = _redis.hash_token(token)
 
     # DEBUG: Log session validation attempt
     now = int(time.time())
@@ -155,8 +164,8 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
 
     # Use cache for user lookup
     user = None
-    if _redis_available and _user_cache:
-        user = await _user_cache.get_by_id(int(user_id))
+    if _redis.available and _redis.user_cache:
+        user = await _redis.user_cache.get_by_id(int(user_id))
 
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
@@ -164,8 +173,8 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     # Check organization status (locked or expired) using cache
     if user.organization_id:
         org = None
-        if _redis_available and _org_cache:
-            org = await _org_cache.get_by_id(user.organization_id)
+        if _redis.available and _redis.org_cache:
+            org = await _redis.org_cache.get_by_id(user.organization_id)
         if org:
             # Check if organization is locked
             is_active = org.is_active if hasattr(org, "is_active") else True
@@ -210,26 +219,26 @@ async def get_user_from_cookie(token: str, db: AsyncSession) -> Optional[User]:
         if not user_id:
             return None
 
-        if not _redis_available:
+        if not _redis.available:
             return None
-        if _get_session_manager is None:
+        if _redis.get_session_manager is None:
             return None
 
-        session_manager = _get_session_manager()
+        session_manager = _redis.get_session_manager()
         if not session_manager.is_session_valid(int(user_id), token):
             logger.debug("Session invalid for user %s in get_user_from_cookie", user_id)
             return None
 
         user = None
-        if _user_cache:
-            user = await _user_cache.get_by_id(int(user_id))
+        if _redis.user_cache:
+            user = await _redis.user_cache.get_by_id(int(user_id))
         if not user:
             result = await db.execute(select(User).where(User.id == int(user_id)))
             user = result.scalar_one_or_none()
             if user:
                 db.expunge(user)
-                if _user_cache:
-                    _user_cache.cache_user(user)
+                if _redis.user_cache:
+                    _redis.user_cache.cache_user(user)
         return user
 
     except JWTError as e:
@@ -276,20 +285,30 @@ async def get_current_user_or_api_key(
         token = request.cookies.get("access_token")
 
     if token:
+        if token.startswith("mgat_"):
+            from utils.auth.user_tokens import validate_user_token
+
+            account_number = request.headers.get("X-MG-Account", "").strip()
+            if not account_number:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="X-MG-Account header required with API token",
+                )
+            return await validate_user_token(token, account_number)
         try:
             payload = decode_access_token(token)
             user_id = payload.get("sub")
 
             if user_id:
-                if not _redis_available:
+                if not _redis.available:
                     user = None
-                elif _get_session_manager is None:
+                elif _redis.get_session_manager is None:
                     user = None
                 else:
-                    session_manager = _get_session_manager()
+                    session_manager = _redis.get_session_manager()
                     if session_manager.is_session_valid(int(user_id), token):
-                        if _user_cache is not None:
-                            user = await _user_cache.get_by_id(int(user_id))
+                        if _redis.user_cache is not None:
+                            user = await _redis.user_cache.get_by_id(int(user_id))
                         else:
                             user = None
                     else:
@@ -345,3 +364,20 @@ async def get_current_user_or_api_key(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="Authentication required: provide JWT token (Authorization: Bearer) or API key (X-API-Key header)",
     )
+
+
+async def require_not_mgat_for_token_mint(
+    request: Request,
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+) -> None:
+    """Reject requests that authenticate with an mgat_ token (browser session only)."""
+    token = None
+    if credentials:
+        token = credentials.credentials
+    elif request:
+        token = request.cookies.get("access_token")
+    if token and token.startswith("mgat_"):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Create API tokens from the browser while logged in, not with an API token.",
+        )

@@ -53,6 +53,8 @@ class RegistrationMetrics:
                 "captcha_failed": 0,
                 "sms_code_invalid": 0,
                 "invitation_code_invalid": 0,
+                "geoip_blocked": 0,
+                "email_exists": 0,
                 "other": 0,
             },
             "total_registration_time": 0.0,

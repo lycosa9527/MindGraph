@@ -133,6 +133,9 @@ async def list_users_admin(
                 "locked_until": utc_to_beijing_iso(user.locked_until),
                 "created_at": utc_to_beijing_iso(user.created_at),
                 "token_stats": user_token_stats,
+                "email_login_whitelisted_from_cn": getattr(
+                    user, "email_login_whitelisted_from_cn", False
+                ),
             }
         )
 
@@ -197,6 +200,15 @@ async def update_user_admin(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         user.name = new_name
 
+    if "email_login_whitelisted_from_cn" in request:
+        raw_flag = request["email_login_whitelisted_from_cn"]
+        if not isinstance(raw_flag, bool):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="email_login_whitelisted_from_cn must be a boolean",
+            )
+        user.email_login_whitelisted_from_cn = raw_flag
+
     if "organization_id" in request:
         org_id = request["organization_id"]
         if org_id:
@@ -220,7 +232,7 @@ async def update_user_admin(
         ) from e
 
     try:
-        user_cache.invalidate(user_id, old_phone)
+        user_cache.invalidate(user_id, old_phone, getattr(user, "email", None))
         logger.debug("[Auth] Invalidated old cache for user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for user ID %s: %s", user_id, e)
@@ -268,6 +280,9 @@ async def update_user_admin(
             "name": user.name,
             "organization_code": org.code if org else None,
             "organization_name": org.name if org else None,
+            "email_login_whitelisted_from_cn": getattr(
+                user, "email_login_whitelisted_from_cn", False
+            ),
         },
     }
 
@@ -304,7 +319,7 @@ async def delete_user_admin(
         ) from e
 
     try:
-        user_cache.invalidate(user_id, user_phone)
+        user_cache.invalidate(user_id, user_phone, getattr(user, "email", None))
         logger.info("[Auth] Invalidated cache for deleted user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted user ID %s: %s", user_id, e)
@@ -341,7 +356,7 @@ async def unlock_user_admin(
         ) from e
 
     try:
-        user_cache.invalidate(user.id, user.phone)
+        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         user_cache.cache_user(user)
         logger.info("[Auth] Unlocked and re-cached user ID %s", user.id)
     except Exception as e:

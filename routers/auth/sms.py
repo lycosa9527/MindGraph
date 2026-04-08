@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
+from config.settings import config
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
     SendSMSCodeRequest,
@@ -34,7 +35,7 @@ from services.auth.sms_service import (
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_sms_storage import get_sms_storage
 from services.redis.cache.redis_user_cache import user_cache
-from utils.auth import AUTH_MODE
+from utils.auth import AUTH_MODE, get_client_ip
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
@@ -44,10 +45,26 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+def _enforce_sms_send_ip_limit(http_request: Request, lang: Language) -> None:
+    """Sliding-window cap on SMS send attempts per client IP (shared across /sms/send endpoints)."""
+    rate_limiter = get_rate_limiter()
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    send_window_seconds = config.SMS_SEND_WINDOW_MINUTES * 60
+    allowed_ip_send, _, _ = rate_limiter.check_and_record(
+        "sms_send_ip",
+        client_ip,
+        config.SMS_SEND_MAX_ATTEMPTS_PER_IP,
+        send_window_seconds,
+    )
+    if not allowed_ip_send:
+        error_msg = Messages.error("too_many_sms_send_attempts_ip", lang, config.SMS_SEND_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+
 @router.post("/sms/send")
 async def send_sms_code(
     request: SendSMSCodeRequest,
-    _http_request: Request,
+    http_request: Request,
     _db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -124,6 +141,8 @@ async def send_sms_code(
     sms_storage = get_sms_storage()
     rate_limiter = get_rate_limiter()
 
+    _enforce_sms_send_ip_limit(http_request, lang)
+
     # Check rate limiting: cooldown between requests (via Redis TTL)
     exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)
 
@@ -194,7 +213,7 @@ async def send_sms_code(
 @router.post("/sms/verify")
 async def verify_sms_code(
     request: VerifySMSCodeRequest,
-    _http_request: Request,
+    http_request: Request,
     _db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
@@ -207,10 +226,37 @@ async def verify_sms_code(
     Note: This does NOT consume the code - the actual action
     endpoints (register_sms, login_sms, reset_password) will
     consume it.
+
+    Rate-limited per phone+purpose and per IP (same pattern as POST /email/verify).
     """
     phone = request.phone
     code = request.code
     purpose = request.purpose
+
+    window_seconds = config.SMS_VERIFY_WINDOW_MINUTES * 60
+    combo_id = f"{phone}:{purpose}"
+    rate_limiter = get_rate_limiter()
+
+    allowed_combo, _combo_count, _ = rate_limiter.check_and_record(
+        "sms_verify_combo",
+        combo_id,
+        config.SMS_VERIFY_MAX_ATTEMPTS_PER_COMBO,
+        window_seconds,
+    )
+    if not allowed_combo:
+        error_msg = Messages.error("too_many_sms_verify_attempts", lang, config.SMS_VERIFY_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
+
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    allowed_ip, _ip_count, _ = rate_limiter.check_and_record(
+        "sms_verify_ip",
+        client_ip,
+        config.SMS_VERIFY_MAX_ATTEMPTS_PER_IP,
+        window_seconds,
+    )
+    if not allowed_ip:
+        error_msg = Messages.error("too_many_sms_verify_attempts", lang, config.SMS_VERIFY_WINDOW_MINUTES)
+        raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     # Get SMS storage
     sms_storage = get_sms_storage()
@@ -264,7 +310,7 @@ def _verify_and_consume_sms_code(phone: str, code: str, purpose: str, _db: Async
 
 async def _send_sms_code_with_purpose(
     request: SendSMSCodeSimpleRequest,
-    _http_request: Request,
+    http_request: Request,
     purpose: str,
     _db: AsyncSession,
     lang: Language,
@@ -328,6 +374,8 @@ async def _send_sms_code_with_purpose(
     # Get Redis SMS storage and rate limiter
     sms_storage = get_sms_storage()
     rate_limiter = get_rate_limiter()
+
+    _enforce_sms_send_ip_limit(http_request, lang)
 
     # Check rate limiting: cooldown between requests (via Redis TTL)
     exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)

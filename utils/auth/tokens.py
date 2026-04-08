@@ -55,7 +55,8 @@ def create_access_token(user) -> str:
 
     payload = {
         "sub": str(user.id),
-        "phone": user.phone,
+        "phone": user.phone or "",
+        "email": getattr(user, "email", None) or "",
         "org_id": user.organization_id,
         "jti": token_id,
         "type": "access",

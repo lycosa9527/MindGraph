@@ -6,7 +6,7 @@ Follows concept map relationship label prompt structure (concrete examples, RULE
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note, THINKING_APPROACH
+from ._common import append_batch_note, is_chinese_inline_prompt_language, THINKING_APPROACH, thinking_locale_key
 
 
 def build_bubble_attributes_prompt(
@@ -20,10 +20,10 @@ def build_bubble_attributes_prompt(
     topic = (context.get("topic") or "").strip()
     attribute_texts = context.get("attribute_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["bubble_map"][language]
+    thinking = THINKING_APPROACH["bubble_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"为以下主题生成{count}个气泡图属性词：{topic}" if topic else "主题未设置"
         prompt = f"""{topic_ctx}
 

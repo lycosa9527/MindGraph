@@ -6,7 +6,7 @@ get_mindmap_children_prompt.
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note, THINKING_APPROACH
+from ._common import append_batch_note, is_chinese_inline_prompt_language, THINKING_APPROACH, thinking_locale_key
 
 
 def build_mindmap_branches_prompt(
@@ -20,10 +20,10 @@ def build_mindmap_branches_prompt(
     topic = (context.get("topic") or "").strip()
     branch_names = context.get("branch_names") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["mindmap"][language]
+    thinking = THINKING_APPROACH["mindmap"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"为以下主题生成{count}个思维导图分支想法：{topic}" if topic else "主题未设置"
         prompt = f"""{topic_ctx}
 
@@ -89,7 +89,7 @@ def build_mindmap_children_prompt(
     context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"主题：{topic}" if topic else "主题未设置"
         prompt = f"""为思维导图分支「{branch_name}」生成{count}个子分支想法
 

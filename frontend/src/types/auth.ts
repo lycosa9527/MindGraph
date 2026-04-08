@@ -30,6 +30,8 @@ export interface User {
   promptLanguage?: string | null
   /** Persisted UI version (chinese | international); absent until loaded from server */
   uiVersion?: string | null
+  /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
+  allowsSimplifiedChinese?: boolean
 }
 
 /**
@@ -54,6 +56,7 @@ export interface BackendUser {
   ui_language?: string | null
   prompt_language?: string | null
   ui_version?: string | null
+  allows_simplified_chinese?: boolean
   user?: {
     id?: string | number
     phone?: string
@@ -62,6 +65,7 @@ export interface BackendUser {
 
 export interface LoginCredentials {
   phone?: string
+  email?: string
   username?: string
   password: string
   captcha?: string

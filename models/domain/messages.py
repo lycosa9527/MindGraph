@@ -216,6 +216,85 @@ class Messages:
             "en": "Registration is not available in {} mode. Please use passkey authentication instead.",
             "az": "{} rejimində qeydiyyat mövcud deyil. Bunun əvəzinə passkey autentifikasiyasından istifadə edin.",
         },
+        "registration_email_not_available_in_region": {
+            "zh": "当前网络环境无法使用教育邮箱注册。中国大陆用户请使用手机号与邀请码注册，或联系销售获取访问权限。",
+            "en": (
+                "Education email registration is not available from your network location. "
+                "If you are in mainland China, register with your phone number and invitation code, "
+                "or contact sales for access."
+            ),
+            "az": (
+                "Təhsil e-poçtu ilə qeydiyyat bu şəbəkə məkanından mövcud deyil. "
+                "Çin materikindəsinizsə, telefon və dəvət kodu ilə qeydiyyatdan keçin və ya satışla əlaqə saxlayın."
+            ),
+        },
+        "registration_geoip_unavailable": {
+            "zh": "无法验证您的网络位置，暂时无法完成教育邮箱注册。请稍后再试或联系支持。",
+            "en": (
+                "Your location could not be verified. Education email registration is temporarily unavailable. "
+                "Try again later or contact support."
+            ),
+            "az": (
+                "Məkanınız təsdiqlənmədi. Təhsil e-poçtu qeydiyyatı müvəqqəti olaraq əlçatan deyil. "
+                "Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın."
+            ),
+        },
+        "email_login_blocked_in_mainland_china": {
+            "zh": (
+                "当前网络环境下无法使用邮箱密码登录。中国大陆用户请使用手机号登录，或联系销售为您的账户开通邮箱登录权限。"
+            ),
+            "en": (
+                "Email sign-in is not available from your network location. "
+                "If you are in mainland China, sign in with your phone number, "
+                "or contact sales to enable email sign-in for your account."
+            ),
+            "az": (
+                "E-poçt ilə giriş bu şəbəkə məkanından mövcud deyil. "
+                "Çin materikindəsinizsə, telefon nömrəsi ilə daxil olun və ya satışla əlaqə saxlayın."
+            ),
+        },
+        "login_email_geoip_unavailable": {
+            "zh": "无法验证您的网络位置，暂时无法完成邮箱登录。请稍后再试或联系支持。",
+            "en": (
+                "Your location could not be verified. Email sign-in is temporarily unavailable. "
+                "Try again later or contact support."
+            ),
+            "az": (
+                "Məkanınız təsdiqlənmədi. E-poçt ilə giriş müvəqqəti olaraq əlçatan deyil. "
+                "Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın."
+            ),
+        },
+        "email_already_registered": {
+            "zh": "该邮箱已被注册，请直接登录或使用其他邮箱。",
+            "en": "This email is already registered. Please sign in or use a different email address.",
+            "az": "Bu e-poçt artıq qeydiyyatdan keçib. Daxil olun və ya başqa ünvandan istifadə edin.",
+        },
+        "login_failed_identifier_not_found": {
+            "zh": ("登录失败。手机号或邮箱未找到或密码不正确。还有 {} 次尝试机会。"),
+            "en": ("Login failed. Phone or email not found or password incorrect. {} attempt(s) remaining."),
+            "az": ("Giriş uğursuz oldu. Telefon və ya e-poçt tapılmadı və ya parol yanlışdır. {} cəhd qalıb."),
+        },
+        "ui_language_zh_not_allowed": {
+            "zh": "您的账户不支持简体中文界面。请选择其他界面语言。",
+            "en": "Simplified Chinese UI is not available for your account. Please choose another language.",
+            "az": "Hesabınız üçün sadə çin dilində interfeysə icazə verilmir. Başqa dil seçin.",
+        },
+        "prompt_language_zh_not_allowed": {
+            "zh": "您的账户不支持简体中文作为生成语言。请选择其他语言（例如繁体中文或英语）。",
+            "en": (
+                "Simplified Chinese is not available as the generation language for your account. "
+                "Please choose another language (e.g. Traditional Chinese or English)."
+            ),
+            "az": (
+                "Hesabınız üçün sadə çin dili nəsrlər üçün mövcud deyil. "
+                "Başqa dil seçin (məsələn, ənənəvi çin və ya ingilis)."
+            ),
+        },
+        "register_overseas_acknowledgment_required": {
+            "zh": "请确认您了解海外教育邮箱注册的相关条款。",
+            "en": "You must acknowledge the overseas education email registration terms.",
+            "az": "Xarici təhsil e-poçtu qeydiyyat şərtlərini təsdiqləməlisiniz.",
+        },
         "login_failed_phone_not_found": {
             "zh": ("登录失败。手机号未找到或密码不正确。还有 {} 次尝试机会。"),
             "en": ("Login failed. Phone number not found or password incorrect. {} attempt(s) remaining."),
@@ -294,6 +373,16 @@ class Messages:
                 "Bu telefon nömrəsi qeydiyyatdan keçməyib. Telefon nömrənizi yoxlayın və ya dəstəklə əlaqə saxlayın."
             ),
         },
+        "email_not_registered_login": {
+            "zh": "该邮箱未注册。请检查邮箱地址或注册新账户。",
+            "en": ("This email is not registered. Check the address or register a new account."),
+            "az": ("Bu e-poçt qeydiyyatdan keçməyib. Ünvanı yoxlayın və ya yeni hesab yaradın."),
+        },
+        "email_not_registered_reset": {
+            "zh": "该邮箱未注册。请检查邮箱地址或联系支持。",
+            "en": ("This email is not registered. Check the address or contact support."),
+            "az": ("Bu e-poçt qeydiyyatdan keçməyib. Ünvanı yoxlayın və ya dəstəklə əlaqə saxlayın."),
+        },
         "sms_cooldown_minutes": {
             "zh": ("请等待 {} 分钟后再请求新的短信验证码。该号码最近已收到验证码。"),
             "en": (
@@ -345,6 +434,216 @@ class Messages:
                 "Daha sonra yenidən cəhd edin və ya problem davam edərsə "
                 "dəstəklə əlaqə saxlayın."
             ),
+        },
+        "email_service_not_configured": {
+            "zh": "邮件验证服务未配置。请联系支持。",
+            "en": "Email verification is not configured. Please contact support.",
+            "az": "E-poçt təsdiqi konfiqurasiya edilməyib. Dəstəklə əlaqə saxlayın.",
+        },
+        "email_invalid_format": {
+            "zh": "邮箱地址格式不正确。请检查后重试。",
+            "en": "The email address format is invalid. Please check and try again.",
+            "az": "E-poçt ünvanı formatı etibarsızdır. Yoxlayın və yenidən cəhd edin.",
+        },
+        "email_not_academic_domain": {
+            "zh": "请使用学校或教育机构提供的官方邮箱地址。",
+            "en": "Please use an official school or educational institution email address.",
+            "az": "Rəsmi məktəb və ya təhsil müəssisəsi e-poçt ünvanından istifadə edin.",
+        },
+        "email_swot_unavailable": {
+            "zh": "学术邮箱校验服务不可用。请联系管理员或稍后再试。",
+            "en": "Academic email verification is unavailable. Contact support or try again later.",
+            "az": "Akademik e-poçt yoxlaması əlçatan deyil. Dəstəklə əlaqə saxlayın.",
+        },
+        "email_code_format_invalid": {
+            "zh": "验证码必须为 6 位数字。",
+            "en": "The verification code must be exactly 6 digits.",
+            "az": "Təsdiq kodu dəqiq 6 rəqəm olmalıdır.",
+        },
+        "email_cooldown_minutes": {
+            "zh": ("请等待 {} 分钟后再请求新的邮件验证码。该邮箱最近已收到验证码。"),
+            "en": (
+                "Please wait {} minute(s) before requesting a new email code. "
+                "A code was recently sent to this address."
+            ),
+            "az": (
+                "Yeni e-poçt kodu tələb etməzdən əvvəl {} dəqiqə gözləyin. "
+                "Bu ünvana yaxınlarda kod göndərilib."
+            ),
+        },
+        "email_cooldown_seconds": {
+            "zh": ("请等待 {} 秒后再请求新的邮件验证码。该邮箱最近已收到验证码。"),
+            "en": (
+                "Please wait {} second(s) before requesting a new email code. "
+                "A code was recently sent to this address."
+            ),
+            "az": (
+                "Yeni e-poçt kodu tələb etməzdən əvvəl {} saniyə gözləyin. "
+                "Bu ünvana yaxınlarda kod göndərilib."
+            ),
+        },
+        "too_many_email_requests": {
+            "zh": ("邮件验证码请求过多（{} 次请求在 {} 小时内）。请稍后再试。"),
+            "en": (
+                "Too many email verification code requests ({} requests in {} hour(s)). "
+                "Please try again later."
+            ),
+            "az": (
+                "Çox sayda e-poçt təsdiq kodu sorğusu ({} sorğu {} saat ərzində). "
+                "Daha sonra yenidən cəhd edin."
+            ),
+        },
+        "too_many_email_verify_attempts": {
+            "zh": ("邮件验证码校验尝试过多（{} 分钟内）。请稍后再试。"),
+            "en": (
+                "Too many email verification attempts in the last {} minute(s). "
+                "Please try again later."
+            ),
+            "az": (
+                "Son {} dəqiqə ərzində çox sayda e-poçt təsdiq cəhdi. "
+                "Daha sonra yenidən cəhd edin."
+            ),
+        },
+        "too_many_email_send_attempts_ip": {
+            "zh": ("邮件发送请求过多（当前 IP 在 {} 分钟内）。请稍后再试。"),
+            "en": (
+                "Too many email verification requests from this network in the last {} minute(s). "
+                "Please try again later."
+            ),
+            "az": (
+                "Son {} dəqiqə ərzində bu şəbəkədən çox sayda e-poçt sorğusu. "
+                "Daha sonra yenidən cəhd edin."
+            ),
+        },
+        "too_many_sms_send_attempts_ip": {
+            "zh": ("短信发送请求过多（当前 IP 在 {} 分钟内）。请稍后再试。"),
+            "en": (
+                "Too many SMS verification requests from this network in the last {} minute(s). "
+                "Please try again later."
+            ),
+            "az": (
+                "Son {} dəqiqə ərzində bu şəbəkədən çox sayda SMS sorğusu. "
+                "Daha sonra yenidən cəhd edin."
+            ),
+        },
+        "too_many_sms_verify_attempts": {
+            "zh": ("短信验证码校验尝试过多（{} 分钟内）。请稍后再试。"),
+            "en": (
+                "Too many SMS verification attempts in the last {} minute(s). "
+                "Please try again later."
+            ),
+            "az": (
+                "Son {} dəqiqə ərzində çox sayda SMS təsdiq cəhdi. "
+                "Daha sonra yenidən cəhd edin."
+            ),
+        },
+        "email_code_invalid": {
+            "zh": "邮件验证码无效。请检查验证码后重试，或申请新的验证码。",
+            "en": (
+                "Invalid email verification code. Please check the code and try again, "
+                "or request a new code."
+            ),
+            "az": (
+                "Etibarsız e-poçt təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin "
+                "və ya yeni kod tələb edin."
+            ),
+        },
+        "email_service_temporarily_unavailable": {
+            "zh": ("邮件服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。"),
+            "en": (
+                "Email service is temporarily unavailable. Please try again later "
+                "or contact support if the problem persists."
+            ),
+            "az": (
+                "E-poçt xidməti müvəqqəti olaraq mövcud deyil. "
+                "Daha sonra yenidən cəhd edin və ya problem davam edərsə "
+                "dəstəklə əlaqə saxlayın."
+            ),
+        },
+        "email_error_frequency_limit": {
+            "zh": "邮件发送过于频繁，请稍后再试。",
+            "en": "Email sending rate limit reached. Please try again later.",
+            "az": "E-poçt göndərmə limiti keçildi. Daha sonra yenidən cəhd edin.",
+        },
+        "email_error_sender_not_authenticated": {
+            "zh": "发件人未通过认证。请联系管理员检查邮件推送配置。",
+            "en": "Sender is not authenticated. Please ask an administrator to check SES configuration.",
+            "az": "Göndərən autentifikasiya olunmayıb. Administrator SES konfiqurasiyasını yoxlasın.",
+        },
+        "email_error_insufficient_quota": {
+            "zh": "邮件套餐额度不足。请联系管理员。",
+            "en": "Email sending quota is insufficient. Please contact an administrator.",
+            "az": "E-poçt göndərmə kotası kifayət etmir. Administratorla əlaqə saxlayın.",
+        },
+        "email_error_insufficient_balance": {
+            "zh": "账户余额不足，无法发送邮件。请联系管理员。",
+            "en": "Account balance is insufficient to send email. Please contact an administrator.",
+            "az": "Hesab balansı e-poçt göndərmək üçün kifayət etmir. Administratorla əlaqə saxlayın.",
+        },
+        "email_error_address_blacklisted": {
+            "zh": "该邮箱地址在黑名单中，无法发送。",
+            "en": "This email address is on a block list and cannot receive mail.",
+            "az": "Bu e-poçt ünvanı qara siyahıdadır və məktub ala bilmir.",
+        },
+        "email_error_invalid_template": {
+            "zh": "邮件模板无效或不可用。请联系管理员。",
+            "en": "Email template is invalid or unavailable. Please contact an administrator.",
+            "az": "E-poçt şablonu etibarsızdır və ya əlçatan deyil. Administratorla əlaqə saxlayın.",
+        },
+        "email_error_template_data": {
+            "zh": "邮件模板参数格式错误。",
+            "en": "Email template data format is invalid.",
+            "az": "E-poçt şablonu məlumat formatı etibarsızdır.",
+        },
+        "email_error_invalid_recipient": {
+            "zh": "收件人邮箱地址无效或无法投递。请检查地址是否正确。",
+            "en": "The recipient email address is invalid or cannot receive mail. Please check the address.",
+            "az": "Alıcı e-poçt ünvanı etibarsızdır və ya məktub qəbul edə bilmir. Ünvanı yoxlayın.",
+        },
+        "email_error_invalid_domain": {
+            "zh": "发信域名配置无效。请联系管理员检查邮件推送设置。",
+            "en": "Sending domain configuration is invalid. Ask an administrator to check SES settings.",
+            "az": "Göndərmə domeni konfiqurasiyası etibarsızdır. Administrator SES ayarlarını yoxlasın.",
+        },
+        "email_error_unsupported_mail_type": {
+            "zh": "该邮箱类型不支持发送。请尝试其他邮箱。",
+            "en": "This mailbox type is not supported for sending. Try another email address.",
+            "az": "Bu poçt qutusu növü göndərmə üçün dəstəklənmir. Başqa ünvandan cəhd edin.",
+        },
+        "email_error_missing_content": {
+            "zh": "邮件内容缺失。请联系技术支持。",
+            "en": "Email content is missing. Please contact support.",
+            "az": "E-poçt məzmunu çatışmır. Dəstəklə əlaqə saxlayın.",
+        },
+        "email_error_invalid_sender": {
+            "zh": "发件人地址格式不正确。",
+            "en": "Sender address format is incorrect.",
+            "az": "Göndərən ünvan formatı düzgün deyil.",
+        },
+        "email_error_unauthorized": {
+            "zh": "邮件服务鉴权失败。请检查 API 密钥与权限。",
+            "en": "Email service authorization failed. Check API keys and permissions.",
+            "az": "E-poçt xidməti avtorizasiyası uğursuz oldu. API açarlarını yoxlayın.",
+        },
+        "email_error_rate_limit": {
+            "zh": "邮件接口请求过于频繁，请稍后再试。",
+            "en": "Email API rate limit exceeded. Please try again later.",
+            "az": "E-poçt API limiti keçildi. Daha sonra yenidən cəhd edin.",
+        },
+        "email_error_timeout": {
+            "zh": "邮件服务请求超时，请稍后重试。",
+            "en": "Email service request timed out. Please try again.",
+            "az": "E-poçt xidməti sorğusu vaxtı bitdi. Yenidən cəhd edin.",
+        },
+        "email_error_http": {
+            "zh": "邮件服务网络错误，请稍后重试。",
+            "en": "Email service network error. Please try again later.",
+            "az": "E-poçt xidməti şəbəkə xətası. Daha sonra yenidən cəhd edin.",
+        },
+        "email_error_generic": {
+            "zh": "邮件发送失败，请稍后重试或联系支持。",
+            "en": "Email could not be sent. Please try again later or contact support.",
+            "az": "E-poçt göndərilə bilmədi. Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın.",
         },
         # SMS Error Codes - FailedOperation
         "sms_error_contain_sensitive_word": {
@@ -783,6 +1082,11 @@ class Messages:
             "zh": "验证码发送成功",
             "en": "Verification code sent successfully",
             "az": "Təsdiq kodu uğurla göndərildi",
+        },
+        "verification_email_sent": {
+            "zh": "验证邮件已发送，请查收收件箱（含垃圾邮件）。",
+            "en": "Verification email sent. Please check your inbox and spam folder.",
+            "az": "Təsdiq e-poçtu göndərildi. Gələnlər və spam qovluğunu yoxlayın.",
         },
         "verification_code_valid": {
             "zh": "验证码有效",

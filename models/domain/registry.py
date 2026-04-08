@@ -14,6 +14,7 @@ from models.domain.auth import (
     UpdateNotification,
     UpdateNotificationDismissed,
 )
+from models.domain.user_api_token import UserAPIToken
 from models.domain.token_usage import TokenUsage
 from models.domain.diagrams import Diagram
 from models.domain.diagram_snapshots import DiagramSnapshot
@@ -90,6 +91,7 @@ __all__ = [
     "Organization",
     "User",
     "APIKey",
+    "UserAPIToken",
     "UpdateNotification",
     "UpdateNotificationDismissed",
     "TokenUsage",

@@ -82,7 +82,7 @@ async def lock_account(user, db: AsyncSession) -> None:
     # Invalidate and re-cache user (lock status changed)
     if _redis_available and _user_cache:
         try:
-            _user_cache.invalidate(user.id, user.phone)
+            _user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
             _user_cache.cache_user(user)
         except Exception as e:
             logger.debug("[Auth] Failed to update cache after lock_account: %s", e)
@@ -110,7 +110,7 @@ async def reset_failed_attempts(user, db: AsyncSession) -> None:
     # Invalidate and re-cache user (lock status and last_login changed)
     if _redis_available and _user_cache:
         try:
-            _user_cache.invalidate(user.id, user.phone)
+            _user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
             _user_cache.cache_user(user)
         except Exception as e:
             logger.debug("[Auth] Failed to update cache after reset_failed_attempts: %s", e)
@@ -137,7 +137,7 @@ async def increment_failed_attempts(user, db: AsyncSession) -> None:
         # Invalidate and re-cache user (failed_login_attempts changed)
         if _redis_available and _user_cache:
             try:
-                _user_cache.invalidate(user.id, user.phone)
+                _user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
                 _user_cache.cache_user(user)
             except Exception as e:
                 logger.debug(

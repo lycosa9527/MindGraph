@@ -10,9 +10,11 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
 from typing import Optional
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 from utils.prompt_output_languages import is_prompt_output_language
 from utils.ui_languages import UI_LANGUAGE_CODES
@@ -83,13 +85,66 @@ class RegisterRequest(BaseModel):
         }
 
 
-class LoginRequest(BaseModel):
-    """Request model for user login"""
+class RegisterOverseasRequest(BaseModel):
+    """Education email registration outside mainland China (GeoIP not CN)."""
 
-    phone: str = Field(..., description="User phone number")
+    email: str = Field(..., max_length=254, description="Education email address")
+    password: str = Field(..., min_length=8, description="Password (min 8 characters)")
+    name: str = Field(
+        ...,
+        min_length=2,
+        description="Display name (min 2 chars, no numbers)",
+    )
+    email_code: str = Field(..., min_length=6, max_length=6, description="6-digit email verification code")
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+    outside_mainland_acknowledged: bool = Field(
+        ...,
+        description="Must be true: user acknowledges overseas email registration terms",
+    )
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, value: str) -> str:
+        return value.strip()
+
+    @field_validator("name")
+    @classmethod
+    def validate_name(cls, value: str) -> str:
+        if len(value) < 2:
+            raise ValueError("Name must be at least 2 characters.")
+        if any(char.isdigit() for char in value):
+            raise ValueError("Name cannot contain numbers.")
+        return value
+
+    @field_validator("email_code")
+    @classmethod
+    def validate_email_code(cls, value: str) -> str:
+        value = value.strip()
+        if len(value) != 6 or not value.isdigit():
+            raise ValueError("Email verification code must be 6 digits.")
+        return value
+
+
+class LoginRequest(BaseModel):
+    """Request model for user login (phone or email)."""
+
+    phone: Optional[str] = Field(None, max_length=20, description="11-digit Chinese mobile")
+    email: Optional[str] = Field(None, max_length=254, description="Account email (overseas registration)")
     password: str = Field(..., description="User password")
     captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
     captcha_id: str = Field(..., description="Captcha session ID")
+
+    @model_validator(mode="after")
+    def exactly_one_login_identifier(self) -> LoginRequest:
+        data = self.model_dump()
+        phone_val = data.get("phone")
+        email_val = data.get("email")
+        phone_set = bool(phone_val and str(phone_val).strip())
+        email_set = bool(email_val and str(email_val).strip())
+        if phone_set == email_set:
+            raise ValueError("Provide exactly one of phone or email")
+        return self
 
     class Config:
         """Configuration for LoginRequest model."""
@@ -256,6 +311,116 @@ class VerifySMSCodeRequest(BaseModel):
         """Configuration for VerifySMSCodeRequest model."""
 
         json_schema_extra = {"example": {"phone": "13812345678", "code": "123456", "purpose": "register"}}
+
+
+# ============================================================================
+# EMAIL VERIFICATION REQUEST MODELS (Tencent SES)
+# ============================================================================
+
+
+class SendEmailCodeRequest(BaseModel):
+    """Request model for sending email verification code (SES)."""
+
+    email: str = Field(..., max_length=254, description="Recipient email address")
+    purpose: str = Field(
+        ...,
+        description=(
+            "Purpose: register (overseas) or reset_password (email reset); "
+            "narrowed to implemented flows."
+        ),
+    )
+    captcha: str = Field(..., min_length=4, max_length=4, description="4-character captcha code")
+    captcha_id: str = Field(..., description="Captcha session ID")
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("purpose")
+    @classmethod
+    def validate_purpose(cls, v: str) -> str:
+        valid = ["register", "reset_password"]
+        if v not in valid:
+            raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
+        return v
+
+    class Config:
+        """Configuration for SendEmailCodeRequest model."""
+
+        json_schema_extra = {
+            "example": {
+                "email": "user@example.com",
+                "purpose": "register",
+                "captcha": "AB3D",
+                "captcha_id": "uuid-captcha-session",
+            }
+        }
+
+
+class VerifyEmailCodeRequest(BaseModel):
+    """Request model for verifying email code (standalone)."""
+
+    email: str = Field(..., max_length=254, description="Recipient email address")
+    code: str = Field(..., min_length=1, max_length=6, description="6-digit verification code")
+    purpose: str = Field(..., description="Purpose: register or reset_password")
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("code")
+    @classmethod
+    def strip_code(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("purpose")
+    @classmethod
+    def validate_purpose(cls, v: str) -> str:
+        valid = ["register", "reset_password"]
+        if v not in valid:
+            raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
+        return v
+
+    class Config:
+        """Configuration for VerifyEmailCodeRequest model."""
+
+        json_schema_extra = {
+            "example": {"email": "user@example.com", "code": "123456", "purpose": "register"}
+        }
+
+
+class ResetPasswordWithEmailRequest(BaseModel):
+    """Request model for password reset with email verification code."""
+
+    email: str = Field(..., max_length=254, description="Account email address")
+    email_code: str = Field(..., min_length=6, max_length=6, description="6-digit email verification code")
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("email_code")
+    @classmethod
+    def validate_email_code(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) != 6 or not v.isdigit():
+            raise ValueError("Email verification code must be exactly 6 digits.")
+        return v
+
+    class Config:
+        """Configuration for ResetPasswordWithEmailRequest model."""
+
+        json_schema_extra = {
+            "example": {
+                "email": "user@university.edu",
+                "email_code": "123456",
+                "new_password": "NewPassword123!",
+            }
+        }
 
 
 class RegisterWithSMSRequest(BaseModel):

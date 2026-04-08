@@ -17,6 +17,7 @@ import os
 # ---------------------------------------------------------------------------
 USER_BY_ID = "user:{user_id}"
 USER_BY_PHONE = "user:phone:{phone}"
+USER_BY_EMAIL = "user:email:{email}"
 TTL_USER = 86_400  # 24 h
 
 # ---------------------------------------------------------------------------
@@ -33,6 +34,12 @@ TTL_ORG = 86_400  # 24 h
 API_KEY_BY_HASH = "apikey:hash:{hash}"
 API_KEY_USAGE_INCR = "apikey:usage:{key_id}"
 TTL_API_KEY = 300  # 5 min
+
+# ---------------------------------------------------------------------------
+# User API token cache  (redis_user_token_cache.py) — OpenClaw mgat_ tokens
+# ---------------------------------------------------------------------------
+USER_TOKEN_BY_HASH = "usertoken:hash:{hash}"
+TTL_USER_TOKEN = 604800  # 7 days (matches default token expiry)
 
 # ---------------------------------------------------------------------------
 # Diagram cache  (_redis_diagram_cache_helpers.py / redis_diagram_cache.py)
@@ -120,6 +127,12 @@ ACTIVITY_USER_PATTERN = "activity:user:*"
 # ---------------------------------------------------------------------------
 SMS_VERIFY = "sms:verify:{purpose}:{phone}"
 TTL_SMS = 300
+
+# ---------------------------------------------------------------------------
+# Email verification  (redis_email_storage.py)
+# ---------------------------------------------------------------------------
+EMAIL_VERIFY = "email:verify:{purpose}:{email}"
+TTL_EMAIL = 600
 
 # ---------------------------------------------------------------------------
 # Bayi tokens / whitelist  (redis_bayi_token.py / redis_bayi_whitelist.py)

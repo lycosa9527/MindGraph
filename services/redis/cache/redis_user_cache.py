@@ -66,6 +66,7 @@ class UserCache:
         return {
             "id": str(user.id),
             "phone": user.phone or "",
+            "email": getattr(user, "email", None) or "",
             "password_hash": user.password_hash or "",
             "name": user.name or "",
             "organization_id": str(user.organization_id) if user.organization_id else "",
@@ -77,6 +78,12 @@ class UserCache:
             "last_login": user.last_login.isoformat() if user.last_login else "",
             "ui_language": getattr(user, "ui_language", None) or "",
             "prompt_language": getattr(user, "prompt_language", None) or "",
+            "allows_simplified_chinese": "1"
+            if getattr(user, "allows_simplified_chinese", True)
+            else "0",
+            "email_login_whitelisted_from_cn": "1"
+            if getattr(user, "email_login_whitelisted_from_cn", False)
+            else "0",
         }
 
     def _deserialize_user(self, data: Dict[str, str]) -> User:
@@ -91,7 +98,12 @@ class UserCache:
         """
         user = User()
         user.id = int(data.get("id", "0"))
-        user.phone = data.get("phone") or ""
+        user.phone = data.get("phone") or None
+        if user.phone == "":
+            user.phone = None
+        user.email = data.get("email") or None
+        if user.email == "":
+            user.email = None
         user.password_hash = data.get("password_hash") or ""
         user.name = data.get("name") or None
         org_id_val = data.get("organization_id")
@@ -127,16 +139,27 @@ class UserCache:
 
         user.ui_language = data.get("ui_language") or None
         user.prompt_language = data.get("prompt_language") or None
+        asc = data.get("allows_simplified_chinese", "1")
+        user.allows_simplified_chinese = asc not in ("0", "false", "False")
+
+        wl = data.get("email_login_whitelisted_from_cn", "0")
+        user.email_login_whitelisted_from_cn = wl in ("1", "true", "True")
 
         return user
 
-    async def _load_from_database(self, user_id: Optional[int] = None, phone: Optional[str] = None) -> Optional[User]:
+    async def _load_from_database(
+        self,
+        user_id: Optional[int] = None,
+        phone: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> Optional[User]:
         """
         Load user from database.
 
         Args:
             user_id: User ID to load (if provided)
             phone: Phone number to load (if provided)
+            email: Normalized email to load (if provided)
 
         Returns:
             User object or None if not found
@@ -148,6 +171,9 @@ class UserCache:
                     user = result.scalar_one_or_none()
                 elif phone:
                     result = await db.execute(select(User).where(User.phone == phone))
+                    user = result.scalar_one_or_none()
+                elif email:
+                    result = await db.execute(select(User).where(User.email == email))
                     user = result.scalar_one_or_none()
                 else:
                     return None
@@ -215,6 +241,42 @@ class UserCache:
 
         logger.debug("[UserCache] Cache miss for user ID %s, loading from database", user_id)
         return await self._load_from_database(user_id=user_id)
+
+    async def get_by_email(self, email: str) -> Optional[User]:
+        """
+        Get user by normalized email with cache lookup and database fallback.
+
+        Args:
+            email: Normalized lowercase email
+
+        Returns:
+            User object or None if not found
+        """
+        if not is_redis_available():
+            return await self._load_from_database(email=email)
+
+        try:
+            index_key = _keys.USER_BY_EMAIL.format(email=email)
+            user_id_str = RedisOps.get(index_key)
+
+            if user_id_str:
+                try:
+                    user_id = int(user_id_str)
+                    return await self.get_by_id(user_id)
+                except (ValueError, TypeError):
+                    try:
+                        RedisOps.delete(index_key)
+                    except Exception as exc:
+                        logger.debug("Corrupted user email index deletion failed: %s", exc)
+                    return await self._load_from_database(email=email)
+        except Exception as exc:
+            logger.warning(
+                "[UserCache] Redis error for email lookup, falling back to database: %s",
+                exc,
+            )
+            return await self._load_from_database(email=email)
+
+        return await self._load_from_database(email=email)
 
     async def get_by_phone(self, phone: str) -> Optional[User]:
         """
@@ -301,6 +363,10 @@ class UserCache:
             if user.phone:
                 phone_index_key = _keys.USER_BY_PHONE.format(phone=user.phone)
                 pipe.set(phone_index_key, str(user.id), ex=USER_CACHE_TTL)
+            user_email = getattr(user, "email", None)
+            if user_email:
+                email_index_key = _keys.USER_BY_EMAIL.format(email=user_email)
+                pipe.set(email_index_key, str(user.id), ex=USER_CACHE_TTL)
             pipe.execute()
 
             phone_prefix = user.phone[:3] if user.phone and len(user.phone) >= 3 else "***"
@@ -313,7 +379,7 @@ class UserCache:
             logger.warning("[UserCache] Failed to cache user ID %s: %s", user.id, exc)
             return False
 
-    def invalidate(self, user_id: int, phone: Optional[str] = None) -> bool:
+    def invalidate(self, user_id: int, phone: Optional[str] = None, email: Optional[str] = None) -> bool:
         """
         Invalidate user cache entries (non-blocking).
 
@@ -322,6 +388,7 @@ class UserCache:
         Args:
             user_id: User ID
             phone: Phone number
+            email: Normalized email
 
         Returns:
             True if invalidated successfully, False otherwise
@@ -339,6 +406,8 @@ class UserCache:
             keys_to_delete = [user_key]
             if phone:
                 keys_to_delete.append(_keys.USER_BY_PHONE.format(phone=phone))
+            if email:
+                keys_to_delete.append(_keys.USER_BY_EMAIL.format(email=email))
 
             redis_client.delete(*keys_to_delete)
 

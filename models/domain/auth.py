@@ -13,6 +13,7 @@ Proprietary License
 from datetime import UTC, datetime
 
 from sqlalchemy import (
+    CheckConstraint,
     Column,
     Integer,
     String,
@@ -69,9 +70,16 @@ class User(Base):
     """
 
     __tablename__ = "users"
+    __table_args__ = (
+        CheckConstraint(
+            "phone IS NOT NULL OR email IS NOT NULL",
+            name="ck_users_phone_or_email",
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    phone: Mapped[str] = mapped_column(String(20), unique=True, index=True, nullable=False)
+    phone: Mapped[str | None] = mapped_column(String(20), unique=True, index=True, nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     organization_id: Mapped[int | None] = mapped_column(
@@ -96,6 +104,13 @@ class User(Base):
     ui_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     prompt_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # False for overseas (email) accounts: Simplified Chinese UI locale (`zh`) is not allowed
+    allows_simplified_chinese: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+
+    # Sales whitelist: allow email/password login from mainland China (GeoIP CN) for this account
+    email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
 
     # Relationships
     organization = relationship("Organization", back_populates="users", lazy="selectin")

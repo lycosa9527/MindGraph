@@ -2,8 +2,9 @@
 Password Reset Endpoint
 ========================
 
-Password reset endpoint:
-- /reset_password - Reset password with SMS verification
+Password reset endpoints:
+- /reset-password - Reset password with SMS verification
+- /reset-password-email - Reset password with email verification code
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -22,6 +23,7 @@ from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import (
     ChangePasswordRequest,
+    ResetPasswordWithEmailRequest,
     ResetPasswordWithSMSRequest,
 )
 from services.auth.password_security import (
@@ -29,10 +31,13 @@ from services.auth.password_security import (
     revoke_refresh_tokens_and_sessions,
 )
 from services.redis.cache.redis_user_cache import user_cache
+from utils.email_validation import validate_email_for_api
 from utils.auth import hash_password, get_client_ip, get_current_user, verify_password
+from services.redis.redis_email_storage import normalize_verification_email
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
+from .email import verify_and_consume_email_code
 from .sms import _verify_and_consume_sms_code
 
 logger = logging.getLogger(__name__)
@@ -133,6 +138,60 @@ async def reset_password_with_sms(
         "message": Messages.success("password_reset_success", lang),
         "phone": user.phone[:3] + "****" + user.phone[-4:],
     }
+
+
+@router.post("/reset-password-email")
+async def reset_password_with_email(
+    request: ResetPasswordWithEmailRequest,
+    http_request: Request,
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """
+    Reset password using email verification code (for accounts registered with email only).
+    """
+    email_validated = validate_email_for_api(request.email, lang)
+    email_norm = normalize_verification_email(email_validated)
+
+    cached_user = await user_cache.get_by_email(email_norm)
+    if not cached_user:
+        error_msg = Messages.error("email_not_registered_reset", lang)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    verify_and_consume_email_code(request.email, request.email_code, "reset_password", lang)
+
+    result = await db.execute(select(User).where(User.id == cached_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        error_msg = Messages.error("email_not_registered_reset", lang)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    user.password_hash = hash_password(request.new_password)
+    user.failed_login_attempts = 0
+    user.locked_until = None
+
+    try:
+        await db.commit()
+    except Exception as exc:
+        await db.rollback()
+        logger.error("[Auth] Failed to update password (email reset) in database: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to reset password",
+        ) from exc
+
+    invalidate_user_cache_after_password_write(user, "Password reset (email)")
+    revoke_refresh_tokens_and_sessions(user.id, "password_reset")
+
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    logger.info(
+        "[TokenAudit] Password reset: user=%s, email=%s, method=email, ip=%s",
+        user.id,
+        email_norm[:3] + "***",
+        client_ip,
+    )
+
+    return {"message": Messages.success("password_reset_success", lang)}
 
 
 @router.put("/change-password")

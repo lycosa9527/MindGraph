@@ -20,6 +20,11 @@ from services.infrastructure.http.error_handler import (
     LLMServiceError,
     LLMTimeoutError,
 )
+from utils.chinese_language_policy import (
+    collect_node_palette_text_blobs,
+    effective_language_for_thinking_user,
+    is_chinese_ui_error_language,
+)
 from utils.placeholder import is_placeholder_text
 from utils.prompt_output_languages import is_prompt_output_language
 
@@ -123,20 +128,25 @@ def _resolve_stage_and_data(
     return stage, stage_data if isinstance(stage_data, dict) else {}
 
 
-def _get_error_message(req: Any, error_type: str) -> str:
+def _get_error_message(req: Any, error_type: str, language_for_ui: str | None = None) -> str:
     """Get localized error message for given error type."""
-    language = getattr(req, "language", "en")
+    language = language_for_ui if language_for_ui is not None else getattr(req, "language", "en")
     zh_msg, en_msg = _ERROR_MESSAGES.get(error_type, _ERROR_MESSAGES["unknown"])
-    return zh_msg if language == "zh" else en_msg
+    return zh_msg if is_chinese_ui_error_language(str(language)) else en_msg
 
 
-def _yield_error_event(req: Any, error_type: str, user_message: str | None = None) -> str:
+def _yield_error_event(
+    req: Any,
+    error_type: str,
+    user_message: str | None = None,
+    language_for_ui: str | None = None,
+) -> str:
     """Format error event as SSE data string."""
-    msg = user_message or _get_error_message(req, error_type)
+    msg = user_message or _get_error_message(req, error_type, language_for_ui)
     return f"data: {json.dumps({'event': 'error', 'error_type': error_type, 'message': msg})}\n\n"
 
 
-def _merged_educational_context(req: Any) -> Optional[Dict[str, Any]]:
+def _merged_educational_context(req: Any, effective_language: str | None = None) -> Optional[Dict[str, Any]]:
     """Merge educational_context with concept_map fields and request generation language."""
     edu: Dict[str, Any] = {}
     raw = getattr(req, "educational_context", None)
@@ -151,7 +161,7 @@ def _merged_educational_context(req: Any) -> Optional[Dict[str, Any]]:
                 edu["focus_question"] = fq
             if rc:
                 edu["root_concept"] = rc
-    req_lang = getattr(req, "language", None)
+    req_lang = effective_language if effective_language is not None else getattr(req, "language", None)
     if isinstance(req_lang, str):
         stripped = req_lang.strip().lower()
         if is_prompt_output_language(stripped):
@@ -165,6 +175,7 @@ def _build_batch_kwargs(
     center_topic: str,
     endpoint_path: str,
     current_user: Any,
+    effective_language: str,
 ) -> dict[str, Any]:
     """Build common kwargs for generate_batch based on diagram type."""
     default_stage = _get_default_stage(req.diagram_type)
@@ -174,7 +185,7 @@ def _build_batch_kwargs(
     base = {
         "session_id": session_id,
         "center_topic": center_topic,
-        "educational_context": _merged_educational_context(req),
+        "educational_context": _merged_educational_context(req, effective_language),
         "nodes_per_llm": 15,
         "user_id": user_id,
         "organization_id": org_id,
@@ -225,8 +236,14 @@ async def stream_node_palette(
     node_count = 0
     chunk_count = 0
 
+    raw_lang = (getattr(req, "language", None) or "en").strip().lower()
+    text_blobs = collect_node_palette_text_blobs(req, center_topic)
+    effective_lang = effective_language_for_thinking_user(current_user, raw_lang, *text_blobs)
+
     try:
-        batch_kwargs = _build_batch_kwargs(req, session_id, center_topic, endpoint_path, current_user)
+        batch_kwargs = _build_batch_kwargs(
+            req, session_id, center_topic, endpoint_path, current_user, effective_lang
+        )
         if req.diagram_type in [
             "tree_map",
             "brace_map",
@@ -283,7 +300,9 @@ async def stream_node_palette(
             session_id[:8],
             str(exc),
         )
-        yield _yield_error_event(req, error_type, getattr(exc, "user_message", None))
+        yield _yield_error_event(
+            req, error_type, getattr(exc, "user_message", None), language_for_ui=effective_lang
+        )
 
     except Exception as exc:
         logger.error(
@@ -293,7 +312,7 @@ async def stream_node_palette(
             str(exc),
             exc_info=True,
         )
-        yield _yield_error_event(req, "unknown")
+        yield _yield_error_event(req, "unknown", language_for_ui=effective_lang)
 
     finally:
         if chunk_count == 0:
@@ -302,4 +321,4 @@ async def stream_node_palette(
                 log_prefix,
                 session_id[:8],
             )
-            yield _yield_error_event(req, "no_response")
+            yield _yield_error_event(req, "no_response", language_for_ui=effective_lang)

@@ -23,6 +23,7 @@ from .config import (
     JWT_EXPIRY_HOURS,
     TRUSTED_PROXY_IPS,
     AUTH_MODE,
+    EMAIL_LOGIN_CN_BLOCK_ENABLED,
     ENTERPRISE_DEFAULT_ORG_CODE,
     ENTERPRISE_DEFAULT_USER_PHONE,
     DEMO_PASSKEY,
@@ -67,7 +68,9 @@ from .authentication import (
     get_current_user,
     get_user_from_cookie,
     get_current_user_or_api_key,
+    require_not_mgat_for_token_mint,
 )
+from .user_tokens import validate_user_token
 
 # Enterprise mode exports
 from .enterprise_mode import get_enterprise_user
@@ -128,6 +131,7 @@ __all__ = [
     "JWT_EXPIRY_HOURS",
     "TRUSTED_PROXY_IPS",
     "AUTH_MODE",
+    "EMAIL_LOGIN_CN_BLOCK_ENABLED",
     "ENTERPRISE_DEFAULT_ORG_CODE",
     "ENTERPRISE_DEFAULT_USER_PHONE",
     "DEMO_PASSKEY",
@@ -165,6 +169,8 @@ __all__ = [
     "get_current_user",
     "get_user_from_cookie",
     "get_current_user_or_api_key",
+    "require_not_mgat_for_token_mint",
+    "validate_user_token",
     # Enterprise mode
     "get_enterprise_user",
     # Demo mode

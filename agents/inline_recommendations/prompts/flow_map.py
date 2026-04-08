@@ -6,7 +6,7 @@ get_flow_substeps_prompt.
 
 from typing import Any, Dict, List, Optional
 
-from ._common import append_batch_note
+from ._common import append_batch_note, is_chinese_inline_prompt_language
 
 
 def build_flow_steps_prompt(
@@ -22,7 +22,7 @@ def build_flow_steps_prompt(
     context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"为流程「{topic}」生成{count}个按时间顺序排列的步骤" if topic else "流程未设置"
         prompt = f"""{topic_ctx}
 
@@ -88,7 +88,7 @@ def build_flow_substeps_prompt(
     context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"流程：{topic}" if topic else "流程未设置"
         prompt = f"""为步骤「{step_name}」生成{count}个子步骤
 

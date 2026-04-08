@@ -472,7 +472,7 @@ async def delete_organization_admin(
             await db.execute(delete(UserUsageStats).where(UserUsageStats.user_id == uid))
             if TokenUsage is not None:
                 await db.execute(update(TokenUsage).where(TokenUsage.user_id == uid).values(user_id=None))
-            user_cache.invalidate(uid, user.phone)
+            user_cache.invalidate(uid, user.phone, getattr(user, "email", None))
             await db.delete(user)
         try:
             await db.flush()
@@ -544,15 +544,16 @@ async def list_all_managers(
     result = []
     for user in managers:
         org = orgs_by_id.get(user.organization_id) if user.organization_id else None
-        masked_phone = user.phone
-        if len(user.phone) == 11:
+        masked_phone = user.phone or ""
+        if user.phone and len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
+        display_name = user.name or user.phone or getattr(user, "email", None) or ""
         result.append(
             {
                 "id": user.id,
                 "phone": masked_phone,
                 "phone_real": user.phone,
-                "name": user.name or user.phone,
+                "name": display_name,
                 "organization_id": user.organization_id,
                 "organization_code": org.code if org else None,
                 "organization_name": org.name if org else None,
@@ -687,7 +688,7 @@ async def set_organization_manager(
 
     # Invalidate user cache
     try:
-        user_cache.invalidate(user.id, user.phone)
+        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         user_cache.cache_user(user)
     except Exception as e:
         logger.warning("[Auth] Failed to update user cache: %s", e)
@@ -753,7 +754,7 @@ async def remove_organization_manager(
 
     # Invalidate user cache
     try:
-        user_cache.invalidate(user.id, user.phone)
+        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         user_cache.cache_user(user)
     except Exception as e:
         logger.warning("[Auth] Failed to update user cache: %s", e)

@@ -102,6 +102,7 @@ async def csrf_protection(request: Request, call_next):
             "/api/frontend_log",
             "/api/frontend_log_batch",
             "/api/gewe/webhook",
+            "/api/mcp",
             "/health",
             "/health/",
             "/docs",

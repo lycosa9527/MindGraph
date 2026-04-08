@@ -37,14 +37,18 @@ from services.redis.rate_limiting.redis_rate_limiter import (
 )
 from services.monitoring.dashboard_session import get_dashboard_session_manager
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
+from services.redis.redis_email_storage import normalize_verification_email
 from services.redis.session.redis_session_manager import (
     get_session_manager,
     get_refresh_token_manager,
 )
+from services.auth.geoip_country import evaluate_email_login_geoip
 from services.redis.cache.redis_user_cache import user_cache
+from utils.email_validation import validate_email_for_api
 from utils.auth import (
     AUTH_MODE,
     BAYI_DEFAULT_ORG_CODE,
+    EMAIL_LOGIN_CN_BLOCK_ENABLED,
     DEMO_PASSKEY,
     LOCKOUT_DURATION_MINUTES,
     MAX_LOGIN_ATTEMPTS,
@@ -118,20 +122,23 @@ async def login(
     - Account lockout: 5 minutes after 10 failed attempts
     - Failed attempt tracking in database
     """
-    # Check rate limit by phone (Redis-backed, shared across workers)
-    is_allowed, _ = check_login_rate_limit(request.phone)
+    if request.email:
+        login_key = normalize_verification_email(validate_email_for_api(request.email, lang))
+        cached_user = await user_cache.get_by_email(login_key)
+    else:
+        login_key = request.phone.strip()
+        cached_user = await user_cache.get_by_phone(login_key)
+
+    is_allowed, _ = check_login_rate_limit(login_key)
     if not is_allowed:
-        logger.warning("Rate limit exceeded for %s", request.phone)
+        logger.warning("Rate limit exceeded for login key %s", login_key[:8] + "***")
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
-    # Find user (use cache with database fallback)
-    cached_user = await user_cache.get_by_phone(request.phone)
-
     if not cached_user:
-        attempts_left = get_login_attempts_remaining(request.phone)
+        attempts_left = get_login_attempts_remaining(login_key)
         if attempts_left > 0:
-            error_msg = Messages.error("login_failed_phone_not_found", lang, attempts_left)
+            error_msg = Messages.error("login_failed_identifier_not_found", lang, attempts_left)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
@@ -142,6 +149,31 @@ async def login(
         minutes_left = LOCKOUT_DURATION_MINUTES
         error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
+
+    # Email login: block GeoIP CN unless whitelisted (phone login unchanged).
+    # Skipped in demo/bayi for predictable local and showcase environments.
+    if (
+        request.email
+        and cached_user
+        and EMAIL_LOGIN_CN_BLOCK_ENABLED
+        and AUTH_MODE not in ("demo", "bayi")
+    ):
+        whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
+        must_deny, geo_msg_key = evaluate_email_login_geoip(
+            get_client_ip(http_request),
+            whitelisted,
+        )
+        if must_deny:
+            detail = Messages.error(geo_msg_key, lang=lang)
+            if geo_msg_key == "email_login_blocked_in_mainland_china":
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail=detail,
+                )
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=detail,
+            )
 
     # Verify captcha
     captcha_valid, captcha_error = await verify_captcha_with_retry(request.captcha_id, request.captcha)
@@ -201,7 +233,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     # Successful login - clear rate limit attempts in Redis
-    clear_login_attempts(request.phone)
+    clear_login_attempts(login_key)
     # Need user attached to session for modification - reload from DB
     result = await db.execute(select(User).where(User.id == cached_user.id))
     db_user = result.scalar_one_or_none()
@@ -210,6 +242,19 @@ async def login(
         user = db_user
     else:
         user = cached_user
+
+    if db_user and not getattr(db_user, "allows_simplified_chinese", True):
+        prefs_changed = False
+        if (db_user.ui_language or "").lower() == "zh":
+            db_user.ui_language = "en"
+            prefs_changed = True
+        if (db_user.prompt_language or "").lower() == "zh":
+            db_user.prompt_language = "en"
+            prefs_changed = True
+        if prefs_changed:
+            await db.commit()
+            await db.refresh(db_user)
+            user = db_user
 
     # Get organization (use cache with database fallback)
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
@@ -279,9 +324,10 @@ async def login(
 
     org_name = org.name if org else "None"
     logger.info(
-        "[TokenAudit] Login success: user=%s, phone=%s, org=%s, method=captcha, ip=%s, device=%s",
+        "[TokenAudit] Login success: user=%s, phone=%s, email=%s, org=%s, method=captcha, ip=%s, device=%s",
         user.id,
         user.phone,
+        getattr(user, "email", None),
         org_name,
         client_ip,
         device_hash,
@@ -300,12 +346,14 @@ async def login(
         "user": {
             "id": user.id,
             "phone": user.phone,
+            "email": getattr(user, "email", None),
             "name": user.name,
             "organization": org.name if org else None,
             "avatar": user.avatar or "🐈‍⬛",
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
             "prompt_language": getattr(user, "prompt_language", None),
+            "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
         },
     }
 
@@ -364,6 +412,23 @@ async def login_with_sms(
         # Reset any failed attempts (SMS login is verified)
         await reset_failed_attempts(db_user, db)
         user = db_user
+
+    if db_user and not getattr(db_user, "allows_simplified_chinese", True):
+        prefs_changed = False
+        if (db_user.ui_language or "").lower() == "zh":
+            db_user.ui_language = "en"
+            prefs_changed = True
+        if (db_user.prompt_language or "").lower() == "zh":
+            db_user.prompt_language = "en"
+            prefs_changed = True
+        if prefs_changed:
+            await db.commit()
+            await db.refresh(db_user)
+            user = db_user
+            try:
+                user_cache.cache_user(db_user)
+            except Exception as cache_exc:
+                logger.warning("[Auth] SMS login: failed to refresh user cache: %s", cache_exc)
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -447,6 +512,7 @@ async def login_with_sms(
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
             "prompt_language": getattr(user, "prompt_language", None),
+            "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
         },
     }
 

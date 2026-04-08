@@ -63,18 +63,33 @@ export function isInterfaceLanguagePickerLocale(code: string): boolean {
   return INTERFACE_LANGUAGE_PICKER_SET.has(code)
 }
 
+/** When false (e.g. overseas email accounts), Simplified Chinese (`zh`) is hidden from pickers. */
+export function userAllowsSimplifiedChinese(allowsSimplifiedChinese: boolean | undefined): boolean {
+  return allowsSimplifiedChinese !== false
+}
+
 /**
  * Enabled registry entries shown in the interface-language dropdown.
  * Always includes `currentUiCode` when set so an existing saved locale outside the list still displays.
  */
 export function getLocalesForInterfaceLanguagePicker(
-  currentUiCode?: string | null
+  currentUiCode?: string | null,
+  allowSimplifiedChinese: boolean = true
 ): UiLocaleEntry[] {
-  return SUPPORTED_UI_LOCALES.filter((e) => {
+  const rows = SUPPORTED_UI_LOCALES.filter((e) => {
     if (!e.enabled) return false
     if (INTERFACE_LANGUAGE_PICKER_SET.has(e.code)) return true
     return currentUiCode != null && e.code === currentUiCode
   }) as UiLocaleEntry[]
+  if (allowSimplifiedChinese) {
+    return rows
+  }
+  return rows.filter((e) => e.code !== 'zh')
+}
+
+/** Count of interface languages shown in Settings (respects SC policy). */
+export function getInterfaceLanguagePickerLocaleCount(allowSimplifiedChinese: boolean = true): number {
+  return getLocalesForInterfaceLanguagePicker(undefined, allowSimplifiedChinese).length
 }
 
 const UI_LOCALE_SET = new Set<string>(UI_LOCALE_CODES)
@@ -182,3 +197,11 @@ export const PROMPT_LANGUAGE_OPTIONS: {
   englishName: e.englishName,
   search: e.search,
 }))
+
+/** Prompt-language dropdown rows; omits Simplified Chinese (`zh`) when policy disallows it. */
+export function getPromptLanguageOptionsForPicker(allowSimplifiedChinese: boolean = true) {
+  if (allowSimplifiedChinese) {
+    return PROMPT_LANGUAGE_OPTIONS
+  }
+  return PROMPT_LANGUAGE_OPTIONS.filter((o) => o.code !== 'zh')
+}

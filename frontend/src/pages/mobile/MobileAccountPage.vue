@@ -21,7 +21,11 @@ import {
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
 import { useLanguage } from '@/composables'
-import { PROMPT_LANGUAGE_OPTIONS, getLocalesForInterfaceLanguagePicker } from '@/i18n/locales'
+import {
+  PROMPT_LANGUAGE_OPTIONS,
+  getLocalesForInterfaceLanguagePicker,
+  getPromptLanguageOptionsForPicker,
+} from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
@@ -55,7 +59,11 @@ const uiLangExpanded = ref(false)
 const promptLangExpanded = ref(false)
 const promptSearchQuery = ref('')
 
-const enabledUiLocales = computed(() => getLocalesForInterfaceLanguagePicker(uiStore.language))
+const allowZhPicker = computed(() => uiStore.languagePolicyAllowZh)
+
+const enabledUiLocales = computed(() =>
+  getLocalesForInterfaceLanguagePicker(uiStore.language, allowZhPicker.value)
+)
 
 const currentUiLabel = computed(() => {
   const match = enabledUiLocales.value.find((entry) => entry.code === uiStore.language)
@@ -64,13 +72,15 @@ const currentUiLabel = computed(() => {
 
 const TOP_PROMPT_CODES = ['zh', 'zh-hant', 'en']
 
-const topPromptOptions = computed(() =>
-  PROMPT_LANGUAGE_OPTIONS.filter((opt) => TOP_PROMPT_CODES.includes(opt.code))
-)
+const topPromptOptions = computed(() => {
+  const opts = getPromptLanguageOptionsForPicker(allowZhPicker.value)
+  return opts.filter((opt) => TOP_PROMPT_CODES.includes(opt.code))
+})
 
 const filteredPromptOptions = computed(() => {
   const query = promptSearchQuery.value.toLowerCase().trim()
-  const nonTop = PROMPT_LANGUAGE_OPTIONS.filter((opt) => !TOP_PROMPT_CODES.includes(opt.code))
+  const allFiltered = getPromptLanguageOptionsForPicker(allowZhPicker.value)
+  const nonTop = allFiltered.filter((opt) => !TOP_PROMPT_CODES.includes(opt.code))
   if (!query) return nonTop
   return nonTop.filter(
     (opt) =>

@@ -50,6 +50,18 @@ TRUSTED_PROXY_IPS = os.getenv("TRUSTED_PROXY_IPS", "").split(",") if os.getenv("
 # enterprise: disables JWT checks—use only on isolated networks (see utils.auth.enterprise_mode).
 AUTH_MODE = os.getenv("AUTH_MODE", "standard").strip().lower()
 
+
+def _parse_bool_env(name: str, default: bool) -> bool:
+    raw = os.getenv(name)
+    if raw is None or not raw.strip():
+        return default
+    return raw.strip().lower() in ("1", "true", "yes", "on")
+
+
+# When false, skip MaxMind CN check on email login (emergency off without deploy).
+# In AUTH_MODE demo/bayi, login route skips this check so local/demo flows stay simple.
+EMAIL_LOGIN_CN_BLOCK_ENABLED = _parse_bool_env("EMAIL_LOGIN_CN_BLOCK_ENABLED", True)
+
 # Enterprise Mode Configuration
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
 ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()

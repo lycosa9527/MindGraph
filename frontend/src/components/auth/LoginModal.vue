@@ -64,8 +64,13 @@ const {
   refreshCaptcha,
   handleLogin,
   handleRegister,
+  sendRegisterEmailCode,
   sendSmsCode,
   handleSmsLogin,
+  isOverseasRegister,
+  forgotUsesEmail,
+  emailSending,
+  emailCountdown,
   handleResetPassword,
   handleBackdropClick,
 } = useLoginModal(props, emit)
@@ -166,15 +171,15 @@ const {
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   for="login-phone"
                 >
-                  {{ t('auth.phone') }}
+                  {{ t('auth.loginPhoneOrEmail') }}
                 </label>
                 <input
                   id="login-phone"
                   v-model="loginForm.phone"
-                  type="tel"
+                  type="text"
                   name="login-phone"
                   :placeholder="t('auth.modal.phonePlaceholder11')"
-                  maxlength="11"
+                  maxlength="254"
                   autocomplete="username"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                 />
@@ -297,6 +302,26 @@ const {
               <div>
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  for="register-education-email"
+                >
+                  {{ t('auth.modal.registrationEmailLabel') }}
+                </label>
+                <input
+                  id="register-education-email"
+                  v-model="registerForm.registrationEmail"
+                  type="email"
+                  name="register-education-email"
+                  autocomplete="email"
+                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                />
+                <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
+                  {{ t('auth.modal.registrationEmailHint') }}
+                </p>
+              </div>
+
+              <div v-show="!isOverseasRegister">
+                <label
+                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   for="register-phone"
                 >
                   {{ t('auth.phone') }} *
@@ -365,7 +390,7 @@ const {
                 />
               </div>
 
-              <div>
+              <div v-show="!isOverseasRegister">
                 <label
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   for="register-invitation-code"
@@ -423,6 +448,55 @@ const {
                   </div>
                 </div>
               </div>
+
+              <template v-if="isOverseasRegister">
+                <div class="flex gap-2 items-end">
+                  <div class="flex-1">
+                    <label
+                      class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                      for="register-email-code"
+                    >
+                      {{ t('auth.modal.emailCodeLabel') }} *
+                    </label>
+                    <input
+                      id="register-email-code"
+                      v-model="registerForm.emailCode"
+                      type="text"
+                      name="register-email-code"
+                      maxlength="6"
+                      inputmode="numeric"
+                      autocomplete="one-time-code"
+                      class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    class="shrink-0 py-3 px-3 text-sm font-medium rounded-lg border border-stone-200 text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+                    :disabled="emailSending || emailCountdown > 0"
+                    @click="sendRegisterEmailCode"
+                  >
+                    {{
+                      emailCountdown > 0
+                        ? t('auth.modal.resendIn', { seconds: emailCountdown })
+                        : t('auth.modal.sendEmailCode')
+                    }}
+                  </button>
+                </div>
+                <label class="flex items-start gap-2 cursor-pointer text-sm text-stone-600">
+                  <input
+                    v-model="registerForm.outsideMainlandAcknowledged"
+                    type="checkbox"
+                    class="mt-1 rounded border-stone-300"
+                  />
+                  <span>{{ t('auth.modal.acknowledgeOverseas') }}</span>
+                </label>
+              </template>
+
+              <p
+                class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed"
+              >
+                {{ t('auth.modal.mainlandSalesNotice') }}
+              </p>
 
               <button
                 type="submit"
@@ -583,15 +657,16 @@ const {
                   class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                   for="forgot-phone"
                 >
-                  {{ t('auth.phone') }}
+                  {{ t('auth.loginPhoneOrEmail') }}
                 </label>
                 <input
                   id="forgot-phone"
                   v-model="forgotForm.phone"
-                  type="tel"
+                  type="text"
                   name="forgot-phone"
-                  :placeholder="t('auth.modal.phoneRegisteredPlaceholder')"
-                  maxlength="11"
+                  :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
+                  maxlength="254"
+                  inputmode="text"
                   autocomplete="username"
                   :disabled="smsSent"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
@@ -651,7 +726,13 @@ const {
                   v-if="smsSending"
                   class="w-4 h-4 animate-spin"
                 />
-                {{ smsSending ? t('auth.modal.sendingSms') : t('auth.modal.sendSmsCode') }}
+                {{
+                  smsSending
+                    ? t('auth.modal.sendingSms')
+                    : forgotUsesEmail
+                      ? t('auth.modal.sendEmailCode')
+                      : t('auth.modal.sendSmsCode')
+                }}
               </button>
 
               <template v-if="smsSent">
@@ -660,7 +741,9 @@ const {
                     class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
                     for="forgot-sms-code"
                   >
-                    {{ t('auth.modal.smsCodeLabel') }}
+                    {{
+                      forgotUsesEmail ? t('auth.modal.emailCodeLabel') : t('auth.modal.smsCodeLabel')
+                    }}
                   </label>
                   <input
                     id="forgot-sms-code"

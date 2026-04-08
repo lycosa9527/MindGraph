@@ -4,7 +4,9 @@ from typing import Any, Dict, List, Optional
 
 from ._common import (
     append_batch_note,
+    is_chinese_inline_prompt_language,
     THINKING_APPROACH,
+    thinking_locale_key,
     BRIDGE_DIMENSION_TYPES_ZH,
     BRIDGE_DIMENSION_TYPES_EN,
 )
@@ -21,11 +23,13 @@ def build_bridge_dimensions_prompt(
     dimension = (context.get("dimension") or "").strip()
     pair_texts = context.get("pair_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["bridge_map"][language]
-    dim_types = BRIDGE_DIMENSION_TYPES_ZH if language == "zh" else BRIDGE_DIMENSION_TYPES_EN
+    thinking = THINKING_APPROACH["bridge_map"][thinking_locale_key(language)]
+    dim_types = (
+        BRIDGE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRIDGE_DIMENSION_TYPES_EN
+    )
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         dim_ctx = f"当前维度：{dimension}" if dimension else "请推荐类比关系维度"
         prompt = f"""用户正在创建桥型图。{dim_ctx}
 
@@ -83,10 +87,10 @@ def build_bridge_pairs_prompt(
     dimension = (context.get("dimension") or "").strip()
     pair_texts = context.get("pair_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["bridge_map"][language]
+    thinking = THINKING_APPROACH["bridge_map"][thinking_locale_key(language)]
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         dim_ctx = f"类比维度：{dimension}" if dimension else "请遵循同一类比关系"
         prompt = f"""用户正在创建桥型图。{dim_ctx}
 

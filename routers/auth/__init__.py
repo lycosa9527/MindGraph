@@ -15,8 +15,10 @@ from fastapi import APIRouter
 # Import all sub-routers
 from . import (
     registration,
+    registration_overseas,
     login,
     sms,
+    email,
     captcha,
     password,
     session,
@@ -24,6 +26,7 @@ from . import (
     avatar,
     phone,
     preferences,
+    personal_token,
 )
 from .admin import admin_router
 
@@ -50,14 +53,17 @@ router = APIRouter()
 # Include all sub-routers
 router.include_router(public.router)
 router.include_router(registration.router)
+router.include_router(registration_overseas.router)
 router.include_router(login.router)
 router.include_router(sms.router)
+router.include_router(email.router)
 router.include_router(captcha.router)
 router.include_router(password.router)
 router.include_router(session.router)
 router.include_router(preferences.router)
 router.include_router(avatar.router)
 router.include_router(phone.router)
+router.include_router(personal_token.router)
 router.include_router(admin_router)
 
 # Export router and utilities

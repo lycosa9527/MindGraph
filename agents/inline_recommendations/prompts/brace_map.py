@@ -4,7 +4,9 @@ from typing import Any, Dict, List, Optional
 
 from ._common import (
     append_batch_note,
+    is_chinese_inline_prompt_language,
     THINKING_APPROACH,
+    thinking_locale_key,
     BRACE_DIMENSION_TYPES_ZH,
     BRACE_DIMENSION_TYPES_EN,
 )
@@ -24,10 +26,12 @@ def build_brace_dimensions_prompt(
     """
     whole = (context.get("whole") or "").strip()
     context_desc = context.get("context_desc") or "General K12 teaching"
-    dim_types = BRACE_DIMENSION_TYPES_ZH if language == "zh" else BRACE_DIMENSION_TYPES_EN
+    dim_types = (
+        BRACE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRACE_DIMENSION_TYPES_EN
+    )
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         whole_ctx = f'"{whole}"' if whole else "（整体未设置）"
         prompt = f"""为主题{whole_ctx}生成{count}个可能的拆解维度。
 
@@ -77,11 +81,13 @@ def build_brace_parts_prompt(
     dimension = (context.get("dimension") or "").strip()
     part_names = context.get("part_names") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
-    thinking = THINKING_APPROACH["brace_map"][language]
-    dim_types = BRACE_DIMENSION_TYPES_ZH if language == "zh" else BRACE_DIMENSION_TYPES_EN
+    thinking = THINKING_APPROACH["brace_map"][thinking_locale_key(language)]
+    dim_types = (
+        BRACE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRACE_DIMENSION_TYPES_EN
+    )
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         whole_ctx = f"整体：{whole}" if whole else "整体未设置"
         dim_ctx = f"拆解维度：{dimension}" if dimension else "请自选拆解维度"
         prompt = f"""用户正在创建括号图。{whole_ctx}
@@ -152,7 +158,7 @@ def build_brace_subparts_prompt(
     context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         whole_ctx = f"整体：{whole}" if whole else "整体未设置"
         prompt = (
             f"""为以下部分生成{count}个子部分：{part_name}

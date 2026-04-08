@@ -7,6 +7,7 @@ import { useRoute } from 'vue-router'
 
 import { Moon, Sunny } from '@element-plus/icons-vue'
 
+import { toolbarShortForUiCode } from '@/i18n/locales'
 import { useUIStore } from '@/stores'
 
 const route = useRoute()
@@ -64,7 +65,7 @@ const icpRegistrationNumber = '京ICP备2025126228号'
           class="!bg-white/10 !border-white/20 !text-white hover:!bg-white/20"
           @click="uiStore.toggleLanguage"
         >
-          {{ uiStore.language === 'zh' ? 'EN' : '中' }}
+          {{ toolbarShortForUiCode(uiStore.language) }}
         </el-button>
       </div>
     </header>

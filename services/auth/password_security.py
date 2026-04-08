@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 def invalidate_user_cache_after_password_write(user: User, context_label: str) -> None:
     """Invalidate and re-cache user after password hash changed in DB."""
     try:
-        user_cache.invalidate(user.id, user.phone)
+        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
         user_cache.cache_user(user)
         logger.info("[Auth] %s: cache updated for user ID %s", context_label, user.id)
     except Exception as exc:

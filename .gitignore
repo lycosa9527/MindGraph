@@ -65,6 +65,7 @@ logs/*.pid
 # Runtime data directory (captcha storage, database files)
 data/**
 !data/prompt_language_registry.json
+!data/kikobeats_free_email_domains.json
 captcha_store.json
 
 # Database files

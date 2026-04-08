@@ -10,9 +10,9 @@ import { ElCheckbox } from 'element-plus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
-  INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT,
-  PROMPT_LANGUAGE_OPTIONS,
+  getInterfaceLanguagePickerLocaleCount,
   getLocalesForInterfaceLanguagePicker,
+  getPromptLanguageOptionsForPicker,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage, UiVersion } from '@/stores/ui'
@@ -29,8 +29,9 @@ const { t } = useLanguage()
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
 const draftVersion = ref<UiVersion>(uiStore.uiVersion)
-const promptLangOptions = PROMPT_LANGUAGE_OPTIONS
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
+
+const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
 
 /**
  * Interface language uses the same searchable dropdown as prompt language.
@@ -42,14 +43,16 @@ function buildUiLanguageSelectRows(): {
   englishName: string
   search: string[]
 }[] {
-  const enabled = getLocalesForInterfaceLanguagePicker(draftUi.value)
+  const allow = allowSimplifiedChinesePicker.value
+  const promptOpts = getPromptLanguageOptionsForPicker(allow)
+  const enabled = getLocalesForInterfaceLanguagePicker(draftUi.value, allow)
   const orderIndex = (code: string) => {
-    const i = PROMPT_LANGUAGE_OPTIONS.findIndex((p) => p.code === code)
+    const i = promptOpts.findIndex((p) => p.code === code)
     return i === -1 ? 9999 : i
   }
   enabled.sort((a, b) => orderIndex(a.code) - orderIndex(b.code) || a.code.localeCompare(b.code))
   return enabled.map((u) => {
-    const prompt = PROMPT_LANGUAGE_OPTIONS.find((p) => p.code === u.code)
+    const prompt = promptOpts.find((p) => p.code === u.code)
     if (prompt) {
       return {
         code: u.code as Language,
@@ -69,9 +72,16 @@ function buildUiLanguageSelectRows(): {
 
 const uiLanguageOptions = computed(() => buildUiLanguageSelectRows())
 
-/** Matches `INTERFACE_LANGUAGE_PICKER_CODES` in `locales.ts` (subtitle next to 界面语言). */
-const interfaceLanguageOptionCount = INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT
-const promptLanguageOptionCount = computed(() => promptLangOptions.length)
+const promptLangOptionsFiltered = computed(() =>
+  getPromptLanguageOptionsForPicker(allowSimplifiedChinesePicker.value)
+)
+
+const interfaceLanguageOptionCount = computed(() =>
+  getInterfaceLanguagePickerLocaleCount(allowSimplifiedChinesePicker.value)
+)
+const promptLanguageOptionCount = computed(() =>
+  getPromptLanguageOptionsForPicker(allowSimplifiedChinesePicker.value).length
+)
 
 /**
  * el-option `label` is shown in the collapsed select and used by filterable matching.
@@ -91,8 +101,18 @@ const multiscriptFontFamily = MULTISCRIPT_SANS_STACK
  */
 watch(visible, (v) => {
   if (v) {
-    draftUi.value = uiStore.language
-    draftPrompt.value = uiStore.promptLanguage
+    let ui = uiStore.language
+    let pr = uiStore.promptLanguage
+    if (!allowSimplifiedChinesePicker.value) {
+      if (ui === 'zh') {
+        ui = 'en'
+      }
+      if (pr === 'zh') {
+        pr = 'en'
+      }
+    }
+    draftUi.value = ui
+    draftPrompt.value = pr
     draftVersion.value = uiStore.uiVersion
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
@@ -243,7 +263,7 @@ function onClose(): void {
           popper-class="prompt-lang-select-popper"
         >
           <el-option
-            v-for="o in promptLangOptions"
+            v-for="o in promptLangOptionsFiltered"
             :key="o.code"
             :label="languageSelectDisplayLabel(o)"
             :value="o.code"

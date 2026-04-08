@@ -96,6 +96,11 @@ export const useUIStore = defineStore('ui', () => {
   const selectedChartType = ref<string>('选择具体图示')
   const templateSlots = ref<Record<string, string>>({})
   const freeInputValue = ref<string>('')
+  /**
+   * When false, Simplified Chinese (`zh`) is omitted from locale cycling (set from auth on login).
+   * Guests default to true.
+   */
+  const languagePolicyAllowZh = ref(true)
 
   // Getters
   const effectiveTheme = computed(() => {
@@ -289,9 +294,21 @@ export const useUIStore = defineStore('ui', () => {
     localStorage.setItem(BROWSER_LOCALE_HINT_KEY, value ? '1' : '0')
   }
 
+  function setLanguagePolicyAllowZh(allow: boolean): void {
+    languagePolicyAllowZh.value = allow
+  }
+
   function toggleLanguage(): void {
-    const order = UI_LOCALE_CODES
-    const idx = order.indexOf(language.value)
+    const order = languagePolicyAllowZh.value
+      ? UI_LOCALE_CODES
+      : UI_LOCALE_CODES.filter((c) => c !== 'zh')
+    if (order.length === 0) {
+      return
+    }
+    let idx = order.indexOf(language.value)
+    if (idx < 0) {
+      idx = 0
+    }
     const next = order[(idx + 1) % order.length]
     setLanguage(next)
   }
@@ -434,6 +451,7 @@ export const useUIStore = defineStore('ui', () => {
     selectedChartType.value = '选择具体图示'
     templateSlots.value = {}
     freeInputValue.value = ''
+    languagePolicyAllowZh.value = true
     uiVersion.value = detectDefaultUiVersion()
     localStorage.removeItem(THEME_KEY)
     localStorage.removeItem(LANGUAGE_KEY)
@@ -480,6 +498,8 @@ export const useUIStore = defineStore('ui', () => {
     setUiLanguageExplicit,
     setBrowserLocaleHintDismissed,
     toggleLanguage,
+    languagePolicyAllowZh,
+    setLanguagePolicyAllowZh,
     setUiVersion,
     applyUiVersionFromServerProfile,
     applyLanguageFromServerProfile,

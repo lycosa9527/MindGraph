@@ -8,6 +8,7 @@ from typing import Any, Dict, List, Optional
 
 from ._common import (
     append_batch_note,
+    is_chinese_inline_prompt_language,
     TREE_DIMENSION_TYPES_ZH,
     TREE_DIMENSION_TYPES_EN,
 )
@@ -27,10 +28,12 @@ def build_tree_dimensions_prompt(
     """
     topic = (context.get("topic") or "").strip()
     context_desc = context.get("context_desc") or "General K12 teaching"
-    dim_types = TREE_DIMENSION_TYPES_ZH if language == "zh" else TREE_DIMENSION_TYPES_EN
+    dim_types = (
+        TREE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else TREE_DIMENSION_TYPES_EN
+    )
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f'"{topic}"' if topic else "（主题未设置）"
         prompt = f"""为主题{topic_ctx}生成{count}个可能的分类维度。
 
@@ -82,7 +85,7 @@ def build_tree_categories_prompt(
     context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         header = (
             f"为主题「{topic}」生成{count}个分类类别，使用分类维度：{dimension}"
             if dimension
@@ -159,7 +162,7 @@ def build_tree_items_prompt(
     context_desc = context.get("context_desc") or "General K12 teaching"
     existing = existing or []
 
-    if language == "zh":
+    if is_chinese_inline_prompt_language(language):
         topic_ctx = f"主题：{topic}" if topic else "主题未设置"
         prompt = f"""为类别「{category_name}」生成{count}个具体条目
 

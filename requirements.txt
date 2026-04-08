@@ -26,6 +26,11 @@ jinja2>=3.1.6
 pydantic>=2.12.5
 pydantic-settings>=2.12.0
 email-validator>=2.3.0  # Pydantic email validation
+geoip2>=4.8.0  # GeoLite2 Country MMDB (overseas email registration)
+# JetBrains Swot via rse-pyswot GitHub main — requires git for pip. If main moves and pip keeps an old
+# checkout, use: pip install --no-cache-dir -U -r requirements.txt (or --force-reinstall for pyswot).
+# Kikobeats free domains: data/kikobeats_free_email_domains.json (scripts/swot/sync_kikobeats_domains.py).
+pyswot @ git+https://github.com/DIAGNijmegen/rse-pyswot.git@main
 orjson>=3.11.5  # Fast JSON serialization for API responses
 
 # ============================================================================
@@ -35,6 +40,7 @@ aiohttp>=3.13.3  # Used by Dify client (MindMate integration)
 openai>=2.15.0
 python-multipart>=0.0.21
 httpx[http2]>=0.28.1  # Primary async HTTP client with HTTP/2 (LLM clients, SMS)
+mcp[cli]>=1.10.0  # Model Context Protocol (Streamable HTTP at /api/mcp when FEATURE_MCP_HTTP=True)
 websockets>=16.0  # WebSocket support (Omni realtime voice)
 
 # ============================================================================
@@ -49,6 +55,7 @@ langchain-text-splitters>=1.1.0  # Text chunking for RAG (Personal Knowledge Spa
 langgraph>=1.0.6
 langgraph-checkpoint>=4.0.0
 dashscope>=1.25.8
+opencc-python-reimplemented>=0.1.7  # Simplified vs Traditional detection for thinking-mode language policy
 
 # ============================================================================
 # CONFIGURATION & ENVIRONMENT

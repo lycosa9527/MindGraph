@@ -14,9 +14,12 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from models.domain.messages import Messages, Language
 from models.requests.requests_auth import LanguagePreferencesUpdate
 from services.redis.cache.redis_user_cache import user_cache
 from utils.auth import get_current_user
+
+from .dependencies import get_language_dependency
 
 logger = logging.getLogger(__name__)
 
@@ -28,6 +31,7 @@ async def update_language_preferences(
     body: LanguagePreferencesUpdate,
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
 ):
     """
     Persist interface language, prompt output language, and/or UI version
@@ -48,8 +52,18 @@ async def update_language_preferences(
         )
 
     if body.ui_language is not None:
+        if body.ui_language.lower() == "zh" and not getattr(user, "allows_simplified_chinese", True):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Messages.error("ui_language_zh_not_allowed", lang),
+            )
         user.ui_language = body.ui_language
     if body.prompt_language is not None:
+        if body.prompt_language.lower() == "zh" and not getattr(user, "allows_simplified_chinese", True):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=Messages.error("prompt_language_zh_not_allowed", lang),
+            )
         user.prompt_language = body.prompt_language
     if body.ui_version is not None:
         user.ui_version = body.ui_version
@@ -70,7 +84,7 @@ async def update_language_preferences(
             detail="Failed to save preferences",
         ) from exc
 
-    user_cache.invalidate(user.id, user.phone)
+    user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
     user_cache.cache_user(user)
 
     return {
