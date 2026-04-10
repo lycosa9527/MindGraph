@@ -195,8 +195,27 @@ def _seed_organizations_if_empty() -> None:
 
 _ALEMBIC_INI = str(Path(__file__).resolve().parent.parent / "alembic.ini")
 _MIGRATION_LOCK_KEY = "lock:mindgraph:alembic_migration"
-_MIGRATION_LOCK_TTL = 120
+# Baseline create_all can run far longer than two minutes; lock must outlive the migration.
+_MIGRATION_LOCK_TTL = 3600
+_MIGRATION_WAIT_INTERVAL_SEC = 2.0
+_MIGRATION_WAIT_MAX_ATTEMPTS = 1800
 _migration_lock_id: "str | None" = None
+
+
+def _get_alembic_version_num() -> str | None:
+    """Return ``alembic_version.version_num`` or None if missing or unreadable.
+
+    Uses plain SQL instead of Alembic's MigrationContext so workers that are
+    waiting on a Redis migration lock do not emit Alembic INFO logs every poll
+    (``Context impl PostgresqlImpl`` / ``Will assume transactional DDL``).
+    """
+    try:
+        with engine.connect() as conn:
+            result = conn.execute(text("SELECT version_num FROM alembic_version LIMIT 1"))
+            row = result.fetchone()
+            return str(row[0]) if row else None
+    except Exception:
+        return None
 
 
 def _run_alembic_upgrade() -> None:
@@ -205,22 +224,28 @@ def _run_alembic_upgrade() -> None:
     Compares the current ``alembic_version`` in the database to the latest
     revision on disk.  If they already match, this is a no-op.
 
-    A Redis ``SETNX`` lock prevents multiple Gunicorn workers from running
-    DDL concurrently.  Workers that lose the lock wait and re-check; once
-    the winner finishes, the losers see ``current_rev == head_rev`` and skip.
+    **Why a Redis lock:** every Uvicorn worker runs ``init_db()`` on startup
+    (default ``UVICORN_WORKER_ID`` is ``0`` for all processes). Without a
+    distributed lock, two workers could run ``alembic upgrade`` concurrently.
+
+    **Waiting workers** poll ``alembic_version`` with plain SQL (not Alembic's
+    ``MigrationContext``) so they do not emit Alembic INFO logs every second
+    during long migrations.
+
+    Workers that lose the lock wait until ``version_num`` matches head, then
+    return without running DDL. If the peer never reaches head within the
+    configured window, startup fails fast instead of continuing with a
+    partial schema.
     """
     from alembic.command import upgrade as alembic_upgrade
     from alembic.config import Config as AlembicConfig
-    from alembic.runtime.migration import MigrationContext
     from alembic.script import ScriptDirectory
 
     alembic_cfg = AlembicConfig(_ALEMBIC_INI)
     script_dir = ScriptDirectory.from_config(alembic_cfg)
     head_rev = script_dir.get_current_head()
 
-    with engine.connect() as conn:
-        context = MigrationContext.configure(conn)
-        current_rev = context.get_current_revision()
+    current_rev = _get_alembic_version_num()
 
     if current_rev == head_rev:
         logger.info("[Database] Schema is up to date (revision %s)", current_rev)
@@ -318,33 +343,35 @@ def _release_migration_lock() -> None:
 
 def _wait_for_migration_completion(expected_head: str) -> None:
     """Poll until the winner worker finishes the migration (revision matches head)."""
-    from alembic.runtime.migration import MigrationContext
-
-    for attempt in range(60):
-        time.sleep(1)
-        try:
-            with engine.connect() as conn:
-                ctx = MigrationContext.configure(conn)
-                current = ctx.get_current_revision()
-            if current == expected_head:
-                logger.info(
-                    "[Database] Migration completed by another worker (revision %s)",
-                    current,
-                )
-                return
-        except Exception as exc:
-            logger.debug(
-                "[Database] Migration poll DB error (attempt %d): %s",
-                attempt + 1,
-                exc,
+    for attempt in range(_MIGRATION_WAIT_MAX_ATTEMPTS):
+        time.sleep(_MIGRATION_WAIT_INTERVAL_SEC)
+        current = _get_alembic_version_num()
+        if current == expected_head:
+            logger.info(
+                "[Database] Migration completed by another worker (revision %s)",
+                current,
             )
-        if attempt % 10 == 9:
-            logger.debug(
-                "[Database] Still waiting for migration to complete (attempt %d)...",
-                attempt + 1,
+            return
+        if (attempt + 1) % 15 == 0:
+            elapsed = int((attempt + 1) * _MIGRATION_WAIT_INTERVAL_SEC)
+            logger.info(
+                "[Database] Still waiting for migration to complete (~%d s elapsed, max ~%d s)...",
+                elapsed,
+                int(_MIGRATION_WAIT_MAX_ATTEMPTS * _MIGRATION_WAIT_INTERVAL_SEC),
             )
 
-    logger.warning("[Database] Timed out waiting for migration lock holder — proceeding")
+    logger.error(
+        "[Database] Timed out waiting for peer worker to finish migrations "
+        "(expected revision %s). Refusing to start with a possibly incomplete schema.",
+        expected_head,
+    )
+    raise RuntimeError(
+        "Timed out waiting for another worker to complete Alembic migrations. "
+        "If first-time baseline migrations legitimately take longer than the "
+        f"configured maximum (~{int(_MIGRATION_WAIT_MAX_ATTEMPTS * _MIGRATION_WAIT_INTERVAL_SEC)} s), "
+        "increase _MIGRATION_WAIT_MAX_ATTEMPTS / _MIGRATION_WAIT_INTERVAL_SEC in config/database.py, "
+        "or run `alembic upgrade head` once before starting multiple workers."
+    )
 
 
 def init_db(seed_organizations: bool = True):
