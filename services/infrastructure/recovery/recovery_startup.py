@@ -29,6 +29,27 @@ from services.utils.backup_scheduler import get_backup_status
 logger = logging.getLogger(__name__)
 
 
+async def _chunk_test_documents_table_exists() -> bool:
+    """Return True if chunk_test_documents exists (migrations may not have created it yet)."""
+
+    async with async_engine.connect() as conn:
+        result = await conn.execute(
+            text(
+                """
+                SELECT EXISTS (
+                    SELECT 1
+                    FROM information_schema.tables
+                    WHERE table_schema = current_schema()
+                      AND table_name = :tbl
+                )
+                """
+            ),
+            {"tbl": ChunkTestDocument.__tablename__},
+        )
+        row = result.fetchone()
+        return bool(row[0]) if row else False
+
+
 async def _cleanup_user_documents(user_id, docs) -> int:
     """Clean up stuck documents for a single user using an async session.
 
@@ -79,6 +100,12 @@ async def cleanup_incomplete_chunk_operations() -> int:
         Number of documents cleaned up
     """
     try:
+        if not await _chunk_test_documents_table_exists():
+            logger.debug(
+                "[Recovery] Skipping incomplete chunk cleanup: table %s is not present",
+                ChunkTestDocument.__tablename__,
+            )
+            return 0
         async with AsyncSessionLocal() as db:
             result = await db.execute(select(ChunkTestDocument).where(ChunkTestDocument.status == "processing"))
             stuck_docs = result.scalars().all()
@@ -137,13 +164,7 @@ async def check_database_on_startup() -> bool:
     if not recovery_success:
         logger.warning("[Recovery] Database recovery from kill -9 failed, but continuing with connectivity check")
 
-    logger.debug("[Recovery] Cleaning up incomplete chunk operations...")
-    cleaned_count = await cleanup_incomplete_chunk_operations()
-    if cleaned_count > 0:
-        logger.info(
-            "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
-            cleaned_count,
-        )
+    # Chunk cleanup runs after init_db() in lifespan so Alembic has created tables first.
 
     skip_check_env = os.getenv("SKIP_INTEGRITY_CHECK", "")
     if skip_check_env.lower() in ("true", "yes"):

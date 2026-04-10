@@ -33,7 +33,10 @@ from services.features.ws_redis_fanout_listener import (
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 from services.infrastructure.monitoring.health_monitor import get_health_monitor
 from services.infrastructure.monitoring.process_monitor import get_process_monitor
-from services.infrastructure.recovery.recovery_startup import check_database_on_startup
+from services.infrastructure.recovery.recovery_startup import (
+    check_database_on_startup,
+    cleanup_incomplete_chunk_operations,
+)
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.utils.browser import log_browser_diagnostics
 from services.llm import llm_service
@@ -343,6 +346,14 @@ async def lifespan(fastapi_app: FastAPI):
             if is_main_worker:
                 logger.error("Failed to send startup failure alert: %s", alert_error)
         raise SystemExit(1) from init_exc
+
+    logger.debug("[LIFESPAN] Cleaning up incomplete chunk test operations (post-migration)...")
+    cleaned_chunk = await cleanup_incomplete_chunk_operations()
+    if cleaned_chunk > 0 and is_main_worker:
+        logger.info(
+            "[Recovery] Cleaned up %d incomplete chunk operation(s) from kill -9",
+            cleaned_chunk,
+        )
 
     if is_main_worker:
         logger.debug("Database initialized successfully")
