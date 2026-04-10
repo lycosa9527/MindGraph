@@ -270,9 +270,9 @@ class Messages:
             "az": "Bu e-poçt artıq qeydiyyatdan keçib. Daxil olun və ya başqa ünvandan istifadə edin.",
         },
         "login_failed_identifier_not_found": {
-            "zh": ("登录失败。手机号或邮箱未找到或密码不正确。还有 {} 次尝试机会。"),
-            "en": ("Login failed. Phone or email not found or password incorrect. {} attempt(s) remaining."),
-            "az": ("Giriş uğursuz oldu. Telefon və ya e-poçt tapılmadı və ya parol yanlışdır. {} cəhd qalıb."),
+            "zh": ("登录失败。未找到使用该手机号或邮箱注册的账号。还有 {} 次尝试机会。"),
+            "en": ("Login failed. No account is registered with this phone number or email. {} attempt(s) remaining."),
+            "az": ("Giriş uğursuz oldu. Bu telefon nömrəsi və ya e-poçt üzrə hesab tapılmadı. {} cəhd qalıb."),
         },
         "ui_language_zh_not_allowed": {
             "zh": "您的账户不支持简体中文界面。请选择其他界面语言。",

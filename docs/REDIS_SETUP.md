@@ -125,6 +125,53 @@ Redis runs on `localhost:6379` by default. Configure in your `.env` file:
 REDIS_URL=redis://localhost:6379/0
 ```
 
+## Key memory histograms (Redis 8.6+)
+
+MindGraph tries to turn on **key memory histograms** at startup (`CONFIG SET key-memory-histograms yes`) so Redis can expose per-key size distribution (for example via `INFO` / debugging). On many servers this **does not work at runtime**: Redis treats the setting as **startup-only**, or `CONFIG` is restricted, so you may see an INFO log such as *key-memory-histograms not applied at runtime*. That is expected and safe to ignore unless you need the feature.
+
+To actually enable histograms, the directive must be present **before** Redis starts (or your host must allow changing it through their control plane).
+
+### Linux (Debian/Ubuntu, local `redis-server`)
+
+**Automated (recommended):** When you install with the MindGraph setup script **as root**, and Redis is 8.6+, the script can patch the system `redis.conf` and restart Redis. That path is implemented in `scripts/setup/setup.py` (`ensure_redis_key_memory_histograms_linux()`), typically under `/etc/redis/redis.conf` or `/etc/redis.conf`. Re-run setup if you upgraded Redis after the first install:
+
+```bash
+sudo $(which python3) scripts/setup/setup.py
+```
+
+Use the same Python you use for the project (conda: `sudo $(which python3)` so sudo resolves your interpreter).
+
+**Manual:**
+
+1. Edit the active config (often `/etc/redis/redis.conf`):
+
+   ```conf
+   # MindGraph: INFO keysizes memory histograms (Redis 8.6+)
+   key-memory-histograms yes
+   ```
+
+2. Restart Redis:
+
+   ```bash
+   sudo systemctl restart redis-server
+   ```
+
+3. Confirm:
+
+   ```bash
+   redis-cli CONFIG GET key-memory-histograms
+   ```
+
+   You should see `key-memory-histograms` followed by `yes`.
+
+### Windows, Docker, cloud / managed Redis
+
+- **Windows (local install):** Add `key-memory-histograms yes` to your Redis config file (path depends on the installer), then restart the Redis service or process.
+- **Docker:** Set the directive in a custom `redis.conf` mounted into the container, or use an `entrypoint` that writes config before `redis-server` starts; restart the container after changing config.
+- **Managed providers** (ElastiCache, Azure Cache, etc.): Use the vendor’s parameter group or portal; you usually cannot patch `redis.conf` from the MindGraph process.
+
+After it is enabled at startup, MindGraph’s runtime `CONFIG SET` may succeed or become unnecessary; either way, histograms will be active.
+
 ## Check Status
 
 ```bash

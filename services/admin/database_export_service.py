@@ -252,6 +252,9 @@ def import_postgres_dump(
     """
     Restore a ``.dump`` file from ``backup/`` into the PostgreSQL database.
 
+    After ``pg_restore``, runs Alembic migrations so schema matches the current
+    app (older backups may omit columns added in later revisions).
+
     WARNING: This replaces all existing data.
     """
     pg_restore = _find_pg_binary("pg_restore")
@@ -292,6 +295,19 @@ def import_postgres_dump(
             stderr,
         )
         return {"success": False, "error": stderr}
+
+    try:
+        logger.info("[DBImport] Applying Alembic migrations after restore (schema may predate current ORM)")
+        _run_alembic_after_pg_restore()
+    except Exception as exc:
+        logger.error("[DBImport] Post-restore migration failed: %s", exc, exc_info=True)
+        return {
+            "success": False,
+            "error": (
+                "pg_restore finished but upgrading schema to current revision failed. "
+                f"Database may be inconsistent. Details: {exc}"
+            )[:2000],
+        }
 
     if pg_engine is not None:
         try:
@@ -334,6 +350,23 @@ def list_pg_dumps(backup_dir: Path) -> List[Dict[str, Any]]:
 
 
 # ── internal helpers ──────────────────────────────────────────────────
+
+
+def _run_alembic_after_pg_restore() -> None:
+    """Apply pending Alembic revisions so restored data matches current ORM.
+
+    ``pg_restore`` replays DDL from the backup file. Older dumps predate columns
+    such as ``users.email``; the running app still issues SELECTs for those
+    columns. ``alembic upgrade head`` only **adds** missing schema (indexes,
+    columns, constraints). It does **not** delete user rows or truncate tables.
+
+    Organization seeding is **disabled** here so an import stays faithful to the
+    dump: we do not inject demo organizations when the restored ``organizations``
+    table happens to be empty.
+    """
+    from config.database import init_db  # pylint: disable=import-outside-toplevel
+
+    init_db(seed_organizations=False)
 
 
 def _get_row_counts(pg_engine: Engine) -> Dict[str, int]:
