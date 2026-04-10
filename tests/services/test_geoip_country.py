@@ -6,6 +6,7 @@ from unittest.mock import MagicMock, patch
 import pytest
 
 from services.auth.geoip_country import (
+    email_cn_geo_blocked,
     evaluate_email_login_geoip,
     overseas_email_registration_allowed,
     resolve_country_iso_from_request,
@@ -38,16 +39,60 @@ def test_evaluate_email_login_geoip(
 
 def test_overseas_registration_uses_lookup() -> None:
     with patch("services.auth.geoip_country.lookup_country_iso_code", return_value="CN"):
-        allowed, err = overseas_email_registration_allowed("203.0.113.1")
+        allowed, err, stamp = overseas_email_registration_allowed("203.0.113.1")
     assert allowed is False
     assert err == "registration_email_not_available_in_region"
+    assert stamp is True
 
 
 def test_overseas_registration_none_allows_with_domain_check_elsewhere() -> None:
     with patch("services.auth.geoip_country.lookup_country_iso_code", return_value=None):
-        allowed, err = overseas_email_registration_allowed("203.0.113.1")
+        allowed, err, stamp = overseas_email_registration_allowed("203.0.113.1")
     assert allowed is True
     assert err == ""
+    assert stamp is False
+
+
+def test_email_cn_geo_blocked_cookie_blocks_us_ip() -> None:
+    req = MagicMock()
+    req.cookies = {"mg_geo_cn_mainland": "valid"}
+    with patch("services.auth.geoip_country.verify_geo_cn_mainland_cookie", return_value=True):
+        must_deny, msg_key, stamp = email_cn_geo_blocked(
+            "8.8.8.8",
+            req,
+            whitelisted_from_cn=False,
+        )
+    assert must_deny is True
+    assert msg_key == "email_login_blocked_in_mainland_china"
+    assert stamp is False
+
+
+def test_email_cn_geo_blocked_uses_resolve_when_request_present() -> None:
+    req = MagicMock()
+    req.cookies = {}
+    with patch("services.auth.geoip_country.resolve_country_iso_from_request", return_value="CN"):
+        must_deny, msg_key, stamp = email_cn_geo_blocked(
+            "8.8.8.8",
+            req,
+            whitelisted_from_cn=False,
+        )
+    assert must_deny is True
+    assert msg_key == "email_login_blocked_in_mainland_china"
+    assert stamp is True
+
+
+def test_overseas_registration_cookie_blocks_without_cn_ip() -> None:
+    req = MagicMock()
+    req.cookies = {"mg_geo_cn_mainland": "valid"}
+    with patch("services.auth.geoip_country.verify_geo_cn_mainland_cookie", return_value=True):
+        with patch("services.auth.geoip_country.lookup_country_iso_code", return_value="US"):
+            allowed, err, stamp = overseas_email_registration_allowed(
+                "8.8.8.8",
+                request=req,
+            )
+    assert allowed is False
+    assert err == "registration_email_not_available_in_region"
+    assert stamp is False
 
 
 def test_resolve_country_iso_from_request_prefers_cf_header() -> None:

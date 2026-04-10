@@ -10,6 +10,7 @@ from services.auth import swot_academic
     ("email", "expected"),
     (
         ("user@gmail.com", False),
+        ("user@pku.edu.cn", False),
         ("user@ox.ac.uk", True),
         ("user@mail.harvard.edu", True),
     ),
@@ -25,3 +26,4 @@ def test_kikobeats_suffix_matches_parent_domain() -> None:
 def test_is_academic_email_matches_combined_predicate() -> None:
     assert swot_academic.is_academic_email("u@ox.ac.uk") is True
     assert swot_academic.is_academic_email("u@gmail.com") is False
+    assert swot_academic.is_academic_email("u@tsinghua.edu.cn") is False

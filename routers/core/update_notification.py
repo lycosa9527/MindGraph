@@ -313,7 +313,8 @@ async def upload_announcement_image(file: UploadFile = File(...), current_user: 
 
     try:
         # Generate unique filename
-        ext = file.filename.split(".")[-1] if "." in file.filename else "png"
+        upload_name = file.filename or ""
+        ext = upload_name.split(".")[-1] if "." in upload_name else "png"
         filename = f"announcement_{uuid.uuid4().hex[:8]}.{ext}"
         filepath = ANNOUNCEMENT_IMAGES_DIR / filename
 

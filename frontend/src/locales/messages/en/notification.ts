@@ -17,6 +17,11 @@ export default {
   'notification.feedbackThanks': 'Thanks for your feedback',
   'notification.feedbackThanksDislike': 'Thanks for your feedback — we will improve',
   'notification.focusQuestionTooShort': 'Enter a longer focus question first',
+  'notification.geoLiteMissingIntro':
+    'Download GeoLite2 Country from MaxMind, extract GeoLite2-Country.mmdb, and copy it into the server data folder:',
+  'notification.geoLiteMissingLink': 'Open MaxMind GeoLite download page',
+  'notification.geoLiteMissingPathLabel': 'Expected path:',
+  'notification.geoLiteMissingTitle': 'GeoLite2 Country database missing',
   'notification.fullscreenFailed': 'Could not enter fullscreen',
   'notification.generationCancelled': 'Generation cancelled',
   'notification.historyClearNodes': 'Clear node text',

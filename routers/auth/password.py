@@ -15,6 +15,7 @@ import logging
 from typing import Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi.responses import JSONResponse
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -26,13 +27,22 @@ from models.requests.requests_auth import (
     ResetPasswordWithEmailRequest,
     ResetPasswordWithSMSRequest,
 )
+from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
+from services.auth.geoip_country import email_cn_geo_blocked
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
 )
 from services.redis.cache.redis_user_cache import user_cache
 from utils.email_validation import validate_email_for_api
-from utils.auth import hash_password, get_client_ip, get_current_user, verify_password
+from utils.auth import (
+    AUTH_MODE,
+    EMAIL_LOGIN_CN_BLOCK_ENABLED,
+    hash_password,
+    get_client_ip,
+    get_current_user,
+    verify_password,
+)
 from services.redis.redis_email_storage import normalize_verification_email
 
 from .captcha import verify_captcha_with_retry
@@ -43,6 +53,32 @@ from .sms import _verify_and_consume_sms_code
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+
+
+def _geo_guard_reset_password_email(
+    http_request: Request,
+    lang: Language,
+) -> JSONResponse | None:
+    """
+    Enforce mainland/VPN geo policy for email-based password reset.
+
+    Returns a 403 JSONResponse when the client must be blocked with optional CN
+    cookie stamping; None when the request may proceed. Raises HTTPException
+    for non-CN service-unavailable style blocks.
+    """
+    if not EMAIL_LOGIN_CN_BLOCK_ENABLED or AUTH_MODE in ("demo", "bayi"):
+        return None
+    must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
+        get_client_ip(http_request),
+        http_request,
+        whitelisted_from_cn=False,
+    )
+    if not must_deny:
+        return None
+    detail = Messages.error(geo_msg_key, lang=lang)
+    if geo_msg_key == "email_login_blocked_in_mainland_china":
+        return json_forbidden_cn_geo(detail, http_request, stamp_cn)
+    raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
 
 
 def _raise_for_captcha_failure(captcha_error: Optional[str], lang: Language) -> None:
@@ -157,6 +193,10 @@ async def reset_password_with_email(
     if not cached_user:
         error_msg = Messages.error("email_not_registered_reset", lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    blocked = _geo_guard_reset_password_email(http_request, lang)
+    if blocked is not None:
+        return blocked
 
     verify_and_consume_email_code(request.email, request.email_code, "reset_password", lang)
 

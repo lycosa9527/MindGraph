@@ -11,6 +11,9 @@ from models.domain.auth import User
 from services.features.voice_agent import voice_agent_manager
 from services.features.websocket_llm_middleware import omni_middleware
 
+from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
+
+_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 from utils.auth import get_current_user
 from utils.auth_ws import authenticate_websocket_user
 
@@ -76,6 +79,10 @@ async def voice_conversation(websocket: WebSocket, diagram_session_id: str):
             reason=auth_error or "Authentication failed",
         )
         logger.warning("WebSocket auth failed: %s", auth_error)
+        return
+
+    if await _close_ws_if_vpn_cn_geo(websocket):
+        logger.warning("WebSocket VPN/CN policy closed connection for user_id=%s", current_user.id)
         return
 
     logger.info("WebSocket connection accepted user_id=%s", current_user.id)

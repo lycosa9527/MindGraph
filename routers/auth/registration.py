@@ -41,6 +41,7 @@ from services.redis.session.redis_session_manager import (
     get_session_manager,
     get_refresh_token_manager,
 )
+from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.registration_metrics import registration_metrics
 
 from .dependencies import get_language_dependency
@@ -270,6 +271,8 @@ async def register(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
+    record_vpn_login_geo(new_user.id, http_request)
+
     org_name = org.name if org else "None"
     logger.info(
         "[TokenAudit] Registration success: user=%s, phone=%s, org=%s, method=captcha, ip=%s",
@@ -489,6 +492,8 @@ async def register_with_sms(
 
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
+
+    record_vpn_login_geo(new_user.id, http_request)
 
     org_name = org.name if org else "None"
     logger.info(

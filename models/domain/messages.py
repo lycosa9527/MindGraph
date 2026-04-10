@@ -250,6 +250,17 @@ class Messages:
                 "Telefon və dəvət kodu ilə qeydiyyatdan keçin və ya materikdən kənar məktəb e-poçtundan istifadə edin."
             ),
         },
+        "email_login_mainland_china_domain": {
+            "zh": "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用邮箱登录。请改用手机号登录，或联系销售。",
+            "en": (
+                "This email domain is associated with mainland China. "
+                "Sign in with your phone number, or contact sales."
+            ),
+            "az": (
+                "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. "
+                "Telefon nömrəsi ilə daxil olun və ya satışla əlaqə saxlayın."
+            ),
+        },
         "email_login_blocked_in_mainland_china": {
             "zh": (
                 "当前网络环境下无法使用邮箱密码登录。中国大陆用户请使用手机号登录，或联系销售为您的账户开通邮箱登录权限。"
@@ -273,6 +284,17 @@ class Messages:
             "az": (
                 "Məkanınız təsdiqlənmədi. E-poçt ilə giriş müvəqqəti olaraq əlçatan deyil. "
                 "Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın."
+            ),
+        },
+        "vpn_cn_session_terminated": {
+            "zh": "检测到网络位置与登录时不一致，出于安全考虑已终止当前会话。请重新登录。",
+            "en": (
+                "Your session was ended because your network location no longer matches "
+                "where you signed in. Please sign in again."
+            ),
+            "az": (
+                "Şəbəkə məkanınız daxil olduğunuz məkandan fərqləndiyi üçün sessiya "
+                "sonlandırıldı. Yenidən daxil olun."
             ),
         },
         "email_already_registered": {

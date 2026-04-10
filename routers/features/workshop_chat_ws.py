@@ -41,6 +41,9 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_ws_auth_failure,
     record_ws_rate_limit_hit,
 )
+from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
+
+_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 from utils.auth import can_access_workshop_chat
 from utils.auth_ws import authenticate_websocket_user
 from utils.ws_limits import (
@@ -147,6 +150,10 @@ async def chat_websocket(websocket: WebSocket):
             logger.debug("Failed to record auth failure metric: %s", exc)
         await websocket.close(code=4001, reason=error or "Auth failed")
         logger.warning("[ChatWS] Auth rejected: %s", error)
+        return
+
+    if await _close_ws_if_vpn_cn_geo(websocket):
+        logger.warning("[ChatWS] VPN/CN policy closed connection for user_id=%s", user.id)
         return
 
     if not can_access_workshop_chat(user):

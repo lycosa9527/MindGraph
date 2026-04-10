@@ -32,6 +32,9 @@ from services.infrastructure.monitoring.ws_metrics import (
 )
 from services.workshop.workshop_ws_mutation_idle import start_mutation_idle_monitor
 
+from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
+
+_close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 from routers.api.workshop_ws_auth import authenticate_and_resolve_canvas_workshop
 from routers.api.workshop_ws_connect import send_canvas_collab_join_handshake
 from routers.api.workshop_ws_disconnect import finalize_canvas_collab_disconnect
@@ -97,6 +100,10 @@ async def canvas_collab_websocket(
     if not resolved:
         return
     user, code, diagram_id, owner_id = resolved
+
+    if await _close_ws_if_vpn_cn_geo(websocket):
+        logger.warning("[WorkshopWS] VPN/CN policy closed connection for user_id=%s", user.id)
+        return
 
     await websocket.accept()
 

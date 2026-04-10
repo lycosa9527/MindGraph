@@ -17,6 +17,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import Organization
+from services.auth.geo_cn_mainland_cookie import set_geo_cn_mainland_cookie
+
+_stamp_geo_cn_mainland_cookie = set_geo_cn_mainland_cookie
 from services.auth.geoip_country import resolve_country_iso_from_request
 from utils.auth import AUTH_MODE, is_https
 
@@ -59,6 +62,8 @@ async def get_client_region(request: Request, response: Response):
         httponly=False,
         secure=is_https(request),
     )
+    if mainland_china:
+        _stamp_geo_cn_mainland_cookie(response, request)
     return {
         "mainland_china": mainland_china,
         "region": "cn" if mainland_china else "intl",

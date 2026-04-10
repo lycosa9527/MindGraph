@@ -64,6 +64,7 @@ from .tokens import (
 from .request_helpers import is_https, get_client_ip
 
 # Authentication exports
+from .auth_resolution import AUTH_CONTEXT_USER_ATTR, load_user_from_jwt_session_token
 from .authentication import (
     get_current_user,
     get_user_from_cookie,
@@ -166,6 +167,8 @@ __all__ = [
     "is_https",
     "get_client_ip",
     # Authentication
+    "AUTH_CONTEXT_USER_ATTR",
+    "load_user_from_jwt_session_token",
     "get_current_user",
     "get_user_from_cookie",
     "get_current_user_or_api_key",

@@ -1,5 +1,5 @@
 """
-Detect email domains associated with mainland China for overseas registration policy.
+Detect email domains associated with mainland China for overseas registration and email login policy.
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
@@ -56,12 +56,21 @@ def is_mainland_china_email_domain(host: str) -> bool:
     return False
 
 
-def raise_if_mainland_china_email_for_overseas_registration(email: str, lang: Language) -> None:
-    """Reject overseas education-email registration when the domain is mainland China."""
+def _raise_if_mainland_china_email(email: str, lang: Language, message_key: str) -> None:
     parts = email.strip().rsplit("@", 1)
     if len(parts) != 2:
         return
     host = parts[1].strip()
     if is_mainland_china_email_domain(host):
-        detail = Messages.error("registration_email_mainland_china_domain", lang)
+        detail = Messages.error(message_key, lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=detail)
+
+
+def raise_if_mainland_china_email_for_overseas_registration(email: str, lang: Language) -> None:
+    """Reject overseas education-email registration when the domain is mainland China."""
+    _raise_if_mainland_china_email(email, lang, "registration_email_mainland_china_domain")
+
+
+def raise_if_mainland_china_email_for_email_login(email: str, lang: Language) -> None:
+    """Reject email-based login when the domain is mainland China (password or OTP)."""
+    _raise_if_mainland_china_email(email, lang, "email_login_mainland_china_domain")

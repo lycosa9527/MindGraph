@@ -215,6 +215,18 @@ sudo tail -f /var/log/redis/redis-server.log
 sudo grep "^logfile" /etc/redis/redis.conf
 ```
 
+## VPN / CN geo enforcement keys (optional)
+
+When `VPN_CN_KICKOUT_ENABLED` is true, the app stores per-user VPN/geo state in Redis (see `services/redis/keys.py`):
+
+| Key pattern | Purpose |
+|-------------|---------|
+| `geo:login_cc:{user_id}` | Country code at login (or one-time backfill) |
+| `geo:last_ip:{user_id}` | Last observed client IP |
+| `geo:last_cc:{user_id}` | Last resolved country |
+
+TTL matches the access-token session window (`TTL_ACCESS_SESSION`). TTL is slid forward on requests that hit the Redis fast path (same IP) and when the access token is refreshed, so long browser sessions do not silently drop the baseline while the user stays active.
+
 ## Common Commands
 
 ```bash

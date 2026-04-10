@@ -17,6 +17,11 @@ export default {
   'notification.feedbackThanks': '感谢您的反馈',
   'notification.feedbackThanksDislike': '感谢您的反馈，我们会努力改进',
   'notification.focusQuestionTooShort': '请先输入更长的焦点问题',
+  'notification.geoLiteMissingIntro':
+    '请从 MaxMind 下载 GeoLite2 Country，解压后把 GeoLite2-Country.mmdb 复制到服务器 data 目录：',
+  'notification.geoLiteMissingLink': '打开 MaxMind GeoLite 下载页',
+  'notification.geoLiteMissingPathLabel': '期望路径：',
+  'notification.geoLiteMissingTitle': '缺少 GeoLite2 Country 数据库',
   'notification.fullscreenFailed': '无法进入全屏模式',
   'notification.generationCancelled': '已取消生成',
   'notification.historyClearNodes': '清空节点文字',

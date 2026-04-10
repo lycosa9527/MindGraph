@@ -88,6 +88,13 @@ TTL_REFRESH_TOKEN = (
 )  # default 604800 s
 
 # ---------------------------------------------------------------------------
+# VPN / CN transition geo baseline  (vpn_geo_enforcement.py)
+# ---------------------------------------------------------------------------
+GEO_VPN_LOGIN_CC = "geo:login_cc:{user_id}"
+GEO_VPN_LAST_IP = "geo:last_ip:{user_id}"
+TTL_GEO_VPN = TTL_ACCESS_SESSION
+
+# ---------------------------------------------------------------------------
 # Rate limiting  (redis_rate_limiter.py)
 # ---------------------------------------------------------------------------
 RATE_KEY = "rate:{category}:{identifier}"

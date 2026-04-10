@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.76.0] - 2026-04-11
+
+### Added
+- **VPN / CN transition geo enforcement** (`services/auth/vpn_geo_enforcement.py`): Redis-backed login-country baseline and last-IP tracking; optional kick / session invalidation when a session that logged in from a non-CN IP is later seen from a China-mainland IP (configurable via `VPN_CN_KICKOUT_*`); coverage for API routes and WebSockets (`routers/api/workshop_ws.py`, `routers/features/workshop_chat_ws.py`); integrates GeoIP resolution and CN mobile checks (`utils/cn_mobile.py`).
+- **Auth resolution** (`utils/auth/auth_resolution.py`): Resolve authenticated `User` once per HTTP request for middleware and dependencies (`request.state.auth_context_user`), reducing duplicate JWT / `mgat_` validation.
+- **HTTP auth token helpers** (`services/auth/http_auth_token.py`): Bearer extraction and access-token payload decoding shared by auth paths.
+- **CN mainland geo cookie / API** (`services/auth/geo_cn_mainland_cookie.py`, `services/auth/email_login_cn_api_geo.py`): Structured responses and enforcement hooks aligned with email login and mainland policies.
+- **Admin GeoLite status** (`routers/auth/admin/geolite.py`): `GET /api/auth/admin/system/geolite` reports whether `GeoLite2-Country.mmdb` is present, expected path, and download URL.
+- **Frontend**: `GeoLiteNotification.vue` — admin-only Element Plus notification when the GeoLite country database is missing (dismissible with localStorage); wired from `App.vue`.
+- **Redis** (`services/redis/keys.py`): `GEO_VPN_LOGIN_CC`, `GEO_VPN_LAST_IP`, and `TTL_GEO_VPN` for VPN/geo baseline keys.
+- **Tests**: `tests/services/test_vpn_geo_enforcement.py`, `tests/services/test_geo_cn_mainland_cookie.py`, `tests/services/test_email_login_cn_api_geo.py`, `tests/utils/test_cn_mobile.py`.
+
+### Changed
+- **Auth (backend)**: Session, login, registration, password, email, public routes, helpers, and admin router wiring; `utils/auth/authentication.py`, `utils/auth/websocket_auth.py`, `utils/auth_ws.py`, `utils/auth/config.py`; `models/domain/messages.py` for user-visible copy; GeoIP and SWOT academic services and their tests where aligned with geo flows.
+- **Middleware / lifecycle** (`services/infrastructure/http/middleware.py`, `services/infrastructure/lifecycle/lifespan.py`): Auth context and VPN/geo enforcement integration.
+- **Notifications**: `routers/core/update_notification.py`; i18n `notification` bundles (`en`/`zh`).
+- **Docs / config**: `env.example`, `docs/REDIS_SETUP.md` for Redis and GeoLite-related settings.
+
 ## [5.75.0] - 2026-04-11
 
 ### Added

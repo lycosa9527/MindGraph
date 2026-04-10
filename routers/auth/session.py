@@ -24,6 +24,9 @@ from jose import jwt, JWTError
 from fastapi import APIRouter, Depends, Request, Response, Header, HTTPException, status
 
 from models import User, Messages, get_request_language, Language
+from services.auth.vpn_geo_enforcement import record_vpn_refresh_last_ip
+
+_record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
@@ -265,6 +268,8 @@ async def refresh_token(request: Request, response: Response):
 
     # Store new session with device hash for same-device session tracking
     session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
+
+    _record_vpn_refresh_last_ip(user_id, request)
 
     # Set new cookies
     set_auth_cookies(response, new_access_token, new_refresh_token, request)

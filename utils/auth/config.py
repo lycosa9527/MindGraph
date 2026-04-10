@@ -62,6 +62,28 @@ def _parse_bool_env(name: str, default: bool) -> bool:
 # In AUTH_MODE demo/bayi, login route skips this check so local/demo flows stay simple.
 EMAIL_LOGIN_CN_BLOCK_ENABLED = _parse_bool_env("EMAIL_LOGIN_CN_BLOCK_ENABLED", True)
 
+# VPN / CN transition: kick non-mainland-phone users when country flips to CN mid-session.
+VPN_CN_KICKOUT_ENABLED = _parse_bool_env("VPN_CN_KICKOUT_ENABLED", False)
+
+
+def _parse_int_id_allowlist(raw: str) -> Set[int]:
+    """Comma-separated user IDs for VPN CN kick-out bypass (support / testing)."""
+    result: Set[int] = set()
+    for part in raw.split(","):
+        part = part.strip()
+        if not part:
+            continue
+        try:
+            result.add(int(part))
+        except ValueError:
+            logger.warning("Invalid user id in VPN_CN_KICKOUT_ALLOWLIST_USER_IDS: %s", part)
+    return result
+
+
+VPN_CN_KICKOUT_ALLOWLIST_USER_IDS = _parse_int_id_allowlist(
+    os.getenv("VPN_CN_KICKOUT_ALLOWLIST_USER_IDS", "").strip()
+)
+
 # Enterprise Mode Configuration
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()
 ENTERPRISE_DEFAULT_USER_PHONE = os.getenv("ENTERPRISE_DEFAULT_USER_PHONE", "enterprise@system.com").strip()

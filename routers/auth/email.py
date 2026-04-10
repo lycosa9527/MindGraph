@@ -20,7 +20,11 @@ from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import SendEmailCodeRequest, VerifyEmailCodeRequest
 from services.auth.email_middleware import SESServiceError, get_email_middleware
-from services.auth.geoip_country import evaluate_email_login_geoip, overseas_email_registration_allowed
+from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
+from services.auth.geoip_country import (
+    email_cn_geo_blocked,
+    overseas_email_registration_allowed,
+)
 from services.auth.swot_academic import require_academic_email_if_configured
 from services.auth.ses_service import (
     EMAIL_CODE_EXPIRY_MINUTES,
@@ -37,7 +41,10 @@ from services.redis.redis_email_storage import (
 )
 from config.settings import config
 from utils.auth import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED, get_client_ip
-from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
+from utils.email_mainland_china import (
+    raise_if_mainland_china_email_for_email_login,
+    raise_if_mainland_china_email_for_overseas_registration,
+)
 from utils.email_validation import validate_email_code_digits, validate_email_for_api
 
 from .captcha import verify_captcha_with_retry
@@ -85,11 +92,26 @@ async def send_email_code(
     client_ip = get_client_ip(http_request)
 
     if request.purpose == "register":
-        geo_allowed, geo_err = overseas_email_registration_allowed(client_ip)
+        geo_allowed, geo_err, stamp_cn = overseas_email_registration_allowed(
+            client_ip,
+            request=http_request,
+        )
         if not geo_allowed:
             detail = Messages.error(geo_err, lang)
             if geo_err == "registration_email_not_available_in_region":
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+                return json_forbidden_cn_geo(detail, http_request, stamp_cn)
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
+
+    if request.purpose == "reset_password" and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+        must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
+            client_ip,
+            http_request,
+            whitelisted_from_cn=False,
+        )
+        if must_deny:
+            detail = Messages.error(geo_msg_key, lang=lang)
+            if geo_msg_key == "email_login_blocked_in_mainland_china":
+                return json_forbidden_cn_geo(detail, http_request, stamp_cn)
             raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
 
     email_middleware = get_email_middleware()
@@ -100,6 +122,8 @@ async def send_email_code(
     email_validated = validate_email_for_api(request.email, lang)
     if request.purpose == "register":
         raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
+    elif request.purpose == "login":
+        raise_if_mainland_china_email_for_email_login(email_validated, lang)
     require_academic_email_if_configured(email_validated, request.purpose, lang)
     email_norm = normalize_verification_email(email_validated)
     purpose = request.purpose
@@ -123,14 +147,15 @@ async def send_email_code(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
         if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
             whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
-            must_deny, geo_msg_key = evaluate_email_login_geoip(client_ip, whitelisted)
+            must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
+                client_ip,
+                http_request,
+                whitelisted_from_cn=whitelisted,
+            )
             if must_deny:
                 detail = Messages.error(geo_msg_key, lang=lang)
                 if geo_msg_key == "email_login_blocked_in_mainland_china":
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail=detail,
-                    )
+                    return json_forbidden_cn_geo(detail, http_request, stamp_cn)
                 raise HTTPException(
                     status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                     detail=detail,
@@ -227,10 +252,36 @@ async def verify_email_code(
 ):
     """Verify email code without consuming (peek). Rate-limited per email+purpose and per IP."""
     email_validated = validate_email_for_api(request.email, lang)
+    if request.purpose == "login":
+        raise_if_mainland_china_email_for_email_login(email_validated, lang)
     require_academic_email_if_configured(email_validated, request.purpose, lang)
     code_validated = validate_email_code_digits(request.code, lang)
 
     email_norm = normalize_verification_email(email_validated)
+
+    if request.purpose in ("login", "reset_password") and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in (
+        "demo",
+        "bayi",
+    ):
+        client_ip_geo = get_client_ip(http_request) if http_request else "unknown"
+        if request.purpose == "login":
+            cached_verify = await user_cache.get_by_email(email_norm)
+            whitelisted = (
+                getattr(cached_verify, "email_login_whitelisted_from_cn", False) if cached_verify else False
+            )
+        else:
+            whitelisted = False
+        must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
+            client_ip_geo,
+            http_request,
+            whitelisted_from_cn=whitelisted,
+        )
+        if must_deny:
+            detail = Messages.error(geo_msg_key, lang=lang)
+            if geo_msg_key == "email_login_blocked_in_mainland_china":
+                return json_forbidden_cn_geo(detail, http_request, stamp_cn)
+            raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
+
     window_seconds = config.EMAIL_VERIFY_WINDOW_MINUTES * 60
     combo_id = f"{email_norm}:{request.purpose}"
     rate_limiter = get_rate_limiter()
@@ -283,6 +334,8 @@ def verify_and_consume_email_code(email: str, code: str, purpose: str, lang: Lan
     (same pattern as register_with_sms + _verify_and_consume_sms_code).
     """
     email_validated = validate_email_for_api(email, lang)
+    if purpose == "login":
+        raise_if_mainland_china_email_for_email_login(email_validated, lang)
     require_academic_email_if_configured(email_validated, purpose, lang)
     validate_email_code_digits(code, lang)
     email_storage = get_email_storage()

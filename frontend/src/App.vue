@@ -12,6 +12,7 @@ import en from 'element-plus/es/locale/lang/en'
 
 import { LoginModal } from '@/components/auth'
 import ChatMessageToast from '@/components/common/ChatMessageToast.vue'
+import GeoLiteNotification from '@/components/common/GeoLiteNotification.vue'
 import VersionNotification from '@/components/common/VersionNotification.vue'
 import BrowserLocaleHintDialog from '@/components/settings/BrowserLocaleHintDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
@@ -150,6 +151,8 @@ onMounted(async () => {
     </component>
 
     <VersionNotification />
+
+    <GeoLiteNotification />
 
     <ChatMessageToast />
 

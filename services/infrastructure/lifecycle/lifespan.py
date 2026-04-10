@@ -24,6 +24,9 @@ from clients.llm import close_httpx_clients
 from config.celery import CeleryStartupError, init_celery_worker_check
 from config.database import close_db, init_db
 from config.settings import config
+from services.auth.geoip_country import log_geolite_country_mmdb_startup_status
+
+_log_geolite_country_mmdb_startup_status = log_geolite_country_mmdb_startup_status
 from services.auth.ip_geolocation import get_geolocation_service
 from services.auth.sms_middleware import get_sms_middleware, shutdown_sms_service
 from services.features.ws_redis_fanout_listener import (
@@ -175,6 +178,7 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("[LIFESPAN] Starting lifespan initialization...")
         logger.debug("[LIFESPAN] Signal handlers registered")
         _log_security_startup_posture()
+        _log_geolite_country_mmdb_startup_status()
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available

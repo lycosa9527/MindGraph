@@ -29,6 +29,7 @@ from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
+from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.redis.session.redis_session_manager import get_session_manager
 from services.monitoring.city_flag_tracker import get_city_flag_tracker
 from services.auth.ip_geolocation import get_geolocation_service
@@ -341,6 +342,8 @@ async def create_user_session(
     # Store new session in Redis (automatically limits concurrent sessions)
     session_manager.store_session(user.id, token, device_hash=device_hash)
 
+    record_vpn_login_geo(user.id, http_request)
+
     # If cache_user_func is provided (for registration), execute it in parallel
     if cache_user_func:
         await asyncio.gather(
@@ -349,6 +352,17 @@ async def create_user_session(
         )
 
     return token, client_ip
+
+
+def issue_access_token_with_vpn_geo(user: User, http_request: Request) -> str:
+    """
+    Issue an access JWT and record VPN geo baseline (no-op when enforcement is off or demo modes).
+
+    Use for any path that issues a browser session token outside the main auth routers.
+    """
+    token = create_access_token(user)
+    record_vpn_login_geo(user.id, http_request)
+    return token
 
 
 # ============================================================================

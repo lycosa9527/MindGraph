@@ -11,6 +11,7 @@ Proprietary License
 """
 
 import logging
+from types import SimpleNamespace
 
 from fastapi import Depends, HTTPException
 from fastapi.websockets import WebSocketDisconnect
@@ -19,22 +20,25 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from . import auth_resolution
 from .tokens import decode_access_token
 
 logger = logging.getLogger(__name__)
 
 # Redis modules (optional)
-_redis_available = False
-_get_session_manager = None
-_user_cache = None
+_redis = SimpleNamespace(
+    available=False,
+    get_session_manager=None,
+    user_cache=None,
+)
 
 try:
     from services.redis.session.redis_session_manager import get_session_manager
     from services.redis.cache.redis_user_cache import user_cache
 
-    _redis_available = True
-    _get_session_manager = get_session_manager
-    _user_cache = user_cache
+    _redis.available = True
+    _redis.get_session_manager = get_session_manager
+    _redis.user_cache = user_cache
 except ImportError:
     pass
 
@@ -66,7 +70,10 @@ async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db
         raise WebSocketDisconnect(code=4001, reason="No token provided")
 
     try:
-        # Decode and validate token
+        user = await auth_resolution.load_user_from_jwt_session_token(token)
+        if user is not None:
+            return user
+
         payload = decode_access_token(token)
         user_id = payload.get("sub")
 
@@ -74,24 +81,22 @@ async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db
             await websocket.close(code=4001, reason="Invalid token")
             raise WebSocketDisconnect(code=4001, reason="Invalid token")
 
-        # Session validation: Check if session exists in Redis
-        if not _redis_available:
+        if not _redis.available:
             await websocket.close(code=4001, reason="Redis unavailable")
             raise WebSocketDisconnect(code=4001, reason="Redis unavailable")
 
-        if _get_session_manager is None:
+        if _redis.get_session_manager is None:
             await websocket.close(code=4001, reason="Session manager unavailable")
             raise WebSocketDisconnect(code=4001, reason="Session manager unavailable")
 
-        session_manager = _get_session_manager()
+        session_manager = _redis.get_session_manager()
         if not session_manager.is_session_valid(int(user_id), token):
             await websocket.close(code=4001, reason="Session expired or invalidated")
             raise WebSocketDisconnect(code=4001, reason="Session expired or invalidated")
 
-        # Use cache for user lookup (with SQLite fallback)
         user = None
-        if _user_cache:
-            user = await _user_cache.get_by_id(int(user_id))
+        if _redis.user_cache:
+            user = await _redis.user_cache.get_by_id(int(user_id))
 
         if not user:
             # Fallback to DB if not in cache
@@ -99,8 +104,8 @@ async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db
             user = result.scalar_one_or_none()
             if user:
                 db.expunge(user)
-                if _user_cache:
-                    _user_cache.cache_user(user)
+                if _redis.user_cache:
+                    _redis.user_cache.cache_user(user)
 
         if not user:
             await websocket.close(code=4001, reason="User not found")

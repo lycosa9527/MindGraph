@@ -19,7 +19,9 @@ from config.database import get_async_db
 from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import RegisterOverseasRequest
+from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import overseas_email_registration_allowed
+from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.auth.swot_academic import require_academic_email_if_configured
 from services.monitoring.registration_metrics import registration_metrics
 from services.redis.cache.redis_user_cache import user_cache
@@ -95,13 +97,16 @@ async def register_overseas(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    allowed, geo_err = overseas_email_registration_allowed(client_ip)
+    allowed, geo_err, stamp_cn = overseas_email_registration_allowed(
+        client_ip,
+        request=http_request,
+    )
     if not allowed:
         duration = time.time() - start_time
         registration_metrics.record_failure("geoip_blocked", duration)
         detail = Messages.error(geo_err, lang)
         if geo_err == "registration_email_not_available_in_region":
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=detail)
+            return json_forbidden_cn_geo(detail, http_request, stamp_cn)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
 
     email_validated = validate_email_for_api(request.email, lang)
@@ -183,6 +188,8 @@ async def register_overseas(
     registration_metrics.record_success(duration, retry_count, cache_write_success)
 
     set_auth_cookies(response, token, refresh_token_value, http_request)
+
+    record_vpn_login_geo(new_user.id, http_request)
 
     logger.info(
         "[TokenAudit] Registration success (overseas email): user=%s ip=%s",

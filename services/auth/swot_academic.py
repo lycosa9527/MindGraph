@@ -18,6 +18,7 @@ from typing import FrozenSet
 from fastapi import HTTPException, status
 
 from models.domain.messages import Language, Messages
+from utils.email_mainland_china import is_mainland_china_email_domain
 
 
 logger = logging.getLogger(__name__)
@@ -75,9 +76,11 @@ def passes_combined_academic_policy(email: str) -> bool:
     """
     True iff registrable host is not a Kikobeats free domain and pyswot.is_academic is True.
 
-    Order: Kikobeats (frozenset) then pyswot.
+    Order: Kikobeats (frozenset), mainland China domain policy (no pyswot country API), then pyswot.
     """
     if _host_in_kikobeats_free(_email_host(email)):
+        return False
+    if is_mainland_china_email_domain(_email_host(email)):
         return False
     try:
         from pyswot import is_academic
@@ -94,7 +97,7 @@ def passes_combined_academic_policy(email: str) -> bool:
 
 def is_academic_email(email: str) -> bool:
     """
-    Same predicate as enforcement: Kikobeats block, then Swot.
+    Same predicate as enforcement: Kikobeats block, mainland China domain block, then Swot.
 
     On unexpected errors from pyswot, logs and returns False (conservative for allow checks).
     """
@@ -115,6 +118,12 @@ def require_academic_email_if_configured(email: str, purpose: str, lang: Languag
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Messages.error("email_not_academic_domain", lang),
+        ) from None
+
+    if is_mainland_china_email_domain(_email_host(email)):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("registration_email_mainland_china_domain", lang),
         ) from None
 
     try:

@@ -145,6 +145,7 @@ declare module 'vue' {
     FilePreview: typeof import('./components/workshop-chat/FilePreview.vue')['default']
     FlowNode: typeof import('./components/diagram/nodes/FlowNode.vue')['default']
     FlowSubstepNode: typeof import('./components/diagram/nodes/FlowSubstepNode.vue')['default']
+    GeoLiteNotification: typeof import('./components/common/GeoLiteNotification.vue')['default']
     GeweLoginComponent: typeof import('./components/admin/GeweLoginComponent.vue')['default']
     HorizontalStepEdge: typeof import('./components/diagram/edges/HorizontalStepEdge.vue')['default']
     ImageLightbox: typeof import('./components/workshop-chat/ImageLightbox.vue')['default']

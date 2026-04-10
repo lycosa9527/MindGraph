@@ -15,7 +15,7 @@ Proprietary License
 
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Optional
+from typing import Optional, cast
 import logging
 import os
 
@@ -30,6 +30,10 @@ from services.redis.session.redis_session_manager import get_session_manager
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from services.redis.redis_bayi_token import get_bayi_token_tracker
+from routers.auth.helpers import issue_access_token_with_vpn_geo
+
+_issue_bayi_access_token = issue_access_token_with_vpn_geo
+
 from utils.auth import (
     AUTH_MODE,
     get_client_ip,
@@ -39,7 +43,6 @@ from utils.auth import (
     decrypt_bayi_token,
     validate_bayi_token_body,
     is_ip_whitelisted,
-    create_access_token,
     hash_password,
     compute_device_hash,
 )
@@ -150,19 +153,22 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
 
                 # Check organization status (locked or expired) - CRITICAL SECURITY CHECK
                 if org:
-                    is_active = org.is_active if hasattr(org, "is_active") else True
+                    is_active = cast(bool, getattr(org, "is_active", True))
                     if not is_active:
                         logger.warning("IP whitelist blocked: Organization %s is locked", org.code)
                         return RedirectResponse(url="/demo", status_code=303)
 
-                    if hasattr(org, "expires_at") and org.expires_at:
-                        if org.expires_at < datetime.now(UTC):
-                            logger.warning(
-                                "IP whitelist blocked: Organization %s expired on %s",
-                                org.code,
-                                org.expires_at,
-                            )
-                            return RedirectResponse(url="/demo", status_code=303)
+                    expires_at = cast(
+                        Optional[datetime],
+                        getattr(org, "expires_at", None),
+                    )
+                    if expires_at is not None and expires_at < datetime.now(UTC):
+                        logger.warning(
+                            "IP whitelist blocked: Organization %s expired on %s",
+                            org.code,
+                            expires_at,
+                        )
+                        return RedirectResponse(url="/demo", status_code=303)
 
                 user_phone = "bayi-ip@system.com"
                 user_name = "Bayi IP User"
@@ -224,7 +230,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                                 )
 
                 session_manager = get_session_manager()
-                jwt_token = create_access_token(bayi_user)
+                jwt_token = _issue_bayi_access_token(bayi_user, request)
                 device_hash = compute_device_hash(request)
 
                 session_manager.store_session(
@@ -433,7 +439,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             old_token_hash = session_manager.get_session_token(bayi_user.id)
             session_manager.invalidate_user_sessions(bayi_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
 
-            jwt_token = create_access_token(bayi_user)
+            jwt_token = _issue_bayi_access_token(bayi_user, request)
             device_hash = compute_device_hash(request)
             session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
 

@@ -23,7 +23,9 @@ from starlette.types import ASGIApp, Receive, Scope, Send
 from starlette.middleware.gzip import GZipResponder
 from config.settings import config
 from services.auth.security_logger import security_log
+from services.auth.vpn_geo_enforcement import maybe_enforce_vpn_cn_geo_async
 from services.infrastructure.http.feature_gate import feature_flag_gate
+from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR, resolve_authenticated_user_optional
 
 logger = logging.getLogger(__name__)
 
@@ -343,6 +345,31 @@ async def ensure_pdf_range_support(request: Request, call_next):
     return response
 
 
+async def auth_context_middleware(request: Request, call_next):
+    """
+    Resolve JWT/mgat_ User once per request so geo middleware and Depends() reuse it.
+    """
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    user = await resolve_authenticated_user_optional(request)
+    if user is not None:
+        setattr(request.state, AUTH_CONTEXT_USER_ATTR, user)
+    return await call_next(request)
+
+
+async def vpn_cn_geo_middleware(request: Request, call_next):
+    """
+    Block non-mainland-phone users when JWT country baseline (at login) was non-CN
+    and the client later resolves to CN (VPN / travel), after Redis fast path.
+    """
+    if request.method == "OPTIONS":
+        return await call_next(request)
+    blocked = await maybe_enforce_vpn_cn_geo_async(request)
+    if blocked is not None:
+        return blocked
+    return await call_next(request)
+
+
 async def log_requests(request: Request, call_next):
     """
     Log all HTTP requests and responses with timing information.
@@ -489,3 +516,5 @@ def setup_middleware(app: FastAPI):
     app.middleware("http")(ensure_pdf_range_support)  # Safety net for PDF headers
     app.middleware("http")(log_requests)
     app.middleware("http")(feature_flag_gate)
+    app.middleware("http")(auth_context_middleware)
+    app.middleware("http")(vpn_cn_geo_middleware)

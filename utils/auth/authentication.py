@@ -13,7 +13,6 @@ Proprietary License
 import logging
 import os
 import time
-from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Optional
 
@@ -29,6 +28,7 @@ from .config import AUTH_MODE, JWT_ALGORITHM
 from .jwt_secret import get_jwt_secret
 from .tokens import security, api_key_header, decode_access_token
 from .api_keys import validate_api_key, track_api_key_usage, get_api_key_record
+from .auth_resolution import AUTH_CONTEXT_USER_ATTR, raise_if_org_locked_or_expired_async
 from .enterprise_mode import get_enterprise_user
 
 logger = logging.getLogger(__name__)
@@ -89,6 +89,11 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     # Enterprise Mode: Skip authentication, return enterprise user
     if AUTH_MODE == "enterprise":
         return await get_enterprise_user()
+
+    cached = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
+    if cached is not None:
+        await raise_if_org_locked_or_expired_async(cached)
+        return cached
 
     # Standard, Demo, and Bayi Mode: Validate JWT token
     token = None
@@ -170,27 +175,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
     if not user:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="User not found")
 
-    # Check organization status (locked or expired) using cache
-    if user.organization_id:
-        org = None
-        if _redis.available and _redis.org_cache:
-            org = await _redis.org_cache.get_by_id(user.organization_id)
-        if org:
-            # Check if organization is locked
-            is_active = org.is_active if hasattr(org, "is_active") else True
-            if not is_active:
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Organization account is locked. Please contact support.",
-                )
-
-            # Check if organization subscription has expired
-            if hasattr(org, "expires_at") and org.expires_at:
-                if org.expires_at < datetime.now(UTC):
-                    raise HTTPException(
-                        status_code=status.HTTP_403_FORBIDDEN,
-                        detail="Organization subscription has expired. Please contact support.",
-                    )
+    await raise_if_org_locked_or_expired_async(user)
 
     return user
 
@@ -285,6 +270,9 @@ async def get_current_user_or_api_key(
         token = request.cookies.get("access_token")
 
     if token:
+        cached = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
+        if cached is not None:
+            return cached
         if token.startswith("mgat_"):
             from utils.auth.user_tokens import validate_user_token
 

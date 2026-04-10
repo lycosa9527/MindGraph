@@ -43,8 +43,11 @@ from services.redis.session.redis_session_manager import (
     get_session_manager,
     get_refresh_token_manager,
 )
-from services.auth.geoip_country import evaluate_email_login_geoip
+from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
+from services.auth.geoip_country import email_cn_geo_blocked
+from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.redis.cache.redis_user_cache import user_cache
+from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
 from utils.auth import (
     AUTH_MODE,
@@ -171,6 +174,8 @@ async def _complete_login_after_otp_verified(
 
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
+    record_vpn_login_geo(user.id, http_request)
+
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
         result_org = await db.execute(select(Organization).where(Organization.id == user.organization_id))
@@ -236,7 +241,9 @@ async def login(
     - Failed attempt tracking in database
     """
     if request.email:
-        login_key = normalize_verification_email(validate_email_for_api(request.email, lang))
+        email_validated = validate_email_for_api(request.email, lang)
+        raise_if_mainland_china_email_for_email_login(email_validated, lang)
+        login_key = normalize_verification_email(email_validated)
         cached_user = await user_cache.get_by_email(login_key)
     else:
         login_key = request.phone.strip()
@@ -272,17 +279,15 @@ async def login(
         and AUTH_MODE not in ("demo", "bayi")
     ):
         whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
-        must_deny, geo_msg_key = evaluate_email_login_geoip(
+        must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
             get_client_ip(http_request),
-            whitelisted,
+            http_request,
+            whitelisted_from_cn=whitelisted,
         )
         if must_deny:
             detail = Messages.error(geo_msg_key, lang=lang)
             if geo_msg_key == "email_login_blocked_in_mainland_china":
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail=detail,
-                )
+                return json_forbidden_cn_geo(detail, http_request, stamp_cn)
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail=detail,
@@ -435,6 +440,8 @@ async def login(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
+    record_vpn_login_geo(user.id, http_request)
+
     org_name = org.name if org else "None"
     logger.info(
         "[TokenAudit] Login success: user=%s, phone=%s, email=%s, org=%s, method=captcha, ip=%s, device=%s",
@@ -540,7 +547,9 @@ async def login_with_email(
 
     Same guarantees as SMS login: no password, org checks, code consumed once.
     """
-    email_key = normalize_verification_email(validate_email_for_api(request.email, lang))
+    email_validated = validate_email_for_api(request.email, lang)
+    raise_if_mainland_china_email_for_email_login(email_validated, lang)
+    email_key = normalize_verification_email(email_validated)
     user = await user_cache.get_by_email(email_key)
 
     if not user:
@@ -562,6 +571,21 @@ async def login_with_email(
                 expired_date = org.expires_at.strftime("%Y-%m-%d")
                 error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+
+    if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+        must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
+            get_client_ip(http_request),
+            http_request,
+            whitelisted_from_cn=getattr(user, "email_login_whitelisted_from_cn", False),
+        )
+        if must_deny:
+            detail = Messages.error(geo_msg_key, lang=lang)
+            if geo_msg_key == "email_login_blocked_in_mainland_china":
+                return json_forbidden_cn_geo(detail, http_request, stamp_cn)
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=detail,
+            )
 
     verify_and_consume_email_code(request.email, request.email_code, "login", lang)
 
@@ -733,6 +757,8 @@ async def verify_demo(
 
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, request)
+
+    record_vpn_login_geo(auth_user.id, request)
 
     logger.info(
         "[TokenAudit] Login success: user=%s, mode=%s, admin=%s, ip=%s, device=%s",
