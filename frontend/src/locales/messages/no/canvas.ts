@@ -1,4 +1,4 @@
-/** no UI — canvas */
+/** no UI — canvas (English copy; translate values as needed) */
 export default {
   'braceMap.defaultSubpartFirst': 'New Subpart 1',
   'braceMap.defaultSubpartSecond': 'New Subpart 2',
@@ -221,6 +221,10 @@ export default {
   'canvas.toolbar.moreApps': 'More Apps',
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
   'canvas.toolbar.moreAppSnapshotDesc': 'Save a version of this diagram (max 10)',
+  'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'On-screen keyboard synced to your interface language',
+  'canvas.toolbar.virtualKeyboardClose': 'Close keyboard',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'Double-click or double-tap a node label first, then type with the keyboard',
   'canvas.toolbar.snapshotSaveFirst': 'Please save the diagram first before taking a snapshot',
   'canvas.toolbar.snapshotTaken': 'Snapshot {n} saved',
   'canvas.toolbar.snapshotFailed': 'Failed to save snapshot, please try again',
@@ -511,6 +515,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'School collaboration',
   'mindgraphLanding.dialogSharedTitle': 'Shared collaboration',
   'mindgraphLanding.import': 'Import',
+  'mindgraphLanding.inputPlaceholder': 'Describe your diagram, or choose a template below...',
   'mindgraphLanding.join': 'Join',
   'mindgraphLanding.joinFailed': 'Failed to join',
   'mindgraphLanding.joinPresentationFailed': 'Failed to join presentation',

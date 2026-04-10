@@ -37,6 +37,7 @@ from utils.auth import (
     get_client_ip,
     hash_password,
 )
+from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
 from utils.email_validation import validate_email_for_api
 
 from .captcha import verify_captcha_with_retry
@@ -104,6 +105,7 @@ async def register_overseas(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=detail)
 
     email_validated = validate_email_for_api(request.email, lang)
+    raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
     require_academic_email_if_configured(email_validated, "register", lang)
     email_norm = normalize_verification_email(email_validated)
 

@@ -1,5 +1,6 @@
 /**
  * Translate `src/locales/messages/<locale>/*.ts` from English using Google Translate (unofficial API).
+ * Prefer hand-written locale files when quality matters; this is a bulk fallback.
  * Preserves `{placeholder}` tokens. Skips: en (source), es (hand-translated), zh, zh-tw.
  *
  * Usage (from frontend/):
@@ -7,6 +8,8 @@
  *   npx tsx scripts/translate-ui-locales-from-en.ts --locale=de
  *   npx tsx scripts/translate-ui-locales-from-en.ts --locale=de,fr,ja
  *   npx tsx scripts/translate-ui-locales-from-en.ts --dry-run
+ *   npx tsx scripts/translate-ui-locales-from-en.ts --skip-ns=notification
+ *   npx tsx scripts/translate-ui-locales-from-en.ts --only-ns=sidebar,common,auth
  *
  * Proxy (VPN): uses system proxy on Windows (registry) or `HTTPS_PROXY` / `HTTP_PROXY`.
  * Override: `--proxy=http://127.0.0.1:7890`
@@ -209,33 +212,76 @@ export { default } from './${localeCode}/index'
   writeFileSync(join(ROOT, `${localeCode}.ts`), raw, 'utf8')
 }
 
-function parseArgs(): { locales: LocaleCode[] | null; dryRun: boolean } {
+function parseArgs(): {
+  locales: LocaleCode[] | null
+  dryRun: boolean
+  skipNs: Set<string>
+  onlyNs: Set<string> | null
+} {
   const dryRun = process.argv.includes('--dry-run')
   const locArg = process.argv.find((a) => a.startsWith('--locale='))
-  if (!locArg) return { locales: null, dryRun }
-  const list = locArg
-    .slice('--locale='.length)
-    .split(',')
-    .map((s) => s.trim())
-    .filter(Boolean) as LocaleCode[]
-  return { locales: list, dryRun }
+  const skipArg = process.argv.find((a) => a.startsWith('--skip-ns='))
+  const onlyArg = process.argv.find((a) => a.startsWith('--only-ns='))
+  const locales = locArg
+    ? (locArg
+        .slice('--locale='.length)
+        .split(',')
+        .map((s) => s.trim())
+        .filter(Boolean) as LocaleCode[])
+    : null
+  const skipNs = new Set(
+    skipArg
+      ? skipArg
+          .slice('--skip-ns='.length)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean)
+      : [],
+  )
+  const onlyNs = onlyArg
+    ? new Set(
+        onlyArg
+          .slice('--only-ns='.length)
+          .split(',')
+          .map((s) => s.trim())
+          .filter(Boolean),
+      )
+    : null
+  return { locales, dryRun, skipNs, onlyNs }
+}
+
+function namespacesToProcess(skipNs: Set<string>, onlyNs: Set<string> | null): (typeof NS_FILES)[number][] {
+  const list: (typeof NS_FILES)[number][] = []
+  for (const ns of NS_FILES) {
+    if (onlyNs !== null && !onlyNs.has(ns)) {
+      continue
+    }
+    if (skipNs.has(ns)) {
+      continue
+    }
+    list.push(ns)
+  }
+  return list
 }
 
 async function translateLocale(
   localeCode: LocaleCode,
   googleTo: string,
-  dryRun: boolean
+  dryRun: boolean,
+  nsToRun: (typeof NS_FILES)[number][],
 ): Promise<void> {
   console.log(`\n=== ${localeCode} -> ${googleTo} ===`)
   if (dryRun) {
     let n = 0
-    for (const ns of NS_FILES) {
+    for (const ns of nsToRun) {
       n += Object.keys(EN_BY_NS[ns]).length
     }
-    console.log(`  (dry-run: would write ${n} keys across ${NS_FILES.length} namespaces)`)
+    console.log(
+      `  (dry-run: would write ${n} keys across ${nsToRun.length} namespace(s): ${nsToRun.join(', ')})`,
+    )
     return
   }
-  for (const ns of NS_FILES) {
+  for (const ns of nsToRun) {
     const enFlat = EN_BY_NS[ns]
     const keys = Object.keys(enFlat)
     const values = keys.map((k) => enFlat[k])
@@ -252,7 +298,28 @@ async function translateLocale(
 }
 
 async function main(): Promise<void> {
-  const { locales: only, dryRun } = parseArgs()
+  const { locales: only, dryRun, skipNs, onlyNs } = parseArgs()
+  if (onlyNs !== null) {
+    for (const n of onlyNs) {
+      if (!NS_FILES.includes(n as (typeof NS_FILES)[number])) {
+        console.error(`Unknown namespace in --only-ns: ${n}. Expected one of: ${NS_FILES.join(', ')}`)
+        process.exit(1)
+      }
+    }
+  }
+  for (const n of skipNs) {
+    if (!NS_FILES.includes(n as (typeof NS_FILES)[number])) {
+      console.error(`Unknown namespace in --skip-ns: ${n}. Expected one of: ${NS_FILES.join(', ')}`)
+      process.exit(1)
+    }
+  }
+
+  const nsToRun = namespacesToProcess(skipNs, onlyNs)
+  if (nsToRun.length === 0) {
+    console.error('No namespaces to process (--only-ns / --skip-ns left nothing to translate).')
+    process.exit(1)
+  }
+
   if (!dryRun) {
     setupFetchProxy()
   }
@@ -269,12 +336,14 @@ async function main(): Promise<void> {
 
   console.log(
     dryRun ? 'DRY RUN (no network)' : 'Translating',
-    targets.map((t) => t.code).join(', ')
+    targets.map((t) => t.code).join(', '),
+    '| namespaces:',
+    nsToRun.join(', '),
   )
 
   for (const entry of targets) {
     const to = googleToForLocale(entry.code, entry.htmlLang)
-    await translateLocale(entry.code, to, dryRun)
+    await translateLocale(entry.code, to, dryRun, nsToRun)
   }
 
   console.log('\nDone. Run: npm run i18n:check-keys && npx vue-tsc --noEmit')

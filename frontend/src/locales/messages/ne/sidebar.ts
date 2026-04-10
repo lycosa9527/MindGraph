@@ -1,4 +1,4 @@
-/** ne UI — sidebar */
+/** ne UI — sidebar (English copy; translate values as needed) */
 export default {
   'sidebar.actions.delete': 'Delete',
   'sidebar.actions.pinToTop': 'Pin to Top',

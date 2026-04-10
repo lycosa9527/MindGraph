@@ -1,4 +1,4 @@
-/** so UI — admin */
+/** so UI — admin (English copy; translate values as needed) */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

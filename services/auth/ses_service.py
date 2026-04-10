@@ -26,7 +26,7 @@ from models.domain.messages import Messages, Language
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_TEMPLATE_ID = "171576"
+_DEFAULT_TEMPLATE_ID = "123456"
 
 TENCENT_SES_SECRET_ID = (
     os.getenv("TENCENT_SES_SECRET_ID", "").strip() or os.getenv("TENCENT_SMS_SECRET_ID", "").strip()
@@ -40,10 +40,7 @@ TENCENT_SES_HOST = os.getenv("TENCENT_SES_HOST", "ses.ap-hongkong.tencentcloudap
 TENCENT_SES_FROM_EMAIL = os.getenv("TENCENT_SES_FROM_EMAIL", "").strip()
 TENCENT_SES_REPLY_TO = os.getenv("TENCENT_SES_REPLY_TO", "").strip()
 
-TENCENT_SES_TEMPLATE_REGISTER = os.getenv("TENCENT_SES_TEMPLATE_REGISTER", "").strip()
-TENCENT_SES_TEMPLATE_LOGIN = os.getenv("TENCENT_SES_TEMPLATE_LOGIN", "").strip()
-TENCENT_SES_TEMPLATE_RESET_PASSWORD = os.getenv("TENCENT_SES_TEMPLATE_RESET_PASSWORD", "").strip()
-TENCENT_SES_TEMPLATE_CHANGE_EMAIL = os.getenv("TENCENT_SES_TEMPLATE_CHANGE_EMAIL", "").strip()
+# Single SES template for all verification-code emails (register, login, reset, change email).
 TENCENT_SES_TEMPLATE_ID = os.getenv("TENCENT_SES_TEMPLATE_ID", _DEFAULT_TEMPLATE_ID).strip()
 
 EMAIL_CODE_EXPIRY_MINUTES = int(os.getenv("EMAIL_CODE_EXPIRY_MINUTES", "10"))
@@ -73,7 +70,10 @@ class SESService:
         self._initialized = False
         self._client: Optional[httpx.AsyncClient] = None
         if not all([TENCENT_SES_SECRET_ID, TENCENT_SES_SECRET_KEY, TENCENT_SES_FROM_EMAIL]):
-            logger.warning("Tencent SES credentials or From address not fully configured. SES disabled.")
+            logger.warning(
+                "Tencent SES disabled: set TENCENT_SES_FROM_EMAIL (verified sender in SES console); "
+                "SecretId/SecretKey may use TENCENT_SMS_* when TENCENT_SES_SECRET_* are empty."
+            )
             return
         self._initialized = True
         logger.info("Tencent SES service initialized (native async mode)")
@@ -131,18 +131,11 @@ class SESService:
             f"Signature={signature}"
         )
 
-    def _get_template_id_int(self, purpose: str) -> int:
-        purpose_map = {
-            "register": TENCENT_SES_TEMPLATE_REGISTER,
-            "login": TENCENT_SES_TEMPLATE_LOGIN,
-            "reset_password": TENCENT_SES_TEMPLATE_RESET_PASSWORD,
-            "change_email": TENCENT_SES_TEMPLATE_CHANGE_EMAIL,
-        }
-        raw = purpose_map.get(purpose, "") or TENCENT_SES_TEMPLATE_ID
+    def _get_template_id_int(self) -> int:
         try:
-            return int(raw)
+            return int(TENCENT_SES_TEMPLATE_ID)
         except ValueError as exc:
-            raise ValueError(f"Invalid SES template id for purpose: {purpose}") from exc
+            raise ValueError(f"Invalid TENCENT_SES_TEMPLATE_ID: {TENCENT_SES_TEMPLATE_ID!r}") from exc
 
     def _get_subject(self, purpose: str) -> str:
         subjects = {
@@ -190,7 +183,7 @@ class SESService:
             code = self.generate_code()
 
         try:
-            template_id = self._get_template_id_int(purpose)
+            template_id = self._get_template_id_int()
         except ValueError as exc:
             logger.error("SES template id: %s", exc)
             return False, Messages.error("email_error_invalid_template", lang), None

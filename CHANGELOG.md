@@ -5,6 +5,21 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.75.0] - 2026-04-11
+
+### Added
+- **i18n**: `TIER_27_UI_LOCALE_CODES` in `frontend/src/i18n/locales.ts` — alias of `INTERFACE_LANGUAGE_PICKER_CODES` for scripts, QA scope, and docs (Belt and Road tier-27 alignment).
+- **i18n tooling**: `frontend/scripts/check-ui-translation-coverage.ts` for tier-27 UI translation coverage checks.
+- **Region helpers**: `frontend/src/composables/auth/useRegisterRegionDetection.ts`, `frontend/src/utils/clientRegion.ts`; `utils/email_mainland_china.py` with `tests/utils/test_email_mainland_china.py`.
+- **Validation**: `scripts/check_sms_email_message_languages.py` for SMS/email message language coverage.
+
+### Changed
+- **i18n**: Large sweep of message-module translations across locales (`auth`, `canvas`, `admin`, `common`, `community`, `knowledge`, `mindmate`, `notification`, `sidebar`, `workshop`); updates to `frontend/scripts/translate-ui-locales-from-en.ts` and `hi` bundle layout where applicable.
+- **Auth (frontend)**: `LoginModal.vue`, `useLoginModal.ts`, and `frontend/src/utils/apiClient.ts` for login flow, region-aware registration, and API error handling.
+- **Auth (backend)**: `routers/auth/login.py`, `email.py`, `public.py`, `registration_overseas.py`, `sms.py`; `models/requests/requests_auth.py`; `models/domain/messages.py` for request validation and user-visible strings.
+- **Email and GeoIP**: `services/auth/geoip_country.py`, `services/auth/ses_service.py` and related router wiring; tests in `tests/services/test_geoip_country.py`, `tests/models/test_send_email_code_request.py`.
+- **Config**: `config/rate_limiting.py` — default `EMAIL_MAX_CONCURRENT_REQUESTS` raised from 10 to 50; `env.example` aligned with current environment variables.
+
 ## [5.74.0] - 2026-04-09
 
 ### Added

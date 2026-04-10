@@ -26,6 +26,7 @@ from models.domain.auth import User, Organization
 from models.requests.requests_auth import (
     DemoPasskeyRequest,
     LoginRequest,
+    LoginWithEmailRequest,
     LoginWithSMSRequest,
 )
 from services.redis.cache.redis_org_cache import org_cache
@@ -73,6 +74,7 @@ from utils.auth import (
 
 from .captcha import verify_captcha_with_retry
 from .dependencies import get_language_dependency
+from .email import verify_and_consume_email_code
 from .helpers import set_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
 
@@ -98,6 +100,117 @@ def _preload_user_diagrams(user_id: int):
             pass
     except Exception as exc:
         logger.debug("Failed to preload diagrams: %s", exc)
+
+
+async def _complete_login_after_otp_verified(
+    user: User,
+    http_request: Request,
+    response: Response,
+    db: AsyncSession,
+    method: str,
+) -> dict:
+    """
+    Shared session/cookie issuance after SMS or email OTP has been verified and consumed.
+    """
+    result = await db.execute(select(User).where(User.id == user.id))
+    db_user = result.scalar_one_or_none()
+    if db_user:
+        await reset_failed_attempts(db_user, db)
+        user = db_user
+
+    if db_user and not getattr(db_user, "allows_simplified_chinese", True):
+        prefs_changed = False
+        if (db_user.ui_language or "").lower() == "zh":
+            db_user.ui_language = "en"
+            prefs_changed = True
+        if (db_user.prompt_language or "").lower() == "zh":
+            db_user.prompt_language = "en"
+            prefs_changed = True
+        if prefs_changed:
+            await db.commit()
+            await db.refresh(db_user)
+            user = db_user
+            try:
+                user_cache.cache_user(db_user)
+            except Exception as cache_exc:
+                logger.warning("[%s OTP login] failed to refresh user cache: %s", method, cache_exc)
+
+    session_manager = get_session_manager()
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+
+    token = create_access_token(user)
+
+    refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
+
+    device_hash = compute_device_hash(http_request)
+
+    user_agent = http_request.headers.get("User-Agent", "")
+    accept_language = http_request.headers.get("Accept-Language", "")
+    sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
+    sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
+    logger.info(
+        "[TokenAudit] Login device fingerprint: user=%s, device_hash=%s, UA=%s..., lang=%s, platform=%s, mobile=%s",
+        user.id,
+        device_hash,
+        user_agent[:50],
+        accept_language[:20],
+        sec_ch_platform,
+        sec_ch_mobile,
+    )
+
+    session_manager.store_session(user.id, token, device_hash=device_hash)
+
+    refresh_manager = get_refresh_token_manager()
+    refresh_manager.store_refresh_token(
+        user_id=user.id,
+        token_hash=refresh_token_hash,
+        ip_address=client_ip,
+        user_agent=user_agent,
+        device_hash=device_hash,
+    )
+
+    set_auth_cookies(response, token, refresh_token_value, http_request)
+
+    org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
+    if not org and user.organization_id:
+        result_org = await db.execute(select(Organization).where(Organization.id == user.organization_id))
+        org = result_org.scalar_one_or_none()
+        if org:
+            db.expunge(org)
+            org_cache.cache_org(org)
+    org_name = org.name if org else "None"
+
+    logger.info(
+        "[TokenAudit] Login success: user=%s, phone=%s, org=%s, method=%s, ip=%s, device=%s",
+        user.id,
+        user.phone,
+        org_name,
+        method,
+        client_ip,
+        device_hash,
+    )
+
+    await track_user_activity(user, "login", {"method": method, "org": org_name}, http_request, db)
+
+    _preload_user_diagrams(user.id)
+
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        "user": {
+            "id": user.id,
+            "phone": user.phone,
+            "email": getattr(user, "email", None),
+            "name": user.name,
+            "organization": org.name if org else None,
+            "avatar": user.avatar or "🐈‍⬛",
+            "role": get_user_role(user),
+            "ui_language": getattr(user, "ui_language", None),
+            "prompt_language": getattr(user, "prompt_language", None),
+            "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
+        },
+    }
 
 
 logger = logging.getLogger(__name__)
@@ -405,116 +518,60 @@ async def login_with_sms(
     # All validations passed - now consume the SMS code
     _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
 
-    # Reload user from database for modification (cached user is detached)
-    result = await db.execute(select(User).where(User.id == user.id))
-    db_user = result.scalar_one_or_none()
-    if db_user:
-        # Reset any failed attempts (SMS login is verified)
-        await reset_failed_attempts(db_user, db)
-        user = db_user
-
-    if db_user and not getattr(db_user, "allows_simplified_chinese", True):
-        prefs_changed = False
-        if (db_user.ui_language or "").lower() == "zh":
-            db_user.ui_language = "en"
-            prefs_changed = True
-        if (db_user.prompt_language or "").lower() == "zh":
-            db_user.prompt_language = "en"
-            prefs_changed = True
-        if prefs_changed:
-            await db.commit()
-            await db.refresh(db_user)
-            user = db_user
-            try:
-                user_cache.cache_user(db_user)
-            except Exception as cache_exc:
-                logger.warning("[Auth] SMS login: failed to refresh user cache: %s", cache_exc)
-
-    # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
-    session_manager = get_session_manager()
-    client_ip = get_client_ip(http_request) if http_request else "unknown"
-
-    # Generate JWT access token
-    token = create_access_token(user)
-
-    # Generate refresh token
-    refresh_token_value, refresh_token_hash = create_refresh_token(user.id)
-
-    # Compute device hash for session and token binding
-    device_hash = compute_device_hash(http_request)
-
-    # DEBUG: Log device fingerprint at login time
-    user_agent = http_request.headers.get("User-Agent", "")
-    accept_language = http_request.headers.get("Accept-Language", "")
-    sec_ch_platform = http_request.headers.get("Sec-CH-UA-Platform", "")
-    sec_ch_mobile = http_request.headers.get("Sec-CH-UA-Mobile", "")
-    logger.info(
-        "[TokenAudit] Login device fingerprint: user=%s, device_hash=%s, UA=%s..., lang=%s, platform=%s, mobile=%s",
-        user.id,
-        device_hash,
-        user_agent[:50],
-        accept_language[:20],
-        sec_ch_platform,
-        sec_ch_mobile,
+    return await _complete_login_after_otp_verified(
+        user,
+        http_request,
+        response,
+        db,
+        "sms",
     )
 
-    # Store access token session in Redis (automatically limits concurrent sessions)
-    session_manager.store_session(user.id, token, device_hash=device_hash)
 
-    # Store refresh token with device binding
-    refresh_manager = get_refresh_token_manager()
-    refresh_manager.store_refresh_token(
-        user_id=user.id,
-        token_hash=refresh_token_hash,
-        ip_address=client_ip,
-        user_agent=user_agent,
-        device_hash=device_hash,
-    )
+@router.post("/email/login")
+async def login_with_email(
+    request: LoginWithEmailRequest,
+    http_request: Request,
+    response: Response,
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """
+    Login with email verification code (SES).
 
-    # Set cookies (both access and refresh tokens)
-    set_auth_cookies(response, token, refresh_token_value, http_request)
+    Same guarantees as SMS login: no password, org checks, code consumed once.
+    """
+    email_key = normalize_verification_email(validate_email_for_api(request.email, lang))
+    user = await user_cache.get_by_email(email_key)
 
-    # Use cache for org lookup (with database fallback)
+    if not user:
+        error_msg = Messages.error("email_not_registered_login", lang)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
-    if not org and user.organization_id:
-        result = await db.execute(select(Organization).where(Organization.id == user.organization_id))
-        org = result.scalar_one_or_none()
-        if org:
-            db.expunge(org)
-            org_cache.cache_org(org)
-    org_name = org.name if org else "None"
 
-    logger.info(
-        "[TokenAudit] Login success: user=%s, phone=%s, org=%s, method=sms, ip=%s, device=%s",
-        user.id,
-        user.phone,
-        org_name,
-        client_ip,
-        device_hash,
+    if org:
+        is_active = org.is_active if hasattr(org, "is_active") else True
+        if not is_active:
+            logger.warning("Email OTP login blocked: Organization %s is locked", org.code)
+            error_msg = Messages.error("organization_locked", lang, org.name)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+
+        if hasattr(org, "expires_at") and org.expires_at:
+            if org.expires_at < datetime.now(UTC):
+                logger.warning("Email OTP login blocked: Organization %s expired", org.code)
+                expired_date = org.expires_at.strftime("%Y-%m-%d")
+                error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+
+    verify_and_consume_email_code(request.email, request.email_code, "login", lang)
+
+    return await _complete_login_after_otp_verified(
+        user,
+        http_request,
+        response,
+        db,
+        "email_otp",
     )
-
-    # Track user activity
-    await track_user_activity(user, "login", {"method": "sms", "org": org_name}, http_request, db)
-
-    # Preload diagram list for instant library access (fire-and-forget)
-    _preload_user_diagrams(user.id)
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
-        "user": {
-            "id": user.id,
-            "phone": user.phone,
-            "name": user.name,
-            "organization": org.name if org else None,
-            "avatar": user.avatar or "🐈‍⬛",
-            "role": get_user_role(user),
-            "ui_language": getattr(user, "ui_language", None),
-            "prompt_language": getattr(user, "prompt_language", None),
-            "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
-        },
-    }
 
 
 @router.post("/demo/verify")

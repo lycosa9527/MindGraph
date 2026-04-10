@@ -2,6 +2,8 @@
 SMS Verification Endpoints
 ==========================
 
+SMS channel: 6-digit SMS code to the registered phone. (Email OTP lives under routers/auth/email.py.)
+
 SMS verification endpoints:
 - /sms/send - Send SMS verification code
 - /sms/verify - Verify SMS code (standalone)

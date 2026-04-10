@@ -1,4 +1,4 @@
-/** fa UI — canvas (machine-translated from en; review as needed) */
+/** fa UI — canvas (English copy; translate values as needed) */
 export default {
   'braceMap.defaultSubpartFirst': 'New Subpart 1',
   'braceMap.defaultSubpartSecond': 'New Subpart 2',
@@ -107,6 +107,7 @@ export default {
   'canvas.toolbar.mathKeyboardK12ChemFormPage1': 'Common compounds & salts',
   'canvas.toolbar.mathKeyboardK12ChemFormPage2': 'Classic reactions',
   'canvas.toolbar.mathKeyboardK12ChemFormPage3': 'Acids · organics · labs',
+
   'canvas.toolbar.mathKeyboardEqPythagorean': 'a²+b²=c²',
   'canvas.toolbar.mathKeyboardEqSquareSum': '(a+b)²',
   'canvas.toolbar.mathKeyboardEqSquareDiff': '(a−b)²',
@@ -119,6 +120,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
   'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
+
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½bh',
@@ -133,6 +135,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqSphereSA': 'Sphere SA',
   'canvas.toolbar.mathKeyboardEqSpaceDiag3d': '3D distance',
   'canvas.toolbar.mathKeyboardEqRectPrismSA': 'Rect. prism SA',
+
   'canvas.toolbar.mathKeyboardEqSin2Cos2': 'sin²+cos²',
   'canvas.toolbar.mathKeyboardEqTanDef': 'tan θ',
   'canvas.toolbar.mathKeyboardEqLawCos': 'Law of cosines',
@@ -141,6 +144,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'sin(α±β)',
   'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Double angle',
+
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Arithmetic aₙ',
   'canvas.toolbar.mathKeyboardEqGeomAn': 'Geometric aₙ',
@@ -150,6 +154,7 @@ export default {
   'canvas.toolbar.mathKeyboardEqVariance': 'σ² (population)',
   'canvas.toolbar.mathKeyboardEqChooseNK': 'C(n,k)',
   'canvas.toolbar.mathKeyboardEqPermNK': 'P(n,k)',
+
   'canvas.toolbar.mathKeyboardChemFGlucose': 'C₆H₁₂O₆',
   'canvas.toolbar.mathKeyboardChemFEthanol': 'C₂H₅OH',
   'canvas.toolbar.mathKeyboardChemFAcetic': 'CH₃COOH',
@@ -169,6 +174,7 @@ export default {
   'canvas.toolbar.mathKeyboardChemFNa2co3': 'Na₂CO₃',
   'canvas.toolbar.mathKeyboardChemFKno3': 'KNO₃',
   'canvas.toolbar.mathKeyboardChemFMgso4': 'MgSO₄',
+
   'canvas.toolbar.mathKeyboardChemFPhotosynth': 'Photosynthesis',
   'canvas.toolbar.mathKeyboardChemFRespiration': 'Respiration',
   'canvas.toolbar.mathKeyboardChemFRusting': 'Rusting',
@@ -177,6 +183,7 @@ export default {
   'canvas.toolbar.mathKeyboardChemFMgO2': 'Mg + O₂',
   'canvas.toolbar.mathKeyboardChemFNh3Synth': 'NH₃ synthesis',
   'canvas.toolbar.mathKeyboardChemFWaterElectrolysis': 'H₂O → H₂ + O₂',
+
   'canvas.toolbar.mathKeyboardChemFHno3': 'HNO₃',
   'canvas.toolbar.mathKeyboardChemFH3po4': 'H₃PO₄',
   'canvas.toolbar.mathKeyboardChemFCh3oh': 'CH₃OH',
@@ -189,6 +196,7 @@ export default {
   'canvas.toolbar.mathKeyboardChemFVinegar': 'Vinegar',
   'canvas.toolbar.mathKeyboardChemFChalk': 'Chalk',
   'canvas.toolbar.mathKeyboardChemFGypsum': 'Gypsum',
+
   'canvas.toolbar.featureInDevelopment': '{name} is in development',
   'canvas.toolbar.fontGroupChinese': 'Chinese',
   'canvas.toolbar.fontGroupEnglish': 'English',
@@ -213,6 +221,10 @@ export default {
   'canvas.toolbar.moreApps': 'More Apps',
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
   'canvas.toolbar.moreAppSnapshotDesc': 'Save a version of this diagram (max 10)',
+  'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'On-screen keyboard synced to your interface language',
+  'canvas.toolbar.virtualKeyboardClose': 'Close keyboard',
+  'canvas.toolbar.virtualKeyboardFocusHint': 'Double-click or double-tap a node label first, then type with the keyboard',
   'canvas.toolbar.snapshotSaveFirst': 'Please save the diagram first before taking a snapshot',
   'canvas.toolbar.snapshotTaken': 'Snapshot {n} saved',
   'canvas.toolbar.snapshotFailed': 'Failed to save snapshot, please try again',
@@ -503,6 +515,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'School collaboration',
   'mindgraphLanding.dialogSharedTitle': 'Shared collaboration',
   'mindgraphLanding.import': 'Import',
+  'mindgraphLanding.inputPlaceholder': 'Describe your diagram, or choose a template below...',
   'mindgraphLanding.join': 'Join',
   'mindgraphLanding.joinFailed': 'Failed to join',
   'mindgraphLanding.joinPresentationFailed': 'Failed to join presentation',

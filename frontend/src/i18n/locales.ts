@@ -54,6 +54,12 @@ export const INTERFACE_LANGUAGE_PICKER_CODES: readonly LocaleCode[] = [
   'af',
 ] as const
 
+/**
+ * Product “27 languages” tier: same list as {@link INTERFACE_LANGUAGE_PICKER_CODES}.
+ * Use for coverage scripts, QA scope, and docs — not the same as every enabled `LocaleCode` in the registry.
+ */
+export const TIER_27_UI_LOCALE_CODES = INTERFACE_LANGUAGE_PICKER_CODES
+
 /** Locales in Settings → Interface language — use this for “supports {n} languages” next to 界面语言. */
 export const INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT = INTERFACE_LANGUAGE_PICKER_CODES.length
 

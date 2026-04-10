@@ -1,4 +1,4 @@
-/** cs UI — common */
+/** cs UI — common (English copy; translate values as needed) */
 export default {
   'app.aiDisclaimer': 'Content is AI-generated; please verify carefully.',
   'app.brandName': 'Mind Platform',

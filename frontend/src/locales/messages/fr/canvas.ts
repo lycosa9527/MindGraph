@@ -237,6 +237,12 @@ export default {
   'canvas.toolbar.moreAppWaterfall': 'Cascade',
   'canvas.toolbar.moreAppWaterfallDesc':
     'Sélectionner plusieurs nœuds simultanément ; rendre visibles les pensées divergentes et convergentes',
+  'canvas.toolbar.moreAppVirtualKeyboard': 'Clavier virtuel',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'Clavier à l’écran synchronisé sur la langue de l’interface',
+  'canvas.toolbar.virtualKeyboardClose': 'Fermer le clavier',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Double-cliquez ou appuyez deux fois sur une étiquette de nœud, puis saisissez avec le clavier',
   'canvas.toolbar.moreApps': 'Plus d’applications',
   'canvas.toolbar.newAssociation': 'Nouvelle association',
   'canvas.toolbar.newAttribute': 'Nouvel attribut',
@@ -518,6 +524,8 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Collaboration scolaire',
   'mindgraphLanding.dialogSharedTitle': 'Collaboration partagée',
   'mindgraphLanding.import': 'Importer',
+  'mindgraphLanding.inputPlaceholder':
+    'Décrivez votre schéma ou choisissez un modèle ci-dessous…',
   'mindgraphLanding.join': 'Rejoindre',
   'mindgraphLanding.joinFailed': 'Échec du raccordement',
   'mindgraphLanding.joinPresentationFailed': 'Échec du raccordement à la présentation',

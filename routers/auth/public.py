@@ -11,15 +11,58 @@ All Rights Reserved
 Proprietary License
 """
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Request, Response
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import Organization
-from utils.auth import AUTH_MODE
+from services.auth.geoip_country import resolve_country_iso_from_request
+from utils.auth import AUTH_MODE, is_https
 
 router = APIRouter()
+
+CLIENT_REGION_COOKIE = "mg_client_region"
+CLIENT_REGION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30
+
+
+@router.get("/client-region")
+async def get_client_region(request: Request, response: Response):
+    """
+    Detect whether the client is likely in mainland China (ISO country CN).
+
+    Used by the registration UI to show phone+invitation vs email-only flows.
+    Sets a short-lived readable cookie when country is known so repeat visits
+    skip GeoIP work. Prefer Cloudflare CF-IPCountry when present.
+    """
+    code = resolve_country_iso_from_request(request)
+    if code is None:
+        response.set_cookie(
+            key=CLIENT_REGION_COOKIE,
+            value="both",
+            max_age=CLIENT_REGION_MAX_AGE_SECONDS,
+            path="/",
+            samesite="lax",
+            httponly=False,
+            secure=is_https(request),
+        )
+        return {"mainland_china": None, "region": "unknown"}
+
+    mainland_china = code == "CN"
+    cookie_val = "cn" if mainland_china else "intl"
+    response.set_cookie(
+        key=CLIENT_REGION_COOKIE,
+        value=cookie_val,
+        max_age=CLIENT_REGION_MAX_AGE_SECONDS,
+        path="/",
+        samesite="lax",
+        httponly=False,
+        secure=is_https(request),
+    )
+    return {
+        "mainland_china": mainland_china,
+        "region": "cn" if mainland_china else "intl",
+    }
 
 
 @router.get("/mode")

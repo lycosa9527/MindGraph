@@ -214,7 +214,7 @@ export default {
   'admin.selectSchool': '选择学校',
   'admin.setManager': '设为管理员',
   'admin.shareInviteMessage':
-    '尊敬的校领导，您好！诚挚邀请您与学校团队体验 MindGraph —— 我们倾力打造的AI思维图示生成软件，致力于开发思维教学信息化平台。贵校的专属邀请码是：{code} 请您访问 {siteUrl} 完成注册，开启高效、直观的思维可视化协作。期待能为贵校的教育创新增添一份力量。',
+    '尊敬的校领导，您好！\n\n诚挚邀请您与学校团队体验 MindGraph —— 我们倾力打造的AI思维图示生成软件，致力于开发思维教学信息化平台。贵校的专属邀请码是：{code}\n\n请您访问 {siteUrl} 完成注册，开启高效、直观的思维可视化协作。期待能为贵校的教育创新增添一份力量。',
   'admin.shareInviteTitle': '分享邀请',
   'admin.source': '来源',
   'admin.sourceDatabase': '数据库',

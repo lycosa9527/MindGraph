@@ -1,10 +1,17 @@
 /**
- * State and handlers for LoginModal (login, register, SMS, forgot password).
+ * State and handlers for LoginModal (password login, register, OTP sign-in, forgot password).
+ *
+ * OTP channels: SMS (Tencent SMS) sends an SMS code; email (Tencent SES) sends an email
+ * verification code. User-facing copy uses “SMS code” vs “email verification code”; avoid
+ * exposing provider acronyms (SES/SMS vendor) in UI strings.
  */
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, ref, toRef, watch } from 'vue'
 
 import { useLanguage, useNotifications } from '@/composables'
+import { useRegisterRegionDetection } from '@/composables/auth/useRegisterRegionDetection'
+import zhAuth from '@/locales/messages/zh/auth'
 import { useAuthStore, useUIStore } from '@/stores'
+import { isBrowserLanguageSimplifiedChinese } from '@/utils/clientRegion'
 
 export type LoginModalViewState = 'login' | 'register' | 'sms-login' | 'forgot-password'
 
@@ -69,13 +76,37 @@ export function useLoginModal(
   const emailCountdown = ref(0)
   const emailCountdownTimer = ref<ReturnType<typeof setInterval> | null>(null)
 
-  const isOverseasRegister = computed(() => {
-    const e = registerForm.value.registrationEmail.trim()
-    return e.includes('@') && /\.[a-z0-9-]+$/i.test(e.split('@')[1] ?? '')
-  })
+  const { registerRegion, registerRegionLoading, isBothRegister } = useRegisterRegionDetection(
+    toRef(props, 'visible'),
+    currentView,
+  )
+
+  /** When region is unknown (GeoIP): user picks education email vs phone + invitation. */
+  const registerPath = ref<'email' | 'phone'>('email')
+
+  function setRegisterPath(path: 'email' | 'phone') {
+    registerPath.value = path
+  }
+
+  const showOverseasEmailFlow = computed(
+    () =>
+      registerRegion.value === 'intl' ||
+      (registerRegion.value === 'both' && registerPath.value === 'email'),
+  )
+
+  const showMainlandPhoneFlow = computed(
+    () =>
+      registerRegion.value === 'cn' ||
+      (registerRegion.value === 'both' && registerPath.value === 'phone'),
+  )
 
   const forgotUsesEmail = computed(() => {
     const id = forgotForm.value.phone.trim()
+    return id.includes('@')
+  })
+
+  const smsLoginUsesEmail = computed(() => {
+    const id = smsLoginForm.value.phone.trim()
     return id.includes('@')
   })
 
@@ -89,7 +120,42 @@ export function useLoginModal(
   })
 
   const pageHeaderTitle = computed(() => {
-    return currentView.value === 'sms-login' ? t('auth.smsLogin') : t('auth.resetPassword')
+    if (currentView.value === 'sms-login') {
+      return smsLoginUsesEmail.value ? t('auth.sesLogin') : t('auth.smsLogin')
+    }
+    return t('auth.resetPassword')
+  })
+
+  function maskIdentifierForCodeSent(raw: string): string {
+    const trimmed = raw.trim()
+    if (trimmed.includes('@')) {
+      const [localPart, domainPart] = trimmed.split('@')
+      if (!domainPart) {
+        return '***'
+      }
+      if (localPart.length <= 2) {
+        return `***@${domainPart}`
+      }
+      return `${localPart[0]}***@${domainPart}`
+    }
+    return trimmed.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2')
+  }
+
+  /**
+   * Overseas email registration: education-only wording for most browsers; full SC copy when the
+   * browser language list indicates Simplified Chinese (see `isBrowserLanguageSimplifiedChinese`).
+   */
+  const overseasAcknowledgeCheckboxLabel = computed(() => {
+    if (!showOverseasEmailFlow.value) {
+      return ''
+    }
+    if (isBrowserLanguageSimplifiedChinese()) {
+      const full = zhAuth['auth.modal.acknowledgeOverseasScBrowser']
+      if (typeof full === 'string' && full.trim() !== '') {
+        return full
+      }
+    }
+    return t('auth.modal.acknowledgeOverseas')
   })
 
   function closeModal() {
@@ -120,6 +186,7 @@ export function useLoginModal(
     forgotForm.value = { phone: '', captcha: '', smsCode: '', newPassword: '', confirmPassword: '' }
     showPassword.value = false
     showConfirmPassword.value = false
+    registerPath.value = 'email'
     smsSent.value = false
     smsCountdown.value = 0
     emailCountdown.value = 0
@@ -133,18 +200,20 @@ export function useLoginModal(
     }
   }
 
-  watch(isOverseasRegister, (on) => {
-    if (on) {
-      registerForm.value.phone = ''
-      registerForm.value.invitationCode = ''
-      if (uiStore.language === 'zh') {
-        uiStore.setLanguage('en')
+  watch(
+    () => [registerRegion.value, registerPath.value] as const,
+    ([region, path]) => {
+      if (region === 'intl' || (region === 'both' && path === 'email')) {
+        registerForm.value.phone = ''
+        registerForm.value.invitationCode = ''
       }
-    } else {
-      registerForm.value.emailCode = ''
-      registerForm.value.outsideMainlandAcknowledged = false
-    }
-  })
+      if (region === 'cn' || (region === 'both' && path === 'phone')) {
+        registerForm.value.registrationEmail = ''
+        registerForm.value.emailCode = ''
+        registerForm.value.outsideMainlandAcknowledged = false
+      }
+    },
+  )
 
   function switchLoginRegisterTab(tab: 'login' | 'register') {
     activeTab.value = tab
@@ -315,9 +384,15 @@ export function useLoginModal(
     }, 1000)
   }
 
+  const SIMPLE_EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
   async function sendRegisterEmailCode() {
     const email = registerForm.value.registrationEmail.trim()
-    if (!email || !isOverseasRegister.value) {
+    if (!email || !showOverseasEmailFlow.value) {
+      notify.warning(t('auth.modal.educationEmailInvalid'))
+      return
+    }
+    if (!SIMPLE_EMAIL_RE.test(email)) {
       notify.warning(t('auth.modal.educationEmailInvalid'))
       return
     }
@@ -381,7 +456,12 @@ export function useLoginModal(
       return
     }
 
-    if (isOverseasRegister.value) {
+    if (registerRegionLoading.value || registerRegion.value === null) {
+      notify.warning(t('auth.modal.waitRegionDetection'))
+      return
+    }
+
+    if (showOverseasEmailFlow.value) {
       const email = registerForm.value.registrationEmail.trim()
       if (!email || !registerForm.value.emailCode || registerForm.value.emailCode.length !== 6) {
         notify.warning(t('auth.modal.fillRequired'))
@@ -495,19 +575,17 @@ export function useLoginModal(
     }
 
     const trimmed = form.phone.trim()
-    const useEmail = type === 'reset' && trimmed.includes('@')
-
-    if (type === 'login' && trimmed.length !== 11) {
-      notify.warning(t('auth.modal.phone11Digits'))
-      return
-    }
+    const useEmail =
+      trimmed.includes('@') && (type === 'reset' || type === 'login')
 
     if (useEmail) {
-      const simple = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-      if (!simple.test(trimmed)) {
+      if (!SIMPLE_EMAIL_RE.test(trimmed)) {
         notify.warning(t('auth.modal.educationEmailInvalid'))
         return
       }
+    } else if (type === 'login' && trimmed.length !== 11) {
+      notify.warning(t('auth.modal.phone11Digits'))
+      return
     } else if (type === 'reset' && trimmed.length !== 11) {
       notify.warning(t('auth.modal.phone11Digits'))
       return
@@ -517,12 +595,13 @@ export function useLoginModal(
 
     try {
       if (useEmail) {
+        const purpose = type === 'login' ? 'login' : 'reset_password'
         const response = await fetch('/api/auth/email/send', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             email: trimmed,
-            purpose: 'reset_password',
+            purpose,
             captcha: form.captcha,
             captcha_id: captchaId.value,
           }),
@@ -564,8 +643,8 @@ export function useLoginModal(
         }
       }
     } catch (error) {
-      console.error('SMS error:', error)
-      notify.error(t('auth.modal.networkSmsError'))
+      console.error('Verification code send error:', error)
+      notify.error(useEmail ? t('auth.modal.networkEmailCodeError') : t('auth.modal.networkSmsError'))
       form.captcha = ''
       void refreshCaptcha()
     } finally {
@@ -592,27 +671,44 @@ export function useLoginModal(
 
   async function handleSmsLogin() {
     if (!smsLoginForm.value.smsCode || smsLoginForm.value.smsCode.length !== 6) {
-      notify.warning(t('auth.modal.enter6DigitSms'))
+      notify.warning(
+        smsLoginUsesEmail.value
+          ? t('auth.modal.enter6DigitEmailCode')
+          : t('auth.modal.enter6DigitSms')
+      )
       return
     }
+
+    const trimmed = smsLoginForm.value.phone.trim()
+    const useEmailOtp = trimmed.includes('@')
 
     isLoading.value = true
 
     try {
-      const response = await fetch('/api/auth/sms/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          phone: smsLoginForm.value.phone,
-          sms_code: smsLoginForm.value.smsCode,
-        }),
-      })
+      const response = useEmailOtp
+        ? await fetch('/api/auth/email/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              email: trimmed,
+              email_code: smsLoginForm.value.smsCode,
+            }),
+          })
+        : await fetch('/api/auth/sms/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              phone: smsLoginForm.value.phone,
+              sms_code: smsLoginForm.value.smsCode,
+            }),
+          })
 
       const data = await response.json()
 
       if (response.ok && data.user) {
         authStore.setUser(data.user)
-        if (data.token) authStore.setToken(data.token)
+        const token = data.access_token || data.token
+        if (token) authStore.setToken(token)
         const userName = data.user?.name || ''
         notify.success(
           userName
@@ -629,11 +725,16 @@ export function useLoginModal(
           }, 1500)
         }
       } else {
-        notify.error(data.detail || t('auth.modal.smsLoginFailed'))
+        notify.error(
+          data.detail ||
+            (useEmailOtp ? t('auth.modal.emailLoginFailed') : t('auth.modal.smsLoginFailed'))
+        )
       }
     } catch (error) {
-      console.error('SMS login error:', error)
-      notify.error(t('auth.modal.networkSmsLoginError'))
+      console.error('OTP login error:', error)
+      notify.error(
+        useEmailOtp ? t('auth.modal.networkEmailLoginError') : t('auth.modal.networkSmsLoginError')
+      )
     } finally {
       isLoading.value = false
     }
@@ -641,7 +742,11 @@ export function useLoginModal(
 
   async function handleResetPassword() {
     if (!forgotForm.value.smsCode || forgotForm.value.smsCode.length !== 6) {
-      notify.warning(t('auth.modal.enter6DigitSms'))
+      notify.warning(
+        forgotUsesEmail.value
+          ? t('auth.modal.enter6DigitEmailCode')
+          : t('auth.modal.enter6DigitSms')
+      )
       return
     }
 
@@ -724,8 +829,17 @@ export function useLoginModal(
     smsSent,
     emailSending,
     emailCountdown,
-    isOverseasRegister,
+    registerPath,
+    setRegisterPath,
+    isBothRegister,
+    showOverseasEmailFlow,
+    showMainlandPhoneFlow,
+    registerRegion,
+    registerRegionLoading,
     forgotUsesEmail,
+    smsLoginUsesEmail,
+    maskIdentifierForCodeSent,
+    overseasAcknowledgeCheckboxLabel,
     isLoading,
     showPassword,
     showConfirmPassword,

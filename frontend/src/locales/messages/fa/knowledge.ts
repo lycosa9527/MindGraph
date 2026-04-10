@@ -1,4 +1,4 @@
-/** fa UI — knowledge (machine-translated from en; review as needed) */
+/** fa UI — knowledge (English copy; translate values as needed) */
 export default {
   'chunkTest.history.confirmDeleteBody':
     'Are you sure you want to delete this test? This cannot be undone.',

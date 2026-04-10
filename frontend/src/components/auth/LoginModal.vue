@@ -1,20 +1,21 @@
 <script setup lang="ts">
 /**
- * LoginModal - Comprehensive auth modal with login, register, SMS login, and password reset
+ * LoginModal - Auth modal: password login, register (phone or overseas email), OTP login
+ * (SMS code or email verification code), and password reset (SMS or email code).
  *
  * Design: Swiss Design (Modern Minimalism)
  * - Monochromatic stone/neutral palette
- * - Uppercase labels with letter-spacing
+ * - Small-caps-style letter-spacing on labels (no forced uppercase)
  * - Borderless inputs with fill backgrounds
  * - High contrast black/white for primary actions
  * - Generous whitespace, clean geometric shapes
  * - Reference: Linear, Vercel, Stripe aesthetics
  */
-import { ElPageHeader } from 'element-plus'
+import { computed, nextTick, ref } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { Eye, EyeOff, Loader2, RefreshCw } from 'lucide-vue-next'
+import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-vue-next'
 
 import { useLoginModal } from '@/composables/auth/useLoginModal'
 
@@ -67,13 +68,33 @@ const {
   sendRegisterEmailCode,
   sendSmsCode,
   handleSmsLogin,
-  isOverseasRegister,
+  registerPath,
+  setRegisterPath,
+  isBothRegister,
+  showOverseasEmailFlow,
+  showMainlandPhoneFlow,
+  registerRegion,
+  registerRegionLoading,
   forgotUsesEmail,
+  smsLoginUsesEmail,
+  maskIdentifierForCodeSent,
+  overseasAcknowledgeCheckboxLabel,
   emailSending,
   emailCountdown,
   handleResetPassword,
   handleBackdropClick,
 } = useLoginModal(props, emit)
+
+const registrationEmailHint = computed(() => t('auth.modal.registrationEmailHint').trim())
+
+/** Focus account field for email + password sign-in on the same form. */
+const loginIdentifierRef = ref<HTMLInputElement | null>(null)
+
+function focusSesLogin() {
+  void nextTick(() => {
+    loginIdentifierRef.value?.focus()
+  })
+}
 </script>
 
 <template>
@@ -114,7 +135,7 @@ const {
               <h2 class="text-xl font-semibold text-stone-900 tracking-tight leading-none">
                 {{ t('auth.modal.productTitle') }}
               </h2>
-              <p class="text-xs text-stone-400 tracking-widest uppercase mt-1.5">
+              <p class="text-xs text-stone-400 tracking-wide mt-1.5">
                 {{ t('auth.modal.tagline') }}
               </p>
             </div>
@@ -148,17 +169,31 @@ const {
               </button>
             </div>
 
-            <!-- Page header for sub-views -->
-            <el-page-header
+            <!-- Sub-view header: back control is icon + label on one line (not el-page-header — it stacks title). -->
+            <div
               v-if="currentView === 'sms-login' || currentView === 'forgot-password'"
               class="page-header"
-              :title="t('auth.backToLogin')"
-              @back="backToLogin"
             >
-              <template #content>
-                <span class="page-header-title">{{ pageHeaderTitle }}</span>
-              </template>
-            </el-page-header>
+              <div class="page-header__row">
+                <button
+                  type="button"
+                  class="page-header__back"
+                  @click="backToLogin"
+                >
+                  <ArrowLeft
+                    class="page-header__back-icon"
+                    aria-hidden="true"
+                  />
+                  {{ t('auth.backToLogin') }}
+                </button>
+                <span
+                  v-if="currentView === 'sms-login'"
+                  class="page-header-title"
+                >
+                  {{ pageHeaderTitle }}
+                </span>
+              </div>
+            </div>
 
             <!-- Login Form -->
             <form
@@ -168,13 +203,14 @@ const {
             >
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="login-phone"
                 >
                   {{ t('auth.loginPhoneOrEmail') }}
                 </label>
                 <input
                   id="login-phone"
+                  ref="loginIdentifierRef"
                   v-model="loginForm.phone"
                   type="text"
                   name="login-phone"
@@ -187,7 +223,7 @@ const {
 
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="login-password"
                 >
                   {{ t('auth.password') }}
@@ -221,7 +257,7 @@ const {
 
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="login-captcha"
                 >
                   {{ t('auth.captcha') }}
@@ -274,7 +310,9 @@ const {
               </button>
 
               <!-- Links -->
-              <div class="flex justify-center items-center gap-1 pt-2">
+              <div
+                class="flex flex-wrap justify-center items-center gap-x-1 gap-y-1 pt-2 text-sm"
+              >
                 <el-button
                   type="primary"
                   link
@@ -282,13 +320,21 @@ const {
                 >
                   {{ t('auth.forgotPassword') }}
                 </el-button>
-                <span class="text-stone-300">|</span>
+                <span class="text-stone-300 select-none">|</span>
                 <el-button
                   type="primary"
                   link
                   @click="showSmsLogin"
                 >
                   {{ t('auth.smsLogin') }}
+                </el-button>
+                <span class="text-stone-300 select-none">|</span>
+                <el-button
+                  type="primary"
+                  link
+                  @click="focusSesLogin"
+                >
+                  {{ t('auth.sesLogin') }}
                 </el-button>
               </div>
             </form>
@@ -299,29 +345,49 @@ const {
               class="p-6 space-y-4"
               @submit.prevent="handleRegister"
             >
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
-                  for="register-education-email"
-                >
-                  {{ t('auth.modal.registrationEmailLabel') }}
-                </label>
-                <input
-                  id="register-education-email"
-                  v-model="registerForm.registrationEmail"
-                  type="email"
-                  name="register-education-email"
-                  autocomplete="email"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                />
-                <p class="text-xs text-stone-500 mt-1.5 leading-relaxed">
-                  {{ t('auth.modal.registrationEmailHint') }}
-                </p>
+              <div
+                v-if="registerRegionLoading"
+                class="flex items-center gap-2 text-sm text-stone-500 py-1"
+              >
+                <Loader2 class="w-4 h-4 animate-spin shrink-0" />
+                <span>{{ t('auth.modal.detectingRegion') }}</span>
               </div>
 
-              <div v-show="!isOverseasRegister">
+              <div
+                v-if="!registerRegionLoading && isBothRegister"
+                class="flex flex-wrap items-center justify-center gap-2"
+                role="group"
+                :aria-label="t('auth.modal.hybridRegisterGroupLabel')"
+              >
+                <button
+                  type="button"
+                  class="rounded-full px-4 py-2 text-xs font-medium transition-colors"
+                  :class="
+                    registerPath === 'email'
+                      ? 'bg-stone-900 text-white'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  "
+                  @click="setRegisterPath('email')"
+                >
+                  {{ t('auth.modal.hybridRegisterEmailTab') }}
+                </button>
+                <button
+                  type="button"
+                  class="rounded-full px-4 py-2 text-xs font-medium transition-colors"
+                  :class="
+                    registerPath === 'phone'
+                      ? 'bg-stone-900 text-white'
+                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                  "
+                  @click="setRegisterPath('phone')"
+                >
+                  {{ t('auth.modal.hybridRegisterPhoneTab') }}
+                </button>
+              </div>
+
+              <div v-if="showMainlandPhoneFlow">
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="register-phone"
                 >
                   {{ t('auth.phone') }} *
@@ -338,9 +404,32 @@ const {
                 />
               </div>
 
+              <div v-if="showOverseasEmailFlow">
+                <label
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                  for="register-education-email"
+                >
+                  {{ t('auth.modal.registrationEmailLabel') }}
+                </label>
+                <input
+                  id="register-education-email"
+                  v-model="registerForm.registrationEmail"
+                  type="email"
+                  name="register-education-email"
+                  autocomplete="email"
+                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                />
+                <p
+                  v-if="registrationEmailHint"
+                  class="text-xs text-stone-500 mt-1.5 leading-relaxed"
+                >
+                  {{ registrationEmailHint }}
+                </p>
+              </div>
+
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="register-password"
                 >
                   {{ t('auth.password') }} *
@@ -374,7 +463,7 @@ const {
 
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="register-name"
                 >
                   {{ t('auth.name') }} *
@@ -390,9 +479,9 @@ const {
                 />
               </div>
 
-              <div v-show="!isOverseasRegister">
+              <div v-if="showMainlandPhoneFlow">
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="register-invitation-code"
                 >
                   {{ t('auth.invitationCode') }} *
@@ -409,7 +498,7 @@ const {
 
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="register-captcha"
                 >
                   {{ t('auth.captcha') }} *
@@ -449,11 +538,11 @@ const {
                 </div>
               </div>
 
-              <template v-if="isOverseasRegister">
+              <template v-if="showOverseasEmailFlow">
                 <div class="flex gap-2 items-end">
                   <div class="flex-1">
                     <label
-                      class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                      class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                       for="register-email-code"
                     >
                       {{ t('auth.modal.emailCodeLabel') }} *
@@ -482,17 +571,20 @@ const {
                     }}
                   </button>
                 </div>
-                <label class="flex items-start gap-2 cursor-pointer text-sm text-stone-600">
+                <label
+                  class="flex items-start gap-2 cursor-pointer text-xs text-stone-500 leading-relaxed"
+                >
                   <input
                     v-model="registerForm.outsideMainlandAcknowledged"
                     type="checkbox"
-                    class="mt-1 rounded border-stone-300"
+                    class="mt-0.5 shrink-0 rounded border-stone-300"
                   />
-                  <span>{{ t('auth.modal.acknowledgeOverseas') }}</span>
+                  <span class="min-w-0">{{ overseasAcknowledgeCheckboxLabel }}</span>
                 </label>
               </template>
 
               <p
+                v-if="showMainlandPhoneFlow"
                 class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed"
               >
                 {{ t('auth.modal.mainlandSalesNotice') }}
@@ -500,7 +592,7 @@ const {
 
               <button
                 type="submit"
-                :disabled="isLoading"
+                :disabled="isLoading || registerRegionLoading || registerRegion === null"
                 class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
               >
                 <Loader2
@@ -519,18 +611,23 @@ const {
             >
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="sms-login-phone"
                 >
-                  {{ t('auth.phone') }}
+                  {{ t('auth.loginPhoneOrEmail') }}
                 </label>
                 <input
                   id="sms-login-phone"
                   v-model="smsLoginForm.phone"
-                  type="tel"
+                  type="text"
                   name="sms-login-phone"
-                  :placeholder="t('auth.modal.phoneRegisteredPlaceholder')"
-                  maxlength="11"
+                  :placeholder="
+                    smsLoginUsesEmail
+                      ? t('auth.modal.forgotPhoneOrEmailPlaceholder')
+                      : t('auth.modal.phoneRegisteredPlaceholder')
+                  "
+                  :maxlength="smsLoginUsesEmail ? 254 : 11"
+                  inputmode="text"
                   autocomplete="username"
                   :disabled="smsSent"
                   class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
@@ -539,7 +636,7 @@ const {
 
               <div v-if="!smsSent">
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="sms-login-captcha"
                 >
                   {{ t('auth.captcha') }}
@@ -590,30 +687,46 @@ const {
                   v-if="smsSending"
                   class="w-4 h-4 animate-spin"
                 />
-                {{ smsSending ? t('auth.modal.sendingSms') : t('auth.modal.sendSmsCode') }}
+                {{
+                  smsSending
+                    ? smsLoginUsesEmail
+                      ? t('auth.modal.sendingEmailCode')
+                      : t('auth.modal.sendingSms')
+                    : smsLoginUsesEmail
+                      ? t('auth.modal.sendEmailCode')
+                      : t('auth.modal.sendSmsCode')
+                }}
               </button>
 
               <template v-if="smsSent">
                 <div>
                   <label
-                    class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="sms-login-code"
                   >
-                    {{ t('auth.modal.smsCodeLabel') }}
+                    {{
+                      smsLoginUsesEmail
+                        ? t('auth.modal.emailCodeLabel')
+                        : t('auth.modal.smsCodeLabel')
+                    }}
                   </label>
                   <input
                     id="sms-login-code"
                     v-model="smsLoginForm.smsCode"
                     type="text"
                     name="sms-login-code"
-                    :placeholder="t('auth.modal.smsCodePlaceholder')"
+                    :placeholder="
+                      smsLoginUsesEmail
+                        ? t('auth.modal.emailCodePlaceholder')
+                        : t('auth.modal.smsCodePlaceholder')
+                    "
                     maxlength="6"
                     autocomplete="one-time-code"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                   <p class="text-xs text-stone-400 mt-1">
                     {{ t('auth.modal.codeSentTo') }}
-                    {{ smsLoginForm.phone.replace(/(\d{3})\d{4}(\d{4})/, '$1****$2') }}
+                    {{ maskIdentifierForCodeSent(smsLoginForm.phone) }}
                   </p>
                 </div>
 
@@ -654,7 +767,7 @@ const {
             >
               <div>
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="forgot-phone"
                 >
                   {{ t('auth.loginPhoneOrEmail') }}
@@ -675,7 +788,7 @@ const {
 
               <div v-if="!smsSent">
                 <label
-                  class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                   for="forgot-captcha"
                 >
                   {{ t('auth.captcha') }}
@@ -728,17 +841,15 @@ const {
                 />
                 {{
                   smsSending
-                    ? t('auth.modal.sendingSms')
-                    : forgotUsesEmail
-                      ? t('auth.modal.sendEmailCode')
-                      : t('auth.modal.sendSmsCode')
+                    ? t('auth.modal.sendingVerificationCode')
+                    : t('auth.modal.sendVerificationCode')
                 }}
               </button>
 
               <template v-if="smsSent">
                 <div>
                   <label
-                    class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="forgot-sms-code"
                   >
                     {{
@@ -759,7 +870,7 @@ const {
 
                 <div>
                   <label
-                    class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="forgot-new-password"
                   >
                     {{ t('auth.modal.newPassword') }}
@@ -793,7 +904,7 @@ const {
 
                 <div>
                   <label
-                    class="block text-xs font-medium text-stone-500 uppercase tracking-wide mb-2"
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
                     for="forgot-confirm-password"
                   >
                     {{ t('auth.modal.confirmPassword') }}
@@ -927,33 +1038,49 @@ const {
   padding: 4px 8px;
 }
 
-/* Page header - Swiss Design style */
+/* Page header - Swiss Design style (single row: back + optional title) */
 .page-header {
   padding: 16px 24px;
   border-bottom: 1px solid #e7e5e4;
 }
 
-:deep(.el-page-header__left) {
-  margin-right: 8px;
+.page-header__row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-height: 22px;
 }
 
-:deep(.el-page-header__left::after) {
-  display: none;
-}
-
-:deep(.el-page-header__back) {
-  color: #57534e;
+.page-header__back {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  background: none;
+  cursor: pointer;
   font-size: 14px;
+  color: #57534e;
+  line-height: 1.25;
 }
 
-:deep(.el-page-header__back:hover) {
+.page-header__back:hover {
   color: #1c1917;
+}
+
+.page-header__back-icon {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
 }
 
 .page-header-title {
   font-size: 14px;
   font-weight: 500;
   color: #1c1917;
+  flex-shrink: 0;
 }
 
 /* Captcha image - sharp display like MindLLMCross */

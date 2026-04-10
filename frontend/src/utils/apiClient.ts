@@ -12,9 +12,29 @@
  * - Refresh tokens have restricted path (/api/auth)
  * - Device binding prevents token theft across devices
  */
+import { i18n } from '@/i18n'
+import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
 
 const API_BASE = '/api'
+
+/** Current Vue I18n UI code for API `X-Language` (backend maps to zh / en / az for Messages). */
+function currentUiLocaleCodeForHeaders(): string {
+  const loc = i18n.global.locale
+  if (typeof loc === 'object' && loc !== null && 'value' in loc) {
+    return String((loc as { value: LocaleCode }).value)
+  }
+  return String(loc)
+}
+
+function mergeApiHeaders(base: Record<string, string>, options?: RequestInit): Record<string, string> {
+  const fromCaller = (options?.headers as Record<string, string>) ?? {}
+  return {
+    'X-Language': currentUiLocaleCodeForHeaders(),
+    ...base,
+    ...fromCaller,
+  }
+}
 
 // Track if a refresh is in progress to prevent multiple simultaneous refreshes
 let isRefreshing = false
@@ -36,9 +56,9 @@ async function refreshAccessToken(): Promise<boolean> {
       const response = await fetch(`${API_BASE}/auth/refresh`, {
         method: 'POST',
         credentials: 'same-origin', // Include cookies
-        headers: {
+        headers: mergeApiHeaders({
           'Content-Type': 'application/json',
-        },
+        }),
       })
 
       if (response.ok) {
@@ -70,11 +90,12 @@ async function refreshAccessToken(): Promise<boolean> {
 export async function apiRequest(endpoint: string, options: RequestInit = {}): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
 
-  // Prepare headers
-  const headers: Record<string, string> = {
-    'Content-Type': 'application/json',
-    ...(options.headers as Record<string, string>),
-  }
+  const headers = mergeApiHeaders(
+    {
+      'Content-Type': 'application/json',
+    },
+    options
+  )
 
   // Make the initial request
   let response = await fetch(url, {
@@ -187,17 +208,14 @@ export async function apiUpload(
 ): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
 
-  // Don't set Content-Type for FormData - browser will set it with boundary
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
-  }
+  const merged = mergeApiHeaders({}, options)
   // Remove Content-Type if it was set, let browser handle it
-  delete headers['Content-Type']
+  delete merged['Content-Type']
 
   let response = await fetch(url, {
     ...options,
     method: 'POST',
-    headers,
+    headers: merged,
     body: formData,
     credentials: 'same-origin',
   })
@@ -210,7 +228,7 @@ export async function apiUpload(
       response = await fetch(url, {
         ...options,
         method: 'POST',
-        headers,
+        headers: merged,
         body: formData,
         credentials: 'same-origin',
       })
@@ -234,15 +252,13 @@ export async function apiPutFormData(
 ): Promise<Response> {
   const url = endpoint.startsWith('/') ? endpoint : `${API_BASE}/${endpoint}`
 
-  const headers: Record<string, string> = {
-    ...(options.headers as Record<string, string>),
-  }
-  delete headers['Content-Type']
+  const merged = mergeApiHeaders({}, options)
+  delete merged['Content-Type']
 
   let response = await fetch(url, {
     ...options,
     method: 'PUT',
-    headers,
+    headers: merged,
     body: formData,
     credentials: 'same-origin',
   })
@@ -254,7 +270,7 @@ export async function apiPutFormData(
       response = await fetch(url, {
         ...options,
         method: 'PUT',
-        headers,
+        headers: merged,
         body: formData,
         credentials: 'same-origin',
       })

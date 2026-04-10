@@ -211,6 +211,12 @@ export default {
   'canvas.toolbar.moreAppWaterfall': 'Şəlalə',
   'canvas.toolbar.moreAppWaterfallDesc':
     'Toplu düyünlərdə seçim; divergent və konvergent düşüncəni göstər',
+  'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'On-screen keyboard synced to your interface language',
+  'canvas.toolbar.virtualKeyboardClose': 'Close keyboard',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Double-click or double-tap a node label first, then type with the keyboard',
   'canvas.toolbar.moreApps': 'Daha çox tətbiq',
   'canvas.toolbar.moreAppSnapshot': 'Anlıq görüntü',
   'canvas.toolbar.moreAppSnapshotDesc': 'Bu diaqramın versiyasını saxlayın (maks. 10)',
@@ -500,6 +506,8 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Məktəb daxilində əməkdaşlıq',
   'mindgraphLanding.dialogSharedTitle': 'Ümumi əməkdaşlıq',
   'mindgraphLanding.import': 'İdxal',
+  'mindgraphLanding.inputPlaceholder':
+    'Describe your diagram, or choose a template below...',
   'mindgraphLanding.join': 'Qoşul',
   'mindgraphLanding.joinFailed': 'Qoşulmaq alınmadı',
   'mindgraphLanding.joinPresentationFailed': 'Təqdimata qoşulmaq alınmadı',

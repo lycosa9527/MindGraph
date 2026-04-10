@@ -1,4 +1,4 @@
-/** sl UI — admin */
+/** sl UI — admin (English copy; translate values as needed) */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

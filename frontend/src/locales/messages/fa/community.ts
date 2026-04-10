@@ -1,4 +1,4 @@
-/** fa UI — community (machine-translated from en; review as needed) */
+/** fa UI — community (English copy; translate values as needed) */
 export default {
   'community.category.all': 'All',
   'community.category.creative': 'Creative ideas',

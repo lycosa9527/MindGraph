@@ -1,4 +1,4 @@
-/** fa UI — admin (machine-translated from en; review as needed) */
+/** fa UI — admin (English copy; translate values as needed) */
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',

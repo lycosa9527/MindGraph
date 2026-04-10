@@ -1,4 +1,4 @@
-/** ca UI — community */
+/** ca UI — community (English copy; translate values as needed) */
 export default {
   'community.category.all': 'All',
   'community.category.creative': 'Creative ideas',

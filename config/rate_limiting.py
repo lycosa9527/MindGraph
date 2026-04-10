@@ -232,10 +232,10 @@ class RateLimitingConfigMixin:
     def EMAIL_MAX_CONCURRENT_REQUESTS(self):
         """Email (SES) maximum concurrent API requests"""
         try:
-            return int(self._get_cached_value("EMAIL_MAX_CONCURRENT_REQUESTS", "10"))
+            return int(self._get_cached_value("EMAIL_MAX_CONCURRENT_REQUESTS", "50"))
         except (ValueError, TypeError):
-            logger.warning("Invalid EMAIL_MAX_CONCURRENT_REQUESTS, using 10")
-            return 10
+            logger.warning("Invalid EMAIL_MAX_CONCURRENT_REQUESTS, using 50")
+            return 50
 
     @property
     def EMAIL_QPM_LIMIT(self):

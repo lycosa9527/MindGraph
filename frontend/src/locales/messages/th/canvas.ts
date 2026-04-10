@@ -211,6 +211,12 @@ export default {
   'canvas.toolbar.moreAppWaterfall': 'น้ำตก',
   'canvas.toolbar.moreAppWaterfallDesc':
     'เลือกข้ามโหนดแบบชุด ทำให้การคิดแบบแยกส่วนและรวมส่วนเห็นได้ชัด',
+  'canvas.toolbar.moreAppVirtualKeyboard': 'คีย์บอร์ดเสมือน',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'คีย์บอร์ดบนหน้าจอซิงค์กับภาษาของอินเทอร์เฟซ',
+  'canvas.toolbar.virtualKeyboardClose': 'ปิดคีย์บอร์ด',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'ดับเบิลคลิกหรือแตะป้ายโหนดสองครั้งก่อน แล้วพิมพ์ด้วยคีย์บอร์ด',
   'canvas.toolbar.moreApps': 'แอปเพิ่มเติม',
   'canvas.toolbar.moreAppSnapshot': 'สแนปช็อต',
   'canvas.toolbar.moreAppSnapshotDesc': 'บันทึกเวอร์ชันของไดอะแกรมนี้ (สูงสุด 10)',
@@ -500,6 +506,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'ร่วมมือกับโรงเรียน',
   'mindgraphLanding.dialogSharedTitle': 'ร่วมมือแบบแชร์',
   'mindgraphLanding.import': 'นำเข้า',
+  'mindgraphLanding.inputPlaceholder': 'อธิบายไดอะแกรมของคุณ หรือเลือกเทมเพลตด้านล่าง...',
   'mindgraphLanding.join': 'เข้าร่วม',
   'mindgraphLanding.joinFailed': 'เข้าร่วมล้มเหลว',
   'mindgraphLanding.joinPresentationFailed': 'เข้าร่วมการนำเสนอล้มเหลว',

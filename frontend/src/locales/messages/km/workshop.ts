@@ -1,4 +1,4 @@
-/** km UI — workshop */
+/** km UI — workshop (English copy; translate values as needed) */
 export default {
   'collab.codeCopied': 'Code copied',
   'collab.codeGenerated': 'Collaboration code generated — share to edit together.',

@@ -325,7 +325,7 @@ class SendEmailCodeRequest(BaseModel):
     purpose: str = Field(
         ...,
         description=(
-            "Purpose: register (overseas) or reset_password (email reset); "
+            "Purpose: register (overseas), reset_password (email reset), or login (email OTP login); "
             "narrowed to implemented flows."
         ),
     )
@@ -340,7 +340,7 @@ class SendEmailCodeRequest(BaseModel):
     @field_validator("purpose")
     @classmethod
     def validate_purpose(cls, v: str) -> str:
-        valid = ["register", "reset_password"]
+        valid = ["register", "reset_password", "login"]
         if v not in valid:
             raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
         return v
@@ -363,7 +363,7 @@ class VerifyEmailCodeRequest(BaseModel):
 
     email: str = Field(..., max_length=254, description="Recipient email address")
     code: str = Field(..., min_length=1, max_length=6, description="6-digit verification code")
-    purpose: str = Field(..., description="Purpose: register or reset_password")
+    purpose: str = Field(..., description="Purpose: register, reset_password, or login")
 
     @field_validator("email")
     @classmethod
@@ -378,7 +378,7 @@ class VerifyEmailCodeRequest(BaseModel):
     @field_validator("purpose")
     @classmethod
     def validate_purpose(cls, v: str) -> str:
-        valid = ["register", "reset_password"]
+        valid = ["register", "reset_password", "login"]
         if v not in valid:
             raise ValueError(f"Purpose must be one of: {', '.join(valid)}")
         return v
@@ -530,6 +530,33 @@ class LoginWithSMSRequest(BaseModel):
         """Configuration for LoginWithSMSRequest model."""
 
         json_schema_extra = {"example": {"phone": "13812345678", "sms_code": "123456"}}
+
+
+class LoginWithEmailRequest(BaseModel):
+    """Request model for login with email verification (SES OTP)."""
+
+    email: str = Field(..., max_length=254, description="Account email address")
+    email_code: str = Field(..., min_length=6, max_length=6, description="6-digit email verification code")
+
+    @field_validator("email")
+    @classmethod
+    def strip_email(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("email_code")
+    @classmethod
+    def validate_email_code(cls, v: str) -> str:
+        v = v.strip()
+        if len(v) != 6 or not v.isdigit():
+            raise ValueError("Email verification code must be exactly 6 digits.")
+        return v
+
+    class Config:
+        """Configuration for LoginWithEmailRequest model."""
+
+        json_schema_extra = {
+            "example": {"email": "user@university.edu", "email_code": "123456"},
+        }
 
 
 class ChangePasswordRequest(BaseModel):

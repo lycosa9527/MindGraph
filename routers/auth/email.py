@@ -1,7 +1,7 @@
 """
-Email verification endpoints (Tencent SES).
+Email verification endpoints (Tencent SES delivers; product language: email verification code).
 
-- /email/send — Send 6-digit code to email
+- /email/send — Send 6-digit code (purposes: register, reset_password, login)
 - /email/verify — Verify code without consuming (peek match)
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
@@ -20,7 +20,7 @@ from models.domain.auth import User
 from models.domain.messages import Messages, Language
 from models.requests.requests_auth import SendEmailCodeRequest, VerifyEmailCodeRequest
 from services.auth.email_middleware import SESServiceError, get_email_middleware
-from services.auth.geoip_country import overseas_email_registration_allowed
+from services.auth.geoip_country import evaluate_email_login_geoip, overseas_email_registration_allowed
 from services.auth.swot_academic import require_academic_email_if_configured
 from services.auth.ses_service import (
     EMAIL_CODE_EXPIRY_MINUTES,
@@ -36,7 +36,8 @@ from services.redis.redis_email_storage import (
     normalize_verification_email,
 )
 from config.settings import config
-from utils.auth import AUTH_MODE, get_client_ip
+from utils.auth import AUTH_MODE, EMAIL_LOGIN_CN_BLOCK_ENABLED, get_client_ip
+from utils.email_mainland_china import raise_if_mainland_china_email_for_overseas_registration
 from utils.email_validation import validate_email_code_digits, validate_email_for_api
 
 from .captcha import verify_captcha_with_retry
@@ -97,6 +98,8 @@ async def send_email_code(
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=error_msg)
 
     email_validated = validate_email_for_api(request.email, lang)
+    if request.purpose == "register":
+        raise_if_mainland_china_email_for_overseas_registration(email_validated, lang)
     require_academic_email_if_configured(email_validated, request.purpose, lang)
     email_norm = normalize_verification_email(email_validated)
     purpose = request.purpose
@@ -112,6 +115,26 @@ async def send_email_code(
         if not existing_user:
             error_msg = Messages.error("email_not_registered_reset", lang)
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    if purpose == "login":
+        cached_user = await user_cache.get_by_email(email_norm)
+        if not cached_user:
+            error_msg = Messages.error("email_not_registered_login", lang)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+        if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
+            whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
+            must_deny, geo_msg_key = evaluate_email_login_geoip(client_ip, whitelisted)
+            if must_deny:
+                detail = Messages.error(geo_msg_key, lang=lang)
+                if geo_msg_key == "email_login_blocked_in_mainland_china":
+                    raise HTTPException(
+                        status_code=status.HTTP_403_FORBIDDEN,
+                        detail=detail,
+                    )
+                raise HTTPException(
+                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                    detail=detail,
+                )
 
     email_storage = get_email_storage()
     rate_limiter = get_rate_limiter()

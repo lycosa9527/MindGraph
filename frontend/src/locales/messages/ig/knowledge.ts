@@ -1,4 +1,4 @@
-/** ig UI — knowledge */
+/** ig UI — knowledge (English copy; translate values as needed) */
 export default {
   'chunkTest.history.confirmDeleteBody':
     'Are you sure you want to delete this test? This cannot be undone.',

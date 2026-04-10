@@ -3,7 +3,7 @@ export default {
   'notification.cannotClearTopicOrCenter': 'Impossibile cancellare i nodi argomento o centrale',
   'notification.cannotResetSelectDiagramType':
     'Impossibile reimpostare: seleziona prima un tipo di diagramma',
-  'notification.canvasClearNodes': 'Cancellati {count} nodo/i',
+  'notification.canvasClearNodes': 'Svuotati {count} nodo/i',
   'notification.canvasClearNodesLearning': 'Svuotati {count} nodo/i, aggiunti alle risposte',
   'notification.canvasSomeoneEditingNode': 'Qualcun altro sta modificando questo nodo',
   'notification.collabDeleteBlocked':
@@ -18,10 +18,10 @@ export default {
   'notification.feedbackCancelled': 'Feedback rimosso',
   'notification.feedbackThanks': 'Grazie per il feedback',
   'notification.feedbackThanksDislike': 'Grazie per il feedback — miglioreremo',
-  'notification.focusQuestionTooShort': 'Inserisci prima una domanda focale più lunga',
+  'notification.focusQuestionTooShort': 'Inserisci prima una domanda di focus più lunga',
   'notification.fullscreenFailed': 'Impossibile entrare a schermo intero',
   'notification.generationCancelled': 'Generazione annullata',
-  'notification.historyClearNodes': 'Cancella testo nodi',
+  'notification.historyClearNodes': 'Cancella testo del nodo',
   'notification.historyEmptyLearning': 'Svuota nodo e aggiungi risposta',
   'notification.importInvalidData': 'Importazione non riuscita: dati diagramma non validi',
   'notification.importLoadFailed': 'Importazione non riuscita: impossibile caricare il diagramma',
@@ -29,13 +29,12 @@ export default {
   'notification.importSlotsFull':
     'Biblioteca piena; diagramma importato ma non salvato in biblioteca',
   'notification.importSuccess': 'Diagramma importato e salvato in biblioteca',
-  'notification.importUnsupportedType':
-    'Importazione non riuscita: tipo di diagramma non supportato',
+  'notification.importUnsupportedType': 'Importazione non riuscita: tipo di diagramma non supportato',
   'notification.loadMoreFailed': 'Impossibile caricare altro',
   'notification.networkError': 'Errore di rete',
   'notification.newVersionAvailable': 'Nuova versione disponibile. Clicca per aggiornare.',
   'notification.recommendationFailed': 'Raccomandazione non riuscita: {msg}',
-  'notification.relationshipGenerationFailed': 'Generazione relazioni non riuscita',
+  'notification.relationshipGenerationFailed': 'Generazione delle relazioni non riuscita',
   'notification.resetDefaultTemplate': 'Ripristina modello predefinito',
   'notification.rootConceptLinkNotFound': 'Collegamento concetto radice non trovato',
   'notification.saved': 'Modifiche salvate correttamente',
@@ -43,5 +42,5 @@ export default {
   'notification.sessionInvalidated':
     'Sei stato disconnesso perché hai superato il numero massimo di dispositivi',
   'notification.signInToUse': 'Accedi per usare questa funzione',
-  'notification.signInToValidateFocus': 'Accedi per convalidare la domanda focale',
+  'notification.signInToValidateFocus': 'Accedi per convalidare la domanda di focus',
 } as const

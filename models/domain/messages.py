@@ -239,6 +239,17 @@ class Messages:
                 "Daha sonra cəhd edin və ya dəstəklə əlaqə saxlayın."
             ),
         },
+        "registration_email_mainland_china_domain": {
+            "zh": "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用教育邮箱海外注册。请改用手机号与邀请码注册，或使用非中国大陆院校邮箱。",
+            "en": (
+                "This email domain is associated with mainland China. "
+                "Use phone number and invitation code to register, or a non–mainland China school email."
+            ),
+            "az": (
+                "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. "
+                "Telefon və dəvət kodu ilə qeydiyyatdan keçin və ya materikdən kənar məktəb e-poçtundan istifadə edin."
+            ),
+        },
         "email_login_blocked_in_mainland_china": {
             "zh": (
                 "当前网络环境下无法使用邮箱密码登录。中国大陆用户请使用手机号登录，或联系销售为您的账户开通邮箱登录权限。"
@@ -1279,8 +1290,12 @@ def get_request_language(language_header: Optional[str] = None, accept_language:
     """
     Determine language from request headers.
 
+    The SPA may send any UI locale code in ``X-Language`` (see frontend ``INTERFACE_LANGUAGE_PICKER_CODES`` /
+    tier-27 product locales). ``Messages`` only stores ``zh``, ``en``, and ``az``; this function maps
+    Simplified-Chinese-style codes to ``zh``, Azerbaijani to ``az``, and everything else to ``en``.
+
     Args:
-        language_header: Custom X-Language header
+        language_header: Custom X-Language header (UI locale code, e.g. ``de``, ``zh-tw``)
         accept_language: Accept-Language header
 
     Returns:
