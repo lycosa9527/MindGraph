@@ -13,8 +13,11 @@ import os
 import sys
 from pathlib import Path
 
-# Load .env before importing config
+# Project root on sys.path so `config` and `models` resolve when run as a script
 _project_root = Path(__file__).resolve().parent.parent.parent
+sys.path.insert(0, str(_project_root))
+
+# Load .env before importing config
 env_path = _project_root / ".env"
 if env_path.exists():
     with open(env_path, encoding="utf-8") as f:
