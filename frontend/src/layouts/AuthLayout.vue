@@ -16,12 +16,8 @@ const uiStore = useUIStore()
 /** `/auth`: no brand row, no manual language control — locale comes from browser on that page. */
 const authLayoutMinimal = computed(() => route.meta.authLayoutMinimal === true)
 
-/** Match MindGraph page shell (`bg-gray-50`) for international UI; CN keeps neutral stone. */
-const authMinimalGreyClass = computed(() =>
-  uiStore.uiVersion === 'international'
-    ? 'auth-layout--minimal-intl bg-gray-50'
-    : 'auth-layout--minimal bg-stone-200'
-)
+/** `/auth`: same animated canvas as international landing (gallery section). */
+const authMinimalGreyClass = 'auth-layout--minimal auth-layout--landing-bg select-none'
 
 /** Beijing MIIT ICP filing (same as `MainLayout`). */
 const icpRegistrationNumber = '京ICP备2025126228号'
@@ -32,7 +28,7 @@ const icpRegistrationNumber = '京ICP备2025126228号'
     class="auth-layout min-h-screen flex flex-col"
     :class="
       authLayoutMinimal
-        ? `${authMinimalGreyClass} select-none`
+        ? authMinimalGreyClass
         : 'bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900'
     "
   >
@@ -123,16 +119,128 @@ const icpRegistrationNumber = '京ICP备2025126228号'
   position: relative;
 }
 
-/* Minimal /auth (CN): neutral stone; LoginModal uses `lightBackdrop` (no scrim). */
-.auth-layout--minimal {
-  background-color: rgb(231 229 228) !important; /* stone-200 */
+/* Minimal /auth: animated canvas (mirrors `InternationalLanding` / gallery). */
+.auth-layout--minimal.auth-layout--landing-bg {
+  isolation: isolate;
   color-scheme: light;
+  background-color: rgb(248 250 252);
+  background-image: linear-gradient(
+    97deg,
+    transparent 0%,
+    transparent 32%,
+    rgba(148, 163, 184, 0.32) 38%,
+    rgba(255, 255, 255, 0.98) 46%,
+    rgba(102, 126, 234, 0.26) 49.5%,
+    rgba(237, 233, 254, 0.75) 50%,
+    rgba(118, 75, 162, 0.12) 50.8%,
+    rgba(248, 250, 252, 0.95) 53%,
+    rgba(100, 116, 139, 0.28) 61%,
+    transparent 72%,
+    transparent 100%
+  );
+  background-size: 300% 100%;
+  background-position: 0% 50%;
+  background-repeat: no-repeat;
+  animation: authLandingSheen 19s linear infinite;
+  animation-delay: -6s;
 }
 
-/* Minimal /auth (international): same grey as MindGraphPage shell */
-.auth-layout--minimal-intl {
-  background-color: rgb(249 250 251) !important; /* gray-50 */
-  color-scheme: light;
+.auth-layout--minimal.auth-layout--landing-bg::before,
+.auth-layout--minimal.auth-layout--landing-bg::after {
+  content: '';
+  position: absolute;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.auth-layout--minimal.auth-layout--landing-bg::before {
+  top: -32%;
+  left: -52%;
+  width: 205%;
+  height: 195%;
+  background: linear-gradient(
+    104deg,
+    transparent 0%,
+    transparent 26%,
+    rgba(148, 163, 184, 0.14) 38%,
+    rgba(102, 126, 234, 0.12) 50%,
+    rgba(226, 232, 240, 0.78) 51%,
+    rgba(118, 75, 162, 0.1) 52%,
+    rgba(148, 163, 184, 0.16) 62%,
+    transparent 100%
+  );
+  filter: blur(11px);
+  transform: translateX(-6%) rotate(1.25deg);
+  animation: authLandingWindPrimary 28s linear infinite;
+  animation-delay: -10s;
+}
+
+.auth-layout--minimal.auth-layout--landing-bg::after {
+  top: -20%;
+  right: -72%;
+  width: 190%;
+  height: 180%;
+  background: linear-gradient(
+    -68deg,
+    transparent 0%,
+    rgba(241, 245, 249, 0.95) 40%,
+    rgba(255, 255, 255, 0.75) 49%,
+    rgba(102, 126, 234, 0.1) 51%,
+    rgba(100, 116, 139, 0.16) 58%,
+    transparent 100%
+  );
+  filter: blur(9px);
+  opacity: 1;
+  animation: authLandingWindSecondary 36s linear infinite;
+  animation-delay: -18s;
+}
+
+.auth-layout--minimal.auth-layout--landing-bg > main,
+.auth-layout--minimal.auth-layout--landing-bg > footer {
+  position: relative;
+  z-index: 1;
+}
+
+@keyframes authLandingSheen {
+  0%,
+  100% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+}
+
+@keyframes authLandingWindPrimary {
+  0%,
+  100% {
+    transform: translateX(-6%) translateY(0) rotate(1.25deg);
+  }
+  50% {
+    transform: translateX(38%) translateY(4%) rotate(0.9deg);
+  }
+}
+
+@keyframes authLandingWindSecondary {
+  0%,
+  100% {
+    transform: translateX(8%) translateY(-5%);
+  }
+  50% {
+    transform: translateX(-32%) translateY(7%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .auth-layout--minimal.auth-layout--landing-bg {
+    animation: none;
+    background-position: 50% 50%;
+  }
+
+  .auth-layout--minimal.auth-layout--landing-bg::before,
+  .auth-layout--minimal.auth-layout--landing-bg::after {
+    animation: none;
+  }
 }
 
 /* Override Element Plus styles for legacy login/demo auth pages (dark glass card) */
