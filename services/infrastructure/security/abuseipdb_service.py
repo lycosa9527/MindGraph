@@ -27,7 +27,7 @@ from services.redis.redis_client import get_redis, is_redis_available
 
 logger = logging.getLogger(__name__)
 
-ABUSEIPDB_API_BASE = "https://api.abuseipdb.com/api/v2"
+_DEFAULT_ABUSEIPDB_API_BASE = "https://api.abuseipdb.com/api/v2"
 
 KEY_BLACKLIST = "abuseipdb:blacklist:ips"
 KEY_BLACKLIST_META = "abuseipdb:blacklist:meta"
@@ -40,6 +40,19 @@ _SISMEMBER_CACHE: Dict[str, Tuple[float, bool]] = {}
 _SISMEMBER_CACHE_LOCK = threading.Lock()
 _SISMEMBER_CACHE_MAX_ENTRIES = 8192
 _SISMEMBER_CACHE_TTL_SNAPSHOT: Optional[int] = None
+
+
+def get_abuseipdb_api_base() -> str:
+    """
+    Base URL for AbuseIPDB API v2 (check, report, blacklist).
+
+    Set ABUSEIPDB_API_BASE in .env if you use a proxy or non-default host; default is
+    the official api.abuseipdb.com endpoint. Authentication is always via ABUSEIPDB_API_KEY.
+    """
+    raw = os.getenv("ABUSEIPDB_API_BASE", "").strip()
+    if not raw:
+        return _DEFAULT_ABUSEIPDB_API_BASE
+    return raw.rstrip("/")
 
 
 def _env_bool(name: str, default: bool = False) -> bool:
@@ -417,7 +430,7 @@ async def fetch_check_score(ip: str) -> Optional[int]:
     try:
         async with httpx.AsyncClient(timeout=15.0) as http_client:
             response = await http_client.get(
-                f"{ABUSEIPDB_API_BASE}/check",
+                f"{get_abuseipdb_api_base()}/check",
                 headers=_client_headers(),
                 params=params,
             )
@@ -508,7 +521,7 @@ async def report_ip_abuse(ip: str, categories: str, comment: str) -> bool:
     try:
         async with httpx.AsyncClient(timeout=20.0) as http_client:
             response = await http_client.post(
-                f"{ABUSEIPDB_API_BASE}/report",
+                f"{get_abuseipdb_api_base()}/report",
                 headers=_client_headers(),
                 data=form,
             )
@@ -543,7 +556,7 @@ def report_ip_abuse_sync(ip: str, categories: str, comment: str, api_key: str) -
     try:
         with httpx.Client(timeout=25.0) as http_client:
             response = http_client.post(
-                f"{ABUSEIPDB_API_BASE}/report",
+                f"{get_abuseipdb_api_base()}/report",
                 headers=headers,
                 data=form,
             )
@@ -681,7 +694,7 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
     try:
         async with httpx.AsyncClient(timeout=300.0) as http_client:
             response = await http_client.get(
-                f"{ABUSEIPDB_API_BASE}/blacklist",
+                f"{get_abuseipdb_api_base()}/blacklist",
                 headers=blacklist_headers,
                 params=params,
             )

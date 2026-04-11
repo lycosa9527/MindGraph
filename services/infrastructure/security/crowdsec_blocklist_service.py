@@ -26,7 +26,9 @@ logger = logging.getLogger(__name__)
 
 KEY_CROWDSEC_META = "crowdsec:blocklist:meta"
 
-DEFAULT_INTEGRATION_BASE = "https://admin.api.crowdsec.net/v1/integrations"
+_DEFAULT_CROWDSEC_INTEGRATION_API_BASE = (
+    "https://admin.api.crowdsec.net/v1/integrations"
+)
 
 
 def _mindgraph_root() -> Path:
@@ -169,6 +171,18 @@ def apply_crowdsec_baseline_from_file() -> int:
     return len(ips)
 
 
+def _crowdsec_integration_api_base() -> str:
+    """
+    Prefix for .../integrations/{id}/content when using CROWDSEC_BLOCKLIST_INTEGRATION_ID.
+
+    Override CROWDSEC_BLOCKLIST_API_BASE in .env for non-default Console API hosts.
+    """
+    raw = os.getenv("CROWDSEC_BLOCKLIST_API_BASE", "").strip().rstrip("/")
+    if raw:
+        return raw
+    return _DEFAULT_CROWDSEC_INTEGRATION_API_BASE
+
+
 def build_crowdsec_blocklist_content_url() -> Optional[str]:
     """Resolve Console Raw IP List URL from CROWDSEC_BLOCKLIST_URL or integration id."""
     full = os.getenv("CROWDSEC_BLOCKLIST_URL", "").strip()
@@ -178,7 +192,7 @@ def build_crowdsec_blocklist_content_url() -> Optional[str]:
     if not integration_id:
         return None
     safe = quote(integration_id, safe="")
-    return f"{DEFAULT_INTEGRATION_BASE}/{safe}/content"
+    return f"{_crowdsec_integration_api_base()}/{safe}/content"
 
 
 def _basic_auth() -> Tuple[str, str]:

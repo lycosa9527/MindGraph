@@ -29,10 +29,25 @@ class TestCrowdsecBlocklistConfig:
         monkeypatch.setenv("CROWDSEC_BLOCKLIST_USERNAME", "u")
         monkeypatch.setenv("CROWDSEC_BLOCKLIST_PASSWORD", "p")
         monkeypatch.delenv("CROWDSEC_BLOCKLIST_URL", raising=False)
+        monkeypatch.delenv("CROWDSEC_BLOCKLIST_API_BASE", raising=False)
         monkeypatch.setenv("CROWDSEC_BLOCKLIST_INTEGRATION_ID", "abc-123")
         assert crowdsec_blocklist_service.crowdsec_blocklist_master_enabled()
         assert crowdsec_blocklist_service.build_crowdsec_blocklist_content_url() == (
             "https://admin.api.crowdsec.net/v1/integrations/abc-123/content"
+        )
+
+    def test_integration_api_base_override(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.setenv("CROWDSEC_BLOCKLIST_ENABLED", "true")
+        monkeypatch.setenv("CROWDSEC_BLOCKLIST_USERNAME", "u")
+        monkeypatch.setenv("CROWDSEC_BLOCKLIST_PASSWORD", "p")
+        monkeypatch.delenv("CROWDSEC_BLOCKLIST_URL", raising=False)
+        monkeypatch.setenv(
+            "CROWDSEC_BLOCKLIST_API_BASE",
+            "https://example.com/v1/integrations",
+        )
+        monkeypatch.setenv("CROWDSEC_BLOCKLIST_INTEGRATION_ID", "abc-123")
+        assert crowdsec_blocklist_service.build_crowdsec_blocklist_content_url() == (
+            "https://example.com/v1/integrations/abc-123/content"
         )
 
     def test_default_baseline_path(self, monkeypatch: pytest.MonkeyPatch) -> None:

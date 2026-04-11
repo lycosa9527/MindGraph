@@ -27,6 +27,7 @@ sys.path.insert(0, str(_project_root()))
 from services.infrastructure.security.abuseipdb_blacklist_parse import (
     parse_abuseipdb_blacklist_plaintext,
 )
+from services.infrastructure.security.abuseipdb_service import get_abuseipdb_api_base
 
 
 def _env_int(name: str, default: int) -> int:
@@ -62,7 +63,7 @@ def main() -> int:
     conf = max(25, min(100, _env_int("ABUSEIPDB_BLACKLIST_CONFIDENCE_MINIMUM", 75)))
     limit = max(1, min(500_000, _env_int("ABUSEIPDB_BLACKLIST_LIMIT", 10_000)))
 
-    url = "https://api.abuseipdb.com/api/v2/blacklist"
+    url = f"{get_abuseipdb_api_base()}/blacklist"
     params = {"confidenceMinimum": conf, "limit": limit}
     headers = {"Key": api_key, "Accept": "text/plain"}
 

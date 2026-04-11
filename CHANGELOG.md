@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.78.0] - 2026-04-11
+
+### Added
+- **AbuseIPDB API base override** (`services/infrastructure/security/abuseipdb_service.py`): `get_abuseipdb_api_base()` reads optional `ABUSEIPDB_API_BASE` (trailing slash stripped) for check, report, blacklist, and baseline download; default remains `https://api.abuseipdb.com/api/v2`.
+- **CrowdSec integration API base override** (`services/infrastructure/security/crowdsec_blocklist_service.py`): optional `CROWDSEC_BLOCKLIST_API_BASE` when building the integration content URL from `CROWDSEC_BLOCKLIST_INTEGRATION_ID`.
+- **Docs / config** (`env.example`): Security notes for AbuseIPDB and CrowdSec credentials; commented examples for `ABUSEIPDB_API_BASE` and `CROWDSEC_BLOCKLIST_API_BASE`.
+- **Tests**: `TestAbuseipdbApiBase` and CrowdSec `test_integration_api_base_override` in `tests/services/test_abuseipdb_blacklist.py`, `tests/services/test_crowdsec_blocklist.py`.
+
+### Changed
+- **`scripts/setup/download_abuseipdb_baseline.py`**: Blacklist download URL uses `get_abuseipdb_api_base()` instead of a hard-coded host.
+
 ## [5.77.0] - 2026-04-11
 
 ### Added

@@ -44,6 +44,25 @@ class TestBlacklistPayloadParse:
         assert ips == set()
 
 
+class TestAbuseipdbApiBase:
+    def test_default_api_base(self, monkeypatch: pytest.MonkeyPatch) -> None:
+        monkeypatch.delenv("ABUSEIPDB_API_BASE", raising=False)
+        assert abuseipdb_service.get_abuseipdb_api_base() == (
+            "https://api.abuseipdb.com/api/v2"
+        )
+
+    def test_api_base_override_strips_slash(
+        self, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        monkeypatch.setenv(
+            "ABUSEIPDB_API_BASE",
+            "https://proxy.example.invalid/api/v2/",
+        )
+        assert abuseipdb_service.get_abuseipdb_api_base() == (
+            "https://proxy.example.invalid/api/v2"
+        )
+
+
 class TestBlacklistSyncInterval:
     def test_default_daily(self, monkeypatch: pytest.MonkeyPatch) -> None:
         monkeypatch.delenv("ABUSEIPDB_BLACKLIST_SYNC_INTERVAL_SECONDS", raising=False)
