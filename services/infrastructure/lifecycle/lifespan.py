@@ -2,7 +2,10 @@
 Lifespan management for MindGraph application.
 
 Handles FastAPI application startup and shutdown lifecycle:
+- Optional Linux Fail2ban template gate (before Redis)
 - Redis initialization
+
+Copy-paste commands for all dependencies: python -m services.infrastructure.utils.launch_commands
 - Database initialization and integrity checks
 - LLM service initialization
 - Background task scheduling
@@ -42,6 +45,7 @@ from services.infrastructure.recovery.recovery_startup import (
 )
 from services.infrastructure.lifecycle.startup import _handle_shutdown_signal
 from services.infrastructure.utils.browser import log_browser_diagnostics
+from services.infrastructure.utils.launch_commands import lines_playwright_startup_critical
 from services.llm import llm_service
 from services.llm.qdrant_startup import QdrantStartupError, init_qdrant_sync
 from services.redis.redis_bayi_whitelist import get_bayi_whitelist
@@ -61,6 +65,9 @@ from services.infrastructure.security.abuseipdb_service import (
     apply_blacklist_baseline_from_file,
     clear_ip_reputation_sismember_cache,
     warm_sismember_cache_ttl_snapshot,
+)
+from services.infrastructure.security.fail2ban_integration.startup_gate import (
+    enforce_fail2ban_startup_or_exit,
 )
 from services.infrastructure.security.ip_reputation_env_snapshot import (
     warm_ip_reputation_env_snapshot,
@@ -193,6 +200,7 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("[LIFESPAN] Signal handlers registered")
         _log_security_startup_posture()
         _log_geolite_country_mmdb_startup_status()
+        enforce_fail2ban_startup_or_exit()
 
     # Initialize Redis (REQUIRED for caching, rate limiting, sessions)
     # Application will exit if Redis is not available
@@ -527,11 +535,8 @@ async def lifespan(fastapi_app: FastAPI):
         try:
             await log_browser_diagnostics()
         except NotImplementedError:
-            logger.error("=" * 80)
-            logger.error("CRITICAL: Playwright browsers are not installed!")
-            logger.error("PNG generation endpoints (/api/generate_png, /api/generate_dingtalk) will fail.")
-            logger.error("To fix: conda activate python3.13 && playwright install chromium")
-            logger.error("=" * 80)
+            for line in lines_playwright_startup_critical():
+                logger.error(line)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Could not verify Playwright installation: %s", e)
 

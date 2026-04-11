@@ -22,6 +22,7 @@ from dotenv import load_dotenv
 from config.settings import config
 from services.infrastructure.http.error_handler import LLMServiceError
 from services.llm import llm_service
+from services.infrastructure.utils.launch_commands import error_footer_launch_reference
 from services.redis.redis_client import (
     RedisStartupError,
     init_redis_sync,
@@ -222,6 +223,7 @@ def _log_celery_error(title: str, details: list[str]) -> None:
         "",
     ]
     lines.extend(details)
+    lines.extend(error_footer_launch_reference())
     lines.extend(["", separator, ""])
 
     error_msg = "\n".join(lines)

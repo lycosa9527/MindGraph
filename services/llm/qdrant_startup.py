@@ -10,8 +10,14 @@ Proprietary License
 
 import logging
 import os
+from urllib.parse import urlparse
 
 import qdrant_client
+
+from services.infrastructure.utils.launch_commands import (
+    error_footer_launch_reference,
+    lines_qdrant_connection_failed,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -103,6 +109,7 @@ def init_qdrant_sync() -> bool:
                 "  (see docs/QDRANT_SETUP.md)",
                 "",
                 "Or download from: https://github.com/qdrant/qdrant/releases",
+                *error_footer_launch_reference(),
             ],
         )
         raise QdrantStartupError("Qdrant not configured") from None
@@ -124,21 +131,13 @@ def init_qdrant_sync() -> bool:
 
     except Exception as exc:
         connection_info = qdrant_url if qdrant_url else f"{qdrant_host or 'localhost:6333'}"
+        if qdrant_url:
+            parsed = urlparse(qdrant_url)
+            err_port = parsed.port if parsed.port is not None else 6333
+        else:
+            _, err_port = parse_qdrant_host_port(qdrant_host)
         _log_qdrant_error(
             title="QDRANT CONNECTION FAILED",
-            details=[
-                f"Failed to connect to Qdrant at: {connection_info}",
-                f"Error: {exc}",
-                "",
-                "MindGraph requires Qdrant. Please ensure Qdrant is running:",
-                "",
-                "  Install:  sudo python3 scripts/setup/setup.py (Linux)",
-                "",
-                "  Ubuntu:   sudo systemctl start qdrant",
-                "",
-                "  Or run:   qdrant",
-                "",
-                "Then set QDRANT_HOST=localhost:6333 in your .env file",
-            ],
+            details=lines_qdrant_connection_failed(connection_info, str(exc), err_port),
         )
         raise QdrantStartupError(f"Failed to connect to Qdrant: {exc}") from exc

@@ -34,6 +34,11 @@ except ImportError:
 
 from functools import wraps
 
+from services.infrastructure.utils.launch_commands import (
+    error_footer_launch_reference,
+    lines_redis_connection_failed,
+)
+
 logger = logging.getLogger(__name__)
 
 # Type variable for generic return type
@@ -246,6 +251,7 @@ def init_redis_sync() -> bool:
                 "",
                 "To fix, run:",
                 "  pip install redis>=5.0.0",
+                *error_footer_launch_reference(),
             ],
         )
         raise RedisStartupError("Redis package not installed") from None
@@ -277,19 +283,7 @@ def init_redis_sync() -> bool:
     except Exception as exc:
         _log_redis_error(
             title="REDIS CONNECTION FAILED",
-            details=[
-                f"Failed to connect to Redis at: {redis_url}",
-                f"Error: {exc}",
-                "",
-                "MindGraph requires Redis. Please ensure Redis is running:",
-                "",
-                "  Ubuntu:  sudo apt install redis-server",
-                "           sudo systemctl start redis-server",
-                "",
-                "  macOS:   brew install redis && brew services start redis",
-                "",
-                "Then set REDIS_URL in your .env file (default: redis://localhost:6379/0)",
-            ],
+            details=lines_redis_connection_failed(redis_url, str(exc)),
         )
         raise RedisStartupError(f"Failed to connect to Redis: {exc}") from exc
 

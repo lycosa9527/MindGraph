@@ -47,6 +47,7 @@ from services.infrastructure.process.process_manager import (
     stop_postgresql_server,
     setup_signal_handlers,
 )
+from services.infrastructure.utils.launch_commands import lines_http_port_in_use
 from services.infrastructure.utils.port_manager import ShutdownErrorFilter
 from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
 from services.infrastructure.process import _port_utils
@@ -56,22 +57,11 @@ logger = logging.getLogger(__name__)
 
 def _exit_port_in_use(port: int, pid: int | None = None) -> None:
     """Print port conflict help and exit with status 1."""
-    print(f"\n[ERROR] Port {port} is already in use!")
-    print(f"        Another process is using port {port}.")
-    if pid is not None:
-        print(f"        Detected process ID: {pid}")
-    print("\n        Solutions:")
-    print(f"        1. Stop the process using port {port}:")
-    if sys.platform == "win32":
-        print(f"           netstat -ano | findstr :{port}")
-        print("           taskkill /PID <PID> /F")
-    else:
-        print(f"           lsof -ti:{port} | xargs kill -9")
-        print(f"           or: sudo fuser -k {port}/tcp")
-    print("        2. Use a different port:")
-    print("           Set PORT=<different_port> in .env")
-    print("           Example: PORT=9528")
-    print("        3. Check if another MindGraph instance is running")
+    lines = lines_http_port_in_use(port, pid)
+    print()
+    print("[ERROR] " + lines[0])
+    for line in lines[1:]:
+        print(line)
     sys.exit(1)
 
 
