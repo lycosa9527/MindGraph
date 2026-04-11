@@ -1,0 +1,4 @@
+# Copy to /etc/fail2ban/abuseipdb.conf (mode 600) and set your Key.
+# Same key as AbuseIPDB in MindGraph .env for consistency.
+#
+# KEY=your_api_key_here

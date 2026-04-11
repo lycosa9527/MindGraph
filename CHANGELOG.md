@@ -5,9 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.77.0] - 2026-04-11
+
+### Added
+- **CrowdSec Console Raw IP List** (`services/infrastructure/security/crowdsec_blocklist_service.py`): Fetches plaintext IPs from the integration endpoint and merges them into the same Redis blacklist set used for AbuseIPDB; optional on-disk baseline `data/crowdsec/blocklist_baseline.txt`; `scripts/setup/download_crowdsec_baseline.py`; `env.example` variables (`CROWDSEC_BLOCKLIST_*`, `CROWDSEC_BASELINE_*`).
+- **IP reputation env snapshot** (`services/infrastructure/security/ip_reputation_env_snapshot.py`): Warms configuration snapshots used with blacklist lookups and schedulers.
+- **Tests**: `tests/services/test_crowdsec_blocklist.py`, `tests/services/test_abuseipdb_blacklist.py`.
+
+### Changed
+- **Lifespan** (`services/infrastructure/lifecycle/lifespan.py`): Applies CrowdSec baseline and optional network merge on startup when enabled.
+- **AbuseIPDB stack** (`abuseipdb_service.py`, `abuseipdb_scheduler.py`): Coordinates CrowdSec merge with daily blacklist sync; shared Redis set documents AbuseIPDB + CrowdSec + baselines.
+- **Pytest** (`tests/conftest.py`): Autouse fixture resets IP-reputation env snapshots so tests that patch environment variables see consistent behavior.
+
 ## [5.76.0] - 2026-04-11
 
 ### Added
+- **AbuseIPDB + Fail2ban (MindGraph-side)**: `services/infrastructure/security/abuseipdb_service.py` (check, report, Redis blacklist sync), `abuseipdb_middleware.py`, `abuseipdb_scheduler.py` (daily blacklist with Redis lock), `fail2ban_integration/` (deploy helper, `report_ban` CLI); `resources/fail2ban/` templates; `docs/FAIL2BAN_SETUP.md`; `scripts/deploy/fail2ban_sync.sh`, `scripts/fail2ban_report_ban.sh`; `env.example` AbuseIPDB variables; lifespan and login lockout hooks; README / `setup.py` doc hints.
+- **AbuseIPDB baseline file**: `data/abuseipdb/blacklist_baseline.txt` (tracked under `.gitignore` exceptions) merged into Redis at startup and after each successful API blacklist sync; `scripts/setup/download_abuseipdb_baseline.py`; `data/abuseipdb/README.md`.
+- **Fail2ban**: `resources/fail2ban/jail.d/mindgraph-npm.local.conf` ships with **`enabled = true`**; `scripts/setup/setup.py` Step 9 calls **`verify_fail2ban_hint()`** (`fail2ban-client` on PATH + `fail2ban-client status`) on Linux alongside Redis/Qdrant checks.
 - **VPN / CN transition geo enforcement** (`services/auth/vpn_geo_enforcement.py`): Redis-backed login-country baseline and last-IP tracking; optional kick / session invalidation when a session that logged in from a non-CN IP is later seen from a China-mainland IP (configurable via `VPN_CN_KICKOUT_*`); coverage for API routes and WebSockets (`routers/api/workshop_ws.py`, `routers/features/workshop_chat_ws.py`); integrates GeoIP resolution and CN mobile checks (`utils/cn_mobile.py`).
 - **Auth resolution** (`utils/auth/auth_resolution.py`): Resolve authenticated `User` once per HTTP request for middleware and dependencies (`request.state.auth_context_user`), reducing duplicate JWT / `mgat_` validation.
 - **HTTP auth token helpers** (`services/auth/http_auth_token.py`): Bearer extraction and access-token payload decoding shared by auth paths.

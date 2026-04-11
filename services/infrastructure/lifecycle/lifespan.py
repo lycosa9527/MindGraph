@@ -57,6 +57,20 @@ from services.redis.redis_distributed_lock import (
 )
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
+from services.infrastructure.security.abuseipdb_service import (
+    apply_blacklist_baseline_from_file,
+    clear_ip_reputation_sismember_cache,
+    warm_sismember_cache_ttl_snapshot,
+)
+from services.infrastructure.security.ip_reputation_env_snapshot import (
+    warm_ip_reputation_env_snapshot,
+)
+from services.infrastructure.security.abuseipdb_scheduler import start_abuseipdb_blacklist_scheduler
+from services.infrastructure.security.crowdsec_blocklist_service import (
+    apply_crowdsec_baseline_from_file,
+    crowdsec_blocklist_sync_enabled,
+    merge_crowdsec_blocklist_from_network,
+)
 from services.utils.backup_scheduler import start_backup_scheduler
 from services.utils.temp_image_cleaner import start_cleanup_scheduler
 from services.workshop import start_workshop_cleanup_scheduler
@@ -186,6 +200,8 @@ async def lifespan(fastapi_app: FastAPI):
         logger.debug("[LIFESPAN] Initializing Redis...")
     try:
         init_redis_sync()
+        warm_ip_reputation_env_snapshot()
+        warm_sismember_cache_ttl_snapshot()
         if is_main_worker:
             logger.debug("Redis initialized successfully")
         try:
@@ -210,6 +226,17 @@ async def lifespan(fastapi_app: FastAPI):
             logger.error("Failed to send startup failure alert: %s", alert_error)
         logger.error("Application startup failed. Exiting.")
         os._exit(1)  # pylint: disable=protected-access
+
+    await asyncio.to_thread(apply_blacklist_baseline_from_file)
+    await asyncio.to_thread(apply_crowdsec_baseline_from_file)
+    if crowdsec_blocklist_sync_enabled():
+        try:
+            await merge_crowdsec_blocklist_from_network()
+        except Exception as crowdsec_exc:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
+
+    clear_ip_reputation_sismember_cache()
 
     # Initialize Qdrant (REQUIRED only if Knowledge Space feature is enabled)
     knowledge_space_enabled = config.FEATURE_KNOWLEDGE_SPACE
@@ -549,6 +576,13 @@ async def lifespan(fastapi_app: FastAPI):
         if worker_id == "0" or not worker_id:
             logger.warning("Failed to start backup scheduler: %s", e)
 
+    abuseipdb_scheduler_task: Optional[asyncio.Task] = None
+    try:
+        abuseipdb_scheduler_task = asyncio.create_task(start_abuseipdb_blacklist_scheduler())
+    except Exception as e:  # pylint: disable=broad-except
+        if worker_id == "0" or not worker_id:
+            logger.warning("Failed to start AbuseIPDB blacklist scheduler: %s", e)
+
     # PDF auto-import removed - no longer needed for image-based viewing
     # Documents are now registered via register_image_folders.py script
     # Users manually export PDFs to images and place folders in storage/library/
@@ -671,6 +705,13 @@ async def lifespan(fastapi_app: FastAPI):
             except asyncio.CancelledError:
                 pass
             # Only log on worker that was the lock holder (scheduler handles this internally)
+
+        if abuseipdb_scheduler_task:
+            abuseipdb_scheduler_task.cancel()
+            try:
+                await abuseipdb_scheduler_task
+            except asyncio.CancelledError:
+                pass
 
         # Library auto-import scheduler no longer runs (removed periodic checking)
 

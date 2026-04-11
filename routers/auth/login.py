@@ -47,6 +47,9 @@ from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import email_cn_geo_blocked
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.redis.cache.redis_user_cache import user_cache
+from services.infrastructure.security.abuseipdb_service import (
+    schedule_abuseipdb_report_on_lockout,
+)
 from utils.email_mainland_china import raise_if_mainland_china_email_for_email_login
 from utils.email_validation import validate_email_for_api
 from utils.auth import (
@@ -246,7 +249,7 @@ async def login(
         login_key = normalize_verification_email(email_validated)
         cached_user = await user_cache.get_by_email(login_key)
     else:
-        login_key = request.phone.strip()
+        login_key = (request.phone or "").strip()
         cached_user = await user_cache.get_by_phone(login_key)
 
     is_allowed, _ = check_login_rate_limit(login_key)
@@ -306,7 +309,7 @@ async def login(
         result = await db.execute(select(User).where(User.id == cached_user.id))
         db_user = result.scalar_one_or_none()
         if db_user:
-            increment_failed_attempts(db_user, db)
+            await increment_failed_attempts(db_user, db)
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
             cached_user.failed_login_attempts = db_user.failed_login_attempts
         else:
@@ -330,6 +333,7 @@ async def login(
             )
         minutes_left = LOCKOUT_DURATION_MINUTES
         lockout_msg = Messages.error("captcha_account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
+        schedule_abuseipdb_report_on_lockout(get_client_ip(http_request))
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=lockout_msg)
 
     # Verify password
@@ -338,7 +342,7 @@ async def login(
         result = await db.execute(select(User).where(User.id == cached_user.id))
         db_user = result.scalar_one_or_none()
         if db_user:
-            increment_failed_attempts(db_user, db)
+            await increment_failed_attempts(db_user, db)
             attempts_left = MAX_LOGIN_ATTEMPTS - db_user.failed_login_attempts
             cached_user.failed_login_attempts = db_user.failed_login_attempts
         else:
@@ -348,6 +352,7 @@ async def login(
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
         minutes_left = LOCKOUT_DURATION_MINUTES
         error_msg = Messages.error("account_locked", lang, MAX_LOGIN_ATTEMPTS, minutes_left)
+        schedule_abuseipdb_report_on_lockout(get_client_ip(http_request))
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     # Successful login - clear rate limit attempts in Redis
@@ -379,22 +384,20 @@ async def login(
 
     # Check organization status (locked or expired)
     if org:
-        is_active = org.is_active if hasattr(org, "is_active") else True
-        if not is_active:
+        if not org.is_active:
             logger.warning("Login blocked: Organization %s is locked", org.code)
             error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
-        if hasattr(org, "expires_at") and org.expires_at:
-            if org.expires_at < datetime.now(UTC):
-                logger.warning(
-                    "Login blocked: Organization %s expired on %s",
-                    org.code,
-                    org.expires_at,
-                )
-                expired_date = org.expires_at.strftime("%Y-%m-%d")
-                error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+        if org.expires_at is not None and org.expires_at < datetime.now(UTC):
+            logger.warning(
+                "Login blocked: Organization %s expired on %s",
+                org.code,
+                org.expires_at,
+            )
+            expired_date = org.expires_at.strftime("%Y-%m-%d")
+            error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
     # Session management: Allow multiple concurrent sessions (up to MAX_CONCURRENT_SESSIONS)
     session_manager = get_session_manager()
@@ -509,18 +512,16 @@ async def login_with_sms(
 
     # Check organization status
     if org:
-        is_active = org.is_active if hasattr(org, "is_active") else True
-        if not is_active:
+        if not org.is_active:
             logger.warning("SMS login blocked: Organization %s is locked", org.code)
             error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
-        if hasattr(org, "expires_at") and org.expires_at:
-            if org.expires_at < datetime.now(UTC):
-                logger.warning("SMS login blocked: Organization %s expired", org.code)
-                expired_date = org.expires_at.strftime("%Y-%m-%d")
-                error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+        if org.expires_at is not None and org.expires_at < datetime.now(UTC):
+            logger.warning("SMS login blocked: Organization %s expired", org.code)
+            expired_date = org.expires_at.strftime("%Y-%m-%d")
+            error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
     # All validations passed - now consume the SMS code
     _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
@@ -559,18 +560,16 @@ async def login_with_email(
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
 
     if org:
-        is_active = org.is_active if hasattr(org, "is_active") else True
-        if not is_active:
+        if not org.is_active:
             logger.warning("Email OTP login blocked: Organization %s is locked", org.code)
             error_msg = Messages.error("organization_locked", lang, org.name)
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
-        if hasattr(org, "expires_at") and org.expires_at:
-            if org.expires_at < datetime.now(UTC):
-                logger.warning("Email OTP login blocked: Organization %s expired", org.code)
-                expired_date = org.expires_at.strftime("%Y-%m-%d")
-                error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+        if org.expires_at is not None and org.expires_at < datetime.now(UTC):
+            logger.warning("Email OTP login blocked: Organization %s expired", org.code)
+            expired_date = org.expires_at.strftime("%Y-%m-%d")
+            error_msg = Messages.error("organization_expired", lang, org.name, expired_date)
+            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
     if EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(

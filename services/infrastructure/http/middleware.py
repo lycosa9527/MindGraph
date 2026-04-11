@@ -479,6 +479,10 @@ def setup_middleware(app: FastAPI):
 
     Order matters - middleware is executed in reverse order of registration.
     """
+    from services.infrastructure.security.abuseipdb_middleware import (
+        abuseipdb_middleware,
+    )
+
     # CORS Middleware
     # Extract server URL once to avoid linter warnings about constant access
     base_server_url = config.server_url
@@ -510,6 +514,7 @@ def setup_middleware(app: FastAPI):
     # Note: Middleware executes in reverse order of registration
     # So log_requests runs first, then add_cache_control_headers, etc.
     app.middleware("http")(limit_request_body_size)
+    app.middleware("http")(abuseipdb_middleware)
     app.middleware("http")(csrf_protection)
     app.middleware("http")(add_security_headers)
     app.middleware("http")(add_cache_control_headers)

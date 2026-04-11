@@ -49,8 +49,8 @@ class Organization(Base):
     created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
     # Service subscription management
-    expires_at = Column(DateTime, nullable=True)  # Service expiration date
-    is_active = Column(Boolean, default=True)  # Active/locked status
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
+    is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
     # Relationship
     users = relationship("User", back_populates="organization", lazy="selectin")

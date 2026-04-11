@@ -56,6 +56,7 @@ AI-powered diagram generation platform. Transform natural language into professi
 
 **Security & Auth**
 
+- Optional **AbuseIPDB** and **Fail2ban** integration — see [docs/FAIL2BAN_SETUP.md](docs/FAIL2BAN_SETUP.md)
 - JWT and API key authentication with Redis cache-aside (5-minute TTL, SHA-256 fingerprinting)
 - Captcha on password change; sessions revoked on password update
 - Per-feature organization/user access rules (DB-backed, Redis-cached)
@@ -172,6 +173,7 @@ API keys are created in the admin panel (`/admin`). See [docs/API_REFERENCE.md](
 - [Redis Setup](docs/REDIS_SETUP.md)
 - [Qdrant Setup](docs/QDRANT_SETUP.md)
 - [PostgreSQL Setup](docs/POSTGRES_SETUP.md)
+- [Fail2ban + AbuseIPDB](docs/FAIL2BAN_SETUP.md)
 
 ---
 

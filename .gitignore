@@ -66,6 +66,12 @@ logs/*.pid
 data/**
 !data/prompt_language_registry.json
 !data/kikobeats_free_email_domains.json
+!data/abuseipdb/
+!data/abuseipdb/README.md
+!data/abuseipdb/blacklist_baseline.txt
+!data/crowdsec/
+!data/crowdsec/README.md
+!data/crowdsec/blocklist_baseline.txt
 captcha_store.json
 
 # Database files

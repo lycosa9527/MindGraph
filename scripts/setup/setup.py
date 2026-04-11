@@ -15,6 +15,8 @@ This script handles the complete installation and setup of MindGraph, including:
   setting) and restarts the service. Prompts let you skip apt installs.
 - Qdrant vector server (Knowledge Space): on Linux with sudo, downloads the official
   release from GitHub, installs systemd (docs/QDRANT_SETUP.md). Optional skip via prompt.
+- Fail2ban (optional host firewall): verification step runs fail2ban-client status on Linux
+  (docs/FAIL2BAN_SETUP.md).
 
 Requirements:
 - Python 3.8+
@@ -236,6 +238,7 @@ CHROMIUM_DIR = os.path.join(BROWSERS_DIR, "chromium")
 DOC_REDIS = "docs/REDIS_SETUP.md"
 DOC_POSTGRES = "docs/POSTGRES_SETUP.md"
 DOC_QDRANT = "docs/QDRANT_SETUP.md"
+DOC_FAIL2BAN = "docs/FAIL2BAN_SETUP.md"
 
 # MindGraph requires recent Redis / PostgreSQL; setup targets latest apt packages
 # that meet these minimums (see docs/REDIS_SETUP.md, docs/POSTGRES_SETUP.md).
@@ -322,12 +325,13 @@ def is_elevated_privileges() -> bool:
 
 
 def print_infrastructure_docs_hint(project_root: str) -> None:
-    """Point operators at Redis/PostgreSQL/Qdrant documentation."""
-    print("\n[INFO] Redis, PostgreSQL, and Qdrant:")
+    """Point operators at Redis/PostgreSQL/Qdrant/Fail2ban documentation."""
+    print("\n[INFO] Redis, PostgreSQL, Qdrant, and Fail2ban:")
     for rel, title in (
         (DOC_REDIS, "Redis"),
         (DOC_POSTGRES, "PostgreSQL"),
         (DOC_QDRANT, "Qdrant"),
+        (DOC_FAIL2BAN, "Fail2ban + AbuseIPDB"),
     ):
         path = os.path.join(project_root, rel)
         if os.path.isfile(path):
@@ -1161,6 +1165,50 @@ def verify_qdrant_hint() -> None:
         print("    [SUCCESS] Python package qdrant-client is importable")
     except ImportError:
         print("    [WARNING] qdrant-client not importable; ensure Step 4 (pip install -r requirements.txt) completed")
+
+
+def fail2ban_client_available() -> bool:
+    """True if fail2ban-client is on PATH."""
+    return shutil.which("fail2ban-client") is not None
+
+
+def fail2ban_server_responding() -> bool:
+    """True if fail2ban-client status exits 0 (daemon reachable)."""
+    if not fail2ban_client_available():
+        return False
+    try:
+        result = subprocess.run(
+            ["fail2ban-client", "status"],
+            capture_output=True,
+            text=True,
+            timeout=12,
+            check=False,
+        )
+        return result.returncode == 0
+    except (OSError, subprocess.SubprocessError):
+        return False
+
+
+def verify_fail2ban_hint() -> None:
+    """Print Fail2ban availability (optional Linux host firewall; docs/FAIL2BAN_SETUP.md)."""
+    if platform.system().lower() == "windows":
+        print(
+            "    [INFO] Fail2ban: use Linux host or WSL for fail2ban; "
+            f"see {DOC_FAIL2BAN}"
+        )
+        return
+    if not fail2ban_client_available():
+        print(
+            f"    [WARNING] fail2ban-client not in PATH; apt install fail2ban ({DOC_FAIL2BAN})"
+        )
+        return
+    if fail2ban_server_responding():
+        print(f"    [SUCCESS] Fail2ban server responding (fail2ban-client status; {DOC_FAIL2BAN})")
+    else:
+        print(
+            "    [WARNING] Fail2ban not running; "
+            f"sudo systemctl enable --now fail2ban ({DOC_FAIL2BAN})"
+        )
 
 
 def run_command(command: str, description: str, check: bool = True) -> bool:
@@ -2314,6 +2362,7 @@ def _ensure_postgres_database_exists(db_parts: Dict[str, str]) -> bool:
             capture_output=True,
             text=True,
             timeout=10,
+            check=False,
         )
         if check.returncode == 0 and check.stdout.strip() == "1":
             print(f"    [INFO] Database '{dbname}' already exists")
@@ -2333,6 +2382,7 @@ def _ensure_postgres_database_exists(db_parts: Dict[str, str]) -> bool:
             capture_output=True,
             text=True,
             timeout=15,
+            check=False,
         )
         if create.returncode == 0:
             print(f"    [SUCCESS] Created database '{dbname}'")
@@ -2646,6 +2696,7 @@ def main() -> None:
         verify_tesseract_ocr()
         verify_redis_postgres_hints()
         verify_qdrant_hint()
+        verify_fail2ban_hint()
         verify_playwright_browsers()
         verify_file_structure()
 
