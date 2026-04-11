@@ -453,17 +453,49 @@ async def fetch_check_score(ip: str) -> Optional[int]:
     return None
 
 
-async def check_ip_score_cached(ip: str) -> Optional[int]:
-    """Return cached or live check score; None if unavailable."""
+async def check_ip_score_cached_with_provenance(
+    ip: str,
+) -> Tuple[Optional[int], str]:
+    """
+    Return cached or live AbuseIPDB abuseConfidenceScore.
+
+    Second value: 'cache' | 'live' | 'unavailable' (API error, 429, or no score).
+    """
     ttl = get_check_cache_ttl_seconds()
     cached = _get_cached_check_score(ip)
     if cached is not None:
-        return cached
+        return cached, "cache"
 
     score = await fetch_check_score(ip)
     if score is not None:
         _set_cached_check_score(ip, score, ttl)
+        return score, "live"
+    return None, "unavailable"
+
+
+async def check_ip_score_cached(ip: str) -> Optional[int]:
+    """Return cached or live check score; None if unavailable."""
+    score, _ = await check_ip_score_cached_with_provenance(ip)
     return score
+
+
+def log_shared_blacklist_redis_size(context: str) -> None:
+    """Log SCARD for the shared blacklist set (AbuseIPDB + CrowdSec + baselines)."""
+    if not is_redis_available():
+        return
+    client = get_redis()
+    if not client:
+        return
+    try:
+        size = client.scard(KEY_BLACKLIST)
+    except (OSError, RedisError) as exc:
+        logger.debug("[IP reputation] blacklist size unreadable (%s): %s", context, exc)
+        return
+    logger.info(
+        "[IP reputation] Shared Redis blacklist size=%s (%s)",
+        size,
+        context,
+    )
 
 
 async def report_ip_abuse(ip: str, categories: str, comment: str) -> bool:
@@ -728,5 +760,6 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
 
     if result.get("ok"):
         clear_ip_reputation_sismember_cache()
+        log_shared_blacklist_redis_size("after AbuseIPDB sync and CrowdSec merge")
 
     return result

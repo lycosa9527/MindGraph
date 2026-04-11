@@ -179,6 +179,9 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network()
                 if cs.get("ok") and not cs.get("skipped"):
                     logger.info("[CrowdSec] Sync OK: %s IPs", cs.get("count"))
+                    abuseipdb_service.log_shared_blacklist_redis_size(
+                        "after CrowdSec-only scheduler merge"
+                    )
                 elif cs.get("rate_limited"):
                     retry_after = float(cs.get("retry_after_seconds") or 3600)
                     logger.warning(

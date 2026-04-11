@@ -70,6 +70,7 @@ from services.infrastructure.security.fail2ban_integration.startup_gate import (
     enforce_fail2ban_startup_or_exit,
 )
 from services.infrastructure.security.ip_reputation_env_snapshot import (
+    log_ip_reputation_startup_summary,
     warm_ip_reputation_env_snapshot,
 )
 from services.infrastructure.security.abuseipdb_scheduler import start_abuseipdb_blacklist_scheduler
@@ -210,6 +211,8 @@ async def lifespan(fastapi_app: FastAPI):
         init_redis_sync()
         warm_ip_reputation_env_snapshot()
         warm_sismember_cache_ttl_snapshot()
+        if is_main_worker:
+            log_ip_reputation_startup_summary()
         if is_main_worker:
             logger.debug("Redis initialized successfully")
         try:
