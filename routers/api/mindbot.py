@@ -208,6 +208,29 @@ def _event_subscription_fields(
     return token, aes_key, owner_key
 
 
+@router.get("/dingtalk/callback")
+async def dingtalk_callback_shared_get() -> Response:
+    """Optional GET reachability check (some DingTalk flows probe the URL with GET)."""
+    _require_mindbot_feature()
+    return Response(
+        status_code=200,
+        headers=mindbot_error_headers(MindbotErrorCode.OK),
+    )
+
+
+@router.get("/dingtalk/orgs/{organization_id}/callback")
+async def dingtalk_callback_per_org_get(organization_id: int) -> Response:
+    """Optional GET reachability check for the per-organization callback URL."""
+    _require_mindbot_feature()
+    return Response(
+        status_code=200,
+        headers=mindbot_error_headers(
+            MindbotErrorCode.OK,
+            organization_id=organization_id,
+        ),
+    )
+
+
 @router.post("/dingtalk/callback")
 async def dingtalk_callback_shared(
     request: Request,
