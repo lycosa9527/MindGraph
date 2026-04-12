@@ -1,0 +1,174 @@
+{
+  "extName": {
+    "message": "MindGraph — 網頁轉心智圖",
+    "description": "擴充功能名稱"
+  },
+  "extDescription": {
+    "message": "將目前網頁透過 MindGraph 產生為心智圖 PNG。",
+    "description": "商店描述"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "工具列提示"
+  },
+  "settingsEyebrow": {
+    "message": "設定",
+    "description": "設定區小標題"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "彈窗標題"
+  },
+  "mainTagline": {
+    "message": "從頁面到結構化心智圖，一步完成。",
+    "description": "主畫面副標題"
+  },
+  "btnGenerate": {
+    "message": "產生心智圖",
+    "description": "主按鈕"
+  },
+  "btnSettings": {
+    "message": "設定",
+    "description": "設定按鈕"
+  },
+  "settingsTitle": {
+    "message": "連線",
+    "description": "設定標題"
+  },
+  "settingsLead": {
+    "message": "請使用與 MindGraph API 權杖流程相同的憑證。",
+    "description": "設定說明"
+  },
+  "labelBaseUrl": {
+    "message": "基礎網址",
+    "description": "標籤"
+  },
+  "placeholderBaseUrl": {
+    "message": "https://你的服務.example.com",
+    "description": "預留提示文字"
+  },
+  "labelAccount": {
+    "message": "帳號（手機號碼）",
+    "description": "標籤"
+  },
+  "placeholderAccount": {
+    "message": "用於 X-MG-Account 的手機號碼",
+    "description": "預留提示文字"
+  },
+  "labelToken": {
+    "message": "API 權杖",
+    "description": "標籤"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "預留提示文字"
+  },
+  "btnSave": {
+    "message": "儲存",
+    "description": "儲存按鈕"
+  },
+  "btnBack": {
+    "message": "返回",
+    "description": "返回按鈕"
+  },
+  "btnClose": {
+    "message": "關閉",
+    "description": "關閉擴充功能彈窗"
+  },
+  "statusWorking": {
+    "message": "處理中…",
+    "description": "狀態"
+  },
+  "statusDownloadStarted": {
+    "message": "已開始下載。",
+    "description": "狀態"
+  },
+  "statusSaved": {
+    "message": "已儲存。",
+    "description": "狀態"
+  },
+  "statusVerifying": {
+    "message": "正在驗證憑證…",
+    "description": "儲存前"
+  },
+  "errFillAll": {
+    "message": "請填寫全部欄位。",
+    "description": "驗證"
+  },
+  "errNoTab": {
+    "message": "沒有活動分頁。",
+    "description": "錯誤"
+  },
+  "errFailed": {
+    "message": "發生錯誤。",
+    "description": "通用錯誤"
+  },
+  "errSettingsIncomplete": {
+    "message": "請開啟「設定」，填寫基礎網址、帳號（手機號碼）和 API 權杖。",
+    "description": "背景錯誤"
+  },
+  "errNoPageText": {
+    "message": "無法讀取頁面文字。請在頁面中選取文字，或嘗試其他網站。",
+    "description": "背景錯誤"
+  },
+  "errApi": {
+    "message": "API $1：$2",
+    "description": "API 錯誤"
+  },
+  "errRestrictedPage": {
+    "message": "無法在此頁面使用（僅支援 http/https 網頁）。請開啟一般網站後再試。",
+    "description": "非網頁位址"
+  },
+  "errRateLimit": {
+    "message": "請求過於頻繁，請稍候再試。",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "服務暫時無法使用，請稍後再試。",
+    "description": "HTTP 503"
+  },
+  "errNotPng": {
+    "message": "伺服器未回傳 PNG 圖片。請檢查基礎網址與帳號設定。",
+    "description": "內容類型錯誤"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "通知標題"
+  },
+  "contextMenuGenerate": {
+    "message": "產生心智圖 PNG",
+    "description": "右鍵選單"
+  },
+  "settingsAdvanced": {
+    "message": "進階",
+    "description": "設定分區"
+  },
+  "labelSaveAs": {
+    "message": "每次下載時詢問儲存位置",
+    "description": "核取方塊"
+  },
+  "stageReadingPage": {
+    "message": "正在讀取頁面內容…",
+    "description": "進度：讀取頁面"
+  },
+  "stageSending": {
+    "message": "正在傳送到 MindGraph 伺服器…",
+    "description": "進度：傳送請求"
+  },
+  "stageServerProcessing": {
+    "message": "伺服器正在產生心智圖…",
+    "description": "進度：等待伺服端"
+  },
+  "stageReceiving": {
+    "message": "正在從伺服器接收圖片…",
+    "description": "進度：接收回應"
+  },
+  "stageSaving": {
+    "message": "正在儲存檔案…",
+    "description": "進度：瀏覽器下載"
+  },
+  "errNetwork": {
+    "message": "無法連線伺服器，請檢查基礎網址與網路。",
+    "description": "請求失敗"
+  }
+}

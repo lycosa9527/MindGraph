@@ -10,7 +10,7 @@ All Rights Reserved
 Proprietary License
 """
 
-from typing import Optional, Dict, Any, List
+from typing import Literal, Optional, Dict, Any, List
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
@@ -261,6 +261,53 @@ class GenerateDingTalkRequest(BaseModel):
         """Configuration for GenerateDingTalkRequest model."""
 
         json_schema_extra = {"example": {"prompt": "比较猫和狗", "language": "zh"}}
+
+
+class WebContentGenerateRequest(BaseModel):
+    """Request model for /api/generate_from_web_content — mind map from page text."""
+
+    page_content: str = Field(
+        ...,
+        min_length=1,
+        max_length=32000,
+        description="Extracted page text (plain or markdown)",
+    )
+    content_format: Literal["text/plain", "text/markdown"] = Field(
+        "text/plain",
+        description="Whether page_content is plain text or markdown",
+    )
+    page_title: Optional[str] = Field(None, max_length=500, description="Document title if available")
+    page_url: Optional[str] = Field(None, max_length=500, description="Page URL if available")
+    language: str = Field(
+        "zh",
+        description="Language code for prompts and output (prompt output registry)",
+    )
+
+    @field_validator("language")
+    @classmethod
+    def validate_web_content_language(cls, value: str) -> str:
+        """Reject unknown generation language codes."""
+        return _validate_prompt_output_language(value)
+
+    class Config:
+        """Configuration for WebContentGenerateRequest."""
+
+        json_schema_extra = {
+            "example": {
+                "page_content": "# Article\n\nParagraph...",
+                "content_format": "text/markdown",
+                "page_title": "Example",
+                "page_url": "https://example.com/page",
+                "language": "zh",
+            }
+        }
+
+
+class WebContentMindmapPngRequest(WebContentGenerateRequest):
+    """Request for /api/web_content_mindmap_png — generate mind map and return PNG bytes."""
+
+    width: Optional[int] = Field(1200, ge=400, le=4000, description="PNG width in pixels")
+    height: Optional[int] = Field(800, ge=300, le=3000, description="PNG height in pixels")
 
 
 class DiagramCreateRequest(BaseModel):

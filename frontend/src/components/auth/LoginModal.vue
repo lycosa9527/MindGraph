@@ -102,21 +102,29 @@ function focusSesLogin() {
     <Transition name="modal">
       <div
         v-if="isVisible"
-        class="fixed inset-0 z-1000 flex items-center justify-center p-4"
+        class="login-modal-overlay fixed inset-0 z-1000 overflow-y-auto overscroll-y-contain"
         :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
-        @click="handleBackdropClick"
       >
         <!-- Full-screen scrim (skipped on /auth so the route background shows through) -->
         <div
           v-if="!lightBackdrop"
-          class="absolute inset-0 bg-stone-900/70"
-          :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
+          class="absolute inset-0 bg-stone-900/70 pointer-events-none"
         />
 
-        <!-- Modal -->
-        <div class="relative w-full max-w-sm">
-          <!-- Card -->
-          <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
+        <!-- min-h-full: scroll tall modals inside the overlay; @click.self: backdrop only (not card) -->
+        <div
+          class="relative min-h-full flex items-center justify-center px-4 pt-4"
+          :class="
+            lightBackdrop
+              ? 'pb-[max(6.5rem,env(safe-area-inset-bottom,0px))] sm:pb-20 md:p-4'
+              : 'pb-4'
+          "
+          @click.self="handleBackdropClick"
+        >
+          <!-- Modal -->
+          <div class="relative w-full max-w-sm">
+            <!-- Card -->
+            <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
             <!-- Close button -->
             <el-button
               class="close-btn"
@@ -964,6 +972,7 @@ function focusSesLogin() {
                 </div>
               </template>
             </form>
+            </div>
           </div>
         </div>
       </div>
@@ -972,6 +981,11 @@ function focusSesLogin() {
 </template>
 
 <style scoped>
+/* Scroll and overscroll stay on the overlay (mobile: avoid dragging the page behind). */
+.login-modal-overlay {
+  -webkit-overflow-scrolling: touch;
+}
+
 /* Modal transitions */
 .modal-enter-active,
 .modal-leave-active {

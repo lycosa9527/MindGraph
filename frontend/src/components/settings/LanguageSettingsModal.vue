@@ -196,11 +196,11 @@ function onClose(): void {
           v-model="draftVersion"
           class="version-group flex w-full gap-3"
         >
-          <el-radio value="chinese">
-            {{ t('settings.version.chinese') }}
-          </el-radio>
           <el-radio value="international">
             {{ t('settings.version.international') }}
+          </el-radio>
+          <el-radio value="chinese">
+            {{ t('settings.version.chinese') }}
           </el-radio>
         </el-radio-group>
       </div>

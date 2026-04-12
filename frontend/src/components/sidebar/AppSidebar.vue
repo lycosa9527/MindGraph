@@ -8,7 +8,7 @@ import { provide } from 'vue'
 
 import { Menu } from 'lucide-vue-next'
 
-import { AccountInfoModal, LoginModal } from '@/components/auth'
+import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { appSidebarInjectionKey, useAppSidebar } from '@/composables/sidebar/useAppSidebar'
 
@@ -18,8 +18,14 @@ import AppSidebarNav from './AppSidebarNav.vue'
 const sidebar = useAppSidebar()
 provide(appSidebarInjectionKey, sidebar)
 
-const { isCollapsed, showLanguageSettingsModal, showLoginModal, showAccountModal, authStore } =
-  sidebar
+const {
+  isCollapsed,
+  showLanguageSettingsModal,
+  showLoginModal,
+  showAccountModal,
+  showUpdateLogModal,
+  authStore,
+} = sidebar
 </script>
 
 <template>
@@ -67,6 +73,7 @@ const { isCollapsed, showLanguageSettingsModal, showLoginModal, showAccountModal
       v-model:visible="showAccountModal"
       @success="authStore.checkAuth()"
     />
+    <UpdateLogModal v-model:visible="showUpdateLogModal" />
   </div>
 </template>
 

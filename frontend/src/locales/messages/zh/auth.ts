@@ -1,6 +1,11 @@
 /** Chinese UI — auth */
 export default {
   'auth.accountInfo': '账户信息',
+  'auth.updateLog': '更新日志',
+  'auth.updateLogModalTitle': '更新日志',
+  'auth.updateLogMaintainerNote': '嗯嗯，本平台由 Roy 认真维护中 ✨',
+  'auth.updateLogLoadError': '暂时无法加载更新日志，请稍后重试。',
+  'auth.updateLogEmpty': '暂无更新说明。',
   'auth.backToLogin': '返回登录',
   'auth.captcha': '验证码',
   'auth.captchaLength4': '请输入4位验证码',

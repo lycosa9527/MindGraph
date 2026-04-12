@@ -19,6 +19,7 @@ All Rights Reserved
 Proprietary License
 """
 
+from codecs import getincrementaldecoder
 from dataclasses import dataclass
 from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
 from io import BytesIO
@@ -390,32 +391,54 @@ class AsyncDifyClient:
                         }
                         return
 
-                    async for line_bytes in response.content:
-                        try:
-                            line = line_bytes.decode("utf-8").strip()
+                    decoder = getincrementaldecoder("utf-8")()
+                    line_buffer = ""
+                    async for raw_chunk in response.content.iter_chunked(8192):
+                        line_buffer += decoder.decode(raw_chunk)
+                        while "\n" in line_buffer:
+                            line, line_buffer = line_buffer.split("\n", 1)
+                            line = line.strip()
                             if not line:
                                 continue
-
                             if line.startswith("data: "):
                                 data_content = line[6:]
                             elif line.startswith("data:"):
                                 data_content = line[5:]
                             else:
                                 continue
-
-                            if data_content.strip():
-                                if data_content.strip() == "[DONE]":
-                                    logger.debug("Received [DONE] signal from Dify")
-                                    break
-
-                                chunk_data = json.loads(data_content.strip())
+                            data_content = data_content.strip()
+                            if not data_content:
+                                continue
+                            if data_content == "[DONE]":
+                                logger.debug("Received [DONE] signal from Dify")
+                                break
+                            try:
+                                chunk_data = json.loads(data_content)
                                 chunk_data["timestamp"] = int(time.time() * 1000)
                                 yield chunk_data
-
-                        except json.JSONDecodeError:
+                            except json.JSONDecodeError:
+                                continue
+                            except Exception as exc:
+                                logger.error("Error processing SSE JSON: %s", exc)
+                                continue
+                    line_buffer += decoder.decode(b"", final=True)
+                    for line in line_buffer.split("\n"):
+                        line = line.strip()
+                        if not line:
                             continue
-                        except Exception as e:
-                            logger.error("Error processing line: %s", e)
+                        if line.startswith("data: "):
+                            data_content = line[6:].strip()
+                        elif line.startswith("data:"):
+                            data_content = line[5:].strip()
+                        else:
+                            continue
+                        if not data_content or data_content == "[DONE]":
+                            continue
+                        try:
+                            chunk_data = json.loads(data_content)
+                            chunk_data["timestamp"] = int(time.time() * 1000)
+                            yield chunk_data
+                        except json.JSONDecodeError:
                             continue
 
                     logger.debug("[DIFY] Async stream completed successfully")

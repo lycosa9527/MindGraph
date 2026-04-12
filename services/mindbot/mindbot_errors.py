@@ -1,0 +1,47 @@
+"""MindBot error codes and HTTP mapping for DingTalk callbacks and admin routes."""
+
+from __future__ import annotations
+
+from enum import Enum
+from typing import Optional
+
+
+class MindbotErrorCode(str, Enum):
+    """Stable string codes for logs, optional response headers, and API JSON."""
+
+    OK = "MINDBOT_OK"
+    FEATURE_DISABLED = "MINDBOT_FEATURE_DISABLED"
+    INVALID_JSON = "MINDBOT_INVALID_JSON"
+    INVALID_BODY = "MINDBOT_INVALID_BODY"
+    MISSING_ROBOT_CODE = "MINDBOT_MISSING_ROBOT_CODE"
+    CONFIG_NOT_FOUND = "MINDBOT_CONFIG_NOT_FOUND"
+    INVALID_SIGNATURE = "MINDBOT_INVALID_SIGNATURE"
+    ROBOT_CODE_MISMATCH = "MINDBOT_ROBOT_CODE_MISMATCH"
+    DUPLICATE_MESSAGE = "MINDBOT_DUPLICATE_MESSAGE"
+    REDIS_UNAVAILABLE_FOR_DEDUP = "MINDBOT_REDIS_UNAVAILABLE_FOR_DEDUP"
+    EMPTY_USER_MESSAGE = "MINDBOT_EMPTY_USER_MESSAGE"
+    DIFY_FAILED = "MINDBOT_DIFY_FAILED"
+    MISSING_SESSION_WEBHOOK = "MINDBOT_MISSING_SESSION_WEBHOOK"
+    SESSION_WEBHOOK_FAILED = "MINDBOT_SESSION_WEBHOOK_FAILED"
+    SESSION_WEBHOOK_INVALID_URL = "MINDBOT_SESSION_WEBHOOK_INVALID_URL"
+    DINGTALK_TOKEN_FAILED = "MINDBOT_DINGTALK_TOKEN_FAILED"
+    DINGTALK_OPENAPI_REPLY_FAILED = "MINDBOT_DINGTALK_OPENAPI_REPLY_FAILED"
+    ADMIN_CONFIG_NOT_FOUND = "MINDBOT_ADMIN_CONFIG_NOT_FOUND"
+    ADMIN_ORGANIZATION_NOT_FOUND = "MINDBOT_ADMIN_ORGANIZATION_NOT_FOUND"
+    ADMIN_ROBOT_CODE_CONFLICT = "MINDBOT_ADMIN_ROBOT_CODE_CONFLICT"
+    ADMIN_SECRETS_REQUIRED = "MINDBOT_ADMIN_SECRETS_REQUIRED"
+
+
+def mindbot_error_headers(
+    code: MindbotErrorCode,
+    *,
+    organization_id: Optional[int] = None,
+    robot_code: Optional[str] = None,
+) -> dict[str, str]:
+    """Headers attached to DingTalk callback HTTP responses for observability."""
+    result: dict[str, str] = {"X-MindBot-Error-Code": code.value}
+    if organization_id is not None:
+        result["X-MindBot-Organization-Id"] = str(int(organization_id))
+    if robot_code and isinstance(robot_code, str) and robot_code.strip():
+        result["X-MindBot-Robot-Code"] = robot_code.strip()
+    return result

@@ -1,0 +1,174 @@
+{
+  "extName": {
+    "message": "MindGraph — 网页转思维导图",
+    "description": "扩展名称"
+  },
+  "extDescription": {
+    "message": "将当前网页通过 MindGraph 生成为思维导图 PNG。",
+    "description": "商店描述"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "工具栏提示"
+  },
+  "settingsEyebrow": {
+    "message": "设置",
+    "description": "设置区小标题"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "弹窗标题"
+  },
+  "mainTagline": {
+    "message": "从页面到结构化导图，一步完成。",
+    "description": "主界面副标题"
+  },
+  "btnGenerate": {
+    "message": "生成思维导图",
+    "description": "主按钮"
+  },
+  "btnSettings": {
+    "message": "设置",
+    "description": "设置按钮"
+  },
+  "settingsTitle": {
+    "message": "连接",
+    "description": "设置标题"
+  },
+  "settingsLead": {
+    "message": "请使用与 MindGraph API 令牌流程相同的凭据。",
+    "description": "设置说明"
+  },
+  "labelBaseUrl": {
+    "message": "基础地址",
+    "description": "标签"
+  },
+  "placeholderBaseUrl": {
+    "message": "https://你的服务.example.com",
+    "description": "占位符"
+  },
+  "labelAccount": {
+    "message": "账号（手机号）",
+    "description": "标签"
+  },
+  "placeholderAccount": {
+    "message": "用于 X-MG-Account 的手机号",
+    "description": "占位符"
+  },
+  "labelToken": {
+    "message": "API 令牌",
+    "description": "标签"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "占位符"
+  },
+  "btnSave": {
+    "message": "保存",
+    "description": "保存按钮"
+  },
+  "btnBack": {
+    "message": "返回",
+    "description": "返回按钮"
+  },
+  "btnClose": {
+    "message": "关闭",
+    "description": "关闭扩展弹窗"
+  },
+  "statusWorking": {
+    "message": "处理中…",
+    "description": "状态"
+  },
+  "statusDownloadStarted": {
+    "message": "已开始下载。",
+    "description": "状态"
+  },
+  "statusSaved": {
+    "message": "已保存。",
+    "description": "状态"
+  },
+  "statusVerifying": {
+    "message": "正在校验凭据…",
+    "description": "保存前"
+  },
+  "errFillAll": {
+    "message": "请填写全部字段。",
+    "description": "校验"
+  },
+  "errNoTab": {
+    "message": "没有活动标签页。",
+    "description": "错误"
+  },
+  "errFailed": {
+    "message": "发生错误。",
+    "description": "通用错误"
+  },
+  "errSettingsIncomplete": {
+    "message": "请打开「设置」，填写基础地址、账号（手机号）和 API 令牌。",
+    "description": "后台错误"
+  },
+  "errNoPageText": {
+    "message": "无法读取页面文本。请在页面中选中文字，或尝试其他网站。",
+    "description": "后台错误"
+  },
+  "errApi": {
+    "message": "接口 $1：$2",
+    "description": "接口错误"
+  },
+  "errRestrictedPage": {
+    "message": "无法在此页面使用（仅支持 http/https 网页）。请打开普通网站后重试。",
+    "description": "非网页地址"
+  },
+  "errRateLimit": {
+    "message": "请求过于频繁，请稍候再试。",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "服务暂时不可用，请稍后重试。",
+    "description": "HTTP 503"
+  },
+  "errNotPng": {
+    "message": "服务器未返回 PNG 图片。请检查基础地址与账号设置。",
+    "description": "内容类型错误"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "通知标题"
+  },
+  "contextMenuGenerate": {
+    "message": "生成思维导图 PNG",
+    "description": "右键菜单"
+  },
+  "settingsAdvanced": {
+    "message": "高级",
+    "description": "设置分区"
+  },
+  "labelSaveAs": {
+    "message": "每次下载时询问保存位置",
+    "description": "复选框"
+  },
+  "stageReadingPage": {
+    "message": "正在读取页面内容…",
+    "description": "进度：读取页面"
+  },
+  "stageSending": {
+    "message": "正在发送到 MindGraph 服务器…",
+    "description": "进度：发送请求"
+  },
+  "stageServerProcessing": {
+    "message": "服务器正在生成思维导图…",
+    "description": "进度：等待服务端"
+  },
+  "stageReceiving": {
+    "message": "正在从服务器接收图片…",
+    "description": "进度：接收响应"
+  },
+  "stageSaving": {
+    "message": "正在保存文件…",
+    "description": "进度：浏览器下载"
+  },
+  "errNetwork": {
+    "message": "无法连接服务器，请检查基础地址与网络。",
+    "description": "请求失败"
+  }
+}

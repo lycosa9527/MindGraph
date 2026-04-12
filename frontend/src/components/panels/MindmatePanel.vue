@@ -5,11 +5,12 @@
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
 import { computed, nextTick, ref, watch } from 'vue'
+import { useRoute } from 'vue-router'
 
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
-import { useAuthStore, useMindMateStore } from '@/stores'
+import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 
 import ShareExportModal from './ShareExportModal.vue'
 import ConversationHistory from './mindmate/ConversationHistory.vue'
@@ -33,6 +34,17 @@ const emit = defineEmits<{
 
 // Computed for mode checks
 const isFullpageMode = computed(() => props.mode === 'fullpage')
+
+const route = useRoute()
+const uiStore = useUIStore()
+
+/** Simplified UI: chat list is in AppSidebar; hide redundant header drawer + menu. */
+const hideHistoryToggle = computed(
+  () =>
+    uiStore.uiVersion === 'international' &&
+    isFullpageMode.value &&
+    route.path.startsWith('/mindmate')
+)
 
 const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
@@ -305,6 +317,7 @@ function isLastAssistantMessage(messageId: string): boolean {
       :title="displayTitle"
       :is-typing="isTypingTitle"
       :is-authenticated="authStore.isAuthenticated"
+      :hide-history-toggle="hideHistoryToggle"
       :conversations="mindMate.conversations.value"
       :is-loading-history="historyLoading"
       :current-conversation-id="mindMateStore.currentConversationId"
@@ -315,9 +328,9 @@ function isLastAssistantMessage(messageId: string): boolean {
       @delete-history="deleteConversationFromHistory"
     />
 
-    <!-- Conversation History Drawer - fullpage mode only; panel uses header dropdown -->
+    <!-- Conversation History Drawer - fullpage when sidebar does not list chats -->
     <ConversationHistory
-      v-if="isFullpageMode"
+      v-if="isFullpageMode && !hideHistoryToggle"
       v-model:visible="showHistorySidebar"
       :conversations="mindMate.conversations.value"
       :is-loading="historyLoading"

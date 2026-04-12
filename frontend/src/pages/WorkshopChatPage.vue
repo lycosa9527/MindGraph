@@ -51,6 +51,7 @@ import { LAST_SEEN_ONLINE_MAX_AGE_MS } from '@/utils/workshopContactLastSeenStor
 const AccountInfoModal = defineAsyncComponent(
   () => import('@/components/auth/AccountInfoModal.vue')
 )
+const UpdateLogModal = defineAsyncComponent(() => import('@/components/auth/UpdateLogModal.vue'))
 const ChannelSettingsDialog = defineAsyncComponent(
   () => import('@/components/workshop-chat/ChannelSettingsDialog.vue')
 )
@@ -102,6 +103,7 @@ const contactsSearchInput = ref('')
 let contactsSearchDebounce: ReturnType<typeof setTimeout> | null = null
 const loadingMoreContacts = ref(false)
 const showAccountModal = ref(false)
+const showUpdateLogModal = ref(false)
 const showTeachingGroupsManage = ref(false)
 
 const messageSearchQuery = ref('')
@@ -1221,6 +1223,8 @@ function handleSignOut(): void {
 function handlePersonalNavigate(page: string): void {
   if (page === 'profile') {
     showAccountModal.value = true
+  } else if (page === 'update-log') {
+    showUpdateLogModal.value = true
   }
 }
 
@@ -2047,6 +2051,10 @@ function handleTopicMove(topicId: number): void {
     <AccountInfoModal
       v-if="showAccountModal"
       v-model:visible="showAccountModal"
+    />
+    <UpdateLogModal
+      v-if="showUpdateLogModal"
+      v-model:visible="showUpdateLogModal"
     />
   </div>
 </template>

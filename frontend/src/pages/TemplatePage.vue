@@ -3,9 +3,12 @@
  * TemplatePage - Template library with filters and thumbnail grid
  * Features: Scene filters, Subject filters, Template thumbnails
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { Folder, Search } from 'lucide-vue-next'
+
+import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
+import { apiRequest } from '@/utils/apiClient'
 
 // Filter options
 const typeOptions = ['全部', 'MindMate', 'MindGraph'] as const
@@ -46,7 +49,58 @@ interface TemplateResource {
   downloads: number
 }
 
-// Mock template data (will be replaced with API later)
+const { featureMarkets } = useFeatureFlags()
+const apiListings = ref<TemplateResource[]>([])
+
+async function fetchMarketTemplateListings(): Promise<void> {
+  if (!featureMarkets.value) {
+    apiListings.value = []
+    return
+  }
+  const params = new URLSearchParams()
+  params.set('listing_kind', 'template')
+  if (activeScene.value !== '全部') {
+    params.set('scene', activeScene.value)
+  }
+  if (activeSubject.value !== '全部') {
+    params.set('subject', activeSubject.value)
+  }
+  if (activeType.value !== '全部') {
+    params.set('product_type', activeType.value)
+  }
+  const res = await apiRequest(`/api/markets/listings?${params.toString()}`)
+  if (!res.ok) {
+    apiListings.value = []
+    return
+  }
+  const rows = (await res.json()) as Array<{
+    id: number
+    title: string
+    product_type: string | null
+    scene: string | null
+    subject: string | null
+  }>
+  apiListings.value = rows.map((row) => ({
+    id: String(row.id),
+    title: row.title,
+    thumbnail: '',
+    type: row.product_type === 'MindMate' ? 'MindMate' : 'MindGraph',
+    scene: row.scene ?? '',
+    subject: row.subject ?? '',
+    views: 0,
+    downloads: 0,
+  }))
+}
+
+watch(
+  [featureMarkets, activeType, activeScene, activeSubject],
+  () => {
+    void fetchMarketTemplateListings()
+  },
+  { immediate: true }
+)
+
+// Mock template data when 市场 feature is off
 const mockTemplates: TemplateResource[] = [
   {
     id: '1',
@@ -170,9 +224,16 @@ const mockTemplates: TemplateResource[] = [
   },
 ]
 
+const baseTemplates = computed(() => {
+  if (featureMarkets.value) {
+    return apiListings.value
+  }
+  return mockTemplates
+})
+
 // Filtered templates
 const filteredTemplates = computed(() => {
-  return mockTemplates.filter((template) => {
+  return baseTemplates.value.filter((template) => {
     const matchesType = activeType.value === '全部' || template.type === activeType.value
     const matchesScene = activeScene.value === '全部' || template.scene === activeScene.value
     const matchesSubject =
@@ -225,8 +286,11 @@ function getPlaceholderColor(id: string): string {
     'from-lime-400 to-green-500',
     'from-fuchsia-400 to-purple-500',
   ]
-  const index = parseInt(id) % colors.length
-  return colors[index]
+  let hash = 0
+  for (let i = 0; i < id.length; i += 1) {
+    hash = (hash * 31 + id.charCodeAt(i)) >>> 0
+  }
+  return colors[hash % colors.length]
 }
 </script>
 

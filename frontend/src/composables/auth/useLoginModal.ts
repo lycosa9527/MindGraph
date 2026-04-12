@@ -268,25 +268,12 @@ export function useLoginModal(
           uiStore.syncGuestLocaleFromBrowser()
         }
         void refreshCaptcha()
-        if (authStore.showSessionExpiredModal) {
-          document.body.style.overflow = 'hidden'
-        }
+        document.body.style.overflow = 'hidden'
       } else {
         document.body.style.overflow = ''
       }
     },
     { immediate: true }
-  )
-
-  watch(
-    () => authStore.showSessionExpiredModal,
-    (isSessionExpired) => {
-      if (isSessionExpired && props.visible) {
-        document.body.style.overflow = 'hidden'
-      } else if (!props.visible) {
-        document.body.style.overflow = ''
-      }
-    }
   )
 
   onBeforeUnmount(() => {
@@ -803,13 +790,11 @@ export function useLoginModal(
     }
   }
 
-  function handleBackdropClick(event: MouseEvent) {
+  function handleBackdropClick() {
     if (props.persistent) {
       return
     }
-    if (event.target === event.currentTarget) {
-      closeModal()
-    }
+    closeModal()
   }
 
   return {

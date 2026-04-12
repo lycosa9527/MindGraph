@@ -2,7 +2,7 @@
 /**
  * ChatHistory - Grouped list of recent chat conversations
  * Design: Clean minimalist grouped by time periods
- * Shows max 10 items initially with "Show more" option
+ * Shows a limited batch initially (default 10; higher on fullpage MindMate) with "Show more".
  */
 import { computed, ref, watch } from 'vue'
 
@@ -29,17 +29,25 @@ import {
 } from '@/composables/queries'
 import { type MindMateConversation, useAuthStore, useMindMateStore } from '@/stores'
 
-const _props = defineProps<{
-  isBlurred?: boolean
-}>()
+const props = withDefaults(
+  defineProps<{
+    isBlurred?: boolean
+    /** Tighter horizontal padding (e.g. simplified MindMate full-height sidebar). */
+    compact?: boolean
+    /** Items shown before "Show more" (API returns up to 50). */
+    initialVisibleLimit?: number
+  }>(),
+  {
+    compact: false,
+    initialVisibleLimit: 10,
+  }
+)
 
 const { t } = useLanguage()
 const _authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
 
-// Show all or just 10
 const showAll = ref(false)
-const INITIAL_LIMIT = 10
 
 // Vue Query queries
 const { data: conversationsData, isLoading: isLoadingConversations } = useConversations()
@@ -106,8 +114,8 @@ const groupedConversations = computed((): GroupedConversations => {
   const yesterdayStart = todayStart - 24 * 60 * 60 * 1000
   const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000
 
-  // Limit to 10 unless showAll
-  const items = showAll.value ? conversations.value : conversations.value.slice(0, INITIAL_LIMIT)
+  const limit = props.initialVisibleLimit
+  const items = showAll.value ? conversations.value : conversations.value.slice(0, limit)
 
   items.forEach((conv) => {
     // Pinned items go to pinned group regardless of time
@@ -133,9 +141,11 @@ const groupedConversations = computed((): GroupedConversations => {
   return groups
 })
 
-// Check if there are more conversations to show
-const hasMore = computed(() => conversations.value.length > INITIAL_LIMIT && !showAll.value)
-const remainingCount = computed(() => conversations.value.length - INITIAL_LIMIT)
+const hasMore = computed(() => {
+  const limit = props.initialVisibleLimit
+  return conversations.value.length > limit && !showAll.value
+})
+const remainingCount = computed(() => conversations.value.length - props.initialVisibleLimit)
 
 // Group labels
 const groupLabels = computed(() => ({
@@ -221,16 +231,24 @@ function toggleShowAll(): void {
 </script>
 
 <template>
-  <div class="chat-history flex flex-col border-t border-stone-200 relative overflow-hidden">
+  <div
+    class="chat-history flex flex-col border-t border-stone-200 relative overflow-hidden"
+    :class="{ 'chat-history--compact': props.compact }"
+  >
     <!-- Header -->
-    <div class="px-4 py-3">
+    <div :class="props.compact ? 'px-3 py-2.5' : 'px-4 py-3'">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">
         {{ t('sidebar.chatHistory.title') }}
       </div>
     </div>
 
     <!-- Scrollable conversation list -->
-    <ElScrollbar class="flex-1 px-4 pb-4">
+    <ElScrollbar
+      :class="[
+        'flex-1 min-h-0',
+        props.compact ? 'chat-history-scroll--compact' : 'px-4 pb-4',
+      ]"
+    >
       <div :class="isBlurred ? 'blur-sm pointer-events-none select-none' : ''">
         <!-- Loading State -->
         <div
@@ -527,7 +545,7 @@ function toggleShowAll(): void {
 
           <!-- Show Less button -->
           <button
-            v-if="showAll && conversations.length > INITIAL_LIMIT"
+            v-if="showAll && conversations.length > initialVisibleLimit"
             class="show-more-btn"
             @click="toggleShowAll"
           >
@@ -559,6 +577,35 @@ function toggleShowAll(): void {
 <style scoped>
 .chat-history {
   min-height: 120px;
+}
+
+.chat-history--compact {
+  min-height: 0;
+}
+
+/* Compact: avoid px-4 + scrollbar gutter doubling the right gap; pad the scroll view instead. */
+.chat-history-scroll--compact :deep(.el-scrollbar__view) {
+  box-sizing: border-box;
+  padding-left: 12px;
+  padding-right: 2px;
+  padding-bottom: 12px;
+}
+
+.chat-history-scroll--compact :deep(.el-scrollbar__bar.is-vertical) {
+  right: 0;
+  width: 5px;
+}
+
+.chat-history-scroll--compact :deep(.el-scrollbar__thumb) {
+  background-color: rgb(214 211 209 / 0.9);
+}
+
+.chat-history--compact .conversation-item {
+  padding: 6px 4px 6px 6px;
+}
+
+.chat-history--compact .group-label {
+  padding-left: 0;
 }
 
 .group-section {

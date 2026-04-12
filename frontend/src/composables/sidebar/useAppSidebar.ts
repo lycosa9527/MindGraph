@@ -33,6 +33,7 @@ export function useAppSidebar() {
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,
+    featureMindbot,
     workshopChatPreviewOrgIds,
     featureOrgAccess,
   } = useFeatureFlags()
@@ -54,12 +55,23 @@ export function useAppSidebar() {
     if (path.startsWith('/library')) return 'library'
     if (path.startsWith('/gewe')) return 'gewe'
     if (path.startsWith('/school-dashboard')) return 'school-dashboard'
-    if (path.startsWith('/admin')) return 'admin'
+    if (path.startsWith('/admin')) {
+      const tab = router.currentRoute.value.query.tab
+      if (tab === 'mindbot') {
+        return 'mindbot'
+      }
+      return 'admin'
+    }
     if (path.startsWith('/smart-response')) return 'smart-response'
     if (path.startsWith('/teacher-usage')) return 'teacher-usage'
     if (path.startsWith('/workshop-chat')) return 'workshop-chat'
     return 'mindmate'
   })
+
+  /** Simplified UI on MindMate: sidebar shows only chat history (no other module entries). */
+  const isSimplifiedMindmateOnlyNav = computed(
+    () => uiStore.uiVersion === 'international' && currentMode.value === 'mindmate'
+  )
 
   const isAuthenticated = computed(() => authStore.isAuthenticated)
 
@@ -98,6 +110,7 @@ export function useAppSidebar() {
 
   const showLoginModal = ref(false)
   const showAccountModal = ref(false)
+  const showUpdateLogModal = ref(false)
   const showLanguageSettingsModal = ref(false)
 
   function toggleSidebar() {
@@ -122,6 +135,7 @@ export function useAppSidebar() {
     'smart-response': '/smart-response',
     'teacher-usage': '/teacher-usage',
     'workshop-chat': '/workshop-chat',
+    mindbot: '/admin?tab=mindbot',
   }
 
   function setMode(index: string) {
@@ -143,6 +157,10 @@ export function useAppSidebar() {
 
   function openAccountModal() {
     showAccountModal.value = true
+  }
+
+  function openUpdateLogModal() {
+    showUpdateLogModal.value = true
   }
 
   function openLanguageSettingsModal() {
@@ -172,6 +190,10 @@ export function useAppSidebar() {
   }
 
   function handleLogoClick() {
+    if (uiStore.uiVersion === 'international') {
+      router.push('/mindgraph')
+      return
+    }
     if (currentMode.value === 'askonce') {
       startNewAskOnce()
     } else {
@@ -224,8 +246,10 @@ export function useAppSidebar() {
     featureSmartResponse,
     featureTeacherUsage,
     featureWorkshopChat,
+    featureMindbot,
     isCollapsed,
     currentMode,
+    isSimplifiedMindmateOnlyNav,
     hasOrganization,
     isAuthenticated,
     isAdminOrManager,
@@ -236,11 +260,13 @@ export function useAppSidebar() {
     userAvatar,
     showLoginModal,
     showAccountModal,
+    showUpdateLogModal,
     showLanguageSettingsModal,
     toggleSidebar,
     setMode,
     openLoginModal,
     openAccountModal,
+    openUpdateLogModal,
     openLanguageSettingsModal,
     handleLogout,
     startNewChat,

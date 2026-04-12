@@ -13,12 +13,14 @@ import { useRoute, useRouter } from 'vue-router'
 import type { TabsInstance } from 'element-plus'
 
 import {
+  ChatDotRound,
   ChatLineRound,
   Coin,
   DataAnalysis,
   Reading,
   School,
   Setting,
+  ShoppingCart,
   Ticket,
   User,
   UserFilled,
@@ -28,6 +30,8 @@ import AdminDashboardTab from '@/components/admin/AdminDashboardTab.vue'
 import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
+import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
+import AdminMindBotTab from '@/components/admin/AdminMindBotTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminTokensTab from '@/components/admin/AdminTokensTab.vue'
@@ -40,7 +44,7 @@ import { useAuthStore } from '@/stores'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { featureGewe, featureLibrary } = useFeatureFlags()
+const { featureGewe, featureLibrary, featureMarkets, featureMindbot } = useFeatureFlags()
 const { t } = useLanguage()
 
 const activeTab = ref((route.query.tab as string) || 'dashboard')
@@ -53,6 +57,7 @@ const allTabsConfig: ReadonlyArray<{
   labelKey: string
   icon: Component
   adminOnly: boolean
+  allowManager?: boolean
 }> = [
   { name: 'dashboard', labelKey: 'admin.dashboard', icon: DataAnalysis, adminOnly: false },
   { name: 'users', labelKey: 'admin.users', icon: User, adminOnly: false },
@@ -61,6 +66,14 @@ const allTabsConfig: ReadonlyArray<{
   { name: 'tokens', labelKey: 'admin.tokens', icon: Ticket, adminOnly: true },
   { name: 'features', labelKey: 'admin.featuresTab', icon: Setting, adminOnly: true },
   { name: 'library', labelKey: 'admin.library', icon: Reading, adminOnly: true },
+  { name: 'markets', labelKey: 'admin.markets', icon: ShoppingCart, adminOnly: true },
+  {
+    name: 'mindbot',
+    labelKey: 'admin.mindbot',
+    icon: ChatDotRound,
+    adminOnly: true,
+    allowManager: true,
+  },
   { name: 'database', labelKey: 'admin.database.tab', icon: Coin, adminOnly: true },
   { name: 'gewe', labelKey: 'admin.geweWechat', icon: ChatLineRound, adminOnly: true },
 ]
@@ -68,13 +81,27 @@ const allTabsConfig: ReadonlyArray<{
 const tabs = computed(() => {
   let visible = allTabsConfig
   if (!isAdmin.value) {
-    visible = visible.filter((tab) => !tab.adminOnly)
+    visible = visible.filter((tab) => {
+      if (!tab.adminOnly) {
+        return true
+      }
+      if (tab.allowManager && authStore.isManager) {
+        return true
+      }
+      return false
+    })
   }
   if (!featureGewe.value) {
     visible = visible.filter((tab) => tab.name !== 'gewe')
   }
   if (!featureLibrary.value) {
     visible = visible.filter((tab) => tab.name !== 'library')
+  }
+  if (!featureMarkets.value) {
+    visible = visible.filter((tab) => tab.name !== 'markets')
+  }
+  if (!featureMindbot.value) {
+    visible = visible.filter((tab) => tab.name !== 'mindbot')
   }
   return visible.map((tab) => ({ ...tab, label: t(tab.labelKey) }))
 })
@@ -176,6 +203,14 @@ onMounted(scheduleTabBarUpdate)
 
           <template v-else-if="activeTab === 'library'">
             <AdminLibraryTab />
+          </template>
+
+          <template v-else-if="activeTab === 'markets'">
+            <AdminMarketsTab />
+          </template>
+
+          <template v-else-if="activeTab === 'mindbot'">
+            <AdminMindBotTab />
           </template>
 
           <template v-else-if="activeTab === 'database'">

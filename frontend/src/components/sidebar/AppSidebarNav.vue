@@ -2,7 +2,8 @@
 /**
  * Sidebar feature navigation and inline history accordion panels.
  */
-import { inject, reactive } from 'vue'
+import { computed, inject, reactive } from 'vue'
+import { useRoute } from 'vue-router'
 
 import {
   ChatDotRound,
@@ -19,7 +20,7 @@ import {
   VideoPlay,
 } from '@element-plus/icons-vue'
 
-import { ChevronDown, MessageSquare, Settings, Watch } from 'lucide-vue-next'
+import { Bot, ChevronDown, MessageSquare, Settings, Watch } from 'lucide-vue-next'
 
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
@@ -37,10 +38,47 @@ if (!_raw) {
   throw new Error('AppSidebarNav must be used inside AppSidebar')
 }
 const s = reactive(_raw)
+
+const route = useRoute()
+/** Fullpage `/mindmate`: show more chats in the sidebar by default (API returns up to 50). */
+const mindmatePageChatHistoryLimit = computed(() =>
+  route.path.startsWith('/mindmate') ? 50 : 10
+)
 </script>
 
 <template>
+  <!-- Simplified UI on MindMate: conversation history only (no module list) -->
+  <template v-if="s.isSimplifiedMindmateOnlyNav">
+    <div
+      v-if="!s.isCollapsed"
+      class="sidebar-nav-scroll sidebar-nav-scroll--mindmate-only"
+    >
+      <ChatHistory
+        compact
+        :initial-visible-limit="mindmatePageChatHistoryLimit"
+      />
+    </div>
+    <div
+      v-else
+      class="sidebar-nav-scroll sidebar-nav-scroll--collapsed flex flex-col items-center pt-2"
+    >
+      <el-tooltip
+        :content="s.t('sidebar.expandSidebar')"
+        placement="right"
+      >
+        <button
+          type="button"
+          class="nav-item nav-item--collapsed"
+          :aria-label="s.t('sidebar.expandSidebar')"
+          @click="s.toggleSidebar"
+        >
+          <el-icon><ChatLineSquare /></el-icon>
+        </button>
+      </el-tooltip>
+    </div>
+  </template>
   <div
+    v-else
     class="sidebar-nav-scroll"
     :class="{
       'sidebar-nav-scroll--collapsed': s.isCollapsed,
@@ -71,7 +109,7 @@ const s = reactive(_raw)
         v-if="s.showPanel('mindmate')"
         class="sidebar-panel"
       >
-        <ChatHistory />
+        <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
       </div>
     </transition>
 
@@ -431,6 +469,26 @@ const s = reactive(_raw)
       </el-tooltip>
 
       <el-tooltip
+        v-if="s.isAdmin && s.featureMindbot"
+        :content="s.t('sidebar.mindbot')"
+        placement="right"
+        :disabled="!s.isCollapsed"
+      >
+        <div
+          class="nav-item"
+          :class="s.navItemClass('mindbot')"
+          @click="s.setMode('mindbot')"
+        >
+          <el-icon><Bot /></el-icon>
+          <span
+            v-if="!s.isCollapsed"
+            class="nav-label"
+            >{{ s.t('sidebar.mindbot') }}</span
+          >
+        </div>
+      </el-tooltip>
+
+      <el-tooltip
         v-if="s.isAdminOrManager"
         :content="s.t('admin.schoolDashboard')"
         placement="right"
@@ -474,6 +532,30 @@ const s = reactive(_raw)
 </template>
 
 <style scoped>
+.sidebar-nav-scroll--mindmate-only {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 8px 6px 8px 8px;
+}
+
+.sidebar-nav-scroll--mindmate-only :deep(.chat-history) {
+  flex: 1;
+  min-height: 0;
+  border-top: none;
+}
+
+button.nav-item {
+  appearance: none;
+  border: none;
+  background: transparent;
+  width: 100%;
+  font: inherit;
+  text-align: center;
+}
+
 /* Navigation container (no scroll — only panels scroll internally) */
 .sidebar-nav-scroll {
   flex: 1;

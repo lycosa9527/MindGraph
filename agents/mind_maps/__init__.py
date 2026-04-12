@@ -10,5 +10,6 @@ Proprietary License
 """
 
 from .mind_map_agent import MindMapAgent
+from .web_content_mind_map_agent import WebContentMindMapAgent
 
-__all__ = ["MindMapAgent"]
+__all__ = ["MindMapAgent", "WebContentMindMapAgent"]

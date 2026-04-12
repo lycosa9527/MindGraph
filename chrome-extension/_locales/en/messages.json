@@ -1,0 +1,174 @@
+{
+  "extName": {
+    "message": "MindGraph — Web to mind map",
+    "description": "Extension name"
+  },
+  "extDescription": {
+    "message": "Turn the current page into a mind map PNG via MindGraph.",
+    "description": "Extension description for store"
+  },
+  "browserActionTitle": {
+    "message": "MindGraph",
+    "description": "Toolbar tooltip"
+  },
+  "settingsEyebrow": {
+    "message": "SETTINGS",
+    "description": "Small label above settings heading"
+  },
+  "appTitle": {
+    "message": "MindGraph",
+    "description": "App title in popup"
+  },
+  "mainTagline": {
+    "message": "From page to structured map — one gesture.",
+    "description": "Subtitle on main view"
+  },
+  "btnGenerate": {
+    "message": "Generate",
+    "description": "Primary button"
+  },
+  "btnSettings": {
+    "message": "Settings",
+    "description": "Settings button"
+  },
+  "settingsTitle": {
+    "message": "Connection",
+    "description": "Settings panel title"
+  },
+  "settingsLead": {
+    "message": "Use the same credentials as the MindGraph API token flow.",
+    "description": "Settings intro"
+  },
+  "labelBaseUrl": {
+    "message": "Base URL",
+    "description": "Label"
+  },
+  "placeholderBaseUrl": {
+    "message": "https://your-host.example.com",
+    "description": "Placeholder"
+  },
+  "labelAccount": {
+    "message": "Account (phone)",
+    "description": "Label"
+  },
+  "placeholderAccount": {
+    "message": "Phone number for X-MG-Account",
+    "description": "Placeholder"
+  },
+  "labelToken": {
+    "message": "API token",
+    "description": "Label"
+  },
+  "placeholderToken": {
+    "message": "mgat_…",
+    "description": "Placeholder"
+  },
+  "btnSave": {
+    "message": "Save",
+    "description": "Save button"
+  },
+  "btnBack": {
+    "message": "Back",
+    "description": "Back button"
+  },
+  "btnClose": {
+    "message": "Close",
+    "description": "Close popup (top right)"
+  },
+  "statusWorking": {
+    "message": "Working…",
+    "description": "Status"
+  },
+  "statusDownloadStarted": {
+    "message": "Download started.",
+    "description": "Status"
+  },
+  "statusSaved": {
+    "message": "Saved.",
+    "description": "Status"
+  },
+  "statusVerifying": {
+    "message": "Checking credentials…",
+    "description": "Before save"
+  },
+  "errFillAll": {
+    "message": "Please fill all fields.",
+    "description": "Validation"
+  },
+  "errNoTab": {
+    "message": "No active tab.",
+    "description": "Error"
+  },
+  "errFailed": {
+    "message": "Something went wrong.",
+    "description": "Generic error"
+  },
+  "errSettingsIncomplete": {
+    "message": "Open Settings and enter base URL, account (phone), and API token.",
+    "description": "Background error"
+  },
+  "errNoPageText": {
+    "message": "Could not read text from this page. Select text on the page or try another site.",
+    "description": "Background error"
+  },
+  "errApi": {
+    "message": "API $1: $2",
+    "description": "API error; $1 status, $2 detail"
+  },
+  "errRestrictedPage": {
+    "message": "This page cannot be used (only http/https pages are supported). Open a normal website and try again.",
+    "description": "Non-web URL"
+  },
+  "errRateLimit": {
+    "message": "Too many requests. Wait a minute and try again.",
+    "description": "HTTP 429"
+  },
+  "errServiceUnavailable": {
+    "message": "Service temporarily unavailable. Try again later.",
+    "description": "HTTP 503"
+  },
+  "errNotPng": {
+    "message": "The server did not return a PNG image. Check your base URL and account.",
+    "description": "Wrong content type"
+  },
+  "notificationTitle": {
+    "message": "MindGraph",
+    "description": "Notification title"
+  },
+  "contextMenuGenerate": {
+    "message": "Generate mind map PNG",
+    "description": "Context menu"
+  },
+  "settingsAdvanced": {
+    "message": "Advanced",
+    "description": "Settings section"
+  },
+  "labelSaveAs": {
+    "message": "Ask where to save each file",
+    "description": "Checkbox"
+  },
+  "stageReadingPage": {
+    "message": "Reading page content…",
+    "description": "Progress: capture tab text"
+  },
+  "stageSending": {
+    "message": "Sending to MindGraph server…",
+    "description": "Progress: HTTP request started"
+  },
+  "stageServerProcessing": {
+    "message": "Server is generating your mind map…",
+    "description": "Progress: waiting for API"
+  },
+  "stageReceiving": {
+    "message": "Receiving PNG from server…",
+    "description": "Progress: download response body"
+  },
+  "stageSaving": {
+    "message": "Saving file…",
+    "description": "Progress: browser download"
+  },
+  "errNetwork": {
+    "message": "Could not reach the server. Check the base URL and your network.",
+    "description": "Fetch failed"
+  }
+}

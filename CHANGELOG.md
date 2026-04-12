@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.81.0] - 2026-04-13
+
+### Added
+- **Markets (Alipay)**: Alembic `rev_0009_markets_tables`; `models/domain/markets.py`, `repositories/markets_repo.py`, `services/markets/` (Alipay notify, page pay, settings); HTTP feature routers under `routers/features/markets/`; admin **`AdminMarketsTab.vue`** and feature-flag wiring.
+- **MindBot platform**: DingTalk HTTP callbacks and per-organization config (`routers/api/mindbot.py`, `models/domain/mindbot_config.py`, `models/domain/mindbot_usage.py`, `repositories/mindbot_repo.py`, `services/mindbot/`); Alembic `rev_0010`–`rev_0013` (org configs, usage events, education metrics, Dify inputs JSON); integration tests under `tests/services/test_mindbot_*.py`. (Streaming and production-hardening details are summarized under 5.79.0 / 5.80.0.)
+- **Web content → mind map**: `agents/mind_maps/web_content_mind_map_agent.py`, `routers/api/web_content_generation.py`, request models and prompts for page-text extraction; OpenClaw **`SKILL.md`** updates for the same flow.
+- **Changelog in product**: `GET /changelog/recent` (`routers/core/changelog.py`) backed by `services/utils/changelog_recent.py` and tests; **`UpdateLogModal.vue`** on login; `utils/env_helpers.py` for env parsing helpers where used.
+- **Chrome extension**: `chrome-extension/` client scaffold for MindGraph web capture and API usage.
+
+### Changed
+- **Frontend**: Feature flags and stores (`useFeatureFlags`, `featureFlags`); admin **`AdminPage`** / **`AdminFeaturesTab`**; sidebar, Mindmate header/panel, Workshop personal menu, Template and Workshop chat pages, International landing; i18n (`en` / `zh` / `zh-tw`); auth **`LoginModal`** / **`useLoginModal`**.
+- **Backend**: `clients/dify.py`; API registration and config (`routers/register.py`, `routers/api/config.py`, `routers/api/__init__.py`); `feature_gate.py`, Fail2ban startup gate, `redis_client.py`, `utils/auth/roles.py`, SQLite migration table order; `env.example` and **`requirements.txt`** for new dependencies.
+
+## [5.80.0] - 2026-04-13
+
+### Added
+- **MindBot production hardening** (`services/mindbot/mindbot_callback.py`, `services/mindbot/core/conv_gate.py`): Optional Redis **conversation gate** serializes first Dify bind per DingTalk chat across workers; optional ``MINDBOT_DEDUP_REQUIRE_REDIS`` returns 503 when Redis is unavailable and ``msgId`` dedup cannot run. Response headers may include ``X-MindBot-Organization-Id`` and ``X-MindBot-Robot-Code``; structured ``callback org_id=…`` log line; ``mindbot_metrics`` snapshots add ``by_organization_id`` and ``by_robot_code`` (per process).
+- **Docs** (`docs/MINDBOT_PRODUCTION.md`): DingTalk callback duration expectations, capacity formula, Redis dedup fail-open vs fail-closed, Redis 8.6+ checklist, load-testing note.
+
+### Changed
+- **Config** (`env.example`): MindBot capacity, dedup strict mode, and conv gate tuning variables.
+
+## [5.79.0] - 2026-04-13
+
+### Added
+- **MindBot / Dify streaming (optional follow-ups)** (`services/mindbot/core/dify_stream.py`, `services/mindbot/mindbot_callback.py`): Chatflow-only replies can use ``workflow_finished.data.outputs`` when there are no ``message`` deltas (optional ``MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY``). ``MINDBOT_STREAM_DEFER_TO_END`` defers all DingTalk sends until ``message_end`` (helps when ``message_replace`` runs after partial text). ``message_replace`` after at least one outbound batch logs a warning (stale partial bubbles). Redis binding for ``mindbot:dify_conv:*`` uses ``SET NX`` plus TTL refresh when the key already exists, so concurrent callbacks do not overwrite each other's Dify conversation id.
+
+### Changed
+- **Config** (`env.example`): Documented ``MINDBOT_STREAM_DEFER_TO_END`` and ``MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY``.
+
 ## [5.78.0] - 2026-04-11
 
 ### Added

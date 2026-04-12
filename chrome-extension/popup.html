@@ -1,0 +1,85 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>MindGraph</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <div class="accent-bar" aria-hidden="true"></div>
+    <div id="main-view" class="panel">
+      <header class="panel-head panel-head-with-close">
+        <div class="panel-head-titles">
+          <h1 class="title" data-i18n="appTitle"></h1>
+          <p class="lead" data-i18n="mainTagline"></p>
+        </div>
+        <button
+          type="button"
+          id="btn-close-main"
+          class="btn-icon-close"
+          data-i18n-aria-label="btnClose"
+        >
+          <span class="btn-icon-close-glyph" aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div class="actions">
+        <button type="button" id="btn-generate" class="btn btn-primary" data-i18n="btnGenerate"></button>
+        <button type="button" id="btn-settings" class="btn btn-secondary" data-i18n="btnSettings"></button>
+      </div>
+      <div class="main-status-area">
+        <div id="progress-wrap" class="progress-wrap" hidden>
+          <div class="progress-track" aria-hidden="true">
+            <div id="progress-fill" class="progress-fill"></div>
+          </div>
+          <p id="progress-stage" class="progress-stage"></p>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <div id="settings-view" class="panel" hidden>
+      <header class="panel-head panel-head-with-close">
+        <div class="panel-head-titles">
+          <p class="eyebrow" data-i18n="settingsEyebrow"></p>
+          <h1 class="title title-sm" data-i18n="settingsTitle"></h1>
+          <p class="lead" data-i18n="settingsLead"></p>
+        </div>
+        <button
+          type="button"
+          id="btn-close-settings"
+          class="btn-icon-close"
+          data-i18n-aria-label="btnClose"
+        >
+          <span class="btn-icon-close-glyph" aria-hidden="true">×</span>
+        </button>
+      </header>
+      <div class="fields">
+        <label class="field">
+          <span class="field-label" data-i18n="labelBaseUrl"></span>
+          <input type="url" id="field-base-url" data-i18n-placeholder="placeholderBaseUrl" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="labelAccount"></span>
+          <input type="text" id="field-account" data-i18n-placeholder="placeholderAccount" autocomplete="off" />
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="labelToken"></span>
+          <input type="password" id="field-token" data-i18n-placeholder="placeholderToken" autocomplete="off" />
+        </label>
+        <p class="eyebrow field-section-label" data-i18n="settingsAdvanced"></p>
+        <label class="field-row-checkbox" for="field-save-as">
+          <input type="checkbox" id="field-save-as" />
+          <span class="field-row-label" data-i18n="labelSaveAs"></span>
+        </label>
+      </div>
+      <div class="actions">
+        <button type="button" id="btn-save" class="btn btn-primary" data-i18n="btnSave"></button>
+        <button type="button" id="btn-back" class="btn btn-secondary" data-i18n="btnBack"></button>
+      </div>
+      <div class="settings-status-area">
+        <p id="settings-status" class="status" aria-live="polite"></p>
+      </div>
+    </div>
+    <script src="popup.js"></script>
+  </body>
+</html>

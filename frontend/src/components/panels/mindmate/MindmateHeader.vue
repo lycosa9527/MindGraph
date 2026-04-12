@@ -5,6 +5,9 @@ import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar, ElTooltip } 
 
 import { Close, Delete, DocumentCopy, Menu, Plus } from '@element-plus/icons-vue'
 
+import { LayoutGrid } from 'lucide-vue-next'
+
+import IntlModuleGrid from '@/components/mindgraph/IntlModuleGrid.vue'
 import { useLanguage } from '@/composables'
 import type { LocaleCode } from '@/i18n/locales'
 import { intlLocaleForUiCode } from '@/i18n/locales'
@@ -20,6 +23,8 @@ const props = withDefaults(
     conversations?: MindMateConversation[]
     isLoadingHistory?: boolean
     currentConversationId?: string | null
+    /** Fullpage: true when app sidebar already shows conversation list (e.g. simplified UI). */
+    hideHistoryToggle?: boolean
   }>(),
   {
     mode: 'panel',
@@ -29,6 +34,7 @@ const props = withDefaults(
     conversations: () => [],
     isLoadingHistory: false,
     currentConversationId: null,
+    hideHistoryToggle: false,
   }
 )
 
@@ -79,9 +85,9 @@ function handleDeleteHistory(convId: string, event: Event) {
     class="panel-header h-14 px-4 flex items-center justify-between border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
   >
     <div class="flex items-center gap-2 min-w-0 flex-1">
-      <!-- History button (drawer) - fullpage mode only -->
+      <!-- History button (drawer) - fullpage mode only; hidden when sidebar lists chats -->
       <ElTooltip
-        v-if="isFullpageMode"
+        v-if="isFullpageMode && !props.hideHistoryToggle"
         :content="t('mindmate.historyTitle')"
       >
         <ElButton
@@ -113,6 +119,18 @@ function handleDeleteHistory(convId: string, event: Event) {
         <ElIcon class="mr-1"><Plus /></ElIcon>
         {{ t('mindmate.newChat') }}
       </ElButton>
+      <IntlModuleGrid v-if="isFullpageMode">
+        <template #reference>
+          <ElButton
+            size="small"
+            class="other-modules-pill-btn"
+            :title="t('mindmate.otherModules')"
+          >
+            <LayoutGrid class="other-modules-pill-btn__icon" />
+            {{ t('mindmate.otherModules') }}
+          </ElButton>
+        </template>
+      </IntlModuleGrid>
       <!-- History dropdown - panel mode only, left of close -->
       <ElDropdown
         v-if="!isFullpageMode"
@@ -200,17 +218,63 @@ function handleDeleteHistory(convId: string, event: Event) {
 <style scoped>
 @import './mindmate.css';
 
-/* New Chat button - Swiss Design style (grey, round) */
+/* New Chat — neutral stone (primary action) */
 .new-chat-btn {
   --el-button-bg-color: #e7e5e4;
   --el-button-border-color: #d6d3d1;
   --el-button-hover-bg-color: #d6d3d1;
   --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
   --el-button-active-bg-color: #a8a29e;
   --el-button-active-border-color: #78716c;
   --el-button-text-color: #1c1917;
   font-weight: 500;
   border-radius: 9999px;
+}
+
+.dark .new-chat-btn {
+  --el-button-bg-color: #4b5563;
+  --el-button-border-color: #6b7280;
+  --el-button-hover-bg-color: #6b7280;
+  --el-button-hover-border-color: #9ca3af;
+  --el-button-hover-text-color: #f9fafb;
+  --el-button-active-bg-color: #52525b;
+  --el-button-active-border-color: #a1a1aa;
+  --el-button-text-color: #f9fafb;
+}
+
+/* Other modules — soft indigo (navigation / switch context) */
+.other-modules-pill-btn {
+  --el-button-bg-color: #eef2ff;
+  --el-button-border-color: #c7d2fe;
+  --el-button-hover-bg-color: #e0e7ff;
+  --el-button-hover-border-color: #a5b4fc;
+  --el-button-hover-text-color: #312e81;
+  --el-button-active-bg-color: #c7d2fe;
+  --el-button-active-border-color: #818cf8;
+  --el-button-text-color: #4338ca;
+  font-weight: 500;
+  border-radius: 9999px;
+  gap: 4px;
+}
+
+.dark .other-modules-pill-btn {
+  --el-button-bg-color: #312e81;
+  --el-button-border-color: #4f46e5;
+  --el-button-hover-bg-color: #4338ca;
+  --el-button-hover-border-color: #6366f1;
+  --el-button-hover-text-color: #eef2ff;
+  --el-button-active-bg-color: #4f46e5;
+  --el-button-active-border-color: #818cf8;
+  --el-button-text-color: #e0e7ff;
+}
+
+.other-modules-pill-btn__icon {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  margin-right: 2px;
+  color: currentColor;
 }
 
 /* History dropdown - panel mode */

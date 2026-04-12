@@ -19,6 +19,8 @@ from .requests.requests_diagram import (
     ExportPNGRequest,
     GeneratePNGRequest,
     GenerateDingTalkRequest,
+    WebContentGenerateRequest,
+    WebContentMindmapPngRequest,
     DiagramCreateRequest,
     DiagramUpdateRequest,
 )
@@ -112,6 +114,8 @@ __all__ = [
     "ExportPNGRequest",
     "GeneratePNGRequest",
     "GenerateDingTalkRequest",
+    "WebContentGenerateRequest",
+    "WebContentMindmapPngRequest",
     "AIAssistantRequest",
     "FrontendLogRequest",
     "FrontendLogBatchRequest",

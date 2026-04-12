@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 
-import { LogOut, User } from 'lucide-vue-next'
+import { LogOut, ScrollText, User } from 'lucide-vue-next'
 
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore } from '@/stores/auth'
@@ -69,6 +69,15 @@ function handleSignOut(): void {
       >
         <User class="ws-popover-icon" />
         {{ t('workshop.profile') }}
+      </button>
+
+      <button
+        type="button"
+        class="ws-popover-item"
+        @click="go('update-log')"
+      >
+        <ScrollText class="ws-popover-icon" />
+        {{ t('auth.updateLog') }}
       </button>
 
       <div class="ws-popover-divider" />

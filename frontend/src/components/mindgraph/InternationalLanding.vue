@@ -17,11 +17,11 @@ import {
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { Languages, LogIn, LogOut, Share2, Upload, UserRound } from 'lucide-vue-next'
+import { Languages, LogIn, LogOut, ScrollText, Share2, Upload, UserRound } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
-import { AccountInfoModal } from '@/components/auth'
+import { AccountInfoModal, UpdateLogModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
@@ -255,6 +255,7 @@ function handleCardClick(item: { type: DiagramType }) {
 const showLanguageSettingsModal = ref(false)
 const showShareSiteModal = ref(false)
 const showAccountModal = ref(false)
+const showUpdateLogModal = ref(false)
 
 // ── Auto-join workshop from QR query ──
 
@@ -302,6 +303,7 @@ function handleAvatarCommand(cmd: string) {
   else if (cmd === 'share-site') showShareSiteModal.value = true
   else if (cmd === 'language') showLanguageSettingsModal.value = true
   else if (cmd === 'account') showAccountModal.value = true
+  else if (cmd === 'update-log') showUpdateLogModal.value = true
   else if (cmd === 'logout') authStore.logout()
 }
 
@@ -363,6 +365,10 @@ onMounted(() => {
                 <ElDropdownItem command="account">
                   <UserRound class="w-4 h-4 mr-2" />
                   {{ t('auth.accountInfo') }}
+                </ElDropdownItem>
+                <ElDropdownItem command="update-log">
+                  <ScrollText class="w-4 h-4 mr-2" />
+                  {{ t('auth.updateLog') }}
                 </ElDropdownItem>
                 <ElDropdownItem
                   command="logout"
@@ -513,6 +519,7 @@ onMounted(() => {
       v-model:visible="showAccountModal"
       @success="authStore.checkAuth()"
     />
+    <UpdateLogModal v-model:visible="showUpdateLogModal" />
   </div>
 </template>
 

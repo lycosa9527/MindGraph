@@ -28,7 +28,9 @@ def get_table_migration_order() -> List[str]:
         # TIER 1: Core tables with no foreign key dependencies
         # ========================================================================
         "organizations",
+        "organization_mindbot_configs",
         "users",
+        "mindbot_usage_events",
         "api_keys",
         # ========================================================================
         # TIER 2: Tables that depend on Tier 1
@@ -50,6 +52,12 @@ def get_table_migration_order() -> List[str]:
         "evaluation_results",  # References evaluation_datasets
         # Diagram tables (depend on users)
         "diagrams",  # References users
+        # Market (市场) — catalog and orders
+        "market_listings",
+        "market_orders",  # References users, market_listings
+        "market_payments",  # References market_orders
+        "market_entitlements",  # References users, market_listings, market_orders
+        "market_subscriptions",  # References users, market_listings
         # Token usage (depends on users)
         "token_usage",  # References users
         # Debate tables (depend on users)

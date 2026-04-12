@@ -107,8 +107,8 @@ export default {
   'settings.language.supportsCount': 'Supports {n} languages',
   'settings.language.title': 'Language & prompts',
   'settings.version.title': 'UI Version',
-  'settings.version.chinese': 'Chinese Version',
-  'settings.version.international': 'International Version',
+  'settings.version.chinese': 'Professional mode',
+  'settings.version.international': 'Simplified mode',
   'landing.international.subtitle':
     'The Most Powerful AI Thinking Diagram Software in the Universe',
   'landing.international.promptPlaceholder': 'Describe your diagram, or choose a type below...',

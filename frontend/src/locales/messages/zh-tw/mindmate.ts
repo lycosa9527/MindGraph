@@ -73,6 +73,7 @@ export default {
   'mindmate.input.attachFile': '上傳文件',
   'mindmate.input.placeholder': '請輸入你的問題',
   'mindmate.newChat': '新建對話',
+  'mindmate.otherModules': '其他功能模組',
   'mindmate.noHistory': '暫無歷史會話',
   'mindmate.noHistoryPanel': '暫無歷史會話',
   'mindmate.suggestionLabel': '可以試著問我：',

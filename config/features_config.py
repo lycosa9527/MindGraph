@@ -240,6 +240,22 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MCP_HTTP", "False").lower() == "true"
 
     @property
+    def FEATURE_MARKETS(self):
+        """Enable Market (市场) catalog, orders, and Alipay checkout.
+
+        Disabled by default. Set FEATURE_MARKETS=True in .env to enable.
+        """
+        return self._get_cached_value("FEATURE_MARKETS", "False").lower() == "true"
+
+    @property
+    def FEATURE_MINDBOT(self):
+        """Enable MindBot (DingTalk HTTP robot ↔ per-org Dify).
+
+        Enabled by default. Set FEATURE_MINDBOT=False in .env to disable.
+        """
+        return self._get_cached_value("FEATURE_MINDBOT", "True").lower() == "true"
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value("AI_ASSISTANT_NAME", "MindMate AI")

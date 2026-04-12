@@ -1,6 +1,9 @@
 """
 Optional Linux startup gate: exit if MindGraph Fail2ban templates are missing.
 
+When app DEBUG is True (local development), the check is skipped (same idea as
+skipping Vue SPA serving in dev).
+
 Controlled by FAIL2BAN_STARTUP_CHECK (default true on Linux). Set false in Docker
 or hosts without Fail2ban.
 """
@@ -13,6 +16,7 @@ import textwrap
 from pathlib import Path
 from typing import Optional
 
+from config.settings import config
 from services.infrastructure.security.fail2ban_integration.check import (
     check_fail2ban_install,
     is_linux,
@@ -38,6 +42,9 @@ def _copy_paste_block() -> str:
 
 def startup_fail2ban_check_enabled() -> bool:
     """True when we should enforce Fail2ban on this process (Linux only)."""
+    if config.debug:
+        logger.debug("[FAIL2BAN] Startup check skipped (DEBUG=True, development mode)")
+        return False
     if not is_linux():
         return False
     val = os.getenv(_ENV_CHECK, "true").strip().lower()

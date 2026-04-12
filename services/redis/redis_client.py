@@ -340,6 +340,22 @@ class RedisOperations:
         return True
 
     @staticmethod
+    @_with_retry("SET", default_return=True)
+    def set_with_ttl_if_not_exists(key: str, value: str, ttl_seconds: int) -> bool:
+        """
+        SET key NX EX — atomic create-if-absent.
+
+        Returns True if this call created the key (first claimant).
+        Returns False if the key already existed (typical duplicate).
+        If Redis is unavailable or all retries fail, returns True (fail open: still process).
+        """
+        redis_client = _RedisState.get_client()
+        if not _RedisState.is_available() or not redis_client:
+            return True
+        result = redis_client.set(key, value, ex=ttl_seconds, nx=True)
+        return bool(result)
+
+    @staticmethod
     @_with_retry("GET", default_return=None)
     def get(key: str) -> Optional[str]:
         """Get a key value. Returns None if not found or on error."""

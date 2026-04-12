@@ -8,7 +8,6 @@ import { useRoute } from 'vue-router'
 
 import { Lock } from 'lucide-vue-next'
 
-import IntlModuleGrid from '@/components/mindgraph/IntlModuleGrid.vue'
 import { AppSidebar } from '@/components/sidebar'
 import { useLanguage } from '@/composables'
 import { useAuthStore } from '@/stores/auth'
@@ -20,9 +19,11 @@ const uiStore = useUIStore()
 const { t } = useLanguage()
 
 const isGuest = computed(() => !authStore.isAuthenticated)
-const isInternational = computed(() => uiStore.uiVersion === 'international')
 const isOnLanding = computed(() => route.path === '/mindgraph')
-const showFloatingGrid = computed(() => isInternational.value && !isOnLanding.value)
+/** Simplified (international) gallery: no sidebar; other routes use full sidebar like Chinese mode. */
+const showAppSidebar = computed(
+  () => uiStore.uiVersion !== 'international' || !isOnLanding.value
+)
 
 /** CN `/mindgraph`: show content clearly for guests; other main routes keep blur + login hint overlay. */
 const shouldBlurGuestMain = computed(() => {
@@ -34,16 +35,7 @@ const shouldBlurGuestMain = computed(() => {
 
 <template>
   <div class="main-layout h-screen w-screen flex overflow-hidden">
-    <!-- Sidebar (hidden in international mode) -->
-    <AppSidebar v-if="!isInternational" />
-
-    <!-- Floating module grid for non-landing pages in international mode -->
-    <div
-      v-if="showFloatingGrid"
-      class="intl-floating-grid"
-    >
-      <IntlModuleGrid />
-    </div>
+    <AppSidebar v-if="showAppSidebar" />
 
     <!-- Main content (blurred for guests except CN MindGraph landing; sidebar stays clear) -->
     <main
@@ -87,13 +79,6 @@ const shouldBlurGuestMain = computed(() => {
 </template>
 
 <style scoped>
-.intl-floating-grid {
-  position: fixed;
-  top: 16px;
-  right: 20px;
-  z-index: 100;
-}
-
 .main-slot {
   flex: 1 1 0;
 }

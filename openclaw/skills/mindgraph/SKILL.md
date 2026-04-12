@@ -107,6 +107,34 @@ Workflow: `start` (SSE) → optional `next_batch` (SSE) for more items → `clea
 
 If the HTTP client cannot read SSE, inline recommendations may not be usable from that environment — prefer the browser UI for that flow.
 
+## 7. Web page → mind map PNG (API / Chrome extension)
+
+Mind map **only** from extracted page text (same auth headers as above).
+
+**JSON spec only**
+
+`POST {MINDGRAPH_BASE_URL}/api/generate_from_web_content`
+
+```json
+{
+  "page_content": "plain or markdown text",
+  "content_format": "text/plain",
+  "page_title": "Optional title",
+  "page_url": "https://...",
+  "language": "zh"
+}
+```
+
+`content_format` is `text/plain` or `text/markdown`. `page_content` max length **32000** characters.
+
+**Single-step PNG download**
+
+`POST {MINDGRAPH_BASE_URL}/api/web_content_mindmap_png`
+
+Same JSON body as above, plus optional `width` and `height` (viewport size for PNG capture). Response: **`image/png`** bytes (`Content-Disposition: attachment`).
+
+The repository includes an unpacked Chrome extension under **`chrome-extension/`** (Load unpacked in `chrome://extensions`). It calls `web_content_mindmap_png` and saves the file via the browser download manager.
+
 ## Best practices
 
 - Always send **Authorization** + **X-MG-Account** on every call, using **current** `MINDGRAPH_*` env values (see **Authentication** and **Updating auth** above).

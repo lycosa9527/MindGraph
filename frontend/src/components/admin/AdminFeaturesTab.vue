@@ -30,6 +30,8 @@ interface FeatureFlagsPayload {
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
+  feature_markets: boolean
+  feature_mindbot: boolean
   feature_org_access?: Record<string, FeatureOrgAccessEntry>
 }
 
@@ -54,6 +56,18 @@ const ROWS: RowDef[] = [
     envKey: 'FEATURE_LIBRARY',
     labelKey: 'admin.feature.library',
     hintKey: 'admin.feature.libraryHint',
+  },
+  {
+    apiKey: 'feature_markets',
+    envKey: 'FEATURE_MARKETS',
+    labelKey: 'admin.feature.markets',
+    hintKey: 'admin.feature.marketsHint',
+  },
+  {
+    apiKey: 'feature_mindbot',
+    envKey: 'FEATURE_MINDBOT',
+    labelKey: 'admin.feature.mindbot',
+    hintKey: 'admin.feature.mindbotHint',
   },
   {
     apiKey: 'feature_community',

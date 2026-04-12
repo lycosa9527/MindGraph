@@ -199,12 +199,15 @@ function goTo(route: string) {
     popper-class="intl-module-grid-popper"
   >
     <template #reference>
-      <button
-        class="intl-grid-btn"
-        :title="t('landing.international.modules')"
-      >
-        <LayoutGrid class="w-5 h-5" />
-      </button>
+      <slot name="reference">
+        <button
+          type="button"
+          class="intl-grid-btn"
+          :title="t('landing.international.modules')"
+        >
+          <LayoutGrid class="w-5 h-5" />
+        </button>
+      </slot>
     </template>
     <div class="intl-module-grid">
       <div

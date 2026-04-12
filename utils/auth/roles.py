@@ -29,6 +29,8 @@ FEATURE_KEY_TO_CONFIG_ATTR = {
     "feature_smart_response": "FEATURE_SMART_RESPONSE",
     "feature_teacher_usage": "FEATURE_TEACHER_USAGE",
     "feature_workshop_chat": "FEATURE_WORKSHOP_CHAT",
+    "feature_markets": "FEATURE_MARKETS",
+    "feature_mindbot": "FEATURE_MINDBOT",
 }
 
 

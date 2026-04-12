@@ -4,7 +4,14 @@
  */
 import { computed, inject, reactive } from 'vue'
 
-import { ChevronDown, Languages, LogIn, LogOut, UserRound } from 'lucide-vue-next'
+import {
+  ChevronDown,
+  Languages,
+  LogIn,
+  LogOut,
+  ScrollText,
+  UserRound,
+} from 'lucide-vue-next'
 
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
@@ -104,6 +111,10 @@ const orgSubtitle = computed(() => s.userSubtitle as string)
               <UserRound class="w-4 h-4 mr-2" />
               {{ s.t('auth.accountInfo') }}
             </el-dropdown-item>
+            <el-dropdown-item @click="s.openUpdateLogModal">
+              <ScrollText class="w-4 h-4 mr-2" />
+              {{ s.t('auth.updateLog') }}
+            </el-dropdown-item>
             <el-dropdown-item
               divided
               @click="s.handleLogout"
@@ -151,6 +162,10 @@ const orgSubtitle = computed(() => s.userSubtitle as string)
             <el-dropdown-item @click="s.openAccountModal">
               <UserRound class="w-4 h-4 mr-2" />
               {{ s.t('auth.accountInfo') }}
+            </el-dropdown-item>
+            <el-dropdown-item @click="s.openUpdateLogModal">
+              <ScrollText class="w-4 h-4 mr-2" />
+              {{ s.t('auth.updateLog') }}
             </el-dropdown-item>
             <el-dropdown-item
               divided

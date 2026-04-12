@@ -1,6 +1,11 @@
 /** English UI — auth */
 export default {
   'auth.accountInfo': 'Account',
+  'auth.updateLog': 'Release notes',
+  'auth.updateLogModalTitle': 'Release notes',
+  'auth.updateLogMaintainerNote': 'Yep — this platform is actively maintained by Roy ✨',
+  'auth.updateLogLoadError': 'Could not load release notes. Please try again later.',
+  'auth.updateLogEmpty': 'No release notes are available.',
   'auth.backToLogin': 'Back to Login',
   'auth.captcha': 'Captcha',
   'auth.captchaLength4': 'Please enter the 4-character captcha',

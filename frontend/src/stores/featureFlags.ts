@@ -29,6 +29,8 @@ interface FeatureFlagsResponse {
   feature_smart_response: boolean
   feature_teacher_usage: boolean
   feature_workshop_chat: boolean
+  feature_markets: boolean
+  feature_mindbot: boolean
   workshop_chat_preview_org_ids: number[]
   feature_org_access: Record<string, FeatureOrgAccessEntry>
 }
@@ -73,6 +75,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_smart_response: false,
           feature_teacher_usage: false,
           feature_workshop_chat: false,
+          feature_markets: false,
+          feature_mindbot: true,
           workshop_chat_preview_org_ids: [],
           feature_org_access: {},
         }
@@ -85,6 +89,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       const data: FeatureFlagsResponse = {
         ...raw,
         feature_org_access: raw.feature_org_access ?? {},
+        feature_markets: raw.feature_markets ?? false,
+        feature_mindbot: raw.feature_mindbot ?? true,
       }
       flags.value = data
       lastFetchTime.value = now
@@ -95,24 +101,26 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       if (flags.value) {
         return flags.value
       }
-      const defaultFlags: FeatureFlagsResponse = {
-        external_base_url: '',
-        feature_rag_chunk_test: false,
-        feature_course: false,
-        feature_template: false,
-        feature_community: false,
-        feature_askonce: true,
-        feature_school_zone: false,
-        feature_debateverse: false,
-        feature_knowledge_space: false,
-        feature_library: false,
-        feature_gewe: false,
-        feature_smart_response: false,
-        feature_teacher_usage: false,
-        feature_workshop_chat: false,
-        workshop_chat_preview_org_ids: [],
-        feature_org_access: {},
-      }
+        const defaultFlags: FeatureFlagsResponse = {
+          external_base_url: '',
+          feature_rag_chunk_test: false,
+          feature_course: false,
+          feature_template: false,
+          feature_community: false,
+          feature_askonce: true,
+          feature_school_zone: false,
+          feature_debateverse: false,
+          feature_knowledge_space: false,
+          feature_library: false,
+          feature_gewe: false,
+          feature_smart_response: false,
+          feature_teacher_usage: false,
+          feature_workshop_chat: false,
+          feature_markets: false,
+          feature_mindbot: true,
+          workshop_chat_preview_org_ids: [],
+          feature_org_access: {},
+        }
       flags.value = defaultFlags
       return defaultFlags
     } finally {
@@ -176,6 +184,14 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     return flags.value?.feature_workshop_chat ?? false
   }
 
+  function getFeatureMarkets(): boolean {
+    return flags.value?.feature_markets ?? false
+  }
+
+  function getFeatureMindbot(): boolean {
+    return flags.value?.feature_mindbot ?? true
+  }
+
   function getWorkshopChatPreviewOrgIds(): number[] {
     return flags.value?.workshop_chat_preview_org_ids ?? []
   }
@@ -210,6 +226,8 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
     getFeatureSmartResponse,
     getFeatureTeacherUsage,
     getFeatureWorkshopChat,
+    getFeatureMarkets,
+    getFeatureMindbot,
     getWorkshopChatPreviewOrgIds,
     init,
     markStale,

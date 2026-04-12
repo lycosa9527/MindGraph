@@ -25,7 +25,7 @@ from routers.admin import (
     logs_router as admin_logs,
     realtime_router as admin_realtime,
 )
-from routers.core import pages, cache, update_notification
+from routers.core import changelog, pages, cache, update_notification
 from routers.core.vue_spa import router as vue_spa
 from routers.core.health import router as health_router
 from routers.features import voice, school_zone, askonce
@@ -102,6 +102,16 @@ if config.FEATURE_WORKSHOP_CHAT:
 else:
     logger.debug("[RouterRegistration] Workshop Chat feature disabled via FEATURE_WORKSHOP_CHAT flag")
 
+MARKETS_MODULE = None
+if config.FEATURE_MARKETS:
+    try:
+        from routers.features import markets as MARKETS_MODULE
+    except Exception as e:
+        MARKETS_MODULE = None
+        logger.debug("[RouterRegistration] Failed to import markets router: %s", e, exc_info=True)
+else:
+    logger.debug("[RouterRegistration] Markets feature disabled via FEATURE_MARKETS flag")
+
 
 def register_routers(app: FastAPI) -> None:
     """
@@ -120,6 +130,8 @@ def register_routers(app: FastAPI) -> None:
     """
     # Health check endpoints
     app.include_router(health_router)
+
+    app.include_router(changelog.router, prefix="/api")
 
     # API routes must be registered BEFORE vue_spa catch-all route
     # Authentication & utility routes (loginByXz, favicon)
@@ -177,6 +189,19 @@ def register_routers(app: FastAPI) -> None:
             )
         else:
             logger.debug("[RouterRegistration] Community feature disabled via FEATURE_COMMUNITY flag")
+
+    # Market (市场) - catalog, orders, Alipay
+    if MARKETS_MODULE is not None:
+        app.include_router(MARKETS_MODULE.router)
+        registered_feature_paths.append("/api/markets")
+    else:
+        if config.FEATURE_MARKETS:
+            logger.warning(
+                "[RouterRegistration] Markets router NOT registered - import failed or router is None. "
+                "Check DEBUG logs for details."
+            )
+        else:
+            logger.debug("[RouterRegistration] Markets feature disabled via FEATURE_MARKETS flag")
 
     # Gewe WeChat integration (admin only) - must be before vue_spa
     if GEWE_MODULE is not None:

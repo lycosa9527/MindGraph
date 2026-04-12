@@ -37,6 +37,8 @@ class FeatureFlagsResponse(BaseModel):
     feature_smart_response: bool
     feature_teacher_usage: bool
     feature_workshop_chat: bool
+    feature_markets: bool
+    feature_mindbot: bool
     workshop_chat_preview_org_ids: list[int]
     feature_org_access: dict[str, FeatureOrgAccessEntry] = Field(default_factory=dict)
 
@@ -68,6 +70,8 @@ async def get_feature_flags(
         feature_smart_response=config.FEATURE_SMART_RESPONSE,
         feature_teacher_usage=config.FEATURE_TEACHER_USAGE,
         feature_workshop_chat=config.FEATURE_WORKSHOP_CHAT,
+        feature_markets=config.FEATURE_MARKETS,
+        feature_mindbot=config.FEATURE_MINDBOT,
         workshop_chat_preview_org_ids=sorted(config.WORKSHOP_CHAT_PREVIEW_ORG_IDS),
         feature_org_access=access_map,
     )
