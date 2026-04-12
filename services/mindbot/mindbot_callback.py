@@ -237,6 +237,17 @@ async def process_dingtalk_callback(
                 logger.warning("[MindBot] robotCode does not match org-scoped callback config")
                 return 400, _hdr(MindbotErrorCode.ROBOT_CODE_MISMATCH)
 
+    if resolved_config is not None:
+        ts_missing = not (timestamp_header or "").strip()
+        sg_missing = not (sign_header or "").strip()
+        if body == {} and ts_missing and sg_missing:
+            logger.info(
+                "[MindBot] callback connectivity probe org_id=%s robot=%s",
+                cfg.organization_id,
+                cfg.dingtalk_robot_code.strip(),
+            )
+            return 200, _hdr(MindbotErrorCode.OK)
+
     if not verify_dingtalk_sign(timestamp_header, sign_header, cfg.dingtalk_app_secret.strip()):
         logger.warning("[MindBot] Invalid DingTalk signature")
         return 401, _hdr(MindbotErrorCode.INVALID_SIGNATURE)

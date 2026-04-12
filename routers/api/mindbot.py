@@ -2,8 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import logging
-from typing import Optional
+from typing import Any, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from pydantic import BaseModel, Field
@@ -16,12 +17,70 @@ from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from repositories.mindbot_repo import MindbotConfigRepository
 from routers.auth.dependencies import require_admin_or_manager
+from services.mindbot.dingtalk_platform_event import (
+    dingtalk_platform_event_response,
+    is_dingtalk_platform_event_request,
+    shared_url_platform_event_error,
+)
 from services.mindbot.mindbot_callback import process_dingtalk_callback
 from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.mindbot_metrics import mindbot_metrics
 from utils.auth.roles import is_admin
+from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
+
+_INBOUND_PREVIEW_LEN = 2048
+
+
+def _log_mindbot_inbound(request: Request, raw: bytes, route_label: str) -> None:
+    """When MINDBOT_LOG_CALLBACK_INBOUND=1, log safe inbound metadata for DingTalk debugging."""
+    if not env_bool("MINDBOT_LOG_CALLBACK_INBOUND", False):
+        return
+    ts = request.headers.get("timestamp")
+    sg = request.headers.get("sign")
+    preview = raw.decode("utf-8", errors="replace")[:_INBOUND_PREVIEW_LEN]
+    logger.info(
+        "[MindBot] inbound %s path=%s query=%s body_len=%s timestamp=%s sign_len=%s preview=%r",
+        route_label,
+        request.url.path,
+        request.url.query or "",
+        len(raw),
+        "set" if (ts or "").strip() else "missing",
+        len((sg or "").strip()),
+        preview,
+    )
+
+
+def _dict_from_dingtalk_raw_body(raw: bytes) -> dict[str, Any]:
+    """
+    Parse POST JSON for DingTalk robot HTTP mode.
+
+    DingTalk may POST an empty body when saving the message URL; treat empty
+    whitespace as an empty JSON object.
+    """
+    if not raw.strip():
+        return {}
+    try:
+        text = raw.decode("utf-8")
+    except UnicodeDecodeError:
+        raise HTTPException(
+            status_code=400,
+            detail=f"{MindbotErrorCode.INVALID_JSON.value}: Invalid JSON body",
+        ) from None
+    try:
+        parsed = json.loads(text)
+    except (json.JSONDecodeError, TypeError, ValueError):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{MindbotErrorCode.INVALID_JSON.value}: Invalid JSON body",
+        ) from None
+    if not isinstance(parsed, dict):
+        raise HTTPException(
+            status_code=400,
+            detail=f"{MindbotErrorCode.INVALID_BODY.value}: Body must be a JSON object",
+        )
+    return parsed
 
 router = APIRouter(prefix="/mindbot", tags=["mindbot"])
 
@@ -45,6 +104,21 @@ class MindbotConfigPayload(BaseModel):
         None,
         description="Optional JSON object string passed as Dify chat-messages inputs",
     )
+    dingtalk_event_token: Optional[str] = Field(
+        None,
+        max_length=128,
+        description="DingTalk event subscription Token; omit on update to keep",
+    )
+    dingtalk_event_aes_key: Optional[str] = Field(
+        None,
+        max_length=128,
+        description="EncodingAESKey; omit on update to keep",
+    )
+    dingtalk_event_owner_key: Optional[str] = Field(
+        None,
+        max_length=128,
+        description="appKey, corpId, or suiteKey per DingTalk app type",
+    )
     is_enabled: bool = True
 
 
@@ -53,6 +127,9 @@ class MindbotConfigResponse(BaseModel):
     organization_id: int
     dingtalk_robot_code: str
     dingtalk_client_id: Optional[str]
+    dingtalk_event_token_set: bool
+    dingtalk_event_aes_key_set: bool
+    dingtalk_event_owner_key: Optional[str]
     dify_api_base_url: str
     dify_timeout_seconds: int
     dify_inputs_json: Optional[str]
@@ -105,6 +182,32 @@ def _resolve_secrets(
     )
 
 
+def _event_subscription_fields(
+    payload: MindbotConfigPayload,
+    existing: Optional[OrganizationMindbotConfig],
+) -> tuple[Optional[str], Optional[str], Optional[str]]:
+    """Token and AES key: omit on update to keep; empty string clears."""
+    if existing is None:
+        return (
+            (payload.dingtalk_event_token or "").strip() or None,
+            (payload.dingtalk_event_aes_key or "").strip() or None,
+            (payload.dingtalk_event_owner_key or "").strip() or None,
+        )
+    token = existing.dingtalk_event_token
+    if "dingtalk_event_token" in payload.model_fields_set:
+        raw = (payload.dingtalk_event_token or "").strip()
+        token = raw if raw else None
+    aes_key = existing.dingtalk_event_aes_key
+    if "dingtalk_event_aes_key" in payload.model_fields_set:
+        raw = (payload.dingtalk_event_aes_key or "").strip()
+        aes_key = raw if raw else None
+    owner_key = existing.dingtalk_event_owner_key
+    if "dingtalk_event_owner_key" in payload.model_fields_set:
+        raw = (payload.dingtalk_event_owner_key or "").strip()
+        owner_key = raw if raw else None
+    return token, aes_key, owner_key
+
+
 @router.post("/dingtalk/callback")
 async def dingtalk_callback_shared(
     request: Request,
@@ -112,18 +215,13 @@ async def dingtalk_callback_shared(
 ) -> Response:
     """Shared URL: resolve tenant by ``robotCode`` in JSON body (HTTP receive mode)."""
     _require_mindbot_feature()
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{MindbotErrorCode.INVALID_JSON.value}: Invalid JSON body",
-        ) from None
-    if not isinstance(body, dict):
-        raise HTTPException(
-            status_code=400,
-            detail=f"{MindbotErrorCode.INVALID_BODY.value}: Body must be a JSON object",
-        )
+    raw = await request.body()
+    _log_mindbot_inbound(request, raw, "shared")
+    body = _dict_from_dingtalk_raw_body(raw)
+    if is_dingtalk_platform_event_request(request, body):
+        resp = shared_url_platform_event_error()
+        mindbot_metrics.record_from_headers(dict(resp.headers))
+        return resp
     ts = request.headers.get("timestamp")
     sg = request.headers.get("sign")
     code, resp_headers = await process_dingtalk_callback(
@@ -142,27 +240,32 @@ async def dingtalk_callback_per_org(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ) -> Response:
-    """Per-organization URL: tenant from path; still verify HMAC with that org's app secret."""
+    """Per-org URL: robot HMAC (headers) or open-platform event subscription (query + encrypt)."""
     _require_mindbot_feature()
-    try:
-        body = await request.json()
-    except Exception:
-        raise HTTPException(
-            status_code=400,
-            detail=f"{MindbotErrorCode.INVALID_JSON.value}: Invalid JSON body",
-        ) from None
-    if not isinstance(body, dict):
-        raise HTTPException(
-            status_code=400,
-            detail=f"{MindbotErrorCode.INVALID_BODY.value}: Body must be a JSON object",
-        )
+    raw = await request.body()
+    _log_mindbot_inbound(request, raw, f"org_{organization_id}")
+    body = _dict_from_dingtalk_raw_body(raw)
     repo = MindbotConfigRepository(db)
+    if is_dingtalk_platform_event_request(request, body):
+        cfg_any = await repo.get_by_organization_id(organization_id)
+        if cfg_any is None:
+            resp = Response(
+                status_code=404,
+                headers=mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND),
+            )
+            mindbot_metrics.record_from_headers(dict(resp.headers))
+            return resp
+        resp = dingtalk_platform_event_response(request, body, cfg_any)
+        mindbot_metrics.record_from_headers(dict(resp.headers))
+        return resp
     cfg = await repo.get_enabled_by_organization_id(organization_id)
     if cfg is None:
-        return Response(
+        resp = Response(
             status_code=404,
             headers=mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND),
         )
+        mindbot_metrics.record_from_headers(dict(resp.headers))
+        return resp
     ts = request.headers.get("timestamp")
     sg = request.headers.get("sign")
     code, resp_headers = await process_dingtalk_callback(
@@ -177,11 +280,17 @@ async def dingtalk_callback_per_org(
 
 
 def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
+    tok = (row.dingtalk_event_token or "").strip()
+    aes = (row.dingtalk_event_aes_key or "").strip()
+    own = (row.dingtalk_event_owner_key or "").strip()
     return MindbotConfigResponse(
         id=row.id,
         organization_id=row.organization_id,
         dingtalk_robot_code=row.dingtalk_robot_code,
         dingtalk_client_id=row.dingtalk_client_id,
+        dingtalk_event_token_set=bool(tok),
+        dingtalk_event_aes_key_set=bool(aes),
+        dingtalk_event_owner_key=own or None,
         dify_api_base_url=row.dify_api_base_url,
         dify_timeout_seconds=row.dify_timeout_seconds,
         dify_inputs_json=row.dify_inputs_json,
@@ -246,6 +355,7 @@ async def admin_upsert_mindbot_config(
     )
     existing = result.scalar_one_or_none()
     app_secret, dify_key = _resolve_secrets(payload, existing)
+    evt_token, evt_aes, evt_owner = _event_subscription_fields(payload, existing)
     if existing is None:
         dup = await db.execute(
             select(OrganizationMindbotConfig).where(
@@ -262,6 +372,9 @@ async def admin_upsert_mindbot_config(
             dingtalk_robot_code=payload.dingtalk_robot_code.strip(),
             dingtalk_app_secret=app_secret,
             dingtalk_client_id=(payload.dingtalk_client_id or "").strip() or None,
+            dingtalk_event_token=evt_token,
+            dingtalk_event_aes_key=evt_aes,
+            dingtalk_event_owner_key=evt_owner,
             dify_api_base_url=payload.dify_api_base_url.strip(),
             dify_api_key=dify_key,
             dify_inputs_json=(payload.dify_inputs_json or "").strip() or None,
@@ -284,6 +397,9 @@ async def admin_upsert_mindbot_config(
         existing.dingtalk_robot_code = payload.dingtalk_robot_code.strip()
         existing.dingtalk_app_secret = app_secret
         existing.dingtalk_client_id = (payload.dingtalk_client_id or "").strip() or None
+        existing.dingtalk_event_token = evt_token
+        existing.dingtalk_event_aes_key = evt_aes
+        existing.dingtalk_event_owner_key = evt_owner
         existing.dify_api_base_url = payload.dify_api_base_url.strip()
         existing.dify_api_key = dify_key
         if "dify_inputs_json" in payload.model_fields_set:
@@ -293,6 +409,17 @@ async def admin_upsert_mindbot_config(
         row = existing
     await db.commit()
     await db.refresh(row)
+    logger.info(
+        "[MindBot] config %s organization_id=%s config_id=%s robot_code=%s enabled=%s "
+        "client_id_set=%s user_id=%s",
+        "created" if existing is None else "updated",
+        organization_id,
+        row.id,
+        row.dingtalk_robot_code.strip(),
+        row.is_enabled,
+        bool((row.dingtalk_client_id or "").strip()),
+        user.id,
+    )
     return _to_response(row)
 
 
@@ -315,6 +442,15 @@ async def admin_delete_mindbot_config(
             status_code=404,
             detail=f"{MindbotErrorCode.ADMIN_CONFIG_NOT_FOUND.value}: MindBot config not found",
         )
+    config_id = row.id
+    robot_code = row.dingtalk_robot_code.strip()
     await db.delete(row)
     await db.commit()
+    logger.info(
+        "[MindBot] config deleted organization_id=%s config_id=%s robot_code=%s user_id=%s",
+        organization_id,
+        config_id,
+        robot_code,
+        user.id,
+    )
     return Response(status_code=status.HTTP_204_NO_CONTENT)

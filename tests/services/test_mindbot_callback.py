@@ -104,3 +104,28 @@ async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     assert code == 401
     assert "MINDBOT_INVALID_SIGNATURE" in hdr.get("X-MindBot-Error-Code", "")
+
+
+@pytest.mark.asyncio
+async def test_per_org_connectivity_probe_empty_body_no_signature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DingTalk console may POST empty JSON with no timestamp/sign when validating URL."""
+    monkeypatch.setattr(
+        "services.mindbot.mindbot_callback.config",
+        SimpleNamespace(FEATURE_MINDBOT=True),
+    )
+    cfg = _sample_cfg()
+
+    from services.mindbot.mindbot_callback import process_dingtalk_callback
+
+    session = AsyncMock()
+    code, hdr = await process_dingtalk_callback(
+        session,
+        timestamp_header=None,
+        sign_header=None,
+        body={},
+        resolved_config=cfg,
+    )
+    assert code == 200
+    assert hdr.get("X-MindBot-Error-Code") == "MINDBOT_OK"

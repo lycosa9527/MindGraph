@@ -134,7 +134,7 @@ export default {
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot & Dify (per school)',
   'admin.mindbot.intro':
-    'Paste the callback URLs into the DingTalk developer console (HTTPS). Each school has its own robot code, Client ID, and Client Secret.',
+    'Paste the callback URLs into the DingTalk developer console (HTTPS). Each school has its own robot code, Client ID, and Client Secret. For DingTalk HTTP event subscription / callback URL verification (encrypted body), use the per-organization URL and set Token, EncodingAESKey, and owner key (appKey, corpId, or suiteKey) below.',
   'admin.mindbot.colOrg': 'Organization',
   'admin.mindbot.colRobot': 'Robot code',
   'admin.mindbot.colEnabled': 'Enabled',
@@ -148,6 +148,17 @@ export default {
   'admin.mindbot.dingtalkAppSecret': 'DingTalk Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': 'Leave blank when editing to keep the stored Client Secret.',
   'admin.mindbot.dingtalkClientId': 'DingTalk Client ID (optional)',
+  'admin.mindbot.dingtalkEventToken': 'DingTalk event subscription Token (optional)',
+  'admin.mindbot.dingtalkEventTokenHint':
+    'For HTTP event / callback URL verification only. Leave blank when editing to keep the stored value.',
+  'admin.mindbot.dingtalkEventTokenSet': 'Token is already saved.',
+  'admin.mindbot.dingtalkEventAesKey': 'DingTalk EncodingAESKey (optional)',
+  'admin.mindbot.dingtalkEventAesHint':
+    'For HTTP event / callback URL verification only. Leave blank when editing to keep the stored value.',
+  'admin.mindbot.dingtalkEventAesSet': 'EncodingAESKey is already saved.',
+  'admin.mindbot.dingtalkEventOwnerKey': 'DingTalk owner key (optional)',
+  'admin.mindbot.dingtalkEventOwnerHint':
+    'Use appKey, corpId, or suiteKey as required by your DingTalk app type (must match the decrypted payload).',
   'admin.mindbot.difyBaseUrl': 'Dify API base URL',
   'admin.mindbot.difyApiKey': 'Dify API key',
   'admin.mindbot.difyApiKeyHint': 'Leave blank when editing to keep the stored key.',

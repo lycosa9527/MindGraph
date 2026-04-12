@@ -129,7 +129,7 @@ export default {
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': '钉钉机器人与 Dify（按校）',
   'admin.mindbot.intro':
-    '将回调地址填入钉钉开放平台（须 HTTPS）。每校独立的 robot code、Client ID 与 Client Secret。',
+    '将回调地址填入钉钉开放平台（须 HTTPS）。每校独立的 robot code、Client ID 与 Client Secret。若需钉钉 HTTP 事件订阅 / 回调 URL 验证（加密报文），请使用下方「按校回调」地址，并填写 Token、EncodingAESKey 与 owner key（appKey / corpId / suiteKey，按应用类型）。',
   'admin.mindbot.colOrg': '学校',
   'admin.mindbot.colRobot': '机器人 code',
   'admin.mindbot.colEnabled': '启用',
@@ -143,6 +143,17 @@ export default {
   'admin.mindbot.dingtalkAppSecret': '钉钉 Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': '编辑时留空表示不修改已保存的 Client Secret。',
   'admin.mindbot.dingtalkClientId': '钉钉 Client ID（可选）',
+  'admin.mindbot.dingtalkEventToken': '钉钉事件订阅 Token（可选）',
+  'admin.mindbot.dingtalkEventTokenHint':
+    '仅用于 HTTP 事件 / 回调 URL 验证。编辑时留空表示不修改已保存的 Token。',
+  'admin.mindbot.dingtalkEventTokenSet': '已保存 Token。',
+  'admin.mindbot.dingtalkEventAesKey': '钉钉 EncodingAESKey（可选）',
+  'admin.mindbot.dingtalkEventAesHint':
+    '仅用于 HTTP 事件 / 回调 URL 验证。编辑时留空表示不修改已保存的密钥。',
+  'admin.mindbot.dingtalkEventAesSet': '已保存 EncodingAESKey。',
+  'admin.mindbot.dingtalkEventOwnerKey': '钉钉 owner key（可选）',
+  'admin.mindbot.dingtalkEventOwnerHint':
+    '按应用类型填写 appKey、corpId 或 suiteKey（须与解密后校验字段一致）。',
   'admin.mindbot.difyBaseUrl': 'Dify API 根地址',
   'admin.mindbot.difyApiKey': 'Dify API Key',
   'admin.mindbot.difyApiKeyHint': '编辑时留空表示不修改已保存的密钥。',

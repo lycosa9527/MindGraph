@@ -23,6 +23,9 @@ interface MindbotConfigRow {
   organization_id: number
   dingtalk_robot_code: string
   dingtalk_client_id: string | null
+  dingtalk_event_token_set: boolean
+  dingtalk_event_aes_key_set: boolean
+  dingtalk_event_owner_key: string | null
   dify_api_base_url: string
   dify_timeout_seconds: number
   dify_inputs_json: string | null
@@ -76,6 +79,9 @@ const form = ref({
   dingtalk_robot_code: '',
   dingtalk_app_secret: '',
   dingtalk_client_id: '',
+  dingtalk_event_token: '',
+  dingtalk_event_aes_key: '',
+  dingtalk_event_owner_key: '',
   dify_api_base_url: '',
   dify_api_key: '',
   dify_inputs_json: '',
@@ -101,6 +107,9 @@ function resetForm(): void {
     dingtalk_robot_code: '',
     dingtalk_app_secret: '',
     dingtalk_client_id: '',
+    dingtalk_event_token: '',
+    dingtalk_event_aes_key: '',
+    dingtalk_event_owner_key: '',
     dify_api_base_url: '',
     dify_api_key: '',
     dify_inputs_json: '',
@@ -115,6 +124,9 @@ function fillForm(row: MindbotConfigRow): void {
     dingtalk_robot_code: row.dingtalk_robot_code,
     dingtalk_app_secret: '',
     dingtalk_client_id: row.dingtalk_client_id ?? '',
+    dingtalk_event_token: '',
+    dingtalk_event_aes_key: '',
+    dingtalk_event_owner_key: row.dingtalk_event_owner_key ?? '',
     dify_api_base_url: row.dify_api_base_url,
     dify_api_key: '',
     dify_inputs_json: row.dify_inputs_json ?? '',
@@ -127,6 +139,14 @@ function fillForm(row: MindbotConfigRow): void {
 const orgsWithoutConfig = computed(() => {
   const have = new Set(configs.value.map((c) => c.organization_id))
   return schools.value.filter((o) => !have.has(o.id))
+})
+
+const editingOrgRow = computed(() => {
+  const oid = formOrgId.value
+  if (oid == null) {
+    return undefined
+  }
+  return configs.value.find((c) => c.organization_id === oid)
 })
 
 async function load(): Promise<void> {
@@ -199,6 +219,20 @@ async function save(): Promise<void> {
       dify_timeout_seconds: form.value.dify_timeout_seconds,
       is_enabled: form.value.is_enabled,
     }
+    const currentRow = configs.value.find((c) => c.organization_id === oid)
+    const tok = form.value.dingtalk_event_token.trim()
+    const aes = form.value.dingtalk_event_aes_key.trim()
+    if (tok) {
+      payload.dingtalk_event_token = tok
+    } else if (!isNew && currentRow?.dingtalk_event_token_set) {
+      payload.dingtalk_event_token = ''
+    }
+    if (aes) {
+      payload.dingtalk_event_aes_key = aes
+    } else if (!isNew && currentRow?.dingtalk_event_aes_key_set) {
+      payload.dingtalk_event_aes_key = ''
+    }
+    payload.dingtalk_event_owner_key = form.value.dingtalk_event_owner_key.trim() || null
     const inputsRaw = form.value.dify_inputs_json.trim()
     if (inputsRaw) {
       payload.dify_inputs_json = inputsRaw
@@ -414,6 +448,40 @@ onMounted(() => {
             />
             <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkAppSecretHint') }}</div>
           </el-form-item>
+          <el-form-item :label="t('admin.mindbot.dingtalkEventToken')">
+            <el-input
+              v-model="form.dingtalk_event_token"
+              type="password"
+              show-password
+              autocomplete="new-password"
+            />
+            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventTokenHint') }}</div>
+            <div
+              v-if="dialogMode === 'edit' && editingOrgRow?.dingtalk_event_token_set && !form.dingtalk_event_token"
+              class="text-xs text-gray-500 mt-1"
+            >
+              {{ t('admin.mindbot.dingtalkEventTokenSet') }}
+            </div>
+          </el-form-item>
+          <el-form-item :label="t('admin.mindbot.dingtalkEventAesKey')">
+            <el-input
+              v-model="form.dingtalk_event_aes_key"
+              type="password"
+              show-password
+              autocomplete="new-password"
+            />
+            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventAesHint') }}</div>
+            <div
+              v-if="dialogMode === 'edit' && editingOrgRow?.dingtalk_event_aes_key_set && !form.dingtalk_event_aes_key"
+              class="text-xs text-gray-500 mt-1"
+            >
+              {{ t('admin.mindbot.dingtalkEventAesSet') }}
+            </div>
+          </el-form-item>
+          <el-form-item :label="t('admin.mindbot.dingtalkEventOwnerKey')">
+            <el-input v-model="form.dingtalk_event_owner_key" />
+            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventOwnerHint') }}</div>
+          </el-form-item>
           <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
             <el-input v-model="form.dify_api_base_url" />
           </el-form-item>
@@ -485,6 +553,40 @@ onMounted(() => {
             autocomplete="new-password"
           />
           <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkAppSecretHint') }}</div>
+        </el-form-item>
+        <el-form-item :label="t('admin.mindbot.dingtalkEventToken')">
+          <el-input
+            v-model="form.dingtalk_event_token"
+            type="password"
+            show-password
+            autocomplete="new-password"
+          />
+          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventTokenHint') }}</div>
+          <div
+            v-if="editingOrgRow?.dingtalk_event_token_set && !form.dingtalk_event_token"
+            class="text-xs text-gray-500 mt-1"
+          >
+            {{ t('admin.mindbot.dingtalkEventTokenSet') }}
+          </div>
+        </el-form-item>
+        <el-form-item :label="t('admin.mindbot.dingtalkEventAesKey')">
+          <el-input
+            v-model="form.dingtalk_event_aes_key"
+            type="password"
+            show-password
+            autocomplete="new-password"
+          />
+          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventAesHint') }}</div>
+          <div
+            v-if="editingOrgRow?.dingtalk_event_aes_key_set && !form.dingtalk_event_aes_key"
+            class="text-xs text-gray-500 mt-1"
+          >
+            {{ t('admin.mindbot.dingtalkEventAesSet') }}
+          </div>
+        </el-form-item>
+        <el-form-item :label="t('admin.mindbot.dingtalkEventOwnerKey')">
+          <el-input v-model="form.dingtalk_event_owner_key" />
+          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventOwnerHint') }}</div>
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
           <el-input v-model="form.dify_api_base_url" />
