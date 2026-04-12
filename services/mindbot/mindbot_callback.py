@@ -205,6 +205,12 @@ async def process_dingtalk_callback(
         return 404, mindbot_error_headers(MindbotErrorCode.FEATURE_DISABLED)
 
     repo = MindbotConfigRepository(session)
+    ts_missing = not (timestamp_header or "").strip()
+    sg_missing = not (sign_header or "").strip()
+    if resolved_config is None and body == {} and ts_missing and sg_missing:
+        logger.info("[MindBot] shared callback URL connectivity probe (empty body, no signature)")
+        return 200, mindbot_error_headers(MindbotErrorCode.OK)
+
     cfg = resolved_config
     if cfg is None:
         rc = robot_code_override or body.get("robotCode") or body.get("robot_code")
@@ -238,8 +244,6 @@ async def process_dingtalk_callback(
                 return 400, _hdr(MindbotErrorCode.ROBOT_CODE_MISMATCH)
 
     if resolved_config is not None:
-        ts_missing = not (timestamp_header or "").strip()
-        sg_missing = not (sign_header or "").strip()
         if body == {} and ts_missing and sg_missing:
             logger.info(
                 "[MindBot] callback connectivity probe org_id=%s robot=%s",

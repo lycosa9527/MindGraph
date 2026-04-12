@@ -107,6 +107,28 @@ async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
+async def test_shared_connectivity_probe_empty_body_no_signature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Shared URL: DingTalk may POST empty body with no robotCode when saving the message URL."""
+    monkeypatch.setattr(
+        "services.mindbot.mindbot_callback.config",
+        SimpleNamespace(FEATURE_MINDBOT=True),
+    )
+    from services.mindbot.mindbot_callback import process_dingtalk_callback
+
+    session = AsyncMock()
+    code, hdr = await process_dingtalk_callback(
+        session,
+        timestamp_header=None,
+        sign_header=None,
+        body={},
+    )
+    assert code == 200
+    assert hdr.get("X-MindBot-Error-Code") == "MINDBOT_OK"
+
+
+@pytest.mark.asyncio
 async def test_per_org_connectivity_probe_empty_body_no_signature(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
