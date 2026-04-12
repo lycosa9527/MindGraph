@@ -402,6 +402,9 @@ onMounted(() => {
           <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
             <el-input v-model="form.dingtalk_robot_code" />
           </el-form-item>
+          <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
+            <el-input v-model="form.dingtalk_client_id" />
+          </el-form-item>
           <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
             <el-input
               v-model="form.dingtalk_app_secret"
@@ -410,9 +413,6 @@ onMounted(() => {
               autocomplete="new-password"
             />
             <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkAppSecretHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
-            <el-input v-model="form.dingtalk_client_id" />
           </el-form-item>
           <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
             <el-input v-model="form.dify_api_base_url" />
@@ -474,6 +474,9 @@ onMounted(() => {
         <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
           <el-input v-model="form.dingtalk_robot_code" />
         </el-form-item>
+        <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
+          <el-input v-model="form.dingtalk_client_id" />
+        </el-form-item>
         <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
           <el-input
             v-model="form.dingtalk_app_secret"
@@ -482,9 +485,6 @@ onMounted(() => {
             autocomplete="new-password"
           />
           <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkAppSecretHint') }}</div>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
-          <el-input v-model="form.dingtalk_client_id" />
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
           <el-input v-model="form.dify_api_base_url" />
