@@ -58,13 +58,18 @@ from services.mindbot.platforms.dingtalk.session_webhook import (
     openapi_robot_msg_param_stream_chunk,
     sanitize_markdown_for_dingtalk,
 )
-from services.mindbot.platforms.dingtalk.verify import compute_sign, verify_dingtalk_sign
+from services.mindbot.platforms.dingtalk.verify import (
+    compute_sign,
+    extract_dingtalk_robot_auth_headers,
+    verify_dingtalk_sign,
+)
 
 __all__ = [
     "batch_recall_group_robot_messages",
     "batch_recall_oto_robot_messages",
     "build_session_webhook_payload",
     "compute_sign",
+    "extract_dingtalk_robot_auth_headers",
     "download_url_bytes",
     "extract_dingtalk_sender_profile",
     "extract_download_code_for_openapi",

@@ -1,15 +1,48 @@
-"""DingTalk HTTP callback signature verification (receive-message-1 protocol)."""
+"""DingTalk HTTP callback signature verification (receive-message-1 protocol).
+
+Matches DingTalk docs and common Flask samples: ``Base64(HmacSHA256(key=app_secret,
+msg=timestamp + "\\n" + app_secret))``, timestamp skew window (default 1 hour in ms).
+"""
+
+from __future__ import annotations
 
 import base64
 import hashlib
 import hmac
 import logging
 import time
-from typing import Optional
+from typing import Any, Optional
+
+from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
 
-_MAX_SKEW_SECONDS = 3600
+_DEFAULT_MAX_SKEW_MS = 3600000
+_MAX_SKEW_MS_CAP = 86400000
+
+
+def _max_skew_ms() -> int:
+    raw = env_int("MINDBOT_DINGTALK_MAX_SKEW_MS", _DEFAULT_MAX_SKEW_MS)
+    if raw < 1:
+        return _DEFAULT_MAX_SKEW_MS
+    return min(raw, _MAX_SKEW_MS_CAP)
+
+
+def extract_dingtalk_robot_auth_headers(headers: Any) -> tuple[Optional[str], Optional[str]]:
+    """
+    Read ``timestamp`` and ``sign`` for receive-message-1 (same names as DingTalk / Flask samples).
+
+    Starlette header lookup is case-insensitive; alternate spellings are listed for clarity.
+    """
+    ts_raw = headers.get("timestamp") or headers.get("Timestamp")
+    sg_raw = headers.get("sign") or headers.get("Sign")
+    ts = ts_raw.strip() if isinstance(ts_raw, str) else None
+    sg = sg_raw.strip() if isinstance(sg_raw, str) else None
+    if ts == "":
+        ts = None
+    if sg == "":
+        sg = None
+    return ts, sg
 
 
 def compute_sign(timestamp_str: str, app_secret: str) -> str:
@@ -30,19 +63,23 @@ def verify_dingtalk_sign(
     """
     Verify timestamp and sign from HTTP headers.
 
-    Reject if timestamp missing, skew > 1 hour, or sign mismatch.
+    Reject if timestamp missing, skew over configured window, or sign mismatch.
     """
-    if not timestamp_str or not sign_header or not app_secret:
+    ts = (timestamp_str or "").strip() if isinstance(timestamp_str, str) else ""
+    sg = (sign_header or "").strip() if isinstance(sign_header, str) else ""
+    secret = (app_secret or "").strip()
+    if not ts or not sg or not secret:
         return False
     try:
-        ts_ms = int(timestamp_str)
+        ts_ms = int(ts)
     except (TypeError, ValueError):
         return False
     now_ms = int((now_ts if now_ts is not None else time.time()) * 1000)
-    if abs(now_ms - ts_ms) > _MAX_SKEW_SECONDS * 1000:
+    max_skew = _max_skew_ms()
+    if abs(now_ms - ts_ms) > max_skew:
         logger.warning("[MindBot] DingTalk timestamp skew too large")
         return False
-    expected = compute_sign(timestamp_str, app_secret)
-    if len(expected) != len(sign_header):
+    expected = compute_sign(ts, secret)
+    if len(expected) != len(sg):
         return False
-    return hmac.compare_digest(expected, sign_header)
+    return hmac.compare_digest(expected, sg)

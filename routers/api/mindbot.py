@@ -23,6 +23,7 @@ from services.mindbot.dingtalk_platform_event import (
     shared_url_platform_event_error,
 )
 from services.mindbot.mindbot_callback import process_dingtalk_callback
+from services.mindbot.platforms.dingtalk.verify import extract_dingtalk_robot_auth_headers
 from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.mindbot_metrics import mindbot_metrics
 from utils.auth.roles import is_admin
@@ -37,8 +38,7 @@ def _log_mindbot_inbound(request: Request, raw: bytes, route_label: str) -> None
     """When MINDBOT_LOG_CALLBACK_INBOUND=1, log safe inbound metadata for DingTalk debugging."""
     if not env_bool("MINDBOT_LOG_CALLBACK_INBOUND", False):
         return
-    ts = request.headers.get("timestamp")
-    sg = request.headers.get("sign")
+    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
     preview = raw.decode("utf-8", errors="replace")[:_INBOUND_PREVIEW_LEN]
     logger.info(
         "[MindBot] inbound %s path=%s query=%s body_len=%s timestamp=%s sign_len=%s preview=%r",
@@ -46,8 +46,8 @@ def _log_mindbot_inbound(request: Request, raw: bytes, route_label: str) -> None
         request.url.path,
         request.url.query or "",
         len(raw),
-        "set" if (ts or "").strip() else "missing",
-        len((sg or "").strip()),
+        "set" if ts else "missing",
+        len(sg or ""),
         preview,
     )
 
@@ -222,8 +222,7 @@ async def dingtalk_callback_shared(
         resp = shared_url_platform_event_error()
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
-    ts = request.headers.get("timestamp")
-    sg = request.headers.get("sign")
+    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
     code, resp_headers = await process_dingtalk_callback(
         db,
         timestamp_header=ts,
@@ -266,8 +265,7 @@ async def dingtalk_callback_per_org(
         )
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
-    ts = request.headers.get("timestamp")
-    sg = request.headers.get("sign")
+    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
     code, resp_headers = await process_dingtalk_callback(
         db,
         timestamp_header=ts,
