@@ -43,6 +43,10 @@ from services.mindbot.platforms.dingtalk import (
     media_filename_and_types,
     verify_dingtalk_sign,
 )
+from services.mindbot.dingtalk_inbound_log import (
+    debug_callback_failure_logging_enabled,
+    dingtalk_inbound_logging_enabled,
+)
 from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.mindbot_usage import persist_mindbot_usage_event
 from services.mindbot.session_webhook_url import validate_session_webhook_url
@@ -256,10 +260,22 @@ async def process_dingtalk_callback(
         attempted_robot_code = rc.strip()
         cfg = await repo.get_by_robot_code(attempted_robot_code)
     if cfg is None:
+        _hint = ""
+        if not dingtalk_inbound_logging_enabled():
+            _hint = (
+                " For inbound request logging set MINDBOT_LOG_CALLBACK_INBOUND=1, "
+                "MINDBOT_LOG_CALLBACK_INBOUND_FULL=1, or MINDBOT_LOG_CALLBACK_DEBUG=1; restart the server."
+            )
+        elif not debug_callback_failure_logging_enabled():
+            _hint = (
+                " For raw body and headers on failed callbacks set MINDBOT_LOG_CALLBACK_DEBUG=1; "
+                "restart the server."
+            )
         logger.warning(
             "[MindBot] No enabled MindBot config for robot_code=%r "
-            "(no DB row with this dingtalk_robot_code and is_enabled=true, or code mismatch)",
+            "(no DB row with this dingtalk_robot_code and is_enabled=true, or code mismatch).%s",
             attempted_robot_code,
+            _hint,
         )
         _log_callback_debug_failure(
             debug_route_label=debug_route_label,
