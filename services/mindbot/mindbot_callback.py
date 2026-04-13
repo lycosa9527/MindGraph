@@ -54,6 +54,30 @@ logger = logging.getLogger(__name__)
 _DEFAULT_SEMAPHORE = asyncio.Semaphore(int(os.getenv("MINDBOT_MAX_CONCURRENT", "64")))
 
 
+def _log_callback_debug_failure(
+    *,
+    debug_route_label: Optional[str],
+    debug_raw_body: Optional[bytes],
+    debug_request_headers: Optional[dict[str, str]],
+    body: dict[str, Any],
+    reason: str,
+    extra: Optional[dict[str, Any]] = None,
+) -> None:
+    """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG=1 and router passed raw bytes."""
+    if debug_raw_body is None:
+        return
+    from services.mindbot.dingtalk_inbound_log import log_dingtalk_callback_failure_details
+
+    log_dingtalk_callback_failure_details(
+        route_label=debug_route_label or "?",
+        headers=debug_request_headers or {},
+        raw_body=debug_raw_body,
+        parsed_body=body,
+        reason=reason,
+        extra=extra,
+    )
+
+
 def _parse_dify_inputs_from_config(
     cfg: OrganizationMindbotConfig,
 ) -> Optional[dict[str, Any]]:
@@ -192,6 +216,9 @@ async def process_dingtalk_callback(
     body: dict[str, Any],
     resolved_config: Optional[OrganizationMindbotConfig] = None,
     robot_code_override: Optional[str] = None,
+    debug_route_label: Optional[str] = None,
+    debug_raw_body: Optional[bytes] = None,
+    debug_request_headers: Optional[dict[str, str]] = None,
 ) -> tuple[int, dict[str, str]]:
     """
     Handle one DingTalk callback.
@@ -211,18 +238,55 @@ async def process_dingtalk_callback(
         logger.info("[MindBot] shared callback URL connectivity probe (empty body, no signature)")
         return 200, mindbot_error_headers(MindbotErrorCode.OK)
 
+    attempted_robot_code: Optional[str] = None
     cfg = resolved_config
     if cfg is None:
         rc = robot_code_override or body.get("robotCode") or body.get("robot_code")
         if not rc or not isinstance(rc, str):
             logger.warning("[MindBot] Missing robotCode in payload")
+            _log_callback_debug_failure(
+                debug_route_label=debug_route_label,
+                debug_raw_body=debug_raw_body,
+                debug_request_headers=debug_request_headers,
+                body=body,
+                reason="missing_robot_code",
+                extra={"robot_code_override": robot_code_override},
+            )
             return 400, mindbot_error_headers(MindbotErrorCode.MISSING_ROBOT_CODE)
-        cfg = await repo.get_by_robot_code(rc.strip())
+        attempted_robot_code = rc.strip()
+        cfg = await repo.get_by_robot_code(attempted_robot_code)
     if cfg is None:
-        logger.warning("[MindBot] No enabled config for callback")
+        logger.warning(
+            "[MindBot] No enabled MindBot config for robot_code=%r "
+            "(no DB row with this dingtalk_robot_code and is_enabled=true, or code mismatch)",
+            attempted_robot_code,
+        )
+        _log_callback_debug_failure(
+            debug_route_label=debug_route_label,
+            debug_raw_body=debug_raw_body,
+            debug_request_headers=debug_request_headers,
+            body=body,
+            reason="config_not_found",
+            extra={"attempted_robot_code": attempted_robot_code},
+        )
         return 404, mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND)
     if not cfg.is_enabled:
-        logger.warning("[MindBot] No enabled config for callback")
+        logger.warning(
+            "[MindBot] MindBot config is disabled organization_id=%s robot_code=%s",
+            cfg.organization_id,
+            cfg.dingtalk_robot_code.strip(),
+        )
+        _log_callback_debug_failure(
+            debug_route_label=debug_route_label,
+            debug_raw_body=debug_raw_body,
+            debug_request_headers=debug_request_headers,
+            body=body,
+            reason="config_disabled",
+            extra={
+                "organization_id": cfg.organization_id,
+                "robot_code": cfg.dingtalk_robot_code.strip(),
+            },
+        )
         return 404, mindbot_error_headers(
             MindbotErrorCode.CONFIG_NOT_FOUND,
             organization_id=cfg.organization_id,
@@ -241,6 +305,18 @@ async def process_dingtalk_callback(
         if isinstance(rc_in_body, str) and rc_in_body.strip():
             if rc_in_body.strip() != cfg.dingtalk_robot_code.strip():
                 logger.warning("[MindBot] robotCode does not match org-scoped callback config")
+                _log_callback_debug_failure(
+                    debug_route_label=debug_route_label,
+                    debug_raw_body=debug_raw_body,
+                    debug_request_headers=debug_request_headers,
+                    body=body,
+                    reason="robot_code_mismatch",
+                    extra={
+                        "organization_id": cfg.organization_id,
+                        "expected_robot_code": cfg.dingtalk_robot_code.strip(),
+                        "body_robot_code": rc_in_body.strip(),
+                    },
+                )
                 return 400, _hdr(MindbotErrorCode.ROBOT_CODE_MISMATCH)
 
     if resolved_config is not None:
@@ -254,6 +330,18 @@ async def process_dingtalk_callback(
 
     if not verify_dingtalk_sign(timestamp_header, sign_header, cfg.dingtalk_app_secret.strip()):
         logger.warning("[MindBot] Invalid DingTalk signature")
+        _log_callback_debug_failure(
+            debug_route_label=debug_route_label,
+            debug_raw_body=debug_raw_body,
+            debug_request_headers=debug_request_headers,
+            body=body,
+            reason="invalid_signature",
+            extra={
+                "organization_id": cfg.organization_id,
+                "timestamp_header_present": bool((timestamp_header or "").strip()),
+                "sign_header_present": bool((sign_header or "").strip()),
+            },
+        )
         return 401, _hdr(MindbotErrorCode.INVALID_SIGNATURE)
 
     msg_id = body.get("msgId") or body.get("msg_id")

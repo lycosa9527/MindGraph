@@ -22,7 +22,10 @@ from services.mindbot.dingtalk_platform_event import (
     is_dingtalk_platform_event_request,
     shared_url_platform_event_error,
 )
-from services.mindbot.dingtalk_inbound_log import log_dingtalk_inbound
+from services.mindbot.dingtalk_inbound_log import (
+    debug_callback_failure_logging_enabled,
+    log_dingtalk_inbound,
+)
 from services.mindbot.mindbot_callback import process_dingtalk_callback
 from services.mindbot.platforms.dingtalk.verify import extract_dingtalk_robot_auth_headers
 from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
@@ -221,18 +224,22 @@ async def dingtalk_callback_shared(
     """Shared URL: resolve tenant by ``robotCode`` in JSON body (HTTP receive mode)."""
     _require_mindbot_feature()
     raw = await request.body()
-    log_dingtalk_inbound(request, raw, "shared")
     body = _dict_from_dingtalk_raw_body(raw)
+    log_dingtalk_inbound(request, raw, "shared", parsed_body=body)
     if is_dingtalk_platform_event_request(request, body):
         resp = shared_url_platform_event_error()
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
     ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
+    dbg = debug_callback_failure_logging_enabled()
     code, resp_headers = await process_dingtalk_callback(
         db,
         timestamp_header=ts,
         sign_header=sg,
         body=body,
+        debug_route_label="shared",
+        debug_raw_body=raw if dbg else None,
+        debug_request_headers=dict(request.headers) if dbg else None,
     )
     mindbot_metrics.record_from_headers(resp_headers)
     return Response(status_code=code, headers=resp_headers)
@@ -247,8 +254,8 @@ async def dingtalk_callback_per_org(
     """Per-org URL: robot HMAC (headers) or open-platform event subscription (query + encrypt)."""
     _require_mindbot_feature()
     raw = await request.body()
-    log_dingtalk_inbound(request, raw, f"org_{organization_id}")
     body = _dict_from_dingtalk_raw_body(raw)
+    log_dingtalk_inbound(request, raw, f"org_{organization_id}", parsed_body=body)
     repo = MindbotConfigRepository(db)
     if is_dingtalk_platform_event_request(request, body):
         cfg_any = await repo.get_by_organization_id(organization_id)
@@ -271,12 +278,16 @@ async def dingtalk_callback_per_org(
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
     ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
+    dbg = debug_callback_failure_logging_enabled()
     code, resp_headers = await process_dingtalk_callback(
         db,
         timestamp_header=ts,
         sign_header=sg,
         body=body,
         resolved_config=cfg,
+        debug_route_label=f"org_{organization_id}",
+        debug_raw_body=raw if dbg else None,
+        debug_request_headers=dict(request.headers) if dbg else None,
     )
     mindbot_metrics.record_from_headers(resp_headers)
     return Response(status_code=code, headers=resp_headers)
