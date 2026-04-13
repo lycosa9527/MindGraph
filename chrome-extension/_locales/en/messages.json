@@ -127,6 +127,14 @@
     "message": "Service temporarily unavailable. Try again later.",
     "description": "HTTP 503"
   },
+  "errFetchTimeout": {
+    "message": "The server took too long to respond (over 3 minutes). Try again or check your network.",
+    "description": "AbortController timeout on PNG fetch"
+  },
+  "errVerifyTimeout": {
+    "message": "Credential check timed out. Try again or check your network.",
+    "description": "AbortController timeout on GET /me"
+  },
   "errNotPng": {
     "message": "The server did not return a PNG image. Check your base URL and account.",
     "description": "Wrong content type"
@@ -170,5 +178,13 @@
   "errNetwork": {
     "message": "Could not reach the server. Check the base URL and your network.",
     "description": "Fetch failed"
+  },
+  "errNetworkDetail": {
+    "message": "Could not complete the request: $1",
+    "description": "Fetch failed with detail"
+  },
+  "errPortDisconnected": {
+    "message": "The extension closed the connection. Try again; if it keeps happening, reload MindGraph on chrome://extensions.",
+    "description": "Service worker port closed"
   }
 }

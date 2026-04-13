@@ -24,6 +24,16 @@ logger = logging.getLogger(__name__)
 router = APIRouter(tags=["api"])
 
 
+def _sanitize_correlation_header(value: Optional[str], max_len: int = 128) -> Optional[str]:
+    """Normalize X-Request-Id / client hints for logs and LLM metadata."""
+    if not value or not isinstance(value, str):
+        return None
+    stripped = value.strip()
+    if not stripped:
+        return None
+    return stripped[:max_len]
+
+
 @router.post("/generate_from_web_content")
 async def generate_from_web_content(
     req: WebContentGenerateRequest,
@@ -43,6 +53,8 @@ async def generate_from_web_content(
         getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
     )
 
+    http_request_id = _sanitize_correlation_header(request.headers.get("X-Request-Id"))
+
     agent = WebContentMindMapAgent(model="qwen")
     result = await agent.generate_from_page_content(
         page_content=req.page_content.strip(),
@@ -54,6 +66,7 @@ async def generate_from_web_content(
         organization_id=organization_id,
         request_type="diagram_generation",
         endpoint_path="/api/generate_from_web_content",
+        http_request_id=http_request_id,
     )
 
     if not result.get("success"):
@@ -86,6 +99,15 @@ async def web_content_mindmap_png(
         getattr(current_user, "organization_id", None) if current_user and hasattr(current_user, "id") else None
     )
 
+    http_request_id = _sanitize_correlation_header(request.headers.get("X-Request-Id"))
+    client_label = _sanitize_correlation_header(request.headers.get("X-MG-Client"), max_len=64) or "unspecified"
+    logger.info(
+        "[TokenAudit] web_content_mindmap_png: user=%s, client=%s, request_id=%s",
+        user_id if user_id is not None else "anonymous",
+        client_label,
+        http_request_id or "none",
+    )
+
     agent = WebContentMindMapAgent(model="qwen")
     result = await agent.generate_from_page_content(
         page_content=req.page_content.strip(),
@@ -97,6 +119,7 @@ async def web_content_mindmap_png(
         organization_id=organization_id,
         request_type="diagram_generation",
         endpoint_path="/api/web_content_mindmap_png",
+        http_request_id=http_request_id,
     )
 
     if not result.get("success"):
@@ -122,7 +145,12 @@ async def web_content_mindmap_png(
             height=req.height or 800,
         )
     except Exception as exc:
-        logger.error("web_content_mindmap_png screenshot error: %s", exc, exc_info=True)
+        logger.error(
+            "web_content_mindmap_png screenshot error: request_id=%s %s",
+            http_request_id or "none",
+            exc,
+            exc_info=True,
+        )
         raise HTTPException(status_code=500, detail=Messages.error("export_failed", lang, str(exc))) from exc
 
     return Response(

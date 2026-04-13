@@ -33,10 +33,11 @@ class WebContentMindMapAgent(MindMapAgent):
         organization_id: Optional[int] = None,
         request_type: str = "diagram_generation",
         endpoint_path: Optional[str] = None,
+        http_request_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         """Generate a mind map from extracted page content."""
         try:
-            spec, recovery_warnings = await self._generate_mind_map_spec_from_web(
+            spec, recovery_warnings = await self._spec_from_web_page_content(
                 page_content=page_content,
                 language=language,
                 content_format=content_format,
@@ -46,6 +47,7 @@ class WebContentMindMapAgent(MindMapAgent):
                 organization_id=organization_id,
                 request_type=request_type,
                 endpoint_path=endpoint_path,
+                http_request_id=http_request_id,
             )
             if not spec:
                 return {
@@ -80,7 +82,7 @@ class WebContentMindMapAgent(MindMapAgent):
         except Exception as exc:
             return {"success": False, "error": f"Generation failed: {str(exc)}"}
 
-    async def _generate_mind_map_spec_from_web(
+    async def _spec_from_web_page_content(
         self,
         page_content: str,
         language: str,
@@ -91,8 +93,9 @@ class WebContentMindMapAgent(MindMapAgent):
         organization_id: Optional[int],
         request_type: str,
         endpoint_path: Optional[str],
+        http_request_id: Optional[str] = None,
     ) -> Tuple[Optional[Dict[str, Any]], Optional[List[str]]]:
-        """Generate mind map spec from web page content."""
+        """Call LLM to build mind map spec from extracted web page text."""
         system_prompt = get_prompt("mind_map", language, "web_content_generation")
         if not system_prompt:
             return None, None
@@ -129,6 +132,7 @@ class WebContentMindMapAgent(MindMapAgent):
             diagram_type="mind_map",
             use_knowledge_base=False,
             dashscope_model=config.QWEN_MODEL_CLASSIFICATION,
+            http_request_id=http_request_id,
         )
 
         return self._parse_spec_response(response)

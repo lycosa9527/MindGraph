@@ -118,6 +118,7 @@ class LLMService:
         endpoint_path: Optional[str] = None,
         session_id: Optional[str] = None,
         conversation_id: Optional[str] = None,
+        http_request_id: Optional[str] = None,
         skip_load_balancing: bool = False,  # Skip load balancing if already applied
         use_knowledge_base: bool = True,  # Enable RAG context injection
         **kwargs,
@@ -275,6 +276,7 @@ class LLMService:
                 "endpoint_path": endpoint_path,
                 "session_id": session_id,
                 "conversation_id": conversation_id,
+                "http_request_id": http_request_id,
             }
             await self.metrics_tracker.track_all(
                 model=model,
@@ -304,6 +306,7 @@ class LLMService:
                 "endpoint_path": endpoint_path,
                 "session_id": session_id,
                 "conversation_id": conversation_id,
+                "http_request_id": http_request_id,
             }
             await self.metrics_tracker.track_all(
                 model=model,

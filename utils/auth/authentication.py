@@ -115,7 +115,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         from utils.auth.user_tokens import validate_user_token
 
         account_number = request.headers.get("X-MG-Account", "").strip()
-        return await validate_user_token(token, account_number)
+        return await validate_user_token(token, account_number, request=request)
 
     payload = decode_access_token(token)
 
@@ -282,7 +282,7 @@ async def get_current_user_or_api_key(
                     status_code=status.HTTP_401_UNAUTHORIZED,
                     detail="X-MG-Account header required with API token",
                 )
-            return await validate_user_token(token, account_number)
+            return await validate_user_token(token, account_number, request=request)
         try:
             payload = decode_access_token(token)
             user_id = payload.get("sub")

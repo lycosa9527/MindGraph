@@ -14,6 +14,8 @@ Set headers on all HTTP calls:
 
 - `Authorization: Bearer {MINDGRAPH_TOKEN}` — token starts with `mgat_`
 - `X-MG-Account: {MINDGRAPH_ACCOUNT}` — same phone number as the MindGraph account (no spaces)
+- `X-MG-Client: openclaw` — include on every request so server logs can attribute API token traffic to OpenClaw (optional but recommended)
+- `X-Request-Id` — optional UUID per request; echoed in server `[TokenAudit]` / LLM metadata (`http_request_id`) for tracing
 
 Never print or log the token or account in assistant-visible output.
 

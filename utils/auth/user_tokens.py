@@ -1,12 +1,14 @@
 """Validation for user-scoped API tokens (mgat_ prefix)."""
 
+from __future__ import annotations
+
 import hashlib
 import logging
 from datetime import UTC, datetime
 from types import SimpleNamespace
 from typing import Optional
 
-from fastapi import HTTPException, status
+from fastapi import HTTPException, Request, status
 from sqlalchemy import select
 
 from config.database import AsyncSessionLocal
@@ -65,7 +67,33 @@ async def _check_org_access_async(user: User) -> None:
             )
 
 
-async def validate_user_token(token: str, account_number: str) -> User:
+def _log_mgat_audit(request: Optional[Request], user_id: int) -> None:
+    """Emit TokenAudit line for mgat_ validation (OpenClaw, Chrome extension, etc.)."""
+    if request is None:
+        return
+    if getattr(request.state, "_mgat_audit_logged", False):
+        return
+    setattr(request.state, "_mgat_audit_logged", True)
+    from utils.auth.request_helpers import get_client_ip
+
+    raw_client = (request.headers.get("X-MG-Client") or "").strip()
+    client = raw_client[:64] if raw_client else "unspecified"
+    ip = get_client_ip(request)
+    path = request.url.path
+    logger.info(
+        "[TokenAudit] mgat validated: user=%s, ip=%s, client=%s, path=%s",
+        user_id,
+        ip,
+        client,
+        path,
+    )
+
+
+async def validate_user_token(
+    token: str,
+    account_number: str,
+    request: Optional[Request] = None,
+) -> User:
     """
     Validate mgat_ token + account phone binding.
 
@@ -118,4 +146,5 @@ async def validate_user_token(token: str, account_number: str) -> User:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
 
     await _check_org_access_async(user)
+    _log_mgat_audit(request, user.id)
     return user

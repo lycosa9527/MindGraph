@@ -7,6 +7,19 @@
 
 const MAX_CHARS = 32000;
 
+/** Abort fetch if server does not respond (LLM + Playwright can exceed 60s). */
+const FETCH_TIMEOUT_MS = 180000;
+
+/**
+ * @returns {string}
+ */
+function newRequestId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 /** @type {readonly string[]} */
 const PROMPT_OUTPUT_LANGUAGE_CODES = Object.freeze([
   "zh",
@@ -241,7 +254,12 @@ function postProgress(port, stage) {
 async function runGenerateMindmap(tabId, options) {
   const { progressPort, fromContextMenu } = options;
 
+  let finished = false;
   const finish = (result) => {
+    if (finished) {
+      return;
+    }
+    finished = true;
     if (progressPort) {
       try {
         progressPort.postMessage({ type: "result", ...result });
@@ -258,6 +276,7 @@ async function runGenerateMindmap(tabId, options) {
     }
   };
 
+  let apiUrl = "";
   try {
     const settings = await chrome.storage.local.get(["baseUrl", "account", "token", "saveAs"]);
     const baseUrl = normalizeBaseUrl(settings.baseUrl);
@@ -270,16 +289,27 @@ async function runGenerateMindmap(tabId, options) {
 
     const tab = await chrome.tabs.get(tabId);
     if (isRestrictedTabUrl(tab.url)) {
+      console.error("[MindGraph] restricted tab URL", tab.url);
       finish({ ok: false, error: chrome.i18n.getMessage("errRestrictedPage") });
       return;
     }
 
     postProgress(progressPort, "reading");
-    const results = await chrome.scripting.executeScript({
-      target: { tabId },
-      func: capturePageContent,
-      args: [MAX_CHARS, PROMPT_OUTPUT_LANGUAGE_CODES],
-    });
+    let results;
+    try {
+      results = await chrome.scripting.executeScript({
+        target: { tabId },
+        func: capturePageContent,
+        args: [MAX_CHARS, PROMPT_OUTPUT_LANGUAGE_CODES],
+      });
+    } catch (scriptErr) {
+      console.error("[MindGraph] executeScript failed", scriptErr);
+      finish({
+        ok: false,
+        error: scriptErr?.message || String(scriptErr),
+      });
+      return;
+    }
 
     const payload = results?.[0]?.result;
     if (!payload || typeof payload.page_content !== "string" || !payload.page_content.trim()) {
@@ -288,6 +318,8 @@ async function runGenerateMindmap(tabId, options) {
     }
 
     const url = `${baseUrl}/api/web_content_mindmap_png`;
+    apiUrl = url;
+    console.info("[MindGraph] POST", url);
     const body = {
       page_content: payload.page_content,
       content_format: payload.content_format || "text/plain",
@@ -297,18 +329,35 @@ async function runGenerateMindmap(tabId, options) {
     };
 
     postProgress(progressPort, "sending");
-    const fetchPromise = fetch(url, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${token}`,
-        "X-MG-Account": account,
-      },
-      body: JSON.stringify(body),
-    });
+    const requestId = newRequestId();
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+    let res;
+    try {
+      res = await fetch(url, {
+        method: "POST",
+        signal: controller.signal,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+          "X-MG-Account": account,
+          "X-MG-Client": "chrome-extension",
+          "X-Request-Id": requestId,
+        },
+        body: JSON.stringify(body),
+      });
+    } catch (fetchErr) {
+      clearTimeout(timeoutId);
+      if (fetchErr && fetchErr.name === "AbortError") {
+        console.error("[MindGraph] fetch timeout", FETCH_TIMEOUT_MS, "ms", url, requestId);
+        finish({ ok: false, error: chrome.i18n.getMessage("errFetchTimeout") });
+        return;
+      }
+      throw fetchErr;
+    }
+    clearTimeout(timeoutId);
     await Promise.resolve();
     postProgress(progressPort, "serverProcessing");
-    const res = await fetchPromise;
 
     if (!res.ok) {
       if (res.status === 429) {
@@ -320,6 +369,7 @@ async function runGenerateMindmap(tabId, options) {
         return;
       }
       const detail = await parseErrorDetail(res);
+      console.error("[MindGraph] API HTTP error", res.status, url, detail);
       finish({
         ok: false,
         error: chrome.i18n.getMessage("errApi", [String(res.status), detail]),
@@ -329,6 +379,13 @@ async function runGenerateMindmap(tabId, options) {
 
     const contentType = (res.headers.get("Content-Type") || "").toLowerCase();
     if (!contentType.includes("image/png")) {
+      let bodyPreview = "";
+      try {
+        bodyPreview = (await res.text()).slice(0, 500);
+      } catch {
+        bodyPreview = "";
+      }
+      console.error("[MindGraph] expected image/png, got", contentType, bodyPreview || "(empty body)");
       finish({ ok: false, error: chrome.i18n.getMessage("errNotPng") });
       return;
     }
@@ -348,6 +405,7 @@ async function runGenerateMindmap(tabId, options) {
 
     finish({ ok: true });
   } catch (err) {
+    console.error("[MindGraph] runGenerateMindmap", apiUrl || "(before URL)", err);
     finish({ ok: false, error: err?.message || String(err) });
   }
 }
@@ -384,7 +442,9 @@ chrome.runtime.onConnect.addListener((port) => {
       }
       return;
     }
-    runGenerateMindmap(msg.tabId, { progressPort: port });
+    void runGenerateMindmap(msg.tabId, { progressPort: port }).catch((err) => {
+      console.error("[MindGraph] runGenerateMindmap unhandled", err);
+    });
   });
 });
 

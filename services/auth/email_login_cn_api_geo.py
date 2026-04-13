@@ -75,7 +75,7 @@ async def _resolve_user_for_email_cn_geo(request: Request) -> Optional[User]:
     account = (request.headers.get("X-MG-Account") or "").strip()
     if not account:
         return None
-    return await validate_user_token(token, account)
+    return await validate_user_token(token, account, request=request)
 
 
 async def maybe_enforce_email_login_cn_geo_api_async(request: Request) -> Optional[JSONResponse]:

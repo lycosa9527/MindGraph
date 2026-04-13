@@ -127,6 +127,14 @@
     "message": "服务暂时不可用，请稍后重试。",
     "description": "HTTP 503"
   },
+  "errFetchTimeout": {
+    "message": "服务器响应超时（超过 3 分钟）。请重试或检查网络。",
+    "description": "PNG 请求超时"
+  },
+  "errVerifyTimeout": {
+    "message": "校验凭据超时。请重试或检查网络。",
+    "description": "GET /me 超时"
+  },
   "errNotPng": {
     "message": "服务器未返回 PNG 图片。请检查基础地址与账号设置。",
     "description": "内容类型错误"
@@ -170,5 +178,13 @@
   "errNetwork": {
     "message": "无法连接服务器，请检查基础地址与网络。",
     "description": "请求失败"
+  },
+  "errNetworkDetail": {
+    "message": "请求失败：$1",
+    "description": "带详情的网络错误"
+  },
+  "errPortDisconnected": {
+    "message": "与扩展的连接已断开。请重试；若仍失败，请在 chrome://extensions 中重新加载 MindGraph。",
+    "description": "后台连接关闭"
   }
 }

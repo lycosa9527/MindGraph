@@ -86,7 +86,7 @@ async def resolve_authenticated_user_optional(request: Request) -> Optional[User
         if not account:
             return None
         try:
-            return await validate_user_token(token, account)
+            return await validate_user_token(token, account, request=request)
         except HTTPException:
             return None
     try:

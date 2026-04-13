@@ -262,7 +262,7 @@ async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONRespo
     if not account:
         return None
 
-    user = await validate_user_token(token, account)
+    user = await validate_user_token(token, account, request=request)
     return maybe_enforce_vpn_cn_geo_for_user(request, user.id, user.phone)
 
 

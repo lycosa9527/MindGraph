@@ -23,6 +23,18 @@ function t(key, substitutions) {
   return msg || key;
 }
 
+const VERIFY_TIMEOUT_MS = 60000;
+
+/**
+ * @returns {string}
+ */
+function newRequestId() {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
 function applyLocaleToDocument() {
   const ui = chrome.i18n.getUILanguage();
   const lower = ui.toLowerCase();
@@ -101,18 +113,35 @@ async function parseHttpErrorDetail(res) {
 async function verifyCredentials(baseUrl, account, token) {
   const origin = baseUrl.replace(/\/+$/, "");
   const url = `${origin}/api/auth/me`;
-  const res = await fetch(url, {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "X-MG-Account": account,
-    },
-  });
-  if (res.ok) {
-    return { ok: true };
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), VERIFY_TIMEOUT_MS);
+  try {
+    const res = await fetch(url, {
+      method: "GET",
+      signal: controller.signal,
+      headers: {
+        Authorization: `Bearer ${token}`,
+        "X-MG-Account": account,
+        "X-MG-Client": "chrome-extension",
+        "X-Request-Id": newRequestId(),
+      },
+    });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      return { ok: true };
+    }
+    const detail = await parseHttpErrorDetail(res);
+    return { ok: false, error: t("errApi", [String(res.status), detail]) };
+  } catch (e) {
+    clearTimeout(timeoutId);
+    if (e && e.name === "AbortError") {
+      console.error("[MindGraph] verifyCredentials timeout", VERIFY_TIMEOUT_MS, "ms", url);
+      return { ok: false, error: t("errVerifyTimeout") };
+    }
+    const short = String(e?.message || e).slice(0, 200);
+    console.error("[MindGraph] verifyCredentials", short);
+    return { ok: false, error: t("errNetworkDetail", [short]) };
   }
-  const detail = await parseHttpErrorDetail(res);
-  return { ok: false, error: t("errApi", [String(res.status), detail]) };
 }
 
 const mainView = document.getElementById("main-view");
@@ -199,6 +228,7 @@ btnSave.addEventListener("click", async () => {
   try {
     const verified = await verifyCredentials(baseUrl, account, token);
     if (!verified.ok) {
+      console.error("[MindGraph] settings verify failed", verified.error);
       setStatus(settingsStatus, verified.error, "err");
       return;
     }
@@ -229,6 +259,7 @@ btnSave.addEventListener("click", async () => {
     });
     setStatus(settingsStatus, t("statusSaved"), "ok");
   } catch (e) {
+    console.error("[MindGraph] settings save error", e);
     setStatus(settingsStatus, t("errNetwork"), "err");
   } finally {
     btnSave.disabled = false;
@@ -286,7 +317,13 @@ btnGenerate.addEventListener("click", async () => {
         }
         settled = true;
         cleanup();
-        resolve({ ok: false, error: t("errFailed") });
+        const lastErr = chrome.runtime.lastError?.message;
+        resolve({
+          ok: false,
+          error: lastErr
+            ? `${t("errPortDisconnected")} (${lastErr})`
+            : t("errPortDisconnected"),
+        });
       };
       port.onMessage.addListener(onMessage);
       port.onDisconnect.addListener(onDisconnect);
@@ -297,10 +334,12 @@ btnGenerate.addEventListener("click", async () => {
     if (result?.ok) {
       setStatus(statusEl, t("statusDownloadStarted"), "ok");
     } else {
+      console.error("[MindGraph] generate failed", result?.error || result);
       setStatus(statusEl, result?.error || t("errFailed"), "err");
     }
   } catch (e) {
     setProgressVisible(false);
+    console.error("[MindGraph] generate exception", e);
     setStatus(statusEl, e?.message || String(e), "err");
   } finally {
     if (port) {

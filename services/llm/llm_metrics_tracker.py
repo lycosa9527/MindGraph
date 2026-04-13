@@ -48,6 +48,7 @@ class LLMMetricsTracker:
                 - endpoint_path: Optional[str]
                 - session_id: Optional[str]
                 - conversation_id: Optional[str]
+                - http_request_id: Optional[str] (client X-Request-Id for correlation)
             success: Whether request succeeded
             duration: Request duration in seconds
         """
