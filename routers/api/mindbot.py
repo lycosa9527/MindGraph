@@ -242,11 +242,15 @@ async def dingtalk_callback_shared(
     db: AsyncSession = Depends(get_async_db),
 ) -> Response:
     """
-    Shared URL (legacy): empty-body connectivity probe only.
+    Shared URL (legacy): connectivity probe and migration-period shim only.
 
     Real message delivery must use ``POST /dingtalk/callback/t/{public_callback_token}``
     or ``POST /dingtalk/orgs/{organization_id}/callback`` so the tenant is chosen from
-    the path, not from JSON ``robotCode`` (DingTalk often sends a placeholder).
+    the path, not from JSON ``robotCode`` (DingTalk often sends a placeholder that does
+    not match the stored robot code).
+
+    During migration, non-empty requests are acknowledged with 200 so DingTalk does not
+    mark the shared URL as permanently failed before each school updates their console URL.
     """
     _require_mindbot_feature()
     raw = await request.body()
@@ -267,6 +271,10 @@ async def dingtalk_callback_shared(
         debug_raw_body=raw if dbg else None,
         debug_request_headers=dict(request.headers) if dbg else None,
     )
+    if code == 404:
+        resp_headers = mindbot_error_headers(MindbotErrorCode.PATH_CALLBACK_REQUIRED)
+        mindbot_metrics.record_from_headers(resp_headers)
+        return Response(status_code=200, headers=resp_headers)
     mindbot_metrics.record_from_headers(resp_headers)
     return Response(status_code=code, headers=resp_headers)
 
