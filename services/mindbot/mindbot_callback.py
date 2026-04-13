@@ -67,7 +67,7 @@ def _log_callback_debug_failure(
     reason: str,
     extra: Optional[dict[str, Any]] = None,
 ) -> None:
-    """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG=1 and router passed raw bytes."""
+    """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG is on (default) and router passed raw bytes."""
     if debug_raw_body is None:
         return
     from services.mindbot.dingtalk_inbound_log import log_dingtalk_callback_failure_details
@@ -263,13 +263,13 @@ async def process_dingtalk_callback(
         _hint = ""
         if not dingtalk_inbound_logging_enabled():
             _hint = (
-                " For inbound request logging set MINDBOT_LOG_CALLBACK_INBOUND=1, "
-                "MINDBOT_LOG_CALLBACK_INBOUND_FULL=1, or MINDBOT_LOG_CALLBACK_DEBUG=1; restart the server."
+                " MindBot callback logging is off (set MINDBOT_LOG_CALLBACK_INBOUND or "
+                "INBOUND_FULL, or MINDBOT_LOG_CALLBACK_DEBUG; DEBUG defaults on unless "
+                "MINDBOT_LOG_CALLBACK_DEBUG=0)."
             )
         elif not debug_callback_failure_logging_enabled():
             _hint = (
-                " For raw body and headers on failed callbacks set MINDBOT_LOG_CALLBACK_DEBUG=1; "
-                "restart the server."
+                " Failure dumps need MINDBOT_LOG_CALLBACK_DEBUG=1 (default on unless DEBUG=0)."
             )
         logger.warning(
             "[MindBot] No enabled MindBot config for robot_code=%r "

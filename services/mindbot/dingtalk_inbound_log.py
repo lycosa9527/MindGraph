@@ -1,14 +1,12 @@
 """Optional logging for DingTalk HTTP traffic hitting MindBot callback routes.
 
-Set MINDBOT_LOG_CALLBACK_INBOUND_FULL=1 to log every callback: method, client,
-forwarded headers, all request headers, raw body (capped), and parsed JSON when
-the body is valid JSON.
+By default, MINDBOT_LOG_CALLBACK_DEBUG is on: full inbound logging (method, headers,
+raw body capped, parsed JSON) plus failure-context lines on rejected callbacks.
+Set MINDBOT_LOG_CALLBACK_DEBUG=0 to disable. May include secrets — restrict log access
+in production or turn off where appropriate.
 
-Set MINDBOT_LOG_CALLBACK_INBOUND=1 for a shorter line per request (path, query, body preview).
-
-Set MINDBOT_LOG_CALLBACK_DEBUG=1 for development: same as FULL for every inbound request,
-plus extra failure-context lines on rejected callbacks. May include secrets — disable
-in production or restrict log access.
+When MINDBOT_LOG_CALLBACK_DEBUG=0: set MINDBOT_LOG_CALLBACK_INBOUND_FULL=1 for full inbound,
+or MINDBOT_LOG_CALLBACK_INBOUND=1 for one compact line per request.
 """
 
 from __future__ import annotations
@@ -30,8 +28,8 @@ _JSON_LOG_MAX = 65536
 
 
 def debug_callback_failure_logging_enabled() -> bool:
-    """True when MINDBOT_LOG_CALLBACK_DEBUG=1 (full inbound + failure details)."""
-    return env_bool("MINDBOT_LOG_CALLBACK_DEBUG", False)
+    """True when MINDBOT_LOG_CALLBACK_DEBUG is unset or truthy (full inbound + failure details)."""
+    return env_bool("MINDBOT_LOG_CALLBACK_DEBUG", True)
 
 
 def dingtalk_inbound_logging_enabled() -> bool:
@@ -76,8 +74,8 @@ def log_dingtalk_inbound(
     Log one inbound request. Full mode logs headers, raw body, and optional parsed JSON;
     compact logs a short preview.
 
-    Does nothing unless MINDBOT_LOG_CALLBACK_INBOUND, MINDBOT_LOG_CALLBACK_INBOUND_FULL,
-    or MINDBOT_LOG_CALLBACK_DEBUG is set.
+    Does nothing when MINDBOT_LOG_CALLBACK_DEBUG=0 and compact/full inbound env vars
+    are unset or off.
     """
     if not dingtalk_inbound_logging_enabled():
         return
@@ -163,7 +161,7 @@ def log_dingtalk_callback_failure_details(
     """
     Log full callback context when a handler rejects the request.
 
-    Gated by MINDBOT_LOG_CALLBACK_DEBUG; safe to call only when debug_raw_body was captured.
+    Skipped when MINDBOT_LOG_CALLBACK_DEBUG=0 (default is on). Safe only when debug_raw_body was captured.
     """
     if not debug_callback_failure_logging_enabled():
         return
