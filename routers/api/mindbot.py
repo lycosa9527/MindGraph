@@ -22,34 +22,14 @@ from services.mindbot.dingtalk_platform_event import (
     is_dingtalk_platform_event_request,
     shared_url_platform_event_error,
 )
+from services.mindbot.dingtalk_inbound_log import log_dingtalk_inbound
 from services.mindbot.mindbot_callback import process_dingtalk_callback
 from services.mindbot.platforms.dingtalk.verify import extract_dingtalk_robot_auth_headers
 from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.mindbot_metrics import mindbot_metrics
 from utils.auth.roles import is_admin
-from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
-
-_INBOUND_PREVIEW_LEN = 2048
-
-
-def _log_mindbot_inbound(request: Request, raw: bytes, route_label: str) -> None:
-    """When MINDBOT_LOG_CALLBACK_INBOUND=1, log safe inbound metadata for DingTalk debugging."""
-    if not env_bool("MINDBOT_LOG_CALLBACK_INBOUND", False):
-        return
-    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
-    preview = raw.decode("utf-8", errors="replace")[:_INBOUND_PREVIEW_LEN]
-    logger.info(
-        "[MindBot] inbound %s path=%s query=%s body_len=%s timestamp=%s sign_len=%s preview=%r",
-        route_label,
-        request.url.path,
-        request.url.query or "",
-        len(raw),
-        "set" if ts else "missing",
-        len(sg or ""),
-        preview,
-    )
 
 
 def _dict_from_dingtalk_raw_body(raw: bytes) -> dict[str, Any]:
@@ -209,9 +189,10 @@ def _event_subscription_fields(
 
 
 @router.get("/dingtalk/callback")
-async def dingtalk_callback_shared_get() -> Response:
+async def dingtalk_callback_shared_get(request: Request) -> Response:
     """Optional GET reachability check (some DingTalk flows probe the URL with GET)."""
     _require_mindbot_feature()
+    log_dingtalk_inbound(request, b"", "shared_get")
     return Response(
         status_code=200,
         headers=mindbot_error_headers(MindbotErrorCode.OK),
@@ -219,9 +200,10 @@ async def dingtalk_callback_shared_get() -> Response:
 
 
 @router.get("/dingtalk/orgs/{organization_id}/callback")
-async def dingtalk_callback_per_org_get(organization_id: int) -> Response:
+async def dingtalk_callback_per_org_get(request: Request, organization_id: int) -> Response:
     """Optional GET reachability check for the per-organization callback URL."""
     _require_mindbot_feature()
+    log_dingtalk_inbound(request, b"", f"org_{organization_id}_get")
     return Response(
         status_code=200,
         headers=mindbot_error_headers(
@@ -239,7 +221,7 @@ async def dingtalk_callback_shared(
     """Shared URL: resolve tenant by ``robotCode`` in JSON body (HTTP receive mode)."""
     _require_mindbot_feature()
     raw = await request.body()
-    _log_mindbot_inbound(request, raw, "shared")
+    log_dingtalk_inbound(request, raw, "shared")
     body = _dict_from_dingtalk_raw_body(raw)
     if is_dingtalk_platform_event_request(request, body):
         resp = shared_url_platform_event_error()
@@ -265,7 +247,7 @@ async def dingtalk_callback_per_org(
     """Per-org URL: robot HMAC (headers) or open-platform event subscription (query + encrypt)."""
     _require_mindbot_feature()
     raw = await request.body()
-    _log_mindbot_inbound(request, raw, f"org_{organization_id}")
+    log_dingtalk_inbound(request, raw, f"org_{organization_id}")
     body = _dict_from_dingtalk_raw_body(raw)
     repo = MindbotConfigRepository(db)
     if is_dingtalk_platform_event_request(request, body):
