@@ -5,6 +5,25 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.82.0] - 2026-04-13
+
+### Added
+- **MindBot / DingTalk**: HTTP event subscription and OA-style callback encryption and decryption (`services/mindbot/`, `routers/api/mindbot.py`).
+- **MindBot / DingTalk**: `GET` handlers on the callback route for URL reachability checks; verbose and full inbound logging plus structured debug failure dumps; optional hints listing relevant environment variables when organization config is missing and inbound debug is off.
+- **MindBot / DingTalk**: Path-only callback isolation so webhook traffic can be routed separately from the main app.
+- **MindBot / DingTalk**: Opaque per-organization callback URLs using `public_callback_token` (shared base URL supported during migration).
+- **MindBot / admin**: Default Dify client timeout increased to 300 seconds; secrets masked in admin MindBot views.
+
+### Changed
+- **MindBot / DingTalk**: Robot HTTP header verification aligned with the official DingTalk validation flow.
+- **MindBot**: `MINDBOT_LOG_CALLBACK_DEBUG` defaults to on; repository hints and tests updated accordingly.
+- **Admin**: DingTalk MindBot field labels aligned with Client ID and Client Secret terminology.
+
+### Fixed
+- **MindBot / DingTalk**: Accept shared-robot callback URL verification probes that omit `robotCode`.
+- **MindBot / security**: Skip AbuseIPDB checks on DingTalk webhook paths; exempt DingTalk client IPs from Fail2ban-style bans and skip CSRF on those webhook paths so legitimate traffic is not blocked.
+- **MindBot / DingTalk**: Respond with HTTP 200 on the shared callback URL during token migration so DingTalk does not treat failures as repeated errors and risk blacklisting.
+
 ## [5.81.0] - 2026-04-13
 
 ### Added
