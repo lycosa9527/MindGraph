@@ -163,7 +163,12 @@ export default {
     '若 Dify 应用定义了输入变量，在此填写 JSON 对象（例如 {"grade":"7"}）。',
   'admin.mindbot.enabled': '启用集成',
   'admin.mindbot.callbackShared': '统一回调（请求体含 robotCode）',
-  'admin.mindbot.callbackPerOrg': '按校回调',
+  'admin.mindbot.callbackByToken': '按校回调（推荐）',
+  'admin.mindbot.callbackByTokenHint':
+    '当钉钉请求里的 robotCode 无法区分学校时使用。路径中的 token 为密钥，请妥善保管；泄露等同于暴露回调入口。',
+  'admin.mindbot.callbackPerOrg': '按校回调（路径含数字组织 ID）',
+  'admin.mindbot.callbackPerOrgLegacy': '兼容旧版：与带 token 的地址效果相同，但会暴露内部组织编号。',
+  'admin.mindbot.colCallbackUrl': '学校回调',
   'admin.mindbot.copyUrl': '复制',
   'admin.mindbot.copied': '已复制',
   'admin.mindbot.loadError': '加载 MindBot 设置失败',

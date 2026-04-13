@@ -52,6 +52,7 @@ def _sample_cfg() -> OrganizationMindbotConfig:
     row = OrganizationMindbotConfig(
         organization_id=1,
         dingtalk_robot_code="robot-1",
+        public_callback_token="tok_test_12345678901234567890",
         dingtalk_app_secret="test-secret-for-hmac-signing-32chars!!",
         dingtalk_client_id=None,
         dify_api_base_url="https://example.com/v1",

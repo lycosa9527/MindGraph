@@ -15,6 +15,7 @@ class OrganizationMindbotConfig(Base):
     __table_args__ = (
         UniqueConstraint("organization_id", name="uq_mindbot_config_organization_id"),
         UniqueConstraint("dingtalk_robot_code", name="uq_mindbot_config_robot_code"),
+        UniqueConstraint("public_callback_token", name="uq_mindbot_config_public_callback_token"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -25,6 +26,7 @@ class OrganizationMindbotConfig(Base):
         index=True,
     )
     dingtalk_robot_code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
+    public_callback_token: Mapped[str] = mapped_column(String(64), nullable=False)
     dingtalk_app_secret: Mapped[str] = mapped_column(Text, nullable=False)
     dingtalk_client_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     dingtalk_event_token: Mapped[str | None] = mapped_column(Text, nullable=True)

@@ -6,7 +6,7 @@ import json
 import logging
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Path, Request, Response, status
 from pydantic import BaseModel, Field
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -27,6 +27,7 @@ from services.mindbot.dingtalk_inbound_log import (
     log_dingtalk_inbound,
 )
 from services.mindbot.mindbot_callback import process_dingtalk_callback
+from services.mindbot.mindbot_callback_token import new_public_callback_token
 from services.mindbot.platforms.dingtalk.verify import extract_dingtalk_robot_auth_headers
 from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.mindbot_metrics import mindbot_metrics
@@ -108,6 +109,7 @@ class MindbotConfigPayload(BaseModel):
 class MindbotConfigResponse(BaseModel):
     id: int
     organization_id: int
+    public_callback_token: str
     dingtalk_robot_code: str
     dingtalk_client_id: Optional[str]
     dingtalk_event_token_set: bool
@@ -293,6 +295,71 @@ async def dingtalk_callback_per_org(
     return Response(status_code=code, headers=resp_headers)
 
 
+@router.get("/dingtalk/callback/t/{public_callback_token}")
+async def dingtalk_callback_by_token_get(
+    request: Request,
+    public_callback_token: str = Path(..., min_length=8, max_length=64),
+) -> Response:
+    """GET reachability for opaque per-school URL (no numeric organization id in path)."""
+    _require_mindbot_feature()
+    token = public_callback_token.strip()
+    log_dingtalk_inbound(request, b"", f"token_{token[:8]}_get")
+    return Response(
+        status_code=200,
+        headers=mindbot_error_headers(MindbotErrorCode.OK),
+    )
+
+
+@router.post("/dingtalk/callback/t/{public_callback_token}")
+async def dingtalk_callback_by_token(
+    request: Request,
+    db: AsyncSession = Depends(get_async_db),
+    public_callback_token: str = Path(..., min_length=8, max_length=64),
+) -> Response:
+    """Per-school URL: resolve tenant by secret token in path (HTTP receive mode)."""
+    _require_mindbot_feature()
+    token = public_callback_token.strip()
+    raw = await request.body()
+    body = _dict_from_dingtalk_raw_body(raw)
+    route_label = f"token_{token[:8]}"
+    log_dingtalk_inbound(request, raw, route_label, parsed_body=body)
+    repo = MindbotConfigRepository(db)
+    if is_dingtalk_platform_event_request(request, body):
+        cfg_any = await repo.get_by_public_callback_token(token)
+        if cfg_any is None:
+            resp = Response(
+                status_code=404,
+                headers=mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND),
+            )
+            mindbot_metrics.record_from_headers(dict(resp.headers))
+            return resp
+        resp = dingtalk_platform_event_response(request, body, cfg_any)
+        mindbot_metrics.record_from_headers(dict(resp.headers))
+        return resp
+    cfg = await repo.get_enabled_by_public_callback_token(token)
+    if cfg is None:
+        resp = Response(
+            status_code=404,
+            headers=mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND),
+        )
+        mindbot_metrics.record_from_headers(dict(resp.headers))
+        return resp
+    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
+    dbg = debug_callback_failure_logging_enabled()
+    code, resp_headers = await process_dingtalk_callback(
+        db,
+        timestamp_header=ts,
+        sign_header=sg,
+        body=body,
+        resolved_config=cfg,
+        debug_route_label=route_label,
+        debug_raw_body=raw if dbg else None,
+        debug_request_headers=dict(request.headers) if dbg else None,
+    )
+    mindbot_metrics.record_from_headers(resp_headers)
+    return Response(status_code=code, headers=resp_headers)
+
+
 def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
     tok = (row.dingtalk_event_token or "").strip()
     aes = (row.dingtalk_event_aes_key or "").strip()
@@ -300,6 +367,7 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
     return MindbotConfigResponse(
         id=row.id,
         organization_id=row.organization_id,
+        public_callback_token=row.public_callback_token.strip(),
         dingtalk_robot_code=row.dingtalk_robot_code,
         dingtalk_client_id=row.dingtalk_client_id,
         dingtalk_event_token_set=bool(tok),
@@ -384,6 +452,7 @@ async def admin_upsert_mindbot_config(
         row = OrganizationMindbotConfig(
             organization_id=organization_id,
             dingtalk_robot_code=payload.dingtalk_robot_code.strip(),
+            public_callback_token=new_public_callback_token(),
             dingtalk_app_secret=app_secret,
             dingtalk_client_id=(payload.dingtalk_client_id or "").strip() or None,
             dingtalk_event_token=evt_token,

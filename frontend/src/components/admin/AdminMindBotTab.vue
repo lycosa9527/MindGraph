@@ -21,6 +21,7 @@ const { featureMindbot } = useFeatureFlags()
 interface MindbotConfigRow {
   id: number
   organization_id: number
+  public_callback_token: string
   dingtalk_robot_code: string
   dingtalk_client_id: string | null
   dingtalk_event_token_set: boolean
@@ -63,9 +64,18 @@ function callbackShared(): string {
   return `${apiMindbotBase.value}/dingtalk/callback`
 }
 
+function buildCallbackUrlByToken(token: string): string {
+  const t = token.trim()
+  return `${apiMindbotBase.value}/dingtalk/callback/t/${encodeURIComponent(t)}`
+}
+
 function callbackPerOrg(organizationId: number): string {
   return `${apiMindbotBase.value}/dingtalk/orgs/${organizationId}/callback`
 }
+
+const callbackTokenPattern = computed(
+  () => `${apiMindbotBase.value}/dingtalk/callback/t/{token}`,
+)
 
 const callbackPerOrgPattern = computed(
   () => `${apiMindbotBase.value}/dingtalk/orgs/{organization_id}/callback`,
@@ -328,7 +338,23 @@ onMounted(() => {
         </el-button>
       </div>
       <div class="pt-2">
+        <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackByToken') }}</div>
+        <div class="text-xs text-gray-600 mb-1">{{ t('admin.mindbot.callbackByTokenHint') }}</div>
+        <div class="flex flex-wrap items-center gap-2 mt-1">
+          <code class="text-xs break-all flex-1 min-w-0">{{ callbackTokenPattern }}</code>
+          <el-button
+            v-if="configs.length === 1 && configs[0].public_callback_token"
+            size="small"
+            :icon="DocumentCopy"
+            @click="copyUrl(buildCallbackUrlByToken(configs[0].public_callback_token))"
+          >
+            {{ t('admin.mindbot.copyUrl') }}
+          </el-button>
+        </div>
+      </div>
+      <div class="pt-2">
         <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackPerOrg') }}</div>
+        <div class="text-xs text-gray-600 mb-1">{{ t('admin.mindbot.callbackPerOrgLegacy') }}</div>
         <div class="flex flex-wrap items-center gap-2 mt-1">
           <code class="text-xs break-all flex-1 min-w-0">{{ callbackPerOrgPattern }}</code>
           <el-button
@@ -365,6 +391,21 @@ onMounted(() => {
         >
           <template #default="{ row }">
             {{ orgNameById(row.organization_id) }}
+          </template>
+        </el-table-column>
+        <el-table-column
+          :label="t('admin.mindbot.colCallbackUrl')"
+          min-width="120"
+        >
+          <template #default="{ row }">
+            <el-button
+              v-if="row.public_callback_token"
+              size="small"
+              :icon="DocumentCopy"
+              @click="copyUrl(buildCallbackUrlByToken(row.public_callback_token))"
+            >
+              {{ t('admin.mindbot.copyUrl') }}
+            </el-button>
           </template>
         </el-table-column>
         <el-table-column
@@ -539,6 +580,25 @@ onMounted(() => {
         label-position="top"
         class="max-w-xl space-y-2"
       >
+        <div
+          v-if="editingOrgRow?.public_callback_token"
+          class="rounded-lg border border-gray-200 bg-white p-3 mb-4 space-y-2"
+        >
+          <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackByToken') }}</div>
+          <div class="text-xs text-gray-600">{{ t('admin.mindbot.callbackByTokenHint') }}</div>
+          <div class="flex flex-wrap items-center gap-2">
+            <code class="text-xs break-all flex-1 min-w-0">{{
+              buildCallbackUrlByToken(editingOrgRow.public_callback_token)
+            }}</code>
+            <el-button
+              size="small"
+              :icon="DocumentCopy"
+              @click="copyUrl(buildCallbackUrlByToken(editingOrgRow.public_callback_token))"
+            >
+              {{ t('admin.mindbot.copyUrl') }}
+            </el-button>
+          </div>
+        </div>
         <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
           <el-input v-model="form.dingtalk_robot_code" />
         </el-form-item>

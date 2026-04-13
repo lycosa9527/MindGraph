@@ -23,6 +23,23 @@ class MindbotConfigRepository:
         )
         return result.scalar_one_or_none()
 
+    async def get_by_public_callback_token(self, token: str) -> Optional[OrganizationMindbotConfig]:
+        result = await self._session.execute(
+            select(OrganizationMindbotConfig).where(
+                OrganizationMindbotConfig.public_callback_token == token,
+            )
+        )
+        return result.scalar_one_or_none()
+
+    async def get_enabled_by_public_callback_token(self, token: str) -> Optional[OrganizationMindbotConfig]:
+        result = await self._session.execute(
+            select(OrganizationMindbotConfig).where(
+                OrganizationMindbotConfig.public_callback_token == token,
+                OrganizationMindbotConfig.is_enabled.is_(True),
+            )
+        )
+        return result.scalar_one_or_none()
+
     async def get_by_organization_id(self, organization_id: int) -> Optional[OrganizationMindbotConfig]:
         result = await self._session.execute(
             select(OrganizationMindbotConfig).where(

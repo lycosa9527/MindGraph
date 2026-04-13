@@ -168,7 +168,12 @@ export default {
     'If your Dify app defines input variables, set a JSON object here (e.g. {"grade":"7"}).',
   'admin.mindbot.enabled': 'Enable integration',
   'admin.mindbot.callbackShared': 'Shared callback (robotCode in body)',
-  'admin.mindbot.callbackPerOrg': 'Per-organization callback',
+  'admin.mindbot.callbackByToken': 'Per-school callback (recommended)',
+  'admin.mindbot.callbackByTokenHint':
+    'Use this URL in DingTalk when robotCode in the payload is not unique. The token is secret—treat it like a password; anyone with the URL can hit your webhook.',
+  'admin.mindbot.callbackPerOrg': 'Per-organization callback (numeric id in path)',
+  'admin.mindbot.callbackPerOrgLegacy': 'Legacy: same behavior as the token URL, but exposes internal organization id.',
+  'admin.mindbot.colCallbackUrl': 'School callback',
   'admin.mindbot.copyUrl': 'Copy',
   'admin.mindbot.copied': 'Copied',
   'admin.mindbot.loadError': 'Failed to load MindBot settings',
