@@ -70,6 +70,10 @@ def _should_skip_abuseipdb_path(path: str) -> bool:
         return True
     if path.startswith("/assets/"):
         return True
+    # External webhooks (DingTalk MindBot, etc.): third-party egress must not be
+    # blocked by shared-IP / datacenter AbuseIPDB scores.
+    if path.startswith("/api/mindbot"):
+        return True
     if path in ("/favicon.ico", "/robots.txt"):
         return True
     return False
