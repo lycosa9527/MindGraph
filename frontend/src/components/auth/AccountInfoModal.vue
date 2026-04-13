@@ -41,6 +41,10 @@ const showChangePhoneModal = ref(false)
 const showChangePasswordModal = ref(false)
 const showApiTokenModal = ref(false)
 
+/** Same-origin API paths; cookies sent for GET (session). */
+const openclawSkillZipUrl = '/api/downloads/mindgraph-openclaw-skill'
+const chromeExtensionZipUrl = '/api/downloads/mindgraph-chrome-extension'
+
 // Get user data
 const userName = computed(() => authStore.user?.username || '')
 const userPhone = computed(() => {
@@ -122,12 +126,12 @@ function handlePhoneChangeSuccess() {
                 >
                   头像
                 </label>
-                <div class="flex items-center gap-4">
-                  <div class="text-5xl">{{ currentAvatar }}</div>
+                <div class="flex flex-wrap items-center gap-4">
+                  <div class="text-5xl shrink-0">{{ currentAvatar }}</div>
                   <el-button
                     round
                     size="small"
-                    class="edit-avatar-btn"
+                    class="edit-avatar-btn shrink-0"
                     @click="openAvatarModal"
                   >
                     编辑
@@ -210,18 +214,40 @@ function handlePhoneChangeSuccess() {
                     class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
                   />
                 </div>
+
+                <div>
+                  <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
+                    {{ t('auth.accountPlugin') }}
+                  </label>
+                  <div class="flex flex-wrap items-center gap-2">
+                    <a
+                      class="account-plugin-pill account-plugin-pill--openclaw"
+                      :href="openclawSkillZipUrl"
+                      download
+                    >
+                      {{ t('auth.downloadOpenclawSkill') }}
+                    </a>
+                    <a
+                      class="account-plugin-pill account-plugin-pill--chrome"
+                      :href="chromeExtensionZipUrl"
+                      download
+                    >
+                      {{ t('auth.downloadChromeExtension') }}
+                    </a>
+                    <button
+                      type="button"
+                      class="account-plugin-pill account-plugin-pill--token"
+                      @click="showApiTokenModal = true"
+                    >
+                      {{ t('auth.apiTokenButton') }}
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
             <!-- Footer -->
-            <div class="px-8 pb-8 flex justify-end gap-3">
-              <button
-                type="button"
-                class="py-2 px-5 rounded-full border border-stone-300 text-stone-600 text-sm font-medium hover:border-stone-400 hover:text-stone-800 transition-all"
-                @click="showApiTokenModal = true"
-              >
-                API Token
-              </button>
+            <div class="px-8 pb-8 flex justify-end">
               <button
                 class="py-2 px-6 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all"
                 @click="closeModal"
@@ -281,6 +307,65 @@ function handlePhoneChangeSuccess() {
   --el-button-text-color: #a8a29e;
   --el-button-hover-text-color: #57534e;
   --el-button-hover-bg-color: #f5f5f4;
+}
+
+/*
+ * Plugin row — light Swiss tones: cool mist, soft blue-gray, warm sand.
+ * Dark text on pale fills; subtle border; hover deepens slightly.
+ */
+.account-plugin-pill {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.35rem 0.9rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border: 1px solid;
+  text-decoration: none;
+  cursor: pointer;
+  font-family: inherit;
+  line-height: 1.25;
+  transition:
+    background 0.18s ease,
+    border-color 0.18s ease,
+    color 0.18s ease;
+}
+
+.account-plugin-pill--openclaw {
+  color: #3f3f3c;
+  background: #ecebe8;
+  border-color: #d4d0c8;
+}
+
+.account-plugin-pill--openclaw:hover {
+  background: #e3e1dc;
+  border-color: #c4bfb5;
+  color: #292524;
+}
+
+.account-plugin-pill--chrome {
+  color: #334155;
+  background: #e8eef2;
+  border-color: #c4d0e0;
+}
+
+.account-plugin-pill--chrome:hover {
+  background: #dde6ec;
+  border-color: #a8b8cc;
+  color: #1e293b;
+}
+
+.account-plugin-pill--token {
+  color: #44403c;
+  background: #f0ebe6;
+  border-color: #d9cfc4;
+}
+
+.account-plugin-pill--token:hover {
+  background: #e8e0d8;
+  border-color: #ccc0b8;
+  color: #1c1917;
 }
 
 /* Phone / password actions - Swiss Design with dark grey/black theme */

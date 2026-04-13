@@ -689,6 +689,7 @@ async def serve_temp_image(filepath: str, sig: Optional[str] = None, exp: Option
     return FileResponse(
         path=str(temp_path),
         media_type="image/png",
+        filename=filename,
         headers={
             "Cache-Control": "public, max-age=86400",
             "X-Content-Type-Options": "nosniff",

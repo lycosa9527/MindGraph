@@ -188,4 +188,4 @@ async def get_diagram_png_url(
 
     signed_path = generate_signed_url(filename, expiration_seconds=86400)
     url = _build_public_image_url(request, signed_path)
-    return {"url": url}
+    return {"url": url, "filename": filename}

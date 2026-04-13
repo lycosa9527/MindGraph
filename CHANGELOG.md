@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.83.0] - 2026-04-14
+
+### Added
+- **API / client bundles**: Public zip downloads for the OpenClaw MindGraph skill and the Chrome extension (`GET /api/downloads/mindgraph-openclaw-skill`, `GET /api/downloads/mindgraph-chrome-extension`; `routers/api/client_bundles.py`), built from the repo tree at runtime.
+- **Account UI**: Download links for those bundles in **`AccountInfoModal.vue`** with i18n strings in **`en`** / **`zh`** auth message modules.
+
+### Changed
+- **Chrome extension**: MV3 flow — long `fetch` and download run in the popup; the service worker handles **`PING`** and short **`CAPTURE_PAGE_FOR_MINDMAP`** page capture; **180s** fetch timeout; manifest version **0.2.10**.
+- **OpenClaw skill**: **`SKILL.md`** and **`README.md`** updated (PNG auth and signed URLs, `diagram_type` alias note, `filename` field, long-timeout guidance for PNG routes, **ClawHub** publish version **1.1.0**, bundle file table).
+- **API router**: MindBot lazy import variable renamed to **`MINDBOT_MODULE`** for constant-style naming.
+- **Diagram PNG URL**: `GET .../diagrams/{id}/png` JSON includes **`filename`** alongside **`url`** (`routers/api/diagram_node_ops.py`).
+- **Temp PNG serving**: Signed temp image responses set **`Content-Disposition`** with a **`.png`** filename (`routers/api/png_export.py`).
+
 ## [5.82.0] - 2026-04-13
 
 ### Added

@@ -25,6 +25,9 @@ function t(key, substitutions) {
 
 const VERIFY_TIMEOUT_MS = 60000;
 
+/** Same as background — LLM + Playwright can exceed 60s. */
+const FETCH_TIMEOUT_MS = 180000;
+
 /**
  * @returns {string}
  */
@@ -33,6 +36,213 @@ function newRequestId() {
     return crypto.randomUUID();
   }
   return `mg-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+}
+
+/**
+ * Ensure MV3 service worker is running before sendMessage to background.
+ * @returns {Promise<void>}
+ */
+function pingServiceWorker() {
+  return new Promise((resolve, reject) => {
+    chrome.runtime.sendMessage({ type: "PING" }, (response) => {
+      if (chrome.runtime.lastError) {
+        reject(new Error(chrome.runtime.lastError.message));
+        return;
+      }
+      if (response && response.ok) {
+        resolve(undefined);
+        return;
+      }
+      resolve(undefined);
+    });
+  });
+}
+
+function isTransientConnectionError(text) {
+  if (!text || typeof text !== "string") {
+    return false;
+  }
+  const lower = text.toLowerCase();
+  return (
+    lower.includes("receiving end") ||
+    lower.includes("does not exist") ||
+    lower.includes("could not establish connection") ||
+    lower.includes("message port closed") ||
+    lower.includes("before a response was received")
+  );
+}
+
+/**
+ * Best-effort wake before messaging the service worker.
+ * @returns {Promise<void>}
+ */
+async function tryPingServiceWorker() {
+  try {
+    await pingServiceWorker();
+  } catch (e) {
+    console.warn("[MindGraph] optional PING failed", e);
+  }
+}
+
+function normalizeBaseUrl(url) {
+  const trimmed = (url || "").trim().replace(/\/+$/, "");
+  return trimmed;
+}
+
+function sanitizeFilename(title) {
+  const base = (title || "mindgraph").replace(/[<>:"/\\|?*\x00-\x1f]/g, "_").slice(0, 80);
+  return base.endsWith(".png") ? base : `${base}.png`;
+}
+
+/**
+ * @param {number} tabId
+ * @returns {Promise<{ ok: boolean, payload?: object, error?: string }>}
+ */
+async function capturePageWithRetry(tabId) {
+  for (let attempt = 0; attempt < 2; attempt++) {
+    if (attempt > 0) {
+      await new Promise((r) => setTimeout(r, 200));
+    }
+    await tryPingServiceWorker();
+    const result = await new Promise((resolve) => {
+      chrome.runtime.sendMessage(
+        { type: "CAPTURE_PAGE_FOR_MINDMAP", tabId },
+        (response) => {
+          if (chrome.runtime.lastError) {
+            resolve({
+              ok: false,
+              error: chrome.runtime.lastError.message,
+            });
+            return;
+          }
+          if (response && response.ok) {
+            resolve({ ok: true, payload: response.payload });
+            return;
+          }
+          resolve({
+            ok: false,
+            error: response?.error || t("errFailed"),
+          });
+        },
+      );
+    });
+    if (result.ok || !isTransientConnectionError(String(result.error))) {
+      return result;
+    }
+  }
+  return { ok: false, error: t("errPortDisconnected") };
+}
+
+/**
+ * Fetch + download run in the popup so the service worker is not tied to a long port.
+ * @param {number} tabId
+ * @returns {Promise<{ ok: boolean, error?: string }>}
+ */
+async function generateMindmapPngInPopup(tabId) {
+  const settings = await chrome.storage.local.get(["baseUrl", "account", "token", "saveAs"]);
+  const baseUrl = normalizeBaseUrl(settings.baseUrl);
+  const account = (settings.account || "").trim();
+  const token = (settings.token || "").trim();
+  if (!baseUrl || !account || !token) {
+    return { ok: false, error: t("errSettingsIncomplete") };
+  }
+
+  setProgressStage("reading");
+  const captureResult = await capturePageWithRetry(tabId);
+  if (!captureResult.ok) {
+    return {
+      ok: false,
+      error: captureResult.error || t("errFailed"),
+    };
+  }
+
+  const payload = captureResult.payload;
+
+  const url = `${baseUrl}/api/web_content_mindmap_png`;
+  const body = {
+    page_content: payload.page_content,
+    content_format: payload.content_format || "text/plain",
+    page_title: payload.page_title || null,
+    page_url: payload.page_url || null,
+    language: payload.language || "zh",
+  };
+
+  setProgressStage("sending");
+  const requestId = newRequestId();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(url, {
+      method: "POST",
+      signal: controller.signal,
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+        "X-MG-Account": account,
+        "X-MG-Client": "chrome-extension",
+        "X-Request-Id": requestId,
+      },
+      body: JSON.stringify(body),
+    });
+  } catch (fetchErr) {
+    clearTimeout(timeoutId);
+    if (fetchErr && fetchErr.name === "AbortError") {
+      console.error("[MindGraph] fetch timeout", FETCH_TIMEOUT_MS, "ms", url, requestId);
+      return { ok: false, error: t("errFetchTimeout") };
+    }
+    return { ok: false, error: fetchErr?.message || String(fetchErr) };
+  }
+  clearTimeout(timeoutId);
+
+  setProgressStage("serverProcessing");
+
+  if (!res.ok) {
+    if (res.status === 429) {
+      return { ok: false, error: t("errRateLimit") };
+    }
+    if (res.status === 503) {
+      return { ok: false, error: t("errServiceUnavailable") };
+    }
+    const detail = await parseHttpErrorDetail(res);
+    console.error("[MindGraph] API HTTP error", res.status, url, detail);
+    return {
+      ok: false,
+      error: t("errApi", [String(res.status), detail]),
+    };
+  }
+
+  const contentType = (res.headers.get("Content-Type") || "").toLowerCase();
+  if (!contentType.includes("image/png")) {
+    let bodyPreview = "";
+    try {
+      bodyPreview = (await res.text()).slice(0, 500);
+    } catch {
+      bodyPreview = "";
+    }
+    console.error("[MindGraph] expected image/png, got", contentType, bodyPreview || "(empty body)");
+    return { ok: false, error: t("errNotPng") };
+  }
+
+  setProgressStage("receiving");
+  const blob = await res.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  const filename = sanitizeFilename(payload.page_title);
+  const saveAs = Boolean(settings.saveAs);
+  setProgressStage("saving");
+  try {
+    await chrome.downloads.download({
+      url: blobUrl,
+      filename,
+      saveAs,
+    });
+  } catch (dlErr) {
+    console.error("[MindGraph] downloads.download", dlErr);
+    return { ok: false, error: dlErr?.message || String(dlErr) };
+  }
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60_000);
+
+  return { ok: true };
 }
 
 function applyLocaleToDocument() {
@@ -280,7 +490,6 @@ btnGenerate.addEventListener("click", async () => {
   btnGenerate.disabled = true;
   btnSettings.disabled = true;
 
-  let port;
   try {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab?.id) {
@@ -289,46 +498,19 @@ btnGenerate.addEventListener("click", async () => {
       return;
     }
 
-    port = chrome.runtime.connect({ name: "mindgraph-generate" });
-
-    const result = await new Promise((resolve) => {
-      let settled = false;
-      const cleanup = () => {
-        port.onMessage.removeListener(onMessage);
-        port.onDisconnect.removeListener(onDisconnect);
-      };
-      const onMessage = (msg) => {
-        if (msg?.type === "progress" && msg.stage) {
-          setProgressStage(msg.stage);
-          return;
-        }
-        if (msg?.type === "result") {
-          if (settled) {
-            return;
-          }
-          settled = true;
-          cleanup();
-          resolve(msg);
-        }
-      };
-      const onDisconnect = () => {
-        if (settled) {
-          return;
-        }
-        settled = true;
-        cleanup();
-        const lastErr = chrome.runtime.lastError?.message;
-        resolve({
-          ok: false,
-          error: lastErr
-            ? `${t("errPortDisconnected")} (${lastErr})`
-            : t("errPortDisconnected"),
-        });
-      };
-      port.onMessage.addListener(onMessage);
-      port.onDisconnect.addListener(onDisconnect);
-      port.postMessage({ type: "GENERATE_MINDMAP_PNG", tabId: tab.id });
-    });
+    let result;
+    try {
+      result = await generateMindmapPngInPopup(tab.id);
+    } catch (genErr) {
+      setProgressVisible(false);
+      console.error("[MindGraph] generate threw", genErr);
+      setStatus(
+        statusEl,
+        `${t("errPortDisconnected")} (${genErr?.message || String(genErr)})`,
+        "err",
+      );
+      return;
+    }
 
     setProgressVisible(false);
     if (result?.ok) {
@@ -342,13 +524,6 @@ btnGenerate.addEventListener("click", async () => {
     console.error("[MindGraph] generate exception", e);
     setStatus(statusEl, e?.message || String(e), "err");
   } finally {
-    if (port) {
-      try {
-        port.disconnect();
-      } catch {
-        /* ignore */
-      }
-    }
     btnGenerate.disabled = false;
     btnSettings.disabled = false;
   }

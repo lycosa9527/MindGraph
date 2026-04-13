@@ -422,30 +422,66 @@ function ensureContextMenu() {
 
 chrome.runtime.onInstalled.addListener(ensureContextMenu);
 
+/**
+ * PING: wake MV3 service worker (see popup).
+ * CAPTURE_PAGE_FOR_MINDMAP: short executeScript only; long fetch runs in popup to avoid
+ * holding a runtime port across multi-minute requests.
+ */
+chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+  if (msg && msg.type === "PING") {
+    setTimeout(() => {
+      try {
+        sendResponse({ ok: true });
+      } catch {
+        /* sendResponse may throw if channel already closed */
+      }
+    }, 0);
+    return true;
+  }
+  if (msg && msg.type === "CAPTURE_PAGE_FOR_MINDMAP" && typeof msg.tabId === "number") {
+    void (async () => {
+      try {
+        const tab = await chrome.tabs.get(msg.tabId);
+        if (isRestrictedTabUrl(tab.url)) {
+          console.error("[MindGraph] restricted tab URL", tab.url);
+          sendResponse({
+            ok: false,
+            error: chrome.i18n.getMessage("errRestrictedPage"),
+          });
+          return;
+        }
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: msg.tabId },
+          func: capturePageContent,
+          args: [MAX_CHARS, PROMPT_OUTPUT_LANGUAGE_CODES],
+        });
+        const payload = results?.[0]?.result;
+        if (!payload || typeof payload.page_content !== "string" || !payload.page_content.trim()) {
+          sendResponse({
+            ok: false,
+            error: chrome.i18n.getMessage("errNoPageText"),
+          });
+          return;
+        }
+        sendResponse({ ok: true, payload });
+      } catch (e) {
+        console.error("[MindGraph] CAPTURE_PAGE_FOR_MINDMAP", e);
+        sendResponse({
+          ok: false,
+          error: e?.message || String(e),
+        });
+      }
+    })();
+    return true;
+  }
+  return false;
+});
+
 chrome.contextMenus.onClicked.addListener((info, tab) => {
   if (info.menuItemId !== "mindgraph-generate" || !tab?.id) {
     return;
   }
   runGenerateMindmap(tab.id, { fromContextMenu: true });
-});
-
-chrome.runtime.onConnect.addListener((port) => {
-  if (port.name !== "mindgraph-generate") {
-    return;
-  }
-  port.onMessage.addListener((msg) => {
-    if (msg?.type !== "GENERATE_MINDMAP_PNG" || typeof msg.tabId !== "number") {
-      try {
-        port.postMessage({ type: "result", ok: false, error: chrome.i18n.getMessage("errNoTab") });
-      } catch {
-        /* ignore */
-      }
-      return;
-    }
-    void runGenerateMindmap(msg.tabId, { progressPort: port }).catch((err) => {
-      console.error("[MindGraph] runGenerateMindmap unhandled", err);
-    });
-  });
 });
 
 /**

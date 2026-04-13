@@ -20,6 +20,7 @@ from config.settings import config as app_config
 
 from . import (
     activity,
+    client_bundles,
     diagram_generation,
     web_content_generation,
     diagram_node_ops,
@@ -48,12 +49,12 @@ if app_config.FEATURE_KNOWLEDGE_SPACE:
 else:
     logger.debug("[API] Knowledge Space feature disabled via FEATURE_KNOWLEDGE_SPACE flag")
 
-mindbot_module = None
+MINDBOT_MODULE = None
 if app_config.FEATURE_MINDBOT:
     try:
-        from . import mindbot as mindbot_module
+        from . import mindbot as MINDBOT_MODULE
     except Exception as e:
-        mindbot_module = None
+        MINDBOT_MODULE = None
         logger.debug("[API] Failed to import mindbot router: %s", e, exc_info=True)
 else:
     logger.debug("[API] MindBot feature disabled via FEATURE_MINDBOT flag")
@@ -64,6 +65,7 @@ router = APIRouter(prefix="/api", tags=["api"])
 # Include all sub-routers
 router.include_router(config.router)
 router.include_router(activity.router)
+router.include_router(client_bundles.router)
 router.include_router(diagram_generation.router)
 router.include_router(web_content_generation.router)
 router.include_router(png_export.router)
@@ -91,8 +93,8 @@ else:
     else:
         logger.debug("[API] Knowledge Space router NOT registered - feature disabled")
 
-if mindbot_module is not None:
-    router.include_router(mindbot_module.router)
+if MINDBOT_MODULE is not None:
+    router.include_router(MINDBOT_MODULE.router)
     logger.info("[API] MindBot router registered at /api/mindbot")
 else:
     if app_config.FEATURE_MINDBOT:

@@ -14,8 +14,8 @@ Set headers on all HTTP calls:
 
 - `Authorization: Bearer {MINDGRAPH_TOKEN}` — token starts with `mgat_`
 - `X-MG-Account: {MINDGRAPH_ACCOUNT}` — same phone number as the MindGraph account (no spaces)
-- `X-MG-Client: openclaw` — include on every request so server logs can attribute API token traffic to OpenClaw (optional but recommended)
-- `X-Request-Id` — optional UUID per request; echoed in server `[TokenAudit]` / LLM metadata (`http_request_id`) for tracing
+- `X-MG-Client: openclaw` — include on every request so server logs can attribute API token traffic to OpenClaw (matches Chrome extension `chrome-extension`; server `[TokenAudit]` lines use this label)
+- `X-Request-Id` — optional but **recommended on long calls** (e.g. web-content PNG); use a fresh UUID per request (or equivalent id). Echoed in server `[TokenAudit]` and LLM metadata (`http_request_id`) for tracing
 
 Never print or log the token or account in assistant-visible output.
 
@@ -43,7 +43,7 @@ JSON body (example):
 { "topic": "Photosynthesis", "diagram_type": "mindmap" }
 ```
 
-`diagram_type` examples: `circle_map`, `bubble_map`, `mindmap`, `tree_map`, `concept_map`, `flow_map`, etc.
+`diagram_type` examples: `circle_map`, `bubble_map`, `mindmap`, `tree_map`, `concept_map`, `flow_map`, etc. The API normalizes common aliases (e.g. **`mindmap` → `mind_map`**).
 
 Response includes the generated **spec** (diagram JSON).
 
@@ -67,7 +67,14 @@ After create or any edit:
 
 `GET {MINDGRAPH_BASE_URL}/api/diagrams/{id}/png`
 
-Response: `{ "url": "https://..." }`. Pass `url` to the **image** tool so the user sees the current canvas.
+Use the same auth headers as every other call (**Authorization** + **X-MG-Account**; `mgat_` requires both). Omitting them returns **401** (`JWT token required for this endpoint`).
+
+Response JSON:
+
+- **`url`** — Signed, time-limited link to a PNG under **`/api/temp_images/`**. The **path** ends with **`.png`** (e.g. `.../temp_images/diagram_<uuid>.png?sig=...&exp=...`); the **`?sig=` / `&exp=`** part is required for access, not optional decoration.
+- **`filename`** — Suggested filename (always **`diagram_<hex>.png`**) for downloads or the image tool.
+
+Pass **`url`** to the **image** tool so the user sees the current canvas. Fetching **`url`** does **not** send Bearer tokens (signature is in the query string). The **`GET /api/temp_images/...`** response includes `Content-Disposition` with a **`.png`** filename for browser downloads.
 
 ## 4. Read diagram (before edits)
 
@@ -127,19 +134,25 @@ Mind map **only** from extracted page text (same auth headers as above).
 }
 ```
 
-`content_format` is `text/plain` or `text/markdown`. `page_content` max length **32000** characters.
+`content_format` is `text/plain` or `text/markdown`. `page_content` max length **32000** characters. Returns **JSON** with the generated spec (LLM only; faster than the PNG route).
 
 **Single-step PNG download**
 
 `POST {MINDGRAPH_BASE_URL}/api/web_content_mindmap_png`
 
-Same JSON body as above, plus optional `width` and `height` (viewport size for PNG capture). Response: **`image/png`** bytes (`Content-Disposition: attachment`).
+Same JSON body as above, plus optional `width` and `height` (viewport size for PNG capture; defaults **1200×800** if omitted). Response: **`image/png`** body (**not** JSON), `Content-Disposition: attachment; filename="mindgraph-web-content.png"`. On error, the server may return **JSON** with `detail` (HTTP 4xx/5xx). **Do not** call `response.json()` on success—read bytes.
 
-The repository includes an unpacked Chrome extension under **`chrome-extension/`** (Load unpacked in `chrome://extensions`). It calls `web_content_mindmap_png` and saves the file via the browser download manager.
+**Timeouts (critical for OpenClaw / any HTTP client)**  
+The PNG path runs **LLM generation** plus **Playwright screenshot** of the export page. End-to-end latency often exceeds **60 seconds**. Use a **client read timeout of at least 180 seconds (3 minutes)** on this request (the Chrome extension uses the same). Shorter timeouts produce misleading “network” failures. The JSON-only route (`generate_from_web_content`) is also LLM-bound; allow **several minutes** if your stack defaults to 30–60s.
+
+**Chrome extension (same API)**  
+The repo ships **`chrome-extension/`** (Load unpacked in `chrome://extensions`). It captures the active tab via a **short** message to the service worker, then runs **`fetch` + download in the popup** so the MV3 worker is not held across a long request. **Base URL** in settings must be the **API origin** (e.g. `https://your-host.example.com`), same as `MINDGRAPH_BASE_URL` here—not the SPA path `/mindgraph` alone.
 
 ## Best practices
 
 - Always send **Authorization** + **X-MG-Account** on every call, using **current** `MINDGRAPH_*` env values (see **Authentication** and **Updating auth** above).
+- Send **`X-MG-Client: openclaw`** and **`X-Request-Id`** on every call when possible; they make server logs and support correlation match the Chrome extension workflow.
+- Use **long HTTP timeouts** for **`web_content_mindmap_png`** and other heavy routes (see §7).
 - After **any** mutation, fetch the PNG URL (step 3) before replying.
 - Prefer reading the diagram (step 4) before PATCH when IDs are unknown.
 - Warn the user before token expiry when relevant.
