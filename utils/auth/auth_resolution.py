@@ -21,6 +21,7 @@ from fastapi import HTTPException, Request, status
 from models.domain.auth import User
 from services.auth.http_auth_token import extract_bearer_token
 from utils.auth.config import AUTH_MODE
+from utils.auth.datetime_compat import as_utc_aware
 from utils.auth.tokens import decode_access_token
 from utils.auth.user_tokens import validate_user_token
 
@@ -63,7 +64,7 @@ async def raise_if_org_locked_or_expired_async(user: User) -> None:
                 detail="Organization account is locked. Please contact support.",
             )
         if hasattr(org, "expires_at") and org.expires_at:
-            if org.expires_at < datetime.now(UTC):
+            if as_utc_aware(org.expires_at) < datetime.now(UTC):
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Organization subscription has expired. Please contact support.",

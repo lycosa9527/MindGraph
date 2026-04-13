@@ -8,10 +8,12 @@ from typing import Optional
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
+
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
 from models.domain.user_api_token import UserAPIToken
 from services.redis.cache.redis_user_token_cache import user_token_cache
+from utils.auth.datetime_compat import as_utc_aware
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ async def _check_org_access_async(user: User) -> None:
             detail="Organization account is locked. Please contact support.",
         )
     if hasattr(org_row, "expires_at") and org_row.expires_at:
-        if org_row.expires_at < datetime.now(UTC):
+        if as_utc_aware(org_row.expires_at) < datetime.now(UTC):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail="Organization subscription has expired. Please contact support.",

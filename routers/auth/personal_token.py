@@ -18,6 +18,7 @@ from utils.auth import (
     get_current_user,
     require_not_mgat_for_token_mint,
 )
+from utils.auth.datetime_compat import as_utc_aware
 
 router = APIRouter(tags=["Authentication"])
 
@@ -90,7 +91,7 @@ async def get_user_api_token_status(
         )
     )
     row = result.scalar_one_or_none()
-    if not row or row.expires_at <= datetime.now(UTC):
+    if not row or as_utc_aware(row.expires_at) <= datetime.now(UTC):
         return {
             "exists": False,
             "expires_at": None,
