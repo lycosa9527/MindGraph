@@ -199,7 +199,7 @@ class DifySettings(BaseModel):
 
     DIFY_API_KEY: Optional[str] = Field(default="", description="Dify API key (optional)")
     DIFY_API_URL: str = Field(default="https://api.dify.ai/v1", description="Dify API URL")
-    DIFY_TIMEOUT: int = Field(default=30, ge=5, le=120, description="Request timeout in seconds")
+    DIFY_TIMEOUT: int = Field(default=300, ge=5, le=600, description="Request timeout in seconds")
     AI_ASSISTANT_NAME: str = Field(
         default="MindMate AI",
         min_length=1,

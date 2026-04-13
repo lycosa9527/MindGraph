@@ -43,7 +43,7 @@ def get_dify_client() -> AsyncDifyClient:
     """Get configured Dify client"""
     api_key = os.getenv("DIFY_API_KEY")
     api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
-    timeout = int(os.getenv("DIFY_TIMEOUT", "30"))
+    timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
 
     if not api_key:
         raise HTTPException(status_code=500, detail="AI service not configured")

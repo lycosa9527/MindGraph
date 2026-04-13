@@ -128,8 +128,12 @@ export default {
   'admin.markets.loadError': '加载失败',
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': '钉钉机器人与 Dify（按校）',
-  'admin.mindbot.intro':
-    '将回调地址填入钉钉开放平台（须 HTTPS）。每校独立的 robot code、Client ID 与 Client Secret。若需钉钉 HTTP 事件订阅 / 回调 URL 验证（加密报文），请使用下方「按校回调」地址，并填写 Token、EncodingAESKey 与 owner key（appKey / corpId / suiteKey，按应用类型）。',
+  'admin.mindbot.introHttpOnly':
+    'HTTP 接收模式：每校独立回调地址（编辑时可见）。Client Secret 用于验签；Dify 负责对话与回复。',
+  'admin.mindbot.emptyState': '尚未配置任何学校的 MindBot。',
+  'admin.mindbot.managerIntro': '为本组织配置钉钉 HTTP 机器人与 Dify。',
+  'admin.mindbot.sectionDingTalk': '钉钉',
+  'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': '学校',
   'admin.mindbot.colRobot': '机器人 code',
   'admin.mindbot.colEnabled': '启用',
@@ -141,34 +145,29 @@ export default {
   'admin.mindbot.orgSelect': '学校',
   'admin.mindbot.dingtalkRobotCode': '钉钉 robot code',
   'admin.mindbot.dingtalkAppSecret': '钉钉 Client Secret',
-  'admin.mindbot.dingtalkAppSecretHint': '编辑时留空表示不修改已保存的 Client Secret。',
-  'admin.mindbot.dingtalkClientId': '钉钉 Client ID（可选）',
-  'admin.mindbot.dingtalkEventToken': '钉钉事件订阅 Token（可选）',
-  'admin.mindbot.dingtalkEventTokenHint':
-    '仅用于 HTTP 事件 / 回调 URL 验证。编辑时留空表示不修改已保存的 Token。',
-  'admin.mindbot.dingtalkEventTokenSet': '已保存 Token。',
-  'admin.mindbot.dingtalkEventAesKey': '钉钉 EncodingAESKey（可选）',
-  'admin.mindbot.dingtalkEventAesHint':
-    '仅用于 HTTP 事件 / 回调 URL 验证。编辑时留空表示不修改已保存的密钥。',
-  'admin.mindbot.dingtalkEventAesSet': '已保存 EncodingAESKey。',
-  'admin.mindbot.dingtalkEventOwnerKey': '钉钉 owner key（可选）',
-  'admin.mindbot.dingtalkEventOwnerHint':
-    '按应用类型填写 appKey、corpId 或 suiteKey（须与解密后校验字段一致）。',
+  'admin.mindbot.dingtalkAppSecretHint': '新增学校时必填。',
+  'admin.mindbot.dingtalkAppSecretMaskedHint':
+    '已保存的密钥，中间已隐藏。点「更换」可输入新的 Client Secret。',
+  'admin.mindbot.dingtalkAppSecretReplaceHint':
+    '输入新的 Client Secret；若留空并保存则保留当前已保存的值。',
   'admin.mindbot.difyBaseUrl': 'Dify API 根地址',
   'admin.mindbot.difyApiKey': 'Dify API Key',
-  'admin.mindbot.difyApiKeyHint': '编辑时留空表示不修改已保存的密钥。',
+  'admin.mindbot.difyApiKeyHint': '新增学校时必填。',
+  'admin.mindbot.difyApiKeyMaskedHint':
+    '已保存的密钥，中间已隐藏。点「更换」可输入新的 API Key。',
+  'admin.mindbot.difyApiKeyReplaceHint':
+    '输入新的 API Key；若留空并保存则保留当前已保存的值。',
+  'admin.mindbot.replaceSecret': '更换',
   'admin.mindbot.difyTimeout': 'Dify 超时（秒）',
   'admin.mindbot.difyInputsJson': 'Dify 应用输入变量（JSON 对象，可选）',
   'admin.mindbot.difyInputsJsonHint':
     '若 Dify 应用定义了输入变量，在此填写 JSON 对象（例如 {"grade":"7"}）。',
   'admin.mindbot.enabled': '启用集成',
-  'admin.mindbot.callbackShared': '统一回调（请求体含 robotCode）',
-  'admin.mindbot.callbackByToken': '按校回调（推荐）',
-  'admin.mindbot.callbackByTokenHint':
-    '当钉钉请求里的 robotCode 无法区分学校时使用。路径中的 token 为密钥，请妥善保管；泄露等同于暴露回调入口。',
-  'admin.mindbot.callbackPerOrg': '按校回调（路径含数字组织 ID）',
-  'admin.mindbot.callbackPerOrgLegacy': '兼容旧版：与带 token 的地址效果相同，但会暴露内部组织编号。',
-  'admin.mindbot.colCallbackUrl': '学校回调',
+  'admin.mindbot.schoolCallbackUrl': '钉钉 HTTP 回调地址（本校）',
+  'admin.mindbot.schoolCallbackUrlHint':
+    '将此地址填入钉钉 HTTP 机器人的回调 URL。请妥善保管，泄露等同于暴露回调入口。',
+  'admin.mindbot.callbackUrlAfterSave': '请先保存一次，生成并显示该校回调地址。',
+  'admin.mindbot.openSettings': 'MindBot 设置',
   'admin.mindbot.copyUrl': '复制',
   'admin.mindbot.copied': '已复制',
   'admin.mindbot.loadError': '加载 MindBot 设置失败',

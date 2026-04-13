@@ -57,7 +57,7 @@ def _sample_cfg() -> OrganizationMindbotConfig:
         dingtalk_client_id=None,
         dify_api_base_url="https://example.com/v1",
         dify_api_key="k",
-        dify_timeout_seconds=30,
+        dify_timeout_seconds=300,
         is_enabled=True,
     )
     row.id = 1

@@ -35,7 +35,7 @@ class OrganizationMindbotConfig(Base):
     dify_api_base_url: Mapped[str] = mapped_column(String(512), nullable=False)
     dify_api_key: Mapped[str] = mapped_column(Text, nullable=False)
     dify_inputs_json: Mapped[str | None] = mapped_column(Text, nullable=True)
-    dify_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=30)
+    dify_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -133,8 +133,12 @@ export default {
   'admin.markets.loadError': 'Failed to load',
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot & Dify (per school)',
-  'admin.mindbot.intro':
-    'Paste the callback URLs into the DingTalk developer console (HTTPS). Each school has its own robot code, Client ID, and Client Secret. For DingTalk HTTP event subscription / callback URL verification (encrypted body), use the per-organization URL and set Token, EncodingAESKey, and owner key (appKey, corpId, or suiteKey) below.',
+  'admin.mindbot.introHttpOnly':
+    'HTTP receive mode: one callback URL per school (shown when you edit). DingTalk app secret signs inbound requests; Dify powers replies.',
+  'admin.mindbot.emptyState': 'No school has MindBot configured yet.',
+  'admin.mindbot.managerIntro': 'Configure the DingTalk HTTP robot and Dify for your organization.',
+  'admin.mindbot.sectionDingTalk': 'DingTalk',
+  'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': 'Organization',
   'admin.mindbot.colRobot': 'Robot code',
   'admin.mindbot.colEnabled': 'Enabled',
@@ -146,34 +150,29 @@ export default {
   'admin.mindbot.orgSelect': 'School',
   'admin.mindbot.dingtalkRobotCode': 'DingTalk robot code',
   'admin.mindbot.dingtalkAppSecret': 'DingTalk Client Secret',
-  'admin.mindbot.dingtalkAppSecretHint': 'Leave blank when editing to keep the stored Client Secret.',
-  'admin.mindbot.dingtalkClientId': 'DingTalk Client ID (optional)',
-  'admin.mindbot.dingtalkEventToken': 'DingTalk event subscription Token (optional)',
-  'admin.mindbot.dingtalkEventTokenHint':
-    'For HTTP event / callback URL verification only. Leave blank when editing to keep the stored value.',
-  'admin.mindbot.dingtalkEventTokenSet': 'Token is already saved.',
-  'admin.mindbot.dingtalkEventAesKey': 'DingTalk EncodingAESKey (optional)',
-  'admin.mindbot.dingtalkEventAesHint':
-    'For HTTP event / callback URL verification only. Leave blank when editing to keep the stored value.',
-  'admin.mindbot.dingtalkEventAesSet': 'EncodingAESKey is already saved.',
-  'admin.mindbot.dingtalkEventOwnerKey': 'DingTalk owner key (optional)',
-  'admin.mindbot.dingtalkEventOwnerHint':
-    'Use appKey, corpId, or suiteKey as required by your DingTalk app type (must match the decrypted payload).',
+  'admin.mindbot.dingtalkAppSecretHint': 'Required when adding a school.',
+  'admin.mindbot.dingtalkAppSecretMaskedHint':
+    'Stored secret with the middle masked. Use Replace to enter a new Client Secret.',
+  'admin.mindbot.dingtalkAppSecretReplaceHint':
+    'Enter a new Client Secret, or leave blank and save to keep the current one.',
   'admin.mindbot.difyBaseUrl': 'Dify API base URL',
   'admin.mindbot.difyApiKey': 'Dify API key',
-  'admin.mindbot.difyApiKeyHint': 'Leave blank when editing to keep the stored key.',
+  'admin.mindbot.difyApiKeyHint': 'Required when adding a school.',
+  'admin.mindbot.difyApiKeyMaskedHint':
+    'Stored key with the middle masked. Use Replace to enter a new API key.',
+  'admin.mindbot.difyApiKeyReplaceHint':
+    'Enter a new API key, or leave blank and save to keep the current one.',
+  'admin.mindbot.replaceSecret': 'Replace',
   'admin.mindbot.difyTimeout': 'Dify timeout (seconds)',
   'admin.mindbot.difyInputsJson': 'Dify app inputs (JSON object, optional)',
   'admin.mindbot.difyInputsJsonHint':
     'If your Dify app defines input variables, set a JSON object here (e.g. {"grade":"7"}).',
   'admin.mindbot.enabled': 'Enable integration',
-  'admin.mindbot.callbackShared': 'Shared callback (robotCode in body)',
-  'admin.mindbot.callbackByToken': 'Per-school callback (recommended)',
-  'admin.mindbot.callbackByTokenHint':
-    'Use this URL in DingTalk when robotCode in the payload is not unique. The token is secret—treat it like a password; anyone with the URL can hit your webhook.',
-  'admin.mindbot.callbackPerOrg': 'Per-organization callback (numeric id in path)',
-  'admin.mindbot.callbackPerOrgLegacy': 'Legacy: same behavior as the token URL, but exposes internal organization id.',
-  'admin.mindbot.colCallbackUrl': 'School callback',
+  'admin.mindbot.schoolCallbackUrl': 'DingTalk HTTP callback URL (this school)',
+  'admin.mindbot.schoolCallbackUrlHint':
+    'Paste this URL into the DingTalk HTTP robot callback field. Keep it private—anyone with the link can send traffic to your webhook.',
+  'admin.mindbot.callbackUrlAfterSave': 'Save once to generate and show this school’s callback URL.',
+  'admin.mindbot.openSettings': 'MindBot settings',
   'admin.mindbot.copyUrl': 'Copy',
   'admin.mindbot.copied': 'Copied',
   'admin.mindbot.loadError': 'Failed to load MindBot settings',

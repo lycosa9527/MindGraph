@@ -434,7 +434,7 @@ async def process_dingtalk_callback(
     dify = AsyncDifyClient(
         api_key=cfg.dify_api_key.strip(),
         api_url=cfg.dify_api_base_url.strip(),
-        timeout=max(5, min(120, cfg.dify_timeout_seconds)),
+        timeout=max(5, min(600, cfg.dify_timeout_seconds)),
     )
 
     usage_started = time.monotonic()

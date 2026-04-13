@@ -1,10 +1,10 @@
 <script setup lang="ts">
 /**
- * Admin — MindBot: per-organization DingTalk + Dify (HTTP callback).
+ * Admin — MindBot: per-organization DingTalk HTTP robot + Dify.
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { DocumentCopy } from '@element-plus/icons-vue'
+import { DocumentCopy, Plus } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
@@ -23,6 +23,8 @@ interface MindbotConfigRow {
   organization_id: number
   public_callback_token: string
   dingtalk_robot_code: string
+  dingtalk_app_secret_masked: string
+  dify_api_key_masked: string
   dingtalk_client_id: string | null
   dingtalk_event_token_set: boolean
   dingtalk_event_aes_key_set: boolean
@@ -60,42 +62,25 @@ const apiMindbotBase = computed(() => {
   return `${origin}/api/mindbot`
 })
 
-function callbackShared(): string {
-  return `${apiMindbotBase.value}/dingtalk/callback`
-}
-
 function buildCallbackUrlByToken(token: string): string {
-  const t = token.trim()
-  return `${apiMindbotBase.value}/dingtalk/callback/t/${encodeURIComponent(t)}`
+  const tok = token.trim()
+  return `${apiMindbotBase.value}/dingtalk/callback/t/${encodeURIComponent(tok)}`
 }
-
-function callbackPerOrg(organizationId: number): string {
-  return `${apiMindbotBase.value}/dingtalk/orgs/${organizationId}/callback`
-}
-
-const callbackTokenPattern = computed(
-  () => `${apiMindbotBase.value}/dingtalk/callback/t/{token}`,
-)
-
-const callbackPerOrgPattern = computed(
-  () => `${apiMindbotBase.value}/dingtalk/orgs/{organization_id}/callback`,
-)
 
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const formOrgId = ref<number | null>(null)
+/** True when user chose to type a new DingTalk / Dify secret (edit mode). */
+const dingtalkSecretReplaceMode = ref(false)
+const difyApiKeyReplaceMode = ref(false)
 
 const form = ref({
   dingtalk_robot_code: '',
   dingtalk_app_secret: '',
-  dingtalk_client_id: '',
-  dingtalk_event_token: '',
-  dingtalk_event_aes_key: '',
-  dingtalk_event_owner_key: '',
   dify_api_base_url: '',
   dify_api_key: '',
   dify_inputs_json: '',
-  dify_timeout_seconds: 30,
+  dify_timeout_seconds: 300,
   is_enabled: true,
 })
 
@@ -116,27 +101,21 @@ function resetForm(): void {
   form.value = {
     dingtalk_robot_code: '',
     dingtalk_app_secret: '',
-    dingtalk_client_id: '',
-    dingtalk_event_token: '',
-    dingtalk_event_aes_key: '',
-    dingtalk_event_owner_key: '',
     dify_api_base_url: '',
     dify_api_key: '',
     dify_inputs_json: '',
-    dify_timeout_seconds: 30,
+    dify_timeout_seconds: 300,
     is_enabled: true,
   }
   formOrgId.value = null
+  dingtalkSecretReplaceMode.value = false
+  difyApiKeyReplaceMode.value = false
 }
 
 function fillForm(row: MindbotConfigRow): void {
   form.value = {
     dingtalk_robot_code: row.dingtalk_robot_code,
     dingtalk_app_secret: '',
-    dingtalk_client_id: row.dingtalk_client_id ?? '',
-    dingtalk_event_token: '',
-    dingtalk_event_aes_key: '',
-    dingtalk_event_owner_key: row.dingtalk_event_owner_key ?? '',
     dify_api_base_url: row.dify_api_base_url,
     dify_api_key: '',
     dify_inputs_json: row.dify_inputs_json ?? '',
@@ -144,6 +123,18 @@ function fillForm(row: MindbotConfigRow): void {
     is_enabled: row.is_enabled,
   }
   formOrgId.value = row.organization_id
+  dingtalkSecretReplaceMode.value = !row.dingtalk_app_secret_masked
+  difyApiKeyReplaceMode.value = !row.dify_api_key_masked
+}
+
+function startReplaceDingtalkSecret(): void {
+  dingtalkSecretReplaceMode.value = true
+  form.value.dingtalk_app_secret = ''
+}
+
+function startReplaceDifyApiKey(): void {
+  difyApiKeyReplaceMode.value = true
+  form.value.dify_api_key = ''
 }
 
 const orgsWithoutConfig = computed(() => {
@@ -157,6 +148,18 @@ const editingOrgRow = computed(() => {
     return undefined
   }
   return configs.value.find((c) => c.organization_id === oid)
+})
+
+/** Manager create dialog: prefer profile school name (schools list may be empty). */
+const managerSchoolDisplayName = computed(() => {
+  const fromProfile = authStore.user?.schoolName?.trim()
+  if (fromProfile) {
+    return fromProfile
+  }
+  if (Number.isFinite(managerOrgId.value)) {
+    return orgNameById(managerOrgId.value)
+  }
+  return '—'
 })
 
 async function load(): Promise<void> {
@@ -174,15 +177,6 @@ async function load(): Promise<void> {
         schools.value = (await orgRes.json()) as OrgOption[]
       } else {
         schools.value = []
-      }
-    }
-    if (isManager.value && Number.isFinite(managerOrgId.value)) {
-      const row = configs.value.find((c) => c.organization_id === managerOrgId.value)
-      if (row) {
-        fillForm(row)
-      } else {
-        resetForm()
-        formOrgId.value = managerOrgId.value
       }
     }
   } catch {
@@ -207,6 +201,22 @@ function openEdit(row: MindbotConfigRow): void {
   dialogVisible.value = true
 }
 
+function openManagerMindbotDialog(): void {
+  if (!Number.isFinite(managerOrgId.value)) {
+    return
+  }
+  const row = configs.value.find((c) => c.organization_id === managerOrgId.value)
+  if (row) {
+    dialogMode.value = 'edit'
+    fillForm(row)
+  } else {
+    dialogMode.value = 'create'
+    resetForm()
+    formOrgId.value = managerOrgId.value
+  }
+  dialogVisible.value = true
+}
+
 async function save(): Promise<void> {
   const oid = formOrgId.value
   if (oid == null) {
@@ -224,38 +234,38 @@ async function save(): Promise<void> {
   try {
     const payload: Record<string, unknown> = {
       dingtalk_robot_code: form.value.dingtalk_robot_code.trim(),
-      dingtalk_client_id: form.value.dingtalk_client_id.trim() || null,
       dify_api_base_url: form.value.dify_api_base_url.trim(),
       dify_timeout_seconds: form.value.dify_timeout_seconds,
       is_enabled: form.value.is_enabled,
     }
-    const currentRow = configs.value.find((c) => c.organization_id === oid)
-    const tok = form.value.dingtalk_event_token.trim()
-    const aes = form.value.dingtalk_event_aes_key.trim()
-    if (tok) {
-      payload.dingtalk_event_token = tok
-    } else if (!isNew && currentRow?.dingtalk_event_token_set) {
-      payload.dingtalk_event_token = ''
-    }
-    if (aes) {
-      payload.dingtalk_event_aes_key = aes
-    } else if (!isNew && currentRow?.dingtalk_event_aes_key_set) {
-      payload.dingtalk_event_aes_key = ''
-    }
-    payload.dingtalk_event_owner_key = form.value.dingtalk_event_owner_key.trim() || null
     const inputsRaw = form.value.dify_inputs_json.trim()
     if (inputsRaw) {
       payload.dify_inputs_json = inputsRaw
     } else if (!isNew) {
       payload.dify_inputs_json = null
     }
-    const sec = form.value.dingtalk_app_secret.trim()
-    const key = form.value.dify_api_key.trim()
-    if (sec) {
-      payload.dingtalk_app_secret = sec
-    }
-    if (key) {
-      payload.dify_api_key = key
+    if (isNew) {
+      const sec = form.value.dingtalk_app_secret.trim()
+      const key = form.value.dify_api_key.trim()
+      if (sec) {
+        payload.dingtalk_app_secret = sec
+      }
+      if (key) {
+        payload.dify_api_key = key
+      }
+    } else {
+      if (dingtalkSecretReplaceMode.value) {
+        const sec = form.value.dingtalk_app_secret.trim()
+        if (sec) {
+          payload.dingtalk_app_secret = sec
+        }
+      }
+      if (difyApiKeyReplaceMode.value) {
+        const key = form.value.dify_api_key.trim()
+        if (key) {
+          payload.dify_api_key = key
+        }
+      }
     }
     const res = await apiRequest(`/api/mindbot/admin/configs/${oid}`, {
       method: 'PUT',
@@ -266,9 +276,7 @@ async function save(): Promise<void> {
       return
     }
     notify.success(t('admin.mindbot.saved'))
-    if (isAdmin.value) {
-      dialogVisible.value = false
-    }
+    dialogVisible.value = false
     await load()
   } finally {
     saving.value = false
@@ -311,287 +319,195 @@ onMounted(() => {
 <template>
   <div
     v-if="!featureMindbot"
-    class="text-sm text-gray-600"
+    class="text-sm text-gray-600 dark:text-gray-400"
   >
     {{ t('admin.feature.mindbotHint') }}
   </div>
   <div
     v-else
     v-loading="loading"
-    class="admin-mindbot-tab space-y-6 max-w-4xl"
+    class="admin-mindbot-tab pt-4 max-w-4xl"
   >
-    <div>
-      <h2 class="text-base font-semibold text-gray-900 mb-1">{{ t('admin.mindbot.title') }}</h2>
-      <p class="text-sm text-gray-600">{{ t('admin.mindbot.intro') }}</p>
-    </div>
-
-    <div class="rounded-lg border border-gray-200 bg-gray-50 p-4 space-y-2 text-sm">
-      <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackShared') }}</div>
-      <div class="flex flex-wrap items-center gap-2">
-        <code class="text-xs break-all flex-1 min-w-0">{{ callbackShared() }}</code>
-        <el-button
-          size="small"
-          :icon="DocumentCopy"
-          @click="copyUrl(callbackShared())"
-        >
-          {{ t('admin.mindbot.copyUrl') }}
-        </el-button>
-      </div>
-      <div class="pt-2">
-        <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackByToken') }}</div>
-        <div class="text-xs text-gray-600 mb-1">{{ t('admin.mindbot.callbackByTokenHint') }}</div>
-        <div class="flex flex-wrap items-center gap-2 mt-1">
-          <code class="text-xs break-all flex-1 min-w-0">{{ callbackTokenPattern }}</code>
-          <el-button
-            v-if="configs.length === 1 && configs[0].public_callback_token"
-            size="small"
-            :icon="DocumentCopy"
-            @click="copyUrl(buildCallbackUrlByToken(configs[0].public_callback_token))"
-          >
-            {{ t('admin.mindbot.copyUrl') }}
-          </el-button>
-        </div>
-      </div>
-      <div class="pt-2">
-        <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackPerOrg') }}</div>
-        <div class="text-xs text-gray-600 mb-1">{{ t('admin.mindbot.callbackPerOrgLegacy') }}</div>
-        <div class="flex flex-wrap items-center gap-2 mt-1">
-          <code class="text-xs break-all flex-1 min-w-0">{{ callbackPerOrgPattern }}</code>
-          <el-button
-            v-if="configs.length === 1"
-            size="small"
-            :icon="DocumentCopy"
-            @click="copyUrl(callbackPerOrg(configs[0].organization_id))"
-          >
-            {{ t('admin.mindbot.copyUrl') }}
-          </el-button>
-        </div>
-      </div>
-    </div>
-
     <template v-if="isAdmin">
-      <div class="flex justify-end">
-        <el-button
-          type="primary"
-          :disabled="orgsWithoutConfig.length === 0"
-          @click="openCreate"
-        >
-          {{ t('admin.mindbot.create') }}
-        </el-button>
-      </div>
-      <el-table
-        :data="configs"
-        stripe
-        style="width: 100%"
+      <el-card
+        shadow="never"
+        class="border border-gray-200 dark:border-gray-700"
       >
-        <el-table-column
-          prop="organization_id"
-          :label="t('admin.mindbot.colOrg')"
-          min-width="160"
-        >
-          <template #default="{ row }">
-            {{ orgNameById(row.organization_id) }}
-          </template>
-        </el-table-column>
-        <el-table-column
-          :label="t('admin.mindbot.colCallbackUrl')"
-          min-width="120"
-        >
-          <template #default="{ row }">
+        <template #header>
+          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+            <div class="min-w-0 space-y-1">
+              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+                {{ t('admin.mindbot.title') }}
+              </span>
+              <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 font-normal">
+                {{ t('admin.mindbot.introHttpOnly') }}
+              </p>
+            </div>
             <el-button
-              v-if="row.public_callback_token"
-              size="small"
-              :icon="DocumentCopy"
-              @click="copyUrl(buildCallbackUrlByToken(row.public_callback_token))"
-            >
-              {{ t('admin.mindbot.copyUrl') }}
-            </el-button>
-          </template>
-        </el-table-column>
-        <el-table-column
-          prop="dingtalk_robot_code"
-          :label="t('admin.mindbot.colRobot')"
-          min-width="140"
-        />
-        <el-table-column
-          prop="is_enabled"
-          :label="t('admin.mindbot.colEnabled')"
-          width="100"
-        >
-          <template #default="{ row }">
-            <span>{{ row.is_enabled ? '✓' : '—' }}</span>
-          </template>
-        </el-table-column>
-        <el-table-column
-          :label="t('admin.library.colActions')"
-          width="200"
-          fixed="right"
-        >
-          <template #default="{ row }">
-            <el-button
-              link
               type="primary"
-              @click="openEdit(row)"
+              size="small"
+              class="shrink-0 self-start"
+              :disabled="orgsWithoutConfig.length === 0"
+              @click="openCreate"
             >
-              {{ t('admin.mindbot.edit') }}
+              <el-icon class="mr-1"><Plus /></el-icon>
+              {{ t('admin.mindbot.create') }}
             </el-button>
-            <el-button
-              link
-              type="danger"
-              @click="removeRow(row)"
-            >
-              {{ t('admin.mindbot.delete') }}
-            </el-button>
-          </template>
-        </el-table-column>
-      </el-table>
+          </div>
+        </template>
 
-      <el-dialog
-        v-model="dialogVisible"
-        :title="dialogMode === 'create' ? t('admin.mindbot.create') : t('admin.mindbot.edit')"
-        width="min(520px, 92vw)"
-        destroy-on-close
-        @closed="resetForm"
-      >
-        <el-form
-          label-position="top"
-          class="space-y-2"
+        <div
+          v-if="!loading && configs.length === 0"
+          class="rounded-md border border-dashed border-gray-200 dark:border-gray-600 py-14 px-4 text-center"
         >
-          <el-form-item
-            v-if="dialogMode === 'create'"
-            :label="t('admin.mindbot.orgSelect')"
-          >
-            <el-select
-              v-model="formOrgId"
-              class="w-full"
-              filterable
-            >
-              <el-option
-                v-for="o in orgsWithoutConfig"
-                :key="o.id"
-                :label="orgLabel(o)"
-                :value="o.id"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
-            <el-input v-model="form.dingtalk_robot_code" />
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
-            <el-input v-model="form.dingtalk_client_id" />
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
-            <el-input
-              v-model="form.dingtalk_app_secret"
-              type="password"
-              show-password
-              autocomplete="new-password"
-            />
-            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkAppSecretHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkEventToken')">
-            <el-input
-              v-model="form.dingtalk_event_token"
-              type="password"
-              show-password
-              autocomplete="new-password"
-            />
-            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventTokenHint') }}</div>
-            <div
-              v-if="dialogMode === 'edit' && editingOrgRow?.dingtalk_event_token_set && !form.dingtalk_event_token"
-              class="text-xs text-gray-500 mt-1"
-            >
-              {{ t('admin.mindbot.dingtalkEventTokenSet') }}
-            </div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkEventAesKey')">
-            <el-input
-              v-model="form.dingtalk_event_aes_key"
-              type="password"
-              show-password
-              autocomplete="new-password"
-            />
-            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventAesHint') }}</div>
-            <div
-              v-if="dialogMode === 'edit' && editingOrgRow?.dingtalk_event_aes_key_set && !form.dingtalk_event_aes_key"
-              class="text-xs text-gray-500 mt-1"
-            >
-              {{ t('admin.mindbot.dingtalkEventAesSet') }}
-            </div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.dingtalkEventOwnerKey')">
-            <el-input v-model="form.dingtalk_event_owner_key" />
-            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventOwnerHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
-            <el-input v-model="form.dify_api_base_url" />
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyApiKey')">
-            <el-input
-              v-model="form.dify_api_key"
-              type="password"
-              show-password
-              autocomplete="new-password"
-            />
-            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.difyApiKeyHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyInputsJson')">
-            <el-input
-              v-model="form.dify_inputs_json"
-              type="textarea"
-              :rows="3"
-              class="font-mono text-sm"
-            />
-            <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.difyInputsJsonHint') }}</div>
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.difyTimeout')">
-            <el-input-number
-              v-model="form.dify_timeout_seconds"
-              :min="5"
-              :max="120"
-            />
-          </el-form-item>
-          <el-form-item :label="t('admin.mindbot.enabled')">
-            <el-switch v-model="form.is_enabled" />
-          </el-form-item>
-        </el-form>
-        <template #footer>
-          <el-button @click="dialogVisible = false">{{ t('admin.cancel') }}</el-button>
+          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+            {{ t('admin.mindbot.emptyState') }}
+          </p>
           <el-button
             type="primary"
-            :loading="saving"
-            @click="save"
+            size="small"
+            :disabled="orgsWithoutConfig.length === 0"
+            @click="openCreate"
           >
-            {{ t('admin.mindbot.save') }}
+            <el-icon class="mr-1"><Plus /></el-icon>
+            {{ t('admin.mindbot.create') }}
           </el-button>
-        </template>
-      </el-dialog>
+        </div>
+        <el-table
+          v-else-if="configs.length > 0"
+          :data="configs"
+          stripe
+          size="small"
+          class="w-full"
+        >
+          <el-table-column
+            prop="organization_id"
+            :label="t('admin.mindbot.colOrg')"
+            min-width="160"
+          >
+            <template #default="{ row }">
+              <span class="text-gray-900 dark:text-gray-100">{{ orgNameById(row.organization_id) }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="dingtalk_robot_code"
+            :label="t('admin.mindbot.colRobot')"
+            min-width="140"
+          >
+            <template #default="{ row }">
+              <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{ row.dingtalk_robot_code }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="is_enabled"
+            :label="t('admin.mindbot.colEnabled')"
+            width="110"
+          >
+            <template #default="{ row }">
+              <el-tag
+                :type="row.is_enabled ? 'success' : 'info'"
+                size="small"
+                effect="plain"
+              >
+                {{ row.is_enabled ? t('admin.enabled') : t('admin.disabled') }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            :label="t('admin.library.colActions')"
+            width="200"
+            fixed="right"
+          >
+            <template #default="{ row }">
+              <el-button
+                link
+                type="primary"
+                size="small"
+                @click="openEdit(row)"
+              >
+                {{ t('admin.mindbot.edit') }}
+              </el-button>
+              <el-button
+                link
+                type="danger"
+                size="small"
+                @click="removeRow(row)"
+              >
+                {{ t('admin.mindbot.delete') }}
+              </el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
     </template>
 
     <template v-else-if="isManager">
-      <el-alert
-        v-if="!Number.isFinite(managerOrgId)"
-        type="warning"
-        :closable="false"
-        :title="t('admin.mindbot.managerNoOrg')"
-      />
+      <el-card
+        shadow="never"
+        class="border border-gray-200 dark:border-gray-700"
+      >
+        <template #header>
+          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+            {{ t('admin.mindbot.title') }}
+          </span>
+        </template>
+        <el-alert
+          v-if="!Number.isFinite(managerOrgId)"
+          type="warning"
+          :closable="false"
+          :title="t('admin.mindbot.managerNoOrg')"
+          class="!items-start"
+        />
+        <div
+          v-else
+          class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
+        >
+          <p class="text-sm text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed">
+            {{ t('admin.mindbot.managerIntro') }}
+          </p>
+          <el-button
+            type="primary"
+            size="small"
+            class="shrink-0"
+            @click="openManagerMindbotDialog"
+          >
+            {{ t('admin.mindbot.openSettings') }}
+          </el-button>
+        </div>
+      </el-card>
+    </template>
+
+    <el-dialog
+      v-if="isAdmin || isManager"
+      v-model="dialogVisible"
+      :title="dialogMode === 'create' ? t('admin.mindbot.create') : t('admin.mindbot.edit')"
+      width="min(520px, 94vw)"
+      destroy-on-close
+      append-to-body
+      align-center
+      @closed="resetForm"
+    >
       <el-form
-        v-else
         label-position="top"
-        class="max-w-xl space-y-2"
+        class="space-y-1"
       >
         <div
-          v-if="editingOrgRow?.public_callback_token"
-          class="rounded-lg border border-gray-200 bg-white p-3 mb-4 space-y-2"
+          v-if="dialogMode === 'edit' && editingOrgRow?.public_callback_token"
+          class="mb-5 rounded-md border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/40"
         >
-          <div class="font-medium text-gray-800">{{ t('admin.mindbot.callbackByToken') }}</div>
-          <div class="text-xs text-gray-600">{{ t('admin.mindbot.callbackByTokenHint') }}</div>
-          <div class="flex flex-wrap items-center gap-2">
-            <code class="text-xs break-all flex-1 min-w-0">{{
-              buildCallbackUrlByToken(editingOrgRow.public_callback_token)
-            }}</code>
+          <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
+            {{ t('admin.mindbot.schoolCallbackUrl') }}
+          </div>
+          <p class="text-xs text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
+            {{ t('admin.mindbot.schoolCallbackUrlHint') }}
+          </p>
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
+            <code
+              class="block flex-1 min-w-0 break-all rounded border border-neutral-200 bg-white px-2.5 py-2 text-xs font-mono text-gray-900 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
+            >{{ buildCallbackUrlByToken(editingOrgRow.public_callback_token) }}</code>
             <el-button
               size="small"
+              class="shrink-0"
               :icon="DocumentCopy"
               @click="copyUrl(buildCallbackUrlByToken(editingOrgRow.public_callback_token))"
             >
@@ -599,66 +515,152 @@ onMounted(() => {
             </el-button>
           </div>
         </div>
-        <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
-          <el-input v-model="form.dingtalk_robot_code" />
+        <div
+          v-else-if="dialogMode === 'create'"
+          class="mb-5 rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100/90 leading-relaxed"
+        >
+          {{ t('admin.mindbot.callbackUrlAfterSave') }}
+        </div>
+
+        <el-form-item
+          v-if="dialogMode === 'create' && isAdmin"
+          :label="t('admin.mindbot.orgSelect')"
+        >
+          <el-select
+            v-model="formOrgId"
+            class="w-full"
+            filterable
+          >
+            <el-option
+              v-for="o in orgsWithoutConfig"
+              :key="o.id"
+              :label="orgLabel(o)"
+              :value="o.id"
+            />
+          </el-select>
         </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
-          <el-input v-model="form.dingtalk_client_id" />
+
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 mt-1">
+          {{ t('admin.mindbot.sectionDingTalk') }}
+        </div>
+        <el-form-item
+          v-if="dialogMode === 'create' && !isAdmin"
+          class="!mb-2"
+        >
+          <template #label>
+            <span class="text-sm font-normal text-gray-700 dark:text-gray-300">{{ t('admin.mindbot.orgSelect') }}</span>
+          </template>
+          <span class="text-sm text-gray-900 dark:text-gray-100">{{ managerSchoolDisplayName }}</span>
+        </el-form-item>
+        <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
+          <el-input
+            v-model="form.dingtalk_robot_code"
+            clearable
+          />
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
+          <div
+            v-if="
+              dialogMode === 'edit'
+                && editingOrgRow?.dingtalk_app_secret_masked
+                && !dingtalkSecretReplaceMode
+            "
+            class="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2"
+          >
+            <el-input
+              :model-value="editingOrgRow.dingtalk_app_secret_masked"
+              type="text"
+              readonly
+              class="font-mono text-sm flex-1 min-w-0"
+            />
+            <el-button
+              class="shrink-0"
+              size="small"
+              @click="startReplaceDingtalkSecret"
+            >
+              {{ t('admin.mindbot.replaceSecret') }}
+            </el-button>
+          </div>
           <el-input
+            v-else
             v-model="form.dingtalk_app_secret"
             type="password"
             show-password
             autocomplete="new-password"
+            clearable
           />
-          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkAppSecretHint') }}</div>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkEventToken')">
-          <el-input
-            v-model="form.dingtalk_event_token"
-            type="password"
-            show-password
-            autocomplete="new-password"
-          />
-          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventTokenHint') }}</div>
-          <div
-            v-if="editingOrgRow?.dingtalk_event_token_set && !form.dingtalk_event_token"
-            class="text-xs text-gray-500 mt-1"
-          >
-            {{ t('admin.mindbot.dingtalkEventTokenSet') }}
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+            <template v-if="dialogMode === 'create'">
+              {{ t('admin.mindbot.dingtalkAppSecretHint') }}
+            </template>
+            <template
+              v-else-if="
+                editingOrgRow?.dingtalk_app_secret_masked && !dingtalkSecretReplaceMode
+              "
+            >
+              {{ t('admin.mindbot.dingtalkAppSecretMaskedHint') }}
+            </template>
+            <template v-else>
+              {{ t('admin.mindbot.dingtalkAppSecretReplaceHint') }}
+            </template>
           </div>
         </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkEventAesKey')">
-          <el-input
-            v-model="form.dingtalk_event_aes_key"
-            type="password"
-            show-password
-            autocomplete="new-password"
-          />
-          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventAesHint') }}</div>
-          <div
-            v-if="editingOrgRow?.dingtalk_event_aes_key_set && !form.dingtalk_event_aes_key"
-            class="text-xs text-gray-500 mt-1"
-          >
-            {{ t('admin.mindbot.dingtalkEventAesSet') }}
-          </div>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkEventOwnerKey')">
-          <el-input v-model="form.dingtalk_event_owner_key" />
-          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.dingtalkEventOwnerHint') }}</div>
-        </el-form-item>
+
+        <el-divider class="!my-5" />
+
+        <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
+          {{ t('admin.mindbot.sectionDify') }}
+        </div>
         <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
-          <el-input v-model="form.dify_api_base_url" />
+          <el-input
+            v-model="form.dify_api_base_url"
+            clearable
+          />
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.difyApiKey')">
+          <div
+            v-if="
+              dialogMode === 'edit'
+                && editingOrgRow?.dify_api_key_masked
+                && !difyApiKeyReplaceMode
+            "
+            class="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2"
+          >
+            <el-input
+              :model-value="editingOrgRow.dify_api_key_masked"
+              type="text"
+              readonly
+              class="font-mono text-sm flex-1 min-w-0"
+            />
+            <el-button
+              class="shrink-0"
+              size="small"
+              @click="startReplaceDifyApiKey"
+            >
+              {{ t('admin.mindbot.replaceSecret') }}
+            </el-button>
+          </div>
           <el-input
+            v-else
             v-model="form.dify_api_key"
             type="password"
             show-password
             autocomplete="new-password"
+            clearable
           />
-          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.difyApiKeyHint') }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+            <template v-if="dialogMode === 'create'">
+              {{ t('admin.mindbot.difyApiKeyHint') }}
+            </template>
+            <template
+              v-else-if="editingOrgRow?.dify_api_key_masked && !difyApiKeyReplaceMode"
+            >
+              {{ t('admin.mindbot.difyApiKeyMaskedHint') }}
+            </template>
+            <template v-else>
+              {{ t('admin.mindbot.difyApiKeyReplaceHint') }}
+            </template>
+          </div>
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.difyInputsJson')">
           <el-input
@@ -667,19 +669,26 @@ onMounted(() => {
             :rows="3"
             class="font-mono text-sm"
           />
-          <div class="text-xs text-gray-500 mt-1">{{ t('admin.mindbot.difyInputsJsonHint') }}</div>
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+            {{ t('admin.mindbot.difyInputsJsonHint') }}
+          </div>
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.difyTimeout')">
           <el-input-number
             v-model="form.dify_timeout_seconds"
             :min="5"
-            :max="120"
+            :max="600"
+            class="w-full sm:w-40"
+            controls-position="right"
           />
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.enabled')">
           <el-switch v-model="form.is_enabled" />
         </el-form-item>
-        <el-form-item>
+      </el-form>
+      <template #footer>
+        <div class="flex justify-end gap-2">
+          <el-button @click="dialogVisible = false">{{ t('admin.cancel') }}</el-button>
           <el-button
             type="primary"
             :loading="saving"
@@ -687,8 +696,8 @@ onMounted(() => {
           >
             {{ t('admin.mindbot.save') }}
           </el-button>
-        </el-form-item>
-      </el-form>
-    </template>
+        </div>
+      </template>
+    </el-dialog>
   </div>
 </template>

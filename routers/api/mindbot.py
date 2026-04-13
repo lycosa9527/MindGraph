@@ -69,6 +69,22 @@ def _dict_from_dingtalk_raw_body(raw: bytes) -> dict[str, Any]:
 router = APIRouter(prefix="/mindbot", tags=["mindbot"])
 
 
+def _mask_secret(secret: str, head: int = 4, tail: int = 4) -> str:
+    """Show start/end of a stored secret; mask the middle for admin display only."""
+    text = (secret or "").strip()
+    if not text:
+        return ""
+    length = len(text)
+    if length <= head + tail:
+        if length <= 1:
+            return "•"
+        if length == 2:
+            return text[0] + "•"
+        return text[0] + "•" * (length - 2) + text[-1]
+    mid = min(length - head - tail, 12)
+    return text[:head] + "•" * mid + text[-tail:]
+
+
 class MindbotConfigPayload(BaseModel):
     """Admin create/update body."""
 
@@ -83,7 +99,7 @@ class MindbotConfigPayload(BaseModel):
         None,
         description="Omit or empty on update to keep existing key",
     )
-    dify_timeout_seconds: int = Field(30, ge=5, le=120)
+    dify_timeout_seconds: int = Field(300, ge=5, le=600)
     dify_inputs_json: Optional[str] = Field(
         None,
         description="Optional JSON object string passed as Dify chat-messages inputs",
@@ -111,6 +127,8 @@ class MindbotConfigResponse(BaseModel):
     organization_id: int
     public_callback_token: str
     dingtalk_robot_code: str
+    dingtalk_app_secret_masked: str
+    dify_api_key_masked: str
     dingtalk_client_id: Optional[str]
     dingtalk_event_token_set: bool
     dingtalk_event_aes_key_set: bool
@@ -369,6 +387,8 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
         organization_id=row.organization_id,
         public_callback_token=row.public_callback_token.strip(),
         dingtalk_robot_code=row.dingtalk_robot_code,
+        dingtalk_app_secret_masked=_mask_secret(row.dingtalk_app_secret),
+        dify_api_key_masked=_mask_secret(row.dify_api_key),
         dingtalk_client_id=row.dingtalk_client_id,
         dingtalk_event_token_set=bool(tok),
         dingtalk_event_aes_key_set=bool(aes),
@@ -479,7 +499,8 @@ async def admin_upsert_mindbot_config(
             )
         existing.dingtalk_robot_code = payload.dingtalk_robot_code.strip()
         existing.dingtalk_app_secret = app_secret
-        existing.dingtalk_client_id = (payload.dingtalk_client_id or "").strip() or None
+        if "dingtalk_client_id" in payload.model_fields_set:
+            existing.dingtalk_client_id = (payload.dingtalk_client_id or "").strip() or None
         existing.dingtalk_event_token = evt_token
         existing.dingtalk_event_aes_key = evt_aes
         existing.dingtalk_event_owner_key = evt_owner
