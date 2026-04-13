@@ -14,7 +14,6 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from clients.dify import AsyncDifyClient, DifyFile
 from config.settings import config
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from repositories.mindbot_repo import MindbotConfigRepository
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
     poll_dify_conv_key_async,
@@ -219,7 +218,6 @@ async def process_dingtalk_callback(
     sign_header: Optional[str],
     body: dict[str, Any],
     resolved_config: Optional[OrganizationMindbotConfig] = None,
-    robot_code_override: Optional[str] = None,
     debug_route_label: Optional[str] = None,
     debug_raw_body: Optional[bytes] = None,
     debug_request_headers: Optional[dict[str, str]] = None,
@@ -235,30 +233,13 @@ async def process_dingtalk_callback(
     if not config.FEATURE_MINDBOT:
         return 404, mindbot_error_headers(MindbotErrorCode.FEATURE_DISABLED)
 
-    repo = MindbotConfigRepository(session)
     ts_missing = not (timestamp_header or "").strip()
     sg_missing = not (sign_header or "").strip()
     if resolved_config is None and body == {} and ts_missing and sg_missing:
         logger.info("[MindBot] shared callback URL connectivity probe (empty body, no signature)")
         return 200, mindbot_error_headers(MindbotErrorCode.OK)
 
-    attempted_robot_code: Optional[str] = None
     cfg = resolved_config
-    if cfg is None:
-        rc = robot_code_override or body.get("robotCode") or body.get("robot_code")
-        if not rc or not isinstance(rc, str):
-            logger.warning("[MindBot] Missing robotCode in payload")
-            _log_callback_debug_failure(
-                debug_route_label=debug_route_label,
-                debug_raw_body=debug_raw_body,
-                debug_request_headers=debug_request_headers,
-                body=body,
-                reason="missing_robot_code",
-                extra={"robot_code_override": robot_code_override},
-            )
-            return 400, mindbot_error_headers(MindbotErrorCode.MISSING_ROBOT_CODE)
-        attempted_robot_code = rc.strip()
-        cfg = await repo.get_by_robot_code(attempted_robot_code)
     if cfg is None:
         _hint = ""
         if not dingtalk_inbound_logging_enabled():
@@ -272,9 +253,9 @@ async def process_dingtalk_callback(
                 " Failure dumps need MINDBOT_LOG_CALLBACK_DEBUG=1 (default on unless DEBUG=0)."
             )
         logger.warning(
-            "[MindBot] No enabled MindBot config for robot_code=%r "
-            "(no DB row with this dingtalk_robot_code and is_enabled=true, or code mismatch).%s",
-            attempted_robot_code,
+            "[MindBot] Path-based callback URL required (use /dingtalk/callback/t/<token> "
+            "or /dingtalk/orgs/<organization_id>/callback); message delivery is not routed "
+            "via the shared /dingtalk/callback URL.%s",
             _hint,
         )
         _log_callback_debug_failure(
@@ -282,10 +263,10 @@ async def process_dingtalk_callback(
             debug_raw_body=debug_raw_body,
             debug_request_headers=debug_request_headers,
             body=body,
-            reason="config_not_found",
-            extra={"attempted_robot_code": attempted_robot_code},
+            reason="path_callback_required",
+            extra={},
         )
-        return 404, mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND)
+        return 404, mindbot_error_headers(MindbotErrorCode.PATH_CALLBACK_REQUIRED)
     if not cfg.is_enabled:
         logger.warning(
             "[MindBot] MindBot config is disabled organization_id=%s robot_code=%s",
@@ -320,22 +301,12 @@ async def process_dingtalk_callback(
         rc_in_body = body.get("robotCode") or body.get("robot_code")
         if isinstance(rc_in_body, str) and rc_in_body.strip():
             if rc_in_body.strip() != cfg.dingtalk_robot_code.strip():
-                logger.warning("[MindBot] robotCode does not match org-scoped callback config")
-                _log_callback_debug_failure(
-                    debug_route_label=debug_route_label,
-                    debug_raw_body=debug_raw_body,
-                    debug_request_headers=debug_request_headers,
-                    body=body,
-                    reason="robot_code_mismatch",
-                    extra={
-                        "organization_id": cfg.organization_id,
-                        "expected_robot_code": cfg.dingtalk_robot_code.strip(),
-                        "body_robot_code": rc_in_body.strip(),
-                    },
+                logger.debug(
+                    "[MindBot] body robotCode=%r differs from stored dingtalk_robot_code=%r "
+                    "(ignored; inbound routing is path-based)",
+                    rc_in_body.strip(),
+                    cfg.dingtalk_robot_code.strip(),
                 )
-                return 400, _hdr(MindbotErrorCode.ROBOT_CODE_MISMATCH)
-
-    if resolved_config is not None:
         if body == {} and ts_missing and sg_missing:
             logger.info(
                 "[MindBot] callback connectivity probe org_id=%s robot=%s",

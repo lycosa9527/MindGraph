@@ -241,7 +241,13 @@ async def dingtalk_callback_shared(
     request: Request,
     db: AsyncSession = Depends(get_async_db),
 ) -> Response:
-    """Shared URL: resolve tenant by ``robotCode`` in JSON body (HTTP receive mode)."""
+    """
+    Shared URL (legacy): empty-body connectivity probe only.
+
+    Real message delivery must use ``POST /dingtalk/callback/t/{public_callback_token}``
+    or ``POST /dingtalk/orgs/{organization_id}/callback`` so the tenant is chosen from
+    the path, not from JSON ``robotCode`` (DingTalk often sends a placeholder).
+    """
     _require_mindbot_feature()
     raw = await request.body()
     body = _dict_from_dingtalk_raw_body(raw)

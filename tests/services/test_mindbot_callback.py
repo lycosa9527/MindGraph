@@ -30,7 +30,10 @@ async def test_feature_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
 
 
 @pytest.mark.asyncio
-async def test_missing_robot_code(monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_shared_callback_requires_path_not_body_robot_code(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Shared URL without resolved_config does not route by JSON robotCode."""
     monkeypatch.setattr(
         "services.mindbot.mindbot_callback.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
@@ -42,10 +45,10 @@ async def test_missing_robot_code(monkeypatch: pytest.MonkeyPatch) -> None:
         session,
         timestamp_header="1",
         sign_header="1",
-        body={"text": {"content": "hi"}},
+        body={"text": {"content": "hi"}, "robotCode": "normal"},
     )
-    assert code == 400
-    assert "MINDBOT_MISSING_ROBOT_CODE" in hdr.get("X-MindBot-Error-Code", "")
+    assert code == 404
+    assert hdr.get("X-MindBot-Error-Code") == "MINDBOT_PATH_CALLBACK_REQUIRED"
 
 
 def _sample_cfg() -> OrganizationMindbotConfig:
@@ -77,18 +80,6 @@ async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
 
     cfg = _sample_cfg()
 
-    class _FakeRepo:
-        def __init__(self, _session: object) -> None:
-            pass
-
-        async def get_by_robot_code(self, _rc: str) -> OrganizationMindbotConfig:
-            return cfg
-
-    monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.MindbotConfigRepository",
-        _FakeRepo,
-    )
-
     from services.mindbot.mindbot_callback import process_dingtalk_callback
 
     session = AsyncMock()
@@ -102,9 +93,46 @@ async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
         timestamp_header="1730000000000",
         sign_header="not-the-real-signature",
         body=body,
+        resolved_config=cfg,
     )
     assert code == 401
     assert "MINDBOT_INVALID_SIGNATURE" in hdr.get("X-MindBot-Error-Code", "")
+
+
+@pytest.mark.asyncio
+async def test_body_robotcode_placeholder_does_not_block_before_signature(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """DingTalk may send robotCode != stored dingtalk_robot_code; path routing wins."""
+    monkeypatch.setattr(
+        "services.mindbot.mindbot_callback.config",
+        SimpleNamespace(FEATURE_MINDBOT=True),
+    )
+    monkeypatch.setattr(
+        "services.mindbot.mindbot_callback.is_redis_available",
+        lambda: False,
+    )
+
+    cfg = _sample_cfg()
+
+    from services.mindbot.mindbot_callback import process_dingtalk_callback
+
+    session = AsyncMock()
+    body = {
+        "robotCode": "normal",
+        "msgtype": "text",
+        "text": {"content": "hello"},
+    }
+    code, hdr = await process_dingtalk_callback(
+        session,
+        timestamp_header="1730000000000",
+        sign_header="not-the-real-signature",
+        body=body,
+        resolved_config=cfg,
+    )
+    assert code == 401
+    assert "MINDBOT_INVALID_SIGNATURE" in hdr.get("X-MindBot-Error-Code", "")
+    assert "MINDBOT_ROBOT_CODE_MISMATCH" not in hdr.get("X-MindBot-Error-Code", "")
 
 
 @pytest.mark.asyncio

@@ -135,7 +135,7 @@ export default {
   'admin.mindbot.sectionDingTalk': '钉钉',
   'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': '学校',
-  'admin.mindbot.colRobot': '机器人 code',
+  'admin.mindbot.colRobot': 'OpenAPI 机器人 code',
   'admin.mindbot.colEnabled': '启用',
   'admin.mindbot.edit': '编辑',
   'admin.mindbot.create': '新增学校',
@@ -143,7 +143,9 @@ export default {
   'admin.mindbot.delete': '删除配置',
   'admin.mindbot.deleteConfirm': '确定删除该校的 MindBot 配置？',
   'admin.mindbot.orgSelect': '学校',
-  'admin.mindbot.dingtalkRobotCode': '钉钉 robot code',
+  'admin.mindbot.dingtalkRobotCode': '钉钉 robot code（OpenAPI）',
+  'admin.mindbot.dingtalkRobotCodeHint':
+    '在钉钉开放平台查看，用于调用钉钉 OpenAPI 发消息等。用户消息回调由本校回调 URL 路径识别，不依赖与 webhook JSON 中的 robotCode 一致。',
   'admin.mindbot.dingtalkAppSecret': '钉钉 Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': '新增学校时必填。',
   'admin.mindbot.dingtalkAppSecretMaskedHint':

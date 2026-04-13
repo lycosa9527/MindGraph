@@ -9,19 +9,10 @@ from models.domain.mindbot_config import OrganizationMindbotConfig
 
 
 class MindbotConfigRepository:
-    """Load MindBot integration rows by robot code or organization id."""
+    """Load MindBot integration rows by public callback token or organization id."""
 
     def __init__(self, session: AsyncSession) -> None:
         self._session = session
-
-    async def get_by_robot_code(self, robot_code: str) -> Optional[OrganizationMindbotConfig]:
-        result = await self._session.execute(
-            select(OrganizationMindbotConfig).where(
-                OrganizationMindbotConfig.dingtalk_robot_code == robot_code,
-                OrganizationMindbotConfig.is_enabled.is_(True),
-            )
-        )
-        return result.scalar_one_or_none()
 
     async def get_by_public_callback_token(self, token: str) -> Optional[OrganizationMindbotConfig]:
         result = await self._session.execute(

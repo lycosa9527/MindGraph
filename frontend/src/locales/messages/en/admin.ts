@@ -140,7 +140,7 @@ export default {
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': 'Organization',
-  'admin.mindbot.colRobot': 'Robot code',
+  'admin.mindbot.colRobot': 'OpenAPI robot code',
   'admin.mindbot.colEnabled': 'Enabled',
   'admin.mindbot.edit': 'Edit',
   'admin.mindbot.create': 'Add school',
@@ -148,7 +148,9 @@ export default {
   'admin.mindbot.delete': 'Remove config',
   'admin.mindbot.deleteConfirm': 'Remove MindBot configuration for this organization?',
   'admin.mindbot.orgSelect': 'School',
-  'admin.mindbot.dingtalkRobotCode': 'DingTalk robot code',
+  'admin.mindbot.dingtalkRobotCode': 'DingTalk robot code (OpenAPI)',
+  'admin.mindbot.dingtalkRobotCodeHint':
+    'From the DingTalk developer console; used for outbound API calls (sending replies). Inbound messages are identified by this school’s callback URL path, not by matching this value to the webhook JSON.',
   'admin.mindbot.dingtalkAppSecret': 'DingTalk Client Secret',
   'admin.mindbot.dingtalkAppSecretHint': 'Required when adding a school.',
   'admin.mindbot.dingtalkAppSecretMaskedHint':

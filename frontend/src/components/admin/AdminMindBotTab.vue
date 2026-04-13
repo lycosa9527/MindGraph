@@ -557,6 +557,9 @@ onMounted(() => {
             v-model="form.dingtalk_robot_code"
             clearable
           />
+          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
+            {{ t('admin.mindbot.dingtalkRobotCodeHint') }}
+          </div>
         </el-form-item>
         <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
           <div
