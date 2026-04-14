@@ -23,21 +23,32 @@ def format_pipeline_ctx(
     *,
     msg_id: str = "",
     staff_id: str = "",
+    nick: str = "",
+    chat_type: str = "",
     conv_dingtalk: str = "",
     dify_conv: str = "",
 ) -> str:
     """
     Single-line correlation prefix for DingTalk ↔ Dify traffic logs.
 
-    Field order: who (staff) → where (conv) → trace (org, robot, msg, dify).
+    Field order: who (staff/nick) → where (chat_type:conv) → trace (org, robot, msg, dify).
     Does not include API keys, tokens, or message text.
+
+    ``chat_type`` should be ``"group"`` or ``"1:1"``; when set it is prefixed to the
+    conversation id as ``group:conv`` or ``1:1:conv`` for at-a-glance context.
+    ``nick`` is the sender display name; appended as ``staff=id(Nick)`` when present.
     """
     parts = []
     staff = clip_id(staff_id, 20)
     if staff:
-        parts.append(f"staff={staff}")
+        nick_s = nick.strip()[:20] if isinstance(nick, str) else ""
+        parts.append(f"staff={staff}({nick_s})" if nick_s else f"staff={staff}")
     cdt = clip_id(conv_dingtalk, 20)
-    if cdt:
+    if chat_type and cdt:
+        parts.append(f"{chat_type}:{cdt}")
+    elif chat_type:
+        parts.append(f"chat={chat_type}")
+    elif cdt:
         parts.append(f"conv={cdt}")
     parts.append(f"org={org_id}")
     parts.append(f"robot={clip_id(robot_code, 12)}")

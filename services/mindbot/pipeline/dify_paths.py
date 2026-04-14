@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import logging
+import time
 import uuid
 from typing import Any, Awaitable, Callable, Optional
 
@@ -89,11 +90,11 @@ async def run_streaming_dify_branch(
             pipeline_ctx,
         )
         _card_wiring = False
+    _outbound = "ai_card" if _card_wiring else ("buffer→plain" if _is_cross_org else "plain")
     logger.info(
-        "[MindBot] dify_streaming_branch %s ai_card_wiring=%s buffer_only=%s",
+        "[MindBot] route %s outbound=%s",
         pipeline_ctx,
-        _card_wiring,
-        _is_cross_org,
+        _outbound,
     )
 
     card_state: dict[str, Any] = {
@@ -104,12 +105,21 @@ async def run_streaming_dify_branch(
         "token": None,
         "created": False,
         "update_mode": "stream",
+        "_t0": time.monotonic(),
+        "_first_chunk": False,
     }
 
     async def on_batch(chunk: str) -> tuple[bool, bool]:
         visible = think_filter.push(chunk)
         if not visible:
             return True, False
+        if not card_state["_first_chunk"]:
+            card_state["_first_chunk"] = True
+            logger.info(
+                "[MindBot] dify_first_chunk %s latency=%.1fs",
+                pipeline_ctx,
+                time.monotonic() - card_state["_t0"],
+            )
         if card_state.get("buffer_only"):
             # Cross-org group: accumulate silently; full response sent at end.
             card_state["cum"] += visible
@@ -429,11 +439,14 @@ async def run_streaming_dify_branch(
             new_conv,
             CONV_KEY_TTL_SECONDS,
         )
+    _rp = reply_text[:80].replace("\n", " ")
+    _re = "…" if len(reply_text) > 80 else ""
     logger.info(
-        "[MindBot] dify_streaming_outcome %s outcome=ok reply_chars=%s dify_conv=%s",
+        "[MindBot] done %s chars=%s elapsed=%.1fs reply=%r",
         pipeline_ctx,
         len(reply_text),
-        (new_conv or "")[:32],
+        time.monotonic() - card_state["_t0"],
+        _rp + _re,
     )
     await record_usage(
         MindbotErrorCode.OK,

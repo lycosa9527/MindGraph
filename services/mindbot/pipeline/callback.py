@@ -419,32 +419,40 @@ async def process_dingtalk_callback(
     if isinstance(mid_raw, str) and mid_raw.strip():
         msg_id_for_usage = mid_raw.strip()
 
+    raw_nick = (
+        body.get("senderNick")
+        or body.get("sender_nick")
+        or body.get("senderNickName")
+        or body.get("sender_nickname")
+    )
+    sender_nick = raw_nick.strip() if isinstance(raw_nick, str) else ""
+    conv_type_raw = body.get("conversationType") or body.get("conversation_type") or ""
+    chat_type = (
+        "group" if str(conv_type_raw).strip() == "2"
+        else "1:1" if str(conv_type_raw).strip() == "1"
+        else ""
+    )
     pipeline_ctx = format_pipeline_ctx(
         cfg.organization_id,
         cfg.dingtalk_robot_code.strip(),
         msg_id=msg_id_for_usage or "",
         staff_id=sender_staff,
+        nick=sender_nick,
+        chat_type=chat_type,
         conv_dingtalk=conversation_id_dt,
         dify_conv=dify_conv or "",
     )
+    _preview = text_in[:60].replace("\n", " ")
+    _ellipsis = "…" if len(text_in) > 60 else ""
     logger.info(
-        "[MindBot] pipeline_start %s mode=%s inbound_chars=%s msgtype=%s session_webhook=%s",
+        "[MindBot] recv %s msgtype=%s q=%r chars=%s mode=%s sw=%s",
         pipeline_ctx,
-        "streaming" if _dify_streaming_enabled() else "blocking",
-        len(text_in),
         inbound_msg_type,
+        _preview + _ellipsis,
+        len(text_in),
+        "streaming" if _dify_streaming_enabled() else "blocking",
         "yes" if session_webhook_valid else "no",
     )
-    if env_bool("MINDBOT_LOG_INBOUND_PROMPT_PREVIEW", False):
-        cap = 160
-        tail = "…" if len(text_in) > cap else ""
-        preview = text_in[:cap] + tail
-        logger.info(
-            "[MindBot] inbound_prompt_preview %s total_chars=%s text=%r",
-            pipeline_ctx,
-            len(text_in),
-            preview,
-        )
     logger.debug(
         "[MindBot] pipeline_detail %s gate_acquired=%s redis_dify_conv=%s",
         pipeline_ctx,
