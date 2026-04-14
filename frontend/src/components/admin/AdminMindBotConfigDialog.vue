@@ -3,7 +3,7 @@
  * MindBot create/edit modal: phosphor-terminal shell + Swiss red primary, DingTalk + Dify + usage tabs.
  * Latin/UI typography matches UpdateLogModal (JetBrains Mono / Cascadia Code stack).
  */
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { DocumentCopy, MagicStick, Refresh } from '@element-plus/icons-vue'
 
@@ -52,6 +52,67 @@ const dialogTab = ref<'dingtalk' | 'dify' | 'log' | 'monitor'>('dingtalk')
 const aiCardStreamCheckLoading = ref(false)
 const aiCardStreamMessage = ref<{ ok: boolean; text: string } | null>(null)
 
+/** Effective OpenAPI app key: form overrides saved row. */
+const effectiveDingtalkClientId = computed(() => {
+  const fromForm = form.value.dingtalk_client_id.trim()
+  if (fromForm) {
+    return fromForm
+  }
+  return (props.editingOrgRow?.dingtalk_client_id ?? '').trim()
+})
+
+/** Effective template id: form overrides saved row (must match DingTalk published id, e.g. *.schema). */
+const effectiveAiCardTemplateId = computed(() => {
+  const fromForm = form.value.dingtalk_ai_card_template_id.trim()
+  if (fromForm) {
+    return fromForm
+  }
+  return (props.editingOrgRow?.dingtalk_ai_card_template_id ?? '').trim()
+})
+
+const hasSavedDingtalkClientSecret = computed(() => {
+  return Boolean((props.editingOrgRow?.dingtalk_app_secret_masked ?? '').trim())
+})
+
+/**
+ * Probe calls DingTalk with credentials stored on the server (saved Client Secret).
+ * Client ID and template id may be taken from the form or last-saved config.
+ */
+const canRunAiCardProbe = computed(() => {
+  if (props.mode !== 'edit' || !props.editingOrgRow || !props.featureMindbot) {
+    return false
+  }
+  if (!hasSavedDingtalkClientSecret.value) {
+    return false
+  }
+  if (!effectiveDingtalkClientId.value) {
+    return false
+  }
+  if (!effectiveAiCardTemplateId.value) {
+    return false
+  }
+  return true
+})
+
+const aiCardProbeTooltip = computed(() => {
+  if (!props.featureMindbot) {
+    return t('admin.mindbot.dingtalkAiCardStreamCheckTooltip')
+  }
+  if (props.mode !== 'edit' || !props.editingOrgRow) {
+    return t('admin.mindbot.dingtalkAiCardStreamCheckNeedEdit')
+  }
+  if (!hasSavedDingtalkClientSecret.value) {
+    return t('admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret')
+  }
+  if (!effectiveDingtalkClientId.value) {
+    return t('admin.mindbot.dingtalkAiCardStreamCheckNeedClientId')
+  }
+  if (!effectiveAiCardTemplateId.value) {
+    return t('admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate')
+  }
+  return t('admin.mindbot.dingtalkAiCardStreamCheckTooltip')
+})
+
 watch(visible, (open) => {
   if (open) {
     dialogTab.value = 'dingtalk'
@@ -70,6 +131,12 @@ function orgLabel(org: OrgOption): string {
 async function checkAiCardStreaming(): Promise<void> {
   const oid = formOrgId.value
   if (oid == null || !props.featureMindbot) {
+    return
+  }
+  if (!canRunAiCardProbe.value) {
+    const msg = aiCardProbeTooltip.value
+    notify.warning(msg)
+    aiCardStreamMessage.value = { ok: false, text: msg }
     return
   }
   aiCardStreamCheckLoading.value = true
@@ -351,7 +418,7 @@ function onDialogClosed(): void {
                     />
                     <el-tooltip
                       placement="top"
-                      :content="t('admin.mindbot.dingtalkAiCardStreamCheckTooltip')"
+                      :content="aiCardProbeTooltip"
                     >
                       <el-button
                         type="primary"
@@ -360,7 +427,7 @@ function onDialogClosed(): void {
                         size="small"
                         class="mindbot-ai-card-ping shrink-0 !rounded-full !px-3 !font-medium"
                         :loading="aiCardStreamCheckLoading"
-                        :disabled="mode !== 'edit' || !editingOrgRow || !featureMindbot"
+                        :disabled="!canRunAiCardProbe || aiCardStreamCheckLoading"
                         @click="checkAiCardStreaming"
                       >
                         <el-icon class="mr-0.5"><MagicStick /></el-icon>

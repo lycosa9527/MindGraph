@@ -174,10 +174,17 @@ export default {
   'admin.mindbot.dingtalkAiCardTemplateIdHint':
     '钉钉卡片平台已发布模板；需配置 Client ID 与卡片权限。',
   'admin.mindbot.dingtalkAiCardStreamCheck': '测试权限',
-  'admin.mindbot.dingtalkAiCardStreamOk': '流式接口可用',
+  'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth 与流式卡片权限正常',
   'admin.mindbot.dingtalkAiCardStreamFail': '检测失败',
   'admin.mindbot.dingtalkAiCardStreamCheckTooltip':
-    '调用 PUT /v1.0/card/streaming，验证 OAuth 与 AI 卡片流式权限。需填写模板 ID 并配置 Client ID。',
+    '使用服务器上已保存的 Client Secret、当前 Client ID 与模板 ID；获取 access_token 并调用 PUT /v1.0/card/streaming（随机 outTrackId 会返回「卡片不存在」，属预期），用于确认 OpenAPI 与流式卡片权限。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit': '请先保存该校 MindBot 配置。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret':
+    '请先保存 Client Secret。检测仅使用服务器已保存的凭据，不会使用表单里未保存的输入。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId':
+    '请填写开放平台 Client ID（AppKey），可使用本表单或上次已保存的配置。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate':
+    '请填写已发布的 AI 卡片模板 ID（例如 uuid.schema），可使用本表单或上次已保存的配置。',
   'admin.mindbot.difyBaseUrl': 'Dify API 根地址',
   'admin.mindbot.difyApiKey': 'Dify API Key',
   'admin.mindbot.difyApiKeyHint': '新增学校时必填。',

@@ -44,6 +44,17 @@ def _dt_err(body: dict[str, Any]) -> tuple[str, str]:
     return str(body.get("code") or ""), str(body.get("message") or body.get("msg") or "")
 
 
+def _streaming_probe_missing_card_accepted(body: dict[str, Any]) -> bool:
+    """True when DingTalk reports no card for ``outTrackId`` (expected for admin probe)."""
+    code, message = _dt_err(body)
+    combined = f"{code} {message}".lower()
+    if "outtrack" in combined or "not exist" in combined:
+        return True
+    if "card" in code.lower() and "exist" in combined:
+        return True
+    return False
+
+
 def _http_detail(status: int) -> str:
     return f"http_{status}"
 
@@ -522,6 +533,7 @@ async def probe_ai_card_streaming_update_api(
         token,
         payload,
         timeout_seconds=15,
+        parse_json_on_error=True,
     )
     if status == 0:
         et = "network_error"
@@ -534,6 +546,16 @@ async def probe_ai_card_streaming_update_api(
             _probe_friendly(False, et, None, None),
         )
     if status != 200:
+        if body and _streaming_probe_missing_card_accepted(body):
+            code, message = _dt_err(body)
+            return AiCardProbeResult(
+                True,
+                status,
+                None,
+                code or None,
+                message or None,
+                None,
+            )
         hd = _http_detail(status)
         return AiCardProbeResult(
             False,
@@ -556,11 +578,9 @@ async def probe_ai_card_streaming_update_api(
     if dingtalk_v1_response_ok(body):
         return AiCardProbeResult(True, status, None, None, None, None)
     code, message = _dt_err(body)
+    if _streaming_probe_missing_card_accepted(body):
+        return AiCardProbeResult(True, status, None, code or None, message or None, None)
     combined = f"{code} {message}".lower()
-    if "outtrack" in combined or "not exist" in combined:
-        return AiCardProbeResult(True, status, None, code or None, message or None, None)
-    if "card" in code.lower() and "exist" in combined:
-        return AiCardProbeResult(True, status, None, code or None, message or None, None)
     if "permission" in combined or "forbidden" in combined or "scope" in combined:
         return AiCardProbeResult(
             False,

@@ -180,10 +180,17 @@ export default {
   'admin.mindbot.dingtalkAiCardTemplateIdHint':
     'Published template from DingTalk card platform. Needs Client ID and card permissions.',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'Test permissions',
-  'admin.mindbot.dingtalkAiCardStreamOk': 'Streaming API reachable',
+  'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth and streaming card permissions OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Check failed',
   'admin.mindbot.dingtalkAiCardStreamCheckTooltip':
-    'Calls PUT /v1.0/card/streaming to verify OAuth and AI card streaming permissions. Requires template id and Client ID.',
+    'Uses the Client Secret saved on the server, your Client ID, and template id. Obtains an access token and calls PUT /v1.0/card/streaming (expected “card not found” for a random id) to confirm OpenAPI and streaming-card permissions.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit': 'Save the MindBot config for this school first.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret':
+    'Save a Client Secret first. The check only uses credentials stored on the server, not unsaved text in the form.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId':
+    'Set OpenAPI Client ID (AppKey) in this form or in the last saved config.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate':
+    'Set the published AI card template id (e.g. uuid.schema) in this form or in the last saved config.',
   'admin.mindbot.difyBaseUrl': 'Dify API base URL',
   'admin.mindbot.difyApiKey': 'Dify API key',
   'admin.mindbot.difyApiKeyHint': 'Required when adding a school.',

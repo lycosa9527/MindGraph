@@ -274,6 +274,41 @@ async def test_probe_streaming_treats_missing_card_as_ok() -> None:
 
 
 @pytest.mark.asyncio
+async def test_probe_streaming_treats_missing_card_as_ok_http400() -> None:
+    """DingTalk may return HTTP 400 with JSON body for unknown outTrackId."""
+
+    async def fake_unverified(*_a, **_k):
+        return 400, {
+            "requestid": "73A9CE58-A5D3-7728-88A0-0273A525DA0A",
+            "code": "param.stream.outTrackId",
+            "message": "card is not exist",
+        }
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="r",
+        dingtalk_app_secret="s",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key=None,
+    )
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        new=fake_unverified,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.get_access_token_with_error",
+            new=AsyncMock(return_value=("tok", "")),
+        ):
+            result = await probe_ai_card_streaming_update_api(cfg)
+    assert result.ok is True
+    assert result.http_status == 400
+    assert result.error_token is None
+    assert result.dingtalk_code == "param.stream.outTrackId"
+    assert result.friendly_message is None
+
+
+@pytest.mark.asyncio
 async def test_probe_streaming_fails_without_template() -> None:
     cfg = SimpleNamespace(
         organization_id=1,
