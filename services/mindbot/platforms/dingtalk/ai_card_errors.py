@@ -28,6 +28,10 @@ _CREATE_FRIENDLY: dict[str, str] = {
     "param.contentUnsafe": "Create card: content failed security review.",
     "param.openSpaceIdInvalid": "Create card: openSpaceId is invalid.",
     "param.openSpaceIdEmpty": "Create card: openSpaceId is empty.",
+    "param.openDeliverModelError": (
+        "Create card: deliver model invalid (e.g. group chat may need AppKey as "
+        "robotCode in imGroupOpenDeliverModel; try MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE)."
+    ),
     "param.userIdEmpty": "Create card: userId (creator) is empty.",
     "param.userIdNotExist": "Create card: userId does not exist.",
     "param.cardPublicDataEmpty": "Create card: card public data is empty.",

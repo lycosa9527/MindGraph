@@ -81,6 +81,22 @@ def mindbot_ai_card_wiring_enabled(cfg: OrganizationMindbotConfig) -> bool:
     return True
 
 
+def _im_group_deliver_robot_code(cfg: OrganizationMindbotConfig) -> str:
+    """
+    Value for ``imGroupOpenDeliverModel.robotCode``.
+
+    DingTalk documents that for internal enterprise apps in non-scene groups,
+    this field must be the OpenAPI **AppKey** (same as ``dingtalk_client_id``),
+    not the HTTP callback ``dingtalk_robot_code``. Scene groups and ISV robots
+    may require the robot code instead; set ``MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE``.
+    """
+    app_key = (cfg.dingtalk_client_id or "").strip()
+    robot = (cfg.dingtalk_robot_code or "").strip()
+    if env_bool("MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE", False):
+        return robot or app_key
+    return app_key or robot
+
+
 def _open_space_id_group(open_conversation_id: str) -> str:
     cid = open_conversation_id.strip()
     return f"dtv1.card//im_group.{cid}"
@@ -236,6 +252,7 @@ async def create_and_deliver_ai_card(
         return False, None, "no_sender_staff"
     user_id = sender_staff
     robot_code = cfg.dingtalk_robot_code.strip()
+    group_deliver_robot = _im_group_deliver_robot_code(cfg)
     if is_group:
         if not conv_s:
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
@@ -250,7 +267,7 @@ async def create_and_deliver_ai_card(
             "openSpaceId": open_space_id,
             "imGroupOpenSpaceModel": _im_group_space_model(),
             "imGroupOpenDeliverModel": {
-                "robotCode": robot_code,
+                "robotCode": group_deliver_robot,
                 "atUserIds": {},
                 "recipients": [sender_staff],
             },
@@ -284,11 +301,23 @@ async def create_and_deliver_ai_card(
         token,
         payload,
         timeout_seconds=60,
+        parse_json_on_error=True,
     )
     if status == 0:
         logger.warning("[MindBot] ai_card_create_failed %s reason=network_error", pipeline_ctx)
         return False, None, "network_error"
     if status != 200:
+        if isinstance(resp_body, dict):
+            code_err, msg_err = _dt_err(resp_body)
+            if code_err or msg_err:
+                logger.warning(
+                    "[MindBot] ai_card_create_failed %s code=%s msg=%s friendly=%s",
+                    pipeline_ctx,
+                    code_err,
+                    msg_err,
+                    describe_ai_card_failure(code_err, msg_err),
+                )
+                return False, code_err or None, msg_err
         return False, None, _http_detail(status)
     if not resp_body:
         return False, None, "empty_body"

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, patch
 
@@ -123,7 +124,7 @@ async def test_streaming_update_propagates_token_on_failure_after_401() -> None:
                 "services.mindbot.platforms.dingtalk.ai_card.prefetch_ai_card_access_token",
                 new=AsyncMock(return_value="tok-new"),
             ):
-                ok, code, detail, ref = await streaming_update_ai_card(
+                ok, _, _, ref = await streaming_update_ai_card(
                     cfg,
                     access_token="tok-old",
                     out_track_id="tr",
@@ -201,14 +202,97 @@ async def test_create_and_deliver_group_posts_expected_path() -> None:
     assert pl.get("outTrackId") == "track-1"
     assert pl.get("openSpaceId") == "dtv1.card//im_group.oc-1"
     assert pl.get("callbackType") == "STREAM"
+    assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "kid"
+
+
+@pytest.mark.asyncio
+async def test_create_and_deliver_group_uses_robot_code_when_env() -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_post(_path: str, _token: str, payload: dict, **_kwargs):
+        captured["payload"] = payload
+        return 200, {"success": True, "result": {"outTrackId": "x", "deliverResults": []}}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="robot-1",
+        dingtalk_app_secret="sec",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key="body_md",
+    )
+    body = {
+        "conversationType": "2",
+        "conversationId": "oc-1",
+        "senderStaffId": "staff-9",
+    }
+    with patch.dict(os.environ, {"MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE": "true"}):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+            new=fake_post,
+        ):
+            with patch(
+                "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+                new=AsyncMock(return_value="tok-1"),
+            ):
+                ok, code, detail = await create_and_deliver_ai_card(
+                    cfg,
+                    body,
+                    out_track_id="track-1",
+                    initial_markdown="",
+                    pipeline_ctx="tctx",
+                )
+    assert ok is True
+    assert code is None
+    assert detail == ""
+    pl = captured["payload"]
+    assert isinstance(pl, dict)
     assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "robot-1"
+
+
+@pytest.mark.asyncio
+async def test_create_and_deliver_http_400_returns_dingtalk_code() -> None:
+    async def fake_post(_path: str, _token: str, _payload: dict, **_kwargs):
+        return 400, {"code": "param.openDeliverModelError", "message": "param.openDeliverModelError"}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="r",
+        dingtalk_app_secret="sec",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key="body_md",
+    )
+    body = {
+        "conversationType": "2",
+        "conversationId": "oc-1",
+        "senderStaffId": "staff-9",
+    }
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        new=fake_post,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            new=AsyncMock(return_value="tok-1"),
+        ):
+            ok, code, detail = await create_and_deliver_ai_card(
+                cfg,
+                body,
+                out_track_id="track-1",
+                initial_markdown="",
+                pipeline_ctx="tctx",
+            )
+    assert ok is False
+    assert code == "param.openDeliverModelError"
+    assert detail == "param.openDeliverModelError"
 
 
 @pytest.mark.asyncio
 async def test_create_and_deliver_robot_1to1_stream_and_robot_code() -> None:
     captured: dict[str, object] = {}
 
-    async def fake_post(path: str, token: str, payload: dict, **_kwargs):
+    async def fake_post(path: str, _token: str, payload: dict, **_kwargs):
         captured["path"] = path
         captured["payload"] = payload
         return 200, {"success": True, "result": {"outTrackId": "x", "deliverResults": []}}

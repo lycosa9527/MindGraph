@@ -73,10 +73,15 @@ async def post_v1_json_unverified(
     payload: dict[str, Any],
     *,
     timeout_seconds: int = 60,
+    parse_json_on_error: bool = False,
 ) -> tuple[int, Optional[dict[str, Any]]]:
     """
     POST JSON like ``post_v1_json`` but return parsed body on HTTP 200 even when
     ``success`` is false (for error mapping).
+
+    When ``parse_json_on_error`` is true, non-200 responses with a JSON object
+    body are still parsed (DingTalk may return HTTP 400 with business error
+    fields in the body).
     """
     url = f"{DING_API_BASE}{path}"
     headers = {
@@ -95,6 +100,13 @@ async def post_v1_json_unverified(
                         resp.status,
                         body_txt[:500],
                     )
+                    if parse_json_on_error and body_txt.strip():
+                        try:
+                            data_err = json.loads(body_txt)
+                        except json.JSONDecodeError:
+                            return resp.status, None
+                        if isinstance(data_err, dict):
+                            return resp.status, data_err
                     return resp.status, None
                 try:
                     data = json.loads(body_txt)
