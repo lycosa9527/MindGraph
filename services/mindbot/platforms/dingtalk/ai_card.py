@@ -10,6 +10,7 @@ from typing import Any, NamedTuple, Optional
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.platforms.dingtalk.ai_card_errors import describe_ai_card_failure
 from services.mindbot.platforms.dingtalk.constants import (
+    PATH_CARD_INSTANCES,
     PATH_CARD_INSTANCES_CREATE_AND_DELIVER,
     PATH_CARD_STREAMING_UPDATE,
 )
@@ -248,10 +249,9 @@ def _parse_group_body(
     """
     Return ``(is_group, conversation_id, openapi_user_id, preflight_error_or_none)``.
 
-    For **IM groups**, when no resolvable user id exists (missing or only LWCP),
-    ``openapi_user_id`` may be empty and ``preflight_error_or_none`` None if
-    ``MINDBOT_AI_CARD_GROUP_ANONYMOUS_DELIVER`` allows space-only delivery (omit
-    ``userId`` / ``recipients``).
+    For **IM groups**, a missing or LWCP-only sender is not an error — the caller
+    routes to receiver-mode delivery (no ``openSpaceId`` / ``callbackType: STREAM``).
+    ``preflight_error_or_none`` is only set for non-group 1:1 chats lacking a usable id.
     """
     ct = body.get("conversationType") or body.get("conversation_type")
     is_group = False
@@ -260,9 +260,9 @@ def _parse_group_body(
     conv = body.get("conversationId") or body.get("conversation_id")
     conv_s = conv.strip() if isinstance(conv, str) else ""
     uid, err = _card_openapi_user_id_from_body(body)
-    if err and is_group and env_bool("MINDBOT_AI_CARD_GROUP_ANONYMOUS_DELIVER", True):
-        if err in ("no_openapi_user_id", "no_sender_staff"):
-            return is_group, conv_s, "", None
+    if is_group:
+        # Groups with LWCP/no uid use receiver mode — not a preflight error.
+        return is_group, conv_s, uid if not err else "", None
     if err:
         return is_group, conv_s, "", err
     return is_group, conv_s, uid, None
@@ -278,20 +278,15 @@ def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]
     - ``"no_sender_staff"``   — 1:1 chat with no sender id at all
     - ``"no_conversation_id"`` — group chat but no conversationId
 
-    For **groups**: anonymous deliver (no ``recipients``) matches the official SDK
-    default and is expected to work.  Only a missing ``conversationId`` is fatal.
+    For **groups**: LWCP/no-uid senders are routed to receiver-mode delivery, so
+    only a missing ``conversationId`` is fatal.
 
     Does **not** check org config. Pair with :func:`mindbot_ai_card_wiring_enabled`.
     """
-    is_group, conv_s, uid, err = _parse_group_body(body)
+    is_group, conv_s, _uid, err = _parse_group_body(body)
     if is_group:
         if not conv_s:
             return False, "no_conversation_id"
-        if not uid:
-            # LWCP-only or missing sender: imGroupOpenDeliverModel.recipients cannot
-            # be set. Without recipients the card is accepted by DingTalk (HTTP 200)
-            # but is never posted as a visible chat message in the group.
-            return False, err or "no_openapi_user_id"
         return True, None
     if err:
         return False, err
@@ -305,19 +300,28 @@ async def create_and_deliver_ai_card(
     out_track_id: str,
     initial_markdown: str,
     pipeline_ctx: str = "",
-) -> tuple[bool, Optional[str], str]:
+) -> tuple[bool, Optional[str], str, str]:
     """
     POST createAndDeliver for one IM group or IM robot space.
 
     ``initial_markdown`` is placed in ``cardParamMap`` under the configured param key.
 
-    Returns ``(ok, dingtalk_code, detail)``. ``detail`` is an internal reason key or
-    DingTalk ``message`` when ``dingtalk_code`` is set.
+    Returns ``(ok, dingtalk_code, detail, update_mode)``.  ``update_mode`` is either
+    ``"stream"`` (use ``streaming_update_ai_card`` / ``PUT /v1.0/card/streaming``) or
+    ``"receiver"`` (use ``update_ai_card_receiver`` / ``PUT /v1.0/card/instances/{id}``).
+    On failure ``update_mode`` is ``""``.
+
+    Group delivery uses two flows:
+    - **STREAM** when a real ``senderStaffId`` is available (enterprise-internal groups).
+      Updates go to ``PUT /v1.0/card/streaming``.
+    - **Receiver** when only an LWCP token is available (cross-org / external groups).
+      ``createAndDeliver`` uses ``receiver:{spaceType,spaceId}`` with no ``callbackType``,
+      and updates go to ``PUT /v1.0/card/instances/{outTrackId}``.
     """
     token = await _access_token(cfg)
     if not token:
         logger.warning("[MindBot] ai_card_create_failed %s reason=no_token", pipeline_ctx)
-        return False, None, "no_token"
+        return False, None, "no_token", ""
     template_id = mindbot_ai_card_template_id(cfg)
     param_key = mindbot_ai_card_param_key(cfg)
     is_group, conv_s, sender_staff, preflight = _parse_group_body(body)
@@ -327,40 +331,54 @@ async def create_and_deliver_ai_card(
             pipeline_ctx,
             preflight,
         )
-        return False, None, preflight
+        return False, None, preflight, ""
     if not is_group and not sender_staff:
         logger.warning(
             "[MindBot] ai_card_create_failed %s reason=no_openapi_user_id",
             pipeline_ctx,
         )
-        return False, None, "no_openapi_user_id"
-    user_id = sender_staff
+        return False, None, "no_openapi_user_id", ""
     robot_code = cfg.dingtalk_robot_code.strip()
     if is_group:
         if not conv_s:
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
-            return False, None, "no_conversation_id"
-        # sender_staff is guaranteed non-empty here (pre-check in ai_card_body_deliverable
-        # blocks LWCP-only senders before we reach this point).
-        open_space_id = _open_space_id_group(conv_s)
-        payload = {
-            "cardTemplateId": template_id,
-            "outTrackId": out_track_id,
-            "callbackType": "STREAM",
-            "cardData": {"cardParamMap": {param_key: initial_markdown}},
-            "openSpaceId": open_space_id,
-            "imGroupOpenSpaceModel": _im_group_space_model(),
-            "imGroupOpenDeliverModel": {
+            return False, None, "no_conversation_id", ""
+        if sender_staff:
+            # STREAM flow: real staffId available (enterprise-internal group).
+            open_space_id = _open_space_id_group(conv_s)
+            payload = {
+                "cardTemplateId": template_id,
+                "outTrackId": out_track_id,
+                "callbackType": "STREAM",
+                "cardData": {"cardParamMap": {param_key: initial_markdown}},
+                "openSpaceId": open_space_id,
+                "imGroupOpenSpaceModel": _im_group_space_model(),
+                "imGroupOpenDeliverModel": {
+                    "robotCode": _im_group_robot_code(cfg),
+                    "recipients": [sender_staff],
+                    "atUserIds": {sender_staff: ""},
+                },
+                "userId": sender_staff,
+            }
+            update_mode = "stream"
+        else:
+            # Receiver flow: LWCP token / cross-org group — route by conversation ID.
+            # No callbackType here; using callbackType:STREAM with receiver causes HTTP 400.
+            payload = {
+                "cardTemplateId": template_id,
+                "outTrackId": out_track_id,
+                "cardData": {"cardParamMap": {param_key: initial_markdown}},
+                "receiver": {
+                    "spaceType": "IM_GROUP",
+                    "spaceId": conv_s,
+                },
                 "robotCode": _im_group_robot_code(cfg),
-                "recipients": [sender_staff],
-                "atUserIds": {sender_staff: ""},
-            },
-            "userId": user_id,
-        }
+            }
+            update_mode = "receiver"
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {
-            "userId": user_id,
+            "userId": sender_staff,
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
             "callbackType": "STREAM",
@@ -372,13 +390,15 @@ async def create_and_deliver_ai_card(
                 "robotCode": robot_code,
             },
         }
+        update_mode = "stream"
     logger.debug(
         "[MindBot] ai_card_create_post %s path=%s template_id=%s group=%s "
-        "out_track_prefix=%s",
+        "update_mode=%s out_track_prefix=%s",
         pipeline_ctx,
         PATH_CARD_INSTANCES_CREATE_AND_DELIVER,
         (template_id or "")[:20],
         is_group,
+        update_mode,
         (out_track_id or "")[:12],
     )
     status, resp_body = await post_v1_json_unverified(
@@ -390,7 +410,7 @@ async def create_and_deliver_ai_card(
     )
     if status == 0:
         logger.warning("[MindBot] ai_card_create_failed %s reason=network_error", pipeline_ctx)
-        return False, None, "network_error"
+        return False, None, "network_error", ""
     if status != 200:
         if isinstance(resp_body, dict):
             code_err, msg_err = _dt_err(resp_body)
@@ -402,18 +422,19 @@ async def create_and_deliver_ai_card(
                     msg_err,
                     describe_ai_card_failure(code_err, msg_err),
                 )
-                return False, code_err or None, msg_err
-        return False, None, _http_detail(status)
+                return False, code_err or None, msg_err, ""
+        return False, None, _http_detail(status), ""
     if not resp_body:
-        return False, None, "empty_body"
+        return False, None, "empty_body", ""
     if dingtalk_v1_response_ok(resp_body):
         logger.info(
-            "[MindBot] ai_card_create_ok %s out_track_id=%s group=%s",
+            "[MindBot] ai_card_create_ok %s out_track_id=%s group=%s update_mode=%s",
             pipeline_ctx,
             out_track_id[:16],
             is_group,
+            update_mode,
         )
-        return True, None, ""
+        return True, None, "", update_mode
     code, msg = _dt_err(resp_body)
     logger.warning(
         "[MindBot] ai_card_create_failed %s code=%s msg=%s friendly=%s",
@@ -422,7 +443,7 @@ async def create_and_deliver_ai_card(
         msg,
         describe_ai_card_failure(code, msg),
     )
-    return False, code or None, msg
+    return False, code or None, msg, ""
 
 
 async def streaming_update_ai_card(
@@ -545,6 +566,119 @@ async def streaming_update_ai_card(
     code, msg = _dt_err(resp_body)
     logger.warning(
         "[MindBot] ai_card_stream_failed %s finalize=%s code=%s msg=%s friendly=%s",
+        pipeline_ctx,
+        is_finalize,
+        code,
+        msg,
+        describe_ai_card_failure(code, msg),
+    )
+    return False, code or None, msg, _propagate_token()
+
+
+async def update_ai_card_receiver(
+    cfg: OrganizationMindbotConfig,
+    *,
+    access_token: str,
+    out_track_id: str,
+    markdown_full: str,
+    is_finalize: bool,
+    pipeline_ctx: str = "",
+) -> tuple[bool, Optional[str], str, Optional[str]]:
+    """
+    PUT /v1.0/card/instances/{outTrackId} — receiver-flow card update.
+
+    Used for group cards created via ``receiver:{spaceType,spaceId}`` (no
+    ``callbackType: STREAM``).  Each call replaces the full card content, simulating
+    the streaming typewriter effect seen with the STREAM flow.
+
+    On HTTP 401, invalidates cached OAuth token and retries once.
+    Returns ``(ok, code, detail, refreshed_access_token)``.
+    """
+    param_key = mindbot_ai_card_param_key(cfg)
+    sanitized = sanitize_markdown_for_dingtalk(markdown_full)
+    content = _clip_streaming_content(sanitized)
+    out_short = (out_track_id.strip()[:12] + "…") if len(out_track_id.strip()) > 12 else out_track_id.strip()
+    # SDK uses PUT /v1.0/card/instances with outTrackId in the body (not URL path).
+    path = PATH_CARD_INSTANCES
+    payload: dict[str, Any] = {
+        "outTrackId": out_track_id.strip(),
+        "cardData": {
+            "cardParamMap": {param_key: content},
+        },
+    }
+    logger.debug(
+        "[MindBot] ai_card_receiver_put %s out_track=%s finalize=%s "
+        "param_key=%s wire_chars=%s",
+        pipeline_ctx,
+        out_short,
+        is_finalize,
+        param_key,
+        len(content),
+    )
+    original_token = access_token.strip()
+    effective_token = original_token
+    refreshed: Optional[str] = None
+    status = 0
+    resp_body: Optional[dict[str, Any]] = None
+    for attempt in range(2):
+        status, resp_body = await put_v1_json_unverified(
+            path,
+            effective_token,
+            payload,
+            timeout_seconds=60,
+        )
+        if status == 401 and attempt == 0:
+            logger.info(
+                "[MindBot] ai_card_receiver_oauth_retry %s http_status=401 out_track=%s",
+                pipeline_ctx,
+                out_short,
+            )
+            app_key = (cfg.dingtalk_client_id or "").strip()
+            secret = cfg.dingtalk_app_secret.strip()
+            if app_key and secret:
+                await invalidate_access_token_cache(cfg.organization_id, app_key, secret)
+            new_tok = await prefetch_ai_card_access_token(cfg)
+            if new_tok:
+                effective_token = new_tok
+                refreshed = new_tok
+                continue
+            logger.warning(
+                "[MindBot] ai_card_receiver_oauth_retry %s prefetch_failed_after_401",
+                pipeline_ctx,
+            )
+        break
+
+    def _propagate_token() -> Optional[str]:
+        if refreshed and refreshed != original_token:
+            return refreshed
+        return None
+
+    if status == 0:
+        logger.warning("[MindBot] ai_card_receiver_failed %s reason=network_error", pipeline_ctx)
+        return False, None, "network_error", _propagate_token()
+    if status != 200:
+        logger.debug(
+            "[MindBot] ai_card_receiver_put_http %s status=%s out_track=%s finalize=%s",
+            pipeline_ctx,
+            status,
+            out_short,
+            is_finalize,
+        )
+        return False, None, _http_detail(status), _propagate_token()
+    if not resp_body:
+        return False, None, "empty_body", _propagate_token()
+    if dingtalk_v1_response_ok(resp_body):
+        logger.debug(
+            "[MindBot] ai_card_receiver_put_ok %s out_track=%s finalize=%s oauth_refreshed=%s",
+            pipeline_ctx,
+            out_short,
+            is_finalize,
+            _propagate_token() is not None,
+        )
+        return True, None, "", _propagate_token()
+    code, msg = _dt_err(resp_body)
+    logger.warning(
+        "[MindBot] ai_card_receiver_failed %s finalize=%s code=%s msg=%s friendly=%s",
         pipeline_ctx,
         is_finalize,
         code,

@@ -22,13 +22,18 @@ PATH_ROBOT_PRIVATE_CHAT_MESSAGES_QUERY = "/v1.0/robot/privateChatMessages/query"
 PATH_ROBOT_GROUP_MESSAGES_QUERY = "/v1.0/robot/groupMessages/query"
 
 PATH_CARD_INSTANCES_CREATE_AND_DELIVER = "/v1.0/card/instances/createAndDeliver"
-# PUT /v1.0/card/streaming — official "AI card streaming update" (not PUT .../instances/{id}).
+# PUT /v1.0/card/streaming — official "AI card streaming update" (STREAM flow).
 # Prereqs: enterprise app robot, Stream inbound mode, scope Card.Streaming.Write, template id.
-# Group typing flow: (1) POST createAndDeliver with openSpaceId like
+# STREAM flow for groups: (1) POST createAndDeliver with openSpaceId like
 # dtv1.card//im_group.{openConversationId}, imGroupOpenSpaceModel + imGroupOpenDeliverModel,
 # callbackType STREAM, cardData.cardParamMap; (2) PUT streaming with outTrackId + guid + key +
-# full markdown per frame (isFull true for markdown vars). See open.dingtalk.com streaming API.
+# full markdown per frame (isFull true for markdown vars). Requires real staffId in recipients.
 PATH_CARD_STREAMING_UPDATE = "/v1.0/card/streaming"
+# PUT /v1.0/card/instances — receiver-flow card update (no callbackType: STREAM).
+# outTrackId goes in the request body (not URL path) — matches official SDK put_card_data().
+# Used when createAndDeliver used receiver:{spaceType, spaceId} instead of openSpaceId.
+# Works for LWCP senders in groups where no staffId is available.
+PATH_CARD_INSTANCES = "/v1.0/card/instances"
 
 TOKEN_TTL_SECONDS = int(os.getenv("MINDBOT_DINGTALK_TOKEN_TTL", "6800"))
 MAX_DOWNLOAD_MEDIA_BYTES = int(os.getenv("MINDBOT_MAX_MEDIA_BYTES", str(10 * 1024 * 1024)))

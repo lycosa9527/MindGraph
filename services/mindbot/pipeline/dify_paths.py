@@ -37,6 +37,7 @@ from services.mindbot.platforms.dingtalk.ai_card import (
     mindbot_ai_card_wiring_enabled,
     prefetch_ai_card_access_token,
     streaming_update_ai_card,
+    update_ai_card_receiver,
 )
 from services.mindbot.platforms.dingtalk.ai_card_errors import describe_ai_card_failure
 from utils.env_helpers import env_bool
@@ -89,6 +90,7 @@ async def run_streaming_dify_branch(
         "out_track_id": None,
         "token": None,
         "created": False,
+        "update_mode": "stream",  # "stream" or "receiver"
     }
 
     async def on_batch(chunk: str) -> tuple[bool, bool]:
@@ -112,7 +114,7 @@ async def run_streaming_dify_branch(
             if not card_state["created"]:
                 out_id = str(uuid.uuid4())
                 card_state["out_track_id"] = out_id
-                ok_c, c_code, c_detail = await create_and_deliver_ai_card(
+                ok_c, c_code, c_detail, c_mode = await create_and_deliver_ai_card(
                     cfg,
                     body,
                     out_track_id=out_id,
@@ -134,17 +136,29 @@ async def run_streaming_dify_branch(
                         pipeline_ctx=pipeline_ctx,
                     )
                 card_state["created"] = True
+                card_state["update_mode"] = c_mode
             out_tid = card_state["out_track_id"]
             if not isinstance(out_tid, str) or not out_tid:
                 return False, False
-            ok_s, s_code, s_detail, s_tok = await streaming_update_ai_card(
-                cfg,
-                access_token=tok,
-                out_track_id=out_tid,
-                markdown_full=card_state["cum"],
-                is_finalize=False,
-                pipeline_ctx=pipeline_ctx,
-            )
+            use_receiver = card_state.get("update_mode") == "receiver"
+            if use_receiver:
+                ok_s, s_code, s_detail, s_tok = await update_ai_card_receiver(
+                    cfg,
+                    access_token=tok,
+                    out_track_id=out_tid,
+                    markdown_full=card_state["cum"],
+                    is_finalize=False,
+                    pipeline_ctx=pipeline_ctx,
+                )
+            else:
+                ok_s, s_code, s_detail, s_tok = await streaming_update_ai_card(
+                    cfg,
+                    access_token=tok,
+                    out_track_id=out_tid,
+                    markdown_full=card_state["cum"],
+                    is_finalize=False,
+                    pipeline_ctx=pipeline_ctx,
+                )
             if s_tok:
                 card_state["token"] = s_tok
             token_for_dt = card_state.get("token") or tok
@@ -154,7 +168,7 @@ async def run_streaming_dify_branch(
                     pipeline_ctx,
                     describe_ai_card_failure(s_code, s_detail),
                 )
-                if card_state.get("created") and isinstance(out_tid, str):
+                if card_state.get("created") and isinstance(out_tid, str) and not use_receiver:
                     mk_ok, mk_code, mk_detail, mk_tok = await mark_ai_card_stream_error(
                         cfg,
                         access_token=str(token_for_dt),
@@ -200,13 +214,15 @@ async def run_streaming_dify_branch(
     async def on_dify_message_replace() -> None:
         """Reset AI card and thinking filter when Dify replaces the streamed answer."""
         logger.info(
-            "[MindBot] mindbot_pipeline_message_replace %s had_card_created=%s",
+            "[MindBot] mindbot_pipeline_message_replace %s had_card_created=%s update_mode=%s",
             pipeline_ctx,
             bool(card_state.get("created")),
+            card_state.get("update_mode"),
         )
         tok = card_state.get("token")
         out_tid = card_state.get("out_track_id")
-        if card_state.get("created") and isinstance(out_tid, str) and tok:
+        is_stream_mode = card_state.get("update_mode") != "receiver"
+        if card_state.get("created") and isinstance(out_tid, str) and tok and is_stream_mode:
             await mark_ai_card_stream_error(
                 cfg,
                 access_token=str(tok),
@@ -218,6 +234,7 @@ async def run_streaming_dify_branch(
         card_state["out_track_id"] = None
         card_state["token"] = None
         card_state["created"] = False
+        card_state["update_mode"] = "stream"
         card_state["use_card"] = mindbot_ai_card_wiring_enabled(cfg)
 
     full, new_conv, err_tok, usage_dify = await mindbot_consume_dify_stream_batched(
@@ -263,14 +280,25 @@ async def run_streaming_dify_branch(
         and isinstance(card_state.get("out_track_id"), str)
         and card_state.get("token")
     ):
-        fin_ok, fin_code, fin_detail, fin_tok = await streaming_update_ai_card(
-            cfg,
-            access_token=str(card_state["token"]),
-            out_track_id=str(card_state["out_track_id"]),
-            markdown_full=reply_text,
-            is_finalize=True,
-            pipeline_ctx=pipeline_ctx,
-        )
+        fin_use_receiver = card_state.get("update_mode") == "receiver"
+        if fin_use_receiver:
+            fin_ok, fin_code, fin_detail, fin_tok = await update_ai_card_receiver(
+                cfg,
+                access_token=str(card_state["token"]),
+                out_track_id=str(card_state["out_track_id"]),
+                markdown_full=reply_text,
+                is_finalize=True,
+                pipeline_ctx=pipeline_ctx,
+            )
+        else:
+            fin_ok, fin_code, fin_detail, fin_tok = await streaming_update_ai_card(
+                cfg,
+                access_token=str(card_state["token"]),
+                out_track_id=str(card_state["out_track_id"]),
+                markdown_full=reply_text,
+                is_finalize=True,
+                pipeline_ctx=pipeline_ctx,
+            )
         if fin_tok:
             card_state["token"] = fin_tok
         if fin_ok and env_bool("MINDBOT_AI_CARD_APPEND_OVERFLOW_REMAINDER", False):
@@ -289,20 +317,21 @@ async def run_streaming_dify_branch(
                 pipeline_ctx,
                 describe_ai_card_failure(fin_code, fin_detail),
             )
-            mk_ok, mk_code, mk_detail, mk_tok = await mark_ai_card_stream_error(
-                cfg,
-                access_token=str(card_state["token"]),
-                out_track_id=str(card_state["out_track_id"]),
-                pipeline_ctx=pipeline_ctx,
-            )
-            if mk_tok:
-                card_state["token"] = mk_tok
-            if not mk_ok:
-                logger.warning(
-                    "[MindBot] ai_card_mark_error_after_finalize_failed %s %s",
-                    pipeline_ctx,
-                    describe_ai_card_failure(mk_code, mk_detail),
+            if not fin_use_receiver:
+                mk_ok, mk_code, mk_detail, mk_tok = await mark_ai_card_stream_error(
+                    cfg,
+                    access_token=str(card_state["token"]),
+                    out_track_id=str(card_state["out_track_id"]),
+                    pipeline_ctx=pipeline_ctx,
                 )
+                if mk_tok:
+                    card_state["token"] = mk_tok
+                if not mk_ok:
+                    logger.warning(
+                        "[MindBot] ai_card_mark_error_after_finalize_failed %s %s",
+                        pipeline_ctx,
+                        describe_ai_card_failure(mk_code, mk_detail),
+                    )
             await send_one_reply_chunk(
                 cfg,
                 body,
@@ -445,7 +474,7 @@ async def run_blocking_send_branch(
         if not tok:
             return False
         out_id = str(uuid.uuid4())
-        ok_create, cr_code, cr_detail = await create_and_deliver_ai_card(
+        ok_create, cr_code, cr_detail, cr_mode = await create_and_deliver_ai_card(
             cfg,
             body,
             out_track_id=out_id,
@@ -459,14 +488,25 @@ async def run_blocking_send_branch(
                 describe_ai_card_failure(cr_code, cr_detail),
             )
             return False
-        ok_stream, st_code, st_detail, st_tok = await streaming_update_ai_card(
-            cfg,
-            access_token=tok,
-            out_track_id=out_id,
-            markdown_full=answer,
-            is_finalize=True,
-            pipeline_ctx=pipeline_ctx,
-        )
+        use_receiver = cr_mode == "receiver"
+        if use_receiver:
+            ok_stream, st_code, st_detail, st_tok = await update_ai_card_receiver(
+                cfg,
+                access_token=tok,
+                out_track_id=out_id,
+                markdown_full=answer,
+                is_finalize=True,
+                pipeline_ctx=pipeline_ctx,
+            )
+        else:
+            ok_stream, st_code, st_detail, st_tok = await streaming_update_ai_card(
+                cfg,
+                access_token=tok,
+                out_track_id=out_id,
+                markdown_full=answer,
+                is_finalize=True,
+                pipeline_ctx=pipeline_ctx,
+            )
         token_for_mark = st_tok or tok
         if not ok_stream:
             logger.warning(
@@ -474,18 +514,19 @@ async def run_blocking_send_branch(
                 pipeline_ctx,
                 describe_ai_card_failure(st_code, st_detail),
             )
-            mk_ok, mk_code, mk_detail, _mk_tok = await mark_ai_card_stream_error(
-                cfg,
-                access_token=str(token_for_mark),
-                out_track_id=out_id,
-                pipeline_ctx=pipeline_ctx,
-            )
-            if not mk_ok:
-                logger.warning(
-                    "[MindBot] ai_card_blocking_mark_error_failed %s %s",
-                    pipeline_ctx,
-                    describe_ai_card_failure(mk_code, mk_detail),
+            if not use_receiver:
+                mk_ok, mk_code, mk_detail, _mk_tok = await mark_ai_card_stream_error(
+                    cfg,
+                    access_token=str(token_for_mark),
+                    out_track_id=out_id,
+                    pipeline_ctx=pipeline_ctx,
                 )
+                if not mk_ok:
+                    logger.warning(
+                        "[MindBot] ai_card_blocking_mark_error_failed %s %s",
+                        pipeline_ctx,
+                        describe_ai_card_failure(mk_code, mk_detail),
+                    )
             return False
         return True
 
