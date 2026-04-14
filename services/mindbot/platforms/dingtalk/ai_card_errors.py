@@ -2,7 +2,8 @@
 
 Official references:
 - Streaming update: https://open.dingtalk.com/document/development/api-streamingupdate
-- Create and deliver: Apifox / DingTalk ``card_1.0#CreateAndDeliver`` error tables.
+- Create and deliver: DingTalk ``POST /v1.0/card/instances/createAndDeliver`` error table
+  (互动卡片 / 创建并投放卡片).
 """
 
 from __future__ import annotations
@@ -21,20 +22,41 @@ _STREAMING_FRIENDLY: dict[str, str] = {
 
 # Create and deliver (POST /v1.0/card/instances/createAndDeliver)
 _CREATE_FRIENDLY: dict[str, str] = {
-    "param.cardTemplateIdEmpty": "Create card: template id is empty.",
+    "param.empty": "Create card: request parameters are empty.",
+    "param.outTrackIdEmpty": "Create card: outTrackId is empty.",
+    "param.openSpaceIdEmpty": "Create card: openSpaceId is empty.",
+    "param.openDeliverModelEmpty": "Create card: deliver model block is empty.",
+    "param.openDeliverModelError": (
+        "Create card: space deliver model format is invalid."
+    ),
+    "param.openSpaceIdInvalid": "Create card: openSpaceId does not match the required format.",
+    "param.cardTemplateIdEmpty": "Create card: cardTemplateId is empty.",
+    "param.userIdEmpty": "Create card: userId is empty.",
+    "param.cardPublicDataEmpty": "Create card: card public data is empty.",
+    "param.userIdNotExist": "Create card: user does not exist.",
+    "param.dynamicDataMappingEmpty": "Create card: dynamic data mapping is empty.",
+    "param.dynamicSourceIdEmpty": "Create card: dynamic data source id is empty.",
+    "param.dynamicDataPullConfigEmpty": "Create card: dynamic data pull config is empty.",
+    "param.dynamicDataPullIntervalInvalid": (
+        "Create card: dynamic data pull interval is empty or invalid."
+    ),
+    "param.dynamicDataPullIntervalTimeUnitInvalid": (
+        "Create card: dynamic data pull interval time unit is empty or invalid."
+    ),
+    "param.dynamicDataSourcePullStrategyEmpty": (
+        "Create card: dynamic data pull strategy is empty."
+    ),
+    "param.dynamicDataMappingPathEmpty": "Create card: dynamic data mapping path is empty.",
+    "param.dynamicDataValueTypeEmpty": "Create card: dynamic data value type is empty.",
+    "param.contentUnsafe": "Create card: card data failed security review.",
+    "param.openSpaceModelInvalid": "Create card: open space model fields are invalid.",
+    "param.openSpaceModellnvalid": "Create card: open space model fields are invalid.",
+    "param.cardNotExist": "Create card: card does not exist.",
+    "param.cardAlreadyExist": "Create card: card instance already exists.",
     "param.templateNotExist": "Create card: template does not exist.",
     "param.templateUnpublished": "Create card: template is not published.",
-    "param.cardAlreadyExist": "Create card: outTrackId already used; use a new id.",
-    "param.contentUnsafe": "Create card: content failed security review.",
-    "param.openSpaceIdInvalid": "Create card: openSpaceId is invalid.",
-    "param.openSpaceIdEmpty": "Create card: openSpaceId is empty.",
-    "param.openDeliverModelError": (
-        "Create card: deliver model invalid (e.g. group chat may need AppKey as "
-        "robotCode in imGroupOpenDeliverModel; try MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE)."
-    ),
-    "param.userIdEmpty": "Create card: userId (creator) is empty.",
-    "param.userIdNotExist": "Create card: userId does not exist.",
-    "param.cardPublicDataEmpty": "Create card: card public data is empty.",
+    "param.invalid": "Create card: illegal parameter.",
+    "system.busy": "Create card: DingTalk system busy; retry later.",
 }
 
 

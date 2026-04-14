@@ -202,11 +202,11 @@ async def test_create_and_deliver_group_posts_expected_path() -> None:
     assert pl.get("outTrackId") == "track-1"
     assert pl.get("openSpaceId") == "dtv1.card//im_group.oc-1"
     assert pl.get("callbackType") == "STREAM"
-    assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "kid"
+    assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "robot-1"
 
 
 @pytest.mark.asyncio
-async def test_create_and_deliver_group_uses_robot_code_when_env() -> None:
+async def test_create_and_deliver_group_uses_appkey_when_env() -> None:
     captured: dict[str, object] = {}
 
     async def fake_post(_path: str, _token: str, payload: dict, **_kwargs):
@@ -226,7 +226,7 @@ async def test_create_and_deliver_group_uses_robot_code_when_env() -> None:
         "conversationId": "oc-1",
         "senderStaffId": "staff-9",
     }
-    with patch.dict(os.environ, {"MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE": "true"}):
+    with patch.dict(os.environ, {"MINDBOT_AI_CARD_GROUP_USE_APPKEY": "true"}):
         with patch(
             "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
             new=fake_post,
@@ -247,7 +247,7 @@ async def test_create_and_deliver_group_uses_robot_code_when_env() -> None:
     assert detail == ""
     pl = captured["payload"]
     assert isinstance(pl, dict)
-    assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "robot-1"
+    assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "kid"
 
 
 @pytest.mark.asyncio

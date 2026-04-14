@@ -85,16 +85,17 @@ def _im_group_deliver_robot_code(cfg: OrganizationMindbotConfig) -> str:
     """
     Value for ``imGroupOpenDeliverModel.robotCode``.
 
-    DingTalk documents that for internal enterprise apps in non-scene groups,
-    this field must be the OpenAPI **AppKey** (same as ``dingtalk_client_id``),
-    not the HTTP callback ``dingtalk_robot_code``. Scene groups and ISV robots
-    may require the robot code instead; set ``MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE``.
+    Default matches ``imRobotOpenDeliverModel.robotCode`` in 1:1 chat
+    (``dingtalk_robot_code``), which is what most HTTP robots use.
+
+    Some internal non-scene orgs require the OpenAPI **AppKey**
+    (``dingtalk_client_id``) instead; set ``MINDBOT_AI_CARD_GROUP_USE_APPKEY=true``.
     """
     app_key = (cfg.dingtalk_client_id or "").strip()
     robot = (cfg.dingtalk_robot_code or "").strip()
-    if env_bool("MINDBOT_AI_CARD_GROUP_USE_ROBOT_CODE", False):
-        return robot or app_key
-    return app_key or robot
+    if env_bool("MINDBOT_AI_CARD_GROUP_USE_APPKEY", False):
+        return app_key or robot
+    return robot or app_key
 
 
 def _open_space_id_group(open_conversation_id: str) -> str:

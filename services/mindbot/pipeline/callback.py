@@ -359,9 +359,18 @@ async def process_dingtalk_callback(
     if not text_in:
         return 200, _hdr(MindbotErrorCode.EMPTY_USER_MESSAGE)
 
-    sender_staff = body.get("senderStaffId") or body.get("sender_staff_id") or "unknown"
-    if not isinstance(sender_staff, str):
-        sender_staff = str(sender_staff)
+    raw_sender = (
+        body.get("senderStaffId")
+        or body.get("sender_staff_id")
+        or body.get("senderId")
+        or body.get("sender_id")
+    )
+    if raw_sender is None:
+        sender_staff = "unknown"
+    elif isinstance(raw_sender, str):
+        sender_staff = raw_sender.strip() or "unknown"
+    else:
+        sender_staff = str(raw_sender).strip() or "unknown"
     conversation_id_dt = body.get("conversationId") or body.get("conversation_id") or ""
     if not isinstance(conversation_id_dt, str):
         conversation_id_dt = str(conversation_id_dt)
