@@ -22,7 +22,12 @@ PATH_ROBOT_PRIVATE_CHAT_MESSAGES_QUERY = "/v1.0/robot/privateChatMessages/query"
 PATH_ROBOT_GROUP_MESSAGES_QUERY = "/v1.0/robot/groupMessages/query"
 
 PATH_CARD_INSTANCES_CREATE_AND_DELIVER = "/v1.0/card/instances/createAndDeliver"
-# PUT: AI card streaming update (api-streamingupdate). App must enable scope Card.Streaming.Write.
+# PUT /v1.0/card/streaming — official "AI card streaming update" (not PUT .../instances/{id}).
+# Prereqs: enterprise app robot, Stream inbound mode, scope Card.Streaming.Write, template id.
+# Group typing flow: (1) POST createAndDeliver with openSpaceId like
+# dtv1.card//im_group.{openConversationId}, imGroupOpenSpaceModel + imGroupOpenDeliverModel,
+# callbackType STREAM, cardData.cardParamMap; (2) PUT streaming with outTrackId + guid + key +
+# full markdown per frame (isFull true for markdown vars). See open.dingtalk.com streaming API.
 PATH_CARD_STREAMING_UPDATE = "/v1.0/card/streaming"
 
 TOKEN_TTL_SECONDS = int(os.getenv("MINDBOT_DINGTALK_TOKEN_TTL", "6800"))

@@ -200,33 +200,65 @@ def _is_lwcp_sender_token(value: str) -> bool:
     return bool(s) and s.startswith("$:LWCP")
 
 
-def _card_openapi_user_id_from_body(body: dict[str, Any]) -> tuple[str, Optional[str]]:
-    """
-    Resolve ``userId`` / ``recipients`` for card ``createAndDeliver``.
-
-    Prefer ``senderStaffId``, then ``senderId``. Skip **LWCP** tokens and use the
-    next non-LWCP id. Returns ``("", "no_sender_staff")`` or
-    ``("", "no_openapi_user_id")`` when nothing usable exists.
-    """
-    saw_nonempty = False
-    for key in (
+def _sender_body_keys() -> tuple[str, ...]:
+    """Field names to try for a real OpenAPI user id (top-level or nested)."""
+    base = (
         "senderStaffId",
         "sender_staff_id",
         "senderId",
         "sender_id",
-    ):
-        raw = body.get(key)
-        if isinstance(raw, str):
-            st = raw.strip()
-        elif raw is not None:
-            st = str(raw).strip()
-        else:
-            continue
-        if not st:
-            continue
-        saw_nonempty = True
-        if not _is_lwcp_sender_token(st):
-            return st, None
+        "senderUnionId",
+        "sender_union_id",
+        "unionId",
+        "union_id",
+        "senderOpenId",
+        "openId",
+        "openUserId",
+    )
+    extra = (os.getenv("MINDBOT_AI_CARD_EXTRA_SENDER_KEYS") or "").strip()
+    if not extra:
+        return base
+    parts = tuple(p.strip() for p in extra.split(",") if p.strip())
+    return base + parts
+
+
+def _sender_dicts_from_body(body: dict[str, Any]) -> list[dict[str, Any]]:
+    """Root body plus common nested maps that may carry sender ids."""
+    out: list[dict[str, Any]] = [body]
+    ext = body.get("extension")
+    if isinstance(ext, dict):
+        out.append(ext)
+    biz = body.get("bizData")
+    if isinstance(biz, dict):
+        out.append(biz)
+    return out
+
+
+def _card_openapi_user_id_from_body(body: dict[str, Any]) -> tuple[str, Optional[str]]:
+    """
+    Resolve ``userId`` / ``recipients`` for card ``createAndDeliver``.
+
+    Prefer ``senderStaffId``, then ``senderId``, then union/open ids. Skip **LWCP**
+    tokens. Scans ``extension`` / ``bizData`` when present. Returns
+    ``("", "no_sender_staff")`` or ``("", "no_openapi_user_id")`` when nothing usable
+    exists.
+    """
+    saw_nonempty = False
+    keys = _sender_body_keys()
+    for container in _sender_dicts_from_body(body):
+        for key in keys:
+            raw = container.get(key)
+            if isinstance(raw, str):
+                st = raw.strip()
+            elif raw is not None:
+                st = str(raw).strip()
+            else:
+                continue
+            if not st:
+                continue
+            saw_nonempty = True
+            if not _is_lwcp_sender_token(st):
+                return st, None
     if saw_nonempty:
         return "", "no_openapi_user_id"
     return "", "no_sender_staff"
@@ -238,8 +270,10 @@ def _parse_group_body(
     """
     Return ``(is_group, conversation_id, openapi_user_id, preflight_error_or_none)``.
 
-    ``preflight_error_or_none`` is set when the card cannot be addressed (missing or
-    only-LWCP sender ids).
+    For **IM groups**, when no resolvable user id exists (missing or only LWCP),
+    ``openapi_user_id`` may be empty and ``preflight_error_or_none`` None if
+    ``MINDBOT_AI_CARD_GROUP_ANONYMOUS_DELIVER`` allows space-only delivery (omit
+    ``userId`` / ``recipients``).
     """
     ct = body.get("conversationType") or body.get("conversation_type")
     is_group = False
@@ -248,6 +282,9 @@ def _parse_group_body(
     conv = body.get("conversationId") or body.get("conversation_id")
     conv_s = conv.strip() if isinstance(conv, str) else ""
     uid, err = _card_openapi_user_id_from_body(body)
+    if err and is_group and env_bool("MINDBOT_AI_CARD_GROUP_ANONYMOUS_DELIVER", True):
+        if err in ("no_openapi_user_id", "no_sender_staff"):
+            return is_group, conv_s, "", None
     if err:
         return is_group, conv_s, "", err
     return is_group, conv_s, uid, None
@@ -283,6 +320,12 @@ async def create_and_deliver_ai_card(
             preflight,
         )
         return False, None, preflight
+    if not is_group and not sender_staff:
+        logger.warning(
+            "[MindBot] ai_card_create_failed %s reason=no_openapi_user_id",
+            pipeline_ctx,
+        )
+        return False, None, "no_openapi_user_id"
     user_id = sender_staff
     robot_code = cfg.dingtalk_robot_code.strip()
     group_deliver_robot = _im_group_deliver_robot_code(cfg)
@@ -291,20 +334,29 @@ async def create_and_deliver_ai_card(
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
             return False, None, "no_conversation_id"
         open_space_id = _open_space_id_group(conv_s)
-        payload: dict[str, Any] = {
-            "userId": user_id,
+        im_group_dm: dict[str, Any] = {
+            "robotCode": group_deliver_robot,
+            "atUserIds": {},
+        }
+        if sender_staff:
+            im_group_dm["recipients"] = [sender_staff]
+        payload = {
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
             "callbackType": "STREAM",
             "cardData": {"cardParamMap": {param_key: initial_markdown}},
             "openSpaceId": open_space_id,
             "imGroupOpenSpaceModel": _im_group_space_model(),
-            "imGroupOpenDeliverModel": {
-                "robotCode": group_deliver_robot,
-                "atUserIds": {},
-                "recipients": [sender_staff],
-            },
+            "imGroupOpenDeliverModel": im_group_dm,
         }
+        if sender_staff:
+            payload["userId"] = user_id
+        else:
+            logger.info(
+                "[MindBot] ai_card_group_anonymous_deliver %s (no userId/recipients; "
+                "only LWCP or missing sender in callback)",
+                pipeline_ctx,
+            )
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {

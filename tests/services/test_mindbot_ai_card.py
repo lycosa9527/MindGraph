@@ -335,12 +335,56 @@ async def test_create_and_deliver_group_skips_lwcp_staff_uses_sender_id() -> Non
 
 
 @pytest.mark.asyncio
-async def test_create_and_deliver_fails_when_only_lwcp_ids() -> None:
+async def test_create_and_deliver_fails_when_only_lwcp_and_anonymous_disabled() -> None:
     post_calls: list[int] = []
 
     async def fake_post(_path: str, _token: str, _payload: dict, **_kwargs):
         post_calls.append(1)
         return 200, {"success": True}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="robot-1",
+        dingtalk_app_secret="sec",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key="body_md",
+    )
+    body = {
+        "conversationType": "2",
+        "conversationId": "oc-1",
+        "senderStaffId": "$:LWCP_v1:$a",
+        "senderId": "$:LWCP_v1:$b",
+    }
+    with patch.dict(os.environ, {"MINDBOT_AI_CARD_GROUP_ANONYMOUS_DELIVER": "false"}):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+            new=fake_post,
+        ):
+            with patch(
+                "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+                new=AsyncMock(return_value="tok-1"),
+            ):
+                ok, code, detail = await create_and_deliver_ai_card(
+                    cfg,
+                    body,
+                    out_track_id="track-1",
+                    initial_markdown="",
+                    pipeline_ctx="tctx",
+                )
+    assert ok is False
+    assert code is None
+    assert detail == "no_openapi_user_id"
+    assert not post_calls
+
+
+@pytest.mark.asyncio
+async def test_create_and_deliver_group_anonymous_omits_user_when_only_lwcp() -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_post(_path: str, _token: str, payload: dict, **_kwargs):
+        captured["payload"] = payload
+        return 200, {"success": True, "result": {"outTrackId": "x", "deliverResults": []}}
 
     cfg = SimpleNamespace(
         organization_id=1,
@@ -371,10 +415,61 @@ async def test_create_and_deliver_fails_when_only_lwcp_ids() -> None:
                 initial_markdown="",
                 pipeline_ctx="tctx",
             )
-    assert ok is False
+    assert ok is True
     assert code is None
-    assert detail == "no_openapi_user_id"
-    assert not post_calls
+    assert detail == ""
+    pl = captured["payload"]
+    assert isinstance(pl, dict)
+    assert "userId" not in pl
+    ig = pl.get("imGroupOpenDeliverModel")
+    assert isinstance(ig, dict)
+    assert "recipients" not in ig
+    assert ig.get("robotCode") == "robot-1"
+
+
+@pytest.mark.asyncio
+async def test_create_and_deliver_reads_union_id_from_extension() -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_post(_path: str, _token: str, payload: dict, **_kwargs):
+        captured["payload"] = payload
+        return 200, {"success": True, "result": {"outTrackId": "x", "deliverResults": []}}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="robot-1",
+        dingtalk_app_secret="sec",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key="body_md",
+    )
+    body = {
+        "conversationType": "2",
+        "conversationId": "oc-1",
+        "senderStaffId": "$:LWCP_v1:$a",
+        "extension": {"unionId": "union-real-99"},
+    }
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        new=fake_post,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            new=AsyncMock(return_value="tok-1"),
+        ):
+            ok, _, detail = await create_and_deliver_ai_card(
+                cfg,
+                body,
+                out_track_id="track-1",
+                initial_markdown="",
+                pipeline_ctx="tctx",
+            )
+    assert ok is True
+    assert detail == ""
+    pl = captured["payload"]
+    assert isinstance(pl, dict)
+    assert pl.get("userId") == "union-real-99"
+    assert pl.get("imGroupOpenDeliverModel", {}).get("recipients") == ["union-real-99"]
 
 
 @pytest.mark.asyncio
