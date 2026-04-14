@@ -290,6 +290,28 @@ def _parse_group_body(
     return is_group, conv_s, uid, None
 
 
+def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]:
+    """
+    Fast pre-check: can ``createAndDeliver`` run for this callback body?
+
+    Returns ``(True, None)`` when delivery is possible.
+    Returns ``(False, reason)`` when it cannot proceed, e.g.:
+    - ``"no_openapi_user_id"`` — 1:1 chat but only LWCP tokens available
+    - ``"no_sender_staff"``   — 1:1 chat with no sender id at all
+    - ``"no_conversation_id"`` — group chat but no conversationId
+
+    Does **not** check org config. Pair with :func:`mindbot_ai_card_wiring_enabled`.
+    """
+    is_group, conv_s, _uid, err = _parse_group_body(body)
+    if is_group:
+        if not conv_s:
+            return False, "no_conversation_id"
+        return True, None
+    if err:
+        return False, err
+    return True, None
+
+
 async def create_and_deliver_ai_card(
     cfg: OrganizationMindbotConfig,
     body: dict[str, Any],

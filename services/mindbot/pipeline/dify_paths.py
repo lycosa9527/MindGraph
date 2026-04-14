@@ -30,6 +30,7 @@ from services.mindbot.outbound.text import (
     send_one_reply_chunk,
 )
 from services.mindbot.platforms.dingtalk.ai_card import (
+    ai_card_body_deliverable,
     ai_card_overflow_remainder_for_markdown,
     create_and_deliver_ai_card,
     mark_ai_card_stream_error,
@@ -62,18 +63,28 @@ async def run_streaming_dify_branch(
 ) -> tuple[int, dict[str, str]]:
     """Consume Dify SSE, send batched chunks to DingTalk, record usage."""
     min_c, flush_s, max_p = mindbot_stream_batch_params()
-    logger.info(
-        "[MindBot] dify_streaming_branch %s ai_card_wiring=%s",
-        pipeline_ctx,
-        mindbot_ai_card_wiring_enabled(cfg),
-    )
-
     think_filter = MindbotThinkingStreamFilter(
         show_chain_of_thought=bool(cfg.show_chain_of_thought),
     )
 
+    _card_wiring = mindbot_ai_card_wiring_enabled(cfg)
+    if _card_wiring:
+        _deliverable, _skip_reason = ai_card_body_deliverable(body)
+        if not _deliverable:
+            logger.info(
+                "[MindBot] ai_card_skipped %s reason=%s",
+                pipeline_ctx,
+                _skip_reason,
+            )
+            _card_wiring = False
+    logger.info(
+        "[MindBot] dify_streaming_branch %s ai_card_wiring=%s",
+        pipeline_ctx,
+        _card_wiring,
+    )
+
     card_state: dict[str, Any] = {
-        "use_card": mindbot_ai_card_wiring_enabled(cfg),
+        "use_card": _card_wiring,
         "cum": "",
         "out_track_id": None,
         "token": None,
@@ -421,6 +432,14 @@ async def run_blocking_send_branch(
         if not answer.strip():
             return False
         if not mindbot_ai_card_wiring_enabled(cfg):
+            return False
+        deliverable, skip_reason = ai_card_body_deliverable(body)
+        if not deliverable:
+            logger.info(
+                "[MindBot] ai_card_skipped %s reason=%s",
+                pipeline_ctx,
+                skip_reason,
+            )
             return False
         tok = await prefetch_ai_card_access_token(cfg)
         if not tok:
