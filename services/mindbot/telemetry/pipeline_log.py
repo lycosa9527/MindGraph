@@ -29,24 +29,24 @@ def format_pipeline_ctx(
     """
     Single-line correlation prefix for DingTalk ↔ Dify traffic logs.
 
+    Field order: who (staff) → where (conv) → trace (org, robot, msg, dify).
     Does not include API keys, tokens, or message text.
     """
-    parts = [
-        f"org_id={org_id}",
-        f"robot={clip_id(robot_code, 20)}",
-    ]
-    mid = clip_id(msg_id, 24)
-    if mid:
-        parts.append(f"msg_id={mid}")
+    parts = []
     staff = clip_id(staff_id, 20)
     if staff:
         parts.append(f"staff={staff}")
-    cdt = clip_id(conv_dingtalk, 24)
+    cdt = clip_id(conv_dingtalk, 20)
     if cdt:
-        parts.append(f"dt_conv={cdt}")
-    dcv = clip_id(dify_conv, 32)
+        parts.append(f"conv={cdt}")
+    parts.append(f"org={org_id}")
+    parts.append(f"robot={clip_id(robot_code, 12)}")
+    mid = clip_id(msg_id, 16)
+    if mid:
+        parts.append(f"msg={mid}")
+    dcv = clip_id(dify_conv, 24)
     if dcv:
-        parts.append(f"dify_conv={dcv}")
+        parts.append(f"dify={dcv}")
     return " ".join(parts)
 
 

@@ -28,27 +28,35 @@ def _import_sdk() -> Any:
         ) from exc
 
 
-class _CardCallbackHandler:
+def _make_card_callback_handler_class(sdk: Any) -> type:
     """
-    Minimal ACK handler for card interaction callbacks delivered via the Stream SDK.
+    Dynamically build a ``CallbackHandler`` subclass after the SDK is imported.
 
-    Card streaming content is pushed via REST independently; this handler only
-    acknowledges interactive card events (button clicks, form submissions) so
-    DingTalk does not retry them.
+    The SDK's ``DingTalkStreamClient`` calls ``handler.pre_start()`` during
+    startup.  We must inherit from ``sdk.CallbackHandler`` so that method exists;
+    a plain class without it causes an ``AttributeError`` on every connection
+    attempt which triggers the reconnect loop immediately.
     """
 
-    def __init__(self) -> None:
-        self.logger = logger
+    class _CardCallbackHandler(sdk.CallbackHandler):
+        """
+        Minimal ACK handler for card interaction callbacks.
 
-    async def process(self, callback: Any) -> tuple[int, str]:
-        sdk = _import_sdk()
-        data = callback.data if hasattr(callback, "data") else {}
-        out_track = (data or {}).get("outTrackId", "") if isinstance(data, dict) else ""
-        self.logger.debug(
-            "[MindBot] dingtalk_card_callback_ack outTrackId=%s",
-            out_track,
-        )
-        return sdk.AckMessage.STATUS_OK, "OK"
+        Card streaming content is pushed via REST independently; this handler
+        only acknowledges interactive events (button clicks, form submissions)
+        so DingTalk does not retry them.
+        """
+
+        async def process(self, callback: Any) -> tuple[int, str]:
+            data = callback.data if hasattr(callback, "data") else {}
+            out_track = (data or {}).get("outTrackId", "") if isinstance(data, dict) else ""
+            logger.debug(
+                "[MindBot] dingtalk_card_callback_ack outTrackId=%s",
+                out_track,
+            )
+            return sdk.AckMessage.STATUS_OK, "OK"
+
+    return _CardCallbackHandler
 
 
 class DingTalkStreamManager:
@@ -86,10 +94,11 @@ class DingTalkStreamManager:
             if client_id in self._clients:
                 return
             sdk = _import_sdk()
+            from dingtalk_stream import Card_Callback_Router_Topic  # pylint: disable=import-outside-toplevel
             credential = sdk.Credential(client_id, client_secret)
             client = sdk.DingTalkStreamClient(credential)
-            from dingtalk_stream import Card_Callback_Router_Topic  # pylint: disable=import-outside-toplevel
-            client.register_callback_handler(Card_Callback_Router_Topic, _CardCallbackHandler())
+            handler_cls = _make_card_callback_handler_class(sdk)
+            client.register_callback_handler(Card_Callback_Router_Topic, handler_cls())
             self._clients[client_id] = client
             task = asyncio.create_task(
                 self._run(client_id, client),
