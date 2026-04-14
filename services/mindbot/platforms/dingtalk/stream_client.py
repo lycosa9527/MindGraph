@@ -89,6 +89,10 @@ class DingTalkStreamManager:
         Subsequent calls for the same ``client_id`` return immediately.
         """
         if not client_id or not client_secret:
+            logger.warning(
+                "[MindBot] ensure_client_skipped reason=empty_credentials"
+                " (group AI card callbackType=STREAM will be rejected by DingTalk)"
+            )
             return
         async with self._lock:
             if client_id in self._clients:

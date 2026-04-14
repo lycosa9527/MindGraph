@@ -7,8 +7,6 @@ import time
 import uuid
 from typing import Any, Awaitable, Callable, Optional
 
-logger = logging.getLogger(__name__)
-
 from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.core.dify_stream import (
@@ -43,6 +41,8 @@ from services.mindbot.platforms.dingtalk.ai_card import (
 )
 from services.mindbot.platforms.dingtalk.ai_card_errors import describe_ai_card_failure
 from utils.env_helpers import env_bool
+
+logger = logging.getLogger(__name__)
 
 
 async def run_streaming_dify_branch(
@@ -262,7 +262,9 @@ async def run_streaming_dify_branch(
         card_state["token"] = None
         card_state["created"] = False
         card_state["update_mode"] = "stream"
-        card_state["use_card"] = mindbot_ai_card_wiring_enabled(cfg)
+        card_state["use_card"] = (
+            mindbot_ai_card_wiring_enabled(cfg) and not card_state.get("buffer_only")
+        )
 
     full, new_conv, err_tok, usage_dify = await mindbot_consume_dify_stream_batched(
         dify,
@@ -286,10 +288,9 @@ async def run_streaming_dify_branch(
         show_chain_of_thought=bool(cfg.show_chain_of_thought),
         chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
     )
-    use_cum_for_reply = (
-        not err_tok
-        and card_state.get("created")
-        and card_state.get("use_card")
+    use_cum_for_reply = not err_tok and (
+        (card_state.get("created") and card_state.get("use_card"))
+        or card_state.get("buffer_only")
     )
     reply_text = (
         format_mindbot_reply_for_dingtalk(
@@ -512,6 +513,12 @@ async def run_blocking_send_branch(
                 "[MindBot] ai_card_skipped %s reason=%s",
                 pipeline_ctx,
                 skip_reason,
+            )
+            return False
+        if is_cross_org_group_body(body):
+            logger.info(
+                "[MindBot] ai_card_skipped %s reason=cross_org_group",
+                pipeline_ctx,
             )
             return False
         tok = await prefetch_ai_card_access_token(cfg)
