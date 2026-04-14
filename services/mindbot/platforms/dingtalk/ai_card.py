@@ -348,23 +348,48 @@ async def create_and_deliver_ai_card(
             "robotCode": _im_group_robot_code(cfg),
         }
         if sender_staff:
-            # Real staffId: target the sender directly with an @mention.
+            # Real staffId: target the sender directly.
+            # Only add atUserIds when a non-empty nick is available — an empty-string
+            # nick value causes param.invalid on the createAndDeliver call.
             group_deliver["recipients"] = [sender_staff]
-            group_deliver["atUserIds"] = {sender_staff: ""}
-        # Without recipients the card is visible to the whole group — matches the
-        # official SDK default (imGroupOpenDeliverModel contains only robotCode).
-        payload = {
-            "cardTemplateId": template_id,
-            "outTrackId": out_track_id,
-            "callbackType": "STREAM",
-            "cardData": {"cardParamMap": {param_key: initial_markdown}},
-            "openSpaceId": open_space_id,
-            "imGroupOpenSpaceModel": _im_group_space_model(),
-            "imGroupOpenDeliverModel": group_deliver,
-        }
-        if sender_staff:
-            payload["userId"] = sender_staff
-        update_mode = "stream"
+            raw_nick = (
+                body.get("senderNick")
+                or body.get("sender_nick")
+                or body.get("senderNickName")
+                or body.get("sender_nickname")
+            )
+            sender_nick = raw_nick.strip() if isinstance(raw_nick, str) else ""
+            if sender_nick:
+                group_deliver["atUserIds"] = {sender_staff: sender_nick}
+            # Enterprise-internal group: use STREAM callback so DingTalk renders
+            # the typewriter effect via PUT /v1.0/card/streaming.
+            payload = {
+                "cardTemplateId": template_id,
+                "outTrackId": out_track_id,
+                "callbackType": "STREAM",
+                "cardData": {"cardParamMap": {param_key: initial_markdown}},
+                "openSpaceId": open_space_id,
+                "imGroupOpenSpaceModel": _im_group_space_model(),
+                "imRobotOpenSpaceModel": {"supportForward": True},
+                "imGroupOpenDeliverModel": group_deliver,
+            }
+            update_mode = "stream"
+        else:
+            # Cross-org / external group: sender carries an LWCP token, not a real
+            # staffId.  Omit callbackType so DingTalk accepts the card without
+            # requiring a Stream SDK WebSocket listener.  Content updates go via
+            # PUT /v1.0/card/instances (receiver mode) which also gives the
+            # typewriter streaming effect.
+            payload = {
+                "cardTemplateId": template_id,
+                "outTrackId": out_track_id,
+                "cardData": {"cardParamMap": {param_key: initial_markdown}},
+                "openSpaceId": open_space_id,
+                "imGroupOpenSpaceModel": _im_group_space_model(),
+                "imRobotOpenSpaceModel": {"supportForward": True},
+                "imGroupOpenDeliverModel": group_deliver,
+            }
+            update_mode = "receiver"
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {
