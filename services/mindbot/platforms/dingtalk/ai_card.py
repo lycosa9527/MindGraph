@@ -292,20 +292,27 @@ def _parse_group_body(
 
 def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]:
     """
-    Fast pre-check: can ``createAndDeliver`` run for this callback body?
+    Fast pre-check: can ``createAndDeliver`` produce a **visible** card for ``body``?
 
     Returns ``(True, None)`` when delivery is possible.
     Returns ``(False, reason)`` when it cannot proceed, e.g.:
-    - ``"no_openapi_user_id"`` — 1:1 chat but only LWCP tokens available
-    - ``"no_sender_staff"``   — 1:1 chat with no sender id at all
+    - ``"no_openapi_user_id"`` — only LWCP tokens; real userId required for card visibility
+    - ``"no_sender_staff"``   — no sender id at all
     - ``"no_conversation_id"`` — group chat but no conversationId
+
+    For **groups**: a real ``userId`` is required so that ``recipients`` can be set in
+    ``imGroupOpenDeliverModel``.  Anonymous group deliver (no ``recipients``) is accepted
+    by DingTalk (HTTP 200) but the card is NOT pushed as a visible chat message, so it
+    must be treated as undeliverable here and fall back to the session webhook.
 
     Does **not** check org config. Pair with :func:`mindbot_ai_card_wiring_enabled`.
     """
-    is_group, conv_s, _uid, err = _parse_group_body(body)
+    is_group, conv_s, uid, err = _parse_group_body(body)
     if is_group:
         if not conv_s:
             return False, "no_conversation_id"
+        if not uid:
+            return False, err or "no_openapi_user_id"
         return True, None
     if err:
         return False, err
