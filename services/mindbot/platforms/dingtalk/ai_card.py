@@ -351,6 +351,17 @@ async def create_and_deliver_ai_card(
         if sender_staff:
             im_group_dm["recipients"] = [sender_staff]
             im_group_dm["atUserIds"] = {sender_staff: ""}
+        else:
+            # No real staffId available (LWCP-only sender).
+            # Use @ALL so DingTalk posts the card as a visible group message.
+            # Without recipients AND without atUserIds the card is stored
+            # in the space backend but never delivered as a chat message.
+            im_group_dm["atUserIds"] = {"@ALL": "@ALL"}
+            logger.info(
+                "[MindBot] ai_card_group_anonymous_deliver %s (LWCP sender; "
+                "using @ALL to post card as visible group message)",
+                pipeline_ctx,
+            )
         payload = {
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
@@ -362,12 +373,6 @@ async def create_and_deliver_ai_card(
         }
         if sender_staff:
             payload["userId"] = user_id
-        else:
-            logger.info(
-                "[MindBot] ai_card_group_anonymous_deliver %s (no userId/recipients; "
-                "LWCP or missing sender — card visible to all group members)",
-                pipeline_ctx,
-            )
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {
