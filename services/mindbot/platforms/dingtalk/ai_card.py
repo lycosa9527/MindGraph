@@ -81,9 +81,25 @@ def mindbot_ai_card_wiring_enabled(cfg: OrganizationMindbotConfig) -> bool:
     return True
 
 
+def _open_space_id_group(open_conversation_id: str) -> str:
+    return f"dtv1.card//im_group.{open_conversation_id.strip()}"
+
+
 def _open_space_id_robot(user_id: str) -> str:
-    uid = user_id.strip()
-    return f"dtv1.card//im_robot.{uid}"
+    return f"dtv1.card//im_robot.{user_id.strip()}"
+
+
+def _im_group_space_model() -> dict[str, Any]:
+    return {"supportForward": True}
+
+
+def _im_group_robot_code(cfg: OrganizationMindbotConfig) -> str:
+    """robotCode for imGroupOpenDeliverModel — AppKey (client_id) or robot code."""
+    app_key = (cfg.dingtalk_client_id or "").strip()
+    robot = (cfg.dingtalk_robot_code or "").strip()
+    if env_bool("MINDBOT_AI_CARD_GROUP_USE_APPKEY", False):
+        return app_key or robot
+    return robot or app_key
 
 
 def _im_robot_space_model() -> dict[str, Any]:
@@ -267,10 +283,15 @@ def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]
 
     Does **not** check org config. Pair with :func:`mindbot_ai_card_wiring_enabled`.
     """
-    is_group, conv_s, _uid, err = _parse_group_body(body)
+    is_group, conv_s, uid, err = _parse_group_body(body)
     if is_group:
         if not conv_s:
             return False, "no_conversation_id"
+        if not uid:
+            # LWCP-only or missing sender: imGroupOpenDeliverModel.recipients cannot
+            # be set. Without recipients the card is accepted by DingTalk (HTTP 200)
+            # but is never posted as a visible chat message in the group.
+            return False, err or "no_openapi_user_id"
         return True, None
     if err:
         return False, err
@@ -319,27 +340,23 @@ async def create_and_deliver_ai_card(
         if not conv_s:
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
             return False, None, "no_conversation_id"
-        # Use the receiver-based delivery format (DingTalk recommended for group).
-        # spaceId = openConversationId — no user ID needed, works for LWCP senders.
-        # The old openSpaceId + imGroupOpenDeliverModel format requires recipients/atUserIds;
-        # without them the card is stored in DingTalk's backend but never posted as a
-        # visible chat message. The receiver format routes by conversation ID directly.
+        # sender_staff is guaranteed non-empty here (pre-check in ai_card_body_deliverable
+        # blocks LWCP-only senders before we reach this point).
+        open_space_id = _open_space_id_group(conv_s)
         payload = {
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
             "callbackType": "STREAM",
             "cardData": {"cardParamMap": {param_key: initial_markdown}},
-            "receiver": {
-                "spaceType": "IM_GROUP",
-                "spaceId": conv_s,
+            "openSpaceId": open_space_id,
+            "imGroupOpenSpaceModel": _im_group_space_model(),
+            "imGroupOpenDeliverModel": {
+                "robotCode": _im_group_robot_code(cfg),
+                "recipients": [sender_staff],
+                "atUserIds": {sender_staff: ""},
             },
+            "userId": user_id,
         }
-        logger.info(
-            "[MindBot] ai_card_group_receiver_deliver %s conv=%s has_sender=%s",
-            pipeline_ctx,
-            conv_s[:20],
-            bool(sender_staff),
-        )
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {
