@@ -835,5 +835,17 @@ async def lifespan(fastapi_app: FastAPI):
             if is_main_worker:
                 logger.warning("Failed to close Redis: %s", e)
 
+        # Stop DingTalk Stream SDK WebSocket clients
+        try:
+            from services.mindbot.platforms.dingtalk.stream_client import (  # pylint: disable=import-outside-toplevel
+                get_stream_manager,
+            )
+            get_stream_manager().stop_all()
+            if is_main_worker:
+                logger.info("DingTalk Stream SDK clients stopped")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to stop DingTalk Stream SDK clients: %s", e)
+
         # Don't try to cancel tasks - let uvicorn handle the shutdown
         # This prevents CancelledError exceptions during multiprocess shutdown

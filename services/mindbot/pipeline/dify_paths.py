@@ -33,6 +33,7 @@ from services.mindbot.platforms.dingtalk.ai_card import (
     ai_card_body_deliverable,
     ai_card_overflow_remainder_for_markdown,
     create_and_deliver_ai_card,
+    is_cross_org_group_body,
     mark_ai_card_stream_error,
     mindbot_ai_card_wiring_enabled,
     prefetch_ai_card_access_token,
@@ -78,24 +79,40 @@ async def run_streaming_dify_branch(
                 _skip_reason,
             )
             _card_wiring = False
+    # Cross-org (external) groups use LWCP sender tokens — AI card templates are
+    # enterprise-internal only.  Buffer the full Dify response and send it as one
+    # plain message at the end instead.
+    _is_cross_org = is_cross_org_group_body(body)
+    if _is_cross_org and _card_wiring:
+        logger.info(
+            "[MindBot] ai_card_skipped %s reason=cross_org_group",
+            pipeline_ctx,
+        )
+        _card_wiring = False
     logger.info(
-        "[MindBot] dify_streaming_branch %s ai_card_wiring=%s",
+        "[MindBot] dify_streaming_branch %s ai_card_wiring=%s buffer_only=%s",
         pipeline_ctx,
         _card_wiring,
+        _is_cross_org,
     )
 
     card_state: dict[str, Any] = {
         "use_card": _card_wiring,
+        "buffer_only": _is_cross_org,
         "cum": "",
         "out_track_id": None,
         "token": None,
         "created": False,
-        "update_mode": "stream",  # "stream" or "receiver"
+        "update_mode": "stream",
     }
 
     async def on_batch(chunk: str) -> tuple[bool, bool]:
         visible = think_filter.push(chunk)
         if not visible:
+            return True, False
+        if card_state.get("buffer_only"):
+            # Cross-org group: accumulate silently; full response sent at end.
+            card_state["cum"] += visible
             return True, False
         if card_state["use_card"]:
             card_state["cum"] += visible
@@ -273,6 +290,20 @@ async def run_streaming_dify_branch(
         if use_cum_for_reply
         else formatted_full
     )
+    # Cross-org buffer path: send the complete accumulated response as one message.
+    if card_state.get("buffer_only") and not err_tok and reply_text.strip():
+        logger.info(
+            "[MindBot] cross_org_buffer_send %s reply_chars=%s",
+            pipeline_ctx,
+            len(reply_text),
+        )
+        await send_one_reply_chunk(
+            cfg,
+            body,
+            session_webhook_valid,
+            reply_text,
+            pipeline_ctx=pipeline_ctx,
+        )
     if (
         not err_tok
         and card_state.get("use_card")

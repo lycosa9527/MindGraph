@@ -22,6 +22,7 @@ from services.mindbot.platforms.dingtalk.oauth import (
 )
 from services.mindbot.platforms.dingtalk.response import dingtalk_v1_response_ok
 from services.mindbot.platforms.dingtalk.session_webhook import sanitize_markdown_for_dingtalk
+from services.mindbot.platforms.dingtalk.stream_client import get_stream_manager
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
@@ -278,8 +279,9 @@ def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]
     - ``"no_sender_staff"``   — 1:1 chat with no sender id at all
     - ``"no_conversation_id"`` — group chat but no conversationId
 
-    For **groups**: LWCP/no-uid senders are routed to receiver-mode delivery, so
-    only a missing ``conversationId`` is fatal.
+    For **groups**: only a missing ``conversationId`` is fatal.  Cross-org groups
+    (LWCP sender) are routed to a plain-text buffer path by the pipeline before
+    reaching ``createAndDeliver`` — see :func:`is_cross_org_group_body`.
 
     Does **not** check org config. Pair with :func:`mindbot_ai_card_wiring_enabled`.
     """
@@ -291,6 +293,18 @@ def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]
     if err:
         return False, err
     return True, None
+
+
+def is_cross_org_group_body(body: dict[str, Any]) -> bool:
+    """
+    Return True when the callback body is a cross-org (external) group message.
+
+    Cross-org groups have an LWCP token instead of a real ``senderStaffId``.
+    AI card templates are enterprise-internal only; the pipeline buffers the full
+    Dify response and sends it as a single plain message for these groups.
+    """
+    is_group, _conv, sender_staff, _err = _parse_group_body(body)
+    return is_group and not sender_staff
 
 
 async def create_and_deliver_ai_card(
@@ -306,17 +320,14 @@ async def create_and_deliver_ai_card(
 
     ``initial_markdown`` is placed in ``cardParamMap`` under the configured param key.
 
-    Returns ``(ok, dingtalk_code, detail, update_mode)``.  ``update_mode`` is either
-    ``"stream"`` (use ``streaming_update_ai_card`` / ``PUT /v1.0/card/streaming``) or
-    ``"receiver"`` (use ``update_ai_card_receiver`` / ``PUT /v1.0/card/instances/{id}``).
+    Returns ``(ok, dingtalk_code, detail, update_mode)``.  ``update_mode`` is
+    ``"stream"`` (use ``streaming_update_ai_card`` / ``PUT /v1.0/card/streaming``).
     On failure ``update_mode`` is ``""``.
 
-    Group delivery uses two flows:
-    - **STREAM** when a real ``senderStaffId`` is available (enterprise-internal groups).
-      Updates go to ``PUT /v1.0/card/streaming``.
-    - **Receiver** when only an LWCP token is available (cross-org / external groups).
-      ``createAndDeliver`` uses ``receiver:{spaceType,spaceId}`` with no ``callbackType``,
-      and updates go to ``PUT /v1.0/card/instances/{outTrackId}``.
+    For group delivery the Stream SDK WebSocket connection is required by DingTalk
+    before it accepts ``callbackType: "STREAM"``.  ``ensure_client`` is called
+    lazily here; cross-org (LWCP) groups are already filtered out by the pipeline
+    via :func:`is_cross_org_group_body` and never reach this function.
     """
     token = await _access_token(cfg)
     if not token:
@@ -343,13 +354,20 @@ async def create_and_deliver_ai_card(
         if not conv_s:
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
             return False, None, "no_conversation_id", ""
+        # Ensure the Stream SDK WebSocket is connected before calling
+        # createAndDeliver — DingTalk requires an active Stream SDK connection
+        # to accept callbackType="STREAM" for group cards.
+        await get_stream_manager().ensure_client(
+            (cfg.dingtalk_client_id or "").strip(),
+            (cfg.dingtalk_app_secret or "").strip(),
+        )
         open_space_id = _open_space_id_group(conv_s)
         group_deliver: dict[str, Any] = {
             "robotCode": _im_group_robot_code(cfg),
         }
         if sender_staff:
-            # Real staffId: target the sender directly.
-            # Only add atUserIds when a non-empty nick is available — an empty-string
+            # Real staffId available: target the sender with an @mention.
+            # Only add atUserIds when a non-empty nick exists — an empty-string
             # nick value causes param.invalid on the createAndDeliver call.
             group_deliver["recipients"] = [sender_staff]
             raw_nick = (
@@ -361,35 +379,20 @@ async def create_and_deliver_ai_card(
             sender_nick = raw_nick.strip() if isinstance(raw_nick, str) else ""
             if sender_nick:
                 group_deliver["atUserIds"] = {sender_staff: sender_nick}
-            # Enterprise-internal group: use STREAM callback so DingTalk renders
-            # the typewriter effect via PUT /v1.0/card/streaming.
-            payload = {
-                "cardTemplateId": template_id,
-                "outTrackId": out_track_id,
-                "callbackType": "STREAM",
-                "cardData": {"cardParamMap": {param_key: initial_markdown}},
-                "openSpaceId": open_space_id,
-                "imGroupOpenSpaceModel": _im_group_space_model(),
-                "imRobotOpenSpaceModel": {"supportForward": True},
-                "imGroupOpenDeliverModel": group_deliver,
-            }
-            update_mode = "stream"
-        else:
-            # Cross-org / external group: sender carries an LWCP token, not a real
-            # staffId.  Omit callbackType so DingTalk accepts the card without
-            # requiring a Stream SDK WebSocket listener.  Content updates go via
-            # PUT /v1.0/card/instances (receiver mode) which also gives the
-            # typewriter streaming effect.
-            payload = {
-                "cardTemplateId": template_id,
-                "outTrackId": out_track_id,
-                "cardData": {"cardParamMap": {param_key: initial_markdown}},
-                "openSpaceId": open_space_id,
-                "imGroupOpenSpaceModel": _im_group_space_model(),
-                "imRobotOpenSpaceModel": {"supportForward": True},
-                "imGroupOpenDeliverModel": group_deliver,
-            }
-            update_mode = "receiver"
+        # Without recipients the card is visible to the whole group.
+        # Cross-org groups (LWCP sender, no sender_staff) are filtered out by
+        # is_cross_org_group_body() in the pipeline before reaching this point.
+        payload = {
+            "cardTemplateId": template_id,
+            "outTrackId": out_track_id,
+            "callbackType": "STREAM",
+            "cardData": {"cardParamMap": {param_key: initial_markdown}},
+            "openSpaceId": open_space_id,
+            "imGroupOpenSpaceModel": _im_group_space_model(),
+            "imRobotOpenSpaceModel": {"supportForward": True},
+            "imGroupOpenDeliverModel": group_deliver,
+        }
+        update_mode = "stream"
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {
