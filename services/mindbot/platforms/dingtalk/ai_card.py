@@ -172,19 +172,39 @@ async def _access_token(
     )
 
 
+def _sender_identity_from_callback_body(body: dict[str, Any]) -> str:
+    """
+    Resolve a sender key for card create/deliver.
+
+    Prefer ``senderStaffId``. Some robot callbacks (e.g. custom / Outgoing) omit it
+    or send an empty string; ``senderId`` is usually still present (see DingTalk
+    receive-message protocol).
+    """
+    for key in (
+        "senderStaffId",
+        "sender_staff_id",
+        "senderId",
+        "sender_id",
+    ):
+        raw = body.get(key)
+        if isinstance(raw, str) and raw.strip():
+            return raw.strip()
+        if raw is not None and not isinstance(raw, str):
+            text = str(raw).strip()
+            if text:
+                return text
+    return ""
+
+
 def _parse_group_body(body: dict[str, Any]) -> tuple[bool, str, str]:
-    """Return (is_group, space_id_for_open_space, sender_staff_id)."""
+    """Return (is_group, space_id_for_open_space, sender_user_id_for_openapi)."""
     ct = body.get("conversationType") or body.get("conversation_type")
     is_group = False
     if ct is not None:
         is_group = str(ct).strip().lower() in ("2", "group")
     conv = body.get("conversationId") or body.get("conversation_id")
     conv_s = conv.strip() if isinstance(conv, str) else ""
-    sender_raw = body.get("senderStaffId") or body.get("sender_staff_id")
-    if isinstance(sender_raw, str) and sender_raw.strip():
-        sender = sender_raw.strip()
-    else:
-        sender = ""
+    sender = _sender_identity_from_callback_body(body)
     return is_group, conv_s, sender
 
 
@@ -215,6 +235,7 @@ async def create_and_deliver_ai_card(
         logger.warning("[MindBot] ai_card_create_failed %s reason=no_sender_staff", pipeline_ctx)
         return False, None, "no_sender_staff"
     user_id = sender_staff
+    robot_code = cfg.dingtalk_robot_code.strip()
     if is_group:
         if not conv_s:
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
@@ -224,11 +245,12 @@ async def create_and_deliver_ai_card(
             "userId": user_id,
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
+            "callbackType": "STREAM",
             "cardData": {"cardParamMap": {param_key: initial_markdown}},
             "openSpaceId": open_space_id,
             "imGroupOpenSpaceModel": _im_group_space_model(),
             "imGroupOpenDeliverModel": {
-                "robotCode": cfg.dingtalk_robot_code.strip(),
+                "robotCode": robot_code,
                 "atUserIds": {},
                 "recipients": [sender_staff],
             },
@@ -239,10 +261,14 @@ async def create_and_deliver_ai_card(
             "userId": user_id,
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
+            "callbackType": "STREAM",
             "cardData": {"cardParamMap": {param_key: initial_markdown}},
             "openSpaceId": open_space_id,
             "imRobotOpenSpaceModel": _im_robot_space_model(),
-            "imRobotOpenDeliverModel": {"spaceType": "im_robot"},
+            "imRobotOpenDeliverModel": {
+                "spaceType": "IM_ROBOT",
+                "robotCode": robot_code,
+            },
         }
     logger.debug(
         "[MindBot] ai_card_create_post %s path=%s template_id=%s group=%s "

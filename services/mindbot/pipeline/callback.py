@@ -426,6 +426,16 @@ async def process_dingtalk_callback(
         inbound_msg_type,
         "yes" if session_webhook_valid else "no",
     )
+    if env_bool("MINDBOT_LOG_INBOUND_PROMPT_PREVIEW", False):
+        cap = 160
+        tail = "…" if len(text_in) > cap else ""
+        preview = text_in[:cap] + tail
+        logger.info(
+            "[MindBot] inbound_prompt_preview %s total_chars=%s text=%r",
+            pipeline_ctx,
+            len(text_in),
+            preview,
+        )
     logger.debug(
         "[MindBot] pipeline_detail %s gate_acquired=%s redis_dify_conv=%s",
         pipeline_ctx,

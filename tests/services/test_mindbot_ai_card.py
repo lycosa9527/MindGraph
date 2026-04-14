@@ -200,7 +200,57 @@ async def test_create_and_deliver_group_posts_expected_path() -> None:
     assert isinstance(pl, dict)
     assert pl.get("outTrackId") == "track-1"
     assert pl.get("openSpaceId") == "dtv1.card//im_group.oc-1"
+    assert pl.get("callbackType") == "STREAM"
     assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "robot-1"
+
+
+@pytest.mark.asyncio
+async def test_create_and_deliver_robot_1to1_stream_and_robot_code() -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_post(path: str, token: str, payload: dict, **_kwargs):
+        captured["path"] = path
+        captured["payload"] = payload
+        return 200, {"success": True, "result": {"outTrackId": "x", "deliverResults": []}}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="robot-xy",
+        dingtalk_app_secret="sec",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key="content",
+    )
+    body = {
+        "conversationType": "1",
+        "senderStaffId": "staff-p2p",
+    }
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        new=fake_post,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            new=AsyncMock(return_value="tok-1"),
+        ):
+            ok, code, detail = await create_and_deliver_ai_card(
+                cfg,
+                body,
+                out_track_id="track-p2p",
+                initial_markdown="",
+                pipeline_ctx="tctx",
+            )
+    assert ok is True
+    assert code is None
+    assert detail == ""
+    pl = captured["payload"]
+    assert isinstance(pl, dict)
+    assert pl.get("callbackType") == "STREAM"
+    assert pl.get("openSpaceId") == "dtv1.card//im_robot.staff-p2p"
+    im_robot_dm = pl.get("imRobotOpenDeliverModel")
+    assert isinstance(im_robot_dm, dict)
+    assert im_robot_dm.get("spaceType") == "IM_ROBOT"
+    assert im_robot_dm.get("robotCode") == "robot-xy"
 
 
 @pytest.mark.asyncio
