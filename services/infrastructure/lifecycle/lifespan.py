@@ -847,5 +847,29 @@ async def lifespan(fastapi_app: FastAPI):
             if is_main_worker:
                 logger.warning("Failed to stop DingTalk Stream SDK clients: %s", e)
 
+        # Close shared aiohttp sessions (MindBot HTTP connection pools)
+        try:
+            from services.mindbot.http_client import (  # pylint: disable=import-outside-toplevel
+                close_mindbot_http_sessions,
+            )
+            await close_mindbot_http_sessions()
+            if is_main_worker:
+                logger.info("MindBot HTTP sessions closed")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to close MindBot HTTP sessions: %s", e)
+
+        # Close native async Redis client (MindBot hot-path pool)
+        try:
+            from services.mindbot.redis_async import (  # pylint: disable=import-outside-toplevel
+                close_async_redis,
+            )
+            await close_async_redis()
+            if is_main_worker:
+                logger.info("MindBot async Redis client closed")
+        except Exception as e:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("Failed to close MindBot async Redis client: %s", e)
+
         # Don't try to cancel tasks - let uvicorn handle the shutdown
         # This prevents CancelledError exceptions during multiprocess shutdown

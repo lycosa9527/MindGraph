@@ -8,6 +8,7 @@ from typing import Optional
 
 import aiohttp
 
+from services.mindbot.http_client import get_dingtalk_api_session, get_outbound_session
 from services.mindbot.platforms.dingtalk.constants import (
     DING_API_BASE,
     MAX_DOWNLOAD_MEDIA_BYTES,
@@ -37,12 +38,13 @@ async def get_message_file_download_url(
     payload = {"downloadCode": download_code.strip(), "robotCode": robot_code.strip()}
     timeout = aiohttp.ClientTimeout(total=60)
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(
-                f"{DING_API_BASE}{PATH_ROBOT_MESSAGE_FILES_DOWNLOAD}",
-                headers=headers,
-                json=payload,
-            ) as resp:
+        session = get_dingtalk_api_session()
+        async with session.post(
+            f"{DING_API_BASE}{PATH_ROBOT_MESSAGE_FILES_DOWNLOAD}",
+            headers=headers,
+            json=payload,
+            timeout=timeout,
+        ) as resp:
                 body_txt = await resp.text()
                 if resp.status != 200:
                     logger.warning(
@@ -73,8 +75,8 @@ async def get_message_file_download_url(
 async def download_url_bytes(url: str) -> Optional[bytes]:
     timeout = aiohttp.ClientTimeout(total=120)
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(url) as resp:
+        session = get_outbound_session()
+        async with session.get(url, timeout=timeout) as resp:
                 if resp.status != 200:
                     logger.warning("[MindBot] media GET failed: %s", resp.status)
                     return None

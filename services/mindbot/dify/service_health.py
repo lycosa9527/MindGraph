@@ -8,6 +8,8 @@ from typing import Optional, Tuple
 
 import aiohttp
 
+from services.mindbot.http_client import get_outbound_session
+
 logger = logging.getLogger(__name__)
 
 
@@ -33,8 +35,8 @@ async def check_dify_app_api_reachable(
     headers = {"Authorization": f"Bearer {key}"}
     timeout = aiohttp.ClientTimeout(total=timeout_s)
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(url, headers=headers) as resp:
+        session = get_outbound_session()
+        async with session.get(url, headers=headers, timeout=timeout) as resp:
                 status = resp.status
                 if status == 200:
                     await resp.read()

@@ -8,6 +8,7 @@ from typing import Any, Optional
 
 import aiohttp
 
+from services.mindbot.http_client import get_outbound_session
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.telemetry.pipeline_log import session_webhook_host
 from utils.env_helpers import env_bool
@@ -133,12 +134,13 @@ async def post_session_webhook(
     host = session_webhook_host(session_webhook)
     timeout = aiohttp.ClientTimeout(total=30)
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as http:
-            async with http.post(
-                session_webhook.strip(),
-                data=json.dumps(out_payload),
-                headers={"Content-Type": "application/json; charset=utf-8"},
-            ) as r:
+        http = get_outbound_session()
+        async with http.post(
+            session_webhook.strip(),
+            data=json.dumps(out_payload),
+            headers={"Content-Type": "application/json; charset=utf-8"},
+            timeout=timeout,
+        ) as r:
                 if r.status >= 400:
                     body_txt = await r.text()
                     logger.warning(

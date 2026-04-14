@@ -9,6 +9,7 @@ from urllib.parse import quote
 
 import aiohttp
 
+from services.mindbot.http_client import get_outbound_session
 from services.mindbot.platforms.dingtalk.constants import (
     OAPI_MAX_FILE_BYTES,
     OAPI_MAX_IMAGE_BYTES,
@@ -68,8 +69,8 @@ async def upload_media_oapi(
     )
     timeout = aiohttp.ClientTimeout(total=120)
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, data=data) as resp:
+        session = get_outbound_session()
+        async with session.post(url, data=data, timeout=timeout) as resp:
                 body_txt = await resp.text()
                 if resp.status != 200:
                     logger.warning(

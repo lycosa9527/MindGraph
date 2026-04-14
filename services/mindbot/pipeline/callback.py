@@ -50,7 +50,13 @@ from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
 from services.mindbot.session.webhook_url import validate_session_webhook_url
-from services.redis.redis_client import RedisOperations, is_redis_available
+from services.mindbot.redis_async import (
+    redis_delete,
+    redis_expire,
+    redis_get,
+    redis_set_ttl,
+    redis_setnx_ttl,
+)
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
@@ -108,34 +114,8 @@ def _dify_streaming_enabled() -> bool:
     return env_bool("MINDBOT_DIFY_STREAMING", True)
 
 
-def _redis_get(key: str) -> Optional[str]:
-    if not is_redis_available():
-        return None
-    return RedisOperations.get(key)
-
-
-def _redis_set_ttl(key: str, value: str, ttl: int) -> bool:
-    if not is_redis_available():
-        return False
-    return RedisOperations.set_with_ttl(key, value, ttl)
-
-
 async def _redis_get_async(key: str) -> Optional[str]:
-    return await asyncio.to_thread(_redis_get, key)
-
-
-async def _redis_set_ttl_async(key: str, value: str, ttl: int) -> bool:
-    return await asyncio.to_thread(_redis_set_ttl, key, value, ttl)
-
-
-def _redis_delete(key: str) -> None:
-    if not is_redis_available():
-        return
-    RedisOperations.delete(key)
-
-
-async def _redis_delete_async(key: str) -> None:
-    await asyncio.to_thread(_redis_delete, key)
+    return await redis_get(key)
 
 
 async def _redis_bind_dify_conversation_async(key: str, value: str, ttl: int) -> None:
@@ -144,16 +124,9 @@ async def _redis_bind_dify_conversation_async(key: str, value: str, ttl: int) ->
 
     Avoids races where parallel callbacks overwrite each other's Dify ``conversation_id``.
     """
-    if not is_redis_available():
-        return
-    created = await asyncio.to_thread(
-        RedisOperations.set_with_ttl_if_not_exists,
-        key,
-        value,
-        ttl,
-    )
+    created = await redis_setnx_ttl(key, value, ttl)
     if not created:
-        await asyncio.to_thread(RedisOperations.set_ttl, key, ttl)
+        await redis_expire(key, ttl)
 
 
 async def _maybe_dify_files_for_media(
@@ -337,17 +310,9 @@ async def process_dingtalk_callback(
     msg_id = body.get("msgId") or body.get("msg_id")
     if msg_id and isinstance(msg_id, str):
         dedup_key = f"{MSG_DEDUP_PREFIX}{cfg.organization_id}:{msg_id}"
-        if is_redis_available():
-            first = await asyncio.to_thread(
-                RedisOperations.set_with_ttl_if_not_exists,
-                dedup_key,
-                "1",
-                MSG_DEDUP_TTL,
-            )
-            if not first:
-                return 200, _hdr(MindbotErrorCode.DUPLICATE_MESSAGE)
-        elif env_bool("MINDBOT_DEDUP_REQUIRE_REDIS", False):
-            return 503, _hdr(MindbotErrorCode.REDIS_UNAVAILABLE_FOR_DEDUP)
+        first = await redis_setnx_ttl(dedup_key, "1", MSG_DEDUP_TTL)
+        if not first:
+            return 200, _hdr(MindbotErrorCode.DUPLICATE_MESSAGE)
 
     text_in, inbound_msg_type = extract_inbound_prompt(body)
     logger.debug(

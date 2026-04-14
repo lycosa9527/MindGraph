@@ -6,7 +6,7 @@ import asyncio
 import time
 from typing import Awaitable, Callable, Optional
 
-from services.redis.redis_client import RedisOperations, is_redis_available
+from services.mindbot.redis_async import redis_delete, redis_setnx_ttl
 from utils.env_helpers import env_bool, env_int
 
 CONV_GATE_PREFIX = "mindbot:conv_gate:"
@@ -37,23 +37,14 @@ def gate_key_for(org_id: int, dingtalk_conversation_id: str) -> str:
 
 async def redis_acquire_conv_gate_async(org_id: int, dingtalk_conversation_id: str) -> bool:
     """Return True if this process holds the gate (SET NX won)."""
-    if not is_redis_available():
-        return False
     key = gate_key_for(org_id, dingtalk_conversation_id)
     ttl = conv_gate_ttl_seconds()
-    return await asyncio.to_thread(
-        RedisOperations.set_with_ttl_if_not_exists,
-        key,
-        "1",
-        ttl,
-    )
+    return await redis_setnx_ttl(key, "1", ttl)
 
 
 async def redis_release_conv_gate_async(org_id: int, dingtalk_conversation_id: str) -> None:
-    if not is_redis_available():
-        return
     key = gate_key_for(org_id, dingtalk_conversation_id)
-    await asyncio.to_thread(RedisOperations.delete, key)
+    await redis_delete(key)
 
 
 async def poll_dify_conv_key_async(

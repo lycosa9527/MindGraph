@@ -2,11 +2,10 @@
 
 from __future__ import annotations
 
-import asyncio
 from typing import Any, Optional
 
 from services.mindbot.core.redis_keys import TURN_COUNT_PREFIX, TURN_COUNT_TTL_SECONDS
-from services.redis.redis_client import RedisOperations, is_redis_available
+from services.mindbot.redis_async import redis_incr_with_ttl
 from utils.env_helpers import env_bool
 
 
@@ -46,11 +45,5 @@ async def conversation_user_turn_index(
         return None
     if not conversation_id_dt.strip():
         return None
-    if not is_redis_available():
-        return None
     key = f"{TURN_COUNT_PREFIX}{organization_id}:{conversation_id_dt}"
-    return await asyncio.to_thread(
-        RedisOperations.increment,
-        key,
-        TURN_COUNT_TTL_SECONDS,
-    )
+    return await redis_incr_with_ttl(key, TURN_COUNT_TTL_SECONDS)

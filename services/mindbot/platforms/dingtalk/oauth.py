@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import asyncio
 import hashlib
 import json
 import logging
@@ -10,8 +9,9 @@ from typing import Any, Optional, Tuple
 
 import aiohttp
 
+from services.mindbot.http_client import get_dingtalk_api_session
 from services.mindbot.platforms.dingtalk.constants import DING_API_BASE, PATH_OAUTH_ACCESS_TOKEN, TOKEN_TTL_SECONDS
-from services.redis.redis_client import RedisOperations, is_redis_available
+from services.mindbot.redis_async import redis_get, redis_set_ttl
 
 logger = logging.getLogger(__name__)
 
@@ -26,26 +26,6 @@ def _token_cache_key(organization_id: int, app_key: str, app_secret: str) -> str
         f"mindbot:dt_oauth:{organization_id}:"
         f"{_oauth_credential_cache_suffix(app_key, app_secret)}"
     )
-
-
-def _redis_token_get(key: str) -> Optional[str]:
-    if not is_redis_available():
-        return None
-    return RedisOperations.get(key)
-
-
-def _redis_token_set(key: str, value: str, ttl: int) -> bool:
-    if not is_redis_available():
-        return False
-    return RedisOperations.set_with_ttl(key, value, ttl)
-
-
-async def _redis_token_get_async(key: str) -> Optional[str]:
-    return await asyncio.to_thread(_redis_token_get, key)
-
-
-async def _redis_token_set_async(key: str, value: str, ttl: int) -> bool:
-    return await asyncio.to_thread(_redis_token_set, key, value, ttl)
 
 
 def _parse_access_token(data: dict[str, Any]) -> str:
@@ -118,40 +98,41 @@ async def get_access_token_with_error(
         )
 
     key = _token_cache_key(organization_id, app_key, app_secret)
-    cached = await _redis_token_get_async(key)
+    cached = await redis_get(key)
     if cached:
         return cached, ""
 
     payload = {"appKey": app_key.strip(), "appSecret": app_secret.strip()}
     timeout = aiohttp.ClientTimeout(total=30)
     try:
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(
-                f"{DING_API_BASE}{PATH_OAUTH_ACCESS_TOKEN}",
-                json=payload,
-                headers={"Content-Type": "application/json"},
-            ) as resp:
-                body_txt = await resp.text()
-                if resp.status != 200:
-                    logger.warning(
-                        "[MindBot] DingTalk accessToken failed: %s %s",
-                        resp.status,
-                        body_txt[:500],
-                    )
-                    return None, _http_oauth_error_detail(resp.status, body_txt)
-                try:
-                    data = json.loads(body_txt)
-                except json.JSONDecodeError:
-                    logger.warning("[MindBot] DingTalk accessToken invalid JSON")
-                    return None, "invalid JSON from DingTalk OAuth"
-                if not isinstance(data, dict):
-                    return None, "unexpected OAuth response type"
-                token = _parse_access_token(data)
-                if token:
-                    await _redis_token_set_async(key, token, TOKEN_TTL_SECONDS)
-                    return token, ""
-                err = _oauth_error_snippet(data)
-                if not err:
+        session = get_dingtalk_api_session()
+        async with session.post(
+            f"{DING_API_BASE}{PATH_OAUTH_ACCESS_TOKEN}",
+            json=payload,
+            headers={"Content-Type": "application/json"},
+            timeout=timeout,
+        ) as resp:
+            body_txt = await resp.text()
+            if resp.status != 200:
+                logger.warning(
+                    "[MindBot] DingTalk accessToken failed: %s %s",
+                    resp.status,
+                    body_txt[:500],
+                )
+                return None, _http_oauth_error_detail(resp.status, body_txt)
+            try:
+                data = json.loads(body_txt)
+            except json.JSONDecodeError:
+                logger.warning("[MindBot] DingTalk accessToken invalid JSON")
+                return None, "invalid JSON from DingTalk OAuth"
+            if not isinstance(data, dict):
+                return None, "unexpected OAuth response type"
+            token = _parse_access_token(data)
+            if token:
+                await redis_set_ttl(key, token, TOKEN_TTL_SECONDS)
+                return token, ""
+            err = _oauth_error_snippet(data)
+            if not err:
                     err = f"no access_token in response ({body_txt[:400]})"
                 logger.warning("[MindBot] DingTalk accessToken missing token: %s", err)
                 return None, err
