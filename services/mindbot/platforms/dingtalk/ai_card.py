@@ -343,38 +343,28 @@ async def create_and_deliver_ai_card(
         if not conv_s:
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
             return False, None, "no_conversation_id", ""
+        open_space_id = _open_space_id_group(conv_s)
+        group_deliver: dict[str, Any] = {
+            "robotCode": _im_group_robot_code(cfg),
+        }
         if sender_staff:
-            # STREAM flow: real staffId available (enterprise-internal group).
-            open_space_id = _open_space_id_group(conv_s)
-            payload = {
-                "cardTemplateId": template_id,
-                "outTrackId": out_track_id,
-                "callbackType": "STREAM",
-                "cardData": {"cardParamMap": {param_key: initial_markdown}},
-                "openSpaceId": open_space_id,
-                "imGroupOpenSpaceModel": _im_group_space_model(),
-                "imGroupOpenDeliverModel": {
-                    "robotCode": _im_group_robot_code(cfg),
-                    "recipients": [sender_staff],
-                    "atUserIds": {sender_staff: ""},
-                },
-                "userId": sender_staff,
-            }
-            update_mode = "stream"
-        else:
-            # Receiver flow: LWCP token / cross-org group — route by conversation ID.
-            # No callbackType here; using callbackType:STREAM with receiver causes HTTP 400.
-            payload = {
-                "cardTemplateId": template_id,
-                "outTrackId": out_track_id,
-                "cardData": {"cardParamMap": {param_key: initial_markdown}},
-                "receiver": {
-                    "spaceType": "IM_GROUP",
-                    "spaceId": conv_s,
-                },
-                "robotCode": _im_group_robot_code(cfg),
-            }
-            update_mode = "receiver"
+            # Real staffId: target the sender directly with an @mention.
+            group_deliver["recipients"] = [sender_staff]
+            group_deliver["atUserIds"] = {sender_staff: ""}
+        # Without recipients the card is visible to the whole group — matches the
+        # official SDK default (imGroupOpenDeliverModel contains only robotCode).
+        payload = {
+            "cardTemplateId": template_id,
+            "outTrackId": out_track_id,
+            "callbackType": "STREAM",
+            "cardData": {"cardParamMap": {param_key: initial_markdown}},
+            "openSpaceId": open_space_id,
+            "imGroupOpenSpaceModel": _im_group_space_model(),
+            "imGroupOpenDeliverModel": group_deliver,
+        }
+        if sender_staff:
+            payload["userId"] = sender_staff
+        update_mode = "stream"
     else:
         open_space_id = _open_space_id_robot(sender_staff)
         payload = {
