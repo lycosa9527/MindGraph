@@ -109,19 +109,7 @@ def _open_space_id_robot(user_id: str) -> str:
 
 
 def _im_group_space_model() -> dict[str, Any]:
-    return {
-        "supportForward": False,
-        "lastMessageI18n": {"ZH_CN": "AI", "EN_US": "AI"},
-        "searchSupport": {
-            "searchIcon": "@lALPDgQ9q8hFhlHNAXzNAqI",
-            "searchTypeName": '{"zh_CN":"MindBot","en_US":"MindBot"}',
-            "searchDesc": "MindBot",
-        },
-        "notification": {
-            "alertContent": " ",
-            "notificationOff": False,
-        },
-    }
+    return {"supportForward": True}
 
 
 def _im_robot_space_model() -> dict[str, Any]:
@@ -292,27 +280,23 @@ def _parse_group_body(
 
 def ai_card_body_deliverable(body: dict[str, Any]) -> tuple[bool, Optional[str]]:
     """
-    Fast pre-check: can ``createAndDeliver`` produce a **visible** card for ``body``?
+    Fast pre-check: can ``createAndDeliver`` run for this callback body?
 
     Returns ``(True, None)`` when delivery is possible.
     Returns ``(False, reason)`` when it cannot proceed, e.g.:
-    - ``"no_openapi_user_id"`` — only LWCP tokens; real userId required for card visibility
-    - ``"no_sender_staff"``   — no sender id at all
+    - ``"no_openapi_user_id"`` — 1:1 chat but only LWCP tokens available
+    - ``"no_sender_staff"``   — 1:1 chat with no sender id at all
     - ``"no_conversation_id"`` — group chat but no conversationId
 
-    For **groups**: a real ``userId`` is required so that ``recipients`` can be set in
-    ``imGroupOpenDeliverModel``.  Anonymous group deliver (no ``recipients``) is accepted
-    by DingTalk (HTTP 200) but the card is NOT pushed as a visible chat message, so it
-    must be treated as undeliverable here and fall back to the session webhook.
+    For **groups**: anonymous deliver (no ``recipients``) matches the official SDK
+    default and is expected to work.  Only a missing ``conversationId`` is fatal.
 
     Does **not** check org config. Pair with :func:`mindbot_ai_card_wiring_enabled`.
     """
-    is_group, conv_s, uid, err = _parse_group_body(body)
+    is_group, conv_s, _uid, err = _parse_group_body(body)
     if is_group:
         if not conv_s:
             return False, "no_conversation_id"
-        if not uid:
-            return False, err or "no_openapi_user_id"
         return True, None
     if err:
         return False, err
@@ -363,12 +347,10 @@ async def create_and_deliver_ai_card(
             logger.warning("[MindBot] ai_card_create_failed %s reason=no_conversation_id", pipeline_ctx)
             return False, None, "no_conversation_id"
         open_space_id = _open_space_id_group(conv_s)
-        im_group_dm: dict[str, Any] = {
-            "robotCode": group_deliver_robot,
-            "atUserIds": {},
-        }
+        im_group_dm: dict[str, Any] = {"robotCode": group_deliver_robot}
         if sender_staff:
             im_group_dm["recipients"] = [sender_staff]
+            im_group_dm["atUserIds"] = {sender_staff: ""}
         payload = {
             "cardTemplateId": template_id,
             "outTrackId": out_track_id,
@@ -383,7 +365,7 @@ async def create_and_deliver_ai_card(
         else:
             logger.info(
                 "[MindBot] ai_card_group_anonymous_deliver %s (no userId/recipients; "
-                "only LWCP or missing sender in callback)",
+                "LWCP or missing sender — card visible to all group members)",
                 pipeline_ctx,
             )
     else:
