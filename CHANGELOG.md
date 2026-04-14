@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.84.0] - 2026-04-14
+
+### Added
+- **MindBot / DingTalk**: Optional chain-of-thought display for streaming replies (`show_chain_of_thought`, `chain_of_thought_max_chars` on `organization_mindbot_configs`; Alembic `rev_0017`; `services/mindbot/core/reply_thinking.py`).
+- **MindBot / DingTalk**: Optional AI card updates for OpenAPI streaming via template id and stream parameter key (`dingtalk_ai_card_template_id`, `dingtalk_ai_card_param_key`; Alembic `rev_0018`; `services/mindbot/platforms/dingtalk/ai_card.py`).
+- **MindBot / Dify**: SSE event parsing (`services/mindbot/core/dify_sse_parse.py`), Dify service health checks (`services/mindbot/dify/service_health.py`), and typed HTTP error helpers (`clients/dify_http_errors.py`).
+- **MindBot / admin**: Dedicated **`MindbotAdminPage.vue`** at **`/admin/mindbot`** (legacy **`AdminPage?tab=mindbot`** redirects); **`AdminMindBotConfigDialog.vue`**, **`AdminMindBotUsagePanel.vue`**, and usage persistence via **`repositories/mindbot_usage_repo.py`**.
+- **Admin / security**: Shared sensitive-value masking for lists and dialogs (`utils/sensitive_mask.py`, `frontend/src/utils/sensitiveMask.ts`).
+- **Tests**: Coverage for SSE parsing, service health, reply thinking, AI card paths, admin usage, and related MindBot flows.
+
+### Changed
+- **MindBot**: Package layout reorganized under `services/mindbot/` (`core`, `dify`, `education`, `integrations/dingtalk`, `outbound`, `pipeline`, `session`, `telemetry`); former top-level modules moved (for example usage/metrics/callback/outbound).
+- **MindBot**: Streaming and reply pipeline updates (`services/mindbot/core/dify_stream.py`, `services/mindbot/core/dify_reply.py`); outbound text/media helpers; pipeline logging (`services/mindbot/telemetry/pipeline_log.py`).
+- **API / config**: `routers/api/mindbot.py`, `clients/dify.py`, `config/features_config.py`, `env.example`, `models/domain/mindbot_config.py`; admin user/role/school routers and MindBot tab UI aligned with the new admin page and masking.
+- **OpenClaw skill**: **`openclaw/skills/mindgraph/SKILL.md`** and **`README.md`** updated for current MindBot behavior.
+
 ## [5.83.0] - 2026-04-14
 
 ### Added
@@ -53,7 +69,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.80.0] - 2026-04-13
 
 ### Added
-- **MindBot production hardening** (`services/mindbot/mindbot_callback.py`, `services/mindbot/core/conv_gate.py`): Optional Redis **conversation gate** serializes first Dify bind per DingTalk chat across workers; optional ``MINDBOT_DEDUP_REQUIRE_REDIS`` returns 503 when Redis is unavailable and ``msgId`` dedup cannot run. Response headers may include ``X-MindBot-Organization-Id`` and ``X-MindBot-Robot-Code``; structured ``callback org_id=…`` log line; ``mindbot_metrics`` snapshots add ``by_organization_id`` and ``by_robot_code`` (per process).
+- **MindBot production hardening** (`services/mindbot/pipeline/callback.py`, `services/mindbot/core/conv_gate.py`): Optional Redis **conversation gate** serializes first Dify bind per DingTalk chat across workers; optional ``MINDBOT_DEDUP_REQUIRE_REDIS`` returns 503 when Redis is unavailable and ``msgId`` dedup cannot run. Response headers may include ``X-MindBot-Organization-Id`` and ``X-MindBot-Robot-Code``; structured ``callback org_id=…`` log line; ``mindbot_metrics`` snapshots add ``by_organization_id`` and ``by_robot_code`` (per process).
 - **Docs** (`docs/MINDBOT_PRODUCTION.md`): DingTalk callback duration expectations, capacity formula, Redis dedup fail-open vs fail-closed, Redis 8.6+ checklist, load-testing note.
 
 ### Changed
@@ -62,7 +78,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [5.79.0] - 2026-04-13
 
 ### Added
-- **MindBot / Dify streaming (optional follow-ups)** (`services/mindbot/core/dify_stream.py`, `services/mindbot/mindbot_callback.py`): Chatflow-only replies can use ``workflow_finished.data.outputs`` when there are no ``message`` deltas (optional ``MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY``). ``MINDBOT_STREAM_DEFER_TO_END`` defers all DingTalk sends until ``message_end`` (helps when ``message_replace`` runs after partial text). ``message_replace`` after at least one outbound batch logs a warning (stale partial bubbles). Redis binding for ``mindbot:dify_conv:*`` uses ``SET NX`` plus TTL refresh when the key already exists, so concurrent callbacks do not overwrite each other's Dify conversation id.
+- **MindBot / Dify streaming (optional follow-ups)** (`services/mindbot/core/dify_stream.py`, `services/mindbot/pipeline/callback.py`): Chatflow-only replies can use ``workflow_finished.data.outputs`` when there are no ``message`` deltas (optional ``MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY``). ``MINDBOT_STREAM_DEFER_TO_END`` defers all DingTalk sends until ``message_end`` (helps when ``message_replace`` runs after partial text). ``message_replace`` after at least one outbound batch logs a warning (stale partial bubbles). Redis binding for ``mindbot:dify_conv:*`` uses ``SET NX`` plus TTL refresh when the key already exists, so concurrent callbacks do not overwrite each other's Dify conversation id.
 
 ### Changed
 - **Config** (`env.example`): Documented ``MINDBOT_STREAM_DEFER_TO_END`` and ``MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY``.

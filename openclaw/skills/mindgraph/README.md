@@ -2,6 +2,8 @@
 
 This folder is versioned with the MindGraph app. It teaches OpenClaw how to call MindGraph’s HTTP API using your account token.
 
+**Agent behavior:** Most users only specify a **topic** (sent as **`prompt`**) and a **diagram type** — the eight **Thinking Maps** plus **mind map** (and **concept map** when needed). If someone wants **exact text on certain nodes**, the skill describes **`GET` diagram + `PATCH` nodes** instead of regenerating from scratch.
+
 ## Install (end users)
 
 ```bash
@@ -60,7 +62,7 @@ From the MindGraph repo root:
 ```bash
 npm i -g clawhub
 clawhub login
-clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.1.0 --tags latest
+clawhub skill publish ./openclaw/skills/mindgraph --slug mindgraph --name "MindGraph" --version 1.2.0 --tags latest
 ```
 
 Bump the **ClawHub** `--version` when `SKILL.md` or this README changes.

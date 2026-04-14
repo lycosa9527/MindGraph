@@ -46,6 +46,7 @@ async def list_admins(
     admin_stmt = select(User).where(User.role.in_(["admin", "superadmin"])).order_by(User.created_at.asc())
     admin_users = (await db.execute(admin_stmt)).scalars().all()
 
+    admin_phones = {u.phone for u in admin_users}
     env_phones = [p.strip() for p in ADMIN_PHONES if p.strip()]
 
     env_admins = []
@@ -54,6 +55,8 @@ async def list_admins(
         env_users = (await db.execute(env_stmt)).scalars().all()
         user_by_phone = {u.phone: u for u in env_users}
         for phone in env_phones:
+            if phone in admin_phones:
+                continue
             user = user_by_phone.get(phone)
             env_admins.append(
                 {
@@ -72,7 +75,6 @@ async def list_admins(
             {
                 "id": user.id,
                 "phone": masked_phone,
-                "phone_real": user.phone,
                 "name": user.name,
                 "role": user.role,
                 "source": "database",

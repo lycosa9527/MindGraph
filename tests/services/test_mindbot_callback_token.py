@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from services.mindbot.mindbot_callback_token import new_public_callback_token
+from services.mindbot.session.callback_token import new_public_callback_token
 
 
 def test_new_public_callback_token_shape() -> None:

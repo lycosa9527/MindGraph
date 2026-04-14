@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import base64
+
 import pytest
 
 from services.mindbot.core.dify_stream import mindbot_consume_dify_stream_batched
@@ -192,6 +194,35 @@ async def test_message_replace_resets_full_text() -> None:
 
 
 @pytest.mark.asyncio
+async def test_message_replace_calls_on_message_replace() -> None:
+    replace_hits = 0
+
+    async def on_batch(_chunk: str) -> tuple[bool, bool]:
+        return True, False
+
+    async def on_message_replace() -> None:
+        nonlocal replace_hits
+        replace_hits += 1
+
+    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+        _FakeDifyMessageReplace(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+        on_message_replace=on_message_replace,
+    )
+    assert err is None
+    assert conv == "c1"
+    assert full == "safe reply"
+    assert replace_hits == 1
+
+
+@pytest.mark.asyncio
 async def test_workflow_finished_outputs_when_no_message_deltas() -> None:
     sent: list[str] = []
 
@@ -326,3 +357,90 @@ async def test_stale_conversation_retries_without_conv_id() -> None:
     assert conv == "new-conv"
     assert full == "recovered"
     assert sent == ["recovered"]
+
+
+class _FakeMessageFileImage:
+    async def stream_chat(self, **_kwargs):
+        yield {"event": "message", "answer": "pic: "}
+        yield {
+            "event": "message_file",
+            "data": {
+                "type": "image",
+                "url": "https://example.com/x.png",
+            },
+        }
+        yield {"event": "message_end", "conversation_id": "c-img"}
+
+
+class _FakeTtsAfterText:
+    async def stream_chat(self, **_kwargs):
+        yield {"event": "message", "answer": "hello"}
+        yield {"event": "message_end", "conversation_id": "c-tts"}
+        chunk = base64.b64encode(b"fakevoice").decode("ascii")
+        yield {"event": "tts_message", "data": {"audio": chunk}}
+        yield {"event": "tts_message_end"}
+
+
+@pytest.mark.asyncio
+async def test_message_file_triggers_on_media() -> None:
+    sent: list[str] = []
+    media: list[tuple[str, dict]] = []
+
+    async def on_batch(chunk: str) -> tuple[bool, bool]:
+        sent.append(chunk)
+        return True, False
+
+    async def on_media(kind: str, payload: dict) -> tuple[bool, bool]:
+        media.append((kind, payload))
+        return True, False
+
+    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+        _FakeMessageFileImage(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+        on_media=on_media,
+    )
+    assert err is None
+    assert conv == "c-img"
+    assert "pic:" in full
+    assert media and media[0][0] == "image"
+    assert media[0][1].get("url", "").startswith("https://")
+
+
+@pytest.mark.asyncio
+async def test_tts_after_message_end_sends_audio() -> None:
+    sent: list[str] = []
+    media: list[tuple[str, dict]] = []
+
+    async def on_batch(chunk: str) -> tuple[bool, bool]:
+        sent.append(chunk)
+        return True, False
+
+    async def on_media(kind: str, payload: dict) -> tuple[bool, bool]:
+        media.append((kind, payload))
+        return True, False
+
+    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+        _FakeTtsAfterText(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+        on_media=on_media,
+    )
+    assert err is None
+    assert conv == "c-tts"
+    assert full == "hello"
+    assert any(k == "audio" for k, _ in media)
+    audio_payload = next(p for k, p in media if k == "audio")
+    assert audio_payload.get("bytes") == b"fakevoice"

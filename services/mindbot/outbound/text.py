@@ -9,6 +9,7 @@ from typing import Any, Optional
 import aiohttp
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from services.mindbot.telemetry.pipeline_log import session_webhook_host
 from utils.env_helpers import env_bool
 
 from services.mindbot.platforms.dingtalk import (
@@ -37,6 +38,7 @@ async def reply_via_openapi(
     answer: str,
     *,
     stream_chunk: bool = False,
+    pipeline_ctx: str = "",
 ) -> tuple[bool, bool]:
     """
     Try OpenAPI send. Returns (success, token_failed).
@@ -78,7 +80,21 @@ async def reply_via_openapi(
             msg_key,
             msg_param,
         )
-        return (res is not None, False)
+        ok = res is not None
+        if ok:
+            log_fn = logger.debug if stream_chunk else logger.info
+            log_fn(
+                "[MindBot] outbound_openapi %s chat=group chunk=%s answer_chars=%s",
+                pipeline_ctx,
+                stream_chunk,
+                len(answer),
+            )
+        else:
+            logger.warning(
+                "[MindBot] outbound_openapi_failed %s chat=group",
+                pipeline_ctx,
+            )
+        return (ok, False)
     if not sender_s:
         logger.warning("[MindBot] OpenAPI private fallback: missing senderStaffId")
         return False, False
@@ -89,7 +105,21 @@ async def reply_via_openapi(
         msg_key,
         msg_param,
     )
-    return (res is not None, False)
+    ok = res is not None
+    if ok:
+        log_fn = logger.debug if stream_chunk else logger.info
+        log_fn(
+            "[MindBot] outbound_openapi %s chat=oto chunk=%s answer_chars=%s",
+            pipeline_ctx,
+            stream_chunk,
+            len(answer),
+        )
+    else:
+        logger.warning(
+            "[MindBot] outbound_openapi_failed %s chat=oto",
+            pipeline_ctx,
+        )
+    return (ok, False)
 
 
 async def post_session_webhook(
@@ -97,8 +127,10 @@ async def post_session_webhook(
     answer: str,
     *,
     stream_chunk: bool = False,
+    pipeline_ctx: str = "",
 ) -> bool:
     out_payload = build_session_webhook_payload(answer, stream_chunk=stream_chunk)
+    host = session_webhook_host(session_webhook)
     timeout = aiohttp.ClientTimeout(total=30)
     try:
         async with aiohttp.ClientSession(timeout=timeout) as http:
@@ -110,14 +142,30 @@ async def post_session_webhook(
                 if r.status >= 400:
                     body_txt = await r.text()
                     logger.warning(
-                        "[MindBot] sessionWebhook POST failed: %s %s",
+                        "[MindBot] outbound_session_webhook_http %s host=%s status=%s body=%s",
+                        pipeline_ctx,
+                        host,
                         r.status,
                         body_txt[:500],
                     )
                     return False
     except Exception as exc:
-        logger.exception("[MindBot] sessionWebhook request error: %s", exc)
+        logger.exception(
+            "[MindBot] outbound_session_webhook_error %s host=%s: %s",
+            pipeline_ctx,
+            host,
+            exc,
+        )
         return False
+    payload_chars = len(json.dumps(out_payload, ensure_ascii=False))
+    log_ok = logger.debug if stream_chunk else logger.info
+    log_ok(
+        "[MindBot] outbound_session_webhook_ok %s host=%s chunk=%s payload_chars=%s",
+        pipeline_ctx,
+        host,
+        stream_chunk,
+        payload_chars,
+    )
     return True
 
 
@@ -126,10 +174,23 @@ async def send_one_reply_chunk(
     body: dict[str, Any],
     session_webhook_valid: Optional[str],
     chunk: str,
+    *,
+    pipeline_ctx: str = "",
 ) -> tuple[bool, bool]:
     """Send one streaming segment: session webhook (text) then OpenAPI ``sampleText`` fallback."""
+    logger.debug(
+        "[MindBot] outbound_text_chunk %s chars=%s route=%s",
+        pipeline_ctx,
+        len(chunk),
+        "session_webhook" if session_webhook_valid else "openapi_only",
+    )
     if session_webhook_valid:
-        if await post_session_webhook(session_webhook_valid, chunk, stream_chunk=True):
+        if await post_session_webhook(
+            session_webhook_valid,
+            chunk,
+            stream_chunk=True,
+            pipeline_ctx=pipeline_ctx,
+        ):
             return True, False
-        return await reply_via_openapi(cfg, body, chunk, stream_chunk=True)
-    return await reply_via_openapi(cfg, body, chunk, stream_chunk=True)
+        return await reply_via_openapi(cfg, body, chunk, stream_chunk=True, pipeline_ctx=pipeline_ctx)
+    return await reply_via_openapi(cfg, body, chunk, stream_chunk=True, pipeline_ctx=pipeline_ctx)

@@ -8,7 +8,7 @@ import { nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { ElMessageBox } from 'element-plus'
 
-import { Delete, Loading, Lock, Refresh, Share, Unlock } from '@element-plus/icons-vue'
+import { Delete, Hide, Loading, Lock, Refresh, Share, Unlock, View } from '@element-plus/icons-vue'
 
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
@@ -65,6 +65,31 @@ const lockLoading = ref(false)
 const deleteLoading = ref(false)
 const expiresAtEdit = ref<string | null>(null)
 const expiresAtSaving = ref(false)
+
+/** True when invitationCode holds the full code (after reveal or refresh); list API is masked only. */
+const revealInvitation = ref(false)
+
+async function toggleRevealInvitation() {
+  if (revealInvitation.value) {
+    revealInvitation.value = false
+    invitationCode.value = props.orgInvitationCode ?? ''
+    return
+  }
+  if (props.orgId == null) return
+  try {
+    const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || t('admin.trendChartErrors.refreshFailed'))
+      return
+    }
+    const data = (await res.json()) as { invitation_code?: string }
+    invitationCode.value = data.invitation_code ?? ''
+    revealInvitation.value = true
+  } catch {
+    notify.error(t('admin.trendChartErrors.refreshInvitationCodeFailed'))
+  }
+}
 
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
@@ -345,6 +370,7 @@ async function refreshInvitationCode() {
     }
     const data = await res.json()
     invitationCode.value = data.invitation_code ?? invitationCode.value
+    revealInvitation.value = true
     notify.success(t('notification.saved'))
     emit('refresh')
   } catch {
@@ -396,16 +422,28 @@ async function removeManager(userId: number) {
   }
 }
 
-function shareMessageText(): string {
+function shareMessageTextForCode(code: string): string {
   return t('admin.shareInviteMessage', {
-    code: invitationCode.value,
+    code,
     siteUrl: publicSiteUrl.value,
   })
 }
 
 async function copyShareMessage() {
+  if (props.orgId == null) return
   try {
-    await navigator.clipboard.writeText(shareMessageText())
+    let code = invitationCode.value
+    if (!revealInvitation.value) {
+      const res = await apiRequest(`/api/auth/admin/organizations/${props.orgId}/invitation-code`)
+      if (!res.ok) {
+        const data = await res.json().catch(() => ({}))
+        notify.error((data.detail as string) || t('admin.trendChartErrors.refreshFailed'))
+        return
+      }
+      const data = (await res.json()) as { invitation_code?: string }
+      code = data.invitation_code ?? ''
+    }
+    await navigator.clipboard.writeText(shareMessageTextForCode(code))
     notify.success(t('notification.copied'))
   } catch {
     notify.error(t('notification.copyFailed'))
@@ -528,6 +566,7 @@ watch(
   () => props.visible,
   (v) => {
     if (v) {
+      revealInvitation.value = false
       load()
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
@@ -557,6 +596,7 @@ watch(
     ] as const,
   () => {
     if (props.visible) {
+      revealInvitation.value = false
       load()
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
@@ -579,8 +619,10 @@ onBeforeUnmount(() => {
   <el-dialog
     :model-value="visible"
     :title="chartTitle"
-    width="640px"
+    class="admin-org-dialog"
+    width="720px"
     destroy-on-close
+    align-center
     @update:model-value="(v: boolean) => emit('update:visible', v)"
     @close="handleClose"
   >
@@ -596,17 +638,17 @@ onBeforeUnmount(() => {
       </el-icon>
     </div>
     <template v-else>
-      <div class="relative h-64 min-h-[256px] w-full">
+      <div class="relative h-64 min-h-[220px] sm:min-h-[256px] w-full min-w-0">
         <canvas
           ref="chartRef"
           class="block w-full h-full"
         />
       </div>
       <div class="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <div class="grid grid-cols-1 min-[400px]:grid-cols-2 lg:grid-cols-4 gap-3">
           <el-card
             shadow="hover"
-            class="token-period-card cursor-pointer"
+            class="token-period-card min-w-0 cursor-pointer"
             :class="{ 'ring-2 ring-primary-500': period === 'today' }"
             @click="switchPeriod('today')"
           >
@@ -619,7 +661,7 @@ onBeforeUnmount(() => {
           </el-card>
           <el-card
             shadow="hover"
-            class="token-period-card cursor-pointer"
+            class="token-period-card min-w-0 cursor-pointer"
             :class="{ 'ring-2 ring-primary-500': period === 'week' }"
             @click="switchPeriod('week')"
           >
@@ -632,7 +674,7 @@ onBeforeUnmount(() => {
           </el-card>
           <el-card
             shadow="hover"
-            class="token-period-card cursor-pointer"
+            class="token-period-card min-w-0 cursor-pointer"
             :class="{ 'ring-2 ring-primary-500': period === 'month' }"
             @click="switchPeriod('month')"
           >
@@ -645,7 +687,7 @@ onBeforeUnmount(() => {
           </el-card>
           <el-card
             shadow="hover"
-            class="token-period-card cursor-pointer"
+            class="token-period-card min-w-0 cursor-pointer"
             :class="{ 'ring-2 ring-primary-500': period === 'total' }"
             @click="switchPeriod('total')"
           >
@@ -668,17 +710,18 @@ onBeforeUnmount(() => {
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
             {{ t('admin.displayNameHint') }}
           </p>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
             <el-input
               v-model="displayNameEdit"
               :placeholder="orgName"
               size="small"
               clearable
-              class="flex-1"
+              class="min-w-0 flex-1"
             />
             <el-button
               type="primary"
               size="small"
+              class="admin-org-pill-btn shrink-0"
               :loading="displayNameSaving"
               @click="saveDisplayName"
             >
@@ -686,9 +729,9 @@ onBeforeUnmount(() => {
             </el-button>
           </div>
         </div>
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium">{{ t('admin.status') }}</span>
-          <div class="flex items-center gap-2">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <span class="text-sm font-medium shrink-0">{{ t('admin.status') }}</span>
+          <div class="flex flex-wrap items-center gap-2 min-w-0">
             <el-tag
               :type="orgActiveState ? 'success' : 'danger'"
               size="small"
@@ -698,6 +741,7 @@ onBeforeUnmount(() => {
             <el-button
               :loading="lockLoading"
               size="small"
+              class="admin-org-pill-btn-muted"
               :type="orgActiveState ? 'warning' : 'success'"
               @click="toggleLock"
             >
@@ -714,7 +758,7 @@ onBeforeUnmount(() => {
           <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
             {{ t('admin.expirationDateHint') }}
           </p>
-          <div class="flex items-center gap-2">
+          <div class="flex flex-col gap-2 sm:flex-row sm:items-stretch">
             <el-date-picker
               v-model="expiresAtEdit"
               type="date"
@@ -722,11 +766,12 @@ onBeforeUnmount(() => {
               value-format="YYYY-MM-DD"
               size="small"
               clearable
-              class="flex-1"
+              class="min-w-0 flex-1"
             />
             <el-button
               type="primary"
               size="small"
+              class="admin-org-pill-btn shrink-0"
               :loading="expiresAtSaving"
               @click="saveExpiresAt"
             >
@@ -734,29 +779,59 @@ onBeforeUnmount(() => {
             </el-button>
           </div>
         </div>
-        <div class="flex items-center justify-between">
-          <span class="text-sm font-medium">{{ t('admin.invitationCode') }}</span>
-          <div class="flex items-center gap-2">
-            <el-tag type="info">{{ invitationCode }}</el-tag>
-            <el-button
-              :loading="refreshCodeLoading"
-              size="small"
-              @click="refreshInvitationCode"
-            >
-              <el-icon class="mr-1"><Refresh /></el-icon>
-              {{ t('admin.refreshInvitationCode') }}
-            </el-button>
-            <el-tooltip
-              :content="t('admin.shareInviteTitle')"
-              placement="top"
-            >
-              <el-button
-                size="small"
-                @click="copyShareMessage"
+        <div>
+          <p class="text-sm font-medium mb-1">{{ t('admin.invitationCode') }}</p>
+          <p class="text-xs text-gray-500 dark:text-gray-400 mb-2">
+            {{ t('admin.invitationCodeMaskedHint') }}
+          </p>
+          <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+            <div class="flex min-w-0 flex-wrap items-center gap-2">
+              <el-tag
+                type="info"
+                class="font-mono text-xs max-w-full break-all !h-auto py-1"
               >
-                <el-icon><Share /></el-icon>
+                {{ invitationCode }}
+              </el-tag>
+              <el-tooltip
+                :content="revealInvitation ? t('admin.sensitiveHide') : t('admin.sensitiveReveal')"
+                placement="top"
+              >
+                <el-button
+                  link
+                  type="primary"
+                  size="small"
+                  class="shrink-0"
+                  @click="toggleRevealInvitation"
+                >
+                  <el-icon><Hide v-if="revealInvitation" /><View v-else /></el-icon>
+                </el-button>
+              </el-tooltip>
+            </div>
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <el-button
+                :loading="refreshCodeLoading"
+                size="small"
+                class="admin-org-pill-btn-muted"
+                @click="refreshInvitationCode"
+              >
+                <el-icon class="mr-1"><Refresh /></el-icon>
+                {{ t('admin.refreshInvitationCode') }}
               </el-button>
-            </el-tooltip>
+              <el-tooltip
+                :content="t('admin.shareInviteTitle')"
+                placement="top"
+              >
+                <el-button
+                  size="small"
+                  type="primary"
+                  class="admin-org-pill-btn"
+                  @click="copyShareMessage"
+                >
+                  <el-icon class="mr-1"><Share /></el-icon>
+                  {{ t('admin.copyShareMessage') }}
+                </el-button>
+              </el-tooltip>
+            </div>
           </div>
         </div>
 
@@ -777,7 +852,7 @@ onBeforeUnmount(() => {
               :key="m.id"
               class="flex items-center justify-between py-1 px-2 rounded bg-gray-50 dark:bg-gray-800"
             >
-              <span>{{ m.name || m.phone }}</span>
+              <span class="min-w-0 break-words">{{ m.name || m.phone }}</span>
               <el-button
                 type="danger"
                 link
@@ -789,13 +864,13 @@ onBeforeUnmount(() => {
             </div>
             <div
               v-if="orgUsers.length > 0"
-              class="flex items-center gap-2 mt-2"
+              class="flex flex-col gap-2 mt-2 sm:flex-row sm:items-center"
             >
               <el-select
                 v-model="addManagerSelect"
                 :placeholder="t('admin.setManager')"
                 size="small"
-                style="width: 200px"
+                class="w-full min-w-0 sm:max-w-xs"
                 clearable
                 @change="(v: number | null) => v != null && setManager(v)"
               >
@@ -812,17 +887,23 @@ onBeforeUnmount(() => {
       </div>
     </template>
     <template #footer>
-      <div class="flex justify-end gap-2">
+      <div class="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:flex-wrap">
+        <el-button
+          class="admin-org-pill-btn-ghost w-full sm:w-auto"
+          @click="close"
+        >
+          {{ t('common.close') }}
+        </el-button>
         <el-button
           v-if="type === 'org' && orgId"
           type="danger"
+          class="admin-org-pill-btn-danger w-full sm:w-auto"
           :loading="deleteLoading"
           @click="deleteOrganization"
         >
           <el-icon class="mr-1"><Delete /></el-icon>
           {{ t('admin.deleteOrganization') }}
         </el-button>
-        <el-button @click="close">{{ t('common.close') }}</el-button>
       </div>
     </template>
   </el-dialog>
@@ -831,5 +912,38 @@ onBeforeUnmount(() => {
 <style scoped>
 .token-period-card :deep(.el-card__body) {
   padding: 12px 16px;
+}
+
+.admin-org-dialog {
+  width: min(92vw, 720px) !important;
+  max-width: 100%;
+}
+
+.admin-org-pill-btn.el-button--primary {
+  border-radius: 9999px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-weight: 500;
+}
+
+.admin-org-pill-btn-muted.el-button {
+  border-radius: 9999px;
+  padding-left: 0.875rem;
+  padding-right: 0.875rem;
+  font-weight: 500;
+}
+
+.admin-org-pill-btn-ghost.el-button {
+  border-radius: 9999px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-weight: 500;
+}
+
+.admin-org-pill-btn-danger.el-button--danger {
+  border-radius: 9999px;
+  padding-left: 1rem;
+  padding-right: 1rem;
+  font-weight: 500;
 }
 </style>

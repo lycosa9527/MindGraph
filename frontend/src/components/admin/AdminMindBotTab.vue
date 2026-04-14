@@ -4,42 +4,25 @@
  */
 import { computed, onMounted, ref } from 'vue'
 
-import { DocumentCopy, Plus } from '@element-plus/icons-vue'
 import { ElMessageBox } from 'element-plus'
 
+import AdminMindBotConfigDialog from '@/components/admin/AdminMindBotConfigDialog.vue'
+import type {
+  MindbotConfigFormState,
+  MindbotConfigRow,
+  OrgOption,
+} from '@/components/admin/mindbotConfigTypes'
 import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useFeatureFlags } from '@/composables/core/useFeatureFlags'
 import { useAuthStore } from '@/stores/auth'
 import { apiRequest } from '@/utils/apiClient'
+import { maskSensitiveDisplay } from '@/utils/sensitiveMask'
 
 const { t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const { publicSiteUrl } = usePublicSiteUrl()
 const { featureMindbot } = useFeatureFlags()
-
-interface MindbotConfigRow {
-  id: number
-  organization_id: number
-  public_callback_token: string
-  dingtalk_robot_code: string
-  dingtalk_app_secret_masked: string
-  dify_api_key_masked: string
-  dingtalk_client_id: string | null
-  dingtalk_event_token_set: boolean
-  dingtalk_event_aes_key_set: boolean
-  dingtalk_event_owner_key: string | null
-  dify_api_base_url: string
-  dify_timeout_seconds: number
-  dify_inputs_json: string | null
-  is_enabled: boolean
-}
-
-interface OrgOption {
-  id: number
-  name: string
-  display_name?: string | null
-}
 
 const loading = ref(true)
 const saving = ref(false)
@@ -69,18 +52,24 @@ function buildCallbackUrlByToken(token: string): string {
 
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
+const rotating = ref(false)
 const formOrgId = ref<number | null>(null)
 /** True when user chose to type a new DingTalk / Dify secret (edit mode). */
 const dingtalkSecretReplaceMode = ref(false)
 const difyApiKeyReplaceMode = ref(false)
 
-const form = ref({
+const form = ref<MindbotConfigFormState>({
   dingtalk_robot_code: '',
+  dingtalk_client_id: '',
   dingtalk_app_secret: '',
   dify_api_base_url: '',
   dify_api_key: '',
   dify_inputs_json: '',
   dify_timeout_seconds: 300,
+  show_chain_of_thought: false,
+  chain_of_thought_max_chars: 4000,
+  dingtalk_ai_card_template_id: '',
+  dingtalk_ai_card_param_key: '',
   is_enabled: true,
 })
 
@@ -100,11 +89,16 @@ function orgNameById(organizationId: number): string {
 function resetForm(): void {
   form.value = {
     dingtalk_robot_code: '',
+    dingtalk_client_id: '',
     dingtalk_app_secret: '',
     dify_api_base_url: '',
     dify_api_key: '',
     dify_inputs_json: '',
     dify_timeout_seconds: 300,
+    show_chain_of_thought: false,
+    chain_of_thought_max_chars: 4000,
+    dingtalk_ai_card_template_id: '',
+    dingtalk_ai_card_param_key: '',
     is_enabled: true,
   }
   formOrgId.value = null
@@ -115,11 +109,16 @@ function resetForm(): void {
 function fillForm(row: MindbotConfigRow): void {
   form.value = {
     dingtalk_robot_code: row.dingtalk_robot_code,
+    dingtalk_client_id: row.dingtalk_client_id ?? '',
     dingtalk_app_secret: '',
     dify_api_base_url: row.dify_api_base_url,
     dify_api_key: '',
     dify_inputs_json: row.dify_inputs_json ?? '',
     dify_timeout_seconds: row.dify_timeout_seconds,
+    show_chain_of_thought: Boolean(row.show_chain_of_thought),
+    chain_of_thought_max_chars: row.chain_of_thought_max_chars,
+    dingtalk_ai_card_template_id: row.dingtalk_ai_card_template_id ?? '',
+    dingtalk_ai_card_param_key: row.dingtalk_ai_card_param_key ?? '',
     is_enabled: row.is_enabled,
   }
   formOrgId.value = row.organization_id
@@ -149,6 +148,8 @@ const editingOrgRow = computed(() => {
   }
   return configs.value.find((c) => c.organization_id === oid)
 })
+
+const canLoadUsage = computed(() => dialogMode.value === 'edit' && editingOrgRow.value != null)
 
 /** Manager create dialog: prefer profile school name (schools list may be empty). */
 const managerSchoolDisplayName = computed(() => {
@@ -234,8 +235,13 @@ async function save(): Promise<void> {
   try {
     const payload: Record<string, unknown> = {
       dingtalk_robot_code: form.value.dingtalk_robot_code.trim(),
+      dingtalk_client_id: form.value.dingtalk_client_id.trim() || null,
       dify_api_base_url: form.value.dify_api_base_url.trim(),
       dify_timeout_seconds: form.value.dify_timeout_seconds,
+      show_chain_of_thought: form.value.show_chain_of_thought,
+      chain_of_thought_max_chars: form.value.chain_of_thought_max_chars,
+      dingtalk_ai_card_template_id: form.value.dingtalk_ai_card_template_id.trim() || null,
+      dingtalk_ai_card_param_key: form.value.dingtalk_ai_card_param_key.trim() || null,
       is_enabled: form.value.is_enabled,
     }
     const inputsRaw = form.value.dify_inputs_json.trim()
@@ -275,11 +281,50 @@ async function save(): Promise<void> {
       notify.error(t('admin.mindbot.saveError'))
       return
     }
+    const saved = (await res.json()) as MindbotConfigRow
     notify.success(t('admin.mindbot.saved'))
-    dialogVisible.value = false
     await load()
+    const row = configs.value.find((c) => c.organization_id === oid) ?? saved
+    fillForm(row)
+    dialogMode.value = 'edit'
   } finally {
     saving.value = false
+  }
+}
+
+async function rotateCallbackUrl(): Promise<void> {
+  const oid = formOrgId.value
+  if (oid == null) {
+    return
+  }
+  try {
+    await ElMessageBox.confirm(t('admin.mindbot.rotateConfirm'), {
+      type: 'warning',
+    })
+  } catch {
+    return
+  }
+  rotating.value = true
+  try {
+    const res = await apiRequest(`/api/mindbot/admin/configs/${oid}/rotate-callback-token`, {
+      method: 'POST',
+    })
+    if (!res.ok) {
+      notify.error(t('admin.mindbot.loadError'))
+      return
+    }
+    const row = (await res.json()) as MindbotConfigRow
+    const idx = configs.value.findIndex((c) => c.organization_id === oid)
+    if (idx >= 0) {
+      configs.value[idx] = row
+    }
+    const merged = configs.value.find((c) => c.organization_id === oid)
+    if (merged) {
+      fillForm(merged)
+    }
+    notify.success(t('admin.mindbot.callbackRotated'))
+  } finally {
+    rotating.value = false
   }
 }
 
@@ -314,6 +359,13 @@ async function copyUrl(text: string): Promise<void> {
 onMounted(() => {
   void load()
 })
+
+const isAddSchoolDisabled = computed(() => loading.value || orgsWithoutConfig.value.length === 0)
+
+defineExpose({
+  openCreate,
+  isAddSchoolDisabled,
+})
 </script>
 
 <template>
@@ -334,25 +386,13 @@ onMounted(() => {
         class="border border-gray-200 dark:border-gray-700"
       >
         <template #header>
-          <div class="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
-            <div class="min-w-0 space-y-1">
-              <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                {{ t('admin.mindbot.title') }}
-              </span>
-              <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 font-normal">
-                {{ t('admin.mindbot.introHttpOnly') }}
-              </p>
-            </div>
-            <el-button
-              type="primary"
-              size="small"
-              class="shrink-0 self-start"
-              :disabled="orgsWithoutConfig.length === 0"
-              @click="openCreate"
-            >
-              <el-icon class="mr-1"><Plus /></el-icon>
-              {{ t('admin.mindbot.create') }}
-            </el-button>
+          <div class="min-w-0 space-y-1">
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {{ t('admin.mindbot.title') }}
+            </span>
+            <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 font-normal">
+              {{ t('admin.mindbot.introHttpOnly') }}
+            </p>
           </div>
         </template>
 
@@ -360,18 +400,9 @@ onMounted(() => {
           v-if="!loading && configs.length === 0"
           class="rounded-md border border-dashed border-gray-200 dark:border-gray-600 py-14 px-4 text-center"
         >
-          <p class="text-sm text-gray-500 dark:text-gray-400 mb-4">
+          <p class="text-sm text-gray-500 dark:text-gray-400">
             {{ t('admin.mindbot.emptyState') }}
           </p>
-          <el-button
-            type="primary"
-            size="small"
-            :disabled="orgsWithoutConfig.length === 0"
-            @click="openCreate"
-          >
-            <el-icon class="mr-1"><Plus /></el-icon>
-            {{ t('admin.mindbot.create') }}
-          </el-button>
         </div>
         <el-table
           v-else-if="configs.length > 0"
@@ -386,7 +417,9 @@ onMounted(() => {
             min-width="160"
           >
             <template #default="{ row }">
-              <span class="text-gray-900 dark:text-gray-100">{{ orgNameById(row.organization_id) }}</span>
+              <span class="text-gray-900 dark:text-gray-100">{{
+                orgNameById(row.organization_id)
+              }}</span>
             </template>
           </el-table-column>
           <el-table-column
@@ -395,7 +428,9 @@ onMounted(() => {
             min-width="140"
           >
             <template #default="{ row }">
-              <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{ row.dingtalk_robot_code }}</code>
+              <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{
+                maskSensitiveDisplay(row.dingtalk_robot_code)
+              }}</code>
             </template>
           </el-table-column>
           <el-table-column
@@ -419,22 +454,26 @@ onMounted(() => {
             fixed="right"
           >
             <template #default="{ row }">
-              <el-button
-                link
-                type="primary"
-                size="small"
-                @click="openEdit(row)"
-              >
-                {{ t('admin.mindbot.edit') }}
-              </el-button>
-              <el-button
-                link
-                type="danger"
-                size="small"
-                @click="removeRow(row)"
-              >
-                {{ t('admin.mindbot.delete') }}
-              </el-button>
+              <div class="flex flex-wrap items-center gap-2">
+                <el-button
+                  type="primary"
+                  size="small"
+                  plain
+                  class="mindbot-pill mindbot-pill--table-edit"
+                  @click="openEdit(row)"
+                >
+                  {{ t('admin.mindbot.edit') }}
+                </el-button>
+                <el-button
+                  type="danger"
+                  size="small"
+                  plain
+                  class="mindbot-pill mindbot-pill--table-delete"
+                  @click="removeRow(row)"
+                >
+                  {{ t('admin.mindbot.delete') }}
+                </el-button>
+              </div>
             </template>
           </el-table-column>
         </el-table>
@@ -468,7 +507,7 @@ onMounted(() => {
           <el-button
             type="primary"
             size="small"
-            class="shrink-0"
+            class="mindbot-pill mindbot-pill--header shrink-0"
             @click="openManagerMindbotDialog"
           >
             {{ t('admin.mindbot.openSettings') }}
@@ -477,230 +516,83 @@ onMounted(() => {
       </el-card>
     </template>
 
-    <el-dialog
+    <AdminMindBotConfigDialog
       v-if="isAdmin || isManager"
       v-model="dialogVisible"
-      :title="dialogMode === 'create' ? t('admin.mindbot.create') : t('admin.mindbot.edit')"
-      width="min(520px, 94vw)"
-      destroy-on-close
-      append-to-body
-      align-center
+      v-model:form="form"
+      v-model:form-org-id="formOrgId"
+      :mode="dialogMode"
+      :editing-org-row="editingOrgRow"
+      :orgs-without-config="orgsWithoutConfig"
+      :is-admin="isAdmin"
+      :feature-mindbot="featureMindbot"
+      :saving="saving"
+      :rotating="rotating"
+      :dingtalk-secret-replace-mode="dingtalkSecretReplaceMode"
+      :dify-api-key-replace-mode="difyApiKeyReplaceMode"
+      :manager-school-display-name="managerSchoolDisplayName"
+      :can-load-usage="canLoadUsage"
+      :build-callback-url="buildCallbackUrlByToken"
+      @save="save"
       @closed="resetForm"
-    >
-      <el-form
-        label-position="top"
-        class="space-y-1"
-      >
-        <div
-          v-if="dialogMode === 'edit' && editingOrgRow?.public_callback_token"
-          class="mb-5 rounded-md border border-neutral-200 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/40"
-        >
-          <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-1">
-            {{ t('admin.mindbot.schoolCallbackUrl') }}
-          </div>
-          <p class="text-xs text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
-            {{ t('admin.mindbot.schoolCallbackUrlHint') }}
-          </p>
-          <div class="flex flex-col gap-2 sm:flex-row sm:items-start sm:gap-3">
-            <code
-              class="block flex-1 min-w-0 break-all rounded border border-neutral-200 bg-white px-2.5 py-2 text-xs font-mono text-gray-900 dark:border-neutral-600 dark:bg-neutral-950 dark:text-neutral-100"
-            >{{ buildCallbackUrlByToken(editingOrgRow.public_callback_token) }}</code>
-            <el-button
-              size="small"
-              class="shrink-0"
-              :icon="DocumentCopy"
-              @click="copyUrl(buildCallbackUrlByToken(editingOrgRow.public_callback_token))"
-            >
-              {{ t('admin.mindbot.copyUrl') }}
-            </el-button>
-          </div>
-        </div>
-        <div
-          v-else-if="dialogMode === 'create'"
-          class="mb-5 rounded-md border border-amber-200/80 bg-amber-50/80 px-3 py-2.5 text-xs text-amber-900 dark:border-amber-900/50 dark:bg-amber-950/30 dark:text-amber-100/90 leading-relaxed"
-        >
-          {{ t('admin.mindbot.callbackUrlAfterSave') }}
-        </div>
-
-        <el-form-item
-          v-if="dialogMode === 'create' && isAdmin"
-          :label="t('admin.mindbot.orgSelect')"
-        >
-          <el-select
-            v-model="formOrgId"
-            class="w-full"
-            filterable
-          >
-            <el-option
-              v-for="o in orgsWithoutConfig"
-              :key="o.id"
-              :label="orgLabel(o)"
-              :value="o.id"
-            />
-          </el-select>
-        </el-form-item>
-
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2 mt-1">
-          {{ t('admin.mindbot.sectionDingTalk') }}
-        </div>
-        <el-form-item
-          v-if="dialogMode === 'create' && !isAdmin"
-          class="!mb-2"
-        >
-          <template #label>
-            <span class="text-sm font-normal text-gray-700 dark:text-gray-300">{{ t('admin.mindbot.orgSelect') }}</span>
-          </template>
-          <span class="text-sm text-gray-900 dark:text-gray-100">{{ managerSchoolDisplayName }}</span>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
-          <el-input
-            v-model="form.dingtalk_robot_code"
-            clearable
-          />
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-            {{ t('admin.mindbot.dingtalkRobotCodeHint') }}
-          </div>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
-          <div
-            v-if="
-              dialogMode === 'edit'
-                && editingOrgRow?.dingtalk_app_secret_masked
-                && !dingtalkSecretReplaceMode
-            "
-            class="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2"
-          >
-            <el-input
-              :model-value="editingOrgRow.dingtalk_app_secret_masked"
-              type="text"
-              readonly
-              class="font-mono text-sm flex-1 min-w-0"
-            />
-            <el-button
-              class="shrink-0"
-              size="small"
-              @click="startReplaceDingtalkSecret"
-            >
-              {{ t('admin.mindbot.replaceSecret') }}
-            </el-button>
-          </div>
-          <el-input
-            v-else
-            v-model="form.dingtalk_app_secret"
-            type="password"
-            show-password
-            autocomplete="new-password"
-            clearable
-          />
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-            <template v-if="dialogMode === 'create'">
-              {{ t('admin.mindbot.dingtalkAppSecretHint') }}
-            </template>
-            <template
-              v-else-if="
-                editingOrgRow?.dingtalk_app_secret_masked && !dingtalkSecretReplaceMode
-              "
-            >
-              {{ t('admin.mindbot.dingtalkAppSecretMaskedHint') }}
-            </template>
-            <template v-else>
-              {{ t('admin.mindbot.dingtalkAppSecretReplaceHint') }}
-            </template>
-          </div>
-        </el-form-item>
-
-        <el-divider class="!my-5" />
-
-        <div class="text-[11px] font-semibold uppercase tracking-wider text-gray-500 dark:text-gray-400 mb-2">
-          {{ t('admin.mindbot.sectionDify') }}
-        </div>
-        <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
-          <el-input
-            v-model="form.dify_api_base_url"
-            clearable
-          />
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.difyApiKey')">
-          <div
-            v-if="
-              dialogMode === 'edit'
-                && editingOrgRow?.dify_api_key_masked
-                && !difyApiKeyReplaceMode
-            "
-            class="flex flex-col gap-2 sm:flex-row sm:items-stretch sm:gap-2"
-          >
-            <el-input
-              :model-value="editingOrgRow.dify_api_key_masked"
-              type="text"
-              readonly
-              class="font-mono text-sm flex-1 min-w-0"
-            />
-            <el-button
-              class="shrink-0"
-              size="small"
-              @click="startReplaceDifyApiKey"
-            >
-              {{ t('admin.mindbot.replaceSecret') }}
-            </el-button>
-          </div>
-          <el-input
-            v-else
-            v-model="form.dify_api_key"
-            type="password"
-            show-password
-            autocomplete="new-password"
-            clearable
-          />
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-            <template v-if="dialogMode === 'create'">
-              {{ t('admin.mindbot.difyApiKeyHint') }}
-            </template>
-            <template
-              v-else-if="editingOrgRow?.dify_api_key_masked && !difyApiKeyReplaceMode"
-            >
-              {{ t('admin.mindbot.difyApiKeyMaskedHint') }}
-            </template>
-            <template v-else>
-              {{ t('admin.mindbot.difyApiKeyReplaceHint') }}
-            </template>
-          </div>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.difyInputsJson')">
-          <el-input
-            v-model="form.dify_inputs_json"
-            type="textarea"
-            :rows="3"
-            class="font-mono text-sm"
-          />
-          <div class="text-xs text-gray-500 dark:text-gray-400 mt-1.5 leading-relaxed">
-            {{ t('admin.mindbot.difyInputsJsonHint') }}
-          </div>
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.difyTimeout')">
-          <el-input-number
-            v-model="form.dify_timeout_seconds"
-            :min="5"
-            :max="600"
-            class="w-full sm:w-40"
-            controls-position="right"
-          />
-        </el-form-item>
-        <el-form-item :label="t('admin.mindbot.enabled')">
-          <el-switch v-model="form.is_enabled" />
-        </el-form-item>
-      </el-form>
-      <template #footer>
-        <div class="flex justify-end gap-2">
-          <el-button @click="dialogVisible = false">{{ t('admin.cancel') }}</el-button>
-          <el-button
-            type="primary"
-            :loading="saving"
-            @click="save"
-          >
-            {{ t('admin.mindbot.save') }}
-          </el-button>
-        </div>
-      </template>
-    </el-dialog>
+      @rotate-callback="rotateCallbackUrl"
+      @copy-url="copyUrl"
+      @replace-dingtalk-secret="startReplaceDingtalkSecret"
+      @replace-dify-api-key="startReplaceDifyApiKey"
+    />
   </div>
 </template>
+
+<style scoped>
+.mindbot-pill.el-button {
+  border-radius: 9999px;
+  font-weight: 500;
+  padding-left: 1rem;
+  padding-right: 1rem;
+}
+
+.mindbot-pill--header.el-button--primary {
+  box-shadow: 0 1px 2px rgb(15 23 42 / 0.06);
+  --el-button-bg-color: rgb(241 245 249);
+  --el-button-border-color: rgb(226 232 240);
+  --el-button-text-color: rgb(71 85 105);
+  --el-button-hover-bg-color: rgb(226 232 240);
+  --el-button-hover-border-color: rgb(203 213 225);
+  --el-button-hover-text-color: rgb(51 65 85);
+}
+
+html.dark .mindbot-pill--header.el-button--primary {
+  --el-button-bg-color: rgb(51 65 85 / 0.55);
+  --el-button-border-color: rgb(71 85 105 / 0.7);
+  --el-button-text-color: rgb(226 232 240);
+  --el-button-hover-bg-color: rgb(71 85 105 / 0.65);
+  --el-button-hover-border-color: rgb(100 116 139 / 0.5);
+  --el-button-hover-text-color: rgb(248 250 252);
+}
+
+.mindbot-pill--table-edit.el-button--primary.is-plain {
+  --el-button-bg-color: rgb(248 250 252);
+  --el-button-border-color: rgb(226 232 240);
+  --el-button-text-color: rgb(100 116 139);
+  min-width: 3.5rem;
+}
+
+html.dark .mindbot-pill--table-edit.el-button--primary.is-plain {
+  --el-button-bg-color: rgb(30 41 59 / 0.35);
+  --el-button-border-color: rgb(51 65 85 / 0.5);
+  --el-button-text-color: rgb(203 213 225);
+}
+
+.mindbot-pill--table-delete.el-button--danger.is-plain {
+  --el-button-bg-color: rgb(255 251 251);
+  --el-button-border-color: rgb(254 228 228);
+  --el-button-text-color: rgb(185 100 100);
+  min-width: 3.5rem;
+}
+
+html.dark .mindbot-pill--table-delete.el-button--danger.is-plain {
+  --el-button-bg-color: rgb(69 10 10 / 0.28);
+  --el-button-border-color: rgb(127 29 29 / 0.35);
+  --el-button-text-color: rgb(254 202 202 / 0.9);
+}
+</style>

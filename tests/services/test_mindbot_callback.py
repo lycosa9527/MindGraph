@@ -13,10 +13,10 @@ from models.domain.mindbot_config import OrganizationMindbotConfig
 @pytest.mark.asyncio
 async def test_feature_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.config",
+        "services.mindbot.pipeline.callback.config",
         SimpleNamespace(FEATURE_MINDBOT=False),
     )
-    from services.mindbot.mindbot_callback import process_dingtalk_callback
+    from services.mindbot.pipeline.callback import process_dingtalk_callback
 
     session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
@@ -35,10 +35,10 @@ async def test_shared_callback_requires_path_not_body_robot_code(
 ) -> None:
     """Shared URL without resolved_config does not route by JSON robotCode."""
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.config",
+        "services.mindbot.pipeline.callback.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
-    from services.mindbot.mindbot_callback import process_dingtalk_callback
+    from services.mindbot.pipeline.callback import process_dingtalk_callback
 
     session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
@@ -70,17 +70,17 @@ def _sample_cfg() -> OrganizationMindbotConfig:
 @pytest.mark.asyncio
 async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.config",
+        "services.mindbot.pipeline.callback.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.is_redis_available",
+        "services.mindbot.pipeline.callback.is_redis_available",
         lambda: False,
     )
 
     cfg = _sample_cfg()
 
-    from services.mindbot.mindbot_callback import process_dingtalk_callback
+    from services.mindbot.pipeline.callback import process_dingtalk_callback
 
     session = AsyncMock()
     body = {
@@ -105,17 +105,17 @@ async def test_body_robotcode_placeholder_does_not_block_before_signature(
 ) -> None:
     """DingTalk may send robotCode != stored dingtalk_robot_code; path routing wins."""
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.config",
+        "services.mindbot.pipeline.callback.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.is_redis_available",
+        "services.mindbot.pipeline.callback.is_redis_available",
         lambda: False,
     )
 
     cfg = _sample_cfg()
 
-    from services.mindbot.mindbot_callback import process_dingtalk_callback
+    from services.mindbot.pipeline.callback import process_dingtalk_callback
 
     session = AsyncMock()
     body = {
@@ -141,10 +141,10 @@ async def test_shared_connectivity_probe_empty_body_no_signature(
 ) -> None:
     """Shared URL: DingTalk may POST empty body with no robotCode when saving the message URL."""
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.config",
+        "services.mindbot.pipeline.callback.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
-    from services.mindbot.mindbot_callback import process_dingtalk_callback
+    from services.mindbot.pipeline.callback import process_dingtalk_callback
 
     session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
@@ -163,12 +163,12 @@ async def test_per_org_connectivity_probe_empty_body_no_signature(
 ) -> None:
     """DingTalk console may POST empty JSON with no timestamp/sign when validating URL."""
     monkeypatch.setattr(
-        "services.mindbot.mindbot_callback.config",
+        "services.mindbot.pipeline.callback.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     cfg = _sample_cfg()
 
-    from services.mindbot.mindbot_callback import process_dingtalk_callback
+    from services.mindbot.pipeline.callback import process_dingtalk_callback
 
     session = AsyncMock()
     code, hdr = await process_dingtalk_callback(

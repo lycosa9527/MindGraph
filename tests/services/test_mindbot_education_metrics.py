@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import pytest
 
-from services.mindbot import education_metrics as mindbot_edu
+from services.mindbot.education import metrics as mindbot_edu
 
 
 def test_chat_scope_group() -> None:

@@ -21,14 +21,14 @@ from services.mindbot.core.conv_gate import (
     redis_release_conv_gate_async,
 )
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
-from services.mindbot.dify_usage_parse import parse_dify_usage_from_blocking_response
-from services.mindbot.mindbot_dify_paths import (
-    run_blocking_send_branch,
-    run_streaming_dify_branch,
-)
-from services.mindbot.education_metrics import (
+from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
+from services.mindbot.education.metrics import (
     conversation_user_turn_index,
     dingtalk_chat_scope,
+)
+from services.mindbot.pipeline.dify_paths import (
+    run_blocking_send_branch,
+    run_streaming_dify_branch,
 )
 from services.mindbot.core.redis_keys import (
     CONV_KEY_PREFIX,
@@ -42,13 +42,14 @@ from services.mindbot.platforms.dingtalk import (
     media_filename_and_types,
     verify_dingtalk_sign,
 )
-from services.mindbot.dingtalk_inbound_log import (
+from services.mindbot.integrations.dingtalk.inbound_log import (
     debug_callback_failure_logging_enabled,
     dingtalk_inbound_logging_enabled,
 )
-from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
-from services.mindbot.mindbot_usage import persist_mindbot_usage_event
-from services.mindbot.session_webhook_url import validate_session_webhook_url
+from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
+from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx
+from services.mindbot.telemetry.usage import persist_mindbot_usage_event
+from services.mindbot.session.webhook_url import validate_session_webhook_url
 from services.redis.redis_client import RedisOperations, is_redis_available
 from utils.env_helpers import env_bool
 
@@ -69,7 +70,9 @@ def _log_callback_debug_failure(
     """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG is on (default) and router passed raw bytes."""
     if debug_raw_body is None:
         return
-    from services.mindbot.dingtalk_inbound_log import log_dingtalk_callback_failure_details
+    from services.mindbot.integrations.dingtalk.inbound_log import (
+        log_dingtalk_callback_failure_details,
+    )
 
     log_dingtalk_callback_failure_details(
         route_label=debug_route_label or "?",
@@ -236,7 +239,7 @@ async def process_dingtalk_callback(
     ts_missing = not (timestamp_header or "").strip()
     sg_missing = not (sign_header or "").strip()
     if resolved_config is None and body == {} and ts_missing and sg_missing:
-        logger.info("[MindBot] shared callback URL connectivity probe (empty body, no signature)")
+        logger.debug("[MindBot] shared_callback probe empty_body no_signature")
         return 200, mindbot_error_headers(MindbotErrorCode.OK)
 
     cfg = resolved_config
@@ -308,8 +311,8 @@ async def process_dingtalk_callback(
                     cfg.dingtalk_robot_code.strip(),
                 )
         if body == {} and ts_missing and sg_missing:
-            logger.info(
-                "[MindBot] callback connectivity probe org_id=%s robot=%s",
+            logger.debug(
+                "[MindBot] path_callback probe org_id=%s robot=%s",
                 cfg.organization_id,
                 cfg.dingtalk_robot_code.strip(),
             )
@@ -355,13 +358,6 @@ async def process_dingtalk_callback(
     )
     if not text_in:
         return 200, _hdr(MindbotErrorCode.EMPTY_USER_MESSAGE)
-
-    logger.info(
-        "[MindBot] callback org_id=%s robot=%s inbound_len=%s",
-        cfg.organization_id,
-        cfg.dingtalk_robot_code.strip(),
-        len(text_in),
-    )
 
     sender_staff = body.get("senderStaffId") or body.get("sender_staff_id") or "unknown"
     if not isinstance(sender_staff, str):
@@ -413,6 +409,29 @@ async def process_dingtalk_callback(
     msg_id_for_usage: Optional[str] = None
     if isinstance(mid_raw, str) and mid_raw.strip():
         msg_id_for_usage = mid_raw.strip()
+
+    pipeline_ctx = format_pipeline_ctx(
+        cfg.organization_id,
+        cfg.dingtalk_robot_code.strip(),
+        msg_id=msg_id_for_usage or "",
+        staff_id=sender_staff,
+        conv_dingtalk=conversation_id_dt,
+        dify_conv=dify_conv or "",
+    )
+    logger.info(
+        "[MindBot] pipeline_start %s mode=%s inbound_chars=%s msgtype=%s session_webhook=%s",
+        pipeline_ctx,
+        "streaming" if _dify_streaming_enabled() else "blocking",
+        len(text_in),
+        inbound_msg_type,
+        "yes" if session_webhook_valid else "no",
+    )
+    logger.debug(
+        "[MindBot] pipeline_detail %s gate_acquired=%s redis_dify_conv=%s",
+        pipeline_ctx,
+        gate_acquired,
+        bool(dify_conv),
+    )
 
     async def _record_usage(
         outcome: MindbotErrorCode,
@@ -477,6 +496,7 @@ async def process_dingtalk_callback(
                     record_usage=_record_usage,
                     hdr=_hdr,
                     redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
+                    pipeline_ctx=pipeline_ctx,
                 )
 
             resp = await mindbot_dify_chat_blocking(
@@ -487,6 +507,7 @@ async def process_dingtalk_callback(
                 files=files,
                 inputs=dify_inputs,
                 on_stale_conversation=stale_cb,
+                pipeline_ctx=pipeline_ctx,
             )
             if resp is None:
                 await _record_usage(
@@ -516,6 +537,7 @@ async def process_dingtalk_callback(
             record_usage=_record_usage,
             hdr=_hdr,
             redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
+            pipeline_ctx=pipeline_ctx,
         )
     finally:
         if gate_acquired:

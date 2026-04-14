@@ -256,6 +256,20 @@ class FeaturesConfigMixin:
         return self._get_cached_value("FEATURE_MINDBOT", "True").lower() == "true"
 
     @property
+    def MINDBOT_DIFY_HEALTH_BASE_URL(self) -> str:
+        """Dify app API base (no trailing slash) for admin GET /parameters probe."""
+        raw = (self._get_cached_value(
+            "MINDBOT_DIFY_HEALTH_BASE_URL",
+            "https://dify.mindspringedu.com/v1",
+        ) or "").strip()
+        return raw.rstrip("/")
+
+    @property
+    def MINDBOT_DIFY_HEALTH_API_KEY(self) -> str:
+        """App API key for MindBot admin Dify online probe (Bearer). Keep server-side only."""
+        return (self._get_cached_value("MINDBOT_DIFY_HEALTH_API_KEY", "") or "").strip()
+
+    @property
     def AI_ASSISTANT_NAME(self):
         """AI Assistant display name (appears in toolbar button and panel header)."""
         return self._get_cached_value("AI_ASSISTANT_NAME", "MindMate AI")

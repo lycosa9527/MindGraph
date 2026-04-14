@@ -90,6 +90,7 @@ export default {
   'meta.pageTitle.login': 'Sign in',
   'meta.pageTitle.main': 'Mind Platform',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'Page not found',
   'meta.pageTitle.publicDashboard': 'Statistics',

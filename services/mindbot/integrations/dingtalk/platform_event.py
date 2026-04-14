@@ -9,7 +9,7 @@ from fastapi import Request
 from fastapi.responses import JSONResponse, Response
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from services.mindbot.mindbot_errors import MindbotErrorCode, mindbot_error_headers
+from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.platforms.dingtalk.oa_callback_crypto import DingTalkOaCallbackCrypto
 
 logger = logging.getLogger(__name__)
@@ -79,8 +79,8 @@ def dingtalk_platform_event_response(
             ),
         )
 
-    logger.info(
-        "[MindBot] DingTalk event subscription callback org_id=%s plaintext_len=%s",
+    logger.debug(
+        "[MindBot] event_subscription_decrypt_ok org_id=%s plaintext_len=%s",
         cfg.organization_id,
         len(plaintext),
     )

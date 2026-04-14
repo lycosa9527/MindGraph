@@ -5,7 +5,7 @@ Inbound shapes follow DingTalk docs and common callback variants:
 - [机器人接收消息](https://developers.dingtalk.com/document/dingstart/robot-receive-message)
 
 Non-text media: identifiers are embedded in the prompt; optional OpenAPI download
-and Dify upload are implemented in ``mindbot_callback`` when Client ID is configured.
+and Dify upload are implemented in ``pipeline.callback`` when Client ID is configured.
 """
 
 from __future__ import annotations

@@ -124,7 +124,6 @@ async def list_users_admin(
             {
                 "id": user.id,
                 "phone": masked_phone,
-                "phone_real": user.phone,
                 "name": user.name,
                 "role": getattr(user, "role", "user") or "user",
                 "organization_id": user.organization_id,
@@ -147,6 +146,51 @@ async def list_users_admin(
             "total": total,
             "total_pages": total_pages,
         },
+    }
+
+
+@router.get("/admin/users/{user_id}", dependencies=[Depends(require_admin)])
+async def get_user_admin(
+    user_id: int,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """
+    Return one user's fields including full phone (ADMIN ONLY).
+
+    List endpoints return masked phone; use this before editing a user.
+    """
+    user = (await db.execute(select(User).where(User.id == user_id))).scalar_one_or_none()
+    if not user:
+        error_msg = Messages.error("user_not_found", lang, user_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    org = None
+    if user.organization_id:
+        org = (
+            await db.execute(select(Organization).where(Organization.id == user.organization_id))
+        ).scalar_one_or_none()
+
+    logger.info(
+        "[Auth] Admin user_id=%s read full user profile for user_id=%s",
+        current_user.id,
+        user_id,
+    )
+
+    return {
+        "id": user.id,
+        "phone": user.phone,
+        "name": user.name,
+        "role": getattr(user, "role", "user") or "user",
+        "organization_id": user.organization_id,
+        "organization_code": org.code if org else None,
+        "organization_name": org.name if org else None,
+        "locked_until": utc_to_beijing_iso(user.locked_until),
+        "created_at": utc_to_beijing_iso(user.created_at),
+        "email_login_whitelisted_from_cn": getattr(
+            user, "email_login_whitelisted_from_cn", False
+        ),
     }
 
 

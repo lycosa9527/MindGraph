@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from services.mindbot import dingtalk_inbound_log as dil
+from services.mindbot.integrations.dingtalk import inbound_log as dil
 
 
 def test_logging_enabled_by_default_when_debug_unset(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -46,7 +46,7 @@ def test_log_full_includes_parsed_json(
     monkeypatch.setenv("MINDBOT_LOG_CALLBACK_INBOUND_FULL", "1")
     import logging
 
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.DEBUG)
     req = MagicMock()
     req.method = "POST"
     req.url.path = "/api/mindbot/dingtalk/callback"
@@ -86,7 +86,7 @@ def test_log_callback_failure_details_noop_when_debug_off(
         parsed_body={},
         reason="r",
     )
-    assert "callback_debug_failure" not in caplog.text
+    assert "callback_rejected" not in caplog.text
 
 
 def test_log_callback_failure_details_when_debug_on(
@@ -96,7 +96,7 @@ def test_log_callback_failure_details_when_debug_on(
     monkeypatch.setenv("MINDBOT_LOG_CALLBACK_DEBUG", "1")
     import logging
 
-    caplog.set_level(logging.INFO)
+    caplog.set_level(logging.DEBUG)
     dil.log_dingtalk_callback_failure_details(
         route_label="shared",
         headers={"host": "example.com"},
@@ -105,6 +105,6 @@ def test_log_callback_failure_details_when_debug_on(
         reason="config_not_found",
         extra={"attempted_robot_code": "r1"},
     )
-    assert "callback_debug_failure" in caplog.text
+    assert "callback_rejected" in caplog.text
     assert "config_not_found" in caplog.text
     assert "body_parsed_json" in caplog.text or "body_raw" in caplog.text

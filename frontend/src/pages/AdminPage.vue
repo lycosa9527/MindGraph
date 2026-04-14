@@ -13,7 +13,6 @@ import { useRoute, useRouter } from 'vue-router'
 import type { TabsInstance } from 'element-plus'
 
 import {
-  ChatDotRound,
   ChatLineRound,
   Coin,
   DataAnalysis,
@@ -31,7 +30,6 @@ import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
-import AdminMindBotTab from '@/components/admin/AdminMindBotTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminTokensTab from '@/components/admin/AdminTokensTab.vue'
@@ -44,7 +42,7 @@ import { useAuthStore } from '@/stores'
 const route = useRoute()
 const router = useRouter()
 const authStore = useAuthStore()
-const { featureGewe, featureLibrary, featureMarkets, featureMindbot } = useFeatureFlags()
+const { featureGewe, featureLibrary, featureMarkets } = useFeatureFlags()
 const { t } = useLanguage()
 
 const activeTab = ref((route.query.tab as string) || 'dashboard')
@@ -67,13 +65,6 @@ const allTabsConfig: ReadonlyArray<{
   { name: 'features', labelKey: 'admin.featuresTab', icon: Setting, adminOnly: true },
   { name: 'library', labelKey: 'admin.library', icon: Reading, adminOnly: true },
   { name: 'markets', labelKey: 'admin.markets', icon: ShoppingCart, adminOnly: true },
-  {
-    name: 'mindbot',
-    labelKey: 'admin.mindbot',
-    icon: ChatDotRound,
-    adminOnly: true,
-    allowManager: true,
-  },
   { name: 'database', labelKey: 'admin.database.tab', icon: Coin, adminOnly: true },
   { name: 'gewe', labelKey: 'admin.geweWechat', icon: ChatLineRound, adminOnly: true },
 ]
@@ -99,9 +90,6 @@ const tabs = computed(() => {
   }
   if (!featureMarkets.value) {
     visible = visible.filter((tab) => tab.name !== 'markets')
-  }
-  if (!featureMindbot.value) {
-    visible = visible.filter((tab) => tab.name !== 'mindbot')
   }
   return visible.map((tab) => ({ ...tab, label: t(tab.labelKey) }))
 })
@@ -207,10 +195,6 @@ onMounted(scheduleTabBarUpdate)
 
           <template v-else-if="activeTab === 'markets'">
             <AdminMarketsTab />
-          </template>
-
-          <template v-else-if="activeTab === 'mindbot'">
-            <AdminMindBotTab />
           </template>
 
           <template v-else-if="activeTab === 'database'">

@@ -13,7 +13,8 @@ Usage (from repo root):
   set MINDBOT_DINGTALK_APP_SECRET=your_robot_app_secret
   python scripts/mindbot/dingtalk_callback_smoke_test.py --signed
 
-Use --verbose to print response bodies. Check server logs for dingtalk_inbound_full / inbound lines
+Use --verbose to print response bodies. Check server logs: INFO ``inbound_compact``,
+DEBUG ``dingtalk_inbound_full`` (when debug inbound is on).
 if MINDBOT_LOG_CALLBACK_* is enabled on the server.
 """
 

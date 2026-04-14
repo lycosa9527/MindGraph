@@ -55,13 +55,8 @@ export function useAppSidebar() {
     if (path.startsWith('/library')) return 'library'
     if (path.startsWith('/gewe')) return 'gewe'
     if (path.startsWith('/school-dashboard')) return 'school-dashboard'
-    if (path.startsWith('/admin')) {
-      const tab = router.currentRoute.value.query.tab
-      if (tab === 'mindbot') {
-        return 'mindbot'
-      }
-      return 'admin'
-    }
+    if (path.startsWith('/admin/mindbot')) return 'mindbot'
+    if (path.startsWith('/admin')) return 'admin'
     if (path.startsWith('/smart-response')) return 'smart-response'
     if (path.startsWith('/teacher-usage')) return 'teacher-usage'
     if (path.startsWith('/workshop-chat')) return 'workshop-chat'
@@ -135,7 +130,7 @@ export function useAppSidebar() {
     'smart-response': '/smart-response',
     'teacher-usage': '/teacher-usage',
     'workshop-chat': '/workshop-chat',
-    mindbot: '/admin?tab=mindbot',
+    mindbot: '/admin/mindbot',
   }
 
   function setMode(index: string) {

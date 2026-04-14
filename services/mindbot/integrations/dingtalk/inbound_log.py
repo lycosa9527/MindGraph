@@ -1,12 +1,18 @@
 """Optional logging for DingTalk HTTP traffic hitting MindBot callback routes.
 
-By default, MINDBOT_LOG_CALLBACK_DEBUG is on: full inbound logging (method, headers,
-raw body capped, parsed JSON) plus failure-context lines on rejected callbacks.
-Set MINDBOT_LOG_CALLBACK_DEBUG=0 to disable. May include secrets — restrict log access
-in production or turn off where appropriate.
+**Levels (Python ``logging``):**
 
-When MINDBOT_LOG_CALLBACK_DEBUG=0: set MINDBOT_LOG_CALLBACK_INBOUND_FULL=1 for full inbound,
-or MINDBOT_LOG_CALLBACK_INBOUND=1 for one compact line per request.
+- **INFO** — One compact line per inbound request when compact mode is enabled
+  (``MINDBOT_LOG_CALLBACK_INBOUND=1`` without full debug). Safe for ops dashboards.
+- **DEBUG** — Full inbound dumps (headers, raw body, parsed JSON) when
+  ``MINDBOT_LOG_CALLBACK_DEBUG`` is on (default) or ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1``.
+  May include secrets; enable only with log aggregation access controls.
+- **WARNING** — Rejected callbacks: one summary line (reason, route, sizes, keys).
+  Verbose dumps for failures still go to **DEBUG** when debug mode is on.
+
+Set ``MINDBOT_LOG_CALLBACK_DEBUG=0`` to disable full inbound + failure dumps.
+When ``MINDBOT_LOG_CALLBACK_DEBUG=0``: set ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1`` for full
+inbound at DEBUG, or ``MINDBOT_LOG_CALLBACK_INBOUND=1`` for one compact **INFO** line per request.
 """
 
 from __future__ import annotations
@@ -89,7 +95,8 @@ def _log_compact(request: Request, raw: bytes, route_label: str) -> None:
     ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
     preview = raw.decode("utf-8", errors="replace")[:_PREVIEW_LEN]
     logger.info(
-        "[MindBot] inbound %s method=%s path=%s query=%s body_len=%s timestamp=%s sign_len=%s preview=%r",
+        "[MindBot] inbound_compact %s method=%s path=%s query=%s body_len=%s "
+        "timestamp=%s sign_len=%s preview=%r",
         route_label,
         request.method,
         request.url.path,
@@ -120,7 +127,7 @@ def _log_full(
     truncated = len(raw) > max_body
     body_text = body_snip.decode("utf-8", errors="replace")
 
-    logger.info(
+    logger.debug(
         "[MindBot] dingtalk_inbound_full label=%s method=%s path=%s query=%r "
         "client_host=%s x_forwarded_for=%r x_real_ip=%r x_forwarded_proto=%r "
         "body_len=%s body_truncated=%s",
@@ -135,14 +142,14 @@ def _log_full(
         len(raw),
         truncated,
     )
-    logger.info(
+    logger.debug(
         "[MindBot] dingtalk_inbound_full label=%s headers_json=%s",
         route_label,
         json.dumps(headers_dict, ensure_ascii=False),
     )
-    logger.info("[MindBot] dingtalk_inbound_full label=%s body=%r", route_label, body_text)
+    logger.debug("[MindBot] dingtalk_inbound_full label=%s body=%r", route_label, body_text)
     if parsed_body is not None:
-        logger.info(
+        logger.debug(
             "[MindBot] dingtalk_inbound_full label=%s body_parsed_json=%s",
             route_label,
             _parsed_body_json_for_log(parsed_body),
@@ -159,7 +166,7 @@ def log_dingtalk_callback_failure_details(
     extra: Optional[dict[str, Any]] = None,
 ) -> None:
     """
-    Log full callback context when a handler rejects the request.
+    Log callback rejection: **WARNING** summary, **DEBUG** for headers/body when debug mode is on.
 
     Skipped when MINDBOT_LOG_CALLBACK_DEBUG=0 (default is on). Safe only when debug_raw_body was captured.
     """
@@ -174,8 +181,8 @@ def log_dingtalk_callback_failure_details(
     parsed_json = _parsed_body_json_for_log(parsed_body)
 
     top_keys = sorted(parsed_body.keys())
-    logger.info(
-        "[MindBot] callback_debug_failure reason=%s route=%s body_len=%s raw_truncated=%s "
+    logger.warning(
+        "[MindBot] callback_rejected reason=%s route=%s body_len=%s raw_truncated=%s "
         "timestamp_header=%s sign_header_len=%s parsed_top_keys=%s extra=%s",
         reason,
         route_label,
@@ -186,14 +193,14 @@ def log_dingtalk_callback_failure_details(
         top_keys[:80],
         extra or {},
     )
-    logger.info(
-        "[MindBot] callback_debug_failure route=%s headers_json=%s",
+    logger.debug(
+        "[MindBot] callback_rejected_details route=%s headers_json=%s",
         route_label,
         json.dumps(hdr_copy, ensure_ascii=False),
     )
-    logger.info("[MindBot] callback_debug_failure route=%s body_raw=%r", route_label, body_text)
-    logger.info(
-        "[MindBot] callback_debug_failure route=%s body_parsed_json=%s",
+    logger.debug("[MindBot] callback_rejected_details route=%s body_raw=%r", route_label, body_text)
+    logger.debug(
+        "[MindBot] callback_rejected_details route=%s body_parsed_json=%s",
         route_label,
         parsed_json,
     )

@@ -29,6 +29,8 @@ import os
 import time
 import aiohttp
 
+from clients.dify_http_errors import parse_dify_error_response, raise_for_dify_http_error
+
 
 logger = logging.getLogger(__name__)
 
@@ -138,6 +140,27 @@ class DifyFileNotFoundError(DifyAPIError):
 
     def __init__(self, message: str = "File not found or has been deleted"):
         super().__init__(message, status_code=404, error_code="file_not_found")
+
+
+class DifyFileTooLargeError(DifyAPIError):
+    """413: File exceeds size limit"""
+
+    def __init__(self, message: str = "File too large"):
+        super().__init__(message, status_code=413, error_code="file_too_large")
+
+
+class DifyUnsupportedFileTypeError(DifyAPIError):
+    """415: Unsupported file extension for upload"""
+
+    def __init__(self, message: str = "Unsupported file type"):
+        super().__init__(message, status_code=415, error_code="unsupported_file_type")
+
+
+class DifyS3StorageError(DifyAPIError):
+    """503: S3 / object storage errors (upload pipeline)."""
+
+    def __init__(self, message: str, *, error_code: str = "s3_connection_failed"):
+        super().__init__(message, status_code=503, error_code=error_code)
 
 
 # =========================================================================
@@ -264,45 +287,13 @@ class AsyncDifyClient:
                 if response.status == 204:
                     return {"result": "success"}
                 if response.status != 200:
-                    error_msg = f"HTTP {response.status}"
-                    error_code = None
-                    try:
-                        error_data = await response.json()
-                        error_msg = error_data.get("message", error_msg)
-                        error_code = error_data.get("code")
-                    except (json.JSONDecodeError, ValueError):
-                        pass
-
-                    # Map status codes and error codes to specific exceptions
-                    if response.status == 404:
-                        if "conversation" in endpoint.lower() or error_code == "conversation_not_exists":
-                            raise DifyConversationNotFoundError(error_msg)
-                        elif "file" in endpoint.lower() or error_code == "file_not_found":
-                            raise DifyFileNotFoundError(error_msg)
-                    elif response.status == 403 and error_code == "file_access_denied":
-                        raise DifyFileAccessDeniedError(error_msg)
-                    elif response.status == 400:
-                        if error_code == "invalid_param":
-                            raise DifyInvalidParamError(error_msg)
-                        elif error_code == "app_unavailable":
-                            raise DifyAppUnavailableError(error_msg)
-                        elif error_code == "provider_not_initialize":
-                            raise DifyProviderNotInitializeError(error_msg)
-                        elif error_code == "provider_quota_exceeded":
-                            raise DifyQuotaExceededError(error_msg)
-                        elif error_code == "model_currently_not_support":
-                            raise DifyModelNotSupportError(error_msg)
-                        elif error_code == "workflow_not_found":
-                            raise DifyWorkflowNotFoundError(error_msg)
-                        elif error_code == "draft_workflow_error":
-                            raise DifyDraftWorkflowError(error_msg)
-                        elif error_code == "workflow_id_format_error":
-                            raise DifyWorkflowIdFormatError(error_msg)
-                        elif error_code == "completion_request_error":
-                            raise DifyCompletionRequestError(error_msg)
-
-                    # Generic error for unmapped cases
-                    raise DifyAPIError(error_msg, status_code=response.status, error_code=error_code)
+                    error_msg, error_code = await parse_dify_error_response(response)
+                    raise_for_dify_http_error(
+                        response.status,
+                        error_msg,
+                        error_code,
+                        endpoint,
+                    )
                 return await response.json()
 
     # =========================================================================
@@ -343,7 +334,13 @@ class AsyncDifyClient:
                     tts_message, tts_message_end, error, ping
         """
 
-        logger.debug("[DIFY] Async streaming message: %s... for user %s", message[:50], user_id)
+        logger.debug(
+            "[DIFY] stream_chat start user=%s conversation_id=%s query_chars=%s files=%s",
+            user_id,
+            (conversation_id or "")[:32],
+            len(message),
+            len(files) if files else 0,
+        )
 
         payload = {
             "inputs": inputs or {},
@@ -377,15 +374,18 @@ class AsyncDifyClient:
             async with aiohttp.ClientSession(timeout=timeout) as session:
                 async with session.post(url, json=payload, headers=headers) as response:
                     if response.status != 200:
-                        error_msg = f"HTTP {response.status}: API request failed"
-                        try:
-                            error_data = await response.json()
-                            error_msg = error_data.get("message", error_msg)
-                        except (json.JSONDecodeError, ValueError):
-                            pass
-                        logger.error("Dify API error: %s", error_msg)
+                        error_msg, error_code = await parse_dify_error_response(response)
+                        logger.error(
+                            "[DIFY] stream open failed status=%s code=%s msg=%s",
+                            response.status,
+                            error_code,
+                            error_msg,
+                        )
                         yield {
                             "event": "error",
+                            "status": response.status,
+                            "code": error_code,
+                            "message": error_msg,
                             "error": error_msg,
                             "timestamp": int(time.time() * 1000),
                         }

@@ -6,7 +6,7 @@ from collections import defaultdict
 from threading import Lock
 from typing import Any, Optional
 
-from services.mindbot.mindbot_errors import MindbotErrorCode
+from services.mindbot.errors import MindbotErrorCode
 
 
 class MindbotMetrics:

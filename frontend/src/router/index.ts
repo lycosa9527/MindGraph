@@ -91,6 +91,17 @@ const routes: RouteRecordRaw[] = [
     meta: { requiresAuth: true, layout: 'canvas', ...pageTitle('canvas') },
   },
   {
+    path: '/admin/mindbot',
+    name: 'MindbotAdmin',
+    component: () => import('@/pages/MindbotAdminPage.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdminOrManager: true,
+      layout: 'main',
+      ...pageTitle('mindbotAdmin'),
+    },
+  },
+  {
     path: '/admin',
     name: 'Admin',
     component: () => import('@/pages/AdminPage.vue'),
@@ -296,6 +307,12 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'MindMate' })
   }
 
+  if (to.name === 'Admin' && to.query.tab === 'mindbot') {
+    const restQuery = { ...to.query }
+    delete restQuery.tab
+    return next({ path: '/admin/mindbot', query: restQuery })
+  }
+
   // Auto-redirect mobile users to /m/* routes (skip for auth, export, dashboard pages)
   const isMobileRoute = to.path === '/m' || to.path.startsWith('/m/')
   const skipMobileRedirect =
@@ -336,7 +353,8 @@ router.beforeEach(async (to, _from, next) => {
     to.name === 'Gewe' ||
     to.name === 'SmartResponse' ||
     to.name === 'TeacherUsage' ||
-    to.name === 'WorkshopChat'
+    to.name === 'WorkshopChat' ||
+    to.name === 'MindbotAdmin'
   if (needsFeatureFlags) {
     await featureFlagsStore.fetchFlags()
   }
@@ -429,6 +447,9 @@ router.beforeEach(async (to, _from, next) => {
     return next({ name: 'MindMate' })
   }
   if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
+    return next({ name: 'MindMate' })
+  }
+  if (to.name === 'MindbotAdmin' && !featureFlagsStore.getFeatureMindbot()) {
     return next({ name: 'MindMate' })
   }
   // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then send signed-in users home

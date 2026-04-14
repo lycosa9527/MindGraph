@@ -21,6 +21,9 @@ PATH_ROBOT_OTO_MESSAGES_BATCH_RECALL = "/v1.0/robot/otoMessages/batchRecall"
 PATH_ROBOT_PRIVATE_CHAT_MESSAGES_QUERY = "/v1.0/robot/privateChatMessages/query"
 PATH_ROBOT_GROUP_MESSAGES_QUERY = "/v1.0/robot/groupMessages/query"
 
+PATH_CARD_INSTANCES_CREATE_AND_DELIVER = "/v1.0/card/instances/createAndDeliver"
+PATH_CARD_STREAMING_UPDATE = "/v1.0/card/streaming"
+
 TOKEN_TTL_SECONDS = int(os.getenv("MINDBOT_DINGTALK_TOKEN_TTL", "6800"))
 MAX_DOWNLOAD_MEDIA_BYTES = int(os.getenv("MINDBOT_MAX_MEDIA_BYTES", str(10 * 1024 * 1024)))
 

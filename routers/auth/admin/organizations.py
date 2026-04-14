@@ -40,6 +40,7 @@ except ImportError:
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.invitations import generate_invitation_code, normalize_or_generate
+from utils.sensitive_mask import mask_invitation_code
 from ..dependencies import get_language_dependency, require_admin
 from ..helpers import utc_to_beijing_iso
 
@@ -120,13 +121,14 @@ async def list_organizations_admin(
 
         expires_at_val = cast(Optional[datetime], org.expires_at)
         created_at_val = cast(Optional[datetime], org.created_at)
+        invite_raw = cast(Optional[str], org.invitation_code)
         result.append(
             {
                 "id": org.id,
                 "code": org.code,
                 "name": org.name,
                 "display_name": getattr(org, "display_name", None),
-                "invitation_code": org.invitation_code,
+                "invitation_code": mask_invitation_code(invite_raw) or "",
                 "user_count": user_count,
                 "manager_count": manager_count,
                 "expires_at": utc_to_beijing_iso(expires_at_val),
@@ -136,6 +138,34 @@ async def list_organizations_admin(
             }
         )
     return result
+
+
+@router.get(
+    "/admin/organizations/{org_id}/invitation-code",
+    dependencies=[Depends(require_admin)],
+)
+async def get_organization_invitation_code_admin(
+    org_id: int,
+    _request: Request,
+    current_user: User = Depends(require_admin),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """
+    Return the full invitation code for one organization (ADMIN ONLY).
+
+    List endpoints return only masked codes; use this for reveal/copy after auth.
+    """
+    org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
+    if not org:
+        error_msg = Messages.error("organization_not_found", lang, org_id)
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+    logger.info(
+        "[Auth] Admin user_id=%s read full invitation code for org_id=%s",
+        current_user.id,
+        org_id,
+    )
+    return {"invitation_code": cast(Optional[str], org.invitation_code) or ""}
 
 
 @router.post("/admin/organizations", dependencies=[Depends(require_admin)])
@@ -552,7 +582,6 @@ async def list_all_managers(
             {
                 "id": user.id,
                 "phone": masked_phone,
-                "phone_real": user.phone,
                 "name": display_name,
                 "organization_id": user.organization_id,
                 "organization_code": org.code if org else None,

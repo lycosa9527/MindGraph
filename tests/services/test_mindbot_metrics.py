@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
-from services.mindbot.mindbot_errors import MindbotErrorCode
-from services.mindbot.mindbot_metrics import MindbotMetrics
+from services.mindbot.errors import MindbotErrorCode
+from services.mindbot.telemetry.metrics import MindbotMetrics
 
 
 def test_record_from_headers_aggregates_by_org_and_robot() -> None:

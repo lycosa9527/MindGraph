@@ -90,6 +90,7 @@ export default {
   'meta.pageTitle.login': '登录',
   'meta.pageTitle.main': '迈特教研',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': '页面未找到',
   'meta.pageTitle.publicDashboard': '统计',

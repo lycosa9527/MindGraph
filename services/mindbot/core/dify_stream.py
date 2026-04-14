@@ -8,7 +8,13 @@ import time
 from typing import Any, Awaitable, Callable, Optional
 
 from clients.dify import AsyncDifyClient, DifyFile
-from services.mindbot.dify_usage_parse import parse_dify_usage_from_stream_event
+from services.mindbot.core.dify_sse_parse import (
+    is_image_file_type,
+    parse_message_file_event,
+    parse_tts_audio_base64_chunk,
+    workflow_outputs_file_hints,
+)
+from services.mindbot.dify.usage_parse import parse_dify_usage_from_stream_event
 from utils.env_helpers import env_bool, env_float, env_int
 
 logger = logging.getLogger(__name__)
@@ -53,6 +59,10 @@ def mindbot_stream_batch_params() -> tuple[int, float, int]:
         max(0.05, flush_ms / 1000.0),
         max(1, env_int("MINDBOT_STREAM_MAX_PARTS", 40)),
     )
+
+
+def mindbot_stream_max_media_parts() -> int:
+    return max(0, env_int("MINDBOT_STREAM_MAX_MEDIA_PARTS", 12))
 
 
 def _should_flush(
@@ -100,39 +110,136 @@ async def mindbot_consume_dify_stream_batched(
     inputs: Optional[dict[str, Any]] = None,
     on_stale_conversation: Optional[Callable[[], Awaitable[None]]] = None,
     stale_retry_done: bool = False,
+    pipeline_ctx: str = "",
+    on_media: Optional[
+        Callable[[str, dict[str, Any]], Awaitable[tuple[bool, bool]]]
+    ] = None,
+    on_message_replace: Optional[Callable[[], Awaitable[None]]] = None,
 ) -> tuple[str, Optional[str], Optional[str], Optional[dict[str, int]]]:
     """
     Consume Dify ``stream_chat`` SSE (ChunkChatCompletionResponse), batch ``answer`` deltas.
 
-    Matches Dify Service API streaming: ``message`` (text chunks), ``message_end``,
-    ``message_replace`` (moderation / full text replacement), ``error``, ``ping``,
-    ``workflow_finished`` (optional text from ``outputs`` when no ``message`` deltas),
-    and other Chatflow prelude events.
+    ``on_media`` when set receives (kind, payload): ``image`` (url), ``audio`` (bytes),
+    ``markdown`` (text for file links). OpenAPI-only sends; session webhook is not used.
 
-    ``MINDBOT_STREAM_DEFER_TO_END``: accumulate only; send after ``message_end`` (avoids
-    partial DingTalk bubbles before ``message_replace``).
-
-    ``on_batch`` returns ``(success, token_failed)`` like OpenAPI helpers.
-
-    Returns ``(full_text, conversation_id, error_token, usage_or_none)`` where
-    ``error_token`` is one of: ``None`` (ok), ``"dify_error"``, ``"dify_empty"``,
-    ``"send_failed"``, ``"token_failed"``.     ``usage_or_none`` may include Dify
-    ``prompt_tokens`` / ``completion_tokens`` / ``total_tokens`` from ``message_end``.
-
-    If the stream fails with a stale ``conversation_id``, ``on_stale_conversation``
-    is invoked and the stream is retried once without ``conversation_id``.
+    ``on_message_replace`` when set is awaited after Dify ``message_replace`` (answer reset);
+    use to reset AI card or UI state that tracks cumulative deltas.
     """
     defer_to_end = env_bool("MINDBOT_STREAM_DEFER_TO_END", False)
+    native_media = env_bool("MINDBOT_DIFY_NATIVE_MEDIA_ENABLED", True)
+    tts_enabled = env_bool("MINDBOT_DIFY_TTS_ENABLED", True)
+    max_media = mindbot_stream_max_media_parts()
+    use_media = native_media and on_media is not None
+
+    logger.debug(
+        "[MindBot] dify_sse_start %s has_conv_id=%s query_chars=%s defer_to_end=%s "
+        "batch_min_chars=%s batch_flush_s=%.3f batch_max_parts=%s native_media=%s",
+        pipeline_ctx,
+        bool((conversation_id or "").strip()),
+        len(text),
+        defer_to_end,
+        min_chars,
+        flush_interval_s,
+        max_parts,
+        use_media,
+    )
     usage_snapshot: Optional[dict[str, int]] = None
     full = ""
     buf = ""
     last_flush = time.monotonic()
     parts_sent = 0
     outbound_count = 0
+    media_sent = 0
     conv_id: Optional[str] = None
     saw_answer = False
     wf_fallback_text: Optional[str] = None
+    wf_file_hints: list[dict[str, Any]] = []
     deferred_flushed = False
+    pending_after_text: list[tuple[str, dict[str, Any]]] = []
+    sent_urls: set[str] = set()
+    tts_chunks: list[bytes] = []
+    tts_voice_pending: Optional[bytes] = None
+
+    async def flush_buf_if_any() -> Optional[str]:
+        nonlocal buf, parts_sent, outbound_count, last_flush
+        if not buf:
+            return None
+        flush_chars = len(buf)
+        logger.debug(
+            "[MindBot] dify_sse_buffer_flush %s reason=coalesce chunk_chars=%s "
+            "full_acc_chars=%s",
+            pipeline_ctx,
+            flush_chars,
+            len(full),
+        )
+        ok, token_failed = await on_batch(buf)
+        buf = ""
+        if not ok:
+            return "token_failed" if token_failed else "send_failed"
+        parts_sent += 1
+        outbound_count += 1
+        last_flush = time.monotonic()
+        return None
+
+    async def send_media_now(kind: str, payload: dict[str, Any]) -> Optional[str]:
+        nonlocal media_sent, outbound_count
+        if not use_media or not on_media:
+            return None
+        if max_media > 0 and media_sent >= max_media:
+            logger.warning(
+                "[MindBot] dify_sse_max_media %s cap=%s",
+                pipeline_ctx,
+                max_media,
+            )
+            return None
+        ok, token_failed = await on_media(kind, payload)
+        if not ok:
+            return "token_failed" if token_failed else "send_failed"
+        media_sent += 1
+        outbound_count += 1
+        return None
+
+    async def enqueue_or_send_file(
+        url: str,
+        type_s: str,
+        filename: str,
+        *,
+        immediate: bool,
+    ) -> Optional[str]:
+        if url in sent_urls:
+            return None
+        sent_urls.add(url)
+        if is_image_file_type(type_s):
+            if immediate:
+                return await send_media_now("image", {"url": url})
+            pending_after_text.append(("image", {"url": url}))
+            return None
+        link_md = f"[file]({url})"
+        if filename:
+            link_md = f"**{filename}**\n{link_md}"
+        if immediate:
+            return await send_media_now("markdown", {"text": link_md})
+        pending_after_text.append(("markdown", {"text": link_md}))
+        return None
+
+    async def flush_pending_after_text_queue() -> Optional[str]:
+        for kind, pl in pending_after_text:
+            err = await send_media_now(kind, pl)
+            if err:
+                return err
+        pending_after_text.clear()
+        return None
+
+    async def flush_tts_voice_if_any() -> Optional[str]:
+        nonlocal tts_voice_pending
+        if not tts_voice_pending:
+            return None
+        err = await send_media_now(
+            "audio",
+            {"bytes": tts_voice_pending, "duration_ms": 0},
+        )
+        tts_voice_pending = None
+        return err
 
     async for ev in dify.stream_chat(
         message=text,
@@ -158,7 +265,8 @@ async def mindbot_consume_dify_stream_batched(
                 and on_stale_conversation is not None
             ):
                 logger.warning(
-                    "[MindBot] Dify stream conversation not found; clearing binding and retrying",
+                    "[MindBot] dify_sse_stale_conversation %s retry_without_conv",
+                    pipeline_ctx,
                 )
                 await on_stale_conversation()
                 return await mindbot_consume_dify_stream_batched(
@@ -174,9 +282,13 @@ async def mindbot_consume_dify_stream_batched(
                     inputs=inputs,
                     on_stale_conversation=on_stale_conversation,
                     stale_retry_done=True,
+                    pipeline_ctx=pipeline_ctx,
+                    on_media=on_media,
+                    on_message_replace=on_message_replace,
                 )
             logger.warning(
-                "[MindBot] Dify stream error event: %s code=%s status=%s",
+                "[MindBot] dify_sse_error_event %s err=%s code=%s status=%s",
+                pipeline_ctx,
                 err,
                 code,
                 status,
@@ -196,19 +308,47 @@ async def mindbot_consume_dify_stream_batched(
                 extracted = _workflow_output_text(outputs)
                 if extracted:
                     wf_fallback_text = extracted
+                wf_file_hints.extend(workflow_outputs_file_hints(outputs))
             continue
 
         if evt == "message_replace":
+            repl = ev.get("answer") or ""
             if outbound_count > 0:
                 logger.warning(
-                    "[MindBot] message_replace after %s DingTalk sends; "
-                    "clients may still show earlier partials",
+                    "[MindBot] dify_sse_message_replace %s prior_outbound_batches=%s",
+                    pipeline_ctx,
                     outbound_count,
                 )
-            repl = ev.get("answer") or ""
+            logger.info(
+                "[MindBot] dify_sse_message_replace %s new_answer_chars=%s buf_cleared=1",
+                pipeline_ctx,
+                len(repl) if isinstance(repl, str) else 0,
+            )
+            if on_message_replace is not None:
+                await on_message_replace()
             full = repl
             buf = ""
             saw_answer = bool(repl.strip())
+            continue
+
+        if evt == "message_file" and use_media:
+            parsed = parse_message_file_event(ev)
+            if not parsed:
+                continue
+            url = parsed["url"]
+            type_s = str(parsed.get("type") or "document")
+            fn = str(parsed.get("filename") or "")
+            immediate = not defer_to_end
+            if not defer_to_end:
+                err_t = await flush_buf_if_any()
+                if err_t:
+                    return full, conv_id, err_t, usage_snapshot
+            err_t = await enqueue_or_send_file(
+                url, type_s, fn, immediate=immediate
+            )
+            if err_t:
+                return full, conv_id, err_t, usage_snapshot
+            saw_answer = True
             continue
 
         if evt in ("message", "agent_message"):
@@ -231,8 +371,20 @@ async def mindbot_consume_dify_stream_batched(
                 )
             ):
                 to_send = buf
+                flush_reason = (
+                    "min_chars" if len(to_send) >= min_chars else "flush_interval"
+                )
                 buf = ""
                 last_flush = time.monotonic()
+                logger.debug(
+                    "[MindBot] dify_sse_buffer_flush %s reason=%s chunk_chars=%s "
+                    "batch_index=%s full_acc_chars=%s",
+                    pipeline_ctx,
+                    flush_reason,
+                    len(to_send),
+                    parts_sent + 1,
+                    len(full),
+                )
                 ok, token_failed = await on_batch(to_send)
                 if not ok:
                     return (
@@ -245,6 +397,20 @@ async def mindbot_consume_dify_stream_batched(
                 outbound_count += 1
             continue
 
+        if use_media and tts_enabled and evt == "tts_message":
+            chunk = parse_tts_audio_base64_chunk(ev)
+            if chunk:
+                tts_chunks.append(chunk)
+            continue
+
+        if use_media and tts_enabled and evt == "tts_message_end":
+            audio_bytes = b"".join(tts_chunks)
+            tts_chunks.clear()
+            if audio_bytes:
+                tts_voice_pending = audio_bytes
+                saw_answer = True
+            continue
+
         if evt == "message_end":
             parsed_u = parse_dify_usage_from_stream_event(ev)
             if parsed_u:
@@ -254,12 +420,25 @@ async def mindbot_consume_dify_stream_batched(
                 saw_answer = bool(full.strip())
             if defer_to_end:
                 if full.strip():
-                    for part in _split_reply_chunks(full, _OPENAPI_TEXT_CHUNK):
+                    for idx, part in enumerate(
+                        _split_reply_chunks(full, _OPENAPI_TEXT_CHUNK),
+                        start=1,
+                    ):
                         if outbound_count >= max_parts:
                             logger.warning(
-                                "[MindBot] MINDBOT_STREAM_MAX_PARTS reached in defer mode",
+                                "[MindBot] dify_sse_max_parts %s defer_mode batches=%s",
+                                pipeline_ctx,
+                                outbound_count,
                             )
                             break
+                        logger.debug(
+                            "[MindBot] dify_sse_buffer_flush %s reason=defer_to_end "
+                            "part=%s chunk_chars=%s full_acc_chars=%s",
+                            pipeline_ctx,
+                            idx,
+                            len(part),
+                            len(full),
+                        )
                         ok, token_failed = await on_batch(part)
                         if not ok:
                             return (
@@ -270,44 +449,83 @@ async def mindbot_consume_dify_stream_batched(
                             )
                         outbound_count += 1
                 deferred_flushed = True
-            elif buf:
-                ok, token_failed = await on_batch(buf)
-                buf = ""
-                if not ok:
-                    return (
-                        full,
-                        conv_id,
-                        "token_failed" if token_failed else "send_failed",
-                        usage_snapshot,
-                    )
-                parts_sent += 1
-                outbound_count += 1
-            break
+            else:
+                err_t = await flush_buf_if_any()
+                if err_t:
+                    return full, conv_id, err_t, usage_snapshot
+
+            for hint in wf_file_hints:
+                u = hint.get("url")
+                if not isinstance(u, str) or not u.strip():
+                    continue
+                t = str(hint.get("type") or "document")
+                fn = str(hint.get("filename") or "")
+                err_t = await enqueue_or_send_file(
+                    u.strip(), t, fn, immediate=False
+                )
+                if err_t:
+                    return full, conv_id, err_t, usage_snapshot
+                saw_answer = True
+            wf_file_hints.clear()
+
+            err_t = await flush_pending_after_text_queue()
+            if err_t:
+                return full, conv_id, err_t, usage_snapshot
+            err_t = await flush_tts_voice_if_any()
+            if err_t:
+                return full, conv_id, err_t, usage_snapshot
+            continue
 
     if not full.strip() and wf_fallback_text:
         full = wf_fallback_text
         saw_answer = bool(full.strip())
 
-    if not saw_answer and not full.strip():
+    saw_content = (
+        saw_answer
+        or bool(media_sent)
+        or bool(pending_after_text)
+        or bool(tts_voice_pending)
+    )
+    if not saw_content and not full.strip():
+        logger.warning(
+            "[MindBot] dify_sse_outcome %s outcome=dify_empty",
+            pipeline_ctx,
+        )
         return "", conv_id, "dify_empty", usage_snapshot
 
-    if defer_to_end:
-        if not deferred_flushed and full.strip():
-            for part in _split_reply_chunks(full, _OPENAPI_TEXT_CHUNK):
-                if outbound_count >= max_parts:
-                    break
-                ok, token_failed = await on_batch(part)
-                if not ok:
-                    return (
-                        full,
-                        conv_id,
-                        "token_failed" if token_failed else "send_failed",
-                        usage_snapshot,
-                    )
-                outbound_count += 1
-        return full, conv_id, None, usage_snapshot
+    if defer_to_end and not deferred_flushed and full.strip():
+        for idx, part in enumerate(
+            _split_reply_chunks(full, _OPENAPI_TEXT_CHUNK),
+            start=1,
+        ):
+            if outbound_count >= max_parts:
+                break
+            logger.debug(
+                "[MindBot] dify_sse_buffer_flush %s reason=defer_tail part=%s "
+                "chunk_chars=%s full_acc_chars=%s",
+                pipeline_ctx,
+                idx,
+                len(part),
+                len(full),
+            )
+            ok, token_failed = await on_batch(part)
+            if not ok:
+                return (
+                    full,
+                    conv_id,
+                    "token_failed" if token_failed else "send_failed",
+                    usage_snapshot,
+                )
+            outbound_count += 1
 
     if buf:
+        logger.debug(
+            "[MindBot] dify_sse_buffer_flush %s reason=stream_end_residual chunk_chars=%s "
+            "full_acc_chars=%s",
+            pipeline_ctx,
+            len(buf),
+            len(full),
+        )
         ok, token_failed = await on_batch(buf)
         if not ok:
             return (
@@ -318,12 +536,25 @@ async def mindbot_consume_dify_stream_batched(
             )
         outbound_count += 1
     elif full.strip() and outbound_count == 0:
-        for part in _split_reply_chunks(full, _OPENAPI_TEXT_CHUNK):
+        for idx, part in enumerate(
+            _split_reply_chunks(full, _OPENAPI_TEXT_CHUNK),
+            start=1,
+        ):
             if parts_sent >= max_parts:
                 logger.warning(
-                    "[MindBot] MINDBOT_STREAM_MAX_PARTS reached (workflow or single-shot)",
+                    "[MindBot] dify_sse_max_parts %s workflow_or_single parts_sent=%s",
+                    pipeline_ctx,
+                    parts_sent,
                 )
                 break
+            logger.debug(
+                "[MindBot] dify_sse_buffer_flush %s reason=workflow_or_zero_batch "
+                "part=%s chunk_chars=%s full_acc_chars=%s",
+                pipeline_ctx,
+                idx,
+                len(part),
+                len(full),
+            )
             ok, token_failed = await on_batch(part)
             if not ok:
                 return (
@@ -335,4 +566,24 @@ async def mindbot_consume_dify_stream_batched(
             parts_sent += 1
             outbound_count += 1
 
+    if use_media:
+        err_t = await flush_pending_after_text_queue()
+        if err_t:
+            return full, conv_id, err_t, usage_snapshot
+        err_t = await flush_tts_voice_if_any()
+        if err_t:
+            return full, conv_id, err_t, usage_snapshot
+
+    logger.debug(
+        "[MindBot] dify_sse_outcome %s outcome=ok reply_chars=%s dify_conv=%s "
+        "outbound_batches=%s parts_sent=%s media_parts=%s usage=%s defer=%s",
+        pipeline_ctx,
+        len(full),
+        (conv_id or "")[:32],
+        outbound_count,
+        parts_sent,
+        media_sent,
+        usage_snapshot,
+        int(defer_to_end),
+    )
     return full, conv_id, None, usage_snapshot

@@ -20,7 +20,6 @@ const notify = useNotifications()
 interface AdminUser {
   id: number
   phone: string
-  phone_real: string
   name: string | null
   role: string
   source: string
@@ -30,7 +29,6 @@ interface AdminUser {
 interface CandidateUser {
   id: number
   phone: string
-  phone_real?: string
   name: string | null
   role: string
 }
@@ -43,7 +41,6 @@ interface EnvAdmin {
 interface ManagerUser {
   id: number
   phone: string
-  phone_real: string
   name: string | null
   organization_id: number | null
   organization_code: string | null
@@ -66,23 +63,19 @@ function maskPhone(phone: string): string {
   return phone
 }
 
-const dbAdminPhones = computed(() => new Set(admins.value.map((a) => a.phone_real)))
 const allAdminsForTable = computed(() => {
   const dbRows = admins.value.map((a) => ({
     ...a,
     source: 'database' as const,
   }))
-  const envRows = envAdmins.value
-    .filter((ea) => !dbAdminPhones.value.has(ea.phone))
-    .map((ea) => ({
-      id: 0,
-      phone: maskPhone(ea.phone),
-      phone_real: ea.phone,
-      name: ea.name,
-      role: 'admin',
-      source: 'env' as const,
-      created_at: null,
-    }))
+  const envRows = envAdmins.value.map((ea) => ({
+    id: 0,
+    phone: maskPhone(ea.phone),
+    name: ea.name,
+    role: 'admin',
+    source: 'env' as const,
+    created_at: null,
+  }))
   return [...dbRows, ...envRows]
 })
 
@@ -186,7 +179,7 @@ async function grantAdmin(user: CandidateUser) {
 
 async function revokeAdmin(admin: AdminUser) {
   try {
-    const displayName = admin.name || admin.phone_real || admin.phone
+    const displayName = admin.name || admin.phone
     await ElMessageBox.confirm(
       `${t('admin.revokeAdminConfirm')} ${displayName}?`,
       t('admin.revokeAdmin'),
@@ -238,7 +231,7 @@ async function loadManagers() {
 async function revokeManager(manager: ManagerUser) {
   if (!manager.organization_id) return
   try {
-    const displayName = manager.name || manager.phone_real || manager.phone
+    const displayName = manager.name || manager.phone
     await ElMessageBox.confirm(
       `${t('admin.removeManager')} ${displayName}?`,
       t('admin.removeManager'),
@@ -349,7 +342,7 @@ onMounted(loadAdmins)
               width="140"
             >
               <template #default="{ row }">
-                {{ row.name || row.phone_real || row.phone || '-' }}
+                {{ row.name || row.phone || '-' }}
               </template>
             </el-table-column>
             <el-table-column
@@ -449,7 +442,7 @@ onMounted(loadAdmins)
               width="140"
             >
               <template #default="{ row }">
-                {{ row.name || row.phone_real || row.phone || '-' }}
+                {{ row.name || row.phone || '-' }}
               </template>
             </el-table-column>
             <el-table-column
@@ -546,7 +539,7 @@ onMounted(loadAdmins)
             class="flex items-center justify-between p-3 rounded border border-gray-200 hover:bg-gray-50"
           >
             <div>
-              <p class="font-medium">{{ user.name || user.phone_real || user.phone }}</p>
+              <p class="font-medium">{{ user.name || user.phone }}</p>
               <p class="text-xs text-gray-500">{{ user.phone }}</p>
             </div>
             <el-button

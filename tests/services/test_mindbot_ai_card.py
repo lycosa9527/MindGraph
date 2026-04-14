@@ -1,0 +1,286 @@
+"""Tests for DingTalk AI card OpenAPI helpers (mocked HTTP)."""
+
+from __future__ import annotations
+
+from types import SimpleNamespace
+from unittest.mock import AsyncMock, patch
+
+import pytest
+
+from services.mindbot.platforms.dingtalk.ai_card import (
+    _open_space_id_group,
+    _open_space_id_robot,
+    ai_card_overflow_remainder_for_markdown,
+    create_and_deliver_ai_card,
+    mindbot_ai_card_param_key,
+    mindbot_ai_card_wiring_enabled,
+    probe_ai_card_streaming_update_api,
+    streaming_update_ai_card,
+)
+
+
+def test_open_space_ids() -> None:
+    assert _open_space_id_group("cid-abc") == "dtv1.card//im_group.cid-abc"
+    assert _open_space_id_robot("staff-1") == "dtv1.card//im_robot.staff-1"
+
+
+def test_mindbot_ai_card_param_key_default() -> None:
+    cfg = SimpleNamespace(dingtalk_ai_card_param_key=None)
+    assert mindbot_ai_card_param_key(cfg) == "content"
+
+
+def test_ai_card_overflow_remainder_empty_when_short() -> None:
+    assert ai_card_overflow_remainder_for_markdown("hello") == ""
+
+
+def test_ai_card_overflow_remainder_after_cap() -> None:
+    long_body = "x" * 1000
+    rem = ai_card_overflow_remainder_for_markdown(long_body)
+    assert len(rem) == 1000 - 950
+    assert rem == "x" * (1000 - 950)
+
+
+@pytest.mark.asyncio
+async def test_streaming_update_retries_on_401_with_fresh_token() -> None:
+    put_calls: list[int] = []
+
+    async def fake_put(
+        _path: str,
+        _token: str,
+        _payload: dict,
+        **_kwargs,
+    ):
+        put_calls.append(1)
+        if len(put_calls) == 1:
+            return 401, None
+        return 200, {"success": True, "result": True}
+
+    cfg = SimpleNamespace(
+        organization_id=7,
+        dingtalk_client_id="kid",
+        dingtalk_app_secret="sec",
+        dingtalk_ai_card_param_key="body",
+    )
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        new=fake_put,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.invalidate_access_token_cache",
+            new=AsyncMock(),
+        ) as inv_mock:
+            with patch(
+                "services.mindbot.platforms.dingtalk.ai_card.prefetch_ai_card_access_token",
+                new=AsyncMock(return_value="tok-new"),
+            ) as pre_mock:
+                ok, code, detail, ref = await streaming_update_ai_card(
+                    cfg,
+                    access_token="tok-old",
+                    out_track_id="tr",
+                    markdown_full="hi",
+                    is_finalize=False,
+                    pipeline_ctx="ctx",
+                )
+    assert ok is True
+    assert code is None
+    assert detail == ""
+    assert ref == "tok-new"
+    assert len(put_calls) == 2
+    inv_mock.assert_awaited_once()
+    pre_mock.assert_awaited()
+
+
+@pytest.mark.asyncio
+async def test_streaming_update_propagates_token_on_failure_after_401() -> None:
+    put_calls: list[int] = []
+
+    async def fake_put(
+        _path: str,
+        _token: str,
+        _payload: dict,
+        **_kwargs,
+    ):
+        put_calls.append(1)
+        if len(put_calls) == 1:
+            return 401, None
+        return 200, {"success": False, "code": "biz.err", "message": "no"}
+
+    cfg = SimpleNamespace(
+        organization_id=7,
+        dingtalk_client_id="kid",
+        dingtalk_app_secret="sec",
+        dingtalk_ai_card_param_key="body",
+    )
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        new=fake_put,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.invalidate_access_token_cache",
+            new=AsyncMock(),
+        ):
+            with patch(
+                "services.mindbot.platforms.dingtalk.ai_card.prefetch_ai_card_access_token",
+                new=AsyncMock(return_value="tok-new"),
+            ):
+                ok, code, detail, ref = await streaming_update_ai_card(
+                    cfg,
+                    access_token="tok-old",
+                    out_track_id="tr",
+                    markdown_full="hi",
+                    is_finalize=False,
+                    pipeline_ctx="ctx",
+                )
+    assert ok is False
+    assert ref == "tok-new"
+    assert len(put_calls) == 2
+
+
+def test_mindbot_ai_card_wiring_requires_template_and_client() -> None:
+    cfg = SimpleNamespace(
+        dingtalk_ai_card_template_id=" ",
+        dingtalk_client_id="kid",
+    )
+    assert not mindbot_ai_card_wiring_enabled(cfg)
+    cfg2 = SimpleNamespace(
+        dingtalk_ai_card_template_id="tpl-1",
+        dingtalk_client_id="",
+    )
+    assert not mindbot_ai_card_wiring_enabled(cfg2)
+    cfg3 = SimpleNamespace(
+        dingtalk_ai_card_template_id="tpl-1",
+        dingtalk_client_id="kid",
+    )
+    assert mindbot_ai_card_wiring_enabled(cfg3)
+
+
+@pytest.mark.asyncio
+async def test_create_and_deliver_group_posts_expected_path() -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_post(path: str, token: str, payload: dict, **_kwargs):
+        captured["path"] = path
+        captured["token"] = token
+        captured["payload"] = payload
+        return 200, {"success": True, "result": {"outTrackId": "x", "deliverResults": []}}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="robot-1",
+        dingtalk_app_secret="sec",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key="body_md",
+    )
+    body = {
+        "conversationType": "2",
+        "conversationId": "oc-1",
+        "senderStaffId": "staff-9",
+    }
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        new=fake_post,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            new=AsyncMock(return_value="tok-1"),
+        ):
+            ok, code, detail = await create_and_deliver_ai_card(
+                cfg,
+                body,
+                out_track_id="track-1",
+                initial_markdown="",
+                pipeline_ctx="tctx",
+            )
+    assert ok is True
+    assert code is None
+    assert detail == ""
+    assert captured["path"] == "/v1.0/card/instances/createAndDeliver"
+    pl = captured["payload"]
+    assert isinstance(pl, dict)
+    assert pl.get("outTrackId") == "track-1"
+    assert pl.get("openSpaceId") == "dtv1.card//im_group.oc-1"
+    assert pl.get("imGroupOpenDeliverModel", {}).get("robotCode") == "robot-1"
+
+
+@pytest.mark.asyncio
+async def test_streaming_update_puts_with_is_finalize() -> None:
+    captured: dict[str, object] = {}
+
+    async def fake_put(path: str, _token: str, payload: dict, **_kwargs):
+        captured["path"] = path
+        captured["payload"] = payload
+        return 200, {"success": True, "result": True}
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_ai_card_param_key="k1",
+    )
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        new=fake_put,
+    ):
+        ok, code, detail, ref_tok = await streaming_update_ai_card(
+            cfg,
+            access_token="tok",
+            out_track_id="tr-2",
+            markdown_full="hello",
+            is_finalize=True,
+            pipeline_ctx="ctx",
+        )
+    assert ok is True
+    assert code is None
+    assert detail == ""
+    assert ref_tok is None
+    assert captured["path"] == "/v1.0/card/streaming"
+    pl = captured["payload"]
+    assert isinstance(pl, dict)
+    assert pl.get("isFinalize") is True
+    assert pl.get("isError") is False
+    assert pl.get("key") == "k1"
+    assert pl.get("isFull") is True
+
+
+@pytest.mark.asyncio
+async def test_probe_streaming_treats_missing_card_as_ok() -> None:
+    async def fake_unverified(*_a, **_k):
+        return 200, {
+            "success": False,
+            "code": "param.stream.outTrackId",
+            "message": "card is not exist",
+        }
+
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_robot_code="r",
+        dingtalk_app_secret="s",
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id="tpl-z",
+        dingtalk_ai_card_param_key=None,
+    )
+    with patch(
+        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        new=fake_unverified,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.ai_card.get_access_token_with_error",
+            new=AsyncMock(return_value=("tok", "")),
+        ):
+            result = await probe_ai_card_streaming_update_api(cfg)
+    assert result.ok is True
+    assert result.http_status == 200
+    assert result.error_token is None
+    assert result.friendly_message is None
+
+
+@pytest.mark.asyncio
+async def test_probe_streaming_fails_without_template() -> None:
+    cfg = SimpleNamespace(
+        organization_id=1,
+        dingtalk_client_id="kid",
+        dingtalk_ai_card_template_id=" ",
+    )
+    result = await probe_ai_card_streaming_update_api(cfg)
+    assert result.ok is False
+    assert result.error_token == "template_not_configured"
+    assert result.http_status is None

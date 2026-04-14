@@ -6,7 +6,7 @@ import socket
 
 import pytest
 
-from services.mindbot.session_webhook_url import validate_session_webhook_url
+from services.mindbot.session.webhook_url import validate_session_webhook_url
 
 
 @pytest.mark.asyncio
@@ -64,7 +64,7 @@ async def test_allowlist_allows_resolved_public_ip(monkeypatch: pytest.MonkeyPat
         raise socket.gaierror("nxdomain")
 
     monkeypatch.setattr(
-        "services.mindbot.session_webhook_url.socket.getaddrinfo",
+        "services.mindbot.session.webhook_url.socket.getaddrinfo",
         fake_gai,
     )
     ok, reason = await validate_session_webhook_url("https://allowed.example/path")

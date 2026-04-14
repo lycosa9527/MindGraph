@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 import time
 from typing import Any, Optional
 
@@ -9,9 +10,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from services.mindbot.mindbot_errors import MindbotErrorCode
+from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk import extract_dingtalk_sender_profile
 from utils.env_helpers import env_bool
+
+logger = logging.getLogger(__name__)
 
 
 def _clip_opt(value: str, max_len: int) -> Optional[str]:
@@ -82,3 +85,14 @@ async def persist_mindbot_usage_event(
     )
     session.add(row)
     await session.commit()
+    logger.debug(
+        "[MindBot] usage_persisted org_id=%s error=%s duration_s=%.3f streaming=%s "
+        "msg_id=%s prompt_chars=%s reply_chars=%s",
+        cfg.organization_id,
+        error_code.value,
+        duration,
+        streaming,
+        msg_id or "",
+        len(text_in),
+        len(reply_text),
+    )

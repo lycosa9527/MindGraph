@@ -20,7 +20,7 @@ const trendUser = ref<{ name: string; id?: number } | null>(null)
 
 function openTrendModal(row: Record<string, unknown>) {
   trendUser.value = {
-    name: String(row.name ?? row.phone_real ?? row.phone ?? ''),
+    name: String(row.name ?? row.phone ?? ''),
     id: row.id as number | undefined,
   }
   trendModalVisible.value = true
@@ -85,14 +85,30 @@ async function loadUsers() {
   }
 }
 
-function openEditModal(user: Record<string, unknown>) {
+async function openEditModal(user: Record<string, unknown>) {
   editUser.value = user
-  editForm.value = {
-    phone: (user.phone_real as string) || (user.phone as string) || '',
-    name: (user.name as string) || '',
-    organization_id: (user.organization_id as number) || null,
+  const uid = user.id as number
+  try {
+    const res = await apiRequest(`/api/auth/admin/users/${uid}`)
+    if (!res.ok) {
+      const data = await res.json().catch(() => ({}))
+      notify.error((data.detail as string) || 'Failed to load user')
+      return
+    }
+    const data = (await res.json()) as {
+      phone?: string
+      name?: string | null
+      organization_id?: number | null
+    }
+    editForm.value = {
+      phone: data.phone || '',
+      name: (data.name as string) || '',
+      organization_id: data.organization_id ?? null,
+    }
+    editModalVisible.value = true
+  } catch {
+    notify.error('Failed to load user')
   }
-  editModalVisible.value = true
 }
 
 async function saveUser() {
@@ -242,7 +258,7 @@ watch([orgFilter], () => {
                 class="cursor-pointer hover:text-primary-500 hover:underline"
                 @click="openTrendModal(row)"
               >
-                {{ row.name || row.phone_real || row.phone || '-' }}
+                {{ row.name || row.phone || '-' }}
               </span>
             </template>
           </el-table-column>
