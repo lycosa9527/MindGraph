@@ -63,6 +63,10 @@ _CREATE_FRIENDLY: dict[str, str] = {
 INTERNAL_PREFLIGHT: dict[str, str] = {
     "no_token": "Could not obtain DingTalk access token.",
     "no_sender_staff": "DingTalk callback is missing sender staff id.",
+    "no_openapi_user_id": (
+        "Sender id is not usable for interactive cards (only LWCP tokens; need a real "
+        "userId in senderId or non-LWCP senderStaffId)."
+    ),
     "no_conversation_id": "DingTalk group callback is missing conversation id.",
     "network_error": "Network error calling DingTalk API.",
     "empty_body": "Empty or invalid JSON response from DingTalk.",

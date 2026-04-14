@@ -189,14 +189,26 @@ async def _access_token(
     )
 
 
-def _sender_identity_from_callback_body(body: dict[str, Any]) -> str:
+def _is_lwcp_sender_token(value: str) -> bool:
     """
-    Resolve a sender key for card create/deliver.
+    True if ``value`` is a DingTalk lightweight participant token.
 
-    Prefer ``senderStaffId``. Some robot callbacks (e.g. custom / Outgoing) omit it
-    or send an empty string; ``senderId`` is usually still present (see DingTalk
-    receive-message protocol).
+    These strings (e.g. ``$:LWCP_v1:$...``) are not valid ``userId`` / ``recipients``
+    for ``createAndDeliver`` in default userId mode.
     """
+    s = value.strip()
+    return bool(s) and s.startswith("$:LWCP")
+
+
+def _card_openapi_user_id_from_body(body: dict[str, Any]) -> tuple[str, Optional[str]]:
+    """
+    Resolve ``userId`` / ``recipients`` for card ``createAndDeliver``.
+
+    Prefer ``senderStaffId``, then ``senderId``. Skip **LWCP** tokens and use the
+    next non-LWCP id. Returns ``("", "no_sender_staff")`` or
+    ``("", "no_openapi_user_id")`` when nothing usable exists.
+    """
+    saw_nonempty = False
     for key in (
         "senderStaffId",
         "sender_staff_id",
@@ -204,25 +216,41 @@ def _sender_identity_from_callback_body(body: dict[str, Any]) -> str:
         "sender_id",
     ):
         raw = body.get(key)
-        if isinstance(raw, str) and raw.strip():
-            return raw.strip()
-        if raw is not None and not isinstance(raw, str):
-            text = str(raw).strip()
-            if text:
-                return text
-    return ""
+        if isinstance(raw, str):
+            st = raw.strip()
+        elif raw is not None:
+            st = str(raw).strip()
+        else:
+            continue
+        if not st:
+            continue
+        saw_nonempty = True
+        if not _is_lwcp_sender_token(st):
+            return st, None
+    if saw_nonempty:
+        return "", "no_openapi_user_id"
+    return "", "no_sender_staff"
 
 
-def _parse_group_body(body: dict[str, Any]) -> tuple[bool, str, str]:
-    """Return (is_group, space_id_for_open_space, sender_user_id_for_openapi)."""
+def _parse_group_body(
+    body: dict[str, Any],
+) -> tuple[bool, str, str, Optional[str]]:
+    """
+    Return ``(is_group, conversation_id, openapi_user_id, preflight_error_or_none)``.
+
+    ``preflight_error_or_none`` is set when the card cannot be addressed (missing or
+    only-LWCP sender ids).
+    """
     ct = body.get("conversationType") or body.get("conversation_type")
     is_group = False
     if ct is not None:
         is_group = str(ct).strip().lower() in ("2", "group")
     conv = body.get("conversationId") or body.get("conversation_id")
     conv_s = conv.strip() if isinstance(conv, str) else ""
-    sender = _sender_identity_from_callback_body(body)
-    return is_group, conv_s, sender
+    uid, err = _card_openapi_user_id_from_body(body)
+    if err:
+        return is_group, conv_s, "", err
+    return is_group, conv_s, uid, None
 
 
 async def create_and_deliver_ai_card(
@@ -247,10 +275,14 @@ async def create_and_deliver_ai_card(
         return False, None, "no_token"
     template_id = mindbot_ai_card_template_id(cfg)
     param_key = mindbot_ai_card_param_key(cfg)
-    is_group, conv_s, sender_staff = _parse_group_body(body)
-    if not sender_staff:
-        logger.warning("[MindBot] ai_card_create_failed %s reason=no_sender_staff", pipeline_ctx)
-        return False, None, "no_sender_staff"
+    is_group, conv_s, sender_staff, preflight = _parse_group_body(body)
+    if preflight:
+        logger.warning(
+            "[MindBot] ai_card_create_failed %s reason=%s",
+            pipeline_ctx,
+            preflight,
+        )
+        return False, None, preflight
     user_id = sender_staff
     robot_code = cfg.dingtalk_robot_code.strip()
     group_deliver_robot = _im_group_deliver_robot_code(cfg)
