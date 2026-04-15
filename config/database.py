@@ -80,10 +80,11 @@ DATABASE_URL = _normalise_db_url(_raw_db_url)
 # - pool_pre_ping: Check connection validity before using (handles stale connections)
 # - pool_recycle: Recycle connections after N seconds (prevents stale connections)
 
-# Default pool configuration for 6 workers (configurable via environment variables)
-# Calculation: 6 workers × 5 base = 30, 6 workers × 10 overflow = 60
-DEFAULT_POOL_SIZE = 30  # Base connections (5 per worker for 6 workers)
-DEFAULT_MAX_OVERFLOW = 60  # Overflow connections (10 per worker for 6 workers)
+# Default pool configuration (per process: each uvicorn/async worker has its own pool).
+# Raised for concurrent MindBot pipelines (each holds a session for the full Dify/outbound
+# path). Size PostgreSQL max_connections for: workers × (pool_size + max_overflow) + margin.
+DEFAULT_POOL_SIZE = 50
+DEFAULT_MAX_OVERFLOW = 100
 DEFAULT_POOL_TIMEOUT = 60  # Wait time for connection (seconds)
 
 # Allow environment variable overrides
@@ -96,8 +97,8 @@ pool_timeout = int(pool_timeout_str)
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=pool_size,  # Default: 30 (for 6 workers), override via DATABASE_POOL_SIZE
-    max_overflow=max_overflow,  # Default: 60 (for 6 workers), override via DATABASE_MAX_OVERFLOW
+    pool_size=pool_size,  # Default: 50, override via DATABASE_POOL_SIZE
+    max_overflow=max_overflow,  # Default: 100, override via DATABASE_MAX_OVERFLOW
     pool_timeout=pool_timeout,  # Default: 60 seconds, override via DATABASE_POOL_TIMEOUT
     pool_pre_ping=True,  # Test connection before using
     pool_recycle=1800,  # Recycle connections every 30 minutes

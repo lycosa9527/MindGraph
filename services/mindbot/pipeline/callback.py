@@ -61,10 +61,10 @@ from utils.env_helpers import env_bool
 logger = logging.getLogger(__name__)
 
 _STREAMING_SEMAPHORE = asyncio.Semaphore(
-    int(os.getenv("MINDBOT_MAX_CONCURRENT_STREAMING", "32"))
+    int(os.getenv("MINDBOT_MAX_CONCURRENT_STREAMING", "64"))
 )
 _BLOCKING_SEMAPHORE = asyncio.Semaphore(
-    int(os.getenv("MINDBOT_MAX_CONCURRENT_BLOCKING", "32"))
+    int(os.getenv("MINDBOT_MAX_CONCURRENT_BLOCKING", "64"))
 )
 
 
@@ -124,7 +124,7 @@ async def _maybe_dify_files_for_media(
     cfg: OrganizationMindbotConfig,
     body: dict[str, Any],
     inbound_msg_type: str,
-    user_id: str,
+    dify_user_id: str,
     dify: AsyncDifyClient,
 ) -> list[DifyFile]:
     if not env_bool("MINDBOT_OPENAPI_ENABLED", True):
@@ -157,7 +157,7 @@ async def _maybe_dify_files_for_media(
     fname, mime, dify_type = media_filename_and_types(inbound_msg_type, body)
     try:
         up = await dify.upload_file(
-            user_id=user_id,
+            dify_user_id,
             file_bytes=raw,
             filename=fname,
             content_type=mime,
@@ -190,8 +190,9 @@ async def execute_mindbot_pipeline(
     inbound_msg_type = msg.inbound_msg_type
     sender_staff = msg.sender_staff_id
     conversation_id_dt = msg.conversation_id
-    user_id = ctx.user_id
+    dify_user_id = ctx.dify_user_id
     conv_key = ctx.conv_key
+    conv_gate_scope = ctx.conv_gate_scope
 
     dify_conv: Optional[str] = await _redis_get_async(conv_key)
     redis_ok = is_redis_available()
@@ -204,7 +205,7 @@ async def execute_mindbot_pipeline(
     ):
         gate_acquired = await redis_acquire_conv_gate_async(
             cfg.organization_id,
-            conversation_id_dt,
+            conv_gate_scope,
             conv_key=conv_key,
         )
         if not gate_acquired:
@@ -281,7 +282,7 @@ async def execute_mindbot_pipeline(
             body=body,
             text_in=text_in,
             conversation_id_dt=conversation_id_dt,
-            user_id=user_id,
+            user_id=dify_user_id,
             streaming=streaming,
             error_code=outcome,
             reply_text=reply_text,
@@ -322,14 +323,14 @@ async def execute_mindbot_pipeline(
                     cfg,
                     body,
                     inbound_msg_type,
-                    user_id,
+                    dify_user_id,
                     dify,
                 )
                 result = await run_streaming_dify_branch(
                     cfg=cfg,
                     dify=dify,
                     text_in=text_in,
-                    user_id=user_id,
+                    user_id=dify_user_id,
                     dify_conv=dify_conv,
                     files=files,
                     body=body,
@@ -359,13 +360,13 @@ async def execute_mindbot_pipeline(
                 cfg,
                 body,
                 inbound_msg_type,
-                user_id,
+                dify_user_id,
                 dify,
             )
             resp = await mindbot_dify_chat_blocking(
                 dify,
                 text=text_in,
-                user_id=user_id,
+                user_id=dify_user_id,
                 conversation_id=dify_conv,
                 files=files,
                 inputs=dify_inputs,
@@ -408,7 +409,7 @@ async def execute_mindbot_pipeline(
         if gate_acquired:
             await redis_release_conv_gate_async(
                 cfg.organization_id,
-                conversation_id_dt,
+                conv_gate_scope,
             )
 
 

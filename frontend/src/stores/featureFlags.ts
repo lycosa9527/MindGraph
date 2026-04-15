@@ -76,7 +76,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_teacher_usage: false,
           feature_workshop_chat: false,
           feature_markets: false,
-          feature_mindbot: true,
+          feature_mindbot: false,
           workshop_chat_preview_org_ids: [],
           feature_org_access: {},
         }
@@ -90,7 +90,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
         ...raw,
         feature_org_access: raw.feature_org_access ?? {},
         feature_markets: raw.feature_markets ?? false,
-        feature_mindbot: raw.feature_mindbot ?? true,
+        feature_mindbot: raw.feature_mindbot ?? false,
       }
       flags.value = data
       lastFetchTime.value = now
@@ -117,7 +117,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
           feature_teacher_usage: false,
           feature_workshop_chat: false,
           feature_markets: false,
-          feature_mindbot: true,
+          feature_mindbot: false,
           workshop_chat_preview_org_ids: [],
           feature_org_access: {},
         }
@@ -189,7 +189,7 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
   }
 
   function getFeatureMindbot(): boolean {
-    return flags.value?.feature_mindbot ?? true
+    return flags.value?.feature_mindbot ?? false
   }
 
   function getWorkshopChatPreviewOrgIds(): number[] {

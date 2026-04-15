@@ -37,9 +37,8 @@ export interface MindbotConfigFormState {
   dify_api_key: string
   dify_inputs_json: string
   dify_timeout_seconds: number
-  show_chain_of_thought_oto: boolean
-  show_chain_of_thought_internal_group: boolean
-  show_chain_of_thought_cross_org_group: boolean
+  /** Unified UI: saved as all three API booleans. */
+  show_chain_of_thought: boolean
   chain_of_thought_max_chars: number
   dingtalk_ai_card_template_id: string
   dingtalk_ai_card_param_key: string

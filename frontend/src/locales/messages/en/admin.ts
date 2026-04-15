@@ -172,11 +172,8 @@ export default {
   'admin.mindbot.dingtalkClientIdHint':
     'Used with the Client Secret to obtain access tokens for AI cards and other OpenAPI. Save both; required for “Test permissions” and AI cards.',
   'admin.mindbot.difyShowChainOfThought': 'Chain-of-thought',
-  'admin.mindbot.difyShowChainOfThoughtOto': '1:1 (private chat)',
-  'admin.mindbot.difyShowChainOfThoughtInternalGroup': 'Internal group',
-  'admin.mindbot.difyShowChainOfThoughtCrossOrgGroup': 'Cross-org group (external)',
   'admin.mindbot.difyShowChainOfThoughtHint':
-    'When on for that chat type, model thinking blocks (e.g. redacted_thinking) are shown; when off they are stripped before sending. Default off everywhere.',
+    'When on, model thinking blocks (e.g. redacted_thinking) are shown for all chat types; when off they are stripped before sending. Default off. Streaming can also merge Dify agent thought from SSE; blocking replies use answer text only unless the API returns separate thought fields. With streaming and CoT on, the character cap applies to the final reply; live card or message updates may show longer thinking until the turn finishes.',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI card template (optional)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     'Empty = text replies; e.g. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
@@ -186,14 +183,11 @@ export default {
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth and streaming card permissions OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Check failed',
   'admin.mindbot.dingtalkAiCardStreamCheckTooltip':
-    'Uses the Client Secret saved on the server, your Client ID, and template id. Obtains an access token and calls PUT /v1.0/card/streaming (expected “card not found” for a random id) to confirm OpenAPI and streaming-card permissions.',
+    'Verifies OAuth and streaming AI card permissions.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit': 'Save the MindBot config for this school first.',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret':
-    'Save a Client Secret first. The check only uses credentials stored on the server, not unsaved text in the form.',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId':
-    'Set OpenAPI Client ID (AppKey) in this form or in the last saved config.',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate':
-    'Set the published AI card template id (e.g. uuid.schema) in this form or in the last saved config.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret': 'Save the Client Secret first.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId': 'Enter the Client ID.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate': 'Enter the AI card template ID.',
   'admin.mindbot.difyBaseUrl': 'Dify API base URL',
   'admin.mindbot.difyApiKey': 'Dify API key',
   'admin.mindbot.difyApiKeyHint': 'Required when adding a school.',
@@ -247,11 +241,16 @@ export default {
   'admin.mindbot.colTurn': 'Turn',
   'admin.mindbot.monitorFilterStaff': 'Filter by user',
   'admin.mindbot.monitorStaffAll': 'All users',
+  'admin.mindbot.exportConversations': 'Export',
+  'admin.mindbot.exportEmpty': 'Nothing to export for the current filter.',
+  'admin.mindbot.exportError': 'Export failed. Try again.',
+  'admin.mindbot.exportSuccess': 'Export downloaded.',
+  'admin.mindbot.exportDisclaimer':
+    'MindBot usage metadata for educational research. Message bodies are not stored; rows are telemetry only.',
   'admin.mindbot.logTabHint':
     'Raw usage lines for this school (newest first). Click a line for full metadata. Message text is not stored.',
   'admin.mindbot.monitorTabHint':
     'Conversations grouped from the loaded page. Click a row to open the thread; click a turn for details.',
-  'admin.mindbot.logDayGroup': '{day}',
   'admin.mindbot.colConvThread': 'Conversation',
   'admin.mindbot.colTurnsLoaded': 'Turns (page)',
   'admin.mindbot.convNoThreadId': '(no thread id)',

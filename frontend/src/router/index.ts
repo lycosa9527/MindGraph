@@ -322,7 +322,8 @@ router.beforeEach(async (to, _from, next) => {
     to.path.startsWith('/auth') ||
     to.path.startsWith('/demo') ||
     to.path.startsWith('/export-render') ||
-    to.path.startsWith('/dashboard')
+    to.path.startsWith('/dashboard') ||
+    to.path.startsWith('/admin/mindbot')
 
   if (isMobile.value && !skipMobileRedirect) {
     const mobileMap: Record<string, string> = {

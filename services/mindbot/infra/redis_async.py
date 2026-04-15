@@ -12,11 +12,12 @@ Intended callers: callback.py, conv_gate.py, oauth.py, metrics.py.
 
 Pool sizing
 ----------
-``MINDBOT_REDIS_MAX_CONNECTIONS`` (default 100) should be at least as large as
+``MINDBOT_REDIS_MAX_CONNECTIONS`` (default 150) should be at least as large as
 the peak number of concurrent MindBot handlers that touch Redis simultaneously.
-With ``MINDBOT_MAX_CONCURRENT`` (default 64) coroutines potentially each making
-one Redis call, the default pool of 100 provides headroom for bursts without
-saturating the pool and introducing wait time.
+With ``MINDBOT_MAX_CONCURRENT_STREAMING`` / ``MINDBOT_MAX_CONCURRENT_BLOCKING``
+(default 64 each) coroutines potentially each making Redis calls, the default
+pool provides headroom for bursts without saturating the pool and introducing
+wait time.
 """
 
 from __future__ import annotations
@@ -31,7 +32,7 @@ logger = logging.getLogger(__name__)
 
 _client: Optional[aioredis.Redis] = None
 
-_DEFAULT_MAX_CONNECTIONS = 100
+_DEFAULT_MAX_CONNECTIONS = 150
 
 
 def _get_client() -> aioredis.Redis:

@@ -51,7 +51,7 @@ async def test_streaming_ai_card_create_stream_and_finalize() -> None:
         on_msg_rep = kwargs["on_message_replace"]
         await on_msg_rep()
         await on_batch("a")
-        return "a", None, None, None
+        return "a", None, None, None, ""
 
     with patch(
         "services.mindbot.pipeline.dify_paths.prefetch_ai_card_access_token",

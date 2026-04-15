@@ -5,6 +5,14 @@ The Stream SDK WebSocket connection is required by DingTalk before it will accep
 content is still pushed via REST ``PUT /v1.0/card/streaming`` — the WebSocket is only
 needed as a registration/validation channel; it also receives card interaction callbacks
 (button clicks etc.) which we ACK without further action.
+
+Operations
+----------
+- Expect **one** Stream SDK client per distinct DingTalk app ``client_id`` in a process.
+  Multiple orgs sharing the same app reuse the same client.
+- Clients are cleared only on process shutdown (``stop_all``). After **mass credential
+  churn** or rotating many distinct apps in one long-lived worker, **restart uvicorn
+  workers** so stale entries are dropped (rare in production).
 """
 
 from __future__ import annotations
@@ -148,6 +156,10 @@ class DingTalkStreamManager:
         """Return True if a Stream SDK task is registered for ``client_id``."""
         task = self._tasks.get(client_id)
         return task is not None and not task.done()
+
+    def registered_client_count(self) -> int:
+        """Number of DingTalk Stream SDK clients held in this process (one per ``client_id``)."""
+        return len(self._clients)
 
     async def stop_all(self) -> None:
         """

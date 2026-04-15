@@ -1,4 +1,10 @@
-"""Resolve whether to show chain-of-thought for the current DingTalk callback."""
+"""Resolve whether to show chain-of-thought for the current DingTalk callback.
+
+MindGraph maps per-chat scopes (1:1, internal group, cross-org) to visibility.
+This is finer-grained than AstrBot's typical ``display_reasoning_text`` /
+``show_reasoning`` flags on the provider or agent runner; behavior aligns with
+AstrBot's idea of gating a separate reasoning channel before it reaches the user.
+"""
 
 from __future__ import annotations
 

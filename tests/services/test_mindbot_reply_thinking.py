@@ -1,8 +1,12 @@
 """Tests for MindBot Dify reply thinking strip / truncate."""
 
 from services.mindbot.core.reply_thinking import (
+    MindbotThinkingStreamFilter,
+    _strip_complete_thinking_blocks,
     format_mindbot_reply_for_dingtalk,
     iter_visible_stream_chunks,
+    native_reasoning_from_dify_blocking_response,
+    split_tag_embedded_reasoning,
 )
 
 
@@ -24,6 +28,70 @@ def test_format_hide_strips_backtick_think_block() -> None:
         chain_of_thought_max_chars=4000,
     )
     assert out == "Hello  world"
+
+
+def test_stream_filter_tag_embedded_reasoning_text() -> None:
+    """``MindbotThinkingStreamFilter`` exposes tag-derived reasoning for inspection."""
+    flt = MindbotThinkingStreamFilter(show_chain_of_thought=True)
+    flt.push("<redacted_thinking>inner</redacted_thinking> tail")
+    assert flt.tag_embedded_reasoning_text == "inner"
+
+
+def test_split_tag_matches_strip() -> None:
+    """``split_tag_embedded_reasoning``.answer matches strip for hide semantics."""
+
+    raw = "A <redacted_thinking>sec</redacted_thinking> B"
+    sp = split_tag_embedded_reasoning(raw)
+    assert sp.reasoning == "sec"
+    assert sp.answer == _strip_complete_thinking_blocks(raw)
+
+
+def test_format_native_reasoning_prepends_when_show() -> None:
+    """Native Dify thought merged when not duplicated in tags."""
+    out = format_mindbot_reply_for_dingtalk(
+        "Hello world",
+        show_chain_of_thought=True,
+        chain_of_thought_max_chars=4000,
+        native_reasoning="step one",
+    )
+    assert "<redacted_thinking>" in out
+    assert "step one" in out
+    assert "Hello world" in out
+
+
+def test_format_native_reasoning_skips_duplicate() -> None:
+    """Do not prepend native when the same text is already in tag reasoning."""
+    raw = "<redacted_thinking>step one</redacted_thinking>\nHello"
+    out = format_mindbot_reply_for_dingtalk(
+        raw,
+        show_chain_of_thought=True,
+        chain_of_thought_max_chars=4000,
+        native_reasoning="step one",
+    )
+    assert out.count("step one") == 1
+
+
+def test_format_native_omitted_when_tag_reasoning_nonempty() -> None:
+    """Tag-embedded reasoning wins; extra native text is not merged in."""
+    raw = "<redacted_thinking>from tags</redacted_thinking>\nbody"
+    out = format_mindbot_reply_for_dingtalk(
+        raw,
+        show_chain_of_thought=True,
+        chain_of_thought_max_chars=4000,
+        native_reasoning="extra native",
+    )
+    assert "extra native" not in out
+    assert "from tags" in out
+
+
+def test_native_reasoning_from_dify_blocking_response_top_level() -> None:
+    assert native_reasoning_from_dify_blocking_response({"thought": "  hi  "}) == "hi"
+
+
+def test_native_reasoning_from_dify_blocking_response_metadata() -> None:
+    assert native_reasoning_from_dify_blocking_response(
+        {"metadata": {"agent_thought": "meta"}}
+    ) == "meta"
 
 
 def test_format_hide_strips_redacted_pair() -> None:

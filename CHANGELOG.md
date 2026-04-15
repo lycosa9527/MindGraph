@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.86.0] - 2026-04-15
+
+### Added
+- **MindBot / Dify**: `services/mindbot/core/dify_user_id.py` — stable Dify `user` id per DingTalk staff; Redis conversation keys and conv-gate scope include `sender_staff_id` in group chats so members do not share one Dify binding.
+- **MindBot / reasoning**: Dify SSE `agent_thought` accumulation in `mindbot_consume_dify_stream_batched` (fifth return value `native_reasoning`); `reply_thinking.py` splits tag-embedded `<think>` / loose blocks from answer text (`SplitReasoningResult`, `split_tag_embedded_reasoning`) and reads blocking JSON via `native_reasoning_from_dify_blocking_response`; `dify_paths.py` merges native + tag reasoning in `format_mindbot_reply_for_dingtalk` (dedup when both channels repeat).
+- **MindBot / ops**: `GET /api/mindbot/admin/internal/memory-footprint` (platform admins) — OAuth lock LRU size/cap, DingTalk Stream registered clients, callback metrics; school managers see org-scoped `by_organization_id` only (`_callback_metrics_snapshot_for_user`).
+- **MindBot / OAuth**: LRU-capped in-process thundering-herd lock map (`MINDBOT_OAUTH_LOCK_MAP_MAX`, default 2048) in `services/mindbot/platforms/dingtalk/auth/oauth.py`.
+- **MindBot / telemetry**: `mindbot_long_lived_maps_snapshot` and related metrics; Stream client count hook in `cards/stream_client.py`.
+- **Config / security**: `_sanitize_feature_org_access_map` so non-admins do not receive full org/user allowlists for feature flags (`routers/api/config.py`); tests in `tests/routers/test_config_feature_org_access_sanitize.py`.
+- **Tests**: `tests/services/test_mindbot_admin_security.py`, `tests/services/test_mindbot_memory_footprint.py`; expanded MindBot callback, Dify stream, and reply-thinking coverage.
+
+### Changed
+- **MindBot / capacity**: Separate semaphores — `MINDBOT_MAX_CONCURRENT_STREAMING` and `MINDBOT_MAX_CONCURRENT_BLOCKING` (replace single `MINDBOT_MAX_CONCURRENT`); `env.example` documents per-process caps and ops notes for RSS / memory footprint endpoint.
+- **MindBot / Redis**: Configurable async pool size `MINDBOT_REDIS_MAX_CONNECTIONS` (`services/mindbot/infra/redis_async.py`).
+- **Database**: Default SQLAlchemy pool raised to **50** base + **100** overflow per worker (`config/database.py`, `env.example`); sizing notes for PostgreSQL `max_connections`.
+- **MindBot / pipeline**: `callback.py`, `callback_validate.py`, `chain_of_thought_policy.py` aligned with new user/conv scoping and reasoning merge.
+- **Frontend / admin**: `AdminMindBotUsagePanel.vue`, `MindbotUsageEventDetailDialog.vue`, `AdminMindBotConfigDialog.vue`, `AdminMindBotTab.vue`; `mindbotConfigTypes.ts`; sidebar and feature-flag wiring (`AppSidebarNav.vue`, `useAppSidebar.ts`, `useFeatureFlags.ts`, `featureFlags.ts`, `router/index.ts`); i18n `en` / `zh` admin strings.
+
 ## [5.85.0] - 2026-04-15
 
 ### Added

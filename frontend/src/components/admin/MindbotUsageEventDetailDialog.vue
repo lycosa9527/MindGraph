@@ -49,20 +49,23 @@ function formatTokens(row: MindbotUsageEventRow): string {
     :title="title"
     width="min(560px, 92vw)"
     class="mindbot-usage-detail-dialog"
+    append-to-body
+    align-center
     destroy-on-close
   >
     <template v-if="event">
-      <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
-        {{ t('admin.mindbot.usageEventDetailPrivacy') }}
-      </p>
-      <el-descriptions
-        :column="1"
-        border
-        size="small"
-        class="mindbot-usage-detail-desc"
-      >
+      <div class="mindbot-usage-detail-scroll max-h-[min(70vh,560px)] overflow-y-auto overflow-x-hidden pr-0.5">
+        <p class="text-xs text-gray-500 dark:text-gray-400 mb-3">
+          {{ t('admin.mindbot.usageEventDetailPrivacy') }}
+        </p>
+        <el-descriptions
+          :column="1"
+          border
+          size="small"
+          class="mindbot-usage-detail-desc w-full max-w-full"
+        >
         <el-descriptions-item :label="t('admin.mindbot.detailId')">
-          {{ event.id }}
+          <span class="font-mono text-xs break-all">{{ event.id }}</span>
         </el-descriptions-item>
         <el-descriptions-item :label="t('admin.mindbot.colTime')">
           {{ formatTime(event.created_at) }}
@@ -121,13 +124,24 @@ function formatTokens(row: MindbotUsageEventRow): string {
         <el-descriptions-item :label="t('admin.mindbot.detailLinkedUser')">
           {{ event.linked_user_id ?? '—' }}
         </el-descriptions-item>
-      </el-descriptions>
+        </el-descriptions>
+      </div>
     </template>
   </el-dialog>
 </template>
 
 <style scoped>
 .mindbot-usage-detail-desc :deep(.el-descriptions__label) {
-  width: 160px;
+  width: 9.5rem;
+  max-width: 42%;
+  vertical-align: top;
+}
+.mindbot-usage-detail-desc :deep(.el-descriptions__content) {
+  min-width: 0;
+  word-break: break-word;
+}
+.mindbot-usage-detail-desc :deep(table) {
+  table-layout: fixed;
+  width: 100%;
 }
 </style>

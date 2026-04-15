@@ -19,7 +19,7 @@ from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from repositories.mindbot_repo import MindbotConfigRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
-from routers.auth.dependencies import require_mindbot_admin_access
+from routers.auth.dependencies import require_admin, require_mindbot_admin_access
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
 from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
@@ -226,6 +226,31 @@ class DifyServiceStatusResponse(BaseModel):
     )
 
 
+class MindbotMemoryFootprintResponse(BaseModel):
+    """In-process MindBot structures for capacity / leak diagnostics (per worker)."""
+
+    oauth_lock_map_size: int = Field(
+        ...,
+        description="Current entries in the OAuth thundering-herd lock LRU map.",
+    )
+    oauth_lock_map_max: int = Field(
+        ...,
+        description="Configured cap before LRU eviction (MINDBOT_OAUTH_LOCK_MAP_MAX).",
+    )
+    dingtalk_stream_registered_clients: int = Field(
+        ...,
+        description="DingTalk Stream SDK clients in this process (one per client_id).",
+    )
+    callback_metrics: dict[str, Any] = Field(
+        ...,
+        description=(
+            "Callback outcome counters since process start. "
+            "School managers only receive their organization's ``by_organization_id`` "
+            "entry; global aggregates and ``by_robot_code`` are admin-only."
+        ),
+    )
+
+
 class DingtalkAiCardStreamingStatusResponse(BaseModel):
     """MindBot admin: probe DingTalk AI card streaming update API (OpenAPI)."""
 
@@ -299,6 +324,36 @@ def _ensure_org_scope(user: User, organization_id: int) -> None:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="Organization access denied",
         )
+
+
+def _callback_metrics_snapshot_for_user(user: User) -> dict[str, Any]:
+    """
+    Full callback counters for admins; managers only see their organization's slice.
+
+    ``by_robot_code`` is omitted for managers because counters are not keyed by org in
+    memory (would risk cross-tenant leakage if robot codes were ever ambiguous).
+    """
+    full = mindbot_metrics.snapshot()
+    if is_admin(user):
+        return full
+    oid = getattr(user, "organization_id", None)
+    if oid is None:
+        return {"by_error_code": {}, "by_organization_id": {}, "by_robot_code": {}}
+    oid_int = int(oid)
+    by_org = full.get("by_organization_id") or {}
+    org_codes: dict[str, int] = {}
+    if oid_int in by_org:
+        org_codes = dict(by_org[oid_int])
+    else:
+        for key, codes in by_org.items():
+            if int(key) == oid_int:
+                org_codes = dict(codes)
+                break
+    return {
+        "by_error_code": {},
+        "by_organization_id": {oid_int: org_codes},
+        "by_robot_code": {},
+    }
 
 
 def _resolve_secrets(
@@ -580,6 +635,29 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
         dingtalk_ai_card_template_id=(row.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(row.dingtalk_ai_card_param_key or "").strip() or None,
         is_enabled=row.is_enabled,
+    )
+
+
+@router.get("/admin/internal/memory-footprint", response_model=MindbotMemoryFootprintResponse)
+async def admin_mindbot_memory_footprint(
+    user: User = Depends(require_admin),
+) -> MindbotMemoryFootprintResponse:
+    """
+    Long-lived in-process MindBot maps (OAuth lock LRU, DingTalk Stream clients) plus
+    callback counters. Platform admins only (process-wide metrics, not org-scoped).
+
+    School managers use MindBot admin APIs scoped to their organization; they must not
+    observe worker-wide maps or global callback aggregates beyond org-sliced metrics.
+    """
+    from services.mindbot.telemetry.metrics import mindbot_long_lived_maps_snapshot
+
+    _require_mindbot_feature()
+    long_lived = mindbot_long_lived_maps_snapshot()
+    return MindbotMemoryFootprintResponse(
+        oauth_lock_map_size=int(long_lived["oauth_lock_map_size"]),
+        oauth_lock_map_max=int(long_lived["oauth_lock_map_max"]),
+        dingtalk_stream_registered_clients=int(long_lived["dingtalk_stream_registered_clients"]),
+        callback_metrics=_callback_metrics_snapshot_for_user(user),
     )
 
 

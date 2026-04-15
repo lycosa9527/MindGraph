@@ -1,4 +1,14 @@
-"""Dify streaming vs blocking reply paths for MindBot (split from callback orchestrator)."""
+"""Dify streaming vs blocking reply paths for MindBot (split from callback orchestrator).
+
+Reasoning from Dify ``agent_thought`` events is merged in
+``format_mindbot_reply_for_dingtalk`` with tag-embedded ``<redacted_thinking>`` blocks.
+If the same text appears in both, duplicate prepends are skipped (prefer tag-embedded
+when already present). Dify ``message_replace`` clears native thought accumulation in
+the stream consumer (``dify_stream``) while ``on_dify_message_replace`` resets the
+tag stream filter and card buffer. Optional separate DingTalk messages for
+reasoning-only UX are not implemented here; a single composed reply keeps streaming
+and AI cards simple.
+"""
 
 from __future__ import annotations
 
@@ -18,6 +28,7 @@ from services.mindbot.core.chain_of_thought_policy import effective_show_chain_o
 from services.mindbot.core.reply_thinking import (
     MindbotThinkingStreamFilter,
     format_mindbot_reply_for_dingtalk,
+    native_reasoning_from_dify_blocking_response,
 )
 from services.mindbot.core.redis_keys import CONV_KEY_TTL_SECONDS
 from services.mindbot.errors import MindbotErrorCode
@@ -289,28 +300,31 @@ async def run_streaming_dify_branch(
             mindbot_ai_card_wiring_enabled(cfg) and not card_state.buffer_only
         )
 
-    full, new_conv, err_tok, usage_dify = await mindbot_consume_dify_stream_batched(
-        dify,
-        text=text_in,
-        user_id=user_id,
-        conversation_id=dify_conv,
-        files=files,
-        min_chars=min_c,
-        flush_interval_s=flush_s,
-        max_parts=max_p,
-        on_batch=on_batch,
-        inputs=dify_inputs,
-        on_stale_conversation=stale_cb,
-        pipeline_ctx=pipeline_ctx,
-        on_media=on_media,
-        on_message_replace=on_dify_message_replace,
-        on_stream_started=release_semaphore_slot,
+    full, new_conv, err_tok, usage_dify, native_reasoning = (
+        await mindbot_consume_dify_stream_batched(
+            dify,
+            text=text_in,
+            user_id=user_id,
+            conversation_id=dify_conv,
+            files=files,
+            min_chars=min_c,
+            flush_interval_s=flush_s,
+            max_parts=max_p,
+            on_batch=on_batch,
+            inputs=dify_inputs,
+            on_stale_conversation=stale_cb,
+            pipeline_ctx=pipeline_ctx,
+            on_media=on_media,
+            on_message_replace=on_dify_message_replace,
+            on_stream_started=release_semaphore_slot,
+        )
     )
     full_str = full if isinstance(full, str) else ""
     formatted_full = format_mindbot_reply_for_dingtalk(
         full_str,
         show_chain_of_thought=eff_show_cot,
         chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
+        native_reasoning=native_reasoning,
     )
     use_cum_for_reply = not err_tok and (
         (card_state.created and card_state.use_card)
@@ -321,6 +335,7 @@ async def run_streaming_dify_branch(
             card_state.cum,
             show_chain_of_thought=eff_show_cot,
             chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
+            native_reasoning=native_reasoning,
         )
         if use_cum_for_reply
         else formatted_full
@@ -503,10 +518,16 @@ async def run_blocking_send_branch(
     if not isinstance(answer, str):
         answer = str(answer)
     eff_show_cot = effective_show_chain_of_thought(cfg, body)
+    native_blocking = (
+        native_reasoning_from_dify_blocking_response(resp)
+        if isinstance(resp, dict)
+        else ""
+    )
     answer = format_mindbot_reply_for_dingtalk(
         answer,
         show_chain_of_thought=eff_show_cot,
         chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
+        native_reasoning=native_blocking,
     )
     new_conv = (resp or {}).get("conversation_id")
     dify_cid_block: Optional[str] = None

@@ -99,6 +99,26 @@ def _stream_error_is_conversation_not_exists(ev: dict[str, Any]) -> bool:
     return False
 
 
+def _extract_agent_thought_text(ev: dict[str, Any]) -> str:
+    """
+    Best-effort text from Dify ``agent_thought`` (and similar) streaming events.
+
+    Field names vary by Dify version and app mode; we accept common top-level and
+    ``data`` payload keys.
+    """
+    for key in ("thought", "observation", "tool_input"):
+        val = ev.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    data = ev.get("data")
+    if isinstance(data, dict):
+        for key in ("thought", "observation", "tool_input", "message"):
+            val = data.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return ""
+
+
 async def mindbot_consume_dify_stream_batched(
     dify: AsyncDifyClient,
     *,
@@ -118,9 +138,14 @@ async def mindbot_consume_dify_stream_batched(
     ] = None,
     on_message_replace: Optional[Callable[[], Awaitable[None]]] = None,
     on_stream_started: Optional[Callable[[], None]] = None,
-) -> tuple[str, Optional[str], Optional[str], Optional[dict[str, int]]]:
+) -> tuple[str, Optional[str], Optional[str], Optional[dict[str, int]], str]:
     """
     Consume Dify ``stream_chat`` SSE (ChunkChatCompletionResponse), batch ``answer`` deltas.
+
+    Returns ``(full_text, conversation_id, error_token, usage_snapshot, native_reasoning)``.
+    ``native_reasoning`` concatenates Dify ``agent_thought`` payloads (when present);
+    it is cleared on ``message_replace`` so discarded streams do not leak. Merge with
+    tag-embedded reasoning in ``format_mindbot_reply_for_dingtalk``.
 
     ``on_media`` when set receives (kind, payload): ``image`` (url), ``audio`` (bytes),
     ``markdown`` (text for file links). OpenAPI-only sends; session webhook is not used.
@@ -165,6 +190,7 @@ async def mindbot_consume_dify_stream_batched(
     sent_urls: set[str] = set()
     tts_chunks: list[bytes] = []
     tts_voice_pending: Optional[bytes] = None
+    native_reasoning_accum = ""
 
     async def flush_buf_if_any() -> Optional[str]:
         nonlocal buf, parts_sent, outbound_count, last_flush
@@ -305,9 +331,18 @@ async def mindbot_consume_dify_stream_batched(
                 code,
                 status,
             )
-            return full, conv_id, "dify_error", usage_snapshot
+            return full, conv_id, "dify_error", usage_snapshot, native_reasoning_accum
 
         if evt == "ping":
+            continue
+
+        if evt == "agent_thought":
+            thought_piece = _extract_agent_thought_text(ev)
+            if thought_piece:
+                if native_reasoning_accum:
+                    native_reasoning_accum = native_reasoning_accum + "\n\n" + thought_piece
+                else:
+                    native_reasoning_accum = thought_piece
             continue
 
         if evt in ("workflow_started", "node_started", "node_finished"):
@@ -341,6 +376,9 @@ async def mindbot_consume_dify_stream_batched(
             full = repl
             buf = ""
             saw_answer = bool(repl.strip())
+            # Align with answer reset: prior ``agent_thought`` chunks belonged to the
+            # discarded stream and must not merge into ``format_mindbot_reply_for_dingtalk``.
+            native_reasoning_accum = ""
             continue
 
         if evt == "message_file" and use_media:
@@ -354,12 +392,12 @@ async def mindbot_consume_dify_stream_batched(
             if not defer_to_end:
                 err_t = await flush_buf_if_any()
                 if err_t:
-                    return full, conv_id, err_t, usage_snapshot
+                    return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
             err_t = await enqueue_or_send_file(
                 url, type_s, fn, immediate=immediate
             )
             if err_t:
-                return full, conv_id, err_t, usage_snapshot
+                return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
             saw_answer = True
             continue
 
@@ -404,6 +442,7 @@ async def mindbot_consume_dify_stream_batched(
                         conv_id,
                         "token_failed" if token_failed else "send_failed",
                         usage_snapshot,
+                        native_reasoning_accum,
                     )
                 parts_sent += 1
                 outbound_count += 1
@@ -458,13 +497,14 @@ async def mindbot_consume_dify_stream_batched(
                                 conv_id,
                                 "token_failed" if token_failed else "send_failed",
                                 usage_snapshot,
+                                native_reasoning_accum,
                             )
                         outbound_count += 1
                 deferred_flushed = True
             else:
                 err_t = await flush_buf_if_any()
                 if err_t:
-                    return full, conv_id, err_t, usage_snapshot
+                    return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
 
             for hint in wf_file_hints:
                 u = hint.get("url")
@@ -476,16 +516,16 @@ async def mindbot_consume_dify_stream_batched(
                     u.strip(), t, fn, immediate=False
                 )
                 if err_t:
-                    return full, conv_id, err_t, usage_snapshot
+                    return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
                 saw_answer = True
             wf_file_hints.clear()
 
             err_t = await flush_pending_after_text_queue()
             if err_t:
-                return full, conv_id, err_t, usage_snapshot
+                return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
             err_t = await flush_tts_voice_if_any()
             if err_t:
-                return full, conv_id, err_t, usage_snapshot
+                return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
             continue
 
     if not full.strip() and wf_fallback_text:
@@ -497,13 +537,14 @@ async def mindbot_consume_dify_stream_batched(
         or bool(media_sent)
         or bool(pending_after_text)
         or bool(tts_voice_pending)
+        or bool(native_reasoning_accum.strip())
     )
     if not saw_content and not full.strip():
         logger.warning(
             "[MindBot] dify_sse_outcome %s outcome=dify_empty",
             pipeline_ctx,
         )
-        return "", conv_id, "dify_empty", usage_snapshot
+        return "", conv_id, "dify_empty", usage_snapshot, native_reasoning_accum
 
     if defer_to_end and not deferred_flushed and full.strip():
         for idx, part in enumerate(
@@ -527,6 +568,7 @@ async def mindbot_consume_dify_stream_batched(
                     conv_id,
                     "token_failed" if token_failed else "send_failed",
                     usage_snapshot,
+                    native_reasoning_accum,
                 )
             outbound_count += 1
 
@@ -545,6 +587,7 @@ async def mindbot_consume_dify_stream_batched(
                 conv_id,
                 "token_failed" if token_failed else "send_failed",
                 usage_snapshot,
+                native_reasoning_accum,
             )
         outbound_count += 1
     elif full.strip() and outbound_count == 0:
@@ -574,6 +617,7 @@ async def mindbot_consume_dify_stream_batched(
                     conv_id,
                     "token_failed" if token_failed else "send_failed",
                     usage_snapshot,
+                    native_reasoning_accum,
                 )
             parts_sent += 1
             outbound_count += 1
@@ -581,10 +625,10 @@ async def mindbot_consume_dify_stream_batched(
     if use_media:
         err_t = await flush_pending_after_text_queue()
         if err_t:
-            return full, conv_id, err_t, usage_snapshot
+            return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
         err_t = await flush_tts_voice_if_any()
         if err_t:
-            return full, conv_id, err_t, usage_snapshot
+            return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
 
     logger.debug(
         "[MindBot] dify_sse_outcome %s outcome=ok reply_chars=%s dify_conv=%s "
@@ -598,4 +642,4 @@ async def mindbot_consume_dify_stream_batched(
         usage_snapshot,
         int(defer_to_end),
     )
-    return full, conv_id, None, usage_snapshot
+    return full, conv_id, None, usage_snapshot, native_reasoning_accum

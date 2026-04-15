@@ -6,14 +6,20 @@ On a cold cache (server restart or TTL expiry), many concurrent requests for the
 same org would all miss Redis and fire parallel DingTalk OAuth POSTs.  A per-org
 ``asyncio.Lock`` keyed by the cache key serialises these so only the first caller
 fetches a fresh token; all others wait and then read it from the cache.
+
+In-process locks are stored in an LRU map capped by ``MINDBOT_OAUTH_LOCK_MAP_MAX``
+(default 2048) so worker memory stays bounded when many distinct org credentials
+appear over the process lifetime.
 """
 
 from __future__ import annotations
 
 import asyncio
+import functools
 import hashlib
 import json
 import logging
+from collections import OrderedDict
 from typing import Any, Optional, Tuple
 
 import aiohttp
@@ -22,16 +28,52 @@ from services.mindbot.infra.http_client import get_dingtalk_api_session
 from services.mindbot.platforms.dingtalk.api.constants import DING_API_BASE, PATH_OAUTH_ACCESS_TOKEN, TOKEN_TTL_SECONDS
 from services.mindbot.infra.redis_async import redis_delete, redis_get, redis_set_ttl
 from services.redis.redis_client import is_redis_available
+from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
 
-_token_fetch_locks: dict[str, asyncio.Lock] = {}
+_token_fetch_locks: "OrderedDict[str, asyncio.Lock]" = OrderedDict()
+
+
+@functools.cache
+def _oauth_lock_map_max_entries() -> int:
+    """Upper bound on in-process OAuth thundering-herd locks (LRU eviction)."""
+    return max(2, min(65536, env_int("MINDBOT_OAUTH_LOCK_MAP_MAX", 2048)))
+
+
+def oauth_lock_map_size() -> int:
+    """Return current size of the per-credential asyncio.Lock map (for metrics)."""
+    return len(_token_fetch_locks)
+
+
+def oauth_lock_map_max_configured() -> int:
+    """Configured maximum entries before LRU eviction (see ``MINDBOT_OAUTH_LOCK_MAP_MAX``)."""
+    return _oauth_lock_map_max_entries()
 
 
 def _get_token_lock(cache_key: str) -> asyncio.Lock:
-    if cache_key not in _token_fetch_locks:
-        _token_fetch_locks[cache_key] = asyncio.Lock()
-    return _token_fetch_locks[cache_key]
+    """
+    Return the lock for ``cache_key``, LRU-touching on reuse.
+
+    When the map exceeds :func:`_oauth_lock_map_max_entries`, the least-recently-used
+    entry is evicted. A tiny risk of duplicate concurrent OAuth for that key until Redis
+    is populated is acceptable at extreme multitenancy scale.
+    """
+    max_entries = _oauth_lock_map_max_entries()
+    if cache_key in _token_fetch_locks:
+        _token_fetch_locks.move_to_end(cache_key)
+        return _token_fetch_locks[cache_key]
+    while len(_token_fetch_locks) >= max_entries:
+        evicted, _ = _token_fetch_locks.popitem(last=False)
+        logger.debug(
+            "[MindBot] oauth_lock_map_evicted oldest_key_prefix=%s remaining=%s max=%s",
+            evicted[:56] if len(evicted) > 56 else evicted,
+            len(_token_fetch_locks),
+            max_entries,
+        )
+    lock = asyncio.Lock()
+    _token_fetch_locks[cache_key] = lock
+    return lock
 
 
 def _oauth_credential_cache_suffix(app_key: str, app_secret: str) -> str:

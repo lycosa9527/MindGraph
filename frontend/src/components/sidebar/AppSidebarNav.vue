@@ -469,7 +469,7 @@ const mindmatePageChatHistoryLimit = computed(() =>
       </el-tooltip>
 
       <el-tooltip
-        v-if="s.isAdmin && s.featureMindbot"
+        v-if="s.canAccessMindbot"
         :content="s.t('sidebar.mindbot')"
         placement="right"
         :disabled="!s.isCollapsed"

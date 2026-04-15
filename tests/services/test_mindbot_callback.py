@@ -8,8 +8,62 @@ from unittest.mock import AsyncMock
 import pytest
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from services.mindbot.core.dify_user_id import (
+    mindbot_conv_gate_scope_id,
+    mindbot_dify_conv_redis_suffix,
+    mindbot_dify_user_id_for_chat,
+)
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.platforms.dingtalk import DingTalkInboundMessage
+
+
+def test_dify_user_id_always_per_staff() -> None:
+    """Dify user is always per staff; group and 1:1 share the same pattern."""
+    assert mindbot_dify_user_id_for_chat(1, "staffA") == "mindbot_1_staffA"
+    assert mindbot_dify_user_id_for_chat(1, "staffB") == "mindbot_1_staffB"
+
+
+def test_group_redis_conv_key_includes_staff() -> None:
+    """Group chats use one Redis Dify conversation binding per member."""
+    body = {"conversationType": "2"}
+    g = mindbot_dify_conv_redis_suffix(
+        1,
+        "cidG",
+        "alice",
+        body,
+        "group",
+    )
+    h = mindbot_dify_conv_redis_suffix(
+        1,
+        "cidG",
+        "bob",
+        body,
+        "group",
+    )
+    assert g == "1:cidG:alice"
+    assert h == "1:cidG:bob"
+    assert g != h
+
+
+def test_one_to_one_redis_conv_key_no_staff_segment() -> None:
+    """1:1 chats keep a single binding per open conversation."""
+    body = {"conversationType": "1"}
+    o = mindbot_dify_conv_redis_suffix(
+        7,
+        "cidO2O",
+        "alice",
+        body,
+        "1:1",
+    )
+    assert o == "7:cidO2O"
+
+
+def test_conv_gate_scope_group_includes_staff() -> None:
+    """Conv gate id must align with Redis conv_key scope in groups."""
+    body = {"conversationType": "2"}
+    assert (
+        mindbot_conv_gate_scope_id("cidG", "alice", body, "group") == "cidG:alice"
+    )
 
 
 @pytest.mark.asyncio
@@ -235,8 +289,9 @@ async def test_run_pipeline_background_records_internal_error_metric(
         debug_raw_body=None,
         debug_request_headers=None,
         msg=_minimal_inbound_msg(),
-        user_id="u1",
+        dify_user_id="u1",
         conv_key="ck",
+        conv_gate_scope="conv",
     )
     await run_pipeline_background(ctx)
     assert recorded == [MindbotErrorCode.PIPELINE_INTERNAL_ERROR.value]

@@ -1,9 +1,15 @@
-"""Format Dify / LLM replies for DingTalk: hide or cap chain-of-thought blocks."""
+"""Format Dify / LLM replies for DingTalk: hide or cap chain-of-thought blocks.
+
+Separates tag-embedded reasoning from answer text (AstrBot-style logical channels).
+Native Dify ``agent_thought`` payloads are merged in ``format_mindbot_reply_for_dingtalk``
+when enabled; see ``services.mindbot.core.chain_of_thought_policy``.
+"""
 
 from __future__ import annotations
 
 import re
-from typing import Iterable, Pattern, Tuple
+from dataclasses import dataclass
+from typing import Any, Iterable, Pattern, Tuple
 
 # Backtick-delimited `<redacted_thinking>` blocks (common in model outputs).
 _BT = chr(96)
@@ -63,6 +69,72 @@ def _strip_complete_thinking_blocks(text: str) -> str:
         if s == prev:
             break
     return s
+
+
+def _strip_loose_complete_blocks_capture(s: str, parts: list[str]) -> str:
+    """Like ``_strip_loose_complete_blocks`` but append inner text to ``parts``."""
+    while True:
+        prev = s
+        for rx in _LOOSE_COMPLETE_RES:
+
+            def repl(m: re.Match[str]) -> str:
+                parts.append(m.group(2))
+                return ""
+
+            s = rx.sub(repl, s)
+        if s == prev:
+            break
+    return s
+
+
+@dataclass(frozen=True)
+class SplitReasoningResult:
+    """Tag-embedded reasoning vs answer (``answer`` matches ``_strip_complete_thinking_blocks``)."""
+
+    reasoning: str
+    answer: str
+
+
+def split_tag_embedded_reasoning(text: str) -> SplitReasoningResult:
+    """
+    Split thinking blocks from ``text`` into inner reasoning (joined with newlines)
+    and remaining answer string. Extraction order matches ``_strip_complete_thinking_blocks``.
+    """
+    s = text
+    parts: list[str] = []
+    while True:
+        prev = s
+        for rx in _COMPLETE_BLOCK_RES:
+
+            def repl_exact(m: re.Match[str]) -> str:
+                parts.append(m.group(2))
+                return ""
+
+            s = rx.sub(repl_exact, s)
+        s = _strip_loose_complete_blocks_capture(s, parts)
+        if s == prev:
+            break
+    reasoning = "\n".join(parts) if parts else ""
+    return SplitReasoningResult(reasoning=reasoning, answer=s)
+
+
+def native_reasoning_from_dify_blocking_response(resp: dict[str, Any]) -> str:
+    """
+    Best-effort reasoning text from a Dify blocking (non-streaming) JSON body.
+
+    Field names are not guaranteed across Dify versions; returns empty when absent.
+    """
+    for key in ("agent_thought", "thought"):
+        val = resp.get(key)
+        if isinstance(val, str) and val.strip():
+            return val.strip()
+    meta = resp.get("metadata")
+    if isinstance(meta, dict):
+        for key in ("agent_thought", "thought"):
+            val = meta.get(key)
+            if isinstance(val, str) and val.strip():
+                return val.strip()
+    return ""
 
 
 def _has_incomplete_thinking_open_prefix(s: str) -> bool:
@@ -212,6 +284,7 @@ def format_mindbot_reply_for_dingtalk(
     *,
     show_chain_of_thought: bool,
     chain_of_thought_max_chars: int,
+    native_reasoning: str = "",
 ) -> str:
     """
     Final reply string for a completed Dify answer.
@@ -219,11 +292,22 @@ def format_mindbot_reply_for_dingtalk(
     When ``show_chain_of_thought`` is False, thinking blocks are removed entirely.
     When True, inner content of each block is truncated to ``chain_of_thought_max_chars``
     (0 means unlimited).
+
+    ``native_reasoning`` is optional Dify ``agent_thought`` (or blocking) text merged
+    only when ``show_chain_of_thought`` is True. If tag-embedded blocks already carry
+    reasoning, that content takes precedence and native text is not prepended.
     """
+    work = text
+    if show_chain_of_thought and native_reasoning.strip():
+        nt = native_reasoning.strip()
+        sp = split_tag_embedded_reasoning(work)
+        tag_r = sp.reasoning.strip()
+        if not tag_r:
+            work = f"<redacted_thinking>\n{nt}\n</redacted_thinking>\n" + work
     if not show_chain_of_thought:
-        return _strip_complete_thinking_blocks(text)
+        return split_tag_embedded_reasoning(work).answer
     cap = max(0, int(chain_of_thought_max_chars))
-    return _truncate_thinking_in_full_text(text, cap)
+    return _truncate_thinking_in_full_text(work, cap)
 
 
 class MindbotThinkingStreamFilter:
@@ -242,9 +326,16 @@ class MindbotThinkingStreamFilter:
         self._show = bool(show_chain_of_thought)
         self._raw = ""
         self._sent_visible_len = 0
+        self._full_for_split = ""
+
+    @property
+    def tag_embedded_reasoning_text(self) -> str:
+        """Reasoning extracted from tag-embedded blocks in the stream so far."""
+        return split_tag_embedded_reasoning(self._full_for_split).reasoning
 
     def push(self, delta: str) -> str:
         """Append a delta and return the next visible substring (may be empty)."""
+        self._full_for_split += delta
         if self._show:
             return delta
         self._raw += delta
@@ -259,6 +350,7 @@ class MindbotThinkingStreamFilter:
         """Clear buffered text and emission cursor."""
         self._raw = ""
         self._sent_visible_len = 0
+        self._full_for_split = ""
 
 
 def iter_visible_stream_chunks(

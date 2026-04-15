@@ -166,11 +166,8 @@ export default {
   'admin.mindbot.dingtalkClientIdHint':
     '用于获取 access_token，调用 AI 卡片流式更新等 OpenAPI。需与「Client Secret」一起保存。未填写则无法使用「测试权限」与 AI 卡片。',
   'admin.mindbot.difyShowChainOfThought': '思维链',
-  'admin.mindbot.difyShowChainOfThoughtOto': '单聊（1:1）',
-  'admin.mindbot.difyShowChainOfThoughtInternalGroup': '企业内部群',
-  'admin.mindbot.difyShowChainOfThoughtCrossOrgGroup': '跨组织群（外部）',
   'admin.mindbot.difyShowChainOfThoughtHint':
-    '按场景开启：开启时展示模型思维块（如 redacted_thinking）；关闭时会在发送前剔除。默认各场景均关闭。',
+    '开启后对所有会话类型展示模型思维块（如 redacted_thinking）；关闭时会在发送前剔除。默认关闭。流式 SSE 可合并 Dify 的 agent 思考事件；阻塞（非流式）回复目前仅使用 answer 文本，除非接口另行返回思考字段。流式且开启思维链时，字数上限作用于最终回复；流式更新过程中可能先显示更长的思考内容直到本轮结束。',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI 卡片模板（可选）',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     '留空为文本回复；示例 d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
@@ -179,15 +176,11 @@ export default {
   'admin.mindbot.dingtalkAiCardStreamCheck': '测试权限',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth 与流式卡片权限正常',
   'admin.mindbot.dingtalkAiCardStreamFail': '检测失败',
-  'admin.mindbot.dingtalkAiCardStreamCheckTooltip':
-    '使用服务器上已保存的 Client Secret、当前 Client ID 与模板 ID；获取 access_token 并调用 PUT /v1.0/card/streaming（随机 outTrackId 会返回「卡片不存在」，属预期），用于确认 OpenAPI 与流式卡片权限。',
+  'admin.mindbot.dingtalkAiCardStreamCheckTooltip': '验证 OAuth 与流式 AI 卡片权限。',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit': '请先保存该校 MindBot 配置。',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret':
-    '请先保存 Client Secret。检测仅使用服务器已保存的凭据，不会使用表单里未保存的输入。',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId':
-    '请填写开放平台 Client ID（AppKey），可使用本表单或上次已保存的配置。',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate':
-    '请填写已发布的 AI 卡片模板 ID（例如 uuid.schema），可使用本表单或上次已保存的配置。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret': '请先保存 Client Secret。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId': '请填写 Client ID。',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate': '请填写 AI 卡片模板 ID。',
   'admin.mindbot.difyBaseUrl': 'Dify API 根地址',
   'admin.mindbot.difyApiKey': 'Dify API Key',
   'admin.mindbot.difyApiKeyHint': '新增学校时必填。',
@@ -236,11 +229,16 @@ export default {
   'admin.mindbot.colTurn': '轮次',
   'admin.mindbot.monitorFilterStaff': '按用户筛选',
   'admin.mindbot.monitorStaffAll': '全部用户',
+  'admin.mindbot.exportConversations': '导出',
+  'admin.mindbot.exportEmpty': '当前筛选下没有可导出的记录。',
+  'admin.mindbot.exportError': '导出失败，请重试。',
+  'admin.mindbot.exportSuccess': '已开始下载导出文件。',
+  'admin.mindbot.exportDisclaimer':
+    'MindBot 使用元数据，供教学研究使用；不保存消息正文，记录仅为遥测数据。',
   'admin.mindbot.logTabHint':
     '本校 MindBot 原始使用记录（新在上）。点击一行查看完整元数据。不保存用户与机器人消息正文。',
   'admin.mindbot.monitorTabHint':
     '按当前页数据聚合同一会话。点击行打开会话；点击轮次查看详情。',
-  'admin.mindbot.logDayGroup': '{day}',
   'admin.mindbot.colConvThread': '会话',
   'admin.mindbot.colTurnsLoaded': '轮次(本页)',
   'admin.mindbot.convNoThreadId': '（无会话 ID）',

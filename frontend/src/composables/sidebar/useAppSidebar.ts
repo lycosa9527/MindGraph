@@ -10,6 +10,7 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
 import { useAskOnceStore } from '@/stores/askonce'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
+import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 export function useAppSidebar() {
@@ -86,6 +87,21 @@ export function useAppSidebar() {
       authStore.user?.schoolId,
       authStore.user?.id,
       workshopChatPreviewOrgIds.value,
+      entry
+    )
+  })
+
+  /** Same rules as router `MindbotAdmin`: feature flag + admin or eligible manager. */
+  const canAccessMindbot = computed(() => {
+    if (!featureMindbot.value) {
+      return false
+    }
+    const entry = featureOrgAccess.value.feature_mindbot
+    return userCanAccessMindbotAdmin(
+      authStore.isAdmin,
+      authStore.isManager,
+      authStore.user?.schoolId,
+      authStore.user?.id,
       entry
     )
   })
@@ -250,6 +266,7 @@ export function useAppSidebar() {
     isAdminOrManager,
     isAdmin,
     canAccessWorkshopChat,
+    canAccessMindbot,
     userName,
     userSubtitle,
     userAvatar,

@@ -52,6 +52,15 @@ class _FakeDifyMessageReplace:
         yield {"event": "message_end", "conversation_id": "c1"}
 
 
+class _FakeDifyMessageReplaceClearsNativeThought:
+    async def stream_chat(self, **_kwargs):
+        yield {"event": "agent_thought", "thought": "discard"}
+        yield {"event": "message_replace", "answer": ""}
+        yield {"event": "agent_thought", "thought": "keep"}
+        yield {"event": "message", "answer": "done"}
+        yield {"event": "message_end", "conversation_id": "c-repl-th"}
+
+
 class _FakeDifyWorkflowOutputsOnly:
     async def stream_chat(self, **_kwargs):
         yield {
@@ -78,7 +87,7 @@ async def test_batches_on_min_chars_and_message_end() -> None:
         sent.append(chunk)
         return True, False
 
-    full, conv, err, usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyOk(),
         text="hi",
         user_id="u1",
@@ -103,7 +112,7 @@ async def test_message_end_metadata_usage() -> None:
     async def on_batch(_chunk: str) -> tuple[bool, bool]:
         return True, False
 
-    _full, conv, err, usage = await mindbot_consume_dify_stream_batched(
+    _full, conv, err, usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyWithUsage(),
         text="hi",
         user_id="u1",
@@ -128,7 +137,7 @@ async def test_dify_error_stops() -> None:
     async def on_batch(_chunk: str) -> tuple[bool, bool]:
         return True, False
 
-    _full, _conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    _full, _conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyErr(),
         text="hi",
         user_id="u1",
@@ -150,7 +159,7 @@ async def test_chatflow_workflow_prelude_then_message() -> None:
         sent.append(chunk)
         return True, False
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyChatflowPrelude(),
         text="hi",
         user_id="u1",
@@ -175,7 +184,7 @@ async def test_message_replace_resets_full_text() -> None:
         sent.append(chunk)
         return True, False
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyMessageReplace(),
         text="hi",
         user_id="u1",
@@ -204,7 +213,7 @@ async def test_message_replace_calls_on_message_replace() -> None:
         nonlocal replace_hits
         replace_hits += 1
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyMessageReplace(),
         text="hi",
         user_id="u1",
@@ -223,6 +232,31 @@ async def test_message_replace_calls_on_message_replace() -> None:
 
 
 @pytest.mark.asyncio
+async def test_message_replace_clears_native_reasoning_accumulator() -> None:
+    """``agent_thought`` before ``message_replace`` must not appear in returned native text."""
+
+    async def on_batch(_chunk: str) -> tuple[bool, bool]:
+        return True, False
+
+    full, conv, err, _usage, native_r = await mindbot_consume_dify_stream_batched(
+        _FakeDifyMessageReplaceClearsNativeThought(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+    )
+    assert err is None
+    assert conv == "c-repl-th"
+    assert full == "done"
+    assert native_r == "keep"
+    assert "discard" not in native_r
+
+
+@pytest.mark.asyncio
 async def test_workflow_finished_outputs_when_no_message_deltas() -> None:
     sent: list[str] = []
 
@@ -230,7 +264,7 @@ async def test_workflow_finished_outputs_when_no_message_deltas() -> None:
         sent.append(chunk)
         return True, False
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyWorkflowOutputsOnly(),
         text="hi",
         user_id="u1",
@@ -256,7 +290,7 @@ async def test_workflow_output_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
         sent.append(chunk)
         return True, False
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeDifyWorkflowCustomKey(),
         text="hi",
         user_id="u1",
@@ -290,7 +324,7 @@ async def test_defer_to_end_sends_once_at_message_end(
             yield {"event": "message", "answer": "cd"}
             yield {"event": "message_end", "conversation_id": "c-defer"}
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeMultiDelta(),
         text="hi",
         user_id="u1",
@@ -339,7 +373,7 @@ async def test_stale_conversation_retries_without_conv_id() -> None:
         cleared.append(True)
 
     fake = _FakeDifyStaleConversation()
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         fake,
         text="hi",
         user_id="u1",
@@ -394,7 +428,7 @@ async def test_message_file_triggers_on_media() -> None:
         media.append((kind, payload))
         return True, False
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeMessageFileImage(),
         text="hi",
         user_id="u1",
@@ -426,7 +460,7 @@ async def test_tts_after_message_end_sends_audio() -> None:
         media.append((kind, payload))
         return True, False
 
-    full, conv, err, _usage = await mindbot_consume_dify_stream_batched(
+    full, conv, err, _usage, _nr = await mindbot_consume_dify_stream_batched(
         _FakeTtsAfterText(),
         text="hi",
         user_id="u1",
@@ -444,3 +478,88 @@ async def test_tts_after_message_end_sends_audio() -> None:
     assert any(k == "audio" for k, _ in media)
     audio_payload = next(p for k, p in media if k == "audio")
     assert audio_payload.get("bytes") == b"fakevoice"
+
+
+class _FakeDifyAgentThought:
+    async def stream_chat(self, **_kwargs):
+        yield {"event": "agent_thought", "thought": "reason step 1"}
+        yield {"event": "message", "answer": "final answer"}
+        yield {"event": "message_end", "conversation_id": "c-ag"}
+
+
+class _FakeDifyAgentThoughtMulti:
+    async def stream_chat(self, **_kwargs):
+        yield {"event": "agent_thought", "thought": "a"}
+        yield {"event": "agent_thought", "thought": "b"}
+        yield {"event": "message_end", "conversation_id": "c-m"}
+
+
+class _FakeDifyThoughtOnly:
+    async def stream_chat(self, **_kwargs):
+        yield {"event": "agent_thought", "thought": "only thought"}
+        yield {"event": "message_end", "conversation_id": "c-th"}
+
+
+@pytest.mark.asyncio
+async def test_agent_thought_accumulates_native_reasoning() -> None:
+    async def on_batch(_chunk: str) -> tuple[bool, bool]:
+        return True, False
+
+    full, conv, err, _usage, native_r = await mindbot_consume_dify_stream_batched(
+        _FakeDifyAgentThought(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+    )
+    assert err is None
+    assert conv == "c-ag"
+    assert native_r == "reason step 1"
+    assert full == "final answer"
+
+
+@pytest.mark.asyncio
+async def test_agent_thought_multiple_joined() -> None:
+    async def on_batch(_chunk: str) -> tuple[bool, bool]:
+        return True, False
+
+    full, _conv, err, _usage, native_r = await mindbot_consume_dify_stream_batched(
+        _FakeDifyAgentThoughtMulti(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+    )
+    assert err is None
+    assert native_r == "a\n\nb"
+    assert full == ""
+
+
+@pytest.mark.asyncio
+async def test_agent_thought_only_not_dify_empty() -> None:
+    async def on_batch(_chunk: str) -> tuple[bool, bool]:
+        return True, False
+
+    full, conv, err, _usage, native_r = await mindbot_consume_dify_stream_batched(
+        _FakeDifyThoughtOnly(),
+        text="hi",
+        user_id="u1",
+        conversation_id=None,
+        files=None,
+        min_chars=1,
+        flush_interval_s=60.0,
+        max_parts=10,
+        on_batch=on_batch,
+    )
+    assert err is None
+    assert conv == "c-th"
+    assert native_r == "only thought"
+    assert full == ""

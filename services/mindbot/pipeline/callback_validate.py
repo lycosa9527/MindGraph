@@ -14,6 +14,11 @@ from services.mindbot.education.metrics import (
     conversation_user_turn_index,
     dingtalk_chat_scope,
 )
+from services.mindbot.core.dify_user_id import (
+    mindbot_conv_gate_scope_id,
+    mindbot_dify_conv_redis_suffix,
+    mindbot_dify_user_id_for_chat,
+)
 from services.mindbot.core.redis_keys import (
     CONV_KEY_PREFIX,
     MSG_DEDUP_PREFIX,
@@ -49,8 +54,9 @@ class MindbotPipelineContext:
     debug_raw_body: Optional[bytes]
     debug_request_headers: Optional[dict[str, str]]
     msg: DingTalkInboundMessage
-    user_id: str
+    dify_user_id: str
     conv_key: str
+    conv_gate_scope: str
 
 
 def _log_callback_debug_failure(
@@ -224,8 +230,20 @@ async def validate_callback_fast(
     sender_staff = msg.sender_staff_id
     conversation_id_dt = msg.conversation_id
 
-    user_id = f"mindbot_{cfg.organization_id}_{sender_staff}"
-    conv_key = f"{CONV_KEY_PREFIX}{cfg.organization_id}:{conversation_id_dt}"
+    dify_user_id = mindbot_dify_user_id_for_chat(
+        cfg.organization_id,
+        sender_staff,
+    )
+    conv_key = (
+        f"{CONV_KEY_PREFIX}"
+        f"{mindbot_dify_conv_redis_suffix(cfg.organization_id, conversation_id_dt, sender_staff, body, msg.chat_type)}"
+    )
+    conv_gate_scope = mindbot_conv_gate_scope_id(
+        conversation_id_dt,
+        sender_staff,
+        body,
+        msg.chat_type,
+    )
 
     if not await check_org_rate_limit(cfg.organization_id):
         return False, (200, _hdr_for_cfg(cfg, MindbotErrorCode.DUPLICATE_MESSAGE)), None
@@ -241,7 +259,7 @@ async def validate_callback_fast(
                 body=body,
                 text_in=text_in,
                 conversation_id_dt=conversation_id_dt,
-                user_id=user_id,
+                user_id=dify_user_id,
                 streaming=False,
                 error_code=MindbotErrorCode.DIFY_FAILED,
                 reply_text="",
@@ -264,7 +282,8 @@ async def validate_callback_fast(
         debug_raw_body=debug_raw_body,
         debug_request_headers=debug_request_headers,
         msg=msg,
-        user_id=user_id,
+        dify_user_id=dify_user_id,
         conv_key=conv_key,
+        conv_gate_scope=conv_gate_scope,
     )
     return True, None, ctx

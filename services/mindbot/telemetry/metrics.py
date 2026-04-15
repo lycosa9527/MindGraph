@@ -51,4 +51,21 @@ class MindbotMetrics:
             }
 
 
+def mindbot_long_lived_maps_snapshot() -> dict[str, Any]:
+    """
+    In-process MindBot structures that can grow with org / credential cardinality.
+
+    Intended for admin diagnostics and capacity planning (not high-cardinality series).
+    """
+    from services.mindbot.platforms.dingtalk.auth import oauth as oauth_mod
+    from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
+
+    mgr = get_stream_manager()
+    return {
+        "oauth_lock_map_size": oauth_mod.oauth_lock_map_size(),
+        "oauth_lock_map_max": oauth_mod.oauth_lock_map_max_configured(),
+        "dingtalk_stream_registered_clients": mgr.registered_client_count(),
+    }
+
+
 mindbot_metrics = MindbotMetrics()

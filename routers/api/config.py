@@ -16,8 +16,43 @@ from models.domain.auth import User
 from models.domain.feature_org_access import FeatureOrgAccessEntry
 from routers.auth.dependencies import get_current_user_optional
 from services.feature_access.repository import load_feature_org_access_map
+from utils.auth.roles import is_admin
 
 router = APIRouter(prefix="/config", tags=["config"])
+
+
+def _sanitize_feature_org_access_map(
+    user: User,
+    full_map: dict[str, FeatureOrgAccessEntry],
+) -> dict[str, FeatureOrgAccessEntry]:
+    """
+    Strip other tenants' ids from allowlists before sending flags to non-admins.
+
+    The client still evaluates ``restrict`` plus whether *this* user's org/user id
+    appears granted; it must not receive full org/user enumerations from Postgres.
+    """
+    if is_admin(user):
+        return full_map
+    uid = getattr(user, "id", None)
+    oid = getattr(user, "organization_id", None)
+    out: dict[str, FeatureOrgAccessEntry] = {}
+    for key, entry in full_map.items():
+        org_ids = [
+            x
+            for x in entry.organization_ids
+            if oid is not None and int(x) == int(oid)
+        ]
+        user_ids = [
+            x
+            for x in entry.user_ids
+            if uid is not None and int(x) == int(uid)
+        ]
+        out[key] = FeatureOrgAccessEntry(
+            restrict=entry.restrict,
+            organization_ids=org_ids,
+            user_ids=user_ids,
+        )
+    return out
 
 
 class FeatureFlagsResponse(BaseModel):
@@ -49,12 +84,18 @@ async def get_feature_flags(
 ):
     """Get feature flags configuration.
 
-    ``feature_org_access`` (org/user allowlists) is omitted for anonymous requests
-    so allowlists are not exposed publicly; authenticated clients receive the full map
-    for UI gating.
+    ``feature_org_access`` is omitted for anonymous requests. Authenticated
+    non-admins receive allowlist entries with only their own organization id and/or
+    user id (when present in the stored rules) so other schools' grants are not
+    exposed. Admins receive the full map (e.g. Admin Features tab).
     """
     external_base = os.getenv("EXTERNAL_BASE_URL", "").strip().rstrip("/")
-    access_map = await load_feature_org_access_map() if current_user is not None else {}
+    raw_access = await load_feature_org_access_map() if current_user is not None else {}
+    access_map = (
+        _sanitize_feature_org_access_map(current_user, raw_access)
+        if current_user is not None
+        else {}
+    )
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,

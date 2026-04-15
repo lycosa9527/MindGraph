@@ -1,6 +1,6 @@
 <script setup lang="ts">
 /**
- * MindBot admin — usage: Log tab (grouped raw-style lines) and Monitor (by conversation + detail).
+ * MindBot admin — usage: Log (raw lines + optional user filter + export) and Monitor (by conversation).
  */
 import { computed, ref, watch } from 'vue'
 
@@ -23,7 +23,8 @@ const props = defineProps<{
 const { t } = useLanguage()
 const notify = useNotifications()
 
-const staffFilter = computed(() => props.mode === 'monitor')
+/** Set true to show Log tab export (hidden until a later product pass). */
+const mindbotLogExportUiEnabled = false
 
 interface ThreadGroup {
   key: string
@@ -91,27 +92,6 @@ const threadGroups = computed<ThreadGroup[]>(() => {
   return out
 })
 
-const logGroups = computed(() => {
-  if (props.mode !== 'log') {
-    return []
-  }
-  const dayMap = new Map<string, MindbotUsageEventRow[]>()
-  for (const row of events.value) {
-    const day = row.created_at.slice(0, 10)
-    const list = dayMap.get(day)
-    if (list) {
-      list.push(row)
-    } else {
-      dayMap.set(day, [row])
-    }
-  }
-  const days = [...dayMap.keys()].sort((a, b) => (a < b ? 1 : a > b ? -1 : 0))
-  return days.map((day) => ({
-    day,
-    events: dayMap.get(day) ?? [],
-  }))
-})
-
 function mergeStaffFromBatch(batch: MindbotUsageEventRow[]): void {
   const seen = new Set(staffOptions.value.map((o) => o.value))
   for (const row of batch) {
@@ -142,7 +122,7 @@ async function loadPage(append: boolean): Promise<void> {
     if (append && cursorBeforeId.value != null) {
       params.set('before_id', String(cursorBeforeId.value))
     }
-    if (staffFilter.value && selectedStaffId.value) {
+    if (selectedStaffId.value) {
       params.set('dingtalk_staff_id', selectedStaffId.value)
     }
     const res = await apiRequest(
@@ -158,7 +138,7 @@ async function loadPage(append: boolean): Promise<void> {
     } else {
       events.value = batch
     }
-    if (staffFilter.value && !selectedStaffId.value) {
+    if (!selectedStaffId.value) {
       mergeStaffFromBatch(batch)
     }
     if (batch.length === 0) {
@@ -318,14 +298,92 @@ watch(
 )
 
 watch(selectedStaffId, () => {
-  if (!staffFilter.value) {
-    return
-  }
   events.value = []
   cursorBeforeId.value = null
   hasMore.value = true
   void loadPage(false)
 })
+
+const exportLoading = ref(false)
+
+async function fetchAllUsageEventsForExport(): Promise<MindbotUsageEventRow[]> {
+  const orgId = props.organizationId
+  if (orgId == null) {
+    return []
+  }
+  const all: MindbotUsageEventRow[] = []
+  let beforeId: number | null = null
+  for (;;) {
+    const params = new URLSearchParams({ limit: '100' })
+    if (beforeId != null) {
+      params.set('before_id', String(beforeId))
+    }
+    if (selectedStaffId.value) {
+      params.set('dingtalk_staff_id', selectedStaffId.value)
+    }
+    const res = await apiRequest(
+      `/api/mindbot/admin/configs/${orgId}/usage-events?${params.toString()}`
+    )
+    if (!res.ok) {
+      throw new Error('fetch')
+    }
+    const batch = (await res.json()) as MindbotUsageEventRow[]
+    if (batch.length === 0) {
+      break
+    }
+    all.push(...batch)
+    beforeId = batch[batch.length - 1].id
+    if (batch.length < 100) {
+      break
+    }
+  }
+  return all
+}
+
+async function exportLogConversations(): Promise<void> {
+  if (!props.canLoad || props.organizationId == null) {
+    return
+  }
+  exportLoading.value = true
+  try {
+    const rows = await fetchAllUsageEventsForExport()
+    if (rows.length === 0) {
+      notify.warning(t('admin.mindbot.exportEmpty'))
+      return
+    }
+    const sorted = [...rows].sort((a, b) => a.id - b.id)
+    const payload = {
+      mindbot_export_version: 1,
+      exported_at: new Date().toISOString(),
+      organization_id: props.organizationId,
+      filter: {
+        dingtalk_staff_id: selectedStaffId.value ?? null,
+      },
+      disclaimer: t('admin.mindbot.exportDisclaimer'),
+      privacy_note: t('admin.mindbot.usageEventDetailPrivacy'),
+      events: sorted,
+    }
+    const blob = new Blob([JSON.stringify(payload, null, 2)], {
+      type: 'application/json;charset=utf-8',
+    })
+    const stamp = new Date().toISOString().slice(0, 19).replace(/:/g, '-')
+    const filename = `mindbot-usage-org${props.organizationId}-export-${stamp}.json`
+    const url = URL.createObjectURL(blob)
+    const anchor = document.createElement('a')
+    anchor.href = url
+    anchor.download = filename
+    anchor.rel = 'noopener'
+    document.body.appendChild(anchor)
+    anchor.click()
+    document.body.removeChild(anchor)
+    URL.revokeObjectURL(url)
+    notify.success(t('admin.mindbot.exportSuccess'))
+  } catch {
+    notify.error(t('admin.mindbot.exportError'))
+  } finally {
+    exportLoading.value = false
+  }
+}
 
 async function onLoadMore(): Promise<void> {
   await loadPage(true)
@@ -374,8 +432,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
       </p>
 
       <div
-        v-if="staffFilter"
-        class="flex flex-col gap-2 sm:flex-row sm:items-center"
+        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap"
       >
         <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{
           t('admin.mindbot.monitorFilterStaff')
@@ -394,39 +451,39 @@ function onMonitorRowClick(row: ThreadGroup): void {
             :value="o.value"
           />
         </el-select>
+        <el-button
+          v-if="mode === 'log' && mindbotLogExportUiEnabled"
+          class="shrink-0 w-full sm:w-auto"
+          size="small"
+          :loading="exportLoading"
+          @click="exportLogConversations"
+        >
+          {{ t('admin.mindbot.exportConversations') }}
+        </el-button>
       </div>
 
-      <!-- Log: grouped raw lines -->
+      <!-- Log: single scrollable block (newest-first order from API) -->
       <div
-        v-if="mode === 'log' && logGroups.length > 0"
-        class="space-y-3 mindbot-log-groups"
+        v-if="mode === 'log' && events.length > 0"
+        class="rounded-lg border border-stone-200 dark:border-stone-600 overflow-hidden"
       >
         <div
-          v-for="g in logGroups"
-          :key="g.day"
-          class="rounded-lg border border-stone-200 dark:border-stone-600 overflow-hidden"
+          class="divide-y divide-stone-100 dark:divide-stone-700 max-h-[min(360px,50vh)] overflow-y-auto"
         >
-          <div
-            class="px-3 py-2 text-xs font-medium bg-stone-100 dark:bg-stone-800 text-stone-700 dark:text-stone-200 font-mono"
+          <button
+            v-for="row in events"
+            :key="row.id"
+            type="button"
+            class="mindbot-log-line w-full text-left px-3 py-1.5 font-mono text-[11px] leading-snug hover:bg-stone-50 dark:hover:bg-stone-800/80 transition-colors"
+            :class="
+              isMindbotUsageSuccess(row.error_code)
+                ? 'text-emerald-800 dark:text-emerald-200'
+                : 'text-rose-800 dark:text-rose-200'
+            "
+            @click="openEventDetail(row)"
           >
-            {{ t('admin.mindbot.logDayGroup', { day: g.day }) }}
-          </div>
-          <div class="divide-y divide-stone-100 dark:divide-stone-700 max-h-[min(360px,50vh)] overflow-y-auto">
-            <button
-              v-for="row in g.events"
-              :key="row.id"
-              type="button"
-              class="mindbot-log-line w-full text-left px-3 py-1.5 font-mono text-[11px] leading-snug hover:bg-stone-50 dark:hover:bg-stone-800/80 transition-colors"
-              :class="
-                isMindbotUsageSuccess(row.error_code)
-                  ? 'text-emerald-800 dark:text-emerald-200'
-                  : 'text-rose-800 dark:text-rose-200'
-              "
-              @click="openEventDetail(row)"
-            >
-              {{ formatLogLine(row) }}
-            </button>
-          </div>
+            {{ formatLogLine(row) }}
+          </button>
         </div>
       </div>
 
@@ -509,66 +566,78 @@ function onMonitorRowClick(row: ThreadGroup): void {
     <el-drawer
       v-model="threadDrawerVisible"
       :title="t('admin.mindbot.conversationDrawerTitle')"
+      append-to-body
       size="min(520px, 92vw)"
       destroy-on-close
+      class="mindbot-thread-drawer"
+      body-class="mindbot-thread-drawer__body"
       @closed="onThreadDrawerClosed"
     >
       <div
         v-loading="threadLoading"
-        class="space-y-2"
+        class="mindbot-thread-drawer__inner flex min-h-0 flex-col gap-3"
       >
-        <p class="text-xs text-gray-500 dark:text-gray-400">
+        <p class="m-0 shrink-0 text-xs text-gray-500 dark:text-gray-400">
           {{ t('admin.mindbot.conversationDrawerHint') }}
         </p>
-        <el-table
+        <div
           v-if="threadEvents.length > 0"
-          :data="threadEvents"
-          stripe
-          size="small"
-          max-height="360"
-          class="w-full mindbot-thread-table"
-          row-class-name="mindbot-thread-row"
-          @row-click="(row: MindbotUsageEventRow) => openEventDetail(row)"
+          class="min-h-0 flex-1 overflow-x-auto overflow-y-hidden rounded-lg border border-stone-200 dark:border-stone-600"
         >
-          <el-table-column
-            :label="t('admin.mindbot.colTime')"
-            min-width="140"
+          <el-table
+            :data="threadEvents"
+            stripe
+            size="small"
+            class="mindbot-thread-table min-w-[420px] w-full"
+            :max-height="400"
+            row-class-name="mindbot-thread-row"
+            @row-click="(row: MindbotUsageEventRow) => openEventDetail(row)"
           >
-            <template #default="{ row }">
-              {{ formatTime(row.created_at) }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="error_code"
-            :label="t('admin.mindbot.colError')"
-            width="120"
-          />
-          <el-table-column
-            :label="t('admin.mindbot.colDuration')"
-            width="88"
-          >
-            <template #default="{ row }">
-              {{ formatDur(row.duration_seconds) }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.mindbot.colTurn')"
-            width="64"
-          >
-            <template #default="{ row }">
-              {{ row.conversation_user_turn ?? '—' }}
-            </template>
-          </el-table-column>
-        </el-table>
+            <el-table-column
+              :label="t('admin.mindbot.colTime')"
+              min-width="148"
+            >
+              <template #default="{ row }">
+                <span class="whitespace-nowrap text-xs">{{
+                  formatTime(row.created_at)
+                }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="error_code"
+              :label="t('admin.mindbot.colError')"
+              min-width="112"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              :label="t('admin.mindbot.colDuration')"
+              width="88"
+              align="right"
+            >
+              <template #default="{ row }">
+                {{ formatDur(row.duration_seconds) }}
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="t('admin.mindbot.colTurn')"
+              width="72"
+              align="center"
+            >
+              <template #default="{ row }">
+                {{ row.conversation_user_turn ?? '—' }}
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
         <p
           v-else-if="!threadLoading"
-          class="text-sm text-gray-500"
+          class="m-0 shrink-0 text-sm text-gray-500 dark:text-gray-400"
         >
           {{ t('admin.mindbot.threadEmpty') }}
         </p>
         <div
           v-if="threadEvents.length > 0 && threadHasMore"
-          class="flex justify-center"
+          class="flex shrink-0 justify-center pt-1"
         >
           <el-button
             size="small"
@@ -601,5 +670,15 @@ function onMonitorRowClick(row: ThreadGroup): void {
 }
 .dark .mindbot-thread-table :deep(.mindbot-thread-row:hover > td) {
   background-color: rgba(41, 49, 65, 0.55);
+}
+</style>
+
+<style>
+/* Drawer is teleported to body; parent MindBot dialog uses overflow:hidden — append-to-body avoids clipping. */
+.mindbot-thread-drawer__body.el-drawer__body {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
 }
 </style>
