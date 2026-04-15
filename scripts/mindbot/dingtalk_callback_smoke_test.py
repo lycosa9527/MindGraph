@@ -34,7 +34,7 @@ import httpx
 
 
 def _compute_sign(timestamp_str: str, app_secret: str) -> str:
-    """Base64(HMAC-SHA256); must match services.mindbot.platforms.dingtalk.verify.compute_sign."""
+    """Base64(HMAC-SHA256); must match services.mindbot.platforms.dingtalk.auth.verify.compute_sign."""
     key = app_secret.encode("utf-8")
     msg = f"{timestamp_str}\n{app_secret}".encode("utf-8")
     digest = hmac.new(key, msg, digestmod=hashlib.sha256).digest()

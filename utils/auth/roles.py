@@ -145,13 +145,20 @@ def user_has_feature_access(current_user, feature_key: str) -> bool:
     """
     Whether the user may use this feature (global FEATURE_* + DB rules).
 
-    Admins and managers pass when the global flag is on. Otherwise rules in
-    ``feature_access_*`` tables apply; missing rules fall back to open access
-    except Workshop Chat, which uses WORKSHOP_CHAT_PREVIEW_ORG_IDS.
+    Admins always pass when the global flag is on. Managers pass for every
+    feature except ``feature_mindbot``: for MindBot, managers are subject to
+    ``feature_access_*`` grants (same as regular users) so PostgreSQL can
+    restrict which organizations may manage DingTalk credentials.
+
+    For non-admin users, rules in ``feature_access_*`` apply; missing rules
+    fall back to open access except Workshop Chat, which uses
+    WORKSHOP_CHAT_PREVIEW_ORG_IDS.
     """
     if not _global_feature_flag_enabled(feature_key):
         return False
-    if is_admin_or_manager(current_user):
+    if is_admin(current_user):
+        return True
+    if is_manager(current_user) and feature_key != "feature_mindbot":
         return True
     doc = _get_feature_access_map_cached() or {}
     entry = doc.get(feature_key)

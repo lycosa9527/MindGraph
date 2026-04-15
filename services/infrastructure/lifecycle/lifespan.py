@@ -685,6 +685,26 @@ async def lifespan(fastapi_app: FastAPI):
         # Give ongoing requests a brief moment to complete
         await asyncio.sleep(0.1)
 
+        try:
+            from services.mindbot.infra.task_registry import drain as mindbot_task_drain
+
+            await mindbot_task_drain(
+                timeout_s=float(os.getenv("MINDBOT_SHUTDOWN_DRAIN_TIMEOUT_S", "35")),
+            )
+            if is_main_worker:
+                logger.info("MindBot pipeline background tasks drained")
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("MindBot task drain error: %s", e)
+
+        try:
+            from clients.dify import close_async_dify_shared_sessions
+
+            await close_async_dify_shared_sessions()
+            if is_main_worker:
+                logger.info("Async Dify shared HTTP sessions closed")
+        except Exception as e:  # pylint: disable=broad-except
+            logger.warning("Async Dify session close error: %s", e)
+
         # Stop cleanup tasks
         if cleanup_task:
             cleanup_task.cancel()
@@ -837,10 +857,10 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Stop DingTalk Stream SDK WebSocket clients
         try:
-            from services.mindbot.platforms.dingtalk.stream_client import (  # pylint: disable=import-outside-toplevel
+            from services.mindbot.platforms.dingtalk.cards.stream_client import (  # pylint: disable=import-outside-toplevel
                 get_stream_manager,
             )
-            get_stream_manager().stop_all()
+            await get_stream_manager().stop_all()
             if is_main_worker:
                 logger.info("DingTalk Stream SDK clients stopped")
         except Exception as e:  # pylint: disable=broad-except
@@ -849,7 +869,7 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Close shared aiohttp sessions (MindBot HTTP connection pools)
         try:
-            from services.mindbot.http_client import (  # pylint: disable=import-outside-toplevel
+            from services.mindbot.infra.http_client import (  # pylint: disable=import-outside-toplevel
                 close_mindbot_http_sessions,
             )
             await close_mindbot_http_sessions()
@@ -861,7 +881,7 @@ async def lifespan(fastapi_app: FastAPI):
 
         # Close native async Redis client (MindBot hot-path pool)
         try:
-            from services.mindbot.redis_async import (  # pylint: disable=import-outside-toplevel
+            from services.mindbot.infra.redis_async import (  # pylint: disable=import-outside-toplevel
                 close_async_redis,
             )
             await close_async_redis()

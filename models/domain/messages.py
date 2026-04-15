@@ -937,6 +937,11 @@ class Messages:
             "en": "Admin or manager access required",
             "az": "İdarəçi və ya menecer girişi tələb olunur",
         },
+        "mindbot_feature_access_required": {
+            "zh": "当前账号无权管理 MindBot（请在数据库中为该校开通 feature_mindbot）",
+            "en": "MindBot admin is not enabled for this account (grant feature_mindbot in the database)",
+            "az": "Bu hesab üçün MindBot admin aktiv deyil (feature_mindbot verilənlər bazasında verilməlidir)",
+        },
         "missing_required_fields": {
             "zh": "缺少必填字段：{}",
             "en": "Missing required fields: {}",

@@ -541,13 +541,36 @@ function onDialogClosed(): void {
                   />
                 </el-form-item>
                 <el-form-item :label="t('admin.mindbot.difyShowChainOfThought')">
-                  <div class="mindbot-cot-field">
-                    <el-switch
-                      v-model="form.show_chain_of_thought"
-                      class="mindbot-cot-switch"
-                    />
+                  <div class="mindbot-cot-field space-y-3 max-w-2xl">
+                    <div>
+                      <div class="text-xs text-stone-600 dark:text-stone-400 mb-1">
+                        {{ t('admin.mindbot.difyShowChainOfThoughtOto') }}
+                      </div>
+                      <el-switch
+                        v-model="form.show_chain_of_thought_oto"
+                        class="mindbot-cot-switch"
+                      />
+                    </div>
+                    <div>
+                      <div class="text-xs text-stone-600 dark:text-stone-400 mb-1">
+                        {{ t('admin.mindbot.difyShowChainOfThoughtInternalGroup') }}
+                      </div>
+                      <el-switch
+                        v-model="form.show_chain_of_thought_internal_group"
+                        class="mindbot-cot-switch"
+                      />
+                    </div>
+                    <div>
+                      <div class="text-xs text-stone-600 dark:text-stone-400 mb-1">
+                        {{ t('admin.mindbot.difyShowChainOfThoughtCrossOrgGroup') }}
+                      </div>
+                      <el-switch
+                        v-model="form.show_chain_of_thought_cross_org_group"
+                        class="mindbot-cot-switch"
+                      />
+                    </div>
                     <p
-                      class="mindbot-hint mindbot-swiss-hint text-xs mt-1.5 m-0 leading-snug max-w-2xl"
+                      class="mindbot-hint mindbot-swiss-hint text-xs mt-1.5 m-0 leading-snug"
                     >
                       {{ t('admin.mindbot.difyShowChainOfThoughtHint') }}
                     </p>
@@ -564,7 +587,7 @@ function onDialogClosed(): void {
               <AdminMindBotUsagePanel
                 :organization-id="formOrgId"
                 :can-load="canLoadUsage"
-                :staff-filter="false"
+                mode="log"
               />
             </el-tab-pane>
 
@@ -576,7 +599,7 @@ function onDialogClosed(): void {
               <AdminMindBotUsagePanel
                 :organization-id="formOrgId"
                 :can-load="canLoadUsage"
-                :staff-filter="true"
+                mode="monitor"
               />
             </el-tab-pane>
           </el-tabs>

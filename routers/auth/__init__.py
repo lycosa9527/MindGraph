@@ -45,6 +45,7 @@ from .dependencies import (
     require_admin,
     require_admin_or_manager,
     require_manager,
+    require_mindbot_admin_access,
 )
 
 # Create main auth router
@@ -80,4 +81,5 @@ __all__ = [
     "require_admin",
     "require_admin_or_manager",
     "require_manager",
+    "require_mindbot_admin_access",
 ]

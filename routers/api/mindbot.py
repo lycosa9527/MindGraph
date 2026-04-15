@@ -19,9 +19,9 @@ from models.domain.auth import Organization, User
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from repositories.mindbot_repo import MindbotConfigRepository
 from repositories.mindbot_usage_repo import MindbotUsageRepository
-from routers.auth.dependencies import require_admin_or_manager
+from routers.auth.dependencies import require_mindbot_admin_access
 from services.mindbot.dify.service_health import check_dify_app_api_reachable
-from services.mindbot.platforms.dingtalk.ai_card import probe_ai_card_streaming_update_api
+from services.mindbot.platforms.dingtalk.cards.ai_card import probe_ai_card_streaming_update_api
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.integrations.dingtalk.inbound_log import (
     debug_callback_failure_logging_enabled,
@@ -32,14 +32,63 @@ from services.mindbot.integrations.dingtalk.platform_event import (
     is_dingtalk_platform_event_request,
     shared_url_platform_event_error,
 )
-from services.mindbot.pipeline.callback import process_dingtalk_callback
+from services.mindbot.pipeline.callback import (
+    mindbot_accept_ack_headers,
+    process_dingtalk_callback,
+    schedule_dingtalk_pipeline_background,
+    validate_callback_fast,
+)
 from services.mindbot.session.callback_token import new_public_callback_token
 from services.mindbot.telemetry.metrics import mindbot_metrics
 from services.mindbot.telemetry.usage import mindbot_usage_tracking_enabled
-from services.mindbot.platforms.dingtalk.verify import extract_dingtalk_robot_auth_headers
+from services.mindbot.platforms.dingtalk.auth.verify import extract_dingtalk_robot_auth_headers
 from utils.auth.roles import is_admin
 
 logger = logging.getLogger(__name__)
+
+
+async def _dingtalk_robot_message_response_after_config(
+    *,
+    cfg: OrganizationMindbotConfig,
+    body: dict[str, Any],
+    raw: bytes,
+    debug_route_label: str,
+    request: Request,
+) -> Response:
+    """Shared path: validate, schedule background pipeline, return 200 ACCEPTED or early error."""
+    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
+    dbg = debug_callback_failure_logging_enabled()
+    ok, early, ctx = await validate_callback_fast(
+        timestamp_header=ts,
+        sign_header=sg,
+        body=body,
+        resolved_config=cfg,
+        debug_route_label=debug_route_label,
+        debug_raw_body=raw if dbg else None,
+        debug_request_headers=dict(request.headers) if dbg else None,
+    )
+    if not ok:
+        if early is None:
+            resp = Response(
+                status_code=500,
+                headers=mindbot_error_headers(MindbotErrorCode.DIFY_FAILED),
+            )
+            mindbot_metrics.record_from_headers(dict(resp.headers))
+            return resp
+        code, resp_headers = early
+        mindbot_metrics.record_from_headers(resp_headers)
+        return Response(status_code=code, headers=resp_headers)
+    if ctx is None:
+        resp = Response(
+            status_code=500,
+            headers=mindbot_error_headers(MindbotErrorCode.DIFY_FAILED),
+        )
+        mindbot_metrics.record_from_headers(dict(resp.headers))
+        return resp
+    schedule_dingtalk_pipeline_background(ctx)
+    ack_headers = mindbot_accept_ack_headers(cfg)
+    mindbot_metrics.record_from_headers(ack_headers)
+    return Response(status_code=200, headers=ack_headers)
 
 
 def _dict_from_dingtalk_raw_body(raw: bytes) -> dict[str, Any]:
@@ -126,7 +175,9 @@ class MindbotConfigPayload(BaseModel):
         description="appKey, corpId, or suiteKey per DingTalk app type",
     )
     is_enabled: bool = True
-    show_chain_of_thought: bool = False
+    show_chain_of_thought_oto: bool = False
+    show_chain_of_thought_internal_group: bool = False
+    show_chain_of_thought_cross_org_group: bool = False
     chain_of_thought_max_chars: int = Field(4000, ge=0, le=32000)
     dingtalk_ai_card_template_id: Optional[str] = Field(
         None,
@@ -154,7 +205,9 @@ class MindbotConfigResponse(BaseModel):
     dify_api_base_url: str
     dify_timeout_seconds: int
     dify_inputs_json: Optional[str]
-    show_chain_of_thought: bool
+    show_chain_of_thought_oto: bool
+    show_chain_of_thought_internal_group: bool
+    show_chain_of_thought_cross_org_group: bool
     chain_of_thought_max_chars: int
     dingtalk_ai_card_template_id: Optional[str]
     dingtalk_ai_card_param_key: Optional[str]
@@ -435,20 +488,13 @@ async def dingtalk_callback_per_org(
         )
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
-    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
-    dbg = debug_callback_failure_logging_enabled()
-    code, resp_headers = await process_dingtalk_callback(
-        db,
-        timestamp_header=ts,
-        sign_header=sg,
+    return await _dingtalk_robot_message_response_after_config(
+        cfg=cfg,
         body=body,
-        resolved_config=cfg,
+        raw=raw,
         debug_route_label=f"org_{organization_id}",
-        debug_raw_body=raw if dbg else None,
-        debug_request_headers=dict(request.headers) if dbg else None,
+        request=request,
     )
-    mindbot_metrics.record_from_headers(resp_headers)
-    return Response(status_code=code, headers=resp_headers)
 
 
 @router.get("/dingtalk/callback/t/{public_callback_token}")
@@ -500,20 +546,13 @@ async def dingtalk_callback_by_token(
         )
         mindbot_metrics.record_from_headers(dict(resp.headers))
         return resp
-    ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
-    dbg = debug_callback_failure_logging_enabled()
-    code, resp_headers = await process_dingtalk_callback(
-        db,
-        timestamp_header=ts,
-        sign_header=sg,
+    return await _dingtalk_robot_message_response_after_config(
+        cfg=cfg,
         body=body,
-        resolved_config=cfg,
+        raw=raw,
         debug_route_label=route_label,
-        debug_raw_body=raw if dbg else None,
-        debug_request_headers=dict(request.headers) if dbg else None,
+        request=request,
     )
-    mindbot_metrics.record_from_headers(resp_headers)
-    return Response(status_code=code, headers=resp_headers)
 
 
 def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
@@ -534,7 +573,9 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
         dify_api_base_url=row.dify_api_base_url,
         dify_timeout_seconds=row.dify_timeout_seconds,
         dify_inputs_json=row.dify_inputs_json,
-        show_chain_of_thought=bool(row.show_chain_of_thought),
+        show_chain_of_thought_oto=bool(row.show_chain_of_thought_oto),
+        show_chain_of_thought_internal_group=bool(row.show_chain_of_thought_internal_group),
+        show_chain_of_thought_cross_org_group=bool(row.show_chain_of_thought_cross_org_group),
         chain_of_thought_max_chars=int(row.chain_of_thought_max_chars),
         dingtalk_ai_card_template_id=(row.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(row.dingtalk_ai_card_param_key or "").strip() or None,
@@ -544,7 +585,7 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
 
 @router.get("/admin/dify-service-status", response_model=DifyServiceStatusResponse)
 async def admin_dify_service_status(
-    _user: User = Depends(require_admin_or_manager),
+    _user: User = Depends(require_mindbot_admin_access),
 ) -> DifyServiceStatusResponse:
     """Probe configured Dify app API (GET /parameters); does not expose secrets."""
     _require_mindbot_feature()
@@ -577,7 +618,7 @@ async def admin_ai_card_streaming_status(
         description="Optional OpenAPI app key from the form before save; falls back to stored config",
     ),
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> DingtalkAiCardStreamingStatusResponse:
     """
     Server-side probe: ``PUT /v1.0/card/streaming`` with a random ``outTrackId``.
@@ -633,7 +674,7 @@ async def admin_ai_card_streaming_status(
 @router.get("/admin/configs", response_model=list[MindbotConfigResponse])
 async def admin_list_mindbot_configs(
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> list[MindbotConfigResponse]:
     _require_mindbot_feature()
     repo = MindbotConfigRepository(db)
@@ -651,7 +692,7 @@ async def admin_list_mindbot_configs(
 async def admin_get_mindbot_config(
     organization_id: int,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> MindbotConfigResponse:
     _require_mindbot_feature()
     _ensure_org_scope(user, organization_id)
@@ -670,7 +711,7 @@ async def admin_upsert_mindbot_config(
     organization_id: int,
     payload: MindbotConfigPayload,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> MindbotConfigResponse:
     _require_mindbot_feature()
     _ensure_org_scope(user, organization_id)
@@ -718,7 +759,9 @@ async def admin_upsert_mindbot_config(
             dify_api_key=dify_key,
             dify_inputs_json=(payload.dify_inputs_json or "").strip() or None,
             dify_timeout_seconds=payload.dify_timeout_seconds,
-            show_chain_of_thought=payload.show_chain_of_thought,
+            show_chain_of_thought_oto=payload.show_chain_of_thought_oto,
+            show_chain_of_thought_internal_group=payload.show_chain_of_thought_internal_group,
+            show_chain_of_thought_cross_org_group=payload.show_chain_of_thought_cross_org_group,
             chain_of_thought_max_chars=payload.chain_of_thought_max_chars,
             dingtalk_ai_card_template_id=(payload.dingtalk_ai_card_template_id or "").strip() or None,
             dingtalk_ai_card_param_key=(payload.dingtalk_ai_card_param_key or "").strip() or None,
@@ -753,7 +796,9 @@ async def admin_upsert_mindbot_config(
         if "dify_inputs_json" in payload.model_fields_set:
             existing.dify_inputs_json = (payload.dify_inputs_json or "").strip() or None
         existing.dify_timeout_seconds = payload.dify_timeout_seconds
-        existing.show_chain_of_thought = payload.show_chain_of_thought
+        existing.show_chain_of_thought_oto = payload.show_chain_of_thought_oto
+        existing.show_chain_of_thought_internal_group = payload.show_chain_of_thought_internal_group
+        existing.show_chain_of_thought_cross_org_group = payload.show_chain_of_thought_cross_org_group
         existing.chain_of_thought_max_chars = payload.chain_of_thought_max_chars
         if "dingtalk_ai_card_template_id" in payload.model_fields_set:
             existing.dingtalk_ai_card_template_id = (
@@ -819,7 +864,7 @@ async def admin_upsert_mindbot_config(
 async def admin_delete_mindbot_config(
     organization_id: int,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> Response:
     _require_mindbot_feature()
     _ensure_org_scope(user, organization_id)
@@ -855,7 +900,7 @@ async def admin_delete_mindbot_config(
 async def admin_rotate_mindbot_callback_token(
     organization_id: int,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
 ) -> MindbotConfigResponse:
     """Issue a new public callback token; DingTalk must use the new callback URL."""
     _require_mindbot_feature()
@@ -890,7 +935,7 @@ async def admin_rotate_mindbot_callback_token(
 async def admin_list_mindbot_usage_events(
     organization_id: int,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_admin_or_manager),
+    user: User = Depends(require_mindbot_admin_access),
     limit: int = Query(50, ge=1, le=100),
     before_id: Optional[int] = Query(
         None,
@@ -911,5 +956,85 @@ async def admin_list_mindbot_usage_events(
         limit=limit,
         before_id=before_id,
         dingtalk_staff_id=dingtalk_staff_id,
+    )
+    return [MindbotUsageEventItem.model_validate(r) for r in rows]
+
+
+@router.get(
+    "/admin/configs/{organization_id}/usage-events/{event_id}",
+    response_model=MindbotUsageEventItem,
+)
+async def admin_get_mindbot_usage_event(
+    organization_id: int,
+    event_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    user: User = Depends(require_mindbot_admin_access),
+) -> MindbotUsageEventItem:
+    _require_mindbot_feature()
+    _ensure_org_scope(user, organization_id)
+    if not mindbot_usage_tracking_enabled():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="MindBot usage tracking disabled",
+        )
+    repo = MindbotUsageRepository(db)
+    row = await repo.get_event_by_id(
+        organization_id=organization_id,
+        event_id=event_id,
+    )
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Usage event not found",
+        )
+    return MindbotUsageEventItem.model_validate(row)
+
+
+@router.get(
+    "/admin/configs/{organization_id}/usage-thread-events",
+    response_model=list[MindbotUsageEventItem],
+)
+async def admin_list_mindbot_usage_thread_events(
+    organization_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    user: User = Depends(require_mindbot_admin_access),
+    dingtalk_staff_id: str = Query(
+        ...,
+        min_length=1,
+        description="DingTalk staff id for the thread",
+    ),
+    dingtalk_conversation_id: Optional[str] = Query(
+        None,
+        description="DingTalk conversation id when present",
+    ),
+    dify_conversation_id: Optional[str] = Query(
+        None,
+        description="Dify conversation id when DingTalk id is absent",
+    ),
+    limit: int = Query(50, ge=1, le=100),
+    before_id: Optional[int] = Query(
+        None,
+        description="Cursor: return rows with id strictly less than this value",
+    ),
+) -> list[MindbotUsageEventItem]:
+    _require_mindbot_feature()
+    _ensure_org_scope(user, organization_id)
+    if not mindbot_usage_tracking_enabled():
+        return []
+    dt = (dingtalk_conversation_id or "").strip()
+    df = (dify_conversation_id or "").strip()
+    if not dt and not df:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="dingtalk_conversation_id or dify_conversation_id is required",
+        )
+    repo = MindbotUsageRepository(db)
+    rows = await repo.list_events_for_thread(
+        organization_id=organization_id,
+        dingtalk_staff_id=dingtalk_staff_id,
+        dingtalk_conversation_id=dt or None,
+        dify_conversation_id=df or None,
+        limit=limit,
+        before_id=before_id,
     )
     return [MindbotUsageEventItem.model_validate(r) for r in rows]

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from services.mindbot.platforms.dingtalk.verify import (
+from services.mindbot.platforms.dingtalk.auth.verify import (
     compute_sign,
     extract_dingtalk_robot_auth_headers,
     verify_dingtalk_sign,

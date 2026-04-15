@@ -29,6 +29,7 @@ from utils.auth import (
     is_admin,
     is_admin_or_manager,
     is_manager,
+    user_has_feature_access,
 )
 
 
@@ -183,6 +184,23 @@ def require_admin_or_manager(
     """
     if not is_admin_or_manager(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
+    return current_user
+
+
+def require_mindbot_admin_access(
+    current_user: User = Depends(require_admin_or_manager),
+    lang: Language = Depends(get_language_dependency),
+) -> User:
+    """
+    MindBot admin UI/API: admin or manager, plus feature_org_access for MindBot.
+
+    Managers are scoped to their ``users.organization_id`` in MindBot routes;
+    when ``feature_access_rules`` restricts ``feature_mindbot``, the manager's
+    organization (or user id) must appear in the corresponding grants.
+    """
+    if not user_has_feature_access(current_user, "feature_mindbot"):
+        error_msg = Messages.error("mindbot_feature_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
 

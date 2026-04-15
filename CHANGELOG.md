@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.85.0] - 2026-04-15
+
+### Added
+- **MindBot / Dify**: Shared async HTTP pool for streaming and blocking chat (`clients/dify.py`); tests in `tests/clients/test_dify_shared_http_pool.py`.
+- **MindBot / DingTalk**: Package layout under `services/mindbot/platforms/dingtalk/` — `api/`, `auth/`, `cards/` (including `ai_card_create.py`, `ai_card_update.py`), `inbound/`, `media/`, `messaging/`; `services/mindbot/infra/` for `http_client`, `redis_async`, plus `circuit_breaker`, `rate_limit`, `task_registry`.
+- **MindBot / pipeline**: Fast callback validation module (`services/mindbot/pipeline/callback_validate.py`) and related pipeline refactors (`callback.py`, `dify_paths.py`).
+- **MindBot / chain-of-thought**: Per-chat-scope flags (1:1, internal group, cross-org group) replacing a single `show_chain_of_thought` column; Alembic `rev_0019`; `services/mindbot/core/chain_of_thought_policy.py`.
+- **MindBot / admin**: Usage event detail dialog and types (`MindbotUsageEventDetailDialog.vue`, `mindbotUsageTypes.ts`); `frontend/src/utils/mindbotAccess.ts` for route access; MindBot admin API and usage repository extensions.
+- **Auth**: MindBot admin access checks (`utils/auth/roles.py`, `routers/auth/dependencies.py`); tests `tests/utils/test_auth_roles_mindbot_access.py`.
+- **Tests**: Chain-of-thought policy, updated MindBot callback and AI card tests.
+
+### Changed
+- **MindBot**: Conversation gate, streaming (`dify_stream.py`), reply thinking (`reply_thinking.py`), outbound text/media, OAuth and OpenAPI helpers; `conv_gate.py` and `service_health.py` updates; `lifespan.py` for background task registry shutdown.
+- **API**: `routers/api/mindbot.py` expanded; `models/domain/mindbot_config.py` and messages for new MindBot fields.
+- **Frontend**: `AdminMindBotConfigDialog.vue`, `AdminMindBotTab.vue`, `AdminMindBotUsagePanel.vue`, `MindbotAdminPage.vue`, router and i18n (`en` / `zh` admin).
+
 ## [5.84.0] - 2026-04-14
 
 ### Added

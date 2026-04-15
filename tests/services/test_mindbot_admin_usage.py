@@ -25,7 +25,7 @@ def test_mindbot_usage_event_item_from_simple_namespace() -> None:
         msg_id="m1",
         dingtalk_conversation_id="dc1",
         dify_conversation_id="df1",
-        error_code="OK",
+        error_code="MINDBOT_OK",
         streaming=False,
         prompt_chars=3,
         reply_chars=5,
@@ -47,6 +47,39 @@ def test_mindbot_usage_event_item_from_simple_namespace() -> None:
 
 
 @pytest.mark.asyncio
+async def test_mindbot_usage_repository_get_event_by_id_calls_execute() -> None:
+    session = AsyncMock()
+    fake_result = MagicMock()
+    fake_result.scalar_one_or_none.return_value = None
+    session.execute = AsyncMock(return_value=fake_result)
+
+    repo = MindbotUsageRepository(session)
+    out = await repo.get_event_by_id(organization_id=7, event_id=3)
+    assert out is None
+    assert session.execute.await_count == 1
+
+
+async def test_mindbot_usage_repository_thread_calls_execute() -> None:
+    session = AsyncMock()
+    fake_scalar = MagicMock()
+    fake_scalar.all.return_value = []
+    fake_result = MagicMock()
+    fake_result.scalars.return_value = fake_scalar
+    session.execute = AsyncMock(return_value=fake_result)
+
+    repo = MindbotUsageRepository(session)
+    out = await repo.list_events_for_thread(
+        organization_id=7,
+        dingtalk_staff_id="s1",
+        dingtalk_conversation_id="c1",
+        dify_conversation_id=None,
+        limit=10,
+        before_id=100,
+    )
+    assert out == []
+    assert session.execute.await_count == 1
+
+
 async def test_mindbot_usage_repository_list_calls_execute() -> None:
     session = AsyncMock()
     fake_scalar = MagicMock()

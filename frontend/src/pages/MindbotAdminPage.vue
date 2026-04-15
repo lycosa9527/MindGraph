@@ -56,12 +56,11 @@ const difyStatusLabel = computed(() => {
 })
 
 const difyStatusTooltip = computed(() => {
-  const url = difyStatus.value?.probe_url ?? '—'
   const err = difyStatus.value?.error
   if (err && err !== 'api_key_not_configured') {
-    return t('admin.mindbot.difyServiceTooltipError', { url, error: err })
+    return t('admin.mindbot.difyServiceTooltipError')
   }
-  return t('admin.mindbot.difyServiceTooltip', { url })
+  return t('admin.mindbot.difyServiceTooltip')
 })
 
 const difyStatusButtonClass = computed(() => {

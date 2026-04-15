@@ -36,7 +36,13 @@ class OrganizationMindbotConfig(Base):
     dify_api_key: Mapped[str] = mapped_column(Text, nullable=False)
     dify_inputs_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     dify_timeout_seconds: Mapped[int] = mapped_column(Integer, nullable=False, default=300)
-    show_chain_of_thought: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    show_chain_of_thought_oto: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    show_chain_of_thought_internal_group: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    show_chain_of_thought_cross_org_group: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
     chain_of_thought_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=4000)
     dingtalk_ai_card_template_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     dingtalk_ai_card_param_key: Mapped[str | None] = mapped_column(String(128), nullable=True)

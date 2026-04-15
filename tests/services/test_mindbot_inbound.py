@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from services.mindbot.platforms.dingtalk.inbound import extract_inbound_prompt
+from services.mindbot.platforms.dingtalk.inbound.parser import extract_inbound_prompt
 
 
 def test_group_text_strips_leading_at_mentions() -> None:

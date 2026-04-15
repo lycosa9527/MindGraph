@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from services.mindbot.platforms.dingtalk.response import (
+from services.mindbot.platforms.dingtalk.api.response import (
     dingtalk_v1_body_log_snippet,
     dingtalk_v1_response_ok,
 )

@@ -6,13 +6,13 @@ import json
 from pathlib import Path
 from typing import Any, Optional
 
-from services.mindbot.platforms.dingtalk.constants import (
+from services.mindbot.platforms.dingtalk.api.constants import (
     PATH_ROBOT_GROUP_MESSAGES_SEND,
     PATH_ROBOT_OTO_MESSAGES_BATCH_SEND,
 )
-from services.mindbot.platforms.dingtalk.http import post_v1_json
-from services.mindbot.platforms.dingtalk.media_upload import upload_media_oapi
-from services.mindbot.platforms.dingtalk.robot_templates import (
+from services.mindbot.platforms.dingtalk.api.http import post_v1_json
+from services.mindbot.platforms.dingtalk.media.media_upload import upload_media_oapi
+from services.mindbot.platforms.dingtalk.messaging.robot_templates import (
     msg_param_sample_action_card,
     msg_param_sample_audio,
     msg_param_sample_file,

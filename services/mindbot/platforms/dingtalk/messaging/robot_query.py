@@ -5,11 +5,11 @@ from __future__ import annotations
 import logging
 from typing import Any, Optional
 
-from services.mindbot.platforms.dingtalk.constants import (
+from services.mindbot.platforms.dingtalk.api.constants import (
     PATH_ROBOT_GROUP_MESSAGES_QUERY,
     PATH_ROBOT_PRIVATE_CHAT_MESSAGES_QUERY,
 )
-from services.mindbot.platforms.dingtalk.http import post_v1_json
+from services.mindbot.platforms.dingtalk.api.http import post_v1_json
 
 logger = logging.getLogger(__name__)
 

@@ -8,18 +8,24 @@ from typing import Any, Optional
 
 import aiohttp
 
-from services.mindbot.http_client import get_outbound_session
+from services.mindbot.infra.http_client import get_outbound_session
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.telemetry.pipeline_log import session_webhook_host
 from utils.env_helpers import env_bool
 
 from services.mindbot.platforms.dingtalk import (
     build_session_webhook_payload,
-    get_access_token,
     openapi_robot_msg_param_for_answer,
     openapi_robot_msg_param_stream_chunk,
-    send_group_robot_message,
-    send_oto_robot_message,
+)
+from services.mindbot.platforms.dingtalk.api.constants import (
+    PATH_ROBOT_GROUP_MESSAGES_SEND,
+    PATH_ROBOT_OTO_MESSAGES_BATCH_SEND,
+)
+from services.mindbot.platforms.dingtalk.api.http import post_v1_json
+from services.mindbot.platforms.dingtalk.auth.oauth import (
+    get_access_token_with_error,
+    invalidate_access_token_cache,
 )
 
 logger = logging.getLogger(__name__)
@@ -45,6 +51,9 @@ async def reply_via_openapi(
     Try OpenAPI send. Returns (success, token_failed).
 
     ``token_failed`` is True only when token acquisition failed (vs send failure).
+
+    On HTTP 401, the cached token is invalidated and one retry is attempted with a
+    fresh token so expired tokens do not require manual intervention.
     """
     if not env_bool("MINDBOT_OPENAPI_ENABLED", True):
         return False, False
@@ -53,10 +62,11 @@ async def reply_via_openapi(
     app_key = (cfg.dingtalk_client_id or "").strip()
     if not app_key:
         return False, False
-    token = await get_access_token(
+    app_secret = cfg.dingtalk_app_secret.strip()
+    token, _err = await get_access_token_with_error(
         cfg.organization_id,
         app_key,
-        cfg.dingtalk_app_secret.strip(),
+        app_secret,
     )
     if not token:
         logger.warning("[MindBot] OpenAPI fallback: no access token")
@@ -70,57 +80,66 @@ async def reply_via_openapi(
         msg_key, msg_param = openapi_robot_msg_param_stream_chunk(answer)
     else:
         msg_key, msg_param = openapi_robot_msg_param_for_answer(answer)
-    if is_group_conversation(body):
-        if not conv_s:
-            logger.warning("[MindBot] OpenAPI group fallback: missing conversationId")
-            return (False, False)
-        res = await send_group_robot_message(
-            token,
-            robot_code,
-            conv_s,
-            msg_key,
-            msg_param,
-        )
-        ok = res is not None
-        if ok:
+    is_group = is_group_conversation(body)
+    if is_group and not conv_s:
+        logger.warning("[MindBot] OpenAPI group fallback: missing conversationId")
+        return False, False
+    if not is_group and not sender_s:
+        logger.warning("[MindBot] OpenAPI private fallback: missing senderStaffId")
+        return False, False
+
+    effective_token = token
+    for attempt in range(2):
+        if is_group:
+            payload = {
+                "msgKey": msg_key,
+                "msgParam": json.dumps(msg_param, ensure_ascii=False),
+                "openConversationId": conv_s,
+                "robotCode": robot_code,
+            }
+            path = PATH_ROBOT_GROUP_MESSAGES_SEND
+        else:
+            payload = {
+                "robotCode": robot_code,
+                "userIds": [sender_s],
+                "msgKey": msg_key,
+                "msgParam": json.dumps(msg_param, ensure_ascii=False),
+            }
+            path = PATH_ROBOT_OTO_MESSAGES_BATCH_SEND
+        status, res = await post_v1_json(path, effective_token, payload)
+        if status == 200 and res is not None:
             log_fn = logger.debug if stream_chunk else logger.info
             log_fn(
-                "[MindBot] outbound_openapi %s chat=group chunk=%s answer_chars=%s",
+                "[MindBot] outbound_openapi %s chat=%s chunk=%s answer_chars=%s",
                 pipeline_ctx,
+                "group" if is_group else "oto",
                 stream_chunk,
                 len(answer),
             )
-        else:
-            logger.warning(
-                "[MindBot] outbound_openapi_failed %s chat=group",
+            return True, False
+        if status == 401 and attempt == 0:
+            logger.info(
+                "[MindBot] outbound_openapi_401_retry %s path=%s invalidating_token",
                 pipeline_ctx,
+                path,
             )
-        return (ok, False)
-    if not sender_s:
-        logger.warning("[MindBot] OpenAPI private fallback: missing senderStaffId")
-        return False, False
-    res = await send_oto_robot_message(
-        token,
-        robot_code,
-        [sender_s],
-        msg_key,
-        msg_param,
+            await invalidate_access_token_cache(cfg.organization_id, app_key, app_secret)
+            new_token, _err2 = await get_access_token_with_error(
+                cfg.organization_id, app_key, app_secret
+            )
+            if new_token:
+                effective_token = new_token
+                continue
+            logger.warning("[MindBot] outbound_openapi_401_retry %s token_refresh_failed", pipeline_ctx)
+        break
+
+    logger.warning(
+        "[MindBot] outbound_openapi_failed %s chat=%s status=%s",
+        pipeline_ctx,
+        "group" if is_group else "oto",
+        status,
     )
-    ok = res is not None
-    if ok:
-        log_fn = logger.debug if stream_chunk else logger.info
-        log_fn(
-            "[MindBot] outbound_openapi %s chat=oto chunk=%s answer_chars=%s",
-            pipeline_ctx,
-            stream_chunk,
-            len(answer),
-        )
-    else:
-        logger.warning(
-            "[MindBot] outbound_openapi_failed %s chat=oto",
-            pipeline_ctx,
-        )
-    return (ok, False)
+    return False, False
 
 
 async def post_session_webhook(
@@ -131,26 +150,28 @@ async def post_session_webhook(
     pipeline_ctx: str = "",
 ) -> bool:
     out_payload = build_session_webhook_payload(answer, stream_chunk=stream_chunk)
+    payload_str = json.dumps(out_payload, ensure_ascii=False)
     host = session_webhook_host(session_webhook)
-    timeout = aiohttp.ClientTimeout(total=30)
+    timeout_s = 8.0 if stream_chunk else 20.0
+    timeout = aiohttp.ClientTimeout(total=timeout_s)
     try:
         http = get_outbound_session()
         async with http.post(
             session_webhook.strip(),
-            data=json.dumps(out_payload),
+            data=payload_str,
             headers={"Content-Type": "application/json; charset=utf-8"},
             timeout=timeout,
         ) as r:
-                if r.status >= 400:
-                    body_txt = await r.text()
-                    logger.warning(
-                        "[MindBot] outbound_session_webhook_http %s host=%s status=%s body=%s",
-                        pipeline_ctx,
-                        host,
-                        r.status,
-                        body_txt[:500],
-                    )
-                    return False
+            if r.status >= 400:
+                body_txt = await r.text()
+                logger.warning(
+                    "[MindBot] outbound_session_webhook_http %s host=%s status=%s body=%s",
+                    pipeline_ctx,
+                    host,
+                    r.status,
+                    body_txt[:500],
+                )
+                return False
     except Exception as exc:
         logger.exception(
             "[MindBot] outbound_session_webhook_error %s host=%s: %s",
@@ -159,7 +180,7 @@ async def post_session_webhook(
             exc,
         )
         return False
-    payload_chars = len(json.dumps(out_payload, ensure_ascii=False))
+    payload_chars = len(payload_str)
     log_ok = logger.debug if stream_chunk else logger.info
     log_ok(
         "[MindBot] outbound_session_webhook_ok %s host=%s chunk=%s payload_chars=%s",

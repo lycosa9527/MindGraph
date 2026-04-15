@@ -9,8 +9,8 @@ from urllib.parse import quote
 
 import aiohttp
 
-from services.mindbot.http_client import get_outbound_session
-from services.mindbot.platforms.dingtalk.constants import (
+from services.mindbot.infra.http_client import get_outbound_session
+from services.mindbot.platforms.dingtalk.api.constants import (
     OAPI_MAX_FILE_BYTES,
     OAPI_MAX_IMAGE_BYTES,
     OAPI_MAX_VIDEO_BYTES,
@@ -71,27 +71,27 @@ async def upload_media_oapi(
     try:
         session = get_outbound_session()
         async with session.post(url, data=data, timeout=timeout) as resp:
-                body_txt = await resp.text()
-                if resp.status != 200:
-                    logger.warning(
-                        "[MindBot] oapi media/upload failed: %s %s",
-                        resp.status,
-                        body_txt[:500],
-                    )
-                    return None
-                try:
-                    payload = json.loads(body_txt)
-                except json.JSONDecodeError:
-                    logger.warning("[MindBot] oapi media/upload invalid JSON")
-                    return None
-                err = payload.get("errcode")
-                if err is not None and err != 0:
-                    logger.warning("[MindBot] oapi media/upload err: %s", body_txt[:500])
-                    return None
-                mid = payload.get("media_id")
-                if isinstance(mid, str) and mid.strip():
-                    return mid.strip()
+            body_txt = await resp.text()
+            if resp.status != 200:
+                logger.warning(
+                    "[MindBot] oapi media/upload failed: %s %s",
+                    resp.status,
+                    body_txt[:500],
+                )
                 return None
+            try:
+                payload = json.loads(body_txt)
+            except json.JSONDecodeError:
+                logger.warning("[MindBot] oapi media/upload invalid JSON")
+                return None
+            err = payload.get("errcode")
+            if err is not None and err != 0:
+                logger.warning("[MindBot] oapi media/upload err: %s", body_txt[:500])
+                return None
+            mid = payload.get("media_id")
+            if isinstance(mid, str) and mid.strip():
+                return mid.strip()
+            return None
     except Exception as exc:
         logger.exception("[MindBot] oapi media/upload error: %s", exc)
         return None

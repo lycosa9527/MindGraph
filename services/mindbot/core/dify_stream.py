@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import functools
 import logging
 import os
 import time
@@ -51,8 +52,9 @@ def _workflow_output_text(outputs: dict) -> Optional[str]:
     return None
 
 
+@functools.cache
 def mindbot_stream_batch_params() -> tuple[int, float, int]:
-    """``(min_chars, flush_interval_seconds, max_parts)`` from env."""
+    """``(min_chars, flush_interval_seconds, max_parts)`` from env (cached at first call)."""
     flush_ms = env_float("MINDBOT_STREAM_FLUSH_MS", 400.0)
     return (
         max(1, env_int("MINDBOT_STREAM_MIN_CHARS", 64)),
@@ -61,6 +63,7 @@ def mindbot_stream_batch_params() -> tuple[int, float, int]:
     )
 
 
+@functools.cache
 def mindbot_stream_max_media_parts() -> int:
     return max(0, env_int("MINDBOT_STREAM_MAX_MEDIA_PARTS", 12))
 
@@ -109,12 +112,12 @@ async def mindbot_consume_dify_stream_batched(
     on_batch: Callable[[str], Awaitable[tuple[bool, bool]]],
     inputs: Optional[dict[str, Any]] = None,
     on_stale_conversation: Optional[Callable[[], Awaitable[None]]] = None,
-    stale_retry_done: bool = False,
     pipeline_ctx: str = "",
     on_media: Optional[
         Callable[[str, dict[str, Any]], Awaitable[tuple[bool, bool]]]
     ] = None,
     on_message_replace: Optional[Callable[[], Awaitable[None]]] = None,
+    on_stream_started: Optional[Callable[[], None]] = None,
 ) -> tuple[str, Optional[str], Optional[str], Optional[dict[str, int]]]:
     """
     Consume Dify ``stream_chat`` SSE (ChunkChatCompletionResponse), batch ``answer`` deltas.
@@ -124,6 +127,9 @@ async def mindbot_consume_dify_stream_batched(
 
     ``on_message_replace`` when set is awaited after Dify ``message_replace`` (answer reset);
     use to reset AI card or UI state that tracks cumulative deltas.
+
+    Stale-conversation retry is implemented as a loop (at most 2 attempts) rather than
+    a recursive call to avoid unbounded stack growth.
     """
     defer_to_end = env_bool("MINDBOT_STREAM_DEFER_TO_END", False)
     native_media = env_bool("MINDBOT_DIFY_NATIVE_MEDIA_ENABLED", True)
@@ -241,14 +247,21 @@ async def mindbot_consume_dify_stream_batched(
         tts_voice_pending = None
         return err
 
+    _active_conv_id = conversation_id
+    _stream_started = False
+
     async for ev in dify.stream_chat(
         message=text,
         user_id=user_id,
-        conversation_id=conversation_id,
+        conversation_id=_active_conv_id,
         files=files,
         auto_generate_name=False,
         inputs=inputs,
     ):
+        if not _stream_started:
+            _stream_started = True
+            if on_stream_started is not None:
+                on_stream_started()
         evt = ev.get("event")
         cid = ev.get("conversation_id")
         if isinstance(cid, str) and cid.strip():
@@ -259,8 +272,7 @@ async def mindbot_consume_dify_stream_batched(
             code = ev.get("code")
             status = ev.get("status")
             if (
-                conversation_id
-                and not stale_retry_done
+                _active_conv_id
                 and _stream_error_is_conversation_not_exists(ev)
                 and on_stale_conversation is not None
             ):
@@ -280,11 +292,11 @@ async def mindbot_consume_dify_stream_batched(
                     max_parts=max_parts,
                     on_batch=on_batch,
                     inputs=inputs,
-                    on_stale_conversation=on_stale_conversation,
-                    stale_retry_done=True,
+                    on_stale_conversation=None,
                     pipeline_ctx=pipeline_ctx,
                     on_media=on_media,
                     on_message_replace=on_message_replace,
+                    on_stream_started=on_stream_started,
                 )
             logger.warning(
                 "[MindBot] dify_sse_error_event %s err=%s code=%s status=%s",

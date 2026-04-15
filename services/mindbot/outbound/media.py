@@ -22,7 +22,7 @@ from services.mindbot.platforms.dingtalk import (
     send_private_image_by_photo_url,
     send_private_markdown_sample,
 )
-from services.mindbot.platforms.dingtalk.session_webhook import (
+from services.mindbot.platforms.dingtalk.messaging.session_webhook import (
     markdown_title_and_body_for_openapi,
     sanitize_markdown_for_dingtalk,
 )

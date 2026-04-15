@@ -1,7 +1,16 @@
-"""OAuth access token for enterprise internal apps (cached in Redis)."""
+"""OAuth access token for enterprise internal apps (cached in Redis).
+
+Thundering-herd prevention
+--------------------------
+On a cold cache (server restart or TTL expiry), many concurrent requests for the
+same org would all miss Redis and fire parallel DingTalk OAuth POSTs.  A per-org
+``asyncio.Lock`` keyed by the cache key serialises these so only the first caller
+fetches a fresh token; all others wait and then read it from the cache.
+"""
 
 from __future__ import annotations
 
+import asyncio
 import hashlib
 import json
 import logging
@@ -9,16 +18,25 @@ from typing import Any, Optional, Tuple
 
 import aiohttp
 
-from services.mindbot.http_client import get_dingtalk_api_session
-from services.mindbot.platforms.dingtalk.constants import DING_API_BASE, PATH_OAUTH_ACCESS_TOKEN, TOKEN_TTL_SECONDS
-from services.mindbot.redis_async import redis_get, redis_set_ttl
+from services.mindbot.infra.http_client import get_dingtalk_api_session
+from services.mindbot.platforms.dingtalk.api.constants import DING_API_BASE, PATH_OAUTH_ACCESS_TOKEN, TOKEN_TTL_SECONDS
+from services.mindbot.infra.redis_async import redis_delete, redis_get, redis_set_ttl
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
+
+_token_fetch_locks: dict[str, asyncio.Lock] = {}
+
+
+def _get_token_lock(cache_key: str) -> asyncio.Lock:
+    if cache_key not in _token_fetch_locks:
+        _token_fetch_locks[cache_key] = asyncio.Lock()
+    return _token_fetch_locks[cache_key]
 
 
 def _oauth_credential_cache_suffix(app_key: str, app_secret: str) -> str:
     raw = f"{app_key.strip()}|{app_secret.strip()}".encode("utf-8")
-    return hashlib.sha256(raw).hexdigest()[:16]
+    return hashlib.sha256(raw).hexdigest()[:32]
 
 
 def _token_cache_key(organization_id: int, app_key: str, app_secret: str) -> str:
@@ -102,43 +120,49 @@ async def get_access_token_with_error(
     if cached:
         return cached, ""
 
-    payload = {"appKey": app_key.strip(), "appSecret": app_secret.strip()}
-    timeout = aiohttp.ClientTimeout(total=30)
-    try:
-        session = get_dingtalk_api_session()
-        async with session.post(
-            f"{DING_API_BASE}{PATH_OAUTH_ACCESS_TOKEN}",
-            json=payload,
-            headers={"Content-Type": "application/json"},
-            timeout=timeout,
-        ) as resp:
-            body_txt = await resp.text()
-            if resp.status != 200:
-                logger.warning(
-                    "[MindBot] DingTalk accessToken failed: %s %s",
-                    resp.status,
-                    body_txt[:500],
-                )
-                return None, _http_oauth_error_detail(resp.status, body_txt)
-            try:
-                data = json.loads(body_txt)
-            except json.JSONDecodeError:
-                logger.warning("[MindBot] DingTalk accessToken invalid JSON")
-                return None, "invalid JSON from DingTalk OAuth"
-            if not isinstance(data, dict):
-                return None, "unexpected OAuth response type"
-            token = _parse_access_token(data)
-            if token:
-                await redis_set_ttl(key, token, TOKEN_TTL_SECONDS)
-                return token, ""
-            err = _oauth_error_snippet(data)
-            if not err:
+    lock = _get_token_lock(key)
+    async with lock:
+        cached = await redis_get(key)
+        if cached:
+            return cached, ""
+
+        payload = {"appKey": app_key.strip(), "appSecret": app_secret.strip()}
+        timeout = aiohttp.ClientTimeout(total=30)
+        try:
+            session = get_dingtalk_api_session()
+            async with session.post(
+                f"{DING_API_BASE}{PATH_OAUTH_ACCESS_TOKEN}",
+                json=payload,
+                headers={"Content-Type": "application/json"},
+                timeout=timeout,
+            ) as resp:
+                body_txt = await resp.text()
+                if resp.status != 200:
+                    logger.warning(
+                        "[MindBot] DingTalk accessToken failed: %s %s",
+                        resp.status,
+                        body_txt[:500],
+                    )
+                    return None, _http_oauth_error_detail(resp.status, body_txt)
+                try:
+                    data = json.loads(body_txt)
+                except json.JSONDecodeError:
+                    logger.warning("[MindBot] DingTalk accessToken invalid JSON")
+                    return None, "invalid JSON from DingTalk OAuth"
+                if not isinstance(data, dict):
+                    return None, "unexpected OAuth response type"
+                token = _parse_access_token(data)
+                if token:
+                    await redis_set_ttl(key, token, TOKEN_TTL_SECONDS)
+                    return token, ""
+                err = _oauth_error_snippet(data)
+                if not err:
                     err = f"no access_token in response ({body_txt[:400]})"
                 logger.warning("[MindBot] DingTalk accessToken missing token: %s", err)
                 return None, err
-    except Exception as exc:
-        logger.exception("[MindBot] DingTalk accessToken request error: %s", exc)
-        return None, str(exc)[:400]
+        except Exception as exc:
+            logger.exception("[MindBot] DingTalk accessToken request error: %s", exc)
+            return None, str(exc)[:400]
 
 
 async def get_access_token(
@@ -162,4 +186,4 @@ async def invalidate_access_token_cache(
     if not (app_key or "").strip() or not (app_secret or "").strip():
         return
     cache_key = _token_cache_key(organization_id, app_key, app_secret)
-    await asyncio.to_thread(RedisOperations.delete, cache_key)
+    await redis_delete(cache_key)

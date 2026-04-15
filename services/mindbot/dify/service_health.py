@@ -8,7 +8,7 @@ from typing import Optional, Tuple
 
 import aiohttp
 
-from services.mindbot.http_client import get_outbound_session
+from services.mindbot.infra.http_client import get_outbound_session
 
 logger = logging.getLogger(__name__)
 
@@ -37,15 +37,15 @@ async def check_dify_app_api_reachable(
     try:
         session = get_outbound_session()
         async with session.get(url, headers=headers, timeout=timeout) as resp:
-                status = resp.status
-                if status == 200:
-                    await resp.read()
-                    return True, status, None
-                body_preview = (await resp.text())[:200]
-                err = f"http_{status}"
-                if body_preview:
-                    err = f"{err}: {body_preview}"
-                return False, status, err
+            status = resp.status
+            if status == 200:
+                await resp.read()
+                return True, status, None
+            body_preview = (await resp.text())[:200]
+            err = f"http_{status}"
+            if body_preview:
+                err = f"{err}: {body_preview}"
+            return False, status, err
     except asyncio.TimeoutError:
         return False, None, "timeout"
     except aiohttp.ClientError as exc:

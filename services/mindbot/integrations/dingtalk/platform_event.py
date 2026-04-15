@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse, Response
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
-from services.mindbot.platforms.dingtalk.oa_callback_crypto import DingTalkOaCallbackCrypto
+from services.mindbot.platforms.dingtalk.inbound.oa_callback_crypto import DingTalkOaCallbackCrypto
 
 logger = logging.getLogger(__name__)
 

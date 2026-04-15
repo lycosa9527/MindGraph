@@ -8,13 +8,13 @@ from typing import Optional
 
 import aiohttp
 
-from services.mindbot.http_client import get_dingtalk_api_session, get_outbound_session
-from services.mindbot.platforms.dingtalk.constants import (
+from services.mindbot.infra.http_client import get_dingtalk_api_session, get_outbound_session
+from services.mindbot.platforms.dingtalk.api.constants import (
     DING_API_BASE,
     MAX_DOWNLOAD_MEDIA_BYTES,
     PATH_ROBOT_MESSAGE_FILES_DOWNLOAD,
 )
-from services.mindbot.platforms.dingtalk.oauth import get_access_token
+from services.mindbot.platforms.dingtalk.auth.oauth import get_access_token
 
 logger = logging.getLogger(__name__)
 
@@ -45,28 +45,28 @@ async def get_message_file_download_url(
             json=payload,
             timeout=timeout,
         ) as resp:
-                body_txt = await resp.text()
-                if resp.status != 200:
-                    logger.warning(
-                        "[MindBot] messageFiles/download failed: %s %s",
-                        resp.status,
-                        body_txt[:500],
-                    )
-                    return None
-                try:
-                    data = json.loads(body_txt)
-                except json.JSONDecodeError:
-                    return None
-                url = data.get("downloadUrl") or ""
-                if isinstance(data.get("data"), dict):
-                    url = url or data["data"].get("downloadUrl") or ""
-                if isinstance(url, str) and url.strip():
-                    return url.strip()
+            body_txt = await resp.text()
+            if resp.status != 200:
                 logger.warning(
-                    "[MindBot] messageFiles/download missing downloadUrl: %s",
-                    body_txt[:300],
+                    "[MindBot] messageFiles/download failed: %s %s",
+                    resp.status,
+                    body_txt[:500],
                 )
                 return None
+            try:
+                data = json.loads(body_txt)
+            except json.JSONDecodeError:
+                return None
+            url = data.get("downloadUrl") or ""
+            if isinstance(data.get("data"), dict):
+                url = url or data["data"].get("downloadUrl") or ""
+            if isinstance(url, str) and url.strip():
+                return url.strip()
+            logger.warning(
+                "[MindBot] messageFiles/download missing downloadUrl: %s",
+                body_txt[:300],
+            )
+            return None
     except Exception as exc:
         logger.exception("[MindBot] messageFiles/download error: %s", exc)
         return None
@@ -77,18 +77,18 @@ async def download_url_bytes(url: str) -> Optional[bytes]:
     try:
         session = get_outbound_session()
         async with session.get(url, timeout=timeout) as resp:
-                if resp.status != 200:
-                    logger.warning("[MindBot] media GET failed: %s", resp.status)
-                    return None
-                data = await resp.read()
-                if len(data) > MAX_DOWNLOAD_MEDIA_BYTES:
-                    logger.warning(
-                        "[MindBot] media too large: %s > %s",
-                        len(data),
-                        MAX_DOWNLOAD_MEDIA_BYTES,
-                    )
-                    return None
-                return data
+            if resp.status != 200:
+                logger.warning("[MindBot] media GET failed: %s", resp.status)
+                return None
+            data = await resp.read()
+            if len(data) > MAX_DOWNLOAD_MEDIA_BYTES:
+                logger.warning(
+                    "[MindBot] media too large: %s > %s",
+                    len(data),
+                    MAX_DOWNLOAD_MEDIA_BYTES,
+                )
+                return None
+            return data
     except Exception as exc:
         logger.exception("[MindBot] media download error: %s", exc)
         return None

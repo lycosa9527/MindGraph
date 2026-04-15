@@ -6,16 +6,89 @@ Inbound shapes follow DingTalk docs and common callback variants:
 
 Non-text media: identifiers are embedded in the prompt; optional OpenAPI download
 and Dify upload are implemented in ``pipeline.callback`` when Client ID is configured.
+
+``DingTalkInboundMessage``
+--------------------------
+Parse the raw ``body`` dict **once** at the callback entry point and carry the
+structured message through the pipeline.  This eliminates repeated ``.get()``
+chains across ``callback.py``, ``text.py``, and ``education/metrics.py``.
 """
 
 from __future__ import annotations
 
 import json
 import re
+from dataclasses import dataclass
 from typing import Any
 
 _MAX_PROMPT = 48000
 _MAX_JSON_SNIPPET = 4000
+
+
+@dataclass(slots=True)
+class DingTalkInboundMessage:
+    """
+    Normalized view of one DingTalk robot callback body.
+
+    Parse once with :func:`parse_inbound_message` at the callback entry point;
+    pass the instance through the pipeline instead of the raw ``body`` dict.
+    The raw ``body`` is still available for callers that need full access (e.g.
+    card delivery helpers that inspect arbitrary nested fields).
+    """
+
+    sender_staff_id: str
+    sender_nick: str | None
+    sender_id: str | None
+    conversation_id: str
+    conversation_type: str
+    chat_type: str
+    msg_id: str | None
+    session_webhook: str | None
+    inbound_msg_type: str
+    text_in: str
+
+
+def parse_inbound_message(body: dict[str, Any]) -> DingTalkInboundMessage:
+    """
+    Extract all pipeline-relevant fields from ``body`` in a single pass.
+
+    Field resolution follows DingTalk's documented camelCase names and the
+    snake_case aliases that some SDK versions emit.
+    """
+    staff, nick, sid = extract_dingtalk_sender_profile(body)
+
+    conv_raw = body.get("conversationId") or body.get("conversation_id") or ""
+    conversation_id = conv_raw.strip() if isinstance(conv_raw, str) else str(conv_raw).strip()
+
+    ct_raw = body.get("conversationType") or body.get("conversation_type") or ""
+    conversation_type = str(ct_raw).strip()
+    if conversation_type == "2":
+        chat_type = "group"
+    elif conversation_type == "1":
+        chat_type = "1:1"
+    else:
+        chat_type = ""
+
+    mid_raw = body.get("msgId") or body.get("msg_id")
+    msg_id = mid_raw.strip() if isinstance(mid_raw, str) and mid_raw.strip() else None
+
+    sw_raw = body.get("sessionWebhook") or body.get("session_webhook")
+    session_webhook = sw_raw.strip() if isinstance(sw_raw, str) and sw_raw.strip() else None
+
+    text_in, inbound_msg_type = extract_inbound_prompt(body)
+
+    return DingTalkInboundMessage(
+        sender_staff_id=staff,
+        sender_nick=nick,
+        sender_id=sid,
+        conversation_id=conversation_id,
+        conversation_type=conversation_type,
+        chat_type=chat_type,
+        msg_id=msg_id,
+        session_webhook=session_webhook,
+        inbound_msg_type=inbound_msg_type,
+        text_in=text_in,
+    )
 
 
 def _as_str(value: Any) -> str:

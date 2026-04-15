@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from services.mindbot.platforms.dingtalk.oa_callback_crypto import DingTalkOaCallbackCrypto
+from services.mindbot.platforms.dingtalk.inbound.oa_callback_crypto import DingTalkOaCallbackCrypto
 
 
 def test_roundtrip_encrypt_decrypt() -> None:
@@ -33,7 +33,10 @@ def test_official_sample_decrypt_vector() -> None:
         "03044561471240d4a14bb09372dfcfd4fd0e40cb",
         "1608001896814",
         "WL4PK6yA",
-        "0vJiX6vliEpwG3U45CtXqi+m8PXbQRARJ8p8BbDuD1EMTDf0jKpQ79QS93qEk7XHpP6u+oTTrd15NRPvNvmBKyDCYxxOK+HZeKju4yhELOFchzNukR+t8SB/qk4ROMu3",
+        (
+            "0vJiX6vliEpwG3U45CtXqi+m8PXbQRARJ8p8BbDuD1EMTDf0jKpQ79QS93qEk7XHpP6u+"
+            "oTTrd15NRPvNvmBKyDCYxxOK+HZeKju4yhELOFchzNukR+t8SB/qk4ROMu3"
+        ),
     )
     assert plain == '{"EventType":"check_url"}'
 

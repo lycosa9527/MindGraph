@@ -7,6 +7,7 @@ import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
 /** Localized `document.title` via `meta.pageTitle.*` keys. */
@@ -449,8 +450,23 @@ router.beforeEach(async (to, _from, next) => {
   if (to.name === 'TeacherUsage' && !featureFlagsStore.getFeatureTeacherUsage()) {
     return next({ name: 'MindMate' })
   }
-  if (to.name === 'MindbotAdmin' && !featureFlagsStore.getFeatureMindbot()) {
-    return next({ name: 'MindMate' })
+  if (to.name === 'MindbotAdmin') {
+    if (!featureFlagsStore.getFeatureMindbot()) {
+      return next({ name: 'MindMate' })
+    }
+    const accessMap = featureFlagsStore.flags?.feature_org_access ?? {}
+    const mindbotEntry = accessMap.feature_mindbot
+    if (
+      !userCanAccessMindbotAdmin(
+        authStore.isAdmin,
+        authStore.isManager,
+        authStore.user?.schoolId,
+        authStore.user?.id,
+        mindbotEntry
+      )
+    ) {
+      return next({ name: 'MindMate' })
+    }
   }
   // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then send signed-in users home
   if (to.meta.guestOnly) {

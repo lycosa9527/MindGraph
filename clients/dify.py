@@ -23,6 +23,7 @@ from codecs import getincrementaldecoder
 from dataclasses import dataclass
 from typing import AsyncGenerator, Dict, Any, Optional, List, Tuple
 from io import BytesIO
+import asyncio
 import json
 import logging
 import os
@@ -33,6 +34,66 @@ from clients.dify_http_errors import parse_dify_error_response, raise_for_dify_h
 
 
 logger = logging.getLogger(__name__)
+
+
+class _DifySharedHttpPool:
+    """Process-wide aiohttp sessions for Dify API (connection reuse)."""
+
+    _lock: Optional[asyncio.Lock] = None
+    _sessions: Dict[str, aiohttp.ClientSession] = {}
+
+    @classmethod
+    async def _get_lock(cls) -> asyncio.Lock:
+        if cls._lock is None:
+            cls._lock = asyncio.Lock()
+        return cls._lock
+
+    @classmethod
+    async def session_blocking(cls, api_url: str, timeout: int) -> aiohttp.ClientSession:
+        key = f"b:{api_url.rstrip('/')}|{timeout}"
+        lock = await cls._get_lock()
+        async with lock:
+            existing = cls._sessions.get(key)
+            if existing is not None and existing.closed:
+                del cls._sessions[key]
+            if key not in cls._sessions:
+                client_timeout = aiohttp.ClientTimeout(total=timeout)
+                connector = aiohttp.TCPConnector(limit=100)
+                cls._sessions[key] = aiohttp.ClientSession(
+                    timeout=client_timeout,
+                    connector=connector,
+                )
+            return cls._sessions[key]
+
+    @classmethod
+    async def session_streaming(cls, api_url: str, sock_read: int) -> aiohttp.ClientSession:
+        key = f"s:{api_url.rstrip('/')}|{sock_read}"
+        lock = await cls._get_lock()
+        async with lock:
+            existing = cls._sessions.get(key)
+            if existing is not None and existing.closed:
+                del cls._sessions[key]
+            if key not in cls._sessions:
+                client_timeout = aiohttp.ClientTimeout(total=None, connect=10, sock_read=sock_read)
+                connector = aiohttp.TCPConnector(limit=100)
+                cls._sessions[key] = aiohttp.ClientSession(
+                    timeout=client_timeout,
+                    connector=connector,
+                )
+            return cls._sessions[key]
+
+    @classmethod
+    async def close_all(cls) -> None:
+        lock = await cls._get_lock()
+        async with lock:
+            for sess in cls._sessions.values():
+                await sess.close()
+            cls._sessions.clear()
+
+
+async def close_async_dify_shared_sessions() -> None:
+    """Close pooled Dify aiohttp sessions (call during app shutdown)."""
+    await _DifySharedHttpPool.close_all()
 
 
 # =========================================================================
@@ -274,27 +335,26 @@ class AsyncDifyClient:
     ) -> Dict[str, Any]:
         """Make a non-streaming HTTP request to Dify API"""
         url = f"{self.api_url}/{endpoint.lstrip('/')}"
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
 
         headers = self._get_headers() if not data else self._get_headers(content_type="")
         if custom_headers:
             headers.update(custom_headers)
 
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.request(
-                method, url, json=json_data, params=params, data=data, headers=headers
-            ) as response:
-                if response.status == 204:
-                    return {"result": "success"}
-                if response.status != 200:
-                    error_msg, error_code = await parse_dify_error_response(response)
-                    raise_for_dify_http_error(
-                        response.status,
-                        error_msg,
-                        error_code,
-                        endpoint,
-                    )
-                return await response.json()
+        session = await _DifySharedHttpPool.session_blocking(self.api_url, self.timeout)
+        async with session.request(
+            method, url, json=json_data, params=params, data=data, headers=headers
+        ) as response:
+            if response.status == 204:
+                return {"result": "success"}
+            if response.status != 200:
+                error_msg, error_code = await parse_dify_error_response(response)
+                raise_for_dify_http_error(
+                    response.status,
+                    error_msg,
+                    error_code,
+                    endpoint,
+                )
+            return await response.json()
 
     # =========================================================================
     # Chat Messages
@@ -369,79 +429,77 @@ class AsyncDifyClient:
             url = f"{self.api_url}/chat-messages"
             logger.debug("[DIFY] Making async request to: %s", url)
 
-            timeout = aiohttp.ClientTimeout(total=None, connect=10, sock_read=self.timeout)
+            session = await _DifySharedHttpPool.session_streaming(self.api_url, self.timeout)
+            async with session.post(url, json=payload, headers=headers) as response:
+                if response.status != 200:
+                    error_msg, error_code = await parse_dify_error_response(response)
+                    logger.error(
+                        "[DIFY] stream open failed status=%s code=%s msg=%s",
+                        response.status,
+                        error_code,
+                        error_msg,
+                    )
+                    yield {
+                        "event": "error",
+                        "status": response.status,
+                        "code": error_code,
+                        "message": error_msg,
+                        "error": error_msg,
+                        "timestamp": int(time.time() * 1000),
+                    }
+                    return
 
-            async with aiohttp.ClientSession(timeout=timeout) as session:
-                async with session.post(url, json=payload, headers=headers) as response:
-                    if response.status != 200:
-                        error_msg, error_code = await parse_dify_error_response(response)
-                        logger.error(
-                            "[DIFY] stream open failed status=%s code=%s msg=%s",
-                            response.status,
-                            error_code,
-                            error_msg,
-                        )
-                        yield {
-                            "event": "error",
-                            "status": response.status,
-                            "code": error_code,
-                            "message": error_msg,
-                            "error": error_msg,
-                            "timestamp": int(time.time() * 1000),
-                        }
-                        return
-
-                    decoder = getincrementaldecoder("utf-8")()
-                    line_buffer = ""
-                    async for raw_chunk in response.content.iter_chunked(8192):
-                        line_buffer += decoder.decode(raw_chunk)
-                        while "\n" in line_buffer:
-                            line, line_buffer = line_buffer.split("\n", 1)
-                            line = line.strip()
-                            if not line:
-                                continue
-                            if line.startswith("data: "):
-                                data_content = line[6:]
-                            elif line.startswith("data:"):
-                                data_content = line[5:]
-                            else:
-                                continue
-                            data_content = data_content.strip()
-                            if not data_content:
-                                continue
-                            if data_content == "[DONE]":
-                                logger.debug("Received [DONE] signal from Dify")
-                                break
-                            try:
-                                chunk_data = json.loads(data_content)
-                                chunk_data["timestamp"] = int(time.time() * 1000)
-                                yield chunk_data
-                            except json.JSONDecodeError:
-                                continue
-                            except Exception as exc:
-                                logger.error("Error processing SSE JSON: %s", exc)
-                                continue
-                    line_buffer += decoder.decode(b"", final=True)
-                    for line in line_buffer.split("\n"):
+                decoder = getincrementaldecoder("utf-8")()
+                line_buffer = ""
+                async for raw_chunk in response.content.iter_chunked(8192):
+                    line_buffer += decoder.decode(raw_chunk)
+                    while "\n" in line_buffer:
+                        line, line_buffer = line_buffer.split("\n", 1)
                         line = line.strip()
                         if not line:
                             continue
                         if line.startswith("data: "):
-                            data_content = line[6:].strip()
+                            data_content = line[6:]
                         elif line.startswith("data:"):
-                            data_content = line[5:].strip()
+                            data_content = line[5:]
                         else:
                             continue
-                        if not data_content or data_content == "[DONE]":
+                        data_content = data_content.strip()
+                        if not data_content:
                             continue
+                        if data_content == "[DONE]":
+                            logger.debug("Received [DONE] signal from Dify")
+                            break
                         try:
                             chunk_data = json.loads(data_content)
                             chunk_data["timestamp"] = int(time.time() * 1000)
                             yield chunk_data
                         except json.JSONDecodeError:
                             continue
+                        except Exception as exc:
+                            logger.error("Error processing SSE JSON: %s", exc)
+                            continue
+                line_buffer += decoder.decode(b"", final=True)
+                for line in line_buffer.split("\n"):
+                    line = line.strip()
+                    if not line:
+                        continue
+                    if line.startswith("data: "):
+                        data_content = line[6:].strip()
+                    elif line.startswith("data:"):
+                        data_content = line[5:].strip()
+                    else:
+                        continue
+                    if not data_content or data_content == "[DONE]":
+                        continue
+                    try:
+                        chunk_data = json.loads(data_content)
+                        chunk_data["timestamp"] = int(time.time() * 1000)
+                        yield chunk_data
+                    except json.JSONDecodeError:
+                        continue
 
-                    logger.debug("[DIFY] Async stream completed successfully")
+                logger.debug("[DIFY] Async stream completed successfully")
 
         except aiohttp.ClientError as e:
             logger.error("Dify API async request error: %s", e)

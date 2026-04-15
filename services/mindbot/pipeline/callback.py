@@ -12,7 +12,7 @@ from typing import Any, Optional
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from clients.dify import AsyncDifyClient, DifyFile
-from config.settings import config
+from config.database import AsyncSessionLocal
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
@@ -21,6 +21,10 @@ from services.mindbot.core.conv_gate import (
     redis_release_conv_gate_async,
 )
 from services.mindbot.core.dify_reply import mindbot_dify_chat_blocking
+from services.mindbot.infra.circuit_breaker import (
+    record_dify_failure,
+    record_dify_success,
+)
 from services.mindbot.dify.usage_parse import parse_dify_usage_from_blocking_response
 from services.mindbot.education.metrics import (
     conversation_user_turn_index,
@@ -30,63 +34,46 @@ from services.mindbot.pipeline.dify_paths import (
     run_blocking_send_branch,
     run_streaming_dify_branch,
 )
-from services.mindbot.core.redis_keys import (
-    CONV_KEY_PREFIX,
-    MSG_DEDUP_PREFIX,
-    MSG_DEDUP_TTL,
-)
 from services.mindbot.platforms.dingtalk import (
     extract_download_code_for_openapi,
-    extract_inbound_prompt,
     fetch_message_media_bytes,
     media_filename_and_types,
-    verify_dingtalk_sign,
-)
-from services.mindbot.integrations.dingtalk.inbound_log import (
-    debug_callback_failure_logging_enabled,
-    dingtalk_inbound_logging_enabled,
 )
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
+from services.mindbot.telemetry.metrics import mindbot_metrics
 from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
 from services.mindbot.session.webhook_url import validate_session_webhook_url
-from services.mindbot.redis_async import (
+from services.mindbot.infra.redis_async import (
+    redis_bind,
     redis_delete,
-    redis_expire,
     redis_get,
-    redis_set_ttl,
-    redis_setnx_ttl,
 )
+from services.mindbot.pipeline.callback_validate import (
+    MindbotPipelineContext,
+    validate_callback_fast,
+    _hdr_for_cfg,
+)
+from services.mindbot.infra.task_registry import register as register_background_task
+from services.redis.redis_client import is_redis_available
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
 
-_DEFAULT_SEMAPHORE = asyncio.Semaphore(int(os.getenv("MINDBOT_MAX_CONCURRENT", "64")))
+_STREAMING_SEMAPHORE = asyncio.Semaphore(
+    int(os.getenv("MINDBOT_MAX_CONCURRENT_STREAMING", "32"))
+)
+_BLOCKING_SEMAPHORE = asyncio.Semaphore(
+    int(os.getenv("MINDBOT_MAX_CONCURRENT_BLOCKING", "32"))
+)
 
 
-def _log_callback_debug_failure(
-    *,
-    debug_route_label: Optional[str],
-    debug_raw_body: Optional[bytes],
-    debug_request_headers: Optional[dict[str, str]],
-    body: dict[str, Any],
-    reason: str,
-    extra: Optional[dict[str, Any]] = None,
-) -> None:
-    """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG is on (default) and router passed raw bytes."""
-    if debug_raw_body is None:
-        return
-    from services.mindbot.integrations.dingtalk.inbound_log import (
-        log_dingtalk_callback_failure_details,
-    )
-
-    log_dingtalk_callback_failure_details(
-        route_label=debug_route_label or "?",
-        headers=debug_request_headers or {},
-        raw_body=debug_raw_body,
-        parsed_body=body,
-        reason=reason,
-        extra=extra,
+def mindbot_accept_ack_headers(cfg: OrganizationMindbotConfig) -> dict[str, str]:
+    """Headers returned immediately when the pipeline is accepted for background processing."""
+    return mindbot_error_headers(
+        MindbotErrorCode.ACCEPTED,
+        organization_id=cfg.organization_id,
+        robot_code=cfg.dingtalk_robot_code.strip(),
     )
 
 
@@ -118,15 +105,19 @@ async def _redis_get_async(key: str) -> Optional[str]:
     return await redis_get(key)
 
 
+async def _redis_delete_async(key: str) -> None:
+    await redis_delete(key)
+
+
 async def _redis_bind_dify_conversation_async(key: str, value: str, ttl: int) -> None:
     """
     First successful writer wins: SET NX EX. If the key already exists, refresh TTL only.
 
-    Avoids races where parallel callbacks overwrite each other's Dify ``conversation_id``.
+    Uses a single Redis pipeline (SET NX + EXPIRE) — 1 RTT regardless of
+    whether the key is new or existing.  Avoids races where parallel callbacks
+    overwrite each other's Dify ``conversation_id``.
     """
-    created = await redis_setnx_ttl(key, value, ttl)
-    if not created:
-        await redis_expire(key, ttl)
+    await redis_bind(key, value, ttl)
 
 
 async def _maybe_dify_files_for_media(
@@ -187,189 +178,51 @@ async def _maybe_dify_files_for_media(
     ]
 
 
-async def process_dingtalk_callback(
+async def execute_mindbot_pipeline(
     session: AsyncSession,
-    *,
-    timestamp_header: Optional[str],
-    sign_header: Optional[str],
-    body: dict[str, Any],
-    resolved_config: Optional[OrganizationMindbotConfig] = None,
-    debug_route_label: Optional[str] = None,
-    debug_raw_body: Optional[bytes] = None,
-    debug_request_headers: Optional[dict[str, str]] = None,
+    ctx: MindbotPipelineContext,
 ) -> tuple[int, dict[str, str]]:
-    """
-    Handle one DingTalk callback.
+    """Conv gate, Dify, outbound. Caller supplies the async DB session."""
+    cfg = ctx.cfg
+    body = ctx.body
+    msg = ctx.msg
+    text_in = msg.text_in
+    inbound_msg_type = msg.inbound_msg_type
+    sender_staff = msg.sender_staff_id
+    conversation_id_dt = msg.conversation_id
+    user_id = ctx.user_id
+    conv_key = ctx.conv_key
 
-    Returns (http_status, response_headers including X-MindBot-Error-Code).
-
-    DingTalk may retry non-2xx; business failures after a valid receive often
-    still use 200 to acknowledge delivery (see internal error code header).
-    """
-    if not config.FEATURE_MINDBOT:
-        return 404, mindbot_error_headers(MindbotErrorCode.FEATURE_DISABLED)
-
-    ts_missing = not (timestamp_header or "").strip()
-    sg_missing = not (sign_header or "").strip()
-    if resolved_config is None and body == {} and ts_missing and sg_missing:
-        logger.debug("[MindBot] shared_callback probe empty_body no_signature")
-        return 200, mindbot_error_headers(MindbotErrorCode.OK)
-
-    cfg = resolved_config
-    if cfg is None:
-        _hint = ""
-        if not dingtalk_inbound_logging_enabled():
-            _hint = (
-                " MindBot callback logging is off (set MINDBOT_LOG_CALLBACK_INBOUND or "
-                "INBOUND_FULL, or MINDBOT_LOG_CALLBACK_DEBUG; DEBUG defaults on unless "
-                "MINDBOT_LOG_CALLBACK_DEBUG=0)."
-            )
-        elif not debug_callback_failure_logging_enabled():
-            _hint = (
-                " Failure dumps need MINDBOT_LOG_CALLBACK_DEBUG=1 (default on unless DEBUG=0)."
-            )
-        logger.warning(
-            "[MindBot] Path-based callback URL required (use /dingtalk/callback/t/<token> "
-            "or /dingtalk/orgs/<organization_id>/callback); message delivery is not routed "
-            "via the shared /dingtalk/callback URL.%s",
-            _hint,
-        )
-        _log_callback_debug_failure(
-            debug_route_label=debug_route_label,
-            debug_raw_body=debug_raw_body,
-            debug_request_headers=debug_request_headers,
-            body=body,
-            reason="path_callback_required",
-            extra={},
-        )
-        return 404, mindbot_error_headers(MindbotErrorCode.PATH_CALLBACK_REQUIRED)
-    if not cfg.is_enabled:
-        logger.warning(
-            "[MindBot] MindBot config is disabled organization_id=%s robot_code=%s",
-            cfg.organization_id,
-            cfg.dingtalk_robot_code.strip(),
-        )
-        _log_callback_debug_failure(
-            debug_route_label=debug_route_label,
-            debug_raw_body=debug_raw_body,
-            debug_request_headers=debug_request_headers,
-            body=body,
-            reason="config_disabled",
-            extra={
-                "organization_id": cfg.organization_id,
-                "robot_code": cfg.dingtalk_robot_code.strip(),
-            },
-        )
-        return 404, mindbot_error_headers(
-            MindbotErrorCode.CONFIG_NOT_FOUND,
-            organization_id=cfg.organization_id,
-            robot_code=cfg.dingtalk_robot_code.strip(),
-        )
-
-    def _hdr(code: MindbotErrorCode) -> dict[str, str]:
-        return mindbot_error_headers(
-            code,
-            organization_id=cfg.organization_id,
-            robot_code=cfg.dingtalk_robot_code.strip(),
-        )
-
-    if resolved_config is not None:
-        rc_in_body = body.get("robotCode") or body.get("robot_code")
-        if isinstance(rc_in_body, str) and rc_in_body.strip():
-            if rc_in_body.strip() != cfg.dingtalk_robot_code.strip():
-                logger.debug(
-                    "[MindBot] body robotCode=%r differs from stored dingtalk_robot_code=%r "
-                    "(ignored; inbound routing is path-based)",
-                    rc_in_body.strip(),
-                    cfg.dingtalk_robot_code.strip(),
-                )
-        if body == {} and ts_missing and sg_missing:
-            logger.debug(
-                "[MindBot] path_callback probe org_id=%s robot=%s",
-                cfg.organization_id,
-                cfg.dingtalk_robot_code.strip(),
-            )
-            return 200, _hdr(MindbotErrorCode.OK)
-
-    if not verify_dingtalk_sign(timestamp_header, sign_header, cfg.dingtalk_app_secret.strip()):
-        logger.warning("[MindBot] Invalid DingTalk signature")
-        _log_callback_debug_failure(
-            debug_route_label=debug_route_label,
-            debug_raw_body=debug_raw_body,
-            debug_request_headers=debug_request_headers,
-            body=body,
-            reason="invalid_signature",
-            extra={
-                "organization_id": cfg.organization_id,
-                "timestamp_header_present": bool((timestamp_header or "").strip()),
-                "sign_header_present": bool((sign_header or "").strip()),
-            },
-        )
-        return 401, _hdr(MindbotErrorCode.INVALID_SIGNATURE)
-
-    msg_id = body.get("msgId") or body.get("msg_id")
-    if msg_id and isinstance(msg_id, str):
-        dedup_key = f"{MSG_DEDUP_PREFIX}{cfg.organization_id}:{msg_id}"
-        first = await redis_setnx_ttl(dedup_key, "1", MSG_DEDUP_TTL)
-        if not first:
-            return 200, _hdr(MindbotErrorCode.DUPLICATE_MESSAGE)
-
-    text_in, inbound_msg_type = extract_inbound_prompt(body)
-    logger.debug(
-        "[MindBot] inbound msgtype=%s normalized=%s len=%s",
-        body.get("msgtype"),
-        inbound_msg_type,
-        len(text_in),
-    )
-    if not text_in:
-        return 200, _hdr(MindbotErrorCode.EMPTY_USER_MESSAGE)
-
-    raw_sender = (
-        body.get("senderStaffId")
-        or body.get("sender_staff_id")
-        or body.get("senderId")
-        or body.get("sender_id")
-    )
-    if raw_sender is None:
-        sender_staff = "unknown"
-    elif isinstance(raw_sender, str):
-        sender_staff = raw_sender.strip() or "unknown"
-    else:
-        sender_staff = str(raw_sender).strip() or "unknown"
-    conversation_id_dt = body.get("conversationId") or body.get("conversation_id") or ""
-    if not isinstance(conversation_id_dt, str):
-        conversation_id_dt = str(conversation_id_dt)
-
-    user_id = f"mindbot_{cfg.organization_id}_{sender_staff}"
-    conv_key = f"{CONV_KEY_PREFIX}{cfg.organization_id}:{conversation_id_dt}"
     dify_conv: Optional[str] = await _redis_get_async(conv_key)
+    redis_ok = is_redis_available()
     gate_acquired = False
     if (
         conv_gate_enabled()
-        and is_redis_available()
+        and redis_ok
         and conversation_id_dt.strip()
         and not dify_conv
     ):
         gate_acquired = await redis_acquire_conv_gate_async(
             cfg.organization_id,
             conversation_id_dt,
+            conv_key=conv_key,
         )
         if not gate_acquired:
             polled = await poll_dify_conv_key_async(_redis_get_async, conv_key)
             if polled:
                 dify_conv = polled
 
-    raw_sw = body.get("sessionWebhook") or body.get("session_webhook")
+    raw_sw = msg.session_webhook
     session_webhook_valid: Optional[str] = None
-    if isinstance(raw_sw, str) and raw_sw.strip():
+    if raw_sw:
         url_ok, url_reason = await validate_session_webhook_url(raw_sw)
         if url_ok:
-            session_webhook_valid = raw_sw.strip()
+            session_webhook_valid = raw_sw
         else:
             logger.warning(
                 "[MindBot] sessionWebhook URL rejected: %s (%s)",
                 url_reason,
-                raw_sw.strip()[:120],
+                raw_sw[:120],
             )
 
     dify = AsyncDifyClient(
@@ -379,24 +232,9 @@ async def process_dingtalk_callback(
     )
 
     usage_started = time.monotonic()
-    mid_raw = body.get("msgId") or body.get("msg_id")
-    msg_id_for_usage: Optional[str] = None
-    if isinstance(mid_raw, str) and mid_raw.strip():
-        msg_id_for_usage = mid_raw.strip()
-
-    raw_nick = (
-        body.get("senderNick")
-        or body.get("sender_nick")
-        or body.get("senderNickName")
-        or body.get("sender_nickname")
-    )
-    sender_nick = raw_nick.strip() if isinstance(raw_nick, str) else ""
-    conv_type_raw = body.get("conversationType") or body.get("conversation_type") or ""
-    chat_type = (
-        "group" if str(conv_type_raw).strip() == "2"
-        else "1:1" if str(conv_type_raw).strip() == "1"
-        else ""
-    )
+    msg_id_for_usage = msg.msg_id
+    sender_nick = msg.sender_nick or ""
+    chat_type = msg.chat_type
     pipeline_ctx = format_pipeline_ctx(
         cfg.organization_id,
         cfg.dingtalk_robot_code.strip(),
@@ -459,20 +297,35 @@ async def process_dingtalk_callback(
     async def _on_stale_dify_conversation() -> None:
         await _redis_delete_async(conv_key)
 
-    stale_cb = _on_stale_dify_conversation if is_redis_available() else None
+    stale_cb = _on_stale_dify_conversation if redis_ok else None
     dify_inputs = _parse_dify_inputs_from_config(cfg)
 
+    def _hdr(code: MindbotErrorCode) -> dict[str, str]:
+        return _hdr_for_cfg(cfg, code)
+
+    cb_key = str(cfg.organization_id)
+    _streaming = _dify_streaming_enabled()
+
     try:
-        async with _DEFAULT_SEMAPHORE:
-            files = await _maybe_dify_files_for_media(
-                cfg,
-                body,
-                inbound_msg_type,
-                user_id,
-                dify,
-            )
-            if _dify_streaming_enabled():
-                return await run_streaming_dify_branch(
+        if _streaming:
+            slot_released = False
+
+            def _release_streaming_slot() -> None:
+                nonlocal slot_released
+                if not slot_released:
+                    slot_released = True
+                    _STREAMING_SEMAPHORE.release()
+
+            await _STREAMING_SEMAPHORE.acquire()
+            try:
+                files = await _maybe_dify_files_for_media(
+                    cfg,
+                    body,
+                    inbound_msg_type,
+                    user_id,
+                    dify,
+                )
+                result = await run_streaming_dify_branch(
                     cfg=cfg,
                     dify=dify,
                     text_in=text_in,
@@ -489,8 +342,26 @@ async def process_dingtalk_callback(
                     hdr=_hdr,
                     redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
                     pipeline_ctx=pipeline_ctx,
+                    release_semaphore_slot=_release_streaming_slot,
                 )
+            finally:
+                _release_streaming_slot()
 
+            resp_hdr = result[1]
+            if resp_hdr.get("X-MindBot-Error-Code") == MindbotErrorCode.DIFY_FAILED.value:
+                record_dify_failure(cb_key)
+            else:
+                record_dify_success(cb_key)
+            return result
+
+        async with _BLOCKING_SEMAPHORE:
+            files = await _maybe_dify_files_for_media(
+                cfg,
+                body,
+                inbound_msg_type,
+                user_id,
+                dify,
+            )
             resp = await mindbot_dify_chat_blocking(
                 dify,
                 text=text_in,
@@ -502,6 +373,7 @@ async def process_dingtalk_callback(
                 pipeline_ctx=pipeline_ctx,
             )
             if resp is None:
+                record_dify_failure(cb_key)
                 await _record_usage(
                     MindbotErrorCode.DIFY_FAILED,
                     reply_text="",
@@ -510,6 +382,7 @@ async def process_dingtalk_callback(
                     streaming=False,
                 )
                 return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
+            record_dify_success(cb_key)
 
             usage_block = (
                 parse_dify_usage_from_blocking_response(resp)
@@ -537,3 +410,58 @@ async def process_dingtalk_callback(
                 cfg.organization_id,
                 conversation_id_dt,
             )
+
+
+async def run_pipeline_background(ctx: MindbotPipelineContext) -> None:
+    """Fire-and-forget pipeline with its own DB session; records final metrics."""
+    try:
+        async with AsyncSessionLocal() as session:
+            _code, headers = await execute_mindbot_pipeline(session, ctx)
+        mindbot_metrics.record_from_headers(headers)
+    except Exception as exc:
+        logger.exception("[MindBot] run_pipeline_background failed: %s", exc)
+        mindbot_metrics.record_error_code(MindbotErrorCode.PIPELINE_INTERNAL_ERROR.value)
+
+
+async def process_dingtalk_callback(
+    session: AsyncSession,
+    *,
+    timestamp_header: Optional[str],
+    sign_header: Optional[str],
+    body: dict[str, Any],
+    resolved_config: Optional[OrganizationMindbotConfig] = None,
+    debug_route_label: Optional[str] = None,
+    debug_raw_body: Optional[bytes] = None,
+    debug_request_headers: Optional[dict[str, str]] = None,
+) -> tuple[int, dict[str, str]]:
+    """
+    Handle one DingTalk callback (full request scope: shared URL / tests).
+
+    Returns (http_status, response_headers including X-MindBot-Error-Code).
+    """
+    ok, early, ctx = await validate_callback_fast(
+        timestamp_header=timestamp_header,
+        sign_header=sign_header,
+        body=body,
+        resolved_config=resolved_config,
+        debug_route_label=debug_route_label,
+        debug_raw_body=debug_raw_body,
+        debug_request_headers=debug_request_headers,
+    )
+    if not ok:
+        if early is None:
+            return 500, mindbot_error_headers(MindbotErrorCode.DIFY_FAILED)
+        return early[0], early[1]
+    if ctx is None:
+        return 500, mindbot_error_headers(MindbotErrorCode.DIFY_FAILED)
+    return await execute_mindbot_pipeline(session, ctx)
+
+
+def schedule_dingtalk_pipeline_background(ctx: MindbotPipelineContext) -> None:
+    """Spawn background task and register for shutdown drain."""
+    org_id = ctx.cfg.organization_id
+    task = asyncio.create_task(
+        run_pipeline_background(ctx),
+        name=f"mindbot_pipeline:org_{org_id}",
+    )
+    register_background_task(task)

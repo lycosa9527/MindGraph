@@ -8,7 +8,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from services.mindbot.platforms.dingtalk.ai_card import (
+from services.mindbot.platforms.dingtalk.cards.ai_card import (
     _open_space_id_group,
     _open_space_id_robot,
     ai_card_overflow_remainder_for_markdown,
@@ -63,15 +63,15 @@ async def test_streaming_update_retries_on_401_with_fresh_token() -> None:
         dingtalk_ai_card_param_key="body",
     )
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.put_v1_json_unverified",
         new=fake_put,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.invalidate_access_token_cache",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.invalidate_access_token_cache",
             new=AsyncMock(),
         ) as inv_mock:
             with patch(
-                "services.mindbot.platforms.dingtalk.ai_card.prefetch_ai_card_access_token",
+                "services.mindbot.platforms.dingtalk.cards.ai_card.prefetch_ai_card_access_token",
                 new=AsyncMock(return_value="tok-new"),
             ) as pre_mock:
                 ok, code, detail, ref = await streaming_update_ai_card(
@@ -113,15 +113,15 @@ async def test_streaming_update_propagates_token_on_failure_after_401() -> None:
         dingtalk_ai_card_param_key="body",
     )
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.put_v1_json_unverified",
         new=fake_put,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.invalidate_access_token_cache",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.invalidate_access_token_cache",
             new=AsyncMock(),
         ):
             with patch(
-                "services.mindbot.platforms.dingtalk.ai_card.prefetch_ai_card_access_token",
+                "services.mindbot.platforms.dingtalk.cards.ai_card.prefetch_ai_card_access_token",
                 new=AsyncMock(return_value="tok-new"),
             ):
                 ok, _, _, ref = await streaming_update_ai_card(
@@ -179,11 +179,11 @@ async def test_create_and_deliver_group_posts_expected_path() -> None:
         "senderStaffId": "staff-9",
     }
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
         new=fake_post,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
             new=AsyncMock(return_value="tok-1"),
         ):
             ok, code, detail = await create_and_deliver_ai_card(
@@ -228,11 +228,11 @@ async def test_create_and_deliver_group_uses_appkey_when_env() -> None:
     }
     with patch.dict(os.environ, {"MINDBOT_AI_CARD_GROUP_USE_APPKEY": "true"}):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
             new=fake_post,
         ):
             with patch(
-                "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+                "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
                 new=AsyncMock(return_value="tok-1"),
             ):
                 ok, code, detail = await create_and_deliver_ai_card(
@@ -269,11 +269,11 @@ async def test_create_and_deliver_http_400_returns_dingtalk_code() -> None:
         "senderStaffId": "staff-9",
     }
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
         new=fake_post,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
             new=AsyncMock(return_value="tok-1"),
         ):
             ok, code, detail = await create_and_deliver_ai_card(
@@ -311,11 +311,11 @@ async def test_create_and_deliver_group_skips_lwcp_staff_uses_sender_id() -> Non
         "senderId": "uid-real-openapi",
     }
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
         new=fake_post,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
             new=AsyncMock(return_value="tok-1"),
         ):
             ok, code, detail = await create_and_deliver_ai_card(
@@ -358,11 +358,11 @@ async def test_create_and_deliver_fails_when_only_lwcp_and_anonymous_disabled() 
     }
     with patch.dict(os.environ, {"MINDBOT_AI_CARD_GROUP_ANONYMOUS_DELIVER": "false"}):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
             new=fake_post,
         ):
             with patch(
-                "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+                "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
                 new=AsyncMock(return_value="tok-1"),
             ):
                 ok, code, detail = await create_and_deliver_ai_card(
@@ -401,11 +401,11 @@ async def test_create_and_deliver_group_anonymous_omits_user_when_only_lwcp() ->
         "senderId": "$:LWCP_v1:$b",
     }
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
         new=fake_post,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
             new=AsyncMock(return_value="tok-1"),
         ):
             ok, code, detail = await create_and_deliver_ai_card(
@@ -450,11 +450,11 @@ async def test_create_and_deliver_reads_union_id_from_extension() -> None:
         "extension": {"unionId": "union-real-99"},
     }
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
         new=fake_post,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
             new=AsyncMock(return_value="tok-1"),
         ):
             ok, _, detail = await create_and_deliver_ai_card(
@@ -494,11 +494,11 @@ async def test_create_and_deliver_robot_1to1_stream_and_robot_code() -> None:
         "senderStaffId": "staff-p2p",
     }
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.post_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.post_v1_json_unverified",
         new=fake_post,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token",
             new=AsyncMock(return_value="tok-1"),
         ):
             ok, code, detail = await create_and_deliver_ai_card(
@@ -535,7 +535,7 @@ async def test_streaming_update_puts_with_is_finalize() -> None:
         dingtalk_ai_card_param_key="k1",
     )
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.put_v1_json_unverified",
         new=fake_put,
     ):
         ok, code, detail, ref_tok = await streaming_update_ai_card(
@@ -577,11 +577,11 @@ async def test_probe_streaming_treats_missing_card_as_ok() -> None:
         dingtalk_ai_card_param_key=None,
     )
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.put_v1_json_unverified",
         new=fake_unverified,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token_with_error",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token_with_error",
             new=AsyncMock(return_value=("tok", "")),
         ):
             result = await probe_ai_card_streaming_update_api(cfg)
@@ -611,11 +611,11 @@ async def test_probe_streaming_treats_missing_card_as_ok_http400() -> None:
         dingtalk_ai_card_param_key=None,
     )
     with patch(
-        "services.mindbot.platforms.dingtalk.ai_card.put_v1_json_unverified",
+        "services.mindbot.platforms.dingtalk.cards.ai_card.put_v1_json_unverified",
         new=fake_unverified,
     ):
         with patch(
-            "services.mindbot.platforms.dingtalk.ai_card.get_access_token_with_error",
+            "services.mindbot.platforms.dingtalk.cards.ai_card.get_access_token_with_error",
             new=AsyncMock(return_value=("tok", "")),
         ):
             result = await probe_ai_card_streaming_update_api(cfg)

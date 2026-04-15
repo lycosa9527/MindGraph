@@ -8,12 +8,14 @@ from unittest.mock import AsyncMock
 import pytest
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
+from services.mindbot.errors import MindbotErrorCode
+from services.mindbot.platforms.dingtalk import DingTalkInboundMessage
 
 
 @pytest.mark.asyncio
 async def test_feature_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.config",
+        "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=False),
     )
     from services.mindbot.pipeline.callback import process_dingtalk_callback
@@ -35,7 +37,7 @@ async def test_shared_callback_requires_path_not_body_robot_code(
 ) -> None:
     """Shared URL without resolved_config does not route by JSON robotCode."""
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.config",
+        "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     from services.mindbot.pipeline.callback import process_dingtalk_callback
@@ -70,7 +72,7 @@ def _sample_cfg() -> OrganizationMindbotConfig:
 @pytest.mark.asyncio
 async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.config",
+        "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     monkeypatch.setattr(
@@ -105,7 +107,7 @@ async def test_body_robotcode_placeholder_does_not_block_before_signature(
 ) -> None:
     """DingTalk may send robotCode != stored dingtalk_robot_code; path routing wins."""
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.config",
+        "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     monkeypatch.setattr(
@@ -141,7 +143,7 @@ async def test_shared_connectivity_probe_empty_body_no_signature(
 ) -> None:
     """Shared URL: DingTalk may POST empty body with no robotCode when saving the message URL."""
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.config",
+        "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     from services.mindbot.pipeline.callback import process_dingtalk_callback
@@ -163,7 +165,7 @@ async def test_per_org_connectivity_probe_empty_body_no_signature(
 ) -> None:
     """DingTalk console may POST empty JSON with no timestamp/sign when validating URL."""
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.config",
+        "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
     cfg = _sample_cfg()
@@ -180,3 +182,61 @@ async def test_per_org_connectivity_probe_empty_body_no_signature(
     )
     assert code == 200
     assert hdr.get("X-MindBot-Error-Code") == "MINDBOT_OK"
+
+
+def _minimal_inbound_msg() -> DingTalkInboundMessage:
+    return DingTalkInboundMessage(
+        sender_staff_id="staff",
+        sender_nick=None,
+        sender_id=None,
+        conversation_id="conv",
+        conversation_type="1",
+        chat_type="1:1",
+        msg_id=None,
+        session_webhook=None,
+        inbound_msg_type="text",
+        text_in="hi",
+    )
+
+
+@pytest.mark.asyncio
+async def test_run_pipeline_background_records_internal_error_metric(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """Unhandled exceptions in execute_mindbot_pipeline increment the pipeline error counter."""
+    recorded: list[str] = []
+
+    async def _boom(_session: object, _ctx: object) -> tuple[int, dict[str, str]]:
+        raise RuntimeError("simulated pipeline failure")
+
+    def _capture_error_code(code: str) -> None:
+        recorded.append(code)
+
+    monkeypatch.setattr(
+        "services.mindbot.pipeline.callback.execute_mindbot_pipeline",
+        _boom,
+    )
+    monkeypatch.setattr(
+        "services.mindbot.pipeline.callback.mindbot_metrics.record_error_code",
+        _capture_error_code,
+    )
+    from services.mindbot.pipeline.callback import (
+        MindbotPipelineContext,
+        run_pipeline_background,
+    )
+
+    cfg = _sample_cfg()
+    ctx = MindbotPipelineContext(
+        cfg=cfg,
+        body={},
+        timestamp_header=None,
+        sign_header=None,
+        debug_route_label=None,
+        debug_raw_body=None,
+        debug_request_headers=None,
+        msg=_minimal_inbound_msg(),
+        user_id="u1",
+        conv_key="ck",
+    )
+    await run_pipeline_background(ctx)
+    assert recorded == [MindbotErrorCode.PIPELINE_INTERNAL_ERROR.value]

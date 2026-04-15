@@ -149,17 +149,28 @@ class DingTalkStreamManager:
         task = self._tasks.get(client_id)
         return task is not None and not task.done()
 
-    def stop_all(self) -> None:
-        """Cancel all SDK client tasks — called during application shutdown."""
+    async def stop_all(self) -> None:
+        """
+        Cancel all SDK client tasks and wait for them to finish.
+
+        Awaiting the cancelled tasks ensures they handle ``CancelledError`` cleanly
+        and avoids ``Task was destroyed but it is pending!`` warnings during
+        interpreter shutdown.  Safe to call from the FastAPI lifespan ``finally``
+        block.
+        """
+        pending = []
         for client_id, task in list(self._tasks.items()):
             if not task.done():
                 task.cancel()
+                pending.append(task)
                 logger.info(
                     "[MindBot] dingtalk_stream_client_stopped client_id=%s",
                     client_id,
                 )
         self._tasks.clear()
         self._clients.clear()
+        if pending:
+            await asyncio.gather(*pending, return_exceptions=True)
 
 
 def get_stream_manager() -> DingTalkStreamManager:

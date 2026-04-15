@@ -8,9 +8,9 @@ from typing import Any, Optional, Tuple
 
 import aiohttp
 
-from services.mindbot.http_client import get_dingtalk_api_session
-from services.mindbot.platforms.dingtalk.constants import DING_API_BASE
-from services.mindbot.platforms.dingtalk.response import (
+from services.mindbot.infra.http_client import get_dingtalk_api_session
+from services.mindbot.platforms.dingtalk.api.constants import DING_API_BASE
+from services.mindbot.platforms.dingtalk.api.response import (
     dingtalk_v1_body_log_snippet,
     dingtalk_v1_response_ok,
 )

@@ -2,13 +2,21 @@
 
 Uses ``redis.asyncio`` (ships with redis-py >= 4.2, already in requirements.txt)
 so every Redis call is a genuine coroutine — no thread-pool hops via
-``asyncio.to_thread``.  All functions return sensible defaults (None / False)
-on connection errors so the rest of the pipeline degrades gracefully when Redis
-is temporarily unreachable.
+``asyncio.to_thread``.
+
+Key design principle: ``redis_setnx_ttl`` returns ``Optional[bool]`` (True/False/None)
+so callers can distinguish "key already existed" (False) from "Redis error" (None).
+This prevents silent message drops when Redis is temporarily unreachable.
 
 Intended callers: callback.py, conv_gate.py, oauth.py, metrics.py.
-Not a replacement for the global ``RedisOperations`` sync client used elsewhere
-in the application — only the MindBot hot path is migrated here.
+
+Pool sizing
+----------
+``MINDBOT_REDIS_MAX_CONNECTIONS`` (default 100) should be at least as large as
+the peak number of concurrent MindBot handlers that touch Redis simultaneously.
+With ``MINDBOT_MAX_CONCURRENT`` (default 64) coroutines potentially each making
+one Redis call, the default pool of 100 provides headroom for bursts without
+saturating the pool and introducing wait time.
 """
 
 from __future__ import annotations
@@ -23,6 +31,8 @@ logger = logging.getLogger(__name__)
 
 _client: Optional[aioredis.Redis] = None
 
+_DEFAULT_MAX_CONNECTIONS = 100
+
 
 def _get_client() -> aioredis.Redis:
     """
@@ -34,10 +44,11 @@ def _get_client() -> aioredis.Redis:
     global _client
     if _client is None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
+        max_conn = int(os.getenv("MINDBOT_REDIS_MAX_CONNECTIONS", str(_DEFAULT_MAX_CONNECTIONS)))
         _client = aioredis.from_url(
             url,
             decode_responses=True,
-            max_connections=50,
+            max_connections=max_conn,
             socket_timeout=5.0,
             socket_connect_timeout=5.0,
             retry_on_timeout=True,
@@ -64,19 +75,25 @@ async def redis_set_ttl(key: str, value: str, ttl: int) -> bool:
         return False
 
 
-async def redis_setnx_ttl(key: str, value: str, ttl: int) -> bool:
+async def redis_setnx_ttl(key: str, value: str, ttl: int) -> Optional[bool]:
     """
     SET key value NX EX ttl.
 
-    Returns ``True`` if this caller won the race (key was set), ``False`` if the
-    key already existed (another process set it first).
+    Returns:
+    - ``True``  — this caller won the race (key was set).
+    - ``False`` — key already existed (another process set it first).
+    - ``None``  — Redis error; caller should **not** treat this as a duplicate.
+
+    The three-valued return is intentional: conflating a Redis error with an
+    existing key would silently drop operations (e.g. message dedup) when Redis
+    is temporarily unreachable.
     """
     try:
         result = await _get_client().set(key, value, ex=ttl, nx=True)
         return bool(result)
     except Exception as exc:  # pylint: disable=broad-except
         logger.warning("[MindBot] redis_setnx_ttl error key=%s: %s", key, exc)
-        return False
+        return None
 
 
 async def redis_delete(key: str) -> None:
@@ -93,6 +110,27 @@ async def redis_expire(key: str, ttl: int) -> None:
         await _get_client().expire(key, ttl)
     except Exception as exc:  # pylint: disable=broad-except
         logger.warning("[MindBot] redis_expire error key=%s: %s", key, exc)
+
+
+async def redis_bind(key: str, value: str, ttl: int) -> None:
+    """
+    Bind ``key`` to ``value`` if it is not already set, then refresh the TTL.
+
+    Sends ``SET NX EX`` and ``EXPIRE`` in a single pipeline (1 RTT) so that:
+    - New keys are created atomically with a TTL.
+    - Existing keys (first-writer wins) have their TTL extended without
+      overwriting the stored value.
+
+    Silently swallows connection errors so the caller degrades gracefully.
+    """
+    try:
+        client = _get_client()
+        async with client.pipeline(transaction=False) as pipe:
+            pipe.set(key, value, ex=ttl, nx=True)
+            pipe.expire(key, ttl)
+            await pipe.execute()
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning("[MindBot] redis_bind error key=%s: %s", key, exc)
 
 
 async def redis_incr_with_ttl(key: str, ttl: int) -> Optional[int]:

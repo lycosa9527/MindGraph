@@ -10,6 +10,8 @@ class MindbotErrorCode(str, Enum):
     """Stable string codes for logs, optional response headers, and API JSON."""
 
     OK = "MINDBOT_OK"
+    ACCEPTED = "MINDBOT_ACCEPTED"
+    PIPELINE_INTERNAL_ERROR = "MINDBOT_PIPELINE_INTERNAL_ERROR"
     FEATURE_DISABLED = "MINDBOT_FEATURE_DISABLED"
     INVALID_JSON = "MINDBOT_INVALID_JSON"
     INVALID_BODY = "MINDBOT_INVALID_BODY"

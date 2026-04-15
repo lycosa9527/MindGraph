@@ -23,7 +23,7 @@ from typing import Any, Mapping, Optional
 
 from fastapi import Request
 
-from services.mindbot.platforms.dingtalk.verify import extract_dingtalk_robot_auth_headers
+from services.mindbot.platforms.dingtalk.auth.verify import extract_dingtalk_robot_auth_headers
 from utils.env_helpers import env_bool, env_int
 
 logger = logging.getLogger(__name__)

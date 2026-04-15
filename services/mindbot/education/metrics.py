@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import Any, Optional
 
 from services.mindbot.core.redis_keys import TURN_COUNT_PREFIX, TURN_COUNT_TTL_SECONDS
-from services.mindbot.redis_async import redis_incr_with_ttl
+from services.mindbot.infra.redis_async import redis_incr_with_ttl
 from utils.env_helpers import env_bool
 
 

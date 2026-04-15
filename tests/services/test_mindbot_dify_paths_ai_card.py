@@ -26,7 +26,9 @@ async def test_blocking_send_uses_ai_card_when_configured() -> None:
 
     cfg = SimpleNamespace(
         organization_id=1,
-        show_chain_of_thought=False,
+        show_chain_of_thought_oto=False,
+        show_chain_of_thought_internal_group=False,
+        show_chain_of_thought_cross_org_group=False,
         chain_of_thought_max_chars=4000,
         dingtalk_ai_card_template_id="tpl-x",
         dingtalk_ai_card_param_key=None,
@@ -40,7 +42,7 @@ async def test_blocking_send_uses_ai_card_when_configured() -> None:
         "conversationType": "2",
     }
     resp = {"answer": "hello card", "conversation_id": "dify-c1"}
-    create_mock = AsyncMock(return_value=(True, None, ""))
+    create_mock = AsyncMock(return_value=(True, None, "", "stream"))
     stream_mock = AsyncMock(return_value=(True, None, "", None))
     prefetch_mock = AsyncMock(return_value="token-z")
     attach_mock = AsyncMock(return_value=None)
@@ -99,7 +101,9 @@ async def test_blocking_ai_card_mark_error_uses_token_from_failed_stream() -> No
 
     cfg = SimpleNamespace(
         organization_id=1,
-        show_chain_of_thought=False,
+        show_chain_of_thought_oto=False,
+        show_chain_of_thought_internal_group=False,
+        show_chain_of_thought_cross_org_group=False,
         chain_of_thought_max_chars=4000,
         dingtalk_ai_card_template_id="tpl-x",
         dingtalk_ai_card_param_key=None,
@@ -113,7 +117,7 @@ async def test_blocking_ai_card_mark_error_uses_token_from_failed_stream() -> No
         "conversationType": "2",
     }
     resp = {"answer": "hello", "conversation_id": "dify-c1"}
-    create_mock = AsyncMock(return_value=(True, None, ""))
+    create_mock = AsyncMock(return_value=(True, None, "", "stream"))
     stream_mock = AsyncMock(
         return_value=(False, "e1", "detail", "refreshed-tok"),
     )
