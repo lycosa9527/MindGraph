@@ -34,6 +34,7 @@ logger = logging.getLogger(__name__)
 
 _dingtalk_session: Optional[aiohttp.ClientSession] = None
 _outbound_session: Optional[aiohttp.ClientSession] = None
+_shutting_down: bool = False
 
 
 def get_dingtalk_api_session() -> aiohttp.ClientSession:
@@ -43,7 +44,9 @@ def get_dingtalk_api_session() -> aiohttp.ClientSession:
     Created lazily on first call (requires a running event loop).
     Callers must pass ``timeout`` per-request — **not** per-session.
     """
-    global _dingtalk_session
+    global _dingtalk_session  # pylint: disable=global-statement
+    if _shutting_down:
+        raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     if _dingtalk_session is None or _dingtalk_session.closed:
         connector = aiohttp.TCPConnector(
             limit=200,
@@ -65,7 +68,9 @@ def get_outbound_session() -> aiohttp.ClientSession:
     health probes — targets vary per message so ``limit_per_host`` is wider.
     Created lazily on first call (requires a running event loop).
     """
-    global _outbound_session
+    global _outbound_session  # pylint: disable=global-statement
+    if _shutting_down:
+        raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     if _outbound_session is None or _outbound_session.closed:
         connector = aiohttp.TCPConnector(
             limit=300,
@@ -86,7 +91,8 @@ async def close_mindbot_http_sessions() -> None:
     Call once from the FastAPI lifespan ``finally`` block.  After this returns
     no further HTTP calls should be made via these sessions.
     """
-    global _dingtalk_session, _outbound_session
+    global _dingtalk_session, _outbound_session, _shutting_down  # pylint: disable=global-statement
+    _shutting_down = True
     for name, session in [
         ("dingtalk_api", _dingtalk_session),
         ("outbound", _outbound_session),

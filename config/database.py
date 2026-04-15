@@ -375,6 +375,42 @@ def _wait_for_migration_completion(expected_head: str) -> None:
     )
 
 
+def _check_pool_vs_max_connections() -> None:
+    """Warn if configured pool exceeds PostgreSQL max_connections."""
+    workers = int(os.getenv("UVICORN_WORKERS", "1"))
+    per_worker = pool_size + max_overflow
+    total_needed = workers * per_worker
+    try:
+        with engine.connect() as conn:
+            row = conn.execute(text("SHOW max_connections")).fetchone()
+            if row is None:
+                return
+            pg_max = int(row[0])
+    except Exception as exc:
+        logger.debug("[Database] Could not query max_connections: %s", exc)
+        return
+    if total_needed > pg_max:
+        logger.warning(
+            "[Database] Pool config may exceed PostgreSQL capacity: "
+            "%d workers × %d (pool_size %d + max_overflow %d) = %d, "
+            "but max_connections = %d. Risk of connection exhaustion.",
+            workers,
+            per_worker,
+            pool_size,
+            max_overflow,
+            total_needed,
+            pg_max,
+        )
+    else:
+        logger.info(
+            "[Database] Pool check OK: %d workers × %d = %d ≤ max_connections %d",
+            workers,
+            per_worker,
+            total_needed,
+            pg_max,
+        )
+
+
 def init_db(seed_organizations: bool = True):
     """
     Initialize the database: apply pending Alembic migrations, then seed data.
@@ -397,6 +433,8 @@ def init_db(seed_organizations: bool = True):
     except Exception as exc:
         logger.error("[Database] Alembic migration failed: %s", exc, exc_info=True)
         raise
+
+    _check_pool_vs_max_connections()
 
     if not seed_organizations:
         logger.info("Skipping organization seed (seed_organizations=False)")

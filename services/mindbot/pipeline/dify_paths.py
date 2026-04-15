@@ -10,7 +10,6 @@ filter plus AI card buffer in ``on_dify_message_replace``.
 
 from __future__ import annotations
 
-import dataclasses
 import logging
 import time
 import uuid
@@ -39,6 +38,7 @@ from services.mindbot.outbound.text import (
     reply_via_openapi,
     send_one_reply_chunk,
 )
+from services.mindbot.pipeline.ai_card_state import init_card_stream_state
 from services.mindbot.platforms.dingtalk.cards.ai_card import (
     ai_card_body_deliverable,
     ai_card_overflow_remainder_for_markdown,
@@ -54,21 +54,6 @@ from services.mindbot.platforms.dingtalk.cards.ai_card_errors import describe_ai
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
-
-
-@dataclasses.dataclass
-class _CardStreamState:
-    """Typed accumulator for AI-card streaming state within one Dify turn."""
-
-    use_card: bool
-    buffer_only: bool
-    cum: str = ""
-    out_track_id: Optional[str] = None
-    token: Optional[str] = None
-    created: bool = False
-    update_mode: str = "stream"
-    t0: float = dataclasses.field(default_factory=time.monotonic)
-    first_chunk: bool = False
 
 
 async def run_streaming_dify_branch(
@@ -98,57 +83,7 @@ async def run_streaming_dify_branch(
         show_chain_of_thought=eff_show_cot,
     )
 
-    _card_wiring = mindbot_ai_card_wiring_enabled(cfg)
-    if _card_wiring:
-        _deliverable, _skip_reason = ai_card_body_deliverable(body)
-        if not _deliverable:
-            logger.info(
-                "[MindBot] ai_card_skipped %s reason=%s",
-                pipeline_ctx,
-                _skip_reason,
-            )
-            _card_wiring = False
-    # Cross-org (external) groups use LWCP sender tokens — AI card templates are
-    # enterprise-internal only.  Buffer the full Dify response and send it as one
-    # plain message at the end instead.
-    _is_cross_org = is_cross_org_group_body(body)
-    if _is_cross_org and _card_wiring:
-        logger.info(
-            "[MindBot] ai_card_skipped %s reason=cross_org_group",
-            pipeline_ctx,
-        )
-        _card_wiring = False
-    _outbound = "ai_card" if _card_wiring else ("buffer→plain" if _is_cross_org else "plain")
-    logger.info(
-        "[MindBot] route %s outbound=%s",
-        pipeline_ctx,
-        _outbound,
-    )
-
-    _initial_token: Optional[str] = None
-    if _card_wiring:
-        _initial_token = await prefetch_ai_card_access_token(cfg)
-        if not _initial_token:
-            logger.warning(
-                "[MindBot] ai_card_token_prefetch_failed %s disabling_card_wiring",
-                pipeline_ctx,
-            )
-            _card_wiring = False
-
-    card_state = _CardStreamState(
-        use_card=_card_wiring,
-        buffer_only=_is_cross_org,
-        token=_initial_token,
-    )
-
-    def _hidden_reply_from_cum(cum: str) -> str:
-        """Re-apply hide rules on accumulated visible text (AI card wire / fallbacks)."""
-        return format_mindbot_reply_for_dingtalk(
-            cum,
-            show_chain_of_thought=False,
-            chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
-            native_reasoning="",
-        )
+    card_state = await init_card_stream_state(cfg, body, pipeline_ctx)
 
     async def on_batch(chunk: str) -> tuple[bool, bool]:
         visible = think_filter.push(chunk)
@@ -167,7 +102,7 @@ async def run_streaming_dify_branch(
             return True, False
         if card_state.use_card:
             card_state.cum += visible
-            wire_cum = _hidden_reply_from_cum(card_state.cum) if not eff_show_cot else card_state.cum
+            wire_cum = card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
             if card_state.token is None:
                 card_state.token = await prefetch_ai_card_access_token(cfg)
             tok = card_state.token
@@ -253,16 +188,20 @@ async def run_streaming_dify_branch(
                             describe_ai_card_failure(mk_code, mk_detail),
                         )
                 card_state.use_card = False
-                fallback = (
-                    _hidden_reply_from_cum(card_state.cum) if not eff_show_cot else card_state.cum
+                full_cum = (
+                    card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
                 )
+                unsent = full_cum[card_state.card_chars_confirmed:]
+                if not unsent.strip():
+                    return True, False
                 return await send_one_reply_chunk(
                     cfg,
                     body,
                     session_webhook_valid,
-                    fallback,
+                    unsent,
                     pipeline_ctx=pipeline_ctx,
                 )
+            card_state.card_chars_confirmed = len(wire_cum)
             return True, False
         return await send_one_reply_chunk(
             cfg,
@@ -302,14 +241,7 @@ async def run_streaming_dify_branch(
                 pipeline_ctx=pipeline_ctx,
             )
         think_filter.reset()
-        card_state.cum = ""
-        card_state.out_track_id = None
-        card_state.token = None
-        card_state.created = False
-        card_state.update_mode = "stream"
-        card_state.use_card = (
-            mindbot_ai_card_wiring_enabled(cfg) and not card_state.buffer_only
-        )
+        card_state.reset(cfg)
 
     full, new_conv, err_tok, usage_dify, native_reasoning = (
         await mindbot_consume_dify_stream_batched(
@@ -372,27 +304,7 @@ async def run_streaming_dify_branch(
         and isinstance(card_state.out_track_id, str)
         and card_state.token
     ):
-        fin_use_receiver = card_state.update_mode == "receiver"
-        if fin_use_receiver:
-            fin_ok, fin_code, fin_detail, fin_tok = await update_ai_card_receiver(
-                cfg,
-                access_token=str(card_state.token),
-                out_track_id=str(card_state.out_track_id),
-                markdown_full=reply_text,
-                is_finalize=True,
-                pipeline_ctx=pipeline_ctx,
-            )
-        else:
-            fin_ok, fin_code, fin_detail, fin_tok = await streaming_update_ai_card(
-                cfg,
-                access_token=str(card_state.token),
-                out_track_id=str(card_state.out_track_id),
-                markdown_full=reply_text,
-                is_finalize=True,
-                pipeline_ctx=pipeline_ctx,
-            )
-        if fin_tok:
-            card_state.token = fin_tok
+        fin_ok, _remainder = await card_state.finalize(cfg, reply_text, pipeline_ctx)
         if fin_ok and env_bool("MINDBOT_AI_CARD_APPEND_OVERFLOW_REMAINDER", False):
             remainder = ai_card_overflow_remainder_for_markdown(reply_text)
             if remainder.strip():
@@ -404,33 +316,15 @@ async def run_streaming_dify_branch(
                     pipeline_ctx=pipeline_ctx,
                 )
         if not fin_ok:
-            logger.warning(
-                "[MindBot] ai_card_finalize_failed %s %s",
-                pipeline_ctx,
-                describe_ai_card_failure(fin_code, fin_detail),
-            )
-            if not fin_use_receiver:
-                mk_ok, mk_code, mk_detail, mk_tok = await mark_ai_card_stream_error(
+            unsent_final = reply_text[card_state.card_chars_confirmed:]
+            if unsent_final.strip():
+                await send_one_reply_chunk(
                     cfg,
-                    access_token=str(card_state.token),
-                    out_track_id=str(card_state.out_track_id),
+                    body,
+                    session_webhook_valid,
+                    unsent_final,
                     pipeline_ctx=pipeline_ctx,
                 )
-                if mk_tok:
-                    card_state.token = mk_tok
-                if not mk_ok:
-                    logger.warning(
-                        "[MindBot] ai_card_mark_error_after_finalize_failed %s %s",
-                        pipeline_ctx,
-                        describe_ai_card_failure(mk_code, mk_detail),
-                    )
-            await send_one_reply_chunk(
-                cfg,
-                body,
-                session_webhook_valid,
-                reply_text,
-                pipeline_ctx=pipeline_ctx,
-            )
     if err_tok == "dify_error":
         logger.warning(
             "[MindBot] dify_streaming_outcome %s outcome=dify_error reply_chars=%s",

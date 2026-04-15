@@ -9,10 +9,7 @@ import os
 import time
 from typing import Any, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
 from clients.dify import AsyncDifyClient, DifyFile
-from config.database import AsyncSessionLocal
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
@@ -49,14 +46,14 @@ from services.mindbot.infra.redis_async import (
     redis_bind,
     redis_delete,
     redis_get,
+    redis_ping,
 )
 from services.mindbot.pipeline.callback_validate import (
     MindbotPipelineContext,
     validate_callback_fast,
-    _hdr_for_cfg,
+    hdr_for_cfg,
 )
 from services.mindbot.infra.task_registry import register as register_background_task
-from services.redis.redis_client import is_redis_available
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
@@ -180,10 +177,9 @@ async def _maybe_dify_files_for_media(
 
 
 async def execute_mindbot_pipeline(
-    session: AsyncSession,
     ctx: MindbotPipelineContext,
 ) -> tuple[int, dict[str, str]]:
-    """Conv gate, Dify, outbound. Caller supplies the async DB session."""
+    """Conv gate, Dify, outbound. Usage is persisted in its own DB session."""
     cfg = ctx.cfg
     body = ctx.body
     msg = ctx.msg
@@ -198,7 +194,7 @@ async def execute_mindbot_pipeline(
     dify_conv: Optional[str] = normalize_dify_conversation_id_from_redis(
         await _redis_get_async(conv_key),
     )
-    redis_ok = is_redis_available()
+    redis_ok = await redis_ping()
     gate_acquired = False
     if (
         conv_gate_enabled()
@@ -215,6 +211,13 @@ async def execute_mindbot_pipeline(
             polled = await poll_dify_conv_key_async(_redis_get_async, conv_key)
             if polled:
                 dify_conv = polled
+            else:
+                logger.warning(
+                    "[MindBot] conv_gate_poll_timeout org_id=%s scope=%s "
+                    "— proceeding without existing Dify conversation (may create new session)",
+                    cfg.organization_id,
+                    conv_gate_scope,
+                )
 
     raw_sw = msg.session_webhook
     session_webhook_valid: Optional[str] = None
@@ -280,7 +283,6 @@ async def execute_mindbot_pipeline(
             conversation_id_dt,
         )
         await persist_mindbot_usage_event(
-            session,
             cfg=cfg,
             body=body,
             text_in=text_in,
@@ -305,7 +307,7 @@ async def execute_mindbot_pipeline(
     dify_inputs = _parse_dify_inputs_from_config(cfg)
 
     def _hdr(code: MindbotErrorCode) -> dict[str, str]:
-        return _hdr_for_cfg(cfg, code)
+        return hdr_for_cfg(cfg, code)
 
     cb_key = str(cfg.organization_id)
     _streaming = _dify_streaming_enabled()
@@ -319,6 +321,8 @@ async def execute_mindbot_pipeline(
                 if not slot_released:
                     slot_released = True
                     _STREAMING_SEMAPHORE.release()
+                else:
+                    logger.debug("[MindBot] streaming semaphore double-release prevented")
 
             await _STREAMING_SEMAPHORE.acquire()
             try:
@@ -353,9 +357,9 @@ async def execute_mindbot_pipeline(
 
             resp_hdr = result[1]
             if resp_hdr.get("X-MindBot-Error-Code") == MindbotErrorCode.DIFY_FAILED.value:
-                record_dify_failure(cb_key)
+                await record_dify_failure(cb_key)
             else:
-                record_dify_success(cb_key)
+                await record_dify_success(cb_key)
             return result
 
         async with _BLOCKING_SEMAPHORE:
@@ -377,7 +381,7 @@ async def execute_mindbot_pipeline(
                 pipeline_ctx=pipeline_ctx,
             )
             if resp is None:
-                record_dify_failure(cb_key)
+                await record_dify_failure(cb_key)
                 await _record_usage(
                     MindbotErrorCode.DIFY_FAILED,
                     reply_text="",
@@ -386,7 +390,7 @@ async def execute_mindbot_pipeline(
                     streaming=False,
                 )
                 return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
-            record_dify_success(cb_key)
+            await record_dify_success(cb_key)
 
             usage_block = (
                 parse_dify_usage_from_blocking_response(resp)
@@ -417,10 +421,9 @@ async def execute_mindbot_pipeline(
 
 
 async def run_pipeline_background(ctx: MindbotPipelineContext) -> None:
-    """Fire-and-forget pipeline with its own DB session; records final metrics."""
+    """Fire-and-forget pipeline; usage events use their own DB sessions."""
     try:
-        async with AsyncSessionLocal() as session:
-            _code, headers = await execute_mindbot_pipeline(session, ctx)
+        _code, headers = await execute_mindbot_pipeline(ctx)
         mindbot_metrics.record_from_headers(headers)
     except Exception as exc:
         logger.exception("[MindBot] run_pipeline_background failed: %s", exc)
@@ -428,7 +431,6 @@ async def run_pipeline_background(ctx: MindbotPipelineContext) -> None:
 
 
 async def process_dingtalk_callback(
-    session: AsyncSession,
     *,
     timestamp_header: Optional[str],
     sign_header: Optional[str],
@@ -458,7 +460,7 @@ async def process_dingtalk_callback(
         return early[0], early[1]
     if ctx is None:
         return 500, mindbot_error_headers(MindbotErrorCode.DIFY_FAILED)
-    return await execute_mindbot_pipeline(session, ctx)
+    return await execute_mindbot_pipeline(ctx)
 
 
 def schedule_dingtalk_pipeline_background(ctx: MindbotPipelineContext) -> None:

@@ -1,4 +1,4 @@
-"""Simple in-memory circuit breaker for MindBot's Dify API calls.
+"""Hybrid in-memory + Redis circuit breaker for MindBot's Dify API calls.
 
 Design
 ------
@@ -7,7 +7,10 @@ Design
 - HALF-OPEN: one probe is allowed through after the reset window to test recovery.
 
 Each key (typically org_id or a global key) gets its own :class:`CircuitBreaker`
-instance. The instances are held in a module-level dict keyed by the same string.
+instance held in a module-level dict.  Redis provides cross-worker consistency:
+failure counts are tracked in Redis so all Uvicorn workers share the same
+circuit state.  When Redis is unavailable, the in-memory breaker acts as a
+per-process fallback.
 
 Configuration (env vars)
 ------------------------
@@ -22,11 +25,19 @@ import functools
 import logging
 import time
 
+from services.mindbot.infra.redis_async import (
+    redis_delete,
+    redis_get,
+    redis_incr_with_ttl,
+    redis_setnx_ttl,
+)
 from utils.env_helpers import env_bool, env_float, env_int
 
 logger = logging.getLogger(__name__)
 
 _breakers: dict[str, "CircuitBreaker"] = {}
+
+_CB_REDIS_KEY_PREFIX = "mindbot:cb:"
 
 
 @functools.cache
@@ -46,7 +57,7 @@ def _cb_reset_seconds() -> float:
 
 class CircuitBreaker:
     """
-    Thread-safe (asyncio-safe) circuit breaker for a single resource key.
+    In-memory circuit breaker for a single resource key (per-process fallback).
 
     ``asyncio`` is single-threaded, so attribute reads/writes are atomic enough
     for our use case (no GIL concerns for coroutine-switching tasks).
@@ -58,7 +69,6 @@ class CircuitBreaker:
         self._is_open: bool = False
 
     def is_open(self) -> bool:
-        """Return True if calls should be rejected right now."""
         if not self._is_open:
             return False
         elapsed = time.monotonic() - self._opened_at
@@ -68,7 +78,6 @@ class CircuitBreaker:
         return True
 
     def is_half_open(self) -> bool:
-        """True when the reset window has elapsed — one probe should be allowed."""
         if not self._is_open:
             return False
         return time.monotonic() - self._opened_at >= _cb_reset_seconds()
@@ -96,15 +105,44 @@ def get_breaker(key: str) -> CircuitBreaker:
     return _breakers[key]
 
 
-def check_circuit_breaker(key: str) -> bool:
+async def check_circuit_breaker(key: str) -> bool:
     """
     Return True if the call should proceed, False if the circuit is open.
 
-    Pass the org_id or a global string (e.g. ``"global"``) as ``key``.
-    When the circuit breaker is disabled globally, always returns True.
+    Checks Redis failure count first for cross-worker consistency; falls back
+    to the in-memory breaker when Redis is unavailable.
+
+    In half-open state a Redis SETNX lock ensures only one probe request is
+    allowed across all workers, preventing thundering-herd recovery.
     """
     if not _cb_enabled():
         return True
+
+    threshold = _cb_failure_threshold()
+    redis_key = f"{_CB_REDIS_KEY_PREFIX}{key}"
+    redis_count = await redis_get(redis_key)
+    if redis_count is not None:
+        try:
+            count = int(redis_count)
+        except (ValueError, TypeError):
+            count = 0
+        if count >= threshold:
+            probe_lock_key = f"{_CB_REDIS_KEY_PREFIX}probe:{key}"
+            reset_s = int(_cb_reset_seconds())
+            probe_won = await redis_setnx_ttl(probe_lock_key, "1", reset_s)
+            if probe_won is True:
+                logger.info(
+                    "[MindBot] circuit_breaker_half_open key=%s allowing_single_probe",
+                    key,
+                )
+                return True
+            logger.warning(
+                "[MindBot] circuit_breaker_rejected key=%s redis_count=%s",
+                key,
+                count,
+            )
+            return False
+
     breaker = get_breaker(key)
     if breaker.is_half_open():
         logger.info("[MindBot] circuit_breaker_half_open key=%s allowing_probe", key)
@@ -115,15 +153,19 @@ def check_circuit_breaker(key: str) -> bool:
     return True
 
 
-def record_dify_success(key: str) -> None:
+async def record_dify_success(key: str) -> None:
     """Record a successful Dify call and close the circuit if open."""
     if not _cb_enabled():
         return
     get_breaker(key).record_success()
+    await redis_delete(f"{_CB_REDIS_KEY_PREFIX}{key}")
+    await redis_delete(f"{_CB_REDIS_KEY_PREFIX}probe:{key}")
 
 
-def record_dify_failure(key: str) -> None:
+async def record_dify_failure(key: str) -> None:
     """Record a Dify failure; open the circuit after threshold consecutive failures."""
     if not _cb_enabled():
         return
     get_breaker(key).record_failure(key)
+    ttl = int(_cb_reset_seconds())
+    await redis_incr_with_ttl(f"{_CB_REDIS_KEY_PREFIX}{key}", ttl)

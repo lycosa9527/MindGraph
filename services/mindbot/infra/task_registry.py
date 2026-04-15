@@ -43,11 +43,22 @@ async def drain(timeout_s: float = 30.0) -> None:
         if env_bool("MINDBOT_SHUTDOWN_CANCEL_PENDING", False):
             for t in still:
                 t.cancel()
-            cancel_wait = float(os.getenv("MINDBOT_SHUTDOWN_CANCEL_JOIN_S", "5"))
-            await asyncio.wait(still, timeout=cancel_wait)
-            logger.warning(
-                "[MindBot] task_registry drain: issued cancel for %s pending task(s)",
-                len(still),
-            )
+            try:
+                cancel_wait = float(os.getenv("MINDBOT_SHUTDOWN_CANCEL_JOIN_S", "5"))
+                results = await asyncio.wait_for(
+                    asyncio.gather(*still, return_exceptions=True),
+                    timeout=cancel_wait,
+                )
+                errors = [r for r in results if isinstance(r, Exception)]
+                logger.warning(
+                    "[MindBot] task_registry drain: cancelled %s task(s), %s raised exceptions",
+                    len(still),
+                    len(errors),
+                )
+            except asyncio.TimeoutError:
+                logger.warning(
+                    "[MindBot] task_registry drain: cancel gather timed out for %s task(s)",
+                    len(still),
+                )
     else:
         logger.debug("[MindBot] task_registry drain: completed %s task(s)", len(done))

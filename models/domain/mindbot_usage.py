@@ -27,6 +27,9 @@ class MindbotUsageEvent(Base):
     __table_args__ = (
         Index("ix_mindbot_usage_org_created", "organization_id", "created_at"),
         Index("ix_mindbot_usage_staff_org", "dingtalk_staff_id", "organization_id"),
+        Index("ix_mindbot_usage_org_id_desc", "organization_id", "id"),
+        Index("ix_mindbot_usage_dt_conv", "dingtalk_conversation_id"),
+        Index("ix_mindbot_usage_dify_conv", "dify_conversation_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -80,6 +83,6 @@ class MindbotUsageEvent(Base):
         index=True,
     )
 
-    organization = relationship("Organization", lazy="selectin")
-    mindbot_config = relationship("OrganizationMindbotConfig", lazy="selectin")
-    linked_user = relationship("User", foreign_keys=[linked_user_id], lazy="selectin")
+    organization = relationship("Organization", lazy="select")
+    mindbot_config = relationship("OrganizationMindbotConfig", lazy="select")
+    linked_user = relationship("User", foreign_keys=[linked_user_id], lazy="select")

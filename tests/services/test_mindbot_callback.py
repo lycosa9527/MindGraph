@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from types import SimpleNamespace
-from unittest.mock import AsyncMock
 
 import pytest
 
@@ -74,9 +73,7 @@ async def test_feature_disabled(monkeypatch: pytest.MonkeyPatch) -> None:
     )
     from services.mindbot.pipeline.callback import process_dingtalk_callback
 
-    session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
-        session,
         timestamp_header="1",
         sign_header="1",
         body={},
@@ -96,9 +93,7 @@ async def test_shared_callback_requires_path_not_body_robot_code(
     )
     from services.mindbot.pipeline.callback import process_dingtalk_callback
 
-    session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
-        session,
         timestamp_header="1",
         sign_header="1",
         body={"text": {"content": "hi"}, "robotCode": "normal"},
@@ -129,23 +124,24 @@ async def test_invalid_signature(monkeypatch: pytest.MonkeyPatch) -> None:
         "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
+    async def _ping_false() -> bool:
+        return False
+
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.is_redis_available",
-        lambda: False,
+        "services.mindbot.pipeline.callback.redis_ping",
+        _ping_false,
     )
 
     cfg = _sample_cfg()
 
     from services.mindbot.pipeline.callback import process_dingtalk_callback
 
-    session = AsyncMock()
     body = {
         "robotCode": "robot-1",
         "msgtype": "text",
         "text": {"content": "hello"},
     }
     code, hdr = await process_dingtalk_callback(
-        session,
         timestamp_header="1730000000000",
         sign_header="not-the-real-signature",
         body=body,
@@ -164,23 +160,25 @@ async def test_body_robotcode_placeholder_does_not_block_before_signature(
         "services.mindbot.pipeline.callback_validate.config",
         SimpleNamespace(FEATURE_MINDBOT=True),
     )
+
+    async def _ping_false() -> bool:
+        return False
+
     monkeypatch.setattr(
-        "services.mindbot.pipeline.callback.is_redis_available",
-        lambda: False,
+        "services.mindbot.pipeline.callback.redis_ping",
+        _ping_false,
     )
 
     cfg = _sample_cfg()
 
     from services.mindbot.pipeline.callback import process_dingtalk_callback
 
-    session = AsyncMock()
     body = {
         "robotCode": "normal",
         "msgtype": "text",
         "text": {"content": "hello"},
     }
     code, hdr = await process_dingtalk_callback(
-        session,
         timestamp_header="1730000000000",
         sign_header="not-the-real-signature",
         body=body,
@@ -202,9 +200,7 @@ async def test_shared_connectivity_probe_empty_body_no_signature(
     )
     from services.mindbot.pipeline.callback import process_dingtalk_callback
 
-    session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
-        session,
         timestamp_header=None,
         sign_header=None,
         body={},
@@ -226,9 +222,7 @@ async def test_per_org_connectivity_probe_empty_body_no_signature(
 
     from services.mindbot.pipeline.callback import process_dingtalk_callback
 
-    session = AsyncMock()
     code, hdr = await process_dingtalk_callback(
-        session,
         timestamp_header=None,
         sign_header=None,
         body={},
@@ -260,7 +254,7 @@ async def test_run_pipeline_background_records_internal_error_metric(
     """Unhandled exceptions in execute_mindbot_pipeline increment the pipeline error counter."""
     recorded: list[str] = []
 
-    async def _boom(_session: object, _ctx: object) -> tuple[int, dict[str, str]]:
+    async def _boom(_ctx: object) -> tuple[int, dict[str, str]]:
         raise RuntimeError("simulated pipeline failure")
 
     def _capture_error_code(code: str) -> None:

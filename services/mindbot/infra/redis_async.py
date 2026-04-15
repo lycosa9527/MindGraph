@@ -41,6 +41,10 @@ def _get_client() -> aioredis.Redis:
 
     ``redis.asyncio.from_url`` creates a connection pool; the first actual
     network connection is established on the first command, not here.
+
+    Thread-safety: this function relies on the single-threaded asyncio event
+    loop for safe lazy initialisation.  It is **not** thread-safe and must
+    not be called from worker threads (e.g. Celery tasks).
     """
     global _client
     if _client is None:
@@ -151,6 +155,41 @@ async def redis_incr_with_ttl(key: str, ttl: int) -> Optional[int]:
     except Exception as exc:  # pylint: disable=broad-except
         logger.warning("[MindBot] redis_incr_with_ttl error key=%s: %s", key, exc)
         return None
+
+
+async def redis_incr_fixed_window(key: str, ttl: int) -> Optional[int]:
+    """
+    Fixed-window counter: INCR + SET TTL only when the key is new.
+
+    Unlike ``redis_incr_with_ttl``, the TTL is **not** refreshed on every
+    increment.  The counter expires after ``ttl`` seconds from the first
+    increment, ensuring a true fixed window regardless of activity volume.
+
+    Uses a Lua script executed atomically on the Redis server.
+    """
+    lua = (
+        "local v = redis.call('INCR', KEYS[1]) "
+        "if v == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end "
+        "return v"
+    )
+    try:
+        client = _get_client()
+        result = await client.execute_command("EVAL", lua, 1, key, str(ttl))
+        if result is None:
+            return None
+        return int(result)
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning("[MindBot] redis_incr_fixed_window error key=%s: %s", key, exc)
+        return None
+
+
+async def redis_ping() -> bool:
+    """Return True if the async Redis client responds to PING, False on error."""
+    try:
+        return bool(await _get_client().ping())
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning("[MindBot] redis_ping failed: %s", exc)
+        return False
 
 
 async def close_async_redis() -> None:

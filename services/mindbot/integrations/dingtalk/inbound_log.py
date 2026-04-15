@@ -32,6 +32,25 @@ _PREVIEW_LEN = 2048
 _DEFAULT_BODY_LOG_MAX = 65536
 _JSON_LOG_MAX = 65536
 
+_REDACTED_HEADER_NAMES = frozenset({
+    "sign",
+    "token",
+    "authorization",
+    "x-dingtalk-sign",
+    "cookie",
+})
+
+
+def _redact_headers(headers: dict[str, str]) -> dict[str, str]:
+    """Return a copy with sensitive header values replaced by '***'."""
+    result: dict[str, str] = {}
+    for key, value in headers.items():
+        if key.lower() in _REDACTED_HEADER_NAMES:
+            result[key] = "***"
+        else:
+            result[key] = value
+    return result
+
 
 def debug_callback_failure_logging_enabled() -> bool:
     """True when MINDBOT_LOG_CALLBACK_DEBUG is unset or truthy (full inbound + failure details)."""
@@ -115,7 +134,7 @@ def _log_full(
     *,
     parsed_body: Optional[dict[str, Any]] = None,
 ) -> None:
-    headers_dict = dict(request.headers.items())
+    headers_dict = _redact_headers(dict(request.headers.items()))
     client_host: Optional[str] = None
     if request.client is not None:
         client_host = request.client.host
@@ -172,7 +191,7 @@ def log_dingtalk_callback_failure_details(
     """
     if not debug_callback_failure_logging_enabled():
         return
-    hdr_copy = dict(headers)
+    hdr_copy = _redact_headers(dict(headers))
     ts, sg = extract_dingtalk_robot_auth_headers(headers)
     max_body = _body_log_max()
     body_snip = raw_body[:max_body] if len(raw_body) > max_body else raw_body

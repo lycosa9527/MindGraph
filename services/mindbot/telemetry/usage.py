@@ -1,4 +1,8 @@
-"""Persist MindBot callback analytics (DingTalk identity + optional Dify token usage)."""
+"""Persist MindBot callback analytics (DingTalk identity + optional Dify token usage).
+
+Usage events are written in their own ``AsyncSessionLocal`` so a persistence
+failure never poisons the caller's DB session or crashes the pipeline.
+"""
 
 from __future__ import annotations
 
@@ -6,8 +10,7 @@ import logging
 import time
 from typing import Any, Optional
 
-from sqlalchemy.ext.asyncio import AsyncSession
-
+from config.database import AsyncSessionLocal
 from models.domain.mindbot_usage import MindbotUsageEvent
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.errors import MindbotErrorCode
@@ -29,7 +32,6 @@ def mindbot_usage_tracking_enabled() -> bool:
 
 
 async def persist_mindbot_usage_event(
-    session: AsyncSession,
     *,
     cfg: OrganizationMindbotConfig,
     body: dict[str, Any],
@@ -83,8 +85,9 @@ async def persist_mindbot_usage_event(
         conversation_user_turn=conversation_user_turn,
         linked_user_id=None,
     )
-    session.add(row)
-    await session.commit()
+    async with AsyncSessionLocal() as session:
+        session.add(row)
+        await session.commit()
     logger.debug(
         "[MindBot] usage_persisted org_id=%s error=%s duration_s=%.3f streaming=%s "
         "msg_id=%s prompt_chars=%s reply_chars=%s",

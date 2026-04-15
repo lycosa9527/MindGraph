@@ -5,6 +5,30 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.87.0] - 2026-04-16
+
+### Added
+- **MindBot / errors**: `RATE_LIMITED` error code (`MindbotErrorCode.RATE_LIMITED`) — rate-limited requests now return HTTP 429 with a dedicated code instead of reusing `DUPLICATE_MESSAGE`.
+- **MindBot / errors**: `REDIS_UNAVAILABLE_FOR_DEDUP` error code — deduplication fails closed (HTTP 503) when Redis is unreachable instead of silently dropping messages.
+- **MindBot / infra**: `redis_ping()` async health check in `redis_async.py`; replaces the synchronous `is_redis_available()` call in the pipeline.
+- **MindBot / infra**: `redis_incr_fixed_window()` Lua-based atomic counter for true fixed-window rate limiting (TTL set only on key creation).
+- **MindBot / infra**: In-memory fallback counter in `rate_limit.py` — per-org abuse protection stays active during Redis outages.
+- **MindBot / infra**: Redis SETNX probe lock in `circuit_breaker.py` — half-open state allows exactly one probe across all workers, preventing thundering-herd recovery.
+- **MindBot / pipeline**: `ai_card_state.py` extracted from `dify_paths.py` — encapsulates the AI-card streaming state machine with `card_chars_confirmed` tracking to prevent duplicate content on card-to-text fallback.
+- **MindBot / ops**: Startup pool-vs-`max_connections` health check in `config/database.py` — warns if SQLAlchemy pool size × workers exceeds PostgreSQL limits.
+- **MindBot / DB**: Alembic `rev_0020` — three new indexes on `mindbot_usage_events` (`org_id+id`, `dingtalk_conversation_id`, `dify_conversation_id`) for usage query performance.
+- **MindBot / logging**: Header redaction (`sign`, `token`, `authorization`, `cookie`) in debug-level inbound and failure dumps (`inbound_log.py`).
+
+### Changed
+- **MindBot / router**: `routers/api/mindbot.py` split into `mindbot_callback.py`, `mindbot_admin.py`, `mindbot_helpers.py`, `mindbot_models.py`; aggregator re-exports for backward compatibility.
+- **MindBot / pipeline**: Shared callback route (`POST /dingtalk/callback`) now runs the pipeline in the background, matching per-org and per-token routes.
+- **MindBot / pipeline**: Conv-gate poll timeout increased from 3 s to 15 s with a warning log when exceeded.
+- **MindBot / pipeline**: Usage events persist in isolated DB sessions — telemetry failures cannot roll back pipeline work.
+- **MindBot / security**: `public_callback_token` masked (last 8 chars only) and `dingtalk_event_owner_key` masked in admin GET responses.
+- **MindBot / infra**: `task_registry.drain()` uses `asyncio.gather(*tasks, return_exceptions=True)` with a bounded timeout for clean shutdown.
+- **MindBot / rate limit**: Default org rate limit set to 200 requests per minute (`MINDBOT_ORG_RATE_LIMIT=200`).
+- **Tests**: `test_mindbot_callback.py` updated to mock `redis_ping` instead of removed `is_redis_available`.
+
 ## [5.86.0] - 2026-04-15
 
 ### Added

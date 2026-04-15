@@ -7,7 +7,6 @@ import logging
 import time
 from typing import Any, Optional, Tuple
 
-from config.database import AsyncSessionLocal
 from config.settings import config
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.education.metrics import (
@@ -85,7 +84,7 @@ def _log_callback_debug_failure(
     )
 
 
-def _hdr_for_cfg(
+def hdr_for_cfg(
     cfg: OrganizationMindbotConfig,
     code: MindbotErrorCode,
 ) -> dict[str, str]:
@@ -190,7 +189,7 @@ async def validate_callback_fast(
                 cfg.organization_id,
                 cfg.dingtalk_robot_code.strip(),
             )
-            return False, (200, _hdr_for_cfg(cfg, MindbotErrorCode.OK)), None
+            return False, (200, hdr_for_cfg(cfg, MindbotErrorCode.OK)), None
 
     if not verify_dingtalk_sign(timestamp_header, sign_header, cfg.dingtalk_app_secret.strip()):
         logger.warning("[MindBot] Invalid DingTalk signature")
@@ -206,14 +205,24 @@ async def validate_callback_fast(
                 "sign_header_present": bool((sign_header or "").strip()),
             },
         )
-        return False, (401, _hdr_for_cfg(cfg, MindbotErrorCode.INVALID_SIGNATURE)), None
+        return False, (401, hdr_for_cfg(cfg, MindbotErrorCode.INVALID_SIGNATURE)), None
 
     msg_id = body.get("msgId") or body.get("msg_id")
     if msg_id and isinstance(msg_id, str):
         dedup_key = f"{MSG_DEDUP_PREFIX}{cfg.organization_id}:{msg_id}"
         first = await redis_setnx_ttl(dedup_key, "1", MSG_DEDUP_TTL)
         if first is False:
-            return False, (200, _hdr_for_cfg(cfg, MindbotErrorCode.DUPLICATE_MESSAGE)), None
+            return False, (200, hdr_for_cfg(cfg, MindbotErrorCode.DUPLICATE_MESSAGE)), None
+        if first is None:
+            logger.warning(
+                "[MindBot] dedup_redis_error org_id=%s msg_id=%s — failing closed",
+                cfg.organization_id,
+                msg_id,
+            )
+            return False, (
+                503,
+                hdr_for_cfg(cfg, MindbotErrorCode.REDIS_UNAVAILABLE_FOR_DEDUP),
+            ), None
 
     msg = parse_inbound_message(body)
     text_in = msg.text_in
@@ -225,7 +234,7 @@ async def validate_callback_fast(
         len(text_in),
     )
     if not text_in:
-        return False, (200, _hdr_for_cfg(cfg, MindbotErrorCode.EMPTY_USER_MESSAGE)), None
+        return False, (200, hdr_for_cfg(cfg, MindbotErrorCode.EMPTY_USER_MESSAGE)), None
 
     sender_staff = msg.sender_staff_id
     conversation_id_dt = msg.conversation_id
@@ -246,32 +255,30 @@ async def validate_callback_fast(
     )
 
     if not await check_org_rate_limit(cfg.organization_id):
-        return False, (200, _hdr_for_cfg(cfg, MindbotErrorCode.DUPLICATE_MESSAGE)), None
+        return False, (429, hdr_for_cfg(cfg, MindbotErrorCode.RATE_LIMITED)), None
 
     cb_key = str(cfg.organization_id)
-    if not check_circuit_breaker(cb_key):
+    if not await check_circuit_breaker(cb_key):
         usage_started = time.monotonic()
-        async with AsyncSessionLocal() as session:
-            turn = await conversation_user_turn_index(cfg.organization_id, conversation_id_dt)
-            await persist_mindbot_usage_event(
-                session,
-                cfg=cfg,
-                body=body,
-                text_in=text_in,
-                conversation_id_dt=conversation_id_dt,
-                user_id=dify_user_id,
-                streaming=False,
-                error_code=MindbotErrorCode.DIFY_FAILED,
-                reply_text="",
-                dify_conversation_id=None,
-                started_mono=usage_started,
-                msg_id=msg.msg_id,
-                usage=None,
-                dingtalk_chat_scope=dingtalk_chat_scope(body),
-                inbound_msg_type=inbound_msg_type,
-                conversation_user_turn=turn,
-            )
-        return False, (200, _hdr_for_cfg(cfg, MindbotErrorCode.DIFY_FAILED)), None
+        turn = await conversation_user_turn_index(cfg.organization_id, conversation_id_dt)
+        await persist_mindbot_usage_event(
+            cfg=cfg,
+            body=body,
+            text_in=text_in,
+            conversation_id_dt=conversation_id_dt,
+            user_id=dify_user_id,
+            streaming=False,
+            error_code=MindbotErrorCode.DIFY_FAILED,
+            reply_text="",
+            dify_conversation_id=None,
+            started_mono=usage_started,
+            msg_id=msg.msg_id,
+            usage=None,
+            dingtalk_chat_scope=dingtalk_chat_scope(body),
+            inbound_msg_type=inbound_msg_type,
+            conversation_user_turn=turn,
+        )
+        return False, (200, hdr_for_cfg(cfg, MindbotErrorCode.DIFY_FAILED)), None
 
     ctx = MindbotPipelineContext(
         cfg=cfg,

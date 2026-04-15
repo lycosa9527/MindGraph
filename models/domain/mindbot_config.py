@@ -57,4 +57,4 @@ class OrganizationMindbotConfig(Base):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    organization = relationship("Organization", lazy="selectin")
+    organization = relationship("Organization", lazy="select")
