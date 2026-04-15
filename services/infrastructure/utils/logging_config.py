@@ -18,6 +18,25 @@ from typing import Literal
 from urllib.parse import urlparse
 from config.settings import config
 
+# Leading "[Tag]" in log messages (after pid); used for module-level ANSI highlights.
+_LEADING_MODULE_TAG_RE = re.compile(r"^(\[[A-Za-z][A-Za-z0-9_]*\])(.*)$", re.DOTALL)
+
+
+def _colorize_leading_module_tag(message: str, module_colors: dict[str, str], reset: str) -> str:
+    """Wrap the first [ModuleName] segment in ANSI color when it is allowlisted or gen_*."""
+    match = _LEADING_MODULE_TAG_RE.match(message)
+    if not match:
+        return message
+    bracket, rest = match.group(1), match.group(2)
+    name = bracket[1:-1]
+    if name.startswith("gen_"):
+        color = "\033[90m"
+    else:
+        color = module_colors.get(name)
+    if not color:
+        return message
+    return f"{color}{bracket}{reset}{rest}"
+
 
 class TimestampedRotatingFileHandler(BaseRotatingHandler):
     """
@@ -270,6 +289,31 @@ class UnifiedFormatter(logging.Formatter):
         "BOLD": "\033[1m",  # Bold
     }
 
+    # Per-module tag colors for leading "[Name]" (standard ANSI for SSH clients like Termius).
+    MODULE_TAG_COLORS = {
+        "MindBot": "\033[35m",
+        "ProcessMonitor": "\033[34m",
+        "HealthMonitor": "\033[92m",
+        "Cleanup": "\033[36m",
+        "Migration": "\033[33m",
+        "DBMigration": "\033[93m",
+        "Auth": "\033[31m",
+        "TokenAudit": "\033[91m",
+        "RateLimiter": "\033[32m",
+        "DIFY": "\033[95m",
+        "LLMService": "\033[94m",
+        "LLMMultiService": "\033[96m",
+        "STREAM": "\033[90m",
+        "Session": "\033[97m",
+        "UserCache": "\033[37m",
+        "OrgCache": "\033[1;36m",
+        "DiagramCache": "\033[1;35m",
+        "Backup": "\033[1;33m",
+        "Captcha": "\033[1;32m",
+        "TokenBuffer": "\033[1;34m",
+        "DoubleBubble": "\033[1;31m",
+    }
+
     def __init__(
         self,
         fmt=None,
@@ -339,6 +383,9 @@ class UnifiedFormatter(logging.Formatter):
         # Normalize message spacing: strip leading whitespace and normalize multiple spaces to single space
         message = record.getMessage().lstrip()
         message = re.sub(r" +", " ", message)  # Normalize multiple spaces to single space
+        message = _colorize_leading_module_tag(
+            message, self.MODULE_TAG_COLORS, self.COLORS["RESET"]
+        )
 
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
 
