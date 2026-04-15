@@ -1,13 +1,11 @@
 """Dify streaming vs blocking reply paths for MindBot (split from callback orchestrator).
 
-Reasoning from Dify ``agent_thought`` events is merged in
-``format_mindbot_reply_for_dingtalk`` with tag-embedded ``<redacted_thinking>`` blocks.
-If the same text appears in both, duplicate prepends are skipped (prefer tag-embedded
-when already present). Dify ``message_replace`` clears native thought accumulation in
-the stream consumer (``dify_stream``) while ``on_dify_message_replace`` resets the
-tag stream filter and card buffer. Optional separate DingTalk messages for
-reasoning-only UX are not implemented here; a single composed reply keeps streaming
-and AI cards simple.
+SSE ``answer`` deltas pass through ``MindbotThinkingStreamFilter`` so chain-of-thought
+is not streamed when disabled (see ``services.mindbot.core.reply_thinking``). Final
+and AI-card wire text use ``format_mindbot_reply_for_dingtalk``; when CoT is shown,
+``agent_thought`` from Dify is merged there if not already present in tag blocks.
+``message_replace`` clears native thought in ``dify_stream`` and resets the stream
+filter plus AI card buffer in ``on_dify_message_replace``.
 """
 
 from __future__ import annotations
@@ -143,6 +141,15 @@ async def run_streaming_dify_branch(
         token=_initial_token,
     )
 
+    def _hidden_reply_from_cum(cum: str) -> str:
+        """Re-apply hide rules on accumulated visible text (AI card wire / fallbacks)."""
+        return format_mindbot_reply_for_dingtalk(
+            cum,
+            show_chain_of_thought=False,
+            chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
+            native_reasoning="",
+        )
+
     async def on_batch(chunk: str) -> tuple[bool, bool]:
         visible = think_filter.push(chunk)
         if not visible:
@@ -160,15 +167,7 @@ async def run_streaming_dify_branch(
             return True, False
         if card_state.use_card:
             card_state.cum += visible
-            if not eff_show_cot:
-                wire_cum = format_mindbot_reply_for_dingtalk(
-                    card_state.cum,
-                    show_chain_of_thought=False,
-                    chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
-                    native_reasoning="",
-                )
-            else:
-                wire_cum = card_state.cum
+            wire_cum = _hidden_reply_from_cum(card_state.cum) if not eff_show_cot else card_state.cum
             if card_state.token is None:
                 card_state.token = await prefetch_ai_card_access_token(cfg)
             tok = card_state.token
@@ -254,11 +253,14 @@ async def run_streaming_dify_branch(
                             describe_ai_card_failure(mk_code, mk_detail),
                         )
                 card_state.use_card = False
+                fallback = (
+                    _hidden_reply_from_cum(card_state.cum) if not eff_show_cot else card_state.cum
+                )
                 return await send_one_reply_chunk(
                     cfg,
                     body,
                     session_webhook_valid,
-                    card_state.cum,
+                    fallback,
                     pipeline_ctx=pipeline_ctx,
                 )
             return True, False

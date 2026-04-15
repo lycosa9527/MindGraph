@@ -1,6 +1,10 @@
 """Format Dify / LLM replies for DingTalk: hide or cap chain-of-thought blocks.
 
-Separates tag-embedded reasoning from answer text (AstrBot-style logical channels).
+When chain-of-thought is hidden, user-visible text is everything *outside* thinking
+tags: paired ``<thinking>`` / ``<redacted_thinking>`` / backtick-think blocks are
+removed entirely, and while streaming we emit nothing until a block is complete
+(including when an open tag is split across SSE chunks).
+
 Native Dify ``agent_thought`` payloads are merged in ``format_mindbot_reply_for_dingtalk``
 when enabled; see ``services.mindbot.core.chain_of_thought_policy``.
 """
@@ -46,6 +50,11 @@ _LOOSE_COMPLETE_RES: Tuple[Pattern[str], ...] = tuple(
 )
 
 
+def _normalize_angle_brackets_for_thinking(text: str) -> str:
+    """Map fullwidth angle brackets to ASCII so tag patterns match."""
+    return text.replace("\uff1c", "<").replace("\uff1e", ">")
+
+
 def _strip_loose_complete_blocks(text: str) -> str:
     """Remove thinking-like blocks with flexible whitespace and optional attributes."""
     s = text
@@ -60,7 +69,7 @@ def _strip_loose_complete_blocks(text: str) -> str:
 
 def _strip_complete_thinking_blocks(text: str) -> str:
     """Remove every complete thinking block (non-overlapping, repeated until stable)."""
-    s = text
+    s = _normalize_angle_brackets_for_thinking(text)
     while True:
         prev = s
         for rx in _COMPLETE_BLOCK_RES:
@@ -100,7 +109,7 @@ def split_tag_embedded_reasoning(text: str) -> SplitReasoningResult:
     Split thinking blocks from ``text`` into inner reasoning (joined with newlines)
     and remaining answer string. Extraction order matches ``_strip_complete_thinking_blocks``.
     """
-    s = text
+    s = _normalize_angle_brackets_for_thinking(text)
     parts: list[str] = []
     while True:
         prev = s
@@ -194,57 +203,24 @@ def _incomplete_open_cut_index(s: str) -> int:
     return best
 
 
-def _hide_thinking_partial_stream(raw: str) -> str:
+def _visible_text_hide_chain_of_thought(raw: str) -> str:
     """
-    Visible prefix of ``raw`` while streaming: drop complete blocks and any
-    trailing incomplete opening block.
+    User-visible prefix when CoT is off: never include text inside thinking tags.
+
+    1. Drop every *complete* thinking block (exact, loose, backtick pairs).
+    2. If the buffer ends with an incomplete open tag (streaming split) or an open
+       block without its closing tag yet, cut before that fragment so we emit nothing
+       from inside the block.
     """
-    s = _strip_complete_thinking_blocks(raw)
-    cut = _incomplete_open_cut_index(s)
-    return s[:cut]
-
-
-def _should_hold_stream_until_first_thinking_closes(raw: str) -> bool:
-    """
-    When chain-of-thought is hidden, return True while any **incomplete** thinking
-    block remains in the buffer.
-
-    Complete blocks are stripped first, so after ``</redacted_thinking>`` the next
-    incomplete block (if any) still holds streaming until its close arrives.
-
-    Text that arrived before any opening tag is visible in the buffer is emitted
-    as it arrives; streaming cannot retract it once sent.
-    """
-    if not raw:
-        return False
-    s = _strip_complete_thinking_blocks(raw)
-    if _has_incomplete_thinking_open_prefix(s):
-        return True
-    earliest: tuple[int, int, str, str] | None = None
-    for name in _LOOSE_BLOCK_NAMES:
-        open_rx = re.compile(r"<\s*" + re.escape(name) + r"\b[^>]*>", re.IGNORECASE)
-        m = open_rx.search(s)
-        if m:
-            if earliest is None:
-                earliest = (m.start(), m.end(), "loose", name)
-            elif m.start() < earliest[0]:
-                earliest = (m.start(), m.end(), "loose", name)
-    for open_tag, close_tag in _THINK_PAIRS:
-        pos = s.find(open_tag)
-        if pos < 0:
-            continue
-        if earliest is None:
-            earliest = (pos, pos + len(open_tag), "exact", close_tag)
-        elif pos < earliest[0]:
-            earliest = (pos, pos + len(open_tag), "exact", close_tag)
-    if earliest is None:
-        return False
-    _, open_end, kind, key = earliest
-    if kind == "loose":
-        close_rx = re.compile(r"<\s*/\s*" + re.escape(key) + r"\s*>", re.IGNORECASE)
-        return close_rx.search(s[open_end:]) is None
-    close_tag = key
-    return s.find(close_tag, open_end) < 0
+    stripped = _strip_complete_thinking_blocks(raw)
+    if _has_incomplete_thinking_open_prefix(stripped):
+        last_lt = stripped.rfind("<")
+        if last_lt >= 0:
+            return stripped[:last_lt]
+        return ""
+    cut = _incomplete_open_cut_index(stripped)
+    out = stripped[:cut]
+    return out.lstrip("\n\r")
 
 
 def _truncate_block_match(rx: Pattern[str], text: str, cap: int) -> str:
@@ -305,9 +281,7 @@ def format_mindbot_reply_for_dingtalk(
         if not tag_r:
             work = f"<redacted_thinking>\n{nt}\n</redacted_thinking>\n" + work
     if not show_chain_of_thought:
-        # Use stream-safe hide so incomplete blocks (no closing tag) never leak;
-        # split_tag_embedded_reasoning only removes *complete* pairs.
-        return _hide_thinking_partial_stream(work)
+        return _visible_text_hide_chain_of_thought(work)
     cap = max(0, int(chain_of_thought_max_chars))
     return _truncate_thinking_in_full_text(work, cap)
 
@@ -316,12 +290,10 @@ class MindbotThinkingStreamFilter:
     """
     Incremental filter for streaming Dify answer deltas.
 
-    When chain-of-thought is hidden, buffers cumulative text and emits only safe
-    visible characters. After an opening tag appears, while that block is
-    incomplete, nothing is emitted until the closing tag arrives (then normal
-    strip/partial rules apply). When
-    shown, deltas are passed through unchanged (length caps apply to non-streaming
-    replies only).
+    When chain-of-thought is hidden, each flush recomputes the longest safe prefix
+    of the buffer with all thinking blocks removed (nothing is streamed from
+    between open/close think tags, including mid-tag SSE splits). When shown,
+    deltas pass through unchanged (length caps apply to non-streaming replies only).
     """
 
     def __init__(self, *, show_chain_of_thought: bool) -> None:
@@ -341,9 +313,7 @@ class MindbotThinkingStreamFilter:
         if self._show:
             return delta
         self._raw += delta
-        if _should_hold_stream_until_first_thinking_closes(self._raw):
-            return ""
-        visible = _hide_thinking_partial_stream(self._raw)
+        visible = _visible_text_hide_chain_of_thought(self._raw)
         out = visible[self._sent_visible_len :]
         self._sent_visible_len = len(visible)
         return out
