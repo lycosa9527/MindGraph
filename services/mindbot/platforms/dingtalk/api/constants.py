@@ -27,7 +27,8 @@ PATH_CARD_INSTANCES_CREATE_AND_DELIVER = "/v1.0/card/instances/createAndDeliver"
 # STREAM flow for groups: (1) POST createAndDeliver with openSpaceId like
 # dtv1.card//im_group.{openConversationId}, imGroupOpenSpaceModel + imGroupOpenDeliverModel,
 # callbackType STREAM, cardData.cardParamMap; (2) PUT streaming with outTrackId + guid + key +
-# full markdown per frame (isFull true for markdown vars). Requires real staffId in recipients.
+# full markdown per frame (isFull true for markdown vars). Group delivery may omit
+# recipients so the card is visible to the whole group.
 PATH_CARD_STREAMING_UPDATE = "/v1.0/card/streaming"
 # PUT /v1.0/card/instances — receiver-flow card update (no callbackType: STREAM).
 # outTrackId goes in the request body (not URL path) — matches official SDK put_card_data().

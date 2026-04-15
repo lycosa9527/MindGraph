@@ -330,8 +330,11 @@ async def test_create_and_deliver_group_skips_lwcp_staff_uses_sender_id() -> Non
     assert detail == ""
     pl = captured["payload"]
     assert isinstance(pl, dict)
-    assert pl.get("userId") == "uid-real-openapi"
-    assert pl.get("imGroupOpenDeliverModel", {}).get("recipients") == ["uid-real-openapi"]
+    assert "userId" not in pl
+    ig = pl.get("imGroupOpenDeliverModel")
+    assert isinstance(ig, dict)
+    assert "recipients" not in ig
+    assert "atUserIds" not in ig
 
 
 @pytest.mark.asyncio
@@ -468,8 +471,10 @@ async def test_create_and_deliver_reads_union_id_from_extension() -> None:
     assert detail == ""
     pl = captured["payload"]
     assert isinstance(pl, dict)
-    assert pl.get("userId") == "union-real-99"
-    assert pl.get("imGroupOpenDeliverModel", {}).get("recipients") == ["union-real-99"]
+    assert "userId" not in pl
+    ig = pl.get("imGroupOpenDeliverModel")
+    assert isinstance(ig, dict)
+    assert "recipients" not in ig
 
 
 @pytest.mark.asyncio

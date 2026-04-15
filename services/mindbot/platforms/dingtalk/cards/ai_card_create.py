@@ -338,24 +338,11 @@ async def create_and_deliver_ai_card(
             (cfg.dingtalk_app_secret or "").strip(),
         )
         open_space_id = _open_space_id_group(conv_s)
+        # Omit recipients / atUserIds so the card is visible to all group members.
+        # Setting recipients targets delivery (often only the @mentioned user sees it).
         group_deliver: dict[str, Any] = {
             "robotCode": _im_group_robot_code(cfg),
         }
-        if sender_staff:
-            # Real staffId available: target the sender with an @mention.
-            # Only add atUserIds when a non-empty nick exists — an empty-string
-            # nick value causes param.invalid on the createAndDeliver call.
-            group_deliver["recipients"] = [sender_staff]
-            raw_nick = (
-                body.get("senderNick")
-                or body.get("sender_nick")
-                or body.get("senderNickName")
-                or body.get("sender_nickname")
-            )
-            sender_nick = raw_nick.strip() if isinstance(raw_nick, str) else ""
-            if sender_nick:
-                group_deliver["atUserIds"] = {sender_staff: sender_nick}
-        # Without recipients the card is visible to the whole group.
         # Cross-org groups (LWCP sender, no sender_staff) are filtered out by
         # is_cross_org_group_body() in the pipeline before reaching this point.
         payload = {
