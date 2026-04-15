@@ -116,6 +116,28 @@ def test_format_hide_strips_whitespace_redacted_tags() -> None:
     assert out == "A  B"
 
 
+def test_format_hide_incomplete_block_drops_open_through_end() -> None:
+    """Hide path uses stream-safe strip so an unclosed block does not leak."""
+    raw = "<redacted_thinking>still thinking"
+    out = format_mindbot_reply_for_dingtalk(
+        raw,
+        show_chain_of_thought=False,
+        chain_of_thought_max_chars=4000,
+    )
+    assert out == ""
+
+
+def test_format_hide_incomplete_block_keeps_prefix_before_open() -> None:
+    """Text before an incomplete thinking open tag stays visible."""
+    raw = "Hi <redacted_thinking>partial"
+    out = format_mindbot_reply_for_dingtalk(
+        raw,
+        show_chain_of_thought=False,
+        chain_of_thought_max_chars=4000,
+    )
+    assert out == "Hi "
+
+
 def test_format_show_truncates_inner() -> None:
     """When CoT is shown, cap inner length per block."""
     inner = "x" * 20

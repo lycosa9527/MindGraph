@@ -305,7 +305,9 @@ def format_mindbot_reply_for_dingtalk(
         if not tag_r:
             work = f"<redacted_thinking>\n{nt}\n</redacted_thinking>\n" + work
     if not show_chain_of_thought:
-        return split_tag_embedded_reasoning(work).answer
+        # Use stream-safe hide so incomplete blocks (no closing tag) never leak;
+        # split_tag_embedded_reasoning only removes *complete* pairs.
+        return _hide_thinking_partial_stream(work)
     cap = max(0, int(chain_of_thought_max_chars))
     return _truncate_thinking_in_full_text(work, cap)
 

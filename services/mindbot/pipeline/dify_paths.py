@@ -160,6 +160,15 @@ async def run_streaming_dify_branch(
             return True, False
         if card_state.use_card:
             card_state.cum += visible
+            if not eff_show_cot:
+                wire_cum = format_mindbot_reply_for_dingtalk(
+                    card_state.cum,
+                    show_chain_of_thought=False,
+                    chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
+                    native_reasoning="",
+                )
+            else:
+                wire_cum = card_state.cum
             if card_state.token is None:
                 card_state.token = await prefetch_ai_card_access_token(cfg)
             tok = card_state.token
@@ -207,7 +216,7 @@ async def run_streaming_dify_branch(
                     cfg,
                     access_token=tok,
                     out_track_id=out_tid,
-                    markdown_full=card_state.cum,
+                    markdown_full=wire_cum,
                     is_finalize=False,
                     pipeline_ctx=pipeline_ctx,
                 )
@@ -216,7 +225,7 @@ async def run_streaming_dify_branch(
                     cfg,
                     access_token=tok,
                     out_track_id=out_tid,
-                    markdown_full=card_state.cum,
+                    markdown_full=wire_cum,
                     is_finalize=False,
                     pipeline_ctx=pipeline_ctx,
                 )
