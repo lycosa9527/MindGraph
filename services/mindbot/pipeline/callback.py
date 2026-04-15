@@ -16,6 +16,7 @@ from config.database import AsyncSessionLocal
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
+    normalize_dify_conversation_id_from_redis,
     poll_dify_conv_key_async,
     redis_acquire_conv_gate_async,
     redis_release_conv_gate_async,
@@ -194,7 +195,9 @@ async def execute_mindbot_pipeline(
     conv_key = ctx.conv_key
     conv_gate_scope = ctx.conv_gate_scope
 
-    dify_conv: Optional[str] = await _redis_get_async(conv_key)
+    dify_conv: Optional[str] = normalize_dify_conversation_id_from_redis(
+        await _redis_get_async(conv_key),
+    )
     redis_ok = is_redis_available()
     gate_acquired = False
     if (

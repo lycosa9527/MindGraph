@@ -5,13 +5,32 @@ from __future__ import annotations
 import pytest
 
 from services.mindbot.core.conv_gate import (
+    CONV_GATE_SENTINEL,
     gate_key_for,
+    normalize_dify_conversation_id_from_redis,
     poll_dify_conv_key_async,
 )
 
 
 def test_gate_key_format() -> None:
     assert gate_key_for(10, "cid-1") == "mindbot:conv_gate:10:cid-1"
+
+
+def test_normalize_redis_conv_skips_gate_sentinel() -> None:
+    assert normalize_dify_conversation_id_from_redis(CONV_GATE_SENTINEL) is None
+    assert normalize_dify_conversation_id_from_redis(f"  {CONV_GATE_SENTINEL}  ") is None
+
+
+def test_normalize_redis_conv_keeps_uuid() -> None:
+    cid = "550e8400-e29b-41d4-a716-446655440000"
+    assert normalize_dify_conversation_id_from_redis(cid) == cid
+    assert normalize_dify_conversation_id_from_redis(f"  {cid}  ") == cid
+
+
+def test_normalize_redis_conv_empty() -> None:
+    assert normalize_dify_conversation_id_from_redis(None) is None
+    assert normalize_dify_conversation_id_from_redis("") is None
+    assert normalize_dify_conversation_id_from_redis("   ") is None
 
 
 @pytest.mark.asyncio

@@ -66,6 +66,24 @@ def conv_gate_enabled() -> bool:
     return env_bool("MINDBOT_CONV_GATE_ENABLED", True)
 
 
+def normalize_dify_conversation_id_from_redis(val: Optional[str]) -> Optional[str]:
+    """
+    Map Redis conv binding to a value safe to pass to Dify.
+
+    While the first in-flight message holds the conv gate, ``conv_key`` may hold
+    ``CONV_GATE_SENTINEL``. That string must not be sent as ``conversation_id``
+    (Dify validates UUIDs). Empty or whitespace-only values are treated as missing.
+    """
+    if val is None:
+        return None
+    if not isinstance(val, str):
+        return None
+    stripped = val.strip()
+    if not stripped or stripped == CONV_GATE_SENTINEL:
+        return None
+    return stripped
+
+
 def gate_key_for(org_id: int, dingtalk_conversation_id: str) -> str:
     return f"{CONV_GATE_PREFIX}{org_id}:{dingtalk_conversation_id}"
 
