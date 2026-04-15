@@ -21,7 +21,7 @@ from utils.env_helpers import env_bool
 logger = logging.getLogger(__name__)
 
 _DEFAULT_PARAM_KEY = "content"
-_MAX_STREAMING_CHARS = 950
+MAX_STREAMING_CHARS = 3000
 
 
 def _dt_err(body: dict[str, Any]) -> tuple[str, str]:
@@ -55,14 +55,14 @@ def mindbot_ai_card_wiring_enabled(cfg: OrganizationMindbotConfig) -> bool:
 
 
 def _clip_streaming_content(text: str) -> str:
-    if len(text) <= _MAX_STREAMING_CHARS:
+    if len(text) <= MAX_STREAMING_CHARS:
         return text
     logger.warning(
         "[MindBot] dingtalk_ai_card_streaming_content_truncated chars=%s max=%s",
         len(text),
-        _MAX_STREAMING_CHARS,
+        MAX_STREAMING_CHARS,
     )
-    return text[:_MAX_STREAMING_CHARS]
+    return text[:MAX_STREAMING_CHARS]
 
 
 def ai_card_overflow_remainder_for_markdown(markdown_full: str) -> str:
@@ -72,9 +72,9 @@ def ai_card_overflow_remainder_for_markdown(markdown_full: str) -> str:
     Used for optional follow-up chat messages when the full reply exceeds the cap.
     """
     sanitized = sanitize_markdown_for_dingtalk(markdown_full)
-    if len(sanitized) <= _MAX_STREAMING_CHARS:
+    if len(sanitized) <= MAX_STREAMING_CHARS:
         return ""
-    return sanitized[_MAX_STREAMING_CHARS:]
+    return sanitized[MAX_STREAMING_CHARS:]
 
 
 def _resolve_app_key(
