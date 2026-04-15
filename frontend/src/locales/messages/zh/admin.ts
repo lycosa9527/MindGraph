@@ -165,9 +165,9 @@ export default {
   'admin.mindbot.dingtalkClientIdPlaceholder': '开放平台应用的 AppKey（与 Client Secret 配套）',
   'admin.mindbot.dingtalkClientIdHint':
     '用于获取 access_token，调用 AI 卡片流式更新等 OpenAPI。需与「Client Secret」一起保存。未填写则无法使用「测试权限」与 AI 卡片。',
-  'admin.mindbot.difyShowChainOfThought': '思维链',
+  'admin.mindbot.difyShowChainOfThought': '显示思维链',
   'admin.mindbot.difyShowChainOfThoughtHint':
-    '开启后对所有会话类型展示模型思维块（如 redacted_thinking）；关闭时会在发送前剔除。默认关闭。流式 SSE 可合并 Dify 的 agent 思考事件；阻塞（非流式）回复目前仅使用 answer 文本，除非接口另行返回思考字段。流式且开启思维链时，字数上限作用于最终回复；流式更新过程中可能先显示更长的思考内容直到本轮结束。',
+    '关闭（默认）时不在回复中展示思维链，发送前会剔除；开启后对所有会话类型展示模型思维块（如 redacted_thinking）。流式 SSE 可合并 Dify 的 agent 思考事件；阻塞（非流式）回复目前仅使用 answer 文本，除非接口另行返回思考字段。流式且开启本开关时，字数上限作用于最终回复；流式更新过程中可能先显示更长的思考内容直到本轮结束。',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI 卡片模板（可选）',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     '留空为文本回复；示例 d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',

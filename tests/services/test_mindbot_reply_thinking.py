@@ -227,3 +227,61 @@ def test_stream_hide_holds_when_open_tag_split_across_chunks() -> None:
         )
     )
     assert visible == " ok "
+
+
+def test_format_hide_strips_plain_think_tags() -> None:
+    """Non-streaming: strip plain ``<think>...</think>`` from Dify responses."""
+    raw = "<think>\ninner reasoning\n</think>visible answer"
+    out = format_mindbot_reply_for_dingtalk(
+        raw,
+        show_chain_of_thought=False,
+        chain_of_thought_max_chars=4000,
+    )
+    assert "inner reasoning" not in out
+    assert "visible answer" in out
+
+
+def test_format_hide_strips_dify_style_think_block() -> None:
+    """Reproduce the exact Dify answer payload that was leaking CoT."""
+    raw = (
+        "<think>\n\n"
+        "\u7528\u6237\u73b0\u5728\u8bf4\u4f60\u597d\uff0c\u6211\u9700\u8981\u6309\u7167"
+        "\u6280\u80fd\u6765\u56de\u5e94\n"
+        "</think>"
+        "\u4f60\u597d\u5440\uff01\u6211\u662f\u4f60\u7684\u865a\u62df\u6559\u7814\u4f19\u4f34"
+    )
+    out = format_mindbot_reply_for_dingtalk(
+        raw,
+        show_chain_of_thought=False,
+        chain_of_thought_max_chars=4000,
+    )
+    assert "<think>" not in out
+    assert "</think>" not in out
+    assert "\u4f60\u597d\u5440" in out
+
+
+def test_stream_hide_plain_think_tags() -> None:
+    """Streaming: ``<think>`` block content must not leak."""
+    parts = [
+        "<think>",
+        "\nsecret reasoning\n",
+        "</think>",
+        "visible answer",
+    ]
+    visible = "".join(
+        iter_visible_stream_chunks(
+            parts,
+            show_chain_of_thought=False,
+        )
+    )
+    assert "secret" not in visible
+    assert "visible answer" in visible
+
+
+def test_split_tag_embedded_reasoning_plain_think() -> None:
+    """``split_tag_embedded_reasoning`` extracts from ``<think>`` blocks."""
+    raw = "<think>reasoning here</think> answer"
+    sp = split_tag_embedded_reasoning(raw)
+    assert "reasoning here" in sp.reasoning
+    assert "answer" in sp.answer
+    assert "<think>" not in sp.answer

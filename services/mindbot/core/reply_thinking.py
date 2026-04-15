@@ -22,6 +22,7 @@ _CLOSE_BT = _BT + chr(60) + "/" + "think" + chr(62) + _BT
 
 _THINK_PAIRS: Tuple[Tuple[str, str], ...] = (
     (_OPEN_BT, _CLOSE_BT),
+    ("<think>", "</think>"),
     ("<thinking>", "</thinking>"),
     ("<redacted_thinking>", "</redacted_thinking>"),
 )
@@ -35,7 +36,7 @@ _COMPLETE_BLOCK_RES: Tuple[Pattern[str], ...] = tuple(
 )
 
 # Models may emit whitespace/attributes: < redacted_thinking > ... </ redacted_thinking >
-_LOOSE_BLOCK_NAMES: Tuple[str, ...] = ("redacted_thinking", "thinking", "reasoning")
+_LOOSE_BLOCK_NAMES: Tuple[str, ...] = ("redacted_thinking", "thinking", "think", "reasoning")
 
 _LOOSE_COMPLETE_RES: Tuple[Pattern[str], ...] = tuple(
     re.compile(

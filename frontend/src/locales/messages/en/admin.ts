@@ -171,9 +171,9 @@ export default {
   'admin.mindbot.dingtalkClientIdPlaceholder': 'Open platform app key (pairs with Client Secret)',
   'admin.mindbot.dingtalkClientIdHint':
     'Used with the Client Secret to obtain access tokens for AI cards and other OpenAPI. Save both; required for “Test permissions” and AI cards.',
-  'admin.mindbot.difyShowChainOfThought': 'Chain-of-thought',
+  'admin.mindbot.difyShowChainOfThought': 'Show chain-of-thought',
   'admin.mindbot.difyShowChainOfThoughtHint':
-    'When on, model thinking blocks (e.g. redacted_thinking) are shown for all chat types; when off they are stripped before sending. Default off. Streaming can also merge Dify agent thought from SSE; blocking replies use answer text only unless the API returns separate thought fields. With streaming and CoT on, the character cap applies to the final reply; live card or message updates may show longer thinking until the turn finishes.',
+    'When off (default), chain-of-thought is not shown in replies and is stripped before sending. When on, model thinking blocks (e.g. redacted_thinking) are shown for all chat types. Streaming can also merge Dify agent thought from SSE; blocking replies use answer text only unless the API returns separate thought fields. With streaming and this option on, the character cap applies to the final reply; live card or message updates may show longer thinking until the turn finishes.',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI card template (optional)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     'Empty = text replies; e.g. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
