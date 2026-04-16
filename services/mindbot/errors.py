@@ -5,6 +5,19 @@ from __future__ import annotations
 from enum import Enum
 from typing import Optional
 
+# Codes that are safe for the caller to retry without side-effects.
+# Permanent failures (signature mismatch, feature disabled, empty message, etc.)
+# must NOT be retried — they indicate a logic/config problem, not a transient error.
+_RETRYABLE_CODES = frozenset({
+    "MINDBOT_DIFY_FAILED",
+    "MINDBOT_SESSION_WEBHOOK_FAILED",
+    "MINDBOT_DINGTALK_TOKEN_FAILED",
+    "MINDBOT_DINGTALK_OPENAPI_REPLY_FAILED",
+    "MINDBOT_REDIS_UNAVAILABLE_FOR_DEDUP",
+    "MINDBOT_CIRCUIT_OPEN",
+    "MINDBOT_PIPELINE_INTERNAL_ERROR",
+})
+
 
 class MindbotErrorCode(str, Enum):
     """Stable string codes for logs, optional response headers, and API JSON."""
@@ -23,6 +36,7 @@ class MindbotErrorCode(str, Enum):
     DUPLICATE_MESSAGE = "MINDBOT_DUPLICATE_MESSAGE"
     REDIS_UNAVAILABLE_FOR_DEDUP = "MINDBOT_REDIS_UNAVAILABLE_FOR_DEDUP"
     RATE_LIMITED = "MINDBOT_RATE_LIMITED"
+    CIRCUIT_OPEN = "MINDBOT_CIRCUIT_OPEN"
     EMPTY_USER_MESSAGE = "MINDBOT_EMPTY_USER_MESSAGE"
     DIFY_FAILED = "MINDBOT_DIFY_FAILED"
     MISSING_SESSION_WEBHOOK = "MINDBOT_MISSING_SESSION_WEBHOOK"
@@ -37,6 +51,19 @@ class MindbotErrorCode(str, Enum):
     EVENT_PLATFORM_NOT_CONFIGURED = "MINDBOT_EVENT_PLATFORM_NOT_CONFIGURED"
     EVENT_PLATFORM_DECRYPT_FAILED = "MINDBOT_EVENT_PLATFORM_DECRYPT_FAILED"
     EVENT_USE_PER_ORG_URL = "MINDBOT_EVENT_USE_PER_ORG_URL"
+
+    @property
+    def retryable(self) -> bool:
+        """True when a transient failure makes it safe for the caller to retry.
+
+        Permanent failures (bad signature, feature disabled, duplicate message,
+        rate limit, config not found, empty message) must NOT be retried because
+        the same response will be returned on every attempt and retrying only
+        amplifies load. Transient failures (Dify unreachable, outbound network
+        errors, Redis dedup unavailable, circuit open) can be retried after a
+        suitable back-off once the underlying issue is resolved.
+        """
+        return self.value in _RETRYABLE_CODES
 
 
 def mindbot_error_headers(

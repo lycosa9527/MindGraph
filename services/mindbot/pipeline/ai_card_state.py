@@ -42,6 +42,7 @@ class CardStreamState:
     t0: float = dataclasses.field(default_factory=time.monotonic)
     first_chunk: bool = False
     card_chars_confirmed: int = 0
+    qps_exhausted: bool = False
 
     def hidden_reply_from_cum(self, cfg: OrganizationMindbotConfig) -> str:
         """Re-apply hide rules on accumulated visible text."""
@@ -60,6 +61,7 @@ class CardStreamState:
         self.created = False
         self.update_mode = "stream"
         self.card_chars_confirmed = 0
+        self.qps_exhausted = False
         self.use_card = (
             mindbot_ai_card_wiring_enabled(cfg) and not self.buffer_only
         )
@@ -69,18 +71,18 @@ class CardStreamState:
         cfg: OrganizationMindbotConfig,
         reply_text: str,
         pipeline_ctx: str,
-    ) -> tuple[bool, Optional[str]]:
+    ) -> bool:
         """
         Send the final AI-card update.
 
-        Returns ``(True, None)`` on success, ``(False, None)`` on failure.
+        Returns ``True`` on success, ``False`` on failure.
         The caller is responsible for sending overflow remainder or fallback
         text when finalization fails.
         """
         tok = self.token
         out_tid = self.out_track_id
         if not tok or not isinstance(out_tid, str):
-            return False, None
+            return False
 
         fin_use_receiver = self.update_mode == "receiver"
         if fin_use_receiver:
@@ -105,7 +107,7 @@ class CardStreamState:
             self.token = fin_tok
 
         if fin_ok:
-            return True, None
+            return True
 
         logger.warning(
             "[MindBot] ai_card_finalize_failed %s %s",
@@ -127,7 +129,7 @@ class CardStreamState:
                     pipeline_ctx,
                     describe_ai_card_failure(mk_code, mk_detail),
                 )
-        return False, None
+        return False
 
 
 async def init_card_stream_state(

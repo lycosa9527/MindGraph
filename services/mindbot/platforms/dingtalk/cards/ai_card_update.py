@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import uuid
-from typing import Any, NamedTuple, Optional
+from typing import Any, Callable, NamedTuple, Optional
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.platforms.dingtalk.api.constants import (
@@ -29,7 +30,11 @@ from services.mindbot.platforms.dingtalk.cards.ai_card_create import (
     prefetch_ai_card_access_token,
 )
 from services.mindbot.platforms.dingtalk.cards.ai_card_errors import describe_ai_card_failure
-from utils.env_helpers import env_bool
+from services.mindbot.platforms.dingtalk.cards.streaming_qps import (
+    acquire_dingtalk_streaming_qps_slot,
+    dingtalk_streaming_body_is_qps_throttle,
+)
+from utils.env_helpers import env_bool, env_int
 
 logger = logging.getLogger(__name__)
 
@@ -56,6 +61,91 @@ def _streaming_probe_missing_card_accepted(body: dict[str, Any]) -> bool:
     return False
 
 
+async def _card_put_with_retry(
+    path: str,
+    payload: dict[str, Any],
+    access_token: str,
+    cfg: OrganizationMindbotConfig,
+    *,
+    pipeline_ctx: str,
+    log_prefix: str,
+    out_short: str,
+    on_qps_retry: Optional[Callable[[dict[str, Any]], None]] = None,
+) -> tuple[int, Optional[dict[str, Any]], Optional[str]]:
+    """PUT ``path`` with ``payload``, retrying on OAuth 401 (once) and QPS 403 throttle.
+
+    The ``on_qps_retry`` callback, when provided, is called with the mutable ``payload``
+    dict before each QPS sleep-and-retry so the caller can update fields like ``guid``.
+
+    Returns ``(http_status, response_body, refreshed_token_or_none)``.  A non-None
+    refreshed token must be stored by the caller so subsequent requests use the new token.
+    """
+    app_key_for_qps = (getattr(cfg, "dingtalk_client_id", None) or "").strip()
+    original_token = access_token.strip()
+    effective_token = original_token
+    refreshed: Optional[str] = None
+    status = 0
+    resp_body: Optional[dict[str, Any]] = None
+    oauth_attempted = False
+    max_qps_retries = max(0, env_int("MINDBOT_DINGTALK_STREAMING_QPS_MAX_RETRIES", 4))
+    qps_retries_done = 0
+
+    while True:
+        await acquire_dingtalk_streaming_qps_slot(app_key_for_qps)
+        status, resp_body = await put_v1_json_unverified(
+            path,
+            effective_token,
+            payload,
+            timeout_seconds=60,
+            parse_json_on_error=True,
+        )
+        if status == 401 and not oauth_attempted:
+            oauth_attempted = True
+            logger.info(
+                "[MindBot] %s_oauth_retry %s http_status=401 out_track=%s",
+                log_prefix,
+                pipeline_ctx,
+                out_short,
+            )
+            app_key = (cfg.dingtalk_client_id or "").strip()
+            secret = cfg.dingtalk_app_secret.strip()
+            if app_key and secret:
+                await invalidate_access_token_cache(cfg.organization_id, app_key, secret)
+            new_tok = await prefetch_ai_card_access_token(cfg)
+            if new_tok:
+                effective_token = new_tok
+                refreshed = new_tok
+                continue
+            logger.warning(
+                "[MindBot] %s_oauth_retry %s prefetch_failed_after_401",
+                log_prefix,
+                pipeline_ctx,
+            )
+            break
+        if (
+            status == 403
+            and dingtalk_streaming_body_is_qps_throttle(resp_body)
+            and qps_retries_done < max_qps_retries
+        ):
+            qps_retries_done += 1
+            if on_qps_retry is not None:
+                on_qps_retry(payload)
+            logger.info(
+                "[MindBot] %s_qps_retry %s http_status=403 attempt=%s/%s out_track=%s",
+                log_prefix,
+                pipeline_ctx,
+                qps_retries_done,
+                max_qps_retries,
+                out_short,
+            )
+            await asyncio.sleep(1.0)
+            continue
+        break
+
+    prop_tok: Optional[str] = refreshed if (refreshed and refreshed != original_token) else None
+    return status, resp_body, prop_tok
+
+
 async def streaming_update_ai_card(
     cfg: OrganizationMindbotConfig,
     *,
@@ -73,6 +163,8 @@ async def streaming_update_ai_card(
     Set ``is_error`` to finalize the stream in an error state (native AI card support).
 
     On HTTP 401, invalidates cached OAuth token and retries once with a fresh token.
+    On DingTalk QPS throttle (HTTP 403 with QPS ``code``), sleeps ~1s and retries
+    (see ``MINDBOT_DINGTALK_STREAMING_QPS_MAX_RETRIES``).
     Returns ``(ok, code, detail, refreshed_access_token)``. When non-None, the fourth
     value is a new token that must replace the previous one on ``card_state`` — including
     on failure after a 401 retry so follow-up calls (e.g. ``mark_ai_card_stream_error``)
@@ -95,7 +187,8 @@ async def streaming_update_ai_card(
         len(sanitized),
         len(content),
     )
-    payload = {
+
+    payload: dict[str, Any] = {
         "outTrackId": out_track_id,
         "guid": str(uuid.uuid4()),
         "key": param_key,
@@ -104,53 +197,24 @@ async def streaming_update_ai_card(
         "isFinalize": is_finalize or is_error,
         "isError": is_error,
     }
-    original_token = access_token.strip()
-    effective_token = original_token
-    refreshed: Optional[str] = None
-    status = 0
-    resp_body: Optional[dict[str, Any]] = None
-    for attempt in range(2):
-        status, resp_body = await put_v1_json_unverified(
-            PATH_CARD_STREAMING_UPDATE,
-            effective_token,
-            payload,
-            timeout_seconds=60,
-        )
-        if status == 401 and attempt == 0:
-            logger.info(
-                "[MindBot] ai_card_streaming_oauth_retry %s http_status=401 "
-                "path=%s out_track=%s",
-                pipeline_ctx,
-                PATH_CARD_STREAMING_UPDATE,
-                out_short,
-            )
-            app_key = (cfg.dingtalk_client_id or "").strip()
-            secret = cfg.dingtalk_app_secret.strip()
-            if app_key and secret:
-                await invalidate_access_token_cache(
-                    cfg.organization_id,
-                    app_key,
-                    secret,
-                )
-            new_tok = await prefetch_ai_card_access_token(cfg)
-            if new_tok:
-                effective_token = new_tok
-                refreshed = new_tok
-                continue
-            logger.warning(
-                "[MindBot] ai_card_streaming_oauth_retry %s prefetch_failed_after_401",
-                pipeline_ctx,
-            )
-        break
 
-    def _propagate_token() -> Optional[str]:
-        if refreshed and refreshed != original_token:
-            return refreshed
-        return None
+    def _refresh_guid(p: dict[str, Any]) -> None:
+        p["guid"] = str(uuid.uuid4())
+
+    status, resp_body, prop_tok = await _card_put_with_retry(
+        PATH_CARD_STREAMING_UPDATE,
+        payload,
+        access_token,
+        cfg,
+        pipeline_ctx=pipeline_ctx,
+        log_prefix="ai_card_streaming",
+        out_short=out_short,
+        on_qps_retry=_refresh_guid,
+    )
 
     if status == 0:
         logger.warning("[MindBot] ai_card_stream_failed %s reason=network_error", pipeline_ctx)
-        return False, None, "network_error", _propagate_token()
+        return False, None, "network_error", prop_tok
     if status != 200:
         logger.debug(
             "[MindBot] ai_card_streaming_put_http %s status=%s out_track=%s finalize=%s",
@@ -159,11 +223,13 @@ async def streaming_update_ai_card(
             out_short,
             is_finalize,
         )
-        return False, None, _http_detail(status), _propagate_token()
+        if resp_body and dingtalk_streaming_body_is_qps_throttle(resp_body):
+            q_code, q_msg = _dt_err(resp_body)
+            return False, q_code or None, q_msg or _http_detail(status), prop_tok
+        return False, None, _http_detail(status), prop_tok
     if not resp_body:
-        return False, None, "empty_body", _propagate_token()
+        return False, None, "empty_body", prop_tok
     if dingtalk_v1_response_ok(resp_body):
-        tok_out = _propagate_token()
         logger.debug(
             "[MindBot] ai_card_streaming_put_ok %s out_track=%s finalize=%s "
             "is_error=%s oauth_refreshed=%s",
@@ -171,9 +237,9 @@ async def streaming_update_ai_card(
             out_short,
             is_finalize,
             is_error,
-            tok_out is not None,
+            prop_tok is not None,
         )
-        return True, None, "", tok_out
+        return True, None, "", prop_tok
     code, msg = _dt_err(resp_body)
     logger.warning(
         "[MindBot] ai_card_stream_failed %s finalize=%s code=%s msg=%s friendly=%s",
@@ -183,7 +249,7 @@ async def streaming_update_ai_card(
         msg,
         describe_ai_card_failure(code, msg),
     )
-    return False, code or None, msg, _propagate_token()
+    return False, code or None, msg, prop_tok
 
 
 async def update_ai_card_receiver(
@@ -202,7 +268,9 @@ async def update_ai_card_receiver(
     ``callbackType: STREAM``).  Each call replaces the full card content, simulating
     the streaming typewriter effect seen with the STREAM flow.
 
-    On HTTP 401, invalidates cached OAuth token and retries once.
+    On HTTP 401, invalidates cached OAuth token and retries once with a fresh token.
+    On DingTalk QPS throttle (HTTP 403 with QPS ``code``), sleeps ~1s and retries
+    (see ``MINDBOT_DINGTALK_STREAMING_QPS_MAX_RETRIES``).
     Returns ``(ok, code, detail, refreshed_access_token)``.
     """
     param_key = mindbot_ai_card_param_key(cfg)
@@ -210,13 +278,6 @@ async def update_ai_card_receiver(
     cap = mindbot_ai_card_streaming_max_chars(cfg)
     content = _clip_streaming_content(sanitized, cap)
     out_short = (out_track_id.strip()[:12] + "…") if len(out_track_id.strip()) > 12 else out_track_id.strip()
-    path = PATH_CARD_INSTANCES
-    payload: dict[str, Any] = {
-        "outTrackId": out_track_id.strip(),
-        "cardData": {
-            "cardParamMap": {param_key: content},
-        },
-    }
     logger.debug(
         "[MindBot] ai_card_receiver_put %s out_track=%s finalize=%s "
         "param_key=%s wire_chars=%s",
@@ -226,47 +287,27 @@ async def update_ai_card_receiver(
         param_key,
         len(content),
     )
-    original_token = access_token.strip()
-    effective_token = original_token
-    refreshed: Optional[str] = None
-    status = 0
-    resp_body: Optional[dict[str, Any]] = None
-    for attempt in range(2):
-        status, resp_body = await put_v1_json_unverified(
-            path,
-            effective_token,
-            payload,
-            timeout_seconds=60,
-        )
-        if status == 401 and attempt == 0:
-            logger.info(
-                "[MindBot] ai_card_receiver_oauth_retry %s http_status=401 out_track=%s",
-                pipeline_ctx,
-                out_short,
-            )
-            app_key = (cfg.dingtalk_client_id or "").strip()
-            secret = cfg.dingtalk_app_secret.strip()
-            if app_key and secret:
-                await invalidate_access_token_cache(cfg.organization_id, app_key, secret)
-            new_tok = await prefetch_ai_card_access_token(cfg)
-            if new_tok:
-                effective_token = new_tok
-                refreshed = new_tok
-                continue
-            logger.warning(
-                "[MindBot] ai_card_receiver_oauth_retry %s prefetch_failed_after_401",
-                pipeline_ctx,
-            )
-        break
 
-    def _propagate_token() -> Optional[str]:
-        if refreshed and refreshed != original_token:
-            return refreshed
-        return None
+    payload: dict[str, Any] = {
+        "outTrackId": out_track_id.strip(),
+        "cardData": {
+            "cardParamMap": {param_key: content},
+        },
+    }
+
+    status, resp_body, prop_tok = await _card_put_with_retry(
+        PATH_CARD_INSTANCES,
+        payload,
+        access_token,
+        cfg,
+        pipeline_ctx=pipeline_ctx,
+        log_prefix="ai_card_receiver",
+        out_short=out_short,
+    )
 
     if status == 0:
         logger.warning("[MindBot] ai_card_receiver_failed %s reason=network_error", pipeline_ctx)
-        return False, None, "network_error", _propagate_token()
+        return False, None, "network_error", prop_tok
     if status != 200:
         logger.debug(
             "[MindBot] ai_card_receiver_put_http %s status=%s out_track=%s finalize=%s",
@@ -275,18 +316,21 @@ async def update_ai_card_receiver(
             out_short,
             is_finalize,
         )
-        return False, None, _http_detail(status), _propagate_token()
+        if resp_body and dingtalk_streaming_body_is_qps_throttle(resp_body):
+            q_code, q_msg = _dt_err(resp_body)
+            return False, q_code or None, q_msg or _http_detail(status), prop_tok
+        return False, None, _http_detail(status), prop_tok
     if not resp_body:
-        return False, None, "empty_body", _propagate_token()
+        return False, None, "empty_body", prop_tok
     if dingtalk_v1_response_ok(resp_body):
         logger.debug(
             "[MindBot] ai_card_receiver_put_ok %s out_track=%s finalize=%s oauth_refreshed=%s",
             pipeline_ctx,
             out_short,
             is_finalize,
-            _propagate_token() is not None,
+            prop_tok is not None,
         )
-        return True, None, "", _propagate_token()
+        return True, None, "", prop_tok
     code, msg = _dt_err(resp_body)
     logger.warning(
         "[MindBot] ai_card_receiver_failed %s finalize=%s code=%s msg=%s friendly=%s",
@@ -296,7 +340,7 @@ async def update_ai_card_receiver(
         msg,
         describe_ai_card_failure(code, msg),
     )
-    return False, code or None, msg, _propagate_token()
+    return False, code or None, msg, prop_tok
 
 
 async def mark_ai_card_stream_error(
@@ -399,6 +443,7 @@ async def probe_ai_card_streaming_update_api(
             oauth_err or None,
             friendly,
         )
+    await acquire_dingtalk_streaming_qps_slot(app_key_resolved)
     payload = {
         "outTrackId": str(uuid.uuid4()),
         "guid": str(uuid.uuid4()),

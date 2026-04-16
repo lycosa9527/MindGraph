@@ -17,6 +17,11 @@ def _coerce_usage_dict(usage: dict[str, Any]) -> Optional[dict[str, int]]:
             return max(0, raw)
         if isinstance(raw, float):
             return max(0, int(raw))
+        if isinstance(raw, str):
+            try:
+                return max(0, int(raw))
+            except (ValueError, TypeError):
+                return 0
         return 0
 
     pt = _int_val("prompt_tokens")

@@ -5,7 +5,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import time
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 from config.settings import config
 from models.domain.mindbot_config import OrganizationMindbotConfig
@@ -67,7 +67,7 @@ def _log_callback_debug_failure(
     reason: str,
     extra: Optional[dict[str, Any]] = None,
 ) -> None:
-    """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG is on (default) and router passed raw bytes."""
+    """Full request dump when MINDBOT_LOG_CALLBACK_DEBUG is enabled and the router passed raw bytes."""
     if debug_raw_body is None:
         return
     from services.mindbot.integrations.dingtalk.inbound_log import (
@@ -104,7 +104,7 @@ async def validate_callback_fast(
     debug_route_label: Optional[str] = None,
     debug_raw_body: Optional[bytes] = None,
     debug_request_headers: Optional[dict[str, str]] = None,
-) -> Tuple[bool, Optional[Tuple[int, dict[str, str]]], Optional[MindbotPipelineContext]]:
+) -> tuple[bool, Optional[tuple[int, dict[str, str]]], Optional[MindbotPipelineContext]]:
     """
     Fast validation: config, signature, dedup, parse, rate limit, circuit breaker.
 
@@ -124,13 +124,13 @@ async def validate_callback_fast(
         _hint = ""
         if not dingtalk_inbound_logging_enabled():
             _hint = (
-                " MindBot callback logging is off (set MINDBOT_LOG_CALLBACK_INBOUND or "
-                "INBOUND_FULL, or MINDBOT_LOG_CALLBACK_DEBUG; DEBUG defaults on unless "
-                "MINDBOT_LOG_CALLBACK_DEBUG=0)."
+                " MindBot callback logging is off (set MINDBOT_LOG_CALLBACK_INBOUND=1 or "
+                "MINDBOT_LOG_CALLBACK_INBOUND_FULL=1 to enable inbound logging)."
             )
         elif not debug_callback_failure_logging_enabled():
             _hint = (
-                " Failure dumps need MINDBOT_LOG_CALLBACK_DEBUG=1 (default on unless DEBUG=0)."
+                " Full failure body dumps are disabled by default (set "
+                "MINDBOT_LOG_CALLBACK_DEBUG=1 to enable — only in controlled environments)."
             )
         logger.warning(
             "[MindBot] Path-based callback URL required (use /dingtalk/callback/t/<token> "
@@ -207,7 +207,8 @@ async def validate_callback_fast(
         )
         return False, (401, hdr_for_cfg(cfg, MindbotErrorCode.INVALID_SIGNATURE)), None
 
-    msg_id = body.get("msgId") or body.get("msg_id")
+    msg_id_raw = body.get("msgId") or body.get("msg_id")
+    msg_id = str(msg_id_raw) if msg_id_raw else None
     if msg_id and isinstance(msg_id, str):
         dedup_key = f"{MSG_DEDUP_PREFIX}{cfg.organization_id}:{msg_id}"
         first = await redis_setnx_ttl(dedup_key, "1", MSG_DEDUP_TTL)
@@ -268,7 +269,7 @@ async def validate_callback_fast(
             conversation_id_dt=conversation_id_dt,
             user_id=dify_user_id,
             streaming=False,
-            error_code=MindbotErrorCode.DIFY_FAILED,
+            error_code=MindbotErrorCode.CIRCUIT_OPEN,
             reply_text="",
             dify_conversation_id=None,
             started_mono=usage_started,
@@ -278,7 +279,7 @@ async def validate_callback_fast(
             inbound_msg_type=inbound_msg_type,
             conversation_user_turn=turn,
         )
-        return False, (200, hdr_for_cfg(cfg, MindbotErrorCode.DIFY_FAILED)), None
+        return False, (200, hdr_for_cfg(cfg, MindbotErrorCode.CIRCUIT_OPEN)), None
 
     ctx = MindbotPipelineContext(
         cfg=cfg,

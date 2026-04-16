@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from services.mindbot.errors import MindbotErrorCode
+from services.mindbot.pipeline.context import DifyReplyContext
 from services.mindbot.pipeline.dify_paths import run_blocking_send_branch
 
 
@@ -62,12 +63,9 @@ async def test_blocking_send_uses_ai_card_when_configured() -> None:
                     "services.mindbot.pipeline.dify_paths.send_blocking_response_attachments",
                     attach_mock,
                 ):
-                    status, _headers = await run_blocking_send_branch(
+                    ctx = DifyReplyContext(
                         cfg=cfg,
                         body=body,
-                        resp=resp,
-                        usage_block=None,
-                        raw_sw=None,
                         session_webhook_valid=None,
                         conversation_id_dt="oc-1",
                         conv_key="ck",
@@ -75,6 +73,12 @@ async def test_blocking_send_uses_ai_card_when_configured() -> None:
                         hdr=hdr,
                         redis_bind_dify_conversation=redis_bind,
                         pipeline_ctx="test_ctx",
+                    )
+                    status, _headers = await run_blocking_send_branch(
+                        ctx,
+                        resp=resp,
+                        usage_block=None,
+                        raw_sw=None,
                     )
     assert status == 200
     assert usage_codes == [MindbotErrorCode.OK]
@@ -143,12 +147,9 @@ async def test_blocking_ai_card_mark_error_uses_token_from_failed_stream() -> No
                         "services.mindbot.pipeline.dify_paths.reply_via_openapi",
                         new=AsyncMock(return_value=(True, False)),
                     ):
-                        status, _ = await run_blocking_send_branch(
+                        ctx = DifyReplyContext(
                             cfg=cfg,
                             body=body,
-                            resp=resp,
-                            usage_block=None,
-                            raw_sw=None,
                             session_webhook_valid=None,
                             conversation_id_dt="oc-1",
                             conv_key="ck",
@@ -156,6 +157,12 @@ async def test_blocking_ai_card_mark_error_uses_token_from_failed_stream() -> No
                             hdr=hdr,
                             redis_bind_dify_conversation=redis_bind,
                             pipeline_ctx="test_ctx",
+                        )
+                        status, _ = await run_blocking_send_branch(
+                            ctx,
+                            resp=resp,
+                            usage_block=None,
+                            raw_sw=None,
                         )
     assert status == 200
     mark_mock.assert_awaited_once()

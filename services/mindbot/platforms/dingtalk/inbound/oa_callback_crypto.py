@@ -13,12 +13,12 @@ from __future__ import annotations
 import base64
 import binascii
 import hashlib
+import hmac
 import io
 import logging
-import string
+import secrets
 import struct
 import time
-from random import choice
 from typing import Any
 
 from Crypto.Cipher import AES
@@ -63,7 +63,7 @@ class DingTalkOaCallbackCrypto:
     ) -> str:
         """Decrypt and verify an inbound ``encrypt`` field; return plaintext JSON string."""
         sign = self._generate_signature(nonce, time_stamp, self.token, content)
-        if msg_signature != sign:
+        if not hmac.compare_digest(msg_signature, sign):
             logger.warning("[MindBot] DingTalk OA callback signature mismatch")
             raise ValueError("signature check error")
 
@@ -78,7 +78,13 @@ class DingTalkOaCallbackCrypto:
         if pad > 32:
             raise ValueError("Input is not padded or padding is corrupt")
         decode_res = decode_res[:-pad]
+        if len(decode_res) < 20:
+            raise ValueError("decrypt: payload too short to contain header")
         msg_len = struct.unpack("!i", decode_res[16:20])[0]
+        if msg_len < 0 or 20 + msg_len > len(decode_res):
+            raise ValueError(
+                f"decrypt: msg_len={msg_len} out of bounds for payload_len={len(decode_res)}"
+            )
         tail = decode_res[(20 + msg_len) :].decode("utf-8")
         if tail != self.owner_key:
             raise ValueError("corpId 校验错误")
@@ -124,8 +130,5 @@ class DingTalkOaCallbackCrypto:
         return content + binascii.unhexlify(output.getvalue()).decode()
 
     @staticmethod
-    def _generate_random_key(
-        size: int,
-        chars: str = string.ascii_letters + string.ascii_lowercase + string.ascii_uppercase + string.digits,
-    ) -> str:
-        return "".join(choice(chars) for _ in range(size))
+    def _generate_random_key(size: int) -> str:
+        return secrets.token_urlsafe(size)[:size]

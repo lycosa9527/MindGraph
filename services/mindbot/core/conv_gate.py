@@ -108,7 +108,10 @@ async def redis_acquire_conv_gate_async(
     result = await redis_setnx_ttl(key, "1", ttl)
     won = result is True
     if won and conv_key:
-        await redis_set_ttl(conv_key, CONV_GATE_SENTINEL, ttl)
+        sentinel_ok = await redis_set_ttl(conv_key, CONV_GATE_SENTINEL, ttl)
+        if not sentinel_ok:
+            await redis_delete(key)
+            return False
     return won
 
 

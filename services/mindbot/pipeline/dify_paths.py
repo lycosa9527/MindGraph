@@ -16,7 +16,7 @@ import uuid
 from typing import Any, Awaitable, Callable, Optional
 
 from clients.dify import AsyncDifyClient, DifyFile
-from models.domain.mindbot_config import OrganizationMindbotConfig
+from services.mindbot.pipeline.context import DifyReplyContext
 from services.mindbot.core.dify_stream import (
     mindbot_consume_dify_stream_batched,
     mindbot_stream_batch_params,
@@ -54,32 +54,38 @@ from services.mindbot.platforms.dingtalk.cards.ai_card_create import (
     mindbot_ai_card_streaming_max_chars,
 )
 from services.mindbot.platforms.dingtalk.cards.ai_card_errors import describe_ai_card_failure
+from services.mindbot.platforms.dingtalk.cards.streaming_qps import (
+    dingtalk_streaming_body_is_qps_throttle,
+)
 from utils.env_helpers import env_bool
 
 logger = logging.getLogger(__name__)
 
 
 async def run_streaming_dify_branch(
+    ctx: DifyReplyContext,
     *,
-    cfg: OrganizationMindbotConfig,
     dify: AsyncDifyClient,
     text_in: str,
     user_id: str,
     dify_conv: Optional[str],
     files: list[DifyFile],
-    body: dict[str, Any],
-    session_webhook_valid: Optional[str],
-    conversation_id_dt: str,
-    conv_key: str,
     dify_inputs: Optional[dict[str, Any]],
     stale_cb: Optional[Callable[[], Awaitable[None]]],
-    record_usage: Callable[..., Awaitable[None]],
-    hdr: Callable[[MindbotErrorCode], dict[str, str]],
-    redis_bind_dify_conversation: Callable[..., Awaitable[None]],
-    pipeline_ctx: str = "",
     release_semaphore_slot: Optional[Callable[[], None]] = None,
 ) -> tuple[int, dict[str, str]]:
     """Consume Dify SSE, send batched chunks to DingTalk, record usage."""
+    cfg = ctx.cfg
+    body = ctx.body
+    session_webhook_valid = ctx.session_webhook_valid
+    session_webhook_pinned_ip = ctx.session_webhook_pinned_ip
+    conversation_id_dt = ctx.conversation_id_dt
+    conv_key = ctx.conv_key
+    record_usage = ctx.record_usage
+    hdr = ctx.hdr
+    redis_bind_dify_conversation = ctx.redis_bind_dify_conversation
+    pipeline_ctx = ctx.pipeline_ctx
+
     min_c, flush_s, max_p = mindbot_stream_batch_params()
     eff_show_cot = effective_show_chain_of_thought(cfg, body)
     think_filter = MindbotThinkingStreamFilter(
@@ -103,6 +109,10 @@ async def run_streaming_dify_branch(
             # Cross-org group: accumulate silently; full response sent at end.
             card_state.cum += visible
             return True, False
+        if card_state.qps_exhausted:
+            # QPS exhausted mid-stream: accumulate silently; full message sent at end.
+            card_state.cum += visible
+            return True, False
         if card_state.use_card:
             card_state.cum += visible
             wire_cum = card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
@@ -117,6 +127,7 @@ async def run_streaming_dify_branch(
                     session_webhook_valid,
                     visible,
                     pipeline_ctx=pipeline_ctx,
+                    pinned_ip=session_webhook_pinned_ip,
                 )
             if not card_state.created:
                 out_id = str(uuid.uuid4())
@@ -141,6 +152,7 @@ async def run_streaming_dify_branch(
                         session_webhook_valid,
                         visible,
                         pipeline_ctx=pipeline_ctx,
+                        pinned_ip=session_webhook_pinned_ip,
                     )
                 card_state.created = True
                 card_state.update_mode = c_mode
@@ -175,6 +187,7 @@ async def run_streaming_dify_branch(
                     pipeline_ctx,
                     describe_ai_card_failure(s_code, s_detail),
                 )
+                # Mark the card as errored once, regardless of failure reason.
                 if card_state.created and isinstance(out_tid, str) and not use_receiver:
                     mk_ok, mk_code, mk_detail, mk_tok = await mark_ai_card_stream_error(
                         cfg,
@@ -191,6 +204,18 @@ async def run_streaming_dify_branch(
                             describe_ai_card_failure(mk_code, mk_detail),
                         )
                 card_state.use_card = False
+                # QPS exhaustion path: accumulate the rest silently, send one
+                # complete plain robot message when Dify finishes streaming.
+                if dingtalk_streaming_body_is_qps_throttle(
+                    {"code": s_code or "", "message": s_detail or ""}
+                ):
+                    logger.warning(
+                        "[MindBot] ai_card_qps_exhausted_fallback %s switching_to_plain_message",
+                        pipeline_ctx,
+                    )
+                    card_state.qps_exhausted = True
+                    return True, False
+                # Non-QPS failure: send the unconfirmed tail immediately as plain text.
                 full_cum = (
                     card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
                 )
@@ -203,6 +228,7 @@ async def run_streaming_dify_branch(
                     session_webhook_valid,
                     unsent,
                     pipeline_ctx=pipeline_ctx,
+                    pinned_ip=session_webhook_pinned_ip,
                 )
             card_state.card_chars_confirmed = len(wire_cum)
             return True, False
@@ -212,6 +238,7 @@ async def run_streaming_dify_branch(
             session_webhook_valid,
             visible,
             pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
         )
 
     async def on_media(kind: str, payload: dict[str, Any]) -> tuple[bool, bool]:
@@ -299,6 +326,23 @@ async def run_streaming_dify_branch(
             session_webhook_valid,
             reply_text,
             pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
+        )
+    # QPS-exhausted fallback: send the complete Dify answer as one plain robot message.
+    # The AI card was closed in error state mid-stream; formatted_full is the full answer.
+    if card_state.qps_exhausted and not err_tok and formatted_full.strip():
+        logger.warning(
+            "[MindBot] dingtalk_qps_plain_fallback_send %s chars=%s",
+            pipeline_ctx,
+            len(formatted_full),
+        )
+        await send_one_reply_chunk(
+            cfg,
+            body,
+            session_webhook_valid,
+            formatted_full,
+            pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
         )
     if (
         not err_tok
@@ -307,7 +351,7 @@ async def run_streaming_dify_branch(
         and isinstance(card_state.out_track_id, str)
         and card_state.token
     ):
-        fin_ok, _remainder = await card_state.finalize(cfg, reply_text, pipeline_ctx)
+        fin_ok = await card_state.finalize(cfg, reply_text, pipeline_ctx)
         if fin_ok and env_bool("MINDBOT_AI_CARD_APPEND_OVERFLOW_REMAINDER", False):
             remainder = ai_card_overflow_remainder_for_markdown(
                 reply_text,
@@ -320,6 +364,7 @@ async def run_streaming_dify_branch(
                     session_webhook_valid,
                     remainder,
                     pipeline_ctx=pipeline_ctx,
+                    pinned_ip=session_webhook_pinned_ip,
                 )
         if not fin_ok:
             unsent_final = reply_text[card_state.card_chars_confirmed:]
@@ -330,6 +375,7 @@ async def run_streaming_dify_branch(
                     session_webhook_valid,
                     unsent_final,
                     pipeline_ctx=pipeline_ctx,
+                    pinned_ip=session_webhook_pinned_ip,
                 )
     if err_tok == "dify_error":
         logger.warning(
@@ -384,10 +430,10 @@ async def run_streaming_dify_branch(
             streaming=True,
         )
         return 200, hdr(MindbotErrorCode.SESSION_WEBHOOK_FAILED)
-    if isinstance(new_conv, str) and new_conv and conversation_id_dt:
+    if isinstance(new_conv, str) and new_conv.strip() and conversation_id_dt:
         await redis_bind_dify_conversation(
             conv_key,
-            new_conv,
+            new_conv.strip(),
             CONV_KEY_TTL_SECONDS,
         )
     _rp = reply_text[:80].replace("\n", " ")
@@ -410,21 +456,24 @@ async def run_streaming_dify_branch(
 
 
 async def run_blocking_send_branch(
+    ctx: DifyReplyContext,
     *,
-    cfg: OrganizationMindbotConfig,
-    body: dict[str, Any],
     resp: dict[str, Any],
     usage_block: Optional[dict[str, int]],
     raw_sw: Any,
-    session_webhook_valid: Optional[str],
-    conversation_id_dt: str,
-    conv_key: str,
-    record_usage: Callable[..., Awaitable[None]],
-    hdr: Callable[[MindbotErrorCode], dict[str, str]],
-    redis_bind_dify_conversation: Callable[..., Awaitable[None]],
-    pipeline_ctx: str = "",
 ) -> tuple[int, dict[str, str]]:
     """Send blocking Dify answer to DingTalk (session webhook and/or OpenAPI)."""
+    cfg = ctx.cfg
+    body = ctx.body
+    session_webhook_valid = ctx.session_webhook_valid
+    session_webhook_pinned_ip = ctx.session_webhook_pinned_ip
+    conversation_id_dt = ctx.conversation_id_dt
+    conv_key = ctx.conv_key
+    record_usage = ctx.record_usage
+    hdr = ctx.hdr
+    redis_bind_dify_conversation = ctx.redis_bind_dify_conversation
+    pipeline_ctx = ctx.pipeline_ctx
+
     answer = (resp or {}).get("answer", "")
     if not isinstance(answer, str):
         answer = str(answer)
@@ -444,10 +493,10 @@ async def run_blocking_send_branch(
     dify_cid_block: Optional[str] = None
     if isinstance(new_conv, str) and new_conv.strip():
         dify_cid_block = new_conv.strip()
-    if isinstance(new_conv, str) and new_conv and conversation_id_dt:
+    if isinstance(new_conv, str) and new_conv.strip() and conversation_id_dt:
         await redis_bind_dify_conversation(
             conv_key,
-            new_conv,
+            new_conv.strip(),
             CONV_KEY_TTL_SECONDS,
         )
 
@@ -580,7 +629,11 @@ async def run_blocking_send_branch(
             )
             return 200, hdr(MindbotErrorCode.SESSION_WEBHOOK_INVALID_URL)
 
-        if await post_session_webhook(session_webhook_valid, answer, pipeline_ctx=pipeline_ctx):
+        if await post_session_webhook(
+            session_webhook_valid, answer,
+            pipeline_ctx=pipeline_ctx,
+            pinned_ip=session_webhook_pinned_ip,
+        ):
             await attachments_after_answer_ok()
             await record_usage(
                 MindbotErrorCode.OK,

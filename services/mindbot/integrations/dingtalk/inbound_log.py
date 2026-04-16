@@ -5,14 +5,15 @@
 - **INFO** — One compact line per inbound request when compact mode is enabled
   (``MINDBOT_LOG_CALLBACK_INBOUND=1`` without full debug). Safe for ops dashboards.
 - **DEBUG** — Full inbound dumps (headers, raw body, parsed JSON) when
-  ``MINDBOT_LOG_CALLBACK_DEBUG`` is on (default) or ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1``.
+  ``MINDBOT_LOG_CALLBACK_DEBUG=1`` or ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1``.
   May include secrets; enable only with log aggregation access controls.
 - **WARNING** — Rejected callbacks: one summary line (reason, route, sizes, keys).
   Verbose dumps for failures still go to **DEBUG** when debug mode is on.
 
-Set ``MINDBOT_LOG_CALLBACK_DEBUG=0`` to disable full inbound + failure dumps.
-When ``MINDBOT_LOG_CALLBACK_DEBUG=0``: set ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1`` for full
-inbound at DEBUG, or ``MINDBOT_LOG_CALLBACK_INBOUND=1`` for one compact **INFO** line per request.
+All inbound logging is **off by default** for production safety.
+Set ``MINDBOT_LOG_CALLBACK_INBOUND=1`` for one compact INFO line per request.
+Set ``MINDBOT_LOG_CALLBACK_INBOUND_FULL=1`` for full inbound body at DEBUG.
+Set ``MINDBOT_LOG_CALLBACK_DEBUG=1`` for full body dumps including failures (PII risk).
 """
 
 from __future__ import annotations
@@ -53,8 +54,13 @@ def _redact_headers(headers: dict[str, str]) -> dict[str, str]:
 
 
 def debug_callback_failure_logging_enabled() -> bool:
-    """True when MINDBOT_LOG_CALLBACK_DEBUG is unset or truthy (full inbound + failure details)."""
-    return env_bool("MINDBOT_LOG_CALLBACK_DEBUG", True)
+    """True when MINDBOT_LOG_CALLBACK_DEBUG is explicitly truthy (full inbound + failure details).
+
+    Defaults to False for production safety — full body dumps may contain PII and
+    user message content. Set MINDBOT_LOG_CALLBACK_DEBUG=1 only in controlled
+    environments where log access is restricted.
+    """
+    return env_bool("MINDBOT_LOG_CALLBACK_DEBUG", False)
 
 
 def dingtalk_inbound_logging_enabled() -> bool:
@@ -112,8 +118,11 @@ def log_dingtalk_inbound(
 
 def _log_compact(request: Request, raw: bytes, route_label: str) -> None:
     ts, sg = extract_dingtalk_robot_auth_headers(request.headers)
+    # Downgraded to DEBUG: the preview contains raw message content which may include
+    # PII.  INFO-level logs are commonly shipped to aggregation systems without per-field
+    # filtering, so message content must not appear there.
     preview = raw.decode("utf-8", errors="replace")[:_PREVIEW_LEN]
-    logger.info(
+    logger.debug(
         "[MindBot] inbound_compact %s method=%s path=%s query=%s body_len=%s "
         "timestamp=%s sign_len=%s preview=%r",
         route_label,

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Optional, Tuple
+from typing import Optional
 
 import aiohttp
 
@@ -18,7 +18,7 @@ async def check_dify_app_api_reachable(
     api_key: str,
     *,
     timeout_s: float = 10.0,
-) -> Tuple[bool, Optional[int], Optional[str]]:
+) -> tuple[bool, Optional[int], Optional[str]]:
     """
     Return (online, http_status, error_token).
 
@@ -36,7 +36,7 @@ async def check_dify_app_api_reachable(
     timeout = aiohttp.ClientTimeout(total=timeout_s)
     try:
         session = get_outbound_session()
-        async with session.get(url, headers=headers, timeout=timeout) as resp:
+        async with session.get(url, headers=headers, timeout=timeout, allow_redirects=False) as resp:
             status = resp.status
             if status == 200:
                 await resp.read()

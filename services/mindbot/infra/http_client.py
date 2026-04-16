@@ -47,6 +47,9 @@ def get_dingtalk_api_session() -> aiohttp.ClientSession:
     global _dingtalk_session  # pylint: disable=global-statement
     if _shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
+    # No asyncio.Lock needed: ClientSession() construction has no await, so the
+    # check-and-assign block runs atomically within a single event-loop tick.
+    # This function must NOT be called from threads outside the event loop.
     if _dingtalk_session is None or _dingtalk_session.closed:
         connector = aiohttp.TCPConnector(
             limit=200,
@@ -71,6 +74,7 @@ def get_outbound_session() -> aiohttp.ClientSession:
     global _outbound_session  # pylint: disable=global-statement
     if _shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
+    # No asyncio.Lock needed: same rationale as get_dingtalk_api_session above.
     if _outbound_session is None or _outbound_session.closed:
         connector = aiohttp.TCPConnector(
             limit=300,

@@ -169,6 +169,54 @@ async def test_streaming_update_propagates_token_on_failure_after_401() -> None:
     assert len(put_calls) == 2
 
 
+@pytest.mark.asyncio
+async def test_streaming_update_retries_on_403_qps() -> None:
+    put_calls: list[int] = []
+
+    async def fake_put(
+        _path: str,
+        _token: str,
+        _payload: dict,
+        **_kwargs,
+    ):
+        put_calls.append(1)
+        if len(put_calls) == 1:
+            return 403, {
+                "code": "Forbidden.AccessDenied.QpsLimitForAppkeyAndApi",
+                "message": "throttled",
+            }
+        return 200, {"success": True, "result": True}
+
+    cfg = _mindbot_cfg(
+        organization_id=7,
+        dingtalk_client_id="kid",
+        dingtalk_app_secret="sec",
+        dingtalk_ai_card_param_key="body",
+    )
+    with patch(
+        "services.mindbot.platforms.dingtalk.cards.ai_card_update.put_v1_json_unverified",
+        new=fake_put,
+    ):
+        with patch(
+            "services.mindbot.platforms.dingtalk.cards.ai_card_update.asyncio.sleep",
+            new=AsyncMock(),
+        ) as sleep_mock:
+            ok, code, detail, ref = await streaming_update_ai_card(
+                cfg,
+                access_token="tok",
+                out_track_id="tr",
+                markdown_full="hi",
+                is_finalize=False,
+                pipeline_ctx="ctx",
+            )
+    assert ok is True
+    assert code is None
+    assert detail == ""
+    assert ref is None
+    assert len(put_calls) == 2
+    sleep_mock.assert_awaited_once_with(1.0)
+
+
 def test_mindbot_ai_card_wiring_requires_template_and_client() -> None:
     cfg = _mindbot_cfg(
         dingtalk_ai_card_template_id=" ",

@@ -32,14 +32,19 @@ def _split_reply_chunks(text: str, max_len: int) -> list[str]:
     return [text[i : i + max_len] for i in range(0, len(text), max_len)]
 
 
-def _workflow_output_text(outputs: dict) -> Optional[str]:
+@functools.cache
+def _workflow_output_key() -> str:
+    return os.getenv("MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY", "").strip()
+
+
+def _workflow_output_text(outputs: dict[str, Any]) -> Optional[str]:
     """
     Resolve assistant text from ``workflow_finished.data.outputs`` (Chatflow).
 
     If ``MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY`` is set, use that key only.
     Otherwise try common keys: text, answer, output, result.
     """
-    explicit = os.getenv("MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY", "").strip()
+    explicit = _workflow_output_key()
     if explicit and explicit in outputs:
         val = outputs.get(explicit)
         if isinstance(val, str) and val.strip():
@@ -153,8 +158,8 @@ async def mindbot_consume_dify_stream_batched(
     ``on_message_replace`` when set is awaited after Dify ``message_replace`` (answer reset);
     use to reset AI card or UI state that tracks cumulative deltas.
 
-    Stale-conversation retry is implemented as a loop (at most 2 attempts) rather than
-    a recursive call to avoid unbounded stack growth.
+    Stale-conversation retry uses a single recursive call with ``on_stale_conversation=None``
+    (at most 2 total attempts); the second call does not retry again so stack depth is bounded.
     """
     defer_to_end = env_bool("MINDBOT_STREAM_DEFER_TO_END", False)
     native_media = env_bool("MINDBOT_DIFY_NATIVE_MEDIA_ENABLED", True)
@@ -451,7 +456,16 @@ async def mindbot_consume_dify_stream_batched(
         if use_media and tts_enabled and evt == "tts_message":
             chunk = parse_tts_audio_base64_chunk(ev)
             if chunk:
-                tts_chunks.append(chunk)
+                _tts_max_bytes = env_int("MINDBOT_TTS_MAX_BYTES", 10 * 1024 * 1024)
+                _tts_current = sum(len(c) for c in tts_chunks)
+                if _tts_current + len(chunk) <= _tts_max_bytes:
+                    tts_chunks.append(chunk)
+                else:
+                    logger.warning(
+                        "[MindBot] tts_chunks_cap_reached total_bytes=%s limit=%s — dropping chunk",
+                        _tts_current,
+                        _tts_max_bytes,
+                    )
             continue
 
         if use_media and tts_enabled and evt == "tts_message_end":

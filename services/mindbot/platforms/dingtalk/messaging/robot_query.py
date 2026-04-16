@@ -14,6 +14,18 @@ from services.mindbot.platforms.dingtalk.api.http import post_v1_json
 logger = logging.getLogger(__name__)
 
 
+def _safe_int(value: Any, *, default: int) -> int:
+    try:
+        return int(value)
+    except (ValueError, TypeError):
+        logger.warning(
+            "[MindBot] robot_query: non-numeric value %r for int field, using default %s",
+            value,
+            default,
+        )
+        return default
+
+
 async def query_private_chat_robot_messages(
     access_token: str,
     robot_code: str,
@@ -32,7 +44,7 @@ async def query_private_chat_robot_messages(
         "robotCode": robot_code.strip(),
         "openConversationId": open_conversation_id.strip(),
         "processQueryKey": process_query_key.strip(),
-        "maxResults": max(1, min(200, int(max_results))),
+        "maxResults": max(1, min(200, _safe_int(max_results, default=200))),
     }
     status, body = await post_v1_json(
         PATH_ROBOT_PRIVATE_CHAT_MESSAGES_QUERY,

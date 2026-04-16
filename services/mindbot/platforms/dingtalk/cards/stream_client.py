@@ -21,6 +21,8 @@ import asyncio
 import logging
 from typing import Any, Optional
 
+from utils.env_helpers import env_int
+
 logger = logging.getLogger(__name__)
 
 
@@ -103,7 +105,19 @@ class DingTalkStreamManager:
             )
             return
         async with self._lock:
-            if client_id in self._clients:
+            existing_task = self._tasks.get(client_id)
+            if client_id in self._clients and existing_task is not None and not existing_task.done():
+                return
+            max_clients = env_int("MINDBOT_STREAM_CLIENT_MAX_KEYS", 50)
+            if len(self._clients) >= max_clients:
+                logger.error(
+                    "[MindBot] dingtalk_stream_client_cap_reached count=%s max=%s "
+                    "client_id=%s — refusing to add new Stream SDK client; "
+                    "restart workers or raise MINDBOT_STREAM_CLIENT_MAX_KEYS",
+                    len(self._clients),
+                    max_clients,
+                    client_id,
+                )
                 return
             sdk = _import_sdk()
             from dingtalk_stream import Card_Callback_Router_Topic  # pylint: disable=import-outside-toplevel
@@ -125,32 +139,83 @@ class DingTalkStreamManager:
 
     async def _run(self, client_id: str, client: Any) -> None:
         """
-        Reconnect loop.
+        Reconnect loop with exponential back-off and a consecutive-error circuit stop.
 
         ``client.start()`` is a long-running coroutine that blocks until the
-        WebSocket disconnects.  On any error we wait 5 s and retry so transient
-        network blips don't permanently break group AI card streaming.
+        WebSocket disconnects.  On any exception we wait with exponential back-off
+        (starting at 5 s, capped at ``MINDBOT_STREAM_CLIENT_MAX_BACKOFF_S``, default
+        300 s) and retry.  After ``MINDBOT_STREAM_CLIENT_MAX_ERRORS`` (default 20)
+        consecutive errors without a successful connection the loop exits with an
+        ERROR log — ops must restart the worker to resume streaming.
+
+        A clean disconnect (no exception from ``client.start()``) resets the
+        consecutive-error counter so brief network blips do not exhaust the budget.
         """
-        while True:
-            try:
-                await client.start()
+        _backoff_base = 5.0
+        max_backoff = float(max(5, env_int("MINDBOT_STREAM_CLIENT_MAX_BACKOFF_S", 300)))
+        max_errors = max(1, env_int("MINDBOT_STREAM_CLIENT_MAX_ERRORS", 20))
+        consecutive_errors = 0
+        backoff = _backoff_base
+
+        try:
+            while True:
+                try:
+                    await client.start()
+                    logger.info(
+                        "[MindBot] dingtalk_stream_client_disconnected client_id=%s reconnecting",
+                        client_id,
+                    )
+                    consecutive_errors = 0
+                    backoff = _backoff_base
+                except asyncio.CancelledError:
+                    logger.info(
+                        "[MindBot] dingtalk_stream_client_cancelled client_id=%s",
+                        client_id,
+                    )
+                    return
+                except Exception as exc:  # pylint: disable=broad-except
+                    consecutive_errors += 1
+                    logger.warning(
+                        "[MindBot] dingtalk_stream_client_error client_id=%s "
+                        "consecutive_errors=%s/%s err=%s backoff_s=%.1f",
+                        client_id,
+                        consecutive_errors,
+                        max_errors,
+                        exc,
+                        backoff,
+                    )
+                    if consecutive_errors >= max_errors:
+                        logger.critical(
+                            "[MindBot] dingtalk_stream_client_giving_up client_id=%s "
+                            "consecutive_errors=%s — entering long-backoff recovery; "
+                            "group AI card streaming will be unavailable until reconnected",
+                            client_id,
+                            consecutive_errors,
+                        )
+                        # Long-backoff self-healing: wait, then exit the loop so the
+                        # finally block clears the entry from _clients/_tasks.
+                        # ensure_client will recreate the client on the next card request.
+                        recovery_backoff = float(
+                            max(60, env_int("MINDBOT_STREAM_CLIENT_RECOVERY_BACKOFF_S", 300))
+                        )
+                        await asyncio.sleep(recovery_backoff)
+                        logger.warning(
+                            "[MindBot] dingtalk_stream_client_recovery_attempt client_id=%s "
+                            "clearing_entry_for_reconnect",
+                            client_id,
+                        )
+                        return
+                await asyncio.sleep(backoff)
+                backoff = min(backoff * 2, max_backoff)
+        finally:
+            async with self._lock:
+                self._clients.pop(client_id, None)
+                self._tasks.pop(client_id, None)
                 logger.info(
-                    "[MindBot] dingtalk_stream_client_disconnected client_id=%s reconnecting",
+                    "[MindBot] dingtalk_stream_client_cleaned_up client_id=%s "
+                    "(will be recreated on next ensure_client call)",
                     client_id,
                 )
-            except asyncio.CancelledError:
-                logger.info(
-                    "[MindBot] dingtalk_stream_client_cancelled client_id=%s",
-                    client_id,
-                )
-                return
-            except Exception as exc:  # pylint: disable=broad-except
-                logger.warning(
-                    "[MindBot] dingtalk_stream_client_error client_id=%s err=%s",
-                    client_id,
-                    exc,
-                )
-            await asyncio.sleep(5)
 
     def is_client_running(self, client_id: str) -> bool:
         """Return True if a Stream SDK task is registered for ``client_id``."""

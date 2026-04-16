@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.89.0] - 2026-04-17
+
+### Added
+- **MindBot / security**: DNS rebinding SSRF protection — `validate_session_webhook_url` now returns a 3-tuple `(ok, reason, pinned_ip)`; the first resolved IP is pinned at validation time and passed to `post_session_webhook`, which uses `_PinnedIPResolver` (a custom `aiohttp` resolver) to connect to the pre-resolved address without re-resolving DNS on each request; TLS SNI and certificate verification continue to use the original hostname.
+- **MindBot / DingTalk**: Per-app-key async sliding-window QPS limiter in `streaming_qps.py` — FIFO waiter queue (O(1) per slot, no spin-sleep); configured via `MINDBOT_DINGTALK_STREAMING_QPS_PER_APP` (default 18/s), `MINDBOT_DINGTALK_STREAMING_QPS_WINDOW_MS`, and `MINDBOT_DINGTALK_STREAMING_QPS_NUM_WORKERS` for multi-worker deployments; LRU eviction when key count exceeds `MINDBOT_QPS_LIMITER_MAX_KEYS` (default 500).
+- **MindBot / DingTalk**: QPS throttle detection helper `dingtalk_streaming_body_is_qps_throttle` handles DingTalk `Forbidden.AccessDenied.QpsLimitForAppkeyAndApi`, `Forbidden.AccessDenied.QpsLimitForApi`, legacy numeric codes `90018`/`90002`, and substring patterns.
+- **MindBot / DingTalk**: `_card_put_with_retry` in `ai_card_update.py` — unified PUT helper with OAuth 401 single-retry (token refresh + cache invalidation) and QPS 403 sleep-and-retry (up to `MINDBOT_DINGTALK_STREAMING_QPS_MAX_RETRIES`, default 4); callers pass `on_qps_retry` to mutate payload (e.g. rotate `guid`) before each retry.
+- **MindBot / pipeline**: `DifyReplyContext` dataclass in `pipeline/context.py` — bundles the ten parameters shared by `run_streaming_dify_branch` and `run_blocking_send_branch` (`cfg`, `body`, `session_webhook_valid`, `session_webhook_pinned_ip`, `conversation_id_dt`, `conv_key`, `record_usage`, `hdr`, `redis_bind_dify_conversation`, `pipeline_ctx`), reducing each function from 14–18 keyword args to a single context object.
+- **MindBot / pipeline**: QPS-exhausted mid-stream fallback in `dify_paths.py` — when a streaming card-update fails with a QPS error, `CardStreamState.qps_exhausted` is set; subsequent SSE chunks accumulate silently and the complete Dify answer is sent as one plain robot message after streaming ends.
+- **MindBot / pipeline**: Two-level semaphore design in `callback.py` — `_STREAMING_SEMAPHORE` (startup queue, released on first SSE event) paired with `_ACTIVE_STREAMS_SEMAPHORE` (held for full stream lifetime, `MINDBOT_MAX_ACTIVE_STREAMING`, default 128); same pattern for blocking path (`_BLOCKING_SEMAPHORE` + `_ACTIVE_BLOCKING_SEMAPHORE`, `MINDBOT_MAX_ACTIVE_BLOCKING`, default 128).
+- **MindBot / pipeline**: Per-org active-stream counter in `callback.py` — logs a WARNING when one org holds ≥ `MINDBOT_ORG_STREAM_WARN_THRESHOLD` (default 10) concurrent streams, enabling noisy-neighbour detection.
+- **MindBot / telemetry**: `MindBotLogAdapter` and `get_pipeline_logger` in `pipeline_log.py` — injects structured `extra` fields (`mb_org_id`, `mb_msg_id`, `mb_error_code`, `mb_robot_code`, `mb_streaming`) into every log record for JSON log processors (Datadog, ELK, CloudWatch) without regex-parsing log lines.
+
+### Changed
+- **MindBot / pipeline**: `dify_paths.py` — `run_streaming_dify_branch` and `run_blocking_send_branch` signatures replaced 14–18 keyword parameters with a single `ctx: DifyReplyContext`; `new_conv.strip()` normalises Dify conversation IDs before Redis binding; all `send_one_reply_chunk` / `post_session_webhook` calls now forward `pinned_ip`.
+- **MindBot / pipeline**: `ai_card_state.py` — `CardStreamState.finalize()` return type simplified from `tuple[bool, Optional[str]]` to `bool`; `qps_exhausted: bool` field added; `reset()` clears both new fields.
+- **MindBot / infra**: `circuit_breaker.py` — `CircuitBreaker.state()` replaces direct `is_open()` as single source of truth, returning `"closed"` / `"open"` / `"half_open"` literals; `_breakers` dict upgraded to `OrderedDict` with LRU eviction at `MINDBOT_CIRCUIT_BREAKER_MAX_KEYS` (default 2000); uses `redis_incr_fixed_window` (fixed-window, TTL on first increment only) instead of `redis_incr_with_ttl`.
+- **MindBot / session**: `validate_session_webhook_url` return type changed from `tuple[bool, str]` to `tuple[bool, str, str]`; DNS timeout cached via `@functools.cache`; empty DNS result set now returns an explicit rejection.
+- **MindBot / outbound**: `post_session_webhook` split into `_do_post_session_webhook` (execution) and public wrapper; accepts `pinned_ip` kwarg; `allow_redirects=False` enforced; response body read unconditionally to drain the connection; token/secret redaction in WARNING logs via `_sanitize_webhook_snippet`.
+- **MindBot / pipeline**: `callback.py` log calls for `recv` and `pipeline_detail` switched to `_pipeline_log` (`MindBotLogAdapter`) for structured field injection; conv-gate poll timeout log includes `elapsed_ms` and `budget_ms`.
+- **Tests**: New test files — `test_mindbot_callback_validate.py`, `test_mindbot_circuit_breaker.py`, `test_mindbot_dify_sse_parse.py`, `test_mindbot_message_files.py`, `test_mindbot_outbound_text.py`, `test_mindbot_pipeline_log.py`, `test_mindbot_rate_limit.py`, `test_mindbot_streaming_qps.py`, `test_mindbot_task_registry.py`, `test_mindbot_usage_parse.py`, `test_mindbot_usage_persistence.py`; expanded coverage for conv gate, AI card, metrics, and session webhook URL.
+
 ## [5.88.0] - 2026-04-16
 
 ### Added

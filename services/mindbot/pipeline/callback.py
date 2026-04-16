@@ -5,7 +5,6 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
-import os
 import time
 from typing import Any, Optional
 
@@ -13,6 +12,7 @@ from clients.dify import AsyncDifyClient, DifyFile
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.core.conv_gate import (
     conv_gate_enabled,
+    conv_gate_poll_total_ms,
     normalize_dify_conversation_id_from_redis,
     poll_dify_conv_key_async,
     redis_acquire_conv_gate_async,
@@ -28,6 +28,7 @@ from services.mindbot.education.metrics import (
     conversation_user_turn_index,
     dingtalk_chat_scope,
 )
+from services.mindbot.pipeline.context import DifyReplyContext
 from services.mindbot.pipeline.dify_paths import (
     run_blocking_send_branch,
     run_streaming_dify_branch,
@@ -39,7 +40,7 @@ from services.mindbot.platforms.dingtalk import (
 )
 from services.mindbot.errors import MindbotErrorCode, mindbot_error_headers
 from services.mindbot.telemetry.metrics import mindbot_metrics
-from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx
+from services.mindbot.telemetry.pipeline_log import format_pipeline_ctx, get_pipeline_logger
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
 from services.mindbot.session.webhook_url import validate_session_webhook_url
 from services.mindbot.infra.redis_async import (
@@ -54,15 +55,57 @@ from services.mindbot.pipeline.callback_validate import (
     hdr_for_cfg,
 )
 from services.mindbot.infra.task_registry import register as register_background_task
-from utils.env_helpers import env_bool
+from utils.env_helpers import env_bool, env_int
 
 logger = logging.getLogger(__name__)
 
+# Per-org active-stream counters for noisy-neighbour detection.
+# Tracks how many streaming pipelines are currently running for each org.
+# Logged at WARNING when an org exceeds MINDBOT_ORG_STREAM_WARN_THRESHOLD.
+_org_active_streams: dict[int, int] = {}
+_org_stream_lock = asyncio.Lock()
+
+
+async def _inc_org_stream(org_id: int) -> int:
+    async with _org_stream_lock:
+        count = _org_active_streams.get(org_id, 0) + 1
+        _org_active_streams[org_id] = count
+        return count
+
+
+async def _dec_org_stream(org_id: int) -> None:
+    async with _org_stream_lock:
+        count = _org_active_streams.get(org_id, 1) - 1
+        if count <= 0:
+            _org_active_streams.pop(org_id, None)
+        else:
+            _org_active_streams[org_id] = count
+
+
+def _org_stream_warn_threshold() -> int:
+    return max(1, env_int("MINDBOT_ORG_STREAM_WARN_THRESHOLD", 10))
+
+
 _STREAMING_SEMAPHORE = asyncio.Semaphore(
-    int(os.getenv("MINDBOT_MAX_CONCURRENT_STREAMING", "64"))
+    max(1, env_int("MINDBOT_MAX_CONCURRENT_STREAMING", 64))
 )
+# Tracks the number of streams that are **actively running** end-to-end (from first
+# SSE event through to card finalization / reply send).  _STREAMING_SEMAPHORE is
+# released as soon as the first SSE event arrives (to free the startup queue slot);
+# _ACTIVE_STREAMS_SEMAPHORE is held for the full lifetime of the stream so total
+# resource consumption (Dify connections, DingTalk API quota, Redis) remains bounded.
+_ACTIVE_STREAMS_SEMAPHORE = asyncio.Semaphore(
+    max(1, env_int("MINDBOT_MAX_ACTIVE_STREAMING", 128))
+)
+# _BLOCKING_SEMAPHORE caps concurrent Dify blocking calls (the expensive, long-poll
+# step).  _ACTIVE_BLOCKING_SEMAPHORE is held for the *full* blocking pipeline
+# (Dify call + outbound send) so total in-flight blocking pipelines remain bounded,
+# consistent with the two-level semaphore design used by the streaming path.
 _BLOCKING_SEMAPHORE = asyncio.Semaphore(
-    int(os.getenv("MINDBOT_MAX_CONCURRENT_BLOCKING", "64"))
+    max(1, env_int("MINDBOT_MAX_CONCURRENT_BLOCKING", 64))
+)
+_ACTIVE_BLOCKING_SEMAPHORE = asyncio.Semaphore(
+    max(1, env_int("MINDBOT_MAX_ACTIVE_BLOCKING", 128))
 )
 
 
@@ -208,23 +251,29 @@ async def execute_mindbot_pipeline(
             conv_key=conv_key,
         )
         if not gate_acquired:
+            _poll_t0 = time.monotonic()
             polled = await poll_dify_conv_key_async(_redis_get_async, conv_key)
             if polled:
                 dify_conv = polled
             else:
                 logger.warning(
                     "[MindBot] conv_gate_poll_timeout org_id=%s scope=%s "
-                    "— proceeding without existing Dify conversation (may create new session)",
+                    "elapsed_ms=%.0f budget_ms=%s "
+                    "proceeding without existing Dify conversation (may create new session)",
                     cfg.organization_id,
                     conv_gate_scope,
+                    (time.monotonic() - _poll_t0) * 1000,
+                    conv_gate_poll_total_ms(),
                 )
 
     raw_sw = msg.session_webhook
     session_webhook_valid: Optional[str] = None
+    session_webhook_pinned_ip: str = ""
     if raw_sw:
-        url_ok, url_reason = await validate_session_webhook_url(raw_sw)
+        url_ok, url_reason, resolved_ip = await validate_session_webhook_url(raw_sw)
         if url_ok:
             session_webhook_valid = raw_sw
+            session_webhook_pinned_ip = resolved_ip
         else:
             logger.warning(
                 "[MindBot] sessionWebhook URL rejected: %s (%s)",
@@ -252,9 +301,16 @@ async def execute_mindbot_pipeline(
         conv_dingtalk=conversation_id_dt,
         dify_conv=dify_conv or "",
     )
+    _pipeline_log = get_pipeline_logger(
+        logger,
+        org_id=cfg.organization_id,
+        msg_id=msg_id_for_usage or "",
+        robot_code=cfg.dingtalk_robot_code.strip(),
+        streaming=_dify_streaming_enabled(),
+    )
     _preview = text_in[:60].replace("\n", " ")
     _ellipsis = "…" if len(text_in) > 60 else ""
-    logger.info(
+    _pipeline_log.info(
         "[MindBot] recv %s msgtype=%s q=%r chars=%s mode=%s sw=%s",
         pipeline_ctx,
         inbound_msg_type,
@@ -263,7 +319,7 @@ async def execute_mindbot_pipeline(
         "streaming" if _dify_streaming_enabled() else "blocking",
         "yes" if session_webhook_valid else "no",
     )
-    logger.debug(
+    _pipeline_log.debug(
         "[MindBot] pipeline_detail %s gate_acquired=%s redis_dify_conv=%s",
         pipeline_ctx,
         gate_acquired,
@@ -309,6 +365,19 @@ async def execute_mindbot_pipeline(
     def _hdr(code: MindbotErrorCode) -> dict[str, str]:
         return hdr_for_cfg(cfg, code)
 
+    reply_ctx = DifyReplyContext(
+        cfg=cfg,
+        body=body,
+        session_webhook_valid=session_webhook_valid,
+        session_webhook_pinned_ip=session_webhook_pinned_ip,
+        conversation_id_dt=conversation_id_dt,
+        conv_key=conv_key,
+        record_usage=_record_usage,
+        hdr=_hdr,
+        redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
+        pipeline_ctx=pipeline_ctx,
+    )
+
     cb_key = str(cfg.organization_id)
     _streaming = _dify_streaming_enabled()
 
@@ -324,36 +393,42 @@ async def execute_mindbot_pipeline(
                 else:
                     logger.debug("[MindBot] streaming semaphore double-release prevented")
 
-            await _STREAMING_SEMAPHORE.acquire()
+            await _ACTIVE_STREAMS_SEMAPHORE.acquire()
             try:
-                files = await _maybe_dify_files_for_media(
-                    cfg,
-                    body,
-                    inbound_msg_type,
-                    dify_user_id,
-                    dify,
-                )
-                result = await run_streaming_dify_branch(
-                    cfg=cfg,
-                    dify=dify,
-                    text_in=text_in,
-                    user_id=dify_user_id,
-                    dify_conv=dify_conv,
-                    files=files,
-                    body=body,
-                    session_webhook_valid=session_webhook_valid,
-                    conversation_id_dt=conversation_id_dt,
-                    conv_key=conv_key,
-                    dify_inputs=dify_inputs,
-                    stale_cb=stale_cb,
-                    record_usage=_record_usage,
-                    hdr=_hdr,
-                    redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
-                    pipeline_ctx=pipeline_ctx,
-                    release_semaphore_slot=_release_streaming_slot,
-                )
+                org_stream_count = await _inc_org_stream(cfg.organization_id)
+                if org_stream_count >= _org_stream_warn_threshold():
+                    logger.warning(
+                        "[MindBot] org_stream_monopoly_suspected org_id=%s active_streams=%s "
+                        "threshold=%s — one org may be starving shared Dify connection pool",
+                        cfg.organization_id,
+                        org_stream_count,
+                        _org_stream_warn_threshold(),
+                    )
+                await _STREAMING_SEMAPHORE.acquire()
+                try:
+                    files = await _maybe_dify_files_for_media(
+                        cfg,
+                        body,
+                        inbound_msg_type,
+                        dify_user_id,
+                        dify,
+                    )
+                    result = await run_streaming_dify_branch(
+                        reply_ctx,
+                        dify=dify,
+                        text_in=text_in,
+                        user_id=dify_user_id,
+                        dify_conv=dify_conv,
+                        files=files,
+                        dify_inputs=dify_inputs,
+                        stale_cb=stale_cb,
+                        release_semaphore_slot=_release_streaming_slot,
+                    )
+                finally:
+                    _release_streaming_slot()
             finally:
-                _release_streaming_slot()
+                await _dec_org_stream(cfg.organization_id)
+                _ACTIVE_STREAMS_SEMAPHORE.release()
 
             resp_hdr = result[1]
             if resp_hdr.get("X-MindBot-Error-Code") == MindbotErrorCode.DIFY_FAILED.value:
@@ -362,56 +437,52 @@ async def execute_mindbot_pipeline(
                 await record_dify_success(cb_key)
             return result
 
-        async with _BLOCKING_SEMAPHORE:
-            files = await _maybe_dify_files_for_media(
-                cfg,
-                body,
-                inbound_msg_type,
-                dify_user_id,
-                dify,
-            )
-            resp = await mindbot_dify_chat_blocking(
-                dify,
-                text=text_in,
-                user_id=dify_user_id,
-                conversation_id=dify_conv,
-                files=files,
-                inputs=dify_inputs,
-                on_stale_conversation=stale_cb,
-                pipeline_ctx=pipeline_ctx,
-            )
-            if resp is None:
-                await record_dify_failure(cb_key)
-                await _record_usage(
-                    MindbotErrorCode.DIFY_FAILED,
-                    reply_text="",
-                    dify_conversation_id=None,
-                    usage=None,
-                    streaming=False,
+        await _ACTIVE_BLOCKING_SEMAPHORE.acquire()
+        try:
+            async with _BLOCKING_SEMAPHORE:
+                files = await _maybe_dify_files_for_media(
+                    cfg,
+                    body,
+                    inbound_msg_type,
+                    dify_user_id,
+                    dify,
                 )
-                return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
-            await record_dify_success(cb_key)
+                resp = await mindbot_dify_chat_blocking(
+                    dify,
+                    text=text_in,
+                    user_id=dify_user_id,
+                    conversation_id=dify_conv,
+                    files=files,
+                    inputs=dify_inputs,
+                    on_stale_conversation=stale_cb,
+                    pipeline_ctx=pipeline_ctx,
+                )
+                if resp is None:
+                    await record_dify_failure(cb_key)
+                    await _record_usage(
+                        MindbotErrorCode.DIFY_FAILED,
+                        reply_text="",
+                        dify_conversation_id=None,
+                        usage=None,
+                        streaming=False,
+                    )
+                    return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
+                await record_dify_success(cb_key)
 
-            usage_block = (
-                parse_dify_usage_from_blocking_response(resp)
-                if isinstance(resp, dict)
-                else None
+                usage_block = (
+                    parse_dify_usage_from_blocking_response(resp)
+                    if isinstance(resp, dict)
+                    else None
+                )
+
+            return await run_blocking_send_branch(
+                reply_ctx,
+                resp=resp,
+                usage_block=usage_block,
+                raw_sw=raw_sw,
             )
-
-        return await run_blocking_send_branch(
-            cfg=cfg,
-            body=body,
-            resp=resp,
-            usage_block=usage_block,
-            raw_sw=raw_sw,
-            session_webhook_valid=session_webhook_valid,
-            conversation_id_dt=conversation_id_dt,
-            conv_key=conv_key,
-            record_usage=_record_usage,
-            hdr=_hdr,
-            redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
-            pipeline_ctx=pipeline_ctx,
-        )
+        finally:
+            _ACTIVE_BLOCKING_SEMAPHORE.release()
     finally:
         if gate_acquired:
             await redis_release_conv_gate_async(
@@ -456,10 +527,12 @@ async def process_dingtalk_callback(
     )
     if not ok:
         if early is None:
-            return 500, mindbot_error_headers(MindbotErrorCode.DIFY_FAILED)
+            logger.error("[MindBot] validate_callback_fast returned ok=False with None early — invariant violated")
+            return 500, mindbot_error_headers(MindbotErrorCode.PIPELINE_INTERNAL_ERROR)
         return early[0], early[1]
     if ctx is None:
-        return 500, mindbot_error_headers(MindbotErrorCode.DIFY_FAILED)
+        logger.error("[MindBot] validate_callback_fast returned ok=True with ctx=None — invariant violated")
+        return 500, mindbot_error_headers(MindbotErrorCode.PIPELINE_INTERNAL_ERROR)
     return await execute_mindbot_pipeline(ctx)
 
 

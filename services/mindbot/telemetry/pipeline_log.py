@@ -1,8 +1,74 @@
-"""Structured correlation strings for MindBot pipeline logs (no secrets, no full bodies)."""
+"""Structured correlation strings and log adapters for MindBot pipeline logs.
+
+Structured logging
+------------------
+:class:`MindBotLogAdapter` injects key observability fields as ``extra`` kwargs on
+every log record so JSON log processors (Datadog, ELK, CloudWatch) can index and
+alert on them without regex-parsing log lines.
+
+Usage::
+
+    from services.mindbot.telemetry.pipeline_log import get_pipeline_logger
+    log = get_pipeline_logger(org_id=42, msg_id="abc", error_code="MINDBOT_OK")
+    log.info("[MindBot] pipeline done")
+    # The emitted record carries: extra.org_id=42, extra.msg_id="abc", ...
+
+The ``pipeline_ctx`` string (for human-readable log lines) and the structured
+``extra`` fields are complementary: use ``pipeline_ctx`` in the message body,
+use ``extra`` for machine filtering.
+"""
 
 from __future__ import annotations
 
+import logging
+from typing import Any, MutableMapping
 from urllib.parse import urlparse
+
+
+class MindBotLogAdapter(logging.LoggerAdapter):
+    """Logger adapter that injects MindBot structured fields into every log record.
+
+    Fields injected into ``extra`` (available on ``LogRecord`` attributes):
+    - ``mb_org_id`` – organization ID (int or "")
+    - ``mb_msg_id`` – inbound message ID (str or "")
+    - ``mb_error_code`` – ``MindbotErrorCode`` value or "" when not yet known
+    - ``mb_robot_code`` – DingTalk robot code or ""
+    - ``mb_streaming`` – True/False/None
+
+    JSON formatters that emit all ``LogRecord.__dict__`` fields (e.g.
+    python-json-logger, structlog) will automatically surface these.
+    """
+
+    def process(
+        self, msg: Any, kwargs: MutableMapping[str, Any]
+    ) -> tuple[Any, MutableMapping[str, Any]]:
+        extra = dict(self.extra or {})
+        existing = kwargs.get("extra") or {}
+        extra.update(existing)
+        kwargs["extra"] = extra
+        return msg, kwargs
+
+
+def get_pipeline_logger(
+    logger: logging.Logger,
+    *,
+    org_id: int | str = "",
+    msg_id: str = "",
+    error_code: str = "",
+    robot_code: str = "",
+    streaming: bool | None = None,
+) -> MindBotLogAdapter:
+    """Return a :class:`MindBotLogAdapter` that enriches log records with pipeline context."""
+    return MindBotLogAdapter(
+        logger,
+        {
+            "mb_org_id": org_id,
+            "mb_msg_id": msg_id,
+            "mb_error_code": error_code,
+            "mb_robot_code": robot_code,
+            "mb_streaming": streaming,
+        },
+    )
 
 
 def clip_id(value: str | None, max_len: int = 28) -> str:

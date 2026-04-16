@@ -60,9 +60,13 @@ def msg_param_sample_action_card(
 
 
 def msg_param_sample_audio(media_id: str, duration_ms: int) -> dict[str, Any]:
+    try:
+        dur = max(1, int(duration_ms))
+    except (ValueError, TypeError):
+        dur = 1
     return {
         "mediaId": media_id.strip(),
-        "duration": str(max(1, int(duration_ms))),
+        "duration": str(dur),
     }
 
 
@@ -80,8 +84,12 @@ def msg_param_sample_video(
     pic_media_id: str,
     video_type: str = "mp4",
 ) -> dict[str, Any]:
+    try:
+        dur = max(1, int(duration_sec))
+    except (ValueError, TypeError):
+        dur = 1
     return {
-        "duration": str(max(1, int(duration_sec))),
+        "duration": str(dur),
         "videoMediaId": video_media_id.strip(),
         "videoType": video_type.strip()[:16],
         "picMediaId": pic_media_id.strip(),

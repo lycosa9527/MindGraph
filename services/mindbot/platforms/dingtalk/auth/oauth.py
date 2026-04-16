@@ -19,8 +19,9 @@ import functools
 import hashlib
 import json
 import logging
+import re
 from collections import OrderedDict
-from typing import Any, Optional, Tuple
+from typing import Any, Optional
 
 import aiohttp
 
@@ -33,6 +34,17 @@ from utils.env_helpers import env_int
 logger = logging.getLogger(__name__)
 
 _token_fetch_locks: "OrderedDict[str, asyncio.Lock]" = OrderedDict()
+
+_SENSITIVE_PATTERN = re.compile(
+    r'("(?:appSecret|appKey|accessToken|access_token|secret|password)")\s*:\s*"[^"]{4,}"',
+    re.IGNORECASE,
+)
+
+
+def _sanitize_oauth_snippet(body_txt: str, max_len: int = 400) -> str:
+    """Return a truncated, credential-redacted snippet safe for WARNING logs."""
+    snippet = body_txt[:max_len]
+    return _SENSITIVE_PATTERN.sub(r'\1: "***"', snippet)
 
 
 @functools.cache
@@ -123,24 +135,23 @@ def _oauth_error_snippet(data: dict[str, Any]) -> str:
 
 def _http_oauth_error_detail(status: int, body_txt: str) -> str:
     """Prefer parsed DingTalk JSON on non-2xx (e.g. HTTP 400 + invalidClientIdOrSecret)."""
-    raw = body_txt[:600]
     try:
         data = json.loads(body_txt)
     except json.JSONDecodeError:
-        return f"HTTP {status}: {raw}"
+        return f"HTTP {status}: {_sanitize_oauth_snippet(body_txt)}"
     if not isinstance(data, dict):
-        return f"HTTP {status}: {raw}"
+        return f"HTTP {status}: {_sanitize_oauth_snippet(body_txt)}"
     snippet = _oauth_error_snippet(data)
     if snippet:
         return f"HTTP {status}: {snippet}"
-    return f"HTTP {status}: {raw}"
+    return f"HTTP {status}: {_sanitize_oauth_snippet(body_txt)}"
 
 
 async def get_access_token_with_error(
     organization_id: int,
     app_key: str,
     app_secret: str,
-) -> Tuple[Optional[str], str]:
+) -> tuple[Optional[str], str]:
     """
     POST ``/v1.0/oauth2/accessToken`` with appKey / appSecret.
 
@@ -183,7 +194,7 @@ async def get_access_token_with_error(
                     logger.warning(
                         "[MindBot] DingTalk accessToken failed: %s %s",
                         resp.status,
-                        body_txt[:500],
+                        _sanitize_oauth_snippet(body_txt),
                     )
                     return None, _http_oauth_error_detail(resp.status, body_txt)
                 try:
@@ -199,12 +210,12 @@ async def get_access_token_with_error(
                     return token, ""
                 err = _oauth_error_snippet(data)
                 if not err:
-                    err = f"no access_token in response ({body_txt[:400]})"
+                    err = f"no access_token in response ({_sanitize_oauth_snippet(body_txt)})"
                 logger.warning("[MindBot] DingTalk accessToken missing token: %s", err)
                 return None, err
         except Exception as exc:
             logger.exception("[MindBot] DingTalk accessToken request error: %s", exc)
-            return None, str(exc)[:400]
+            return None, "request error — check server logs for details"
 
 
 async def get_access_token(

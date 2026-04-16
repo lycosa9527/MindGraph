@@ -26,13 +26,20 @@ async def batch_recall_group_robot_messages(
 
     Up to ``ROBOT_RECALL_MAX_KEYS`` keys per request; longer lists are chunked.
 
+    Returns the last successful response body when **all** chunks succeed, or
+    ``None`` when any chunk fails.  A WARNING is logged with the failing chunk
+    index and the count of chunks that already succeeded.
+
     Docs: https://open.dingtalk.com/document/development/bots-send-query-and-recall-group-chat-messages
     """
     keys = [k.strip() for k in process_query_keys if k.strip()]
     if not keys:
         return None
+    total_chunks = (len(keys) + ROBOT_RECALL_MAX_KEYS - 1) // ROBOT_RECALL_MAX_KEYS
     last: Optional[dict[str, Any]] = None
+    succeeded = 0
     for i in range(0, len(keys), ROBOT_RECALL_MAX_KEYS):
+        chunk_idx = i // ROBOT_RECALL_MAX_KEYS
         chunk = keys[i : i + ROBOT_RECALL_MAX_KEYS]
         payload = {
             "robotCode": robot_code.strip(),
@@ -46,11 +53,16 @@ async def batch_recall_group_robot_messages(
         )
         if status != 200 or body is None:
             logger.warning(
-                "[MindBot] group batchRecall failed chunk=%s status=%s",
-                i // ROBOT_RECALL_MAX_KEYS,
+                "[MindBot] group batchRecall failed chunk_idx=%s/%s "
+                "status=%s succeeded_before=%s total_chunks=%s",
+                chunk_idx,
+                total_chunks - 1,
                 status,
+                succeeded,
+                total_chunks,
             )
             return None
+        succeeded += 1
         last = body
     return last
 
@@ -66,13 +78,20 @@ async def batch_recall_oto_robot_messages(
 
     Requires ``openConversationId`` for the one-to-one session.
 
+    Returns the last successful response body when **all** chunks succeed, or
+    ``None`` when any chunk fails.  A WARNING is logged with the failing chunk
+    index and the count of chunks that already succeeded.
+
     Docs: https://open.dingtalk.com/document/development/batch-message-recall-chat
     """
     keys = [k.strip() for k in process_query_keys if k.strip()]
     if not keys:
         return None
+    total_chunks = (len(keys) + ROBOT_RECALL_MAX_KEYS - 1) // ROBOT_RECALL_MAX_KEYS
     last: Optional[dict[str, Any]] = None
+    succeeded = 0
     for i in range(0, len(keys), ROBOT_RECALL_MAX_KEYS):
+        chunk_idx = i // ROBOT_RECALL_MAX_KEYS
         chunk = keys[i : i + ROBOT_RECALL_MAX_KEYS]
         payload = {
             "robotCode": robot_code.strip(),
@@ -86,10 +105,15 @@ async def batch_recall_oto_robot_messages(
         )
         if status != 200 or body is None:
             logger.warning(
-                "[MindBot] oTo batchRecall failed chunk=%s status=%s",
-                i // ROBOT_RECALL_MAX_KEYS,
+                "[MindBot] oTo batchRecall failed chunk_idx=%s/%s "
+                "status=%s succeeded_before=%s total_chunks=%s",
+                chunk_idx,
+                total_chunks - 1,
                 status,
+                succeeded,
+                total_chunks,
             )
             return None
+        succeeded += 1
         last = body
     return last

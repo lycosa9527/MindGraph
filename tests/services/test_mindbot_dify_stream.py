@@ -284,6 +284,8 @@ async def test_workflow_finished_outputs_when_no_message_deltas() -> None:
 @pytest.mark.asyncio
 async def test_workflow_output_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.setenv("MINDBOT_DIFY_WORKFLOW_OUTPUT_KEY", "custom_out")
+    from services.mindbot.core import dify_stream as ds_mod
+    ds_mod._workflow_output_key.cache_clear()
     sent: list[str] = []
 
     async def on_batch(chunk: str) -> tuple[bool, bool]:
@@ -305,6 +307,8 @@ async def test_workflow_output_key_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert conv == "c2"
     assert full == "custom text"
     assert sent == ["custom text"]
+
+    ds_mod._workflow_output_key.cache_clear()
 
 
 @pytest.mark.asyncio

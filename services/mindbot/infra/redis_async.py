@@ -24,9 +24,10 @@ from __future__ import annotations
 
 import logging
 import os
-from typing import Optional
+from typing import Awaitable, Optional, cast
 
 import redis.asyncio as aioredis
+from utils.env_helpers import env_int
 
 logger = logging.getLogger(__name__)
 
@@ -47,9 +48,12 @@ def _get_client() -> aioredis.Redis:
     not be called from worker threads (e.g. Celery tasks).
     """
     global _client
+    # No asyncio.Lock needed: from_url() construction has no await, so the
+    # check-and-assign block is atomic within one event-loop tick.
+    # This function must NOT be called from threads outside the event loop.
     if _client is None:
         url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        max_conn = int(os.getenv("MINDBOT_REDIS_MAX_CONNECTIONS", str(_DEFAULT_MAX_CONNECTIONS)))
+        max_conn = max(1, env_int("MINDBOT_REDIS_MAX_CONNECTIONS", _DEFAULT_MAX_CONNECTIONS))
         _client = aioredis.from_url(
             url,
             decode_responses=True,
@@ -186,7 +190,8 @@ async def redis_incr_fixed_window(key: str, ttl: int) -> Optional[int]:
 async def redis_ping() -> bool:
     """Return True if the async Redis client responds to PING, False on error."""
     try:
-        return bool(await _get_client().ping())
+        result = await cast(Awaitable[bool], _get_client().ping())
+        return bool(result)
     except Exception as exc:  # pylint: disable=broad-except
         logger.warning("[MindBot] redis_ping failed: %s", exc)
         return False

@@ -8,6 +8,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from services.mindbot.errors import MindbotErrorCode
+from services.mindbot.pipeline.context import DifyReplyContext
 from services.mindbot.pipeline.dify_paths import run_streaming_dify_branch
 
 
@@ -58,35 +59,46 @@ async def test_streaming_ai_card_create_stream_and_finalize() -> None:
         prefetch_mock,
     ):
         with patch(
-            "services.mindbot.pipeline.dify_paths.create_and_deliver_ai_card",
-            create_mock,
+            "services.mindbot.pipeline.ai_card_state.prefetch_ai_card_access_token",
+            prefetch_mock,
         ):
             with patch(
-                "services.mindbot.pipeline.dify_paths.streaming_update_ai_card",
-                stream_mock,
+                "services.mindbot.pipeline.dify_paths.create_and_deliver_ai_card",
+                create_mock,
             ):
                 with patch(
-                    "services.mindbot.pipeline.dify_paths.mindbot_consume_dify_stream_batched",
-                    fake_consume,
+                    "services.mindbot.pipeline.dify_paths.streaming_update_ai_card",
+                    stream_mock,
                 ):
-                    status, _headers = await run_streaming_dify_branch(
-                        cfg=cfg,
-                        dify=SimpleNamespace(),
-                        text_in="hi",
-                        user_id="u1",
-                        dify_conv=None,
-                        files=[],
-                        body=body,
-                        session_webhook_valid=None,
-                        conversation_id_dt="oc-1",
-                        conv_key="ck",
-                        dify_inputs=None,
-                        stale_cb=None,
-                        record_usage=record_usage,
-                        hdr=hdr,
-                        redis_bind_dify_conversation=redis_bind,
-                        pipeline_ctx="test_ctx",
-                    )
+                    with patch(
+                        "services.mindbot.pipeline.ai_card_state.streaming_update_ai_card",
+                        stream_mock,
+                    ):
+                        with patch(
+                            "services.mindbot.pipeline.dify_paths.mindbot_consume_dify_stream_batched",
+                            fake_consume,
+                        ):
+                            ctx = DifyReplyContext(
+                                cfg=cfg,
+                                body=body,
+                                session_webhook_valid=None,
+                                conversation_id_dt="oc-1",
+                                conv_key="ck",
+                                record_usage=record_usage,
+                                hdr=hdr,
+                                redis_bind_dify_conversation=redis_bind,
+                                pipeline_ctx="test_ctx",
+                            )
+                            status, _headers = await run_streaming_dify_branch(
+                                ctx,
+                                dify=SimpleNamespace(),
+                                text_in="hi",
+                                user_id="u1",
+                                dify_conv=None,
+                                files=[],
+                                dify_inputs=None,
+                                stale_cb=None,
+                            )
     assert status == 200
     assert usage_codes == [MindbotErrorCode.OK]
     create_mock.assert_awaited_once()

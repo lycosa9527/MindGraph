@@ -4,9 +4,12 @@ from __future__ import annotations
 
 import json
 import logging
+import re
+import ssl
 from typing import Any, Optional
 
 import aiohttp
+import aiohttp.resolver
 
 from services.mindbot.infra.http_client import get_outbound_session
 from models.domain.mindbot_config import OrganizationMindbotConfig
@@ -29,6 +32,48 @@ from services.mindbot.platforms.dingtalk.auth.oauth import (
 )
 
 logger = logging.getLogger(__name__)
+
+_SENSITIVE_PATTERN = re.compile(
+    r'("(?:accessToken|access_token|token|secret|password)")\s*:\s*"[^"]{4,}"',
+    re.IGNORECASE,
+)
+
+
+def _sanitize_webhook_snippet(body_txt: str, max_len: int = 400) -> str:
+    """Return a truncated, token-redacted snippet safe for WARNING logs."""
+    snippet = body_txt[:max_len]
+    return _SENSITIVE_PATTERN.sub(r'\1: "***"', snippet)
+
+
+class _PinnedIPResolver(aiohttp.resolver.AbstractResolver):
+    """aiohttp resolver that returns a pre-resolved IP, bypassing DNS at request time.
+
+    This prevents DNS rebinding attacks: the hostname was resolved and validated
+    at callback time; subsequent requests use the pinned IP so a rogue DNS TTL-0
+    response cannot redirect the connection to a private address.
+
+    TLS SNI and certificate verification still use the original hostname because
+    aiohttp derives ``server_hostname`` from the URL's host component, not the
+    resolved IP.
+    """
+
+    def __init__(self, pinned_ip: str) -> None:
+        self._pinned_ip = pinned_ip
+
+    async def resolve(self, host: str, port: int = 0, family: int = 0) -> list[dict]:
+        return [
+            {
+                "hostname": host,
+                "host": self._pinned_ip,
+                "port": port,
+                "family": family,
+                "proto": 0,
+                "flags": 0,
+            }
+        ]
+
+    async def close(self) -> None:
+        pass
 
 
 def is_group_conversation(body: dict[str, Any]) -> bool:
@@ -142,36 +187,35 @@ async def reply_via_openapi(
     return False, False
 
 
-async def post_session_webhook(
-    session_webhook: str,
-    answer: str,
-    *,
-    stream_chunk: bool = False,
-    pipeline_ctx: str = "",
+async def _do_post_session_webhook(
+    session: aiohttp.ClientSession,
+    url: str,
+    payload_str: str,
+    timeout: aiohttp.ClientTimeout,
+    host: str,
+    stream_chunk: bool,
+    pipeline_ctx: str,
 ) -> bool:
-    out_payload = build_session_webhook_payload(answer, stream_chunk=stream_chunk)
-    payload_str = json.dumps(out_payload, ensure_ascii=False)
-    host = session_webhook_host(session_webhook)
-    timeout_s = 8.0 if stream_chunk else 20.0
-    timeout = aiohttp.ClientTimeout(total=timeout_s)
+    """Execute the actual webhook POST and handle response/errors."""
     try:
-        http = get_outbound_session()
-        async with http.post(
-            session_webhook.strip(),
+        async with session.post(
+            url,
             data=payload_str,
             headers={"Content-Type": "application/json; charset=utf-8"},
             timeout=timeout,
+            allow_redirects=False,
         ) as r:
-            if r.status >= 400:
+            if not (200 <= r.status < 300):
                 body_txt = await r.text()
                 logger.warning(
                     "[MindBot] outbound_session_webhook_http %s host=%s status=%s body=%s",
                     pipeline_ctx,
                     host,
                     r.status,
-                    body_txt[:500],
+                    _sanitize_webhook_snippet(body_txt),
                 )
                 return False
+            await r.read()
     except Exception as exc:
         logger.exception(
             "[MindBot] outbound_session_webhook_error %s host=%s: %s",
@@ -192,6 +236,40 @@ async def post_session_webhook(
     return True
 
 
+async def post_session_webhook(
+    session_webhook: str,
+    answer: str,
+    *,
+    stream_chunk: bool = False,
+    pipeline_ctx: str = "",
+    pinned_ip: str = "",
+) -> bool:
+    """POST ``answer`` to the DingTalk session webhook.
+
+    When ``pinned_ip`` is non-empty, the request connects to the pre-resolved IP
+    address instead of re-resolving DNS, preventing DNS rebinding SSRF.  TLS SNI
+    and certificate verification still use the original hostname from the URL.
+    """
+    out_payload = build_session_webhook_payload(answer, stream_chunk=stream_chunk)
+    payload_str = json.dumps(out_payload, ensure_ascii=False)
+    host = session_webhook_host(session_webhook)
+    timeout_s = 8.0 if stream_chunk else 20.0
+    timeout = aiohttp.ClientTimeout(total=timeout_s)
+    url = session_webhook.strip()
+
+    if pinned_ip:
+        resolver = _PinnedIPResolver(pinned_ip)
+        ssl_ctx = ssl.create_default_context()
+        connector = aiohttp.TCPConnector(resolver=resolver, ssl=ssl_ctx)
+        async with aiohttp.ClientSession(connector=connector) as pinned_session:
+            return await _do_post_session_webhook(
+                pinned_session, url, payload_str, timeout, host, stream_chunk, pipeline_ctx
+            )
+    return await _do_post_session_webhook(
+        get_outbound_session(), url, payload_str, timeout, host, stream_chunk, pipeline_ctx
+    )
+
+
 async def send_one_reply_chunk(
     cfg: OrganizationMindbotConfig,
     body: dict[str, Any],
@@ -199,6 +277,7 @@ async def send_one_reply_chunk(
     chunk: str,
     *,
     pipeline_ctx: str = "",
+    pinned_ip: str = "",
 ) -> tuple[bool, bool]:
     """Send one streaming segment: session webhook (text) then OpenAPI ``sampleText`` fallback."""
     logger.debug(
@@ -213,6 +292,7 @@ async def send_one_reply_chunk(
             chunk,
             stream_chunk=True,
             pipeline_ctx=pipeline_ctx,
+            pinned_ip=pinned_ip,
         ):
             return True, False
         return await reply_via_openapi(cfg, body, chunk, stream_chunk=True, pipeline_ctx=pipeline_ctx)

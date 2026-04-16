@@ -9,12 +9,13 @@ import pytest
 from services.mindbot.integrations.dingtalk import inbound_log as dil
 
 
-def test_logging_enabled_by_default_when_debug_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_logging_disabled_by_default_when_debug_unset(monkeypatch: pytest.MonkeyPatch) -> None:
+    """All inbound logging defaults to off for production safety (no PII in logs by default)."""
     monkeypatch.delenv("MINDBOT_LOG_CALLBACK_INBOUND", raising=False)
     monkeypatch.delenv("MINDBOT_LOG_CALLBACK_INBOUND_FULL", raising=False)
     monkeypatch.delenv("MINDBOT_LOG_CALLBACK_DEBUG", raising=False)
-    assert dil.dingtalk_inbound_logging_enabled() is True
-    assert dil.dingtalk_inbound_full_logging() is True
+    assert dil.dingtalk_inbound_logging_enabled() is False
+    assert dil.dingtalk_inbound_full_logging() is False
 
 
 def test_full_mode_enables(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -31,12 +32,16 @@ def test_debug_enables_full_inbound(monkeypatch: pytest.MonkeyPatch) -> None:
     assert dil.dingtalk_inbound_full_logging() is True
 
 
-def test_log_dingtalk_inbound_noop_when_all_off(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_log_dingtalk_inbound_noop_when_all_off(
+    monkeypatch: pytest.MonkeyPatch,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     monkeypatch.delenv("MINDBOT_LOG_CALLBACK_INBOUND", raising=False)
     monkeypatch.delenv("MINDBOT_LOG_CALLBACK_INBOUND_FULL", raising=False)
     monkeypatch.setenv("MINDBOT_LOG_CALLBACK_DEBUG", "0")
     req = MagicMock()
     dil.log_dingtalk_inbound(req, b"{}", "t")
+    assert caplog.text == ""
 
 
 def test_log_full_includes_parsed_json(
@@ -61,9 +66,10 @@ def test_log_full_includes_parsed_json(
     assert "r1" in caplog.text
 
 
-def test_debug_failure_logging_enabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_debug_failure_logging_disabled_by_default(monkeypatch: pytest.MonkeyPatch) -> None:
+    """MINDBOT_LOG_CALLBACK_DEBUG defaults to off for production safety."""
     monkeypatch.delenv("MINDBOT_LOG_CALLBACK_DEBUG", raising=False)
-    assert dil.debug_callback_failure_logging_enabled() is True
+    assert dil.debug_callback_failure_logging_enabled() is False
 
 
 def test_debug_failure_logging_explicit_off(monkeypatch: pytest.MonkeyPatch) -> None:

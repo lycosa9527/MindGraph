@@ -7,11 +7,25 @@ reaching the Dify semaphore. This prevents one noisy org from starving others.
 When Redis is unavailable the limiter falls back to a per-process in-memory
 counter so abuse protection is maintained even during Redis outages.
 
+Multi-worker caveat (in-memory fallback)
+-----------------------------------------
+The in-memory fallback is **per-process only**.  Under N Uvicorn workers, each
+worker tracks its own counter independently, so during a Redis outage an org
+can send up to N × limit requests before being blocked.  This is an acceptable
+degradation compared to the alternative (no protection at all) but operators
+should be aware that Redis availability is critical for globally-accurate limits.
+
+Additionally, when ``_mem_counters`` exceeds ``MINDBOT_RATE_LIMIT_MEM_MAX_KEYS``
+the oldest entries are evicted. An evicted org briefly loses its counter and may
+not be accurately limited for the remainder of that window.
+
 Configuration (env vars)
 ------------------------
 MINDBOT_RATE_LIMIT_ENABLED       default True
 MINDBOT_ORG_RATE_LIMIT           default 200    (requests per window)
 MINDBOT_ORG_RATE_WINDOW_SECONDS  default 60     (window size in seconds)
+MINDBOT_RATE_LIMIT_MEM_MAX_KEYS  default 5000   (max in-memory counter entries;
+                                  expired entries purged when exceeded)
 """
 
 from __future__ import annotations
@@ -29,6 +43,11 @@ logger = logging.getLogger(__name__)
 _RATE_LIMIT_KEY_PREFIX = "mindbot:rate:"
 
 _mem_counters: Dict[int, Tuple[int, float]] = {}
+
+
+@functools.cache
+def _mem_max_keys() -> int:
+    return max(100, env_int("MINDBOT_RATE_LIMIT_MEM_MAX_KEYS", 5000))
 
 
 @functools.cache
@@ -52,10 +71,29 @@ def _mem_incr(org_id: int, window: int) -> int:
     entry = _mem_counters.get(org_id)
     if entry is None or (now - entry[1]) >= window:
         _mem_counters[org_id] = (1, now)
-        return 1
-    count = entry[0] + 1
-    _mem_counters[org_id] = (count, entry[1])
-    return count
+    else:
+        count = entry[0] + 1
+        _mem_counters[org_id] = (count, entry[1])
+
+    if len(_mem_counters) > _mem_max_keys():
+        expired_keys = [
+            k for k, (_, start) in _mem_counters.items() if (now - start) >= window
+        ]
+        for k in expired_keys:
+            del _mem_counters[k]
+        if len(_mem_counters) > _mem_max_keys():
+            excess = len(_mem_counters) - _mem_max_keys()
+            keys_to_drop = list(_mem_counters.keys())[:excess]
+            for k in keys_to_drop:
+                del _mem_counters[k]
+            logger.warning(
+                "[MindBot] rate_limit_mem_evicted count=%s (max_keys=%s reached)",
+                excess,
+                _mem_max_keys(),
+            )
+
+    result = _mem_counters.get(org_id)
+    return result[0] if result is not None else 1
 
 
 async def check_org_rate_limit(org_id: int) -> bool:
@@ -79,10 +117,13 @@ async def check_org_rate_limit(org_id: int) -> bool:
     count = await redis_incr_fixed_window(key, window)
     if count is None:
         count = _mem_incr(org_id, window)
-        logger.debug(
-            "[MindBot] rate_limit_fallback_memory org_id=%s count=%s",
+        logger.warning(
+            "[MindBot] rate_limit_fallback_memory org_id=%s count=%s "
+            "(Redis unavailable — limit is per-process only; effective limit may be "
+            "N×%s under N workers)",
             org_id,
             count,
+            _rate_limit_max(),
         )
 
     if count > limit:
