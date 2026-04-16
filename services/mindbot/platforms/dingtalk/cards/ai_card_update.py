@@ -24,6 +24,7 @@ from services.mindbot.platforms.dingtalk.cards.ai_card_create import (
     _http_detail,
     _resolve_app_key,
     mindbot_ai_card_param_key,
+    mindbot_ai_card_streaming_max_chars,
     mindbot_ai_card_template_id,
     prefetch_ai_card_access_token,
 )
@@ -79,7 +80,8 @@ async def streaming_update_ai_card(
     """
     param_key = mindbot_ai_card_param_key(cfg)
     sanitized = sanitize_markdown_for_dingtalk(markdown_full)
-    content = _clip_streaming_content(sanitized)
+    cap = mindbot_ai_card_streaming_max_chars(cfg)
+    content = _clip_streaming_content(sanitized, cap)
     out_short = (out_track_id.strip()[:12] + "…") if len(out_track_id.strip()) > 12 else out_track_id.strip()
     logger.debug(
         "[MindBot] ai_card_streaming_put %s out_track=%s finalize=%s is_error=%s "
@@ -205,7 +207,8 @@ async def update_ai_card_receiver(
     """
     param_key = mindbot_ai_card_param_key(cfg)
     sanitized = sanitize_markdown_for_dingtalk(markdown_full)
-    content = _clip_streaming_content(sanitized)
+    cap = mindbot_ai_card_streaming_max_chars(cfg)
+    content = _clip_streaming_content(sanitized, cap)
     out_short = (out_track_id.strip()[:12] + "…") if len(out_track_id.strip()) > 12 else out_track_id.strip()
     path = PATH_CARD_INSTANCES
     payload: dict[str, Any] = {

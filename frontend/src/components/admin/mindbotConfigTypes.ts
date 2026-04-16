@@ -20,6 +20,7 @@ export interface MindbotConfigRow {
   chain_of_thought_max_chars: number
   dingtalk_ai_card_template_id: string | null
   dingtalk_ai_card_param_key: string | null
+  dingtalk_ai_card_streaming_max_chars: number
   is_enabled: boolean
 }
 
@@ -42,5 +43,6 @@ export interface MindbotConfigFormState {
   chain_of_thought_max_chars: number
   dingtalk_ai_card_template_id: string
   dingtalk_ai_card_param_key: string
+  dingtalk_ai_card_streaming_max_chars: number
   is_enabled: boolean
 }

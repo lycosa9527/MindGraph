@@ -247,6 +247,7 @@ async def admin_upsert_mindbot_config(
             chain_of_thought_max_chars=payload.chain_of_thought_max_chars,
             dingtalk_ai_card_template_id=(payload.dingtalk_ai_card_template_id or "").strip() or None,
             dingtalk_ai_card_param_key=(payload.dingtalk_ai_card_param_key or "").strip() or None,
+            dingtalk_ai_card_streaming_max_chars=payload.dingtalk_ai_card_streaming_max_chars,
             is_enabled=payload.is_enabled,
         )
         db.add(row)
@@ -289,6 +290,10 @@ async def admin_upsert_mindbot_config(
         if "dingtalk_ai_card_param_key" in payload.model_fields_set:
             existing.dingtalk_ai_card_param_key = (
                 (payload.dingtalk_ai_card_param_key or "").strip() or None
+            )
+        if "dingtalk_ai_card_streaming_max_chars" in payload.model_fields_set:
+            existing.dingtalk_ai_card_streaming_max_chars = (
+                payload.dingtalk_ai_card_streaming_max_chars
             )
         existing.is_enabled = payload.is_enabled
         row = existing

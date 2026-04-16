@@ -50,6 +50,9 @@ from services.mindbot.platforms.dingtalk.cards.ai_card import (
     streaming_update_ai_card,
     update_ai_card_receiver,
 )
+from services.mindbot.platforms.dingtalk.cards.ai_card_create import (
+    mindbot_ai_card_streaming_max_chars,
+)
 from services.mindbot.platforms.dingtalk.cards.ai_card_errors import describe_ai_card_failure
 from utils.env_helpers import env_bool
 
@@ -306,7 +309,10 @@ async def run_streaming_dify_branch(
     ):
         fin_ok, _remainder = await card_state.finalize(cfg, reply_text, pipeline_ctx)
         if fin_ok and env_bool("MINDBOT_AI_CARD_APPEND_OVERFLOW_REMAINDER", False):
-            remainder = ai_card_overflow_remainder_for_markdown(reply_text)
+            remainder = ai_card_overflow_remainder_for_markdown(
+                reply_text,
+                max_chars=mindbot_ai_card_streaming_max_chars(cfg),
+            )
             if remainder.strip():
                 await send_one_reply_chunk(
                     cfg,

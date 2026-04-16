@@ -14,12 +14,13 @@ from services.mindbot.platforms.dingtalk.cards.ai_card import (
     ai_card_overflow_remainder_for_markdown,
     create_and_deliver_ai_card,
     mindbot_ai_card_param_key,
+    mindbot_ai_card_streaming_max_chars,
     mindbot_ai_card_wiring_enabled,
     probe_ai_card_streaming_update_api,
     streaming_update_ai_card,
 )
 from services.mindbot.platforms.dingtalk.cards.ai_card_create import (
-    MAX_STREAMING_CHARS,
+    DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS,
     _open_space_id_group,
     _open_space_id_robot,
 )
@@ -49,14 +50,25 @@ def test_mindbot_ai_card_param_key_default() -> None:
     assert mindbot_ai_card_param_key(cfg) == "content"
 
 
+def test_mindbot_ai_card_streaming_max_chars_resolves() -> None:
+    assert (
+        mindbot_ai_card_streaming_max_chars(_mindbot_cfg())
+        == DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS
+    )
+    assert mindbot_ai_card_streaming_max_chars(_mindbot_cfg(dingtalk_ai_card_streaming_max_chars=7000)) == 7000
+    assert mindbot_ai_card_streaming_max_chars(_mindbot_cfg(dingtalk_ai_card_streaming_max_chars=100)) == 500
+
+
 def test_ai_card_overflow_remainder_empty_when_short() -> None:
-    assert ai_card_overflow_remainder_for_markdown("hello") == ""
+    cap = DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS
+    assert ai_card_overflow_remainder_for_markdown("hello", max_chars=cap) == ""
 
 
 def test_ai_card_overflow_remainder_after_cap() -> None:
+    cap = 3000
     overage = 500
-    long_body = "x" * (MAX_STREAMING_CHARS + overage)
-    rem = ai_card_overflow_remainder_for_markdown(long_body)
+    long_body = "x" * (cap + overage)
+    rem = ai_card_overflow_remainder_for_markdown(long_body, max_chars=cap)
     assert len(rem) == overage
     assert rem == "x" * overage
 

@@ -57,6 +57,12 @@ class MindbotConfigPayload(BaseModel):
         max_length=128,
         description="Template variable key for streaming markdown body; empty defaults to 'content'",
     )
+    dingtalk_ai_card_streaming_max_chars: int = Field(
+        6000,
+        ge=500,
+        le=50000,
+        description="Max characters sent per DingTalk AI card streaming/receiver update payload",
+    )
 
 
 class MindbotConfigResponse(BaseModel):
@@ -79,6 +85,7 @@ class MindbotConfigResponse(BaseModel):
     chain_of_thought_max_chars: int
     dingtalk_ai_card_template_id: Optional[str]
     dingtalk_ai_card_param_key: Optional[str]
+    dingtalk_ai_card_streaming_max_chars: int
     is_enabled: bool
 
 

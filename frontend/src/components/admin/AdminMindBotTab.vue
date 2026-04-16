@@ -70,6 +70,7 @@ const form = ref<MindbotConfigFormState>({
   chain_of_thought_max_chars: 4000,
   dingtalk_ai_card_template_id: '',
   dingtalk_ai_card_param_key: '',
+  dingtalk_ai_card_streaming_max_chars: 6000,
   is_enabled: true,
 })
 
@@ -99,6 +100,7 @@ function resetForm(): void {
     chain_of_thought_max_chars: 4000,
     dingtalk_ai_card_template_id: '',
     dingtalk_ai_card_param_key: '',
+    dingtalk_ai_card_streaming_max_chars: 6000,
     is_enabled: true,
   }
   formOrgId.value = null
@@ -122,6 +124,7 @@ function fillForm(row: MindbotConfigRow): void {
     chain_of_thought_max_chars: row.chain_of_thought_max_chars,
     dingtalk_ai_card_template_id: row.dingtalk_ai_card_template_id ?? '',
     dingtalk_ai_card_param_key: row.dingtalk_ai_card_param_key ?? '',
+    dingtalk_ai_card_streaming_max_chars: row.dingtalk_ai_card_streaming_max_chars,
     is_enabled: row.is_enabled,
   }
   formOrgId.value = row.organization_id
@@ -164,6 +167,25 @@ const managerSchoolDisplayName = computed(() => {
     return orgNameById(managerOrgId.value)
   }
   return '—'
+})
+
+/** School name for the MindBot dialog header (钉钉机器人【name】). */
+const mindbotDialogSchoolDisplayName = computed(() => {
+  const oid = formOrgId.value
+  if (oid == null) {
+    return ''
+  }
+  const match = schools.value.find((x) => x.id === oid)
+  if (match) {
+    return orgLabel(match)
+  }
+  if (!isAdmin.value) {
+    const m = managerSchoolDisplayName.value.trim()
+    if (m && m !== '—') {
+      return m
+    }
+  }
+  return String(oid)
 })
 
 async function load(): Promise<void> {
@@ -247,6 +269,7 @@ async function save(): Promise<void> {
       chain_of_thought_max_chars: form.value.chain_of_thought_max_chars,
       dingtalk_ai_card_template_id: form.value.dingtalk_ai_card_template_id.trim() || null,
       dingtalk_ai_card_param_key: form.value.dingtalk_ai_card_param_key.trim() || null,
+      dingtalk_ai_card_streaming_max_chars: form.value.dingtalk_ai_card_streaming_max_chars,
       is_enabled: form.value.is_enabled,
     }
     const inputsRaw = form.value.dify_inputs_json.trim()
@@ -536,6 +559,7 @@ defineExpose({
       :dingtalk-secret-replace-mode="dingtalkSecretReplaceMode"
       :dify-api-key-replace-mode="difyApiKeyReplaceMode"
       :manager-school-display-name="managerSchoolDisplayName"
+      :school-display-name="mindbotDialogSchoolDisplayName"
       :can-load-usage="canLoadUsage"
       :build-callback-url="buildCallbackUrlByToken"
       @save="save"

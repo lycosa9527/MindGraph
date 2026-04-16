@@ -63,7 +63,7 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
     return MindbotConfigResponse(
         id=row.id,
         organization_id=row.organization_id,
-        public_callback_token=_mask_secret(row.public_callback_token.strip(), head=0, tail=8),
+        public_callback_token=row.public_callback_token.strip(),
         dingtalk_robot_code=row.dingtalk_robot_code,
         dingtalk_app_secret_masked=_mask_secret(row.dingtalk_app_secret),
         dify_api_key_masked=_mask_secret(row.dify_api_key),
@@ -80,6 +80,7 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
         chain_of_thought_max_chars=int(row.chain_of_thought_max_chars),
         dingtalk_ai_card_template_id=(row.dingtalk_ai_card_template_id or "").strip() or None,
         dingtalk_ai_card_param_key=(row.dingtalk_ai_card_param_key or "").strip() or None,
+        dingtalk_ai_card_streaming_max_chars=int(row.dingtalk_ai_card_streaming_max_chars),
         is_enabled=row.is_enabled,
     )
 

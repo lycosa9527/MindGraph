@@ -46,6 +46,11 @@ class OrganizationMindbotConfig(Base):
     chain_of_thought_max_chars: Mapped[int] = mapped_column(Integer, nullable=False, default=4000)
     dingtalk_ai_card_template_id: Mapped[str | None] = mapped_column(String(128), nullable=True)
     dingtalk_ai_card_param_key: Mapped[str | None] = mapped_column(String(128), nullable=True)
+    dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(
+        Integer,
+        nullable=False,
+        default=6000,
+    )
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),

@@ -21,7 +21,25 @@ from utils.env_helpers import env_bool
 logger = logging.getLogger(__name__)
 
 _DEFAULT_PARAM_KEY = "content"
-MAX_STREAMING_CHARS = 3000
+DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS = 6000
+_MIN_DINGTALK_AI_CARD_STREAMING_CHARS = 500
+_MAX_DINGTALK_AI_CARD_STREAMING_CHARS = 50000
+
+
+def mindbot_ai_card_streaming_max_chars(cfg: OrganizationMindbotConfig) -> int:
+    """
+    Character cap for each DingTalk AI card streaming / receiver update body.
+
+    Stored per organization; invalid values fall back to the default.
+    """
+    raw = getattr(cfg, "dingtalk_ai_card_streaming_max_chars", None)
+    if raw is None:
+        return DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS
+    try:
+        n = int(raw)
+    except (TypeError, ValueError):
+        return DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS
+    return max(_MIN_DINGTALK_AI_CARD_STREAMING_CHARS, min(_MAX_DINGTALK_AI_CARD_STREAMING_CHARS, n))
 
 
 def _dt_err(body: dict[str, Any]) -> tuple[str, str]:
@@ -54,27 +72,27 @@ def mindbot_ai_card_wiring_enabled(cfg: OrganizationMindbotConfig) -> bool:
     return True
 
 
-def _clip_streaming_content(text: str) -> str:
-    if len(text) <= MAX_STREAMING_CHARS:
+def _clip_streaming_content(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
         return text
     logger.warning(
         "[MindBot] dingtalk_ai_card_streaming_content_truncated chars=%s max=%s",
         len(text),
-        MAX_STREAMING_CHARS,
+        max_chars,
     )
-    return text[:MAX_STREAMING_CHARS]
+    return text[:max_chars]
 
 
-def ai_card_overflow_remainder_for_markdown(markdown_full: str) -> str:
+def ai_card_overflow_remainder_for_markdown(markdown_full: str, max_chars: int) -> str:
     """
     Return the sanitized markdown suffix after the AI card streaming character cap.
 
     Used for optional follow-up chat messages when the full reply exceeds the cap.
     """
     sanitized = sanitize_markdown_for_dingtalk(markdown_full)
-    if len(sanitized) <= MAX_STREAMING_CHARS:
+    if len(sanitized) <= max_chars:
         return ""
-    return sanitized[MAX_STREAMING_CHARS:]
+    return sanitized[max_chars:]
 
 
 def _resolve_app_key(

@@ -137,6 +137,7 @@ export default {
   'admin.markets.loadError': 'Failed to load',
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot & Dify (per school)',
+  'admin.mindbot.dialogHeaderNote': 'DingTalk robot [{name}]',
   'admin.mindbot.introHttpOnly':
     'HTTP receive mode: one callback URL per school (shown when you edit). DingTalk app secret signs inbound requests; Dify powers replies.',
   'admin.mindbot.emptyState': 'No school has MindBot configured yet.',
@@ -172,8 +173,7 @@ export default {
   'admin.mindbot.dingtalkClientIdHint':
     'Used with the Client Secret to obtain access tokens for AI cards and other OpenAPI. Save both; required for “Test permissions” and AI cards.',
   'admin.mindbot.difyShowChainOfThought': 'Show chain-of-thought',
-  'admin.mindbot.difyShowChainOfThoughtHint':
-    'When off (default), chain-of-thought is not shown in replies and is stripped before sending. When on, model thinking blocks (e.g. redacted_thinking) are shown for all chat types. Streaming can also merge Dify agent thought from SSE; blocking replies use answer text only unless the API returns separate thought fields. With streaming and this option on, the character cap applies to the final reply; live card or message updates may show longer thinking until the turn finishes.',
+  'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'DingTalk AI card streaming max chars',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI card template (optional)',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     'Empty = text replies; e.g. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
@@ -197,7 +197,6 @@ export default {
     'Enter a new API key, or leave blank and save to keep the current one.',
   'admin.mindbot.replaceSecret': 'Replace',
   'admin.mindbot.difyTimeout': 'Dify timeout (seconds)',
-  'admin.mindbot.difyInputsJson': 'Dify app inputs (JSON object, optional)',
   'admin.mindbot.difyInputsJsonHint':
     'If your Dify app defines input variables, set a JSON object here (e.g. \'{\'"grade":"7"\'}\').',
   'admin.mindbot.enabled': 'Enable MindBot',

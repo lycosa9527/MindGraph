@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.88.0] - 2026-04-16
+
+### Added
+- **MindBot / DingTalk**: Per-organization cap on AI-card streaming body length — `dingtalk_ai_card_streaming_max_chars` on `organization_mindbot_configs` (default **6000**); Alembic `rev_0021`.
+- **MindBot / DingTalk**: `mindbot_ai_card_streaming_max_chars()` helper in `ai_card_create.py` (minimum enforced against platform limits); pipeline and `ai_card_update` use the cap for streamed card text.
+- **MindBot / admin**: MindBot admin API and UI expose and persist the new field (`mindbot_models.py`, `mindbot_admin.py`, `mindbot_helpers.py`; `AdminMindBotConfigDialog.vue`, `AdminMindBotTab.vue`, `mindbotConfigTypes.ts`); i18n `en` / `zh` admin strings.
+
+### Changed
+- **MindBot / pipeline**: `dify_paths.py` passes per-config `max_chars` into AI-card streaming paths.
+- **Tests**: `test_mindbot_ai_card.py`, `test_mindbot_callback.py` cover the new config field and resolver behavior.
+
 ## [5.87.0] - 2026-04-16
 
 ### Added

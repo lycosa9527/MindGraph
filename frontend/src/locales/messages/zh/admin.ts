@@ -131,6 +131,7 @@ export default {
   'admin.markets.loadError': '加载失败',
   'admin.mindbot': 'MindBot',
   'admin.mindbot.title': '钉钉机器人与 Dify（按校）',
+  'admin.mindbot.dialogHeaderNote': '钉钉机器人【{name}】',
   'admin.mindbot.introHttpOnly':
     'HTTP 接收模式：每校独立回调地址（编辑时可见）。Client Secret 用于验签；Dify 负责对话与回复。',
   'admin.mindbot.emptyState': '尚未配置任何学校的 MindBot。',
@@ -166,8 +167,7 @@ export default {
   'admin.mindbot.dingtalkClientIdHint':
     '用于获取 access_token，调用 AI 卡片流式更新等 OpenAPI。需与「Client Secret」一起保存。未填写则无法使用「测试权限」与 AI 卡片。',
   'admin.mindbot.difyShowChainOfThought': '显示思维链',
-  'admin.mindbot.difyShowChainOfThoughtHint':
-    '关闭（默认）时不在回复中展示思维链，发送前会剔除；开启后对所有会话类型展示模型思维块（如 redacted_thinking）。流式 SSE 可合并 Dify 的 agent 思考事件；阻塞（非流式）回复目前仅使用 answer 文本，除非接口另行返回思考字段。流式且开启本开关时，字数上限作用于最终回复；流式更新过程中可能先显示更长的思考内容直到本轮结束。',
+  'admin.mindbot.dingtalkAiCardStreamingMaxChars': 'AI 卡片流式内容上限（字符）',
   'admin.mindbot.dingtalkAiCardTemplateId': 'AI 卡片模板（可选）',
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     '留空为文本回复；示例 d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
@@ -188,7 +188,6 @@ export default {
   'admin.mindbot.difyApiKeyReplaceHint': '输入新的 API Key；若留空并保存则保留当前已保存的值。',
   'admin.mindbot.replaceSecret': '更换',
   'admin.mindbot.difyTimeout': 'Dify 超时（秒）',
-  'admin.mindbot.difyInputsJson': 'Dify 应用输入变量（JSON 对象，可选）',
   'admin.mindbot.difyInputsJsonHint':
     '若 Dify 应用定义了输入变量，在此填写 JSON 对象（例如 \'{\'"grade":"7"\'}\'）。',
   'admin.mindbot.enabled': '启用 MindBot',

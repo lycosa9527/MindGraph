@@ -15,7 +15,6 @@ import type {
 } from '@/components/admin/mindbotConfigTypes'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
-import { maskSensitiveDisplay } from '@/utils/sensitiveMask'
 
 const visible = defineModel<boolean>({ required: true })
 const form = defineModel<MindbotConfigFormState>('form', { required: true })
@@ -32,6 +31,8 @@ const props = defineProps<{
   dingtalkSecretReplaceMode: boolean
   difyApiKeyReplaceMode: boolean
   managerSchoolDisplayName: string
+  /** Resolved school display name for the dialog subtitle (钉钉机器人【name】). */
+  schoolDisplayName: string
   canLoadUsage: boolean
   buildCallbackUrl: (token: string) => string
 }>()
@@ -221,7 +222,11 @@ function onDialogClosed(): void {
           aria-hidden="true"
           >·</span
         >
-        <span class="mindbot-swiss-header__note">{{ t('admin.mindbot.title') }}</span>
+        <span class="mindbot-swiss-header__note">{{
+          t('admin.mindbot.dialogHeaderNote', {
+            name: (schoolDisplayName || '').trim() || '—',
+          })
+        }}</span>
       </div>
     </template>
     <div class="mindbot-config-body">
@@ -259,7 +264,7 @@ function onDialogClosed(): void {
                   <code
                     class="mindbot-callback-url mindbot-swiss-code block flex-1 min-w-0 max-w-full break-all rounded-sm border border-[var(--mindbot-swiss-border)] bg-[#050505] px-3 py-2.5 text-xs font-mono leading-snug text-[var(--mindbot-swiss-text)]"
                     >{{
-                      maskSensitiveDisplay(buildCallbackUrl(editingOrgRow.public_callback_token))
+                      buildCallbackUrl(editingOrgRow.public_callback_token)
                     }}</code
                   >
                   <div class="flex flex-wrap items-center gap-2 shrink-0 sm:self-center">
@@ -520,7 +525,7 @@ function onDialogClosed(): void {
                     </div>
                   </template>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.difyInputsJson')">
+                <el-form-item>
                   <el-input
                     v-model="form.dify_inputs_json"
                     type="textarea"
@@ -540,17 +545,22 @@ function onDialogClosed(): void {
                     controls-position="right"
                   />
                 </el-form-item>
+                <el-form-item :label="t('admin.mindbot.dingtalkAiCardStreamingMaxChars')">
+                  <el-input-number
+                    v-model="form.dingtalk_ai_card_streaming_max_chars"
+                    :min="500"
+                    :max="50000"
+                    :step="100"
+                    class="mindbot-swiss-input-number w-full sm:w-48"
+                    controls-position="right"
+                  />
+                </el-form-item>
                 <el-form-item :label="t('admin.mindbot.difyShowChainOfThought')">
-                  <div class="mindbot-cot-field space-y-2 max-w-2xl">
+                  <div class="mindbot-cot-field max-w-2xl">
                     <el-switch
                       v-model="form.show_chain_of_thought"
                       class="mindbot-cot-switch"
                     />
-                    <p
-                      class="mindbot-hint mindbot-swiss-hint text-xs m-0 leading-snug"
-                    >
-                      {{ t('admin.mindbot.difyShowChainOfThoughtHint') }}
-                    </p>
                   </div>
                 </el-form-item>
               </div>
