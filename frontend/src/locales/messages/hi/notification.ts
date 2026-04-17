@@ -1,15 +1,16 @@
 /** hi UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'विषय या केंद्र नोड साफ़ नहीं किए जा सकते',
-  'notification.cannotResetSelectDiagramType':
-    'रीसेट नहीं हो सकता: पहले एक आरेख प्रकार चुनें',
+  'notification.cannotResetSelectDiagramType': 'रीसेट नहीं हो सकता: पहले एक आरेख प्रकार चुनें',
   'notification.canvasClearNodes': '{count} नोड साफ़ किए गए',
   'notification.canvasClearNodesLearning': '{count} नोड खाली किए, उत्तरों में जोड़े गए',
   'notification.canvasSomeoneEditingNode': 'कोई और इस नोड को संपादित कर रहा है',
   'notification.collabDeleteBlocked':
     'जब कोई अन्य उपयोगकर्ता चयनित नोड संपादित कर रहा हो तब हटाया नहीं जा सकता',
-  'notification.collabRedoBlocked': 'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तब फिर से नहीं कर सकते',
-  'notification.collabUndoBlocked': 'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तब पूर्ववत नहीं कर सकते',
+  'notification.collabRedoBlocked':
+    'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तब फिर से नहीं कर सकते',
+  'notification.collabUndoBlocked':
+    'जब कोई अन्य उपयोगकर्ता संपादित कर रहा हो तब पूर्ववत नहीं कर सकते',
   'notification.conversationDeleted': 'बातचीत हटा दी गई',
   'notification.copied': 'क्लिपबोर्ड पर कॉपी किया गया',
   'notification.copyFailed': 'कॉपी विफल',

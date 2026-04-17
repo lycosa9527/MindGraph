@@ -99,7 +99,7 @@ class LLMMetricsTracker:
         """
         self.performance_tracker.record_request(model=model, duration=duration, success=success, error=error)
 
-    def record_provider_metrics(
+    async def record_provider_metrics(
         self,
         provider: str,
         load_balancer: Any,
@@ -118,7 +118,9 @@ class LLMMetricsTracker:
             error: Optional error message if failed
         """
         if load_balancer:
-            load_balancer.record_provider_metrics(provider=provider, success=success, duration=duration, error=error)
+            await load_balancer.record_provider_metrics(
+                provider=provider, success=success, duration=duration, error=error
+            )
 
     async def track_all(
         self,
@@ -161,7 +163,7 @@ class LLMMetricsTracker:
 
         # Record provider metrics (if load balancing enabled)
         if provider and load_balancer:
-            self.record_provider_metrics(
+            await self.record_provider_metrics(
                 provider=provider,
                 load_balancer=load_balancer,
                 success=success,

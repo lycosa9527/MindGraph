@@ -40,9 +40,7 @@ _QPS_LIMIT_APP_AND_API = "Forbidden.AccessDenied.QpsLimitForAppkeyAndApi"
 _QPS_LIMIT_API_GLOBAL = "Forbidden.AccessDenied.QpsLimitForApi"
 
 _limiters_guard = asyncio.Lock()
-_limiters: collections.OrderedDict[str, _AsyncSlidingWindowLimiter] = (
-    collections.OrderedDict()
-)
+_limiters: collections.OrderedDict[str, _AsyncSlidingWindowLimiter] = collections.OrderedDict()
 
 _MINDBOT_QPS_LIMITER_MAX_KEYS_DEFAULT = 500
 
@@ -79,11 +77,7 @@ class _AsyncSlidingWindowLimiter:
             async with self._lock:
                 now = loop.time()
                 self._times = [t for t in self._times if t > now - self._window]
-                is_first = (
-                    event is not None
-                    and bool(self._waiters)
-                    and self._waiters[0] is event
-                )
+                is_first = event is not None and bool(self._waiters) and self._waiters[0] is event
                 # Proceed when capacity is available and we are either not queued
                 # (first arrival, no competition) or we are first in the waiter queue.
                 if len(self._times) < self._max_calls and (not self._waiters or is_first):
@@ -181,8 +175,7 @@ async def acquire_dingtalk_streaming_qps_slot(app_key: str) -> None:
             if len(_limiters) >= max_keys:
                 evicted_key, _ = _limiters.popitem(last=False)
                 logger.warning(
-                    "[MindBot] dingtalk_qps_limiter_evicted app_key_tail=%s "
-                    "(max_keys=%s reached)",
+                    "[MindBot] dingtalk_qps_limiter_evicted app_key_tail=%s (max_keys=%s reached)",
                     evicted_key[-6:] if len(evicted_key) > 6 else evicted_key,
                     max_keys,
                 )

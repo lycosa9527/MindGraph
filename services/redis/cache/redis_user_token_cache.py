@@ -11,7 +11,8 @@ from datetime import UTC, datetime, timezone
 from typing import Any, Dict, Optional
 
 from services.redis import keys as _keys
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -25,42 +26,42 @@ def _short_hash_from_full_token_hash(token_hash_64: str) -> str:
 
 
 class _UserTokenCache:
-    def get_by_raw_token(self, raw_token: str) -> Optional[Dict[str, Any]]:
+    async def get_by_raw_token(self, raw_token: str) -> Optional[Dict[str, Any]]:
         if not is_redis_available():
             return None
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return None
         sh = _short_hash_from_raw_token(raw_token)
         cache_key = _keys.USER_TOKEN_BY_HASH.format(hash=sh)
         try:
-            raw = redis.get(cache_key)
+            raw = await redis.get(cache_key)
             if raw:
                 return json.loads(raw)
         except Exception as exc:
             logger.debug("[UserTokenCache] get failed: %s", exc)
         return None
 
-    def get_by_token_hash_64(self, token_hash_64: str) -> Optional[Dict[str, Any]]:
+    async def get_by_token_hash_64(self, token_hash_64: str) -> Optional[Dict[str, Any]]:
         if not is_redis_available():
             return None
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return None
         sh = _short_hash_from_full_token_hash(token_hash_64)
         cache_key = _keys.USER_TOKEN_BY_HASH.format(hash=sh)
         try:
-            raw = redis.get(cache_key)
+            raw = await redis.get(cache_key)
             if raw:
                 return json.loads(raw)
         except Exception as exc:
             logger.debug("[UserTokenCache] get_by_token_hash_64 failed: %s", exc)
         return None
 
-    def set_from_row(self, raw_token: str, row: Any) -> None:
+    async def set_from_row(self, raw_token: str, row: Any) -> None:
         if not is_redis_available():
             return
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return
         sh = _short_hash_from_raw_token(raw_token)
@@ -74,20 +75,20 @@ class _UserTokenCache:
             "token_hash_full": row.token_hash,
         }
         try:
-            redis.setex(cache_key, _keys.TTL_USER_TOKEN, json.dumps(payload))
+            await redis.setex(cache_key, _keys.TTL_USER_TOKEN, json.dumps(payload))
         except Exception as exc:
             logger.debug("[UserTokenCache] set failed: %s", exc)
 
-    def invalidate_by_token_hash_64(self, token_hash_64: str) -> None:
+    async def invalidate_by_token_hash_64(self, token_hash_64: str) -> None:
         if not is_redis_available():
             return
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return
         sh = _short_hash_from_full_token_hash(token_hash_64)
         cache_key = _keys.USER_TOKEN_BY_HASH.format(hash=sh)
         try:
-            redis.delete(cache_key)
+            await redis.delete(cache_key)
         except Exception as exc:
             logger.debug("[UserTokenCache] invalidate failed: %s", exc)
 

@@ -90,7 +90,8 @@ export default {
   'auth.modal.sendingEmailCode': 'Stuur tans…',
   'auth.modal.emailCodePlaceholder': '6-syfer kode uit e-pos',
   'auth.modal.enter6DigitEmailCode': 'Voer die 6-syfer kode uit jou e-pos in',
-  'auth.modal.acknowledgeOverseas': 'Ek verstaan en sal die sagteware slegs vir opvoedkundige doeleindes gebruik.',
+  'auth.modal.acknowledgeOverseas':
+    'Ek verstaan en sal die sagteware slegs vir opvoedkundige doeleindes gebruik.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Bevestig asseblief die kennisgewing hierbo.',
   'auth.modal.waitCaptchaLoad': 'Wag vir die captcha om te laai',

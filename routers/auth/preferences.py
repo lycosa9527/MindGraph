@@ -84,8 +84,8 @@ async def update_language_preferences(
             detail="Failed to save preferences",
         ) from exc
 
-    user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
-    user_cache.cache_user(user)
+    await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
+    await user_cache.cache_user(user)
 
     return {
         "ui_language": user.ui_language,

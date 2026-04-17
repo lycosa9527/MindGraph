@@ -187,7 +187,7 @@ class ConceptMapAgent(BaseAgent):
             layout = self._generate_layout_radial(normalized_topic, normalized_concepts, sanitized_relationships)
 
             # Compute recommended dimensions based on normalized positions extents
-            recommended = self._compute_recommended_dimensions_from_layout(
+            recommended = self._recommended_dims_from_layout(
                 layout=layout,
                 topic=normalized_topic,
                 concepts=normalized_concepts,
@@ -780,7 +780,7 @@ class ConceptMapAgent(BaseAgent):
             },
         }
 
-    def _compute_recommended_dimensions_from_layout(
+    def _recommended_dims_from_layout(
         self,
         layout: Dict,
         topic: str,

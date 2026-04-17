@@ -7,7 +7,7 @@ import logging
 import time
 from typing import Dict
 
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_live_spec_ops import flush_live_spec_to_db
 from services.workshop.workshop_redis_keys import live_last_db_flush_key
 
@@ -25,11 +25,11 @@ async def schedule_live_spec_db_flush(code: str, diagram_id: str) -> None:
     After each live-spec mutation: flush immediately if max interval elapsed,
     else debounce (cancel prior timer, schedule new one).
     """
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return
 
-    raw = redis.get(live_last_db_flush_key(code))
+    raw = await redis.get(live_last_db_flush_key(code))
     last_ts = 0.0
     if raw is not None:
         try:

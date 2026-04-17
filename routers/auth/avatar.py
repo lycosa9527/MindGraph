@@ -646,8 +646,8 @@ async def update_avatar(
     try:
         await db.commit()
         await db.refresh(user)
-        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
-        user_cache.cache_user(user)
+        await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
+        await user_cache.cache_user(user)
         logger.info("User %s updated avatar to %s", user.id, user.avatar)
     except Exception as e:
         await db.rollback()

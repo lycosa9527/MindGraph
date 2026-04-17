@@ -42,12 +42,12 @@ async def _validate_grant_fks(db: AsyncSession, data: Dict[str, FeatureOrgAccess
 
 async def load_feature_org_access_map() -> Dict[str, FeatureOrgAccessEntry]:
     """Read all rules and grants (Redis first, then Postgres)."""
-    cached = redis_feature_org_access_cache.get_cached_map()
+    cached = await redis_feature_org_access_cache.get_cached_map()
     if cached is not None:
         return cached
     async with AsyncSessionLocal() as db:
         data = await load_feature_org_access_session(db)
-    redis_feature_org_access_cache.set_cached_map(data)
+    await redis_feature_org_access_cache.set_cached_map(data)
     return data
 
 
@@ -112,7 +112,7 @@ async def replace_feature_org_access(db: AsyncSession, data: Dict[str, FeatureOr
         await db.rollback()
         raise
     try:
-        redis_feature_org_access_cache.set_cached_map(data)
+        await redis_feature_org_access_cache.set_cached_map(data)
     except Exception as exc:
         logger.warning("Failed to update feature org access cache after commit: %s", exc)
     logger.info("Replaced feature org access rules (%d features)", len(data))

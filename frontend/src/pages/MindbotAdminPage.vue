@@ -21,9 +21,7 @@ const { featureMindbot } = useFeatureFlags()
 
 const mindbotTabRef = ref<InstanceType<typeof AdminMindBotTab> | null>(null)
 
-const showHeaderAddSchool = computed(
-  () => featureMindbot.value && authStore.isAdmin
-)
+const showHeaderAddSchool = computed(() => featureMindbot.value && authStore.isAdmin)
 
 function onHeaderAddSchool(): void {
   mindbotTabRef.value?.openCreate()
@@ -271,5 +269,4 @@ onUnmounted(() => {
   --el-button-active-border-color: #a1a1aa;
   --el-button-text-color: #f9fafb;
 }
-
 </style>

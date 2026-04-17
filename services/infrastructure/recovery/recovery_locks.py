@@ -37,9 +37,10 @@ _integrity_check_cache: Optional[Tuple[bool, float]] = None  # Unused, kept for 
 
 # Import Redis client (optional dependency)
 try:
-    from services.redis.redis_client import get_redis, is_redis_available
+    from services.redis.redis_async_client import get_async_redis
+    from services.redis.redis_client import is_redis_available
 except ImportError:
-    get_redis = None  # type: ignore
+    get_async_redis = None  # type: ignore
     is_redis_available = None  # type: ignore
 
 
@@ -48,11 +49,11 @@ def _generate_integrity_check_lock_id() -> str:
     return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
 
 
-def acquire_integrity_check_lock() -> bool:
+async def acquire_integrity_check_lock() -> bool:
     """
     Attempt to acquire the integrity check lock.
 
-    Uses Redis SETNX for atomic lock acquisition.
+    Uses Redis SETNX for atomic lock acquisition via the shared async client.
     Only ONE worker across all processes can hold this lock.
 
     Returns:
@@ -61,29 +62,26 @@ def acquire_integrity_check_lock() -> bool:
     """
     global _integrity_check_lock_id  # pylint: disable=global-statement
 
-    # Redis not available, assume single worker mode
-    if get_redis is None or is_redis_available is None:
+    if get_async_redis is None or is_redis_available is None:
         return True
 
     if not is_redis_available():
         logger.debug("[Recovery] Redis unavailable, assuming single worker mode for integrity check")
         return True
 
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
-        return True  # Fallback to single worker mode
+        return True
 
     try:
-        # Generate unique ID for this worker
         if _integrity_check_lock_id is None:
             _integrity_check_lock_id = _generate_integrity_check_lock_id()
 
-        # Attempt atomic lock acquisition: SETNX with TTL
-        acquired = redis.set(
+        acquired = await redis.set(
             INTEGRITY_CHECK_LOCK_KEY,
             _integrity_check_lock_id,
-            nx=True,  # Only set if not exists
-            ex=INTEGRITY_CHECK_LOCK_TTL,  # TTL in seconds
+            nx=True,
+            ex=INTEGRITY_CHECK_LOCK_TTL,
         )
 
         if acquired:
@@ -92,42 +90,39 @@ def acquire_integrity_check_lock() -> bool:
                 _integrity_check_lock_id,
             )
             return True
-        else:
-            # Lock held by another worker - check who
-            holder = redis.get(INTEGRITY_CHECK_LOCK_KEY)
-            logger.info(
-                "[Recovery] Another worker holds the integrity check lock (holder=%s), skipping integrity check",
-                holder,
-            )
-            return False
+
+        holder = await redis.get(INTEGRITY_CHECK_LOCK_KEY)
+        logger.info(
+            "[Recovery] Another worker holds the integrity check lock (holder=%s), skipping integrity check",
+            holder,
+        )
+        return False
 
     except (AttributeError, ConnectionError, RuntimeError) as e:
         logger.warning("[Recovery] Lock acquisition failed: %s, proceeding anyway", e)
-        return True  # On error, proceed
+        return True
 
 
-def release_integrity_check_lock() -> bool:
+async def release_integrity_check_lock() -> bool:
     """
     Release the integrity check lock if held by this worker.
 
-    Uses Lua script to ensure we only release our own lock.
+    Uses a Lua script to ensure we only release our own lock.
 
     Returns:
         True if lock released, False otherwise
     """
-    # Redis not available
-    if get_redis is None or is_redis_available is None:
+    if get_async_redis is None or is_redis_available is None:
         return False
 
     if not is_redis_available() or _integrity_check_lock_id is None:
         return False
 
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return False
 
     try:
-        # Lua script: Only delete if lock value matches our lock_id
         lua_script = """
         if redis.call("GET", KEYS[1]) == ARGV[1] then
             return redis.call("DEL", KEYS[1])
@@ -136,7 +131,7 @@ def release_integrity_check_lock() -> bool:
         end
         """
 
-        result = redis.eval(lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _integrity_check_lock_id)
+        result = await redis.eval(lua_script, 1, INTEGRITY_CHECK_LOCK_KEY, _integrity_check_lock_id)
 
         if result:
             logger.debug(
@@ -144,8 +139,7 @@ def release_integrity_check_lock() -> bool:
                 _integrity_check_lock_id,
             )
             return True
-        else:
-            return False
+        return False
 
     except (AttributeError, ConnectionError, RuntimeError) as e:
         logger.debug("[Recovery] Integrity check lock release failed: %s", e)

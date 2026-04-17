@@ -21,26 +21,6 @@ extraPaths = [
     "C:\\Users\\roywang\\AppData\\Local\\Programs\\Python\\Python313\\Lib\\site-packages"
 ]
 
-[tool.pytest.ini_options]
-# Pytest configuration for MindGraph
-pythonpath = ["."]
-python_files = "test_*.py"
-python_classes = "Test*"
-python_functions = "test_*"
-testpaths = ["tests"]
-asyncio_mode = "auto"
-asyncio_default_fixture_loop_scope = "function"
-addopts = [
-    "-v",
-    "--strict-markers",
-    "--tb=short",
-    "--disable-warnings"
-]
-markers = [
-    "asyncio: marks tests as async (deselect with '-m \"not asyncio\"')",
-    "slow: marks tests as slow (deselect with '-m \"not slow\"')"
-]
-
 [tool.pylint.main]
 # Ensure project root is in path for import resolution (fixes E1123 on agent_graph_workflow_with_styles)
 init-hook = 'import sys; import os; sys.path.insert(0, os.getcwd())'
@@ -59,6 +39,9 @@ ignore-patterns = [
 # Pylint 3+: directory paths to skip (ensures migration files are not linted when ignore-patterns is ignored)
 ignore-paths = [
     "alembic/versions",
+    "frontend/node_modules",
+    # Mostly long prompt strings; line length is enforced elsewhere (editors, ruff where applicable).
+    "prompts",
 ]
 
 # Output format
@@ -125,6 +108,8 @@ good-names = [
     "WORKSHOP_CHAT_MODULE",
     "WORKSHOP_CHAT_WS_MODULE",
     "KNOWLEDGE_SPACE_MODULE",
+    "MARKETS_MODULE",
+    "MINDBOT_MODULE",
     "_embedding_client",
     "_embedding_service",
     "_tts_service",
@@ -139,8 +124,17 @@ good-names = [
     "_session_manager",
     "_registration_metrics",
     "_refresh_token_manager",
+    "_api_key_cache",
+    "_get_bayi_whitelist",
+    "_get_redis",
+    "_is_redis_available",
+    "_get_async_redis",
     "_redis_available",
     "_user_cache",
+    "_dingtalk_session",
+    "_outbound_session",
+    "_shutting_down",
+    "_client",
     # Alembic migration module attributes (required names; not UPPER_CASE)
     "revision",
     "down_revision",
@@ -151,6 +145,10 @@ good-names = [
 class-attribute-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
 # Allow UPPER_CASE for attributes (properties that represent constants)
 attr-rgx = "^[A-Z][A-Z0-9_]*$|^[a-z_][a-z0-9_]*$"
+# Methods follow snake_case (3-31 chars). Names starting with ``test_`` may be
+# longer (up to 80 chars after the prefix). AST visitors must use the
+# ``visit_<NodeType>`` form mandated by ast.NodeVisitor.
+method-rgx = "^(?:[a-z_][a-z0-9_]{2,40}|test_[a-z0-9_]{2,80}|visit_[A-Za-z][a-zA-Z0-9_]*|validate_[a-z0-9_]{2,80})$"
 
 [tool.pylint.messages_control]
 # Merged with [tool.pylint.main] disable list by pylint
@@ -192,6 +190,7 @@ ignored-modules = [
     "alembic",
     "geoip2",
     "opencc",
+    "orjson",
 ]
 
 # Ruff: formatter + linter (closest to ESLint/Prettier for Python). Run: ruff format . && ruff check --fix .

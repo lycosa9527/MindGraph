@@ -30,16 +30,23 @@ class UserRepository(BaseRepository[User]):
         self,
         org_id: int,
         *,
+        before_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[User]:
-        result = await self.session.execute(
-            select(User)
-            .where(User.organization_id == org_id)
-            .order_by(User.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        """List members of an org ordered by ``id DESC`` (≈ newest first).
+
+        Use ``before_id`` (the id of the last row on the previous page) for
+        keyset pagination.  ``offset`` is retained for backward compatibility
+        only; it is ignored when ``before_id`` is supplied.
+        """
+        conditions = [User.organization_id == org_id]
+        if before_id is not None:
+            conditions.append(User.id < before_id)
+        stmt = select(User).where(*conditions).order_by(User.id.desc()).limit(limit)
+        if before_id is None and offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def count_by_org(self, org_id: int) -> int:

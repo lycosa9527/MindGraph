@@ -34,9 +34,11 @@ class TokenUsage(Base):
     id = Column(Integer, primary_key=True, index=True)
 
     # Request metadata - CAN TRACK PER USER!
-    user_id = Column(Integer, ForeignKey("users.id"), nullable=True, index=True)
-    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True, index=True)
-    api_key_id = Column(Integer, ForeignKey("api_keys.id"), nullable=True, index=True)  # Track which API key was used
+    # Single-column FK indexes are covered by the leading column of the
+    # ``idx_token_usage_*_date`` composite indexes below.
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    organization_id = Column(Integer, ForeignKey("organizations.id"), nullable=True)
+    api_key_id = Column(Integer, ForeignKey("api_keys.id"), nullable=True)
     session_id = Column(String(100), index=True)  # For grouping multi-LLM requests (e.g., node palette batch)
     conversation_id = Column(String(100), index=True)  # For multi-turn conversations (e.g., mindmate)
 
@@ -67,19 +69,21 @@ class TokenUsage(Base):
 
     # Timing
     response_time = Column(Float)  # seconds
-    created_at = Column(DateTime, default=lambda: datetime.now(UTC), index=True)
+    # BRIN index ix_token_usage_created_brin replaces the standalone btree.
+    created_at = Column(DateTime, default=lambda: datetime.now(UTC))
 
-    # Relationships
-    user = relationship("User", foreign_keys=[user_id], lazy="selectin")
-    organization = relationship("Organization", foreign_keys=[organization_id], lazy="selectin")
-    api_key = relationship("APIKey", foreign_keys=[api_key_id], lazy="selectin")  # APIKey is defined in models.auth
+    # Relationships — token_usage is high-volume; avoid eager-loading the
+    # parent rows on every analytics scan. Admin views that render usernames
+    # / org names should use ``selectinload(TokenUsage.user)`` etc.
+    user = relationship("User", foreign_keys=[user_id], lazy="select")
+    organization = relationship("Organization", foreign_keys=[organization_id], lazy="select")
+    api_key = relationship("APIKey", foreign_keys=[api_key_id], lazy="select")
 
-    # Indexes for fast queries
+    # Indexes for fast queries (BRIN on created_at is created by migration 0022).
     __table_args__ = (
         Index("idx_token_usage_user_date", "user_id", "created_at"),
         Index("idx_token_usage_org_date", "organization_id", "created_at"),
         Index("idx_token_usage_api_key_date", "api_key_id", "created_at"),
-        Index("idx_token_usage_date", "created_at"),
     )
 
     def __repr__(self):

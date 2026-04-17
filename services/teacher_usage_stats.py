@@ -17,9 +17,7 @@ from typing import Any, Optional, Set
 
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
-from sqlalchemy.orm import Session
 
-from config.database import SyncSessionLocal
 from models.domain.teacher_usage_config import (
     TeacherUsageConfig,
     _default_thresholds,
@@ -42,52 +40,6 @@ def _get_window_cutoff_utc():
     beijing_today = beijing_now.replace(hour=0, minute=0, second=0, microsecond=0)
     window_start = (beijing_today - timedelta(days=OBSERVATION_DAYS)).astimezone(timezone.utc).replace(tzinfo=None)
     return window_start
-
-
-def _get_active_dates_for_user(
-    db: Session,
-    user_id: int,
-    window_start,
-) -> Set[Any]:
-    """Get distinct active dates (as date objects) for user in observation window."""
-    active_dates: Set[Any] = set()
-
-    token_rows = (
-        db.query(func.date(TokenUsage.created_at).label("d"))
-        .filter(
-            TokenUsage.user_id == user_id,
-            TokenUsage.success.is_(True),
-            TokenUsage.created_at >= window_start,
-        )
-        .distinct()
-        .all()
-    )
-    for row in token_rows:
-        if row.d:
-            active_dates.add(row.d)
-
-    try:
-        log_db = SyncSessionLocal()
-        try:
-            log_rows = (
-                log_db.query(func.date(UserActivityLog.created_at).label("d"))
-                .filter(
-                    UserActivityLog.user_id == user_id,
-                    UserActivityLog.activity_type == "login",
-                    UserActivityLog.created_at >= window_start,
-                )
-                .distinct()
-                .all()
-            )
-            for row in log_rows:
-                if row.d:
-                    active_dates.add(row.d)
-        finally:
-            log_db.close()
-    except Exception as e:
-        logger.debug("UserActivityLog query failed (table may not exist): %s", e)
-
-    return active_dates
 
 
 def _compute_metrics(active_dates: Set[Any], window_start) -> dict[str, int]:
@@ -170,39 +122,6 @@ def _compute_metrics(active_dates: Set[Any], window_start) -> dict[str, int]:
     }
 
 
-def get_classification_config(db: Session) -> dict:
-    """Get classification thresholds from DB, or defaults if not set."""
-    row = db.query(TeacherUsageConfig).filter(TeacherUsageConfig.config_key == CONFIG_KEY).first()
-    if row and row.config_value:
-        defaults = _default_thresholds()
-        merged = {}
-        for group, default_group in defaults.items():
-            merged[group] = {**default_group, **(row.config_value.get(group) or {})}
-        return merged
-    return _default_thresholds()
-
-
-def save_classification_config(db: Session, thresholds: dict) -> bool:
-    """Save classification thresholds to DB. Returns True on success."""
-    try:
-        row = db.query(TeacherUsageConfig).filter(TeacherUsageConfig.config_key == CONFIG_KEY).first()
-        if row:
-            row.config_value = thresholds
-            row.updated_at = datetime.now(timezone.utc)
-        else:
-            row = TeacherUsageConfig(
-                config_key=CONFIG_KEY,
-                config_value=thresholds,
-            )
-            db.add(row)
-        db.commit()
-        return True
-    except Exception as e:
-        logger.exception("save_classification_config failed: %s", e)
-        db.rollback()
-        return False
-
-
 def _classify(metrics: dict[str, int], config: dict) -> tuple[str, Optional[str]]:
     """Return (tier1, tier2). tier2 is None for unused and continuous."""
     ad = metrics["active_days"]
@@ -251,63 +170,6 @@ def _classify(metrics: dict[str, int], config: dict) -> tuple[str, Optional[str]
         return ("non_continuous", "intermittent")
 
     return ("non_continuous", "intermittent")
-
-
-def compute_and_upsert_user_usage_stats(user_id: int, db: Session) -> bool:
-    """
-    Compute metrics and classification for a user, upsert into user_usage_stats.
-
-    Returns True on success, False on failure (caller should not fail the request).
-    """
-    try:
-        window_start = _get_window_cutoff_utc()
-        active_dates = _get_active_dates_for_user(db, user_id, window_start)
-        metrics = _compute_metrics(active_dates, window_start)
-        config = get_classification_config(db)
-        tier1, tier2 = _classify(metrics, config)
-
-        existing = db.query(UserUsageStats).filter(UserUsageStats.user_id == user_id).first()
-        if existing:
-            existing.active_days = metrics["active_days"]
-            existing.active_days_first10 = metrics["active_days_first10"]
-            existing.active_days_last25 = metrics["active_days_last25"]
-            existing.active_days_first25 = metrics["active_days_first25"]
-            existing.active_days_last14 = metrics["active_days_last14"]
-            existing.active_weeks = metrics["active_weeks"]
-            existing.active_weeks_first4 = metrics["active_weeks_first4"]
-            existing.active_weeks_last4 = metrics["active_weeks_last4"]
-            existing.max_zero_gap_days = metrics["max_zero_gap_days"]
-            existing.n_bursts = metrics["n_bursts"]
-            existing.internal_max_zero_gap_days = metrics["internal_max_zero_gap_days"]
-            existing.tier1 = tier1
-            existing.tier2 = tier2
-            existing.computed_at = datetime.now(timezone.utc)
-        else:
-            stats = UserUsageStats(
-                user_id=user_id,
-                active_days=metrics["active_days"],
-                active_days_first10=metrics["active_days_first10"],
-                active_days_last25=metrics["active_days_last25"],
-                active_days_first25=metrics["active_days_first25"],
-                active_days_last14=metrics["active_days_last14"],
-                active_weeks=metrics["active_weeks"],
-                active_weeks_first4=metrics["active_weeks_first4"],
-                active_weeks_last4=metrics["active_weeks_last4"],
-                max_zero_gap_days=metrics["max_zero_gap_days"],
-                n_bursts=metrics["n_bursts"],
-                internal_max_zero_gap_days=metrics["internal_max_zero_gap_days"],
-                tier1=tier1,
-                tier2=tier2,
-                computed_at=datetime.now(timezone.utc),
-            )
-            db.add(stats)
-
-        db.commit()
-        return True
-    except Exception as e:
-        logger.exception("compute_and_upsert_user_usage_stats failed for user %s: %s", user_id, e)
-        db.rollback()
-        return False
 
 
 async def get_classification_config_async(db: AsyncSession) -> dict:

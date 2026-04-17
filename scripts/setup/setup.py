@@ -1192,23 +1192,15 @@ def fail2ban_server_responding() -> bool:
 def verify_fail2ban_hint() -> None:
     """Print Fail2ban availability (optional Linux host firewall; docs/FAIL2BAN_SETUP.md)."""
     if platform.system().lower() == "windows":
-        print(
-            "    [INFO] Fail2ban: use Linux host or WSL for fail2ban; "
-            f"see {DOC_FAIL2BAN}"
-        )
+        print(f"    [INFO] Fail2ban: use Linux host or WSL for fail2ban; see {DOC_FAIL2BAN}")
         return
     if not fail2ban_client_available():
-        print(
-            f"    [WARNING] fail2ban-client not in PATH; apt install fail2ban ({DOC_FAIL2BAN})"
-        )
+        print(f"    [WARNING] fail2ban-client not in PATH; apt install fail2ban ({DOC_FAIL2BAN})")
         return
     if fail2ban_server_responding():
         print(f"    [SUCCESS] Fail2ban server responding (fail2ban-client status; {DOC_FAIL2BAN})")
     else:
-        print(
-            "    [WARNING] Fail2ban not running; "
-            f"sudo systemctl enable --now fail2ban ({DOC_FAIL2BAN})"
-        )
+        print(f"    [WARNING] Fail2ban not running; sudo systemctl enable --now fail2ban ({DOC_FAIL2BAN})")
 
 
 def run_command(command: str, description: str, check: bool = True) -> bool:
@@ -2429,10 +2421,7 @@ def setup_database_schema(project_root: Path) -> bool:
         print("    [WARNING] Could not parse DATABASE_URL — skipping schema init")
         return False
 
-    print(
-        f"    [INFO] Target: {db_parts['host']}:{db_parts['port']}"
-        f"/{db_parts['dbname']} (user: {db_parts['user']})"
-    )
+    print(f"    [INFO] Target: {db_parts['host']}:{db_parts['port']}/{db_parts['dbname']} (user: {db_parts['user']})")
 
     if not _ensure_postgres_database_exists(db_parts):
         print("    [WARNING] Could not ensure database exists — skipping Alembic migration")
@@ -2444,6 +2433,7 @@ def setup_database_schema(project_root: Path) -> bool:
         # config.database is importable because Python deps were installed in the
         # previous step and sys.path already contains the project root.
         from config.database import init_db  # pylint: disable=import-outside-toplevel
+
         init_db(seed_organizations=True)
         print("    [SUCCESS] Database schema initialized and seeded")
         return True

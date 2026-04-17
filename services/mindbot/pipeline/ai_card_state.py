@@ -62,9 +62,7 @@ class CardStreamState:
         self.update_mode = "stream"
         self.card_chars_confirmed = 0
         self.qps_exhausted = False
-        self.use_card = (
-            mindbot_ai_card_wiring_enabled(cfg) and not self.buffer_only
-        )
+        self.use_card = mindbot_ai_card_wiring_enabled(cfg) and not self.buffer_only
 
     async def finalize(
         self,

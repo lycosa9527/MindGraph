@@ -1,13 +1,11 @@
 /** he UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'לא ניתן לנקות צמתי נושא או מרכז',
-  'notification.cannotResetSelectDiagramType':
-    'לא ניתן לאפס: בחרו תחילה סוג תרשים',
+  'notification.cannotResetSelectDiagramType': 'לא ניתן לאפס: בחרו תחילה סוג תרשים',
   'notification.canvasClearNodes': 'נוקו {count} צמתים',
   'notification.canvasClearNodesLearning': 'רוקנו {count} צמתים, נוספו לתשובות',
   'notification.canvasSomeoneEditingNode': 'משתמש אחר עורך צומת זה',
-  'notification.collabDeleteBlocked':
-    'לא ניתן למחוק בזמן שמשתמש אחר עורך צומת נבחר',
+  'notification.collabDeleteBlocked': 'לא ניתן למחוק בזמן שמשתמש אחר עורך צומת נבחר',
   'notification.collabRedoBlocked': 'לא ניתן לבצע שוב בזמן שמשתמש אחר עורך',
   'notification.collabUndoBlocked': 'לא ניתן לבטל בזמן שמשתמש אחר עורך',
   'notification.conversationDeleted': 'השיחה נמחקה',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'הייבוא נכשל: נתוני תרשים לא תקינים',
   'notification.importLoadFailed': 'הייבוא נכשל: לא ניתן לטעון את התרשים',
   'notification.importSavePartial': 'יובא, אך שמירה לספרייה נכשלה',
-  'notification.importSlotsFull':
-    'הספרייה מלאה; התרשים יובא אך לא נשמר בספרייה',
+  'notification.importSlotsFull': 'הספרייה מלאה; התרשים יובא אך לא נשמר בספרייה',
   'notification.importSuccess': 'התרשים יובא ונשמר בספרייה',
   'notification.importUnsupportedType': 'הייבוא נכשל: סוג תרשים לא נתמך',
   'notification.loadMoreFailed': 'לא ניתן לטעון עוד',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'קישור מושג השורש לא נמצא',
   'notification.saved': 'השינויים נשמרו',
   'notification.selectNodeToClear': 'בחרו צומת לניקוי',
-  'notification.sessionInvalidated':
-    'נותקתם כי חרגתם ממספר המכשירים המרבי',
+  'notification.sessionInvalidated': 'נותקתם כי חרגתם ממספר המכשירים המרבי',
   'notification.signInToUse': 'התחברו כדי להשתמש',
   'notification.signInToValidateFocus': 'התחברו לאימות שאלת המיקוד',
 } as const

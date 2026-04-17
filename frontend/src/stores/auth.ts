@@ -162,11 +162,7 @@ export const useAuthStore = defineStore('auth', () => {
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
       username:
-        backendUser.name ||
-        backendUser.username ||
-        backendUser.phone ||
-        backendUser.email ||
-        '',
+        backendUser.name || backendUser.username || backendUser.phone || backendUser.email || '',
       phone: backendUser.phone || backendUser.user?.phone || '',
       email: backendUser.email,
       role: backendUser.role || 'user',

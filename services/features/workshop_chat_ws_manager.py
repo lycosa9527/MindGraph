@@ -83,7 +83,7 @@ class ChatConnectionManager:
         """Set of currently connected user IDs."""
         return set(self._connections.keys())
 
-    def connect(
+    async def connect(
         self,
         websocket: WebSocket,
         user_id: int,
@@ -104,11 +104,11 @@ class ChatConnectionManager:
         logger.info("[ChatWS] User %d (%s) connected", user_id, username)
         try:
             record_ws_chat_connection_delta(1)
-            redis_increment_active_total(1)
+            await redis_increment_active_total(1)
         except Exception as exc:  # pylint: disable=broad-except
             logger.debug("WebSocket connect metrics update failed: %s", exc)
 
-    def disconnect(self, user_id: int) -> tuple[Set[int], Optional[int]]:
+    async def disconnect(self, user_id: int) -> tuple[Set[int], Optional[int]]:
         """Remove a connection and all its subscriptions.
 
         Returns subscribed channel IDs and presence org (for offline broadcast).
@@ -118,7 +118,7 @@ class ChatConnectionManager:
         presence_org = conn.presence_org_id if conn else None
         if presence_org is not None and is_ws_fanout_enabled():
             try:
-                workshop_chat_presence_store.remove_presence_org_user(
+                await workshop_chat_presence_store.remove_presence_org_user(
                     presence_org,
                     user_id,
                 )
@@ -129,19 +129,19 @@ class ChatConnectionManager:
         logger.info("[ChatWS] User %d disconnected", user_id)
         try:
             record_ws_chat_connection_delta(-1)
-            redis_increment_active_total(-1)
+            await redis_increment_active_total(-1)
         except Exception as exc:  # pylint: disable=broad-except
             logger.debug("WebSocket disconnect metrics update failed: %s", exc)
         return subscribed, presence_org
 
-    def set_presence_org(self, user_id: int, org_id: int) -> None:
+    async def set_presence_org(self, user_id: int, org_id: int) -> None:
         """Scope workshop presence (contacts sidebar) to this organization."""
         conn = self._connections.get(user_id)
         if conn:
             conn.presence_org_id = org_id
         if is_ws_fanout_enabled():
             try:
-                workshop_chat_presence_store.touch_presence_org_user(
+                await workshop_chat_presence_store.touch_presence_org_user(
                     org_id,
                     user_id,
                 )
@@ -153,7 +153,7 @@ class ChatConnectionManager:
         conn = self._connections.get(user_id)
         return conn.presence_org_id if conn else None
 
-    def touch_presence_heartbeat(self, user_id: int) -> None:
+    async def touch_presence_heartbeat(self, user_id: int) -> None:
         """Refresh Redis org presence TTL for active/idle heartbeats."""
         if not is_ws_fanout_enabled():
             return
@@ -161,25 +161,25 @@ class ChatConnectionManager:
         if not conn or conn.presence_org_id is None:
             return
         try:
-            workshop_chat_presence_store.touch_presence_org_user(
+            await workshop_chat_presence_store.touch_presence_org_user(
                 conn.presence_org_id,
                 user_id,
             )
         except Exception as exc:  # pylint: disable=broad-except
             logger.debug("Presence heartbeat refresh failed: %s", exc)
 
-    def online_user_ids_for_presence_org(self, org_id: int) -> Set[int]:
+    async def presence_org_online_ids(self, org_id: int) -> Set[int]:
         """User IDs with an active WS and the same presence org scope."""
         if is_ws_fanout_enabled():
             try:
-                return workshop_chat_presence_store.online_user_ids_for_org(
+                return await workshop_chat_presence_store.online_user_ids_for_org(
                     org_id,
                 )
             except Exception as exc:  # pylint: disable=broad-except
                 logger.debug("Presence org online users lookup failed: %s", exc)
         return {uid for uid, conn in self._connections.items() if conn.presence_org_id == org_id}
 
-    async def broadcast_presence_to_presence_org(
+    async def broadcast_org_presence(
         self,
         user_id: int,
         status: str,

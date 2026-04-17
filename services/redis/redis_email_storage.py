@@ -12,7 +12,9 @@ from typing import Optional, Tuple
 import logging
 
 from services.redis import keys as _keys
-from services.redis.redis_client import is_redis_available, get_redis, RedisOps
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +48,7 @@ class RedisEmailStorage:
         norm = normalize_verification_email(email)
         return f"{EMAIL_PREFIX}{purpose}:{norm}"
 
-    def store(
+    async def store(
         self,
         email: str,
         code: str,
@@ -58,7 +60,7 @@ class RedisEmailStorage:
             return False
 
         key = self._get_key(email, purpose)
-        success = RedisOps.set_with_ttl(key, code, ttl_seconds)
+        success = await AsyncRedisOps.set_with_ttl(key, code, ttl_seconds)
 
         if success:
             logger.info(
@@ -72,7 +74,7 @@ class RedisEmailStorage:
 
         return success
 
-    def verify_and_remove(self, email: str, code: str, purpose: str = "verification") -> bool:
+    async def verify_and_remove(self, email: str, code: str, purpose: str = "verification") -> bool:
         if not is_redis_available():
             logger.warning("[Email] Redis unavailable, cannot verify code")
             return False
@@ -80,49 +82,51 @@ class RedisEmailStorage:
         key = self._get_key(email, purpose)
         masked = mask_email_for_log(email)
 
-        deleted = RedisOps.compare_and_delete(key, code)
+        deleted = await AsyncRedisOps.compare_and_delete(key, code)
 
         if deleted:
-            logger.info("[Email] Code verified and consumed for %s (purpose: %s)", masked, purpose)
+            logger.info(
+                "[Email] Code verified and consumed for %s (purpose: %s)",
+                masked,
+                purpose,
+            )
             return True
 
-        redis_client = get_redis()
-        if redis_client:
-            try:
-                if redis_client.exists(key):
-                    logger.warning(
-                        "[Email] Invalid code for %s (purpose: %s) - code preserved for retry",
-                        masked,
-                        purpose,
-                    )
-                else:
-                    logger.debug("[Email] No code found for %s (purpose: %s)", masked, purpose)
-            except Exception as exc:
-                logger.debug("[Email] exists check failed: %s", exc)
+        try:
+            if await AsyncRedisOps.exists(key):
+                logger.warning(
+                    "[Email] Invalid code for %s (purpose: %s) - code preserved for retry",
+                    masked,
+                    purpose,
+                )
+            else:
+                logger.debug("[Email] No code found for %s (purpose: %s)", masked, purpose)
+        except Exception as exc:
+            logger.debug("[Email] exists check failed: %s", exc)
         return False
 
-    def peek(self, email: str, purpose: str = "verification") -> Optional[str]:
+    async def peek(self, email: str, purpose: str = "verification") -> Optional[str]:
         if not is_redis_available():
             return None
 
         key = self._get_key(email, purpose)
-        return RedisOps.get(key)
+        return await AsyncRedisOps.get(key)
 
-    def check_exists_and_get_ttl(self, email: str, purpose: str = "verification") -> Tuple[bool, int]:
+    async def check_exists_and_get_ttl(self, email: str, purpose: str = "verification") -> Tuple[bool, int]:
         if not is_redis_available():
             return False, -2
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return False, -2
 
         key = self._get_key(email, purpose)
 
         try:
-            pipe = redis.pipeline()
-            pipe.exists(key)
-            pipe.ttl(key)
-            results = pipe.execute()
+            async with redis.pipeline(transaction=False) as pipe:
+                pipe.exists(key)
+                pipe.ttl(key)
+                results = await pipe.execute()
 
             exists = bool(results[0])
             ttl = results[1] if results[1] is not None else -2
@@ -132,12 +136,12 @@ class RedisEmailStorage:
             logger.error("[Email] Pipeline execution failed: %s", exc)
             return False, -2
 
-    def remove(self, email: str, purpose: str = "verification") -> bool:
+    async def remove(self, email: str, purpose: str = "verification") -> bool:
         if not is_redis_available():
             return False
 
         key = self._get_key(email, purpose)
-        return RedisOps.delete(key)
+        return await AsyncRedisOps.delete(key)
 
 
 class _EmailStorageHolder:

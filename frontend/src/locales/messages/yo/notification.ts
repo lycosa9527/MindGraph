@@ -1,13 +1,11 @@
 /** yo UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'A kò le pa ohun ọdọ akọle tabi aarin',
-  'notification.cannotResetSelectDiagramType':
-    'A kò le tun ṣe: yan irọṣẹ àwòrán ní àkọ́kọ́',
+  'notification.cannotResetSelectDiagramType': 'A kò le tun ṣe: yan irọṣẹ àwòrán ní àkọ́kọ́',
   'notification.canvasClearNodes': 'A ti pa ọdọ {count}',
   'notification.canvasClearNodesLearning': 'A ti fọ ọdọ {count}, a ṣàfikún sí àwọn èsì',
   'notification.canvasSomeoneEditingNode': 'Ẹlòmíràn ń ṣatunkọ ọdọ yìí',
-  'notification.collabDeleteBlocked':
-    'A kò le pa nígbà tí ẹlòmíràn ń ṣatunkọ ọdọ tí a yàn',
+  'notification.collabDeleteBlocked': 'A kò le pa nígbà tí ẹlòmíràn ń ṣatunkọ ọdọ tí a yàn',
   'notification.collabRedoBlocked': 'A kò le ṣe lẹ́ẹ̀kansi nígbà tí ẹlòmíràn ń ṣatunkọ',
   'notification.collabUndoBlocked': 'A kò le dápadà nígbà tí ẹlòmíràn ń ṣatunkọ',
   'notification.conversationDeleted': 'A ti pa ìjíròrò',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'Ìkówọlé kùnà: dátà àwòrán tí kò tọ́',
   'notification.importLoadFailed': 'Ìkówọlé kùnà: a kò le gbé àwòrán',
   'notification.importSavePartial': 'A ti kówọlé, ṣùgbọ́n ìpamọ́ sí ààyè kùnà',
-  'notification.importSlotsFull':
-    'Ààyè kún; a ti kówọlé àwòrán ṣùgbọ́n a kò fi pamọ́ sí ààyè',
+  'notification.importSlotsFull': 'Ààyè kún; a ti kówọlé àwòrán ṣùgbọ́n a kò fi pamọ́ sí ààyè',
   'notification.importSuccess': 'A ti kówọlé àwòrán àti fi pamọ́ sí ààyè',
   'notification.importUnsupportedType': 'Ìkówọlé kùnà: irọṣẹ àwòrán tí a kò ṣe àtìlẹyìn',
   'notification.loadMoreFailed': 'A kò le gbé síi',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'A kò rí àsopọ̀ ìmọ̀ ìpilẹ̀',
   'notification.saved': 'Àyípadà ti pamọ́',
   'notification.selectNodeToClear': 'Yan ọdọ láti pa',
-  'notification.sessionInvalidated':
-    'A ti yọ ọ nítorí pé o ti kọja iye ẹ̀rọ tó pọ̀ jùlọ',
+  'notification.sessionInvalidated': 'A ti yọ ọ nítorí pé o ti kọja iye ẹ̀rọ tó pọ̀ jùlọ',
   'notification.signInToUse': 'Wọlé láti lò',
   'notification.signInToValidateFocus': 'Wọlé láti ṣàyẹ̀wò ìbéèrè àfojúsùn',
 } as const

@@ -86,9 +86,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     except LLMContentFilterError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
-            "无法处理您的请求。"
-            if is_chinese_ui_error_language(effective_lang)
-            else "Content could not be processed."
+            "无法处理您的请求。" if is_chinese_ui_error_language(effective_lang) else "Content could not be processed."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMRateLimitError as e:
@@ -102,9 +100,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     except LLMTimeoutError as e:
         error_yielded = True
         msg = getattr(e, "user_message", None) or (
-            "请求超时，请重试。"
-            if is_chinese_ui_error_language(effective_lang)
-            else "Request timed out. Please retry."
+            "请求超时，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request timed out. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMServiceError as e:
@@ -118,11 +114,7 @@ async def _stream_recommendations(req, user: User | None, is_next: bool):
     except Exception as e:
         error_yielded = True
         logger.error("[InlineRec] Stream error: %s", str(e), exc_info=True)
-        msg = (
-            "请求失败，请重试。"
-            if is_chinese_ui_error_language(effective_lang)
-            else "Request failed. Please retry."
-        )
+        msg = "请求失败，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request failed. Please retry."
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     finally:
         logger.debug(

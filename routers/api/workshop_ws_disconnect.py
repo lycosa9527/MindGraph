@@ -25,9 +25,9 @@ logger = logging.getLogger(__name__)
 async def _finalize_editors_fanout_disconnect(code: str, user: object) -> None:
     """Clear editor state when multi-worker Redis fan-out is enabled."""
     um_leave = getattr(user, "username", None) or f"User {user.id}"
-    editors_map = load_editors(code)
+    editors_map = await load_editors(code)
     nodes_with_user = [nid for nid, ed in editors_map.items() if user.id in ed]
-    remove_user_from_all_nodes(code, user.id, editors_map)
+    await remove_user_from_all_nodes(code, user.id, editors_map)
     for nid in nodes_with_user:
         await broadcast_to_others(
             code,
@@ -92,7 +92,7 @@ async def finalize_canvas_collab_disconnect(
     """Editor cleanup, connection maps, participant removal, user_left fan-out."""
     try:
         record_ws_workshop_connection_delta(-1)
-        redis_increment_active_total(-1)
+        await redis_increment_active_total(-1)
     except Exception as exc:
         logger.debug("Failed to record WS disconnect metric: %s", exc)
 

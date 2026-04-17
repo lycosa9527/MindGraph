@@ -506,8 +506,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Məktəb daxilində əməkdaşlıq',
   'mindgraphLanding.dialogSharedTitle': 'Ümumi əməkdaşlıq',
   'mindgraphLanding.import': 'İdxal',
-  'mindgraphLanding.inputPlaceholder':
-    'Describe your diagram, or choose a template below...',
+  'mindgraphLanding.inputPlaceholder': 'Describe your diagram, or choose a template below...',
   'mindgraphLanding.join': 'Qoşul',
   'mindgraphLanding.joinFailed': 'Qoşulmaq alınmadı',
   'mindgraphLanding.joinPresentationFailed': 'Təqdimata qoşulmaq alınmadı',

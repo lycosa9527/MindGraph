@@ -17,7 +17,7 @@ from services.workshop.canvas_collab_locks import (
     filter_granular_connections_for_locks,
     filter_granular_nodes_for_locks,
 )
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_live_flush import schedule_live_spec_db_flush
 from services.workshop.workshop_live_spec_ops import mutate_live_spec_after_ws_update
 from services.workshop.workshop_redis_ttl import get_workshop_redis_ttl_seconds
@@ -135,7 +135,7 @@ async def _handle_node_editing(ctx: CollabWsContext, message: Dict[str, Any]) ->
         emoji = None
 
     if is_ws_fanout_enabled():
-        save_editors(ctx.code, active_editors[ctx.code])
+        await save_editors(ctx.code, active_editors[ctx.code])
 
     await broadcast_to_all(
         ctx.code,
@@ -215,12 +215,12 @@ async def _handle_update(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
     connections = message.get("connections")
 
     await workshop_service.refresh_participant_ttl(ctx.code, ctx.user.id)
-    await workshop_service.refresh_mutation_idle_for_update(
+    await workshop_service.refresh_idle_for_update(
         ctx.code,
         ctx.user.id,
     )
 
-    redis = get_redis()
+    redis = get_async_redis()
     if redis:
         try:
             ttl_sec = await get_workshop_redis_ttl_seconds(ctx.diagram_id)
@@ -249,7 +249,7 @@ async def _handle_update(ctx: CollabWsContext, message: Dict[str, Any]) -> None:
     }
 
     if nodes is not None or connections is not None:
-        editors_redis = load_editors(ctx.code) if is_ws_fanout_enabled() else None
+        editors_redis = await load_editors(ctx.code) if is_ws_fanout_enabled() else None
         has_payload = False
         if nodes is not None:
             filtered_nodes = filter_granular_nodes_for_locks(

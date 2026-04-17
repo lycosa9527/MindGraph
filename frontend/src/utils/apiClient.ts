@@ -27,7 +27,10 @@ function currentUiLocaleCodeForHeaders(): string {
   return String(loc)
 }
 
-function mergeApiHeaders(base: Record<string, string>, options?: RequestInit): Record<string, string> {
+function mergeApiHeaders(
+  base: Record<string, string>,
+  options?: RequestInit
+): Record<string, string> {
   const fromCaller = (options?.headers as Record<string, string>) ?? {}
   return {
     'X-Language': currentUiLocaleCodeForHeaders(),

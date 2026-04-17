@@ -132,9 +132,7 @@ async def list_users_admin(
                 "locked_until": utc_to_beijing_iso(user.locked_until),
                 "created_at": utc_to_beijing_iso(user.created_at),
                 "token_stats": user_token_stats,
-                "email_login_whitelisted_from_cn": getattr(
-                    user, "email_login_whitelisted_from_cn", False
-                ),
+                "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
             }
         )
 
@@ -188,9 +186,7 @@ async def get_user_admin(
         "organization_name": org.name if org else None,
         "locked_until": utc_to_beijing_iso(user.locked_until),
         "created_at": utc_to_beijing_iso(user.created_at),
-        "email_login_whitelisted_from_cn": getattr(
-            user, "email_login_whitelisted_from_cn", False
-        ),
+        "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
     }
 
 
@@ -276,13 +272,13 @@ async def update_user_admin(
         ) from e
 
     try:
-        user_cache.invalidate(user_id, old_phone, getattr(user, "email", None))
+        await user_cache.invalidate(user_id, old_phone, getattr(user, "email", None))
         logger.debug("[Auth] Invalidated old cache for user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for user ID %s: %s", user_id, e)
 
     try:
-        user_cache.cache_user(user)
+        await user_cache.cache_user(user)
         logger.info("[Auth] Updated and re-cached user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to re-cache user ID %s: %s", user_id, e)
@@ -292,7 +288,7 @@ async def update_user_admin(
             if user.organization_id:
                 new_org = await org_cache.get_by_id(user.organization_id)
                 if new_org:
-                    org_cache.invalidate(
+                    await org_cache.invalidate(
                         user.organization_id,
                         cast(Optional[str], new_org.code),
                         cast(Optional[str], new_org.invitation_code),
@@ -300,7 +296,7 @@ async def update_user_admin(
             if old_org_id:
                 old_org = await org_cache.get_by_id(old_org_id)
                 if old_org:
-                    org_cache.invalidate(
+                    await org_cache.invalidate(
                         old_org_id,
                         cast(Optional[str], old_org.code),
                         cast(Optional[str], old_org.invitation_code),
@@ -324,9 +320,7 @@ async def update_user_admin(
             "name": user.name,
             "organization_code": org.code if org else None,
             "organization_name": org.name if org else None,
-            "email_login_whitelisted_from_cn": getattr(
-                user, "email_login_whitelisted_from_cn", False
-            ),
+            "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
         },
     }
 
@@ -363,7 +357,7 @@ async def delete_user_admin(
         ) from e
 
     try:
-        user_cache.invalidate(user_id, user_phone, getattr(user, "email", None))
+        await user_cache.invalidate(user_id, user_phone, getattr(user, "email", None))
         logger.info("[Auth] Invalidated cache for deleted user ID %s", user_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted user ID %s: %s", user_id, e)
@@ -400,8 +394,8 @@ async def unlock_user_admin(
         ) from e
 
     try:
-        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
-        user_cache.cache_user(user)
+        await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
+        await user_cache.cache_user(user)
         logger.info("[Auth] Unlocked and re-cached user ID %s", user.id)
     except Exception as e:
         logger.warning("[Auth] Failed to update cache after unlock: %s", e)
@@ -464,8 +458,8 @@ async def reset_user_password_admin(
             detail="Failed to reset password",
         ) from e
 
-    invalidate_user_cache_after_password_write(user, "Admin password reset")
-    revoke_refresh_tokens_and_sessions(user.id, "admin_password_reset")
+    await invalidate_user_cache_after_password_write(user, "Admin password reset")
+    await revoke_refresh_tokens_and_sessions(user.id, "admin_password_reset")
 
     logger.info("Admin %s reset password for user: %s", current_user.phone, user.phone)
     return {"message": Messages.success("password_reset_for_user", lang, user.phone)}

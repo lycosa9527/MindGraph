@@ -30,7 +30,9 @@ from sqlalchemy import select
 from services.redis import keys as _keys
 from services.redis.cache.redis_user_cache import get_user_cache
 from services.redis.cache.redis_org_cache import get_org_cache
-from services.redis.redis_client import RedisOps, get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_client import is_redis_available
 from config.database import AsyncSessionLocal
 from models.domain.auth import User, Organization
 
@@ -76,7 +78,7 @@ class _LockIdManager:
         return cls._lock_id is not None
 
 
-def is_cache_loading_in_progress() -> bool:
+async def is_cache_loading_in_progress() -> bool:
     """
     Check if cache loading is already in progress by another worker.
 
@@ -86,17 +88,17 @@ def is_cache_loading_in_progress() -> bool:
     if not is_redis_available():
         return False
 
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return False
 
     try:
-        return redis.exists(CACHE_LOADER_LOCK_KEY) > 0
+        return await redis.exists(CACHE_LOADER_LOCK_KEY) > 0
     except Exception:
         return False
 
 
-def acquire_cache_loader_lock() -> bool:
+async def acquire_cache_loader_lock() -> bool:
     """
     Attempt to acquire the cache loader lock.
 
@@ -112,7 +114,7 @@ def acquire_cache_loader_lock() -> bool:
         logger.debug("[CacheLoader] Redis unavailable, assuming single worker mode")
         return True
 
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return True  # Fallback to single worker mode
 
@@ -122,7 +124,7 @@ def acquire_cache_loader_lock() -> bool:
 
         # Attempt atomic lock acquisition: SETNX with TTL
         # Returns True only if key did not exist (lock acquired)
-        acquired = redis.set(
+        acquired = await redis.set(
             CACHE_LOADER_LOCK_KEY,
             worker_lock_id,
             nx=True,  # Only set if not exists
@@ -132,21 +134,20 @@ def acquire_cache_loader_lock() -> bool:
         if acquired:
             logger.debug("[CacheLoader] Lock acquired by this worker (id=%s)", worker_lock_id)
             return True
-        else:
-            # Lock held by another worker - check who
-            holder = redis.get(CACHE_LOADER_LOCK_KEY)
-            logger.debug(
-                "[CacheLoader] Another worker holds the cache loader lock (holder=%s), skipping cache load",
-                holder,
-            )
-            return False  # Return False to indicate lock not acquired
+        # Lock held by another worker - check who
+        holder = await redis.get(CACHE_LOADER_LOCK_KEY)
+        logger.debug(
+            "[CacheLoader] Another worker holds the cache loader lock (holder=%s), skipping cache load",
+            holder,
+        )
+        return False  # Return False to indicate lock not acquired
 
     except Exception as e:
         logger.warning("[CacheLoader] Lock acquisition failed: %s, proceeding anyway", e)
         return True  # On error, proceed (better to have duplicate than no cache)
 
 
-def release_cache_loader_lock() -> bool:
+async def release_cache_loader_lock() -> bool:
     """
     Release the cache loader lock if held by this worker.
 
@@ -159,20 +160,20 @@ def release_cache_loader_lock() -> bool:
     if not is_redis_available() or not _LockIdManager.has_lock_id():
         return True
 
-    redis_client = get_redis()
+    redis_client = get_async_redis()
     if not redis_client:
         return True
 
     try:
         worker_lock_id = _LockIdManager.get_lock_id()
 
-        result = RedisOps.compare_and_delete(CACHE_LOADER_LOCK_KEY, worker_lock_id)
+        result = await AsyncRedisOps.compare_and_delete(CACHE_LOADER_LOCK_KEY, worker_lock_id)
 
         if result:
             logger.debug("[CacheLoader] Lock released (id=%s)", worker_lock_id)
             return True
 
-        current_holder = redis_client.get(CACHE_LOADER_LOCK_KEY)
+        current_holder = await redis_client.get(CACHE_LOADER_LOCK_KEY)
         logger.debug(
             "[CacheLoader] Lock not released (not held by us or already released). Current holder: %s",
             current_holder,
@@ -187,8 +188,10 @@ def release_cache_loader_lock() -> bool:
 async def load_all_users_to_cache() -> Tuple[int, int]:
     """Load all users from the database into Redis cache in batches.
 
-    Opens a fresh DB session per batch so no single session stays open for the
-    full table scan.  Batch size is tunable via CACHE_LOADER_BATCH_SIZE env var.
+    Uses **keyset pagination** (``WHERE id > last_id``) instead of OFFSET so
+    cost stays O(batch) regardless of total table size. Opens a fresh DB
+    session per batch so no single session stays open for the full table scan.
+    Batch size is tunable via CACHE_LOADER_BATCH_SIZE env var.
 
     Returns:
         Tuple of (success_count, error_count)
@@ -196,42 +199,55 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
     user_cache = get_user_cache()
     success_count = 0
     error_count = 0
-    offset = 0
+    last_id = 0
 
     try:
         while True:
             async with AsyncSessionLocal() as db:
-                result = await db.execute(
-                    select(User).order_by(User.id).offset(offset).limit(_BATCH_SIZE)
-                )
+                result = await db.execute(select(User).where(User.id > last_id).order_by(User.id).limit(_BATCH_SIZE))
                 batch = result.scalars().all()
 
             if not batch:
                 break
 
-            for user in batch:
-                try:
-                    user_cache.cache_user(user)
-                    success_count += 1
-                except Exception as exc:
-                    error_count += 1
-                    logger.error(
-                        "[CacheLoader] Failed to cache user ID %s: %s",
-                        user.id,
-                        exc,
-                        exc_info=True,
-                    )
+            # G9: one Redis pipeline per batch instead of per-user round-trip.
+            # Falls back to the per-record path if the bulk write returned 0
+            # (Redis unavailable or the whole pipeline failed) so cache loss
+            # is bounded to the offending batch.
+            written = 0
+            try:
+                written = await user_cache.bulk_cache_users(list(batch))
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error(
+                    "[CacheLoader] Bulk cache_user pipeline failed for batch ending at id %s: %s",
+                    batch[-1].id,
+                    exc,
+                    exc_info=True,
+                )
 
-            logger.debug(
-                "[CacheLoader] Users cached: %d (offset %d)", success_count, offset
-            )
-            offset += len(batch)
+            if written:
+                success_count += written
+                error_count += max(0, len(batch) - written)
+            else:
+                for user in batch:
+                    try:
+                        await user_cache.cache_user(user)
+                        success_count += 1
+                    except Exception as exc:
+                        error_count += 1
+                        logger.error(
+                            "[CacheLoader] Failed to cache user ID %s: %s",
+                            user.id,
+                            exc,
+                            exc_info=True,
+                        )
+
+            last_id = batch[-1].id
+            logger.debug("[CacheLoader] Users cached: %d (last_id %s)", success_count, last_id)
             if len(batch) < _BATCH_SIZE:
                 break
 
-        logger.info(
-            "[CacheLoader] Loaded %d users into cache (%d errors)", success_count, error_count
-        )
+        logger.info("[CacheLoader] Loaded %d users into cache (%d errors)", success_count, error_count)
         return success_count, error_count
 
     except Exception as exc:
@@ -240,7 +256,9 @@ async def load_all_users_to_cache() -> Tuple[int, int]:
 
 
 async def load_all_orgs_to_cache() -> Tuple[int, int]:
-    """Load all organizations from the database into Redis cache in batches.
+    """Load all organizations from the database into Redis cache.
+
+    Uses keyset pagination on ``id``; see :func:`load_all_users_to_cache`.
 
     Returns:
         Tuple of (success_count, error_count)
@@ -248,36 +266,49 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
     org_cache = get_org_cache()
     success_count = 0
     error_count = 0
-    offset = 0
+    last_id = 0
 
     try:
         while True:
             async with AsyncSessionLocal() as db:
                 result = await db.execute(
-                    select(Organization)
-                    .order_by(Organization.id)
-                    .offset(offset)
-                    .limit(_BATCH_SIZE)
+                    select(Organization).where(Organization.id > last_id).order_by(Organization.id).limit(_BATCH_SIZE)
                 )
                 batch = result.scalars().all()
 
             if not batch:
                 break
 
-            for org in batch:
-                try:
-                    org_cache.cache_org(org)
-                    success_count += 1
-                except Exception as exc:
-                    error_count += 1
-                    logger.error(
-                        "[CacheLoader] Failed to cache org ID %s: %s",
-                        org.id,
-                        exc,
-                        exc_info=True,
-                    )
+            # G9: one Redis pipeline per batch instead of per-org round-trip.
+            written = 0
+            try:
+                written = await org_cache.bulk_cache_orgs(list(batch))
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.error(
+                    "[CacheLoader] Bulk cache_org pipeline failed for batch ending at id %s: %s",
+                    batch[-1].id,
+                    exc,
+                    exc_info=True,
+                )
 
-            offset += len(batch)
+            if written:
+                success_count += written
+                error_count += max(0, len(batch) - written)
+            else:
+                for org in batch:
+                    try:
+                        await org_cache.cache_org(org)
+                        success_count += 1
+                    except Exception as exc:
+                        error_count += 1
+                        logger.error(
+                            "[CacheLoader] Failed to cache org ID %s: %s",
+                            org.id,
+                            exc,
+                            exc_info=True,
+                        )
+
+            last_id = batch[-1].id
             if len(batch) < _BATCH_SIZE:
                 break
 
@@ -289,9 +320,7 @@ async def load_all_orgs_to_cache() -> Tuple[int, int]:
         return success_count, error_count
 
     except Exception as exc:
-        logger.error(
-            "[CacheLoader] Failed to load organizations: %s", exc, exc_info=True
-        )
+        logger.error("[CacheLoader] Failed to load organizations: %s", exc, exc_info=True)
         return success_count, error_count
 
 
@@ -310,7 +339,7 @@ async def reload_cache_from_database() -> bool:
         logger.warning("[CacheLoader] Redis is not available - cannot load cache. Cache will be populated on-demand.")
         return False
 
-    if not acquire_cache_loader_lock():
+    if not await acquire_cache_loader_lock():
         logger.debug("[CacheLoader] Another worker is loading cache, skipping (cache will be loaded by that worker)")
         return True
 
@@ -352,4 +381,4 @@ async def reload_cache_from_database() -> bool:
         )
         return False
     finally:
-        release_cache_loader_lock()
+        await release_cache_loader_lock()

@@ -23,7 +23,8 @@ from redis.exceptions import RedisError
 from services.infrastructure.security.abuseipdb_blacklist_parse import (
     parse_abuseipdb_blacklist_plaintext,
 )
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -197,6 +198,23 @@ def pipeline_sadd_chunks(
     return sum(int(x) for x in results)
 
 
+async def pipeline_sadd_chunks_async(
+    redis_client: Any,
+    key: str,
+    batch: List[str],
+    chunk_size: int,
+) -> int:
+    """Async sibling of :func:`pipeline_sadd_chunks` for the asyncio Redis client."""
+    if not batch:
+        return 0
+    async with redis_client.pipeline(transaction=False) as pipe:
+        for i in range(0, len(batch), chunk_size):
+            chunk = batch[i : i + chunk_size]
+            pipe.sadd(key, *chunk)
+        results = await pipe.execute()
+    return sum(int(x) for x in results)
+
+
 def get_blacklist_limit() -> int:
     """
     Max IPs per blacklist request. AbuseIPDB caps by plan (10k / 100k / 500k).
@@ -296,11 +314,13 @@ def parse_baseline_file_lines(text: str) -> Set[str]:
     return out
 
 
-def apply_blacklist_baseline_from_file() -> int:
-    """
-    SADD baseline IPs into Redis KEY_BLACKLIST (merge; idempotent).
+async def apply_blacklist_baseline_from_file_async() -> int:
+    """SADD baseline IPs into Redis KEY_BLACKLIST (merge; idempotent).
 
-    Call at startup and after remote blacklist sync so API replace does not drop baseline IPs.
+    Call at startup and after remote blacklist sync so an API replace does not
+    drop baseline IPs.  Filesystem read is offloaded with ``asyncio.to_thread``
+    because it remains blocking I/O.  All Redis work uses the shared async
+    client.
 
     Returns:
         Number of lines parsed with at least one SADD round executed (best-effort).
@@ -318,7 +338,7 @@ def apply_blacklist_baseline_from_file() -> int:
         return 0
 
     try:
-        text = path.read_text(encoding="utf-8")
+        text = await asyncio.to_thread(path.read_text, encoding="utf-8")
     except OSError as exc:
         logger.warning("[AbuseIPDB] could not read baseline file %s: %s", path, exc)
         return 0
@@ -328,14 +348,14 @@ def apply_blacklist_baseline_from_file() -> int:
         logger.debug("[AbuseIPDB] baseline file has no valid IPs: %s", path)
         return 0
 
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return 0
 
     batch = list(ips)
     chunk_size = 2000
     try:
-        added_total = pipeline_sadd_chunks(r, KEY_BLACKLIST, batch, chunk_size)
+        added_total = await pipeline_sadd_chunks_async(redis, KEY_BLACKLIST, batch, chunk_size)
     except (OSError, RedisError) as exc:
         logger.warning("[AbuseIPDB] baseline SADD failed: %s", exc)
         return 0
@@ -367,8 +387,13 @@ def client_ip_is_skipped_for_abuseipdb(ip: str) -> bool:
     return bool(parsed.is_loopback or parsed.is_private or parsed.is_link_local or parsed.is_reserved)
 
 
-def is_ip_in_blacklist_set(ip: str) -> bool:
-    """Sync: Redis SISMEMBER for shared blacklist (AbuseIPDB, CrowdSec, baseline)."""
+async def is_ip_in_blacklist_set_async(ip: str) -> bool:
+    """Async: Redis SISMEMBER for shared blacklist (AbuseIPDB, CrowdSec, baseline).
+
+    Hot path — called from FastAPI middleware on every request that passes the
+    IP-reputation gate.  Uses the shared async client so the event loop never
+    blocks on a synchronous Redis round-trip.
+    """
     if not is_redis_available():
         return False
     from services.infrastructure.security import ip_reputation_env_snapshot
@@ -379,11 +404,11 @@ def is_ip_in_blacklist_set(ip: str) -> bool:
     cached = _sismember_cache_get(lookup_ip)
     if cached is not None:
         return cached
-    client = get_redis()
-    if not client:
+    redis = get_async_redis()
+    if not redis:
         return False
     try:
-        result = bool(client.sismember(KEY_BLACKLIST, lookup_ip))
+        result = bool(await redis.sismember(KEY_BLACKLIST, lookup_ip))
     except (OSError, RedisError) as exc:
         logger.debug("[AbuseIPDB] blacklist lookup failed (fail open): %s", exc)
         return False
@@ -391,15 +416,15 @@ def is_ip_in_blacklist_set(ip: str) -> bool:
     return result
 
 
-def _get_cached_check_score(ip: str) -> Optional[int]:
+async def _get_cached_check_score_async(ip: str) -> Optional[int]:
     if not is_redis_available():
         return None
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return None
     key = f"{KEY_CHECK_PREFIX}{ip}"
     try:
-        raw = r.get(key)
+        raw = await redis.get(key)
         if not raw:
             return None
         data = json.loads(raw)
@@ -411,15 +436,15 @@ def _get_cached_check_score(ip: str) -> Optional[int]:
     return None
 
 
-def _set_cached_check_score(ip: str, score: int, ttl: int) -> None:
+async def _set_cached_check_score_async(ip: str, score: int, ttl: int) -> None:
     if not is_redis_available():
         return
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return
     key = f"{KEY_CHECK_PREFIX}{ip}"
     try:
-        r.setex(key, ttl, json.dumps({"score": score}))
+        await redis.setex(key, ttl, json.dumps({"score": score}))
     except OSError as exc:
         logger.debug("[AbuseIPDB] check cache write failed: %s", exc)
 
@@ -475,13 +500,13 @@ async def check_ip_score_cached_with_provenance(
     Second value: 'cache' | 'live' | 'unavailable' (API error, 429, or no score).
     """
     ttl = get_check_cache_ttl_seconds()
-    cached = _get_cached_check_score(ip)
+    cached = await _get_cached_check_score_async(ip)
     if cached is not None:
         return cached, "cache"
 
     score = await fetch_check_score(ip)
     if score is not None:
-        _set_cached_check_score(ip, score, ttl)
+        await _set_cached_check_score_async(ip, score, ttl)
         return score, "live"
     return None, "unavailable"
 
@@ -492,15 +517,15 @@ async def check_ip_score_cached(ip: str) -> Optional[int]:
     return score
 
 
-def log_shared_blacklist_redis_size(context: str) -> None:
-    """Log SCARD for the shared blacklist set (AbuseIPDB + CrowdSec + baselines)."""
+async def log_shared_blacklist_redis_size_async(context: str) -> None:
+    """Async: SCARD for the shared blacklist set (AbuseIPDB + CrowdSec + baselines)."""
     if not is_redis_available():
         return
-    client = get_redis()
-    if not client:
+    redis = get_async_redis()
+    if not redis:
         return
     try:
-        size = client.scard(KEY_BLACKLIST)
+        size = await redis.scard(KEY_BLACKLIST)
     except (OSError, RedisError) as exc:
         logger.debug("[IP reputation] blacklist size unreadable (%s): %s", context, exc)
         return
@@ -578,17 +603,17 @@ def report_ip_abuse_sync(ip: str, categories: str, comment: str, api_key: str) -
     return True
 
 
-def try_acquire_report_dedupe(ip: str) -> bool:
+async def try_acquire_report_dedupe_async(ip: str) -> bool:
     """Return True if this IP may report now (dedupe key set with NX)."""
     if not is_redis_available():
         return True
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return True
     key = f"{KEY_REPORT_DEDUPE_PREFIX}{ip}"
     ttl = get_report_dedupe_ttl_seconds()
     try:
-        acquired = r.set(key, "1", nx=True, ex=ttl)
+        acquired = await redis.set(key, "1", nx=True, ex=ttl)
         return bool(acquired)
     except OSError as exc:
         logger.debug("[AbuseIPDB] report dedupe failed (allow report): %s", exc)
@@ -601,7 +626,7 @@ async def report_lockout_background(ip: str) -> None:
         return
     if client_ip_is_skipped_for_abuseipdb(ip):
         return
-    if not try_acquire_report_dedupe(ip):
+    if not await try_acquire_report_dedupe_async(ip):
         return
 
     comment = "MindGraph: account lockout after repeated failed login attempts"
@@ -633,17 +658,17 @@ def schedule_abuseipdb_report_on_lockout(client_ip: Optional[str]) -> None:
         logger.debug("[AbuseIPDB] no running loop; skip lockout report scheduling")
 
 
-def _store_blacklist_ips(ips: Set[str]) -> bool:
-    """Replace Redis SET contents with ips."""
+async def _store_blacklist_ips_async(ips: Set[str]) -> bool:
+    """Async: replace Redis SET contents with ips (atomic via tmp key + RENAME)."""
     if not is_redis_available():
         return False
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return False
     batch: List[str] = list(ips)
     if not batch:
         try:
-            r.delete(KEY_BLACKLIST)
+            await redis.delete(KEY_BLACKLIST)
         except OSError as exc:
             logger.error("[AbuseIPDB] failed to clear blacklist key: %s", exc)
             return False
@@ -652,15 +677,15 @@ def _store_blacklist_ips(ips: Set[str]) -> bool:
     tmp_key = f"{KEY_BLACKLIST}:tmp:{uuid.uuid4().hex}"
     try:
         chunk_size = 2000
-        pipe = r.pipeline(transaction=False)
-        for i in range(0, len(batch), chunk_size):
-            chunk = batch[i : i + chunk_size]
-            pipe.sadd(tmp_key, *chunk)
-        pipe.execute()
-        r.rename(tmp_key, KEY_BLACKLIST)
+        async with redis.pipeline(transaction=False) as pipe:
+            for i in range(0, len(batch), chunk_size):
+                chunk = batch[i : i + chunk_size]
+                pipe.sadd(tmp_key, *chunk)
+            await pipe.execute()
+        await redis.rename(tmp_key, KEY_BLACKLIST)
     except (OSError, RedisError) as exc:
         try:
-            r.delete(tmp_key)
+            await redis.delete(tmp_key)
         except OSError:
             pass
         logger.error("[AbuseIPDB] failed to store blacklist in Redis: %s", exc)
@@ -732,7 +757,7 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
         result["error"] = f"unexpected body: {err_detail}"
         return result
 
-    if not _store_blacklist_ips(ips):
+    if not await _store_blacklist_ips_async(ips):
         result["error"] = "redis_store_failed"
         return result
 
@@ -743,10 +768,10 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
             "limit": get_blacklist_limit(),
         }
     )
-    r = get_redis()
-    if r:
+    async_r = get_async_redis()
+    if async_r:
         try:
-            r.set(KEY_BLACKLIST_META, meta)
+            await async_r.set(KEY_BLACKLIST_META, meta)
         except OSError as exc:
             logger.debug("[AbuseIPDB] could not write blacklist meta: %s", exc)
 
@@ -754,7 +779,7 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
     result["count"] = len(ips)
     logger.info("[AbuseIPDB] blacklist sync stored %s IPs in Redis", len(ips))
 
-    baseline_merged = apply_blacklist_baseline_from_file()
+    baseline_merged = await apply_blacklist_baseline_from_file_async()
     if baseline_merged:
         result["baseline_merged"] = baseline_merged
 
@@ -767,12 +792,12 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
             "skipped": crowdsec_out.get("skipped", False),
         }
 
-    crowdsec_baseline = crowdsec_blocklist_service.apply_crowdsec_baseline_from_file()
+    crowdsec_baseline = await crowdsec_blocklist_service.apply_crowdsec_baseline_from_file_async()
     if crowdsec_baseline:
         result["crowdsec_baseline_merged"] = crowdsec_baseline
 
     if result.get("ok"):
         clear_ip_reputation_sismember_cache()
-        log_shared_blacklist_redis_size("after AbuseIPDB sync and CrowdSec merge")
+        await log_shared_blacklist_redis_size_async("after AbuseIPDB sync and CrowdSec merge")
 
     return result

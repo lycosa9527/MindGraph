@@ -1,8 +1,7 @@
 /** bg UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Не може да се изчистят възлите за тема или център',
-  'notification.cannotResetSelectDiagramType':
-    'Не може да се нулира: първо изберете тип диаграма',
+  'notification.cannotResetSelectDiagramType': 'Не може да се нулира: първо изберете тип диаграма',
   'notification.canvasClearNodes': 'Изчистени са {count} възела',
   'notification.canvasClearNodesLearning': 'Изпразнени са {count} възела, добавени към отговорите',
   'notification.canvasSomeoneEditingNode': 'Друг потребител редактира този възел',

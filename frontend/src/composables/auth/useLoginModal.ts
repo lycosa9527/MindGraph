@@ -22,7 +22,7 @@ type LoginModalEmit = {
 
 export function useLoginModal(
   props: { visible: boolean; persistent?: boolean },
-  emit: LoginModalEmit,
+  emit: LoginModalEmit
 ) {
   const authStore = useAuthStore()
   const uiStore = useUIStore()
@@ -78,7 +78,7 @@ export function useLoginModal(
 
   const { registerRegion, registerRegionLoading, isBothRegister } = useRegisterRegionDetection(
     toRef(props, 'visible'),
-    currentView,
+    currentView
   )
 
   /** When region is unknown (GeoIP): user picks education email vs phone + invitation. */
@@ -91,13 +91,13 @@ export function useLoginModal(
   const showOverseasEmailFlow = computed(
     () =>
       registerRegion.value === 'intl' ||
-      (registerRegion.value === 'both' && registerPath.value === 'email'),
+      (registerRegion.value === 'both' && registerPath.value === 'email')
   )
 
   const showMainlandPhoneFlow = computed(
     () =>
       registerRegion.value === 'cn' ||
-      (registerRegion.value === 'both' && registerPath.value === 'phone'),
+      (registerRegion.value === 'both' && registerPath.value === 'phone')
   )
 
   const forgotUsesEmail = computed(() => {
@@ -212,7 +212,7 @@ export function useLoginModal(
         registerForm.value.emailCode = ''
         registerForm.value.outsideMainlandAcknowledged = false
       }
-    },
+    }
   )
 
   function switchLoginRegisterTab(tab: 'login' | 'register') {
@@ -562,8 +562,7 @@ export function useLoginModal(
     }
 
     const trimmed = form.phone.trim()
-    const useEmail =
-      trimmed.includes('@') && (type === 'reset' || type === 'login')
+    const useEmail = trimmed.includes('@') && (type === 'reset' || type === 'login')
 
     if (useEmail) {
       if (!SIMPLE_EMAIL_RE.test(trimmed)) {
@@ -631,7 +630,9 @@ export function useLoginModal(
       }
     } catch (error) {
       console.error('Verification code send error:', error)
-      notify.error(useEmail ? t('auth.modal.networkEmailCodeError') : t('auth.modal.networkSmsError'))
+      notify.error(
+        useEmail ? t('auth.modal.networkEmailCodeError') : t('auth.modal.networkSmsError')
+      )
       form.captcha = ''
       void refreshCaptcha()
     } finally {

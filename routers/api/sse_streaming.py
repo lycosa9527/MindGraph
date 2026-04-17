@@ -56,7 +56,7 @@ async def ai_assistant_stream(
     if current_user and hasattr(current_user, "id"):
         try:
             tracker = get_activity_tracker()
-            tracker.record_activity(
+            await tracker.record_activity(
                 user_id=current_user.id,
                 user_phone=getattr(current_user, "phone", None) or "",
                 activity_type="ai_assistant",

@@ -31,7 +31,8 @@ import json
 import logging
 import threading
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from config.settings import config
 
 
@@ -462,25 +463,25 @@ class IPGeolocationService:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def _get_from_cache(self, ip: str) -> Optional[Dict]:
+    async def _get_from_cache(self, ip: str) -> Optional[Dict]:
         """Get location from Redis cache."""
         if not self._use_redis():
             return None
 
         try:
-            redis = get_redis()
+            redis = get_async_redis()
             if not redis:
                 return None
 
             cache_key = f"{LOCATION_PREFIX}{ip}"
-            cached_data = redis.get(cache_key)
+            cached_data = await redis.get(cache_key)
 
             if cached_data:
                 try:
                     return json.loads(cached_data)
                 except json.JSONDecodeError:
                     logger.warning("[IPGeo] Invalid cached data for IP %s", ip)
-                    redis.delete(cache_key)  # Clean up invalid cache
+                    await redis.delete(cache_key)
                     return None
 
             return None
@@ -489,21 +490,21 @@ class IPGeolocationService:
             logger.error("[IPGeo] Error reading cache: %s", e)
             return None
 
-    def _store_in_cache(self, ip: str, location: Dict):
+    async def _store_in_cache(self, ip: str, location: Dict) -> None:
         """Store location in Redis cache."""
         if not self._use_redis():
             return
 
         try:
-            redis = get_redis()
+            redis = get_async_redis()
             if not redis:
                 return
 
             cache_key = f"{LOCATION_PREFIX}{ip}"
-            redis.setex(
+            await redis.setex(
                 cache_key,
                 CACHE_TTL_SECONDS,
-                json.dumps(location, ensure_ascii=False),  # Preserve UTF-8 characters
+                json.dumps(location, ensure_ascii=False),
             )
             logger.debug("[IPGeo] Cached location for IP %s", ip)
 
@@ -653,16 +654,14 @@ class IPGeolocationService:
         if not ip or ip == "unknown":
             return None
 
-        # Check cache first
-        cached = self._get_from_cache(ip)
+        cached = await self._get_from_cache(ip)
         if cached:
             logger.debug("[IPGeo] Cache hit for IP %s", ip)
             return cached
 
-        # Check patches first (patches take priority over main database)
         patch_location = self._find_patch_for_ip(ip)
         if patch_location:
-            self._store_in_cache(ip, patch_location)
+            await self._store_in_cache(ip, patch_location)
             logger.debug(
                 "[IPGeo] Patch match for IP %s: %s, %s (from patch)",
                 ip,
@@ -671,10 +670,9 @@ class IPGeolocationService:
             )
             return patch_location
 
-        # Lookup in local database
         location = self._lookup_local(ip)
         if location:
-            self._store_in_cache(ip, location)
+            await self._store_in_cache(ip, location)
             logger.debug(
                 "[IPGeo] Local lookup successful for IP %s: %s, %s",
                 ip,

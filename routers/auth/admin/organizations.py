@@ -237,7 +237,7 @@ async def create_organization_admin(
 
     # Write to Redis cache SECOND (non-blocking)
     try:
-        org_cache.cache_org(new_org)
+        await org_cache.cache_org(new_org)
         logger.info("[Auth] New org cached: ID %s, code %s", new_org.id, new_org.code)
     except Exception as e:
         logger.warning("[Auth] Failed to cache new org ID %s: %s", new_org.id, e)
@@ -380,7 +380,7 @@ async def update_organization_admin(
             detail="Failed to update organization",
         ) from e
 
-    if not org_cache.write_through(org, old_code, old_invite):
+    if not await org_cache.write_through(org, old_code, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
     else:
         logger.info("[Auth] Updated and re-cached org ID %s", org_id)
@@ -458,7 +458,7 @@ async def refresh_organization_invitation_code(
             detail="Failed to refresh invitation code",
         ) from e
 
-    if not org_cache.write_through(org, org_code_val, old_invite):
+    if not await org_cache.write_through(org, org_code_val, old_invite):
         logger.warning("[Auth] Cache write-through failed for org ID %s", org_id)
 
     logger.info("Admin %s refreshed invitation code for org %s", current_user.phone, org.code)
@@ -502,7 +502,7 @@ async def delete_organization_admin(
             await db.execute(delete(UserUsageStats).where(UserUsageStats.user_id == uid))
             if TokenUsage is not None:
                 await db.execute(update(TokenUsage).where(TokenUsage.user_id == uid).values(user_id=None))
-            user_cache.invalidate(uid, user.phone, getattr(user, "email", None))
+            await user_cache.invalidate(uid, user.phone, getattr(user, "email", None))
             await db.delete(user)
         try:
             await db.flush()
@@ -526,7 +526,7 @@ async def delete_organization_admin(
         ) from e
 
     try:
-        org_cache.invalidate(org_id, org_code, org_invite)
+        await org_cache.invalidate(org_id, org_code, org_invite)
         logger.info("[Auth] Invalidated cache for deleted org ID %s", org_id)
     except Exception as e:
         logger.warning("[Auth] Failed to invalidate cache for deleted org ID %s: %s", org_id, e)
@@ -717,8 +717,8 @@ async def set_organization_manager(
 
     # Invalidate user cache
     try:
-        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
-        user_cache.cache_user(user)
+        await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
+        await user_cache.cache_user(user)
     except Exception as e:
         logger.warning("[Auth] Failed to update user cache: %s", e)
 
@@ -783,8 +783,8 @@ async def remove_organization_manager(
 
     # Invalidate user cache
     try:
-        user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
-        user_cache.cache_user(user)
+        await user_cache.invalidate(user.id, user.phone, getattr(user, "email", None))
+        await user_cache.cache_user(user)
     except Exception as e:
         logger.warning("[Auth] Failed to update user cache: %s", e)
 

@@ -187,8 +187,7 @@ async def check_circuit_breaker(key: str) -> bool:
             # probe_won is None: Redis error during SETNX. Fall through to the
             # in-memory breaker so a Redis failure does not block all traffic.
             logger.warning(
-                "[MindBot] circuit_breaker_probe_redis_error key=%s "
-                "falling_back_to_in_memory",
+                "[MindBot] circuit_breaker_probe_redis_error key=%s falling_back_to_in_memory",
                 key,
             )
 

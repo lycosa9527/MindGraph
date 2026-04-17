@@ -47,12 +47,12 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
-def _enforce_sms_send_ip_limit(http_request: Request, lang: Language) -> None:
+async def _enforce_sms_send_ip_limit(http_request: Request, lang: Language) -> None:
     """Sliding-window cap on SMS send attempts per client IP (shared across /sms/send endpoints)."""
     rate_limiter = get_rate_limiter()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     send_window_seconds = config.SMS_SEND_WINDOW_MINUTES * 60
-    allowed_ip_send, _, _ = rate_limiter.check_and_record(
+    allowed_ip_send, _, _ = await rate_limiter.check_and_record(
         "sms_send_ip",
         client_ip,
         config.SMS_SEND_MAX_ATTEMPTS_PER_IP,
@@ -143,10 +143,10 @@ async def send_sms_code(
     sms_storage = get_sms_storage()
     rate_limiter = get_rate_limiter()
 
-    _enforce_sms_send_ip_limit(http_request, lang)
+    await _enforce_sms_send_ip_limit(http_request, lang)
 
     # Check rate limiting: cooldown between requests (via Redis TTL)
-    exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)
+    exists, remaining_ttl = await sms_storage.check_exists_and_get_ttl(phone, purpose)
 
     if exists and remaining_ttl > 0:
         total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
@@ -163,7 +163,7 @@ async def send_sms_code(
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     # Check rate limit within time window using Redis rate limiter
-    allowed, window_count, _error_message = rate_limiter.check_and_record(
+    allowed, window_count, _error_message = await rate_limiter.check_and_record(
         "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
     )
 
@@ -177,7 +177,7 @@ async def send_sms_code(
     # Store verification code in Redis BEFORE sending SMS
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
 
-    if not sms_storage.store(phone, code, purpose, ttl_seconds):
+    if not await sms_storage.store(phone, code, purpose, ttl_seconds):
         phone_masked = phone[:3] + "****" + phone[-4:]
         logger.error("Failed to store SMS code in Redis for %s", phone_masked)
         raise HTTPException(
@@ -189,13 +189,11 @@ async def send_sms_code(
     try:
         success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code, lang=lang)
     except SMSServiceError as e:
-        # SMS middleware error - remove the Redis record since SMS won't be sent
-        sms_storage.remove(phone, purpose)
+        await sms_storage.remove(phone, purpose)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
 
     if not success:
-        # SMS sending failed - remove the Redis record
-        sms_storage.remove(phone, purpose)
+        await sms_storage.remove(phone, purpose)
         if message and message != "SMS service not available":
             error_detail = message
         else:
@@ -239,7 +237,7 @@ async def verify_sms_code(
     combo_id = f"{phone}:{purpose}"
     rate_limiter = get_rate_limiter()
 
-    allowed_combo, _combo_count, _ = rate_limiter.check_and_record(
+    allowed_combo, _combo_count, _ = await rate_limiter.check_and_record(
         "sms_verify_combo",
         combo_id,
         config.SMS_VERIFY_MAX_ATTEMPTS_PER_COMBO,
@@ -250,7 +248,7 @@ async def verify_sms_code(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    allowed_ip, _ip_count, _ = rate_limiter.check_and_record(
+    allowed_ip, _ip_count, _ = await rate_limiter.check_and_record(
         "sms_verify_ip",
         client_ip,
         config.SMS_VERIFY_MAX_ATTEMPTS_PER_IP,
@@ -264,7 +262,7 @@ async def verify_sms_code(
     sms_storage = get_sms_storage()
 
     # Peek at the stored code to verify (without consuming)
-    stored_code = sms_storage.peek(phone, purpose)
+    stored_code = await sms_storage.peek(phone, purpose)
 
     if stored_code is None:
         error_msg = Messages.error("sms_code_invalid", lang)
@@ -280,7 +278,13 @@ async def verify_sms_code(
     return {"valid": True, "message": Messages.success("verification_code_valid", lang)}
 
 
-def _verify_and_consume_sms_code(phone: str, code: str, purpose: str, _db: AsyncSession, lang: Language = "en") -> bool:
+async def _verify_and_consume_sms_code(
+    phone: str,
+    code: str,
+    purpose: str,
+    _db: AsyncSession,
+    lang: Language = "en",
+) -> bool:
     """
     Internal helper to verify and consume SMS code
 
@@ -296,11 +300,9 @@ def _verify_and_consume_sms_code(phone: str, code: str, purpose: str, _db: Async
         db: Database session (kept for API compatibility, not used for SMS anymore)
         lang: Language for error messages (default: "en")
     """
-    # Get SMS storage
     sms_storage = get_sms_storage()
 
-    # Atomic verify and remove - prevents race conditions
-    if sms_storage.verify_and_remove(phone, code, purpose):
+    if await sms_storage.verify_and_remove(phone, code, purpose):
         phone_masked = phone[:3] + "****" + phone[-4:]
         logger.info("SMS code consumed: %s (Purpose: %s)", phone_masked, purpose)
         return True
@@ -377,10 +379,10 @@ async def _send_sms_code_with_purpose(
     sms_storage = get_sms_storage()
     rate_limiter = get_rate_limiter()
 
-    _enforce_sms_send_ip_limit(http_request, lang)
+    await _enforce_sms_send_ip_limit(http_request, lang)
 
     # Check rate limiting: cooldown between requests (via Redis TTL)
-    exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(phone, purpose)
+    exists, remaining_ttl = await sms_storage.check_exists_and_get_ttl(phone, purpose)
 
     if exists and remaining_ttl > 0:
         total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
@@ -397,7 +399,7 @@ async def _send_sms_code_with_purpose(
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     # Check rate limit within time window using Redis rate limiter
-    allowed, window_count, _error_message = rate_limiter.check_and_record(
+    allowed, window_count, _error_message = await rate_limiter.check_and_record(
         "sms", phone, SMS_MAX_ATTEMPTS_PER_PHONE, SMS_MAX_ATTEMPTS_WINDOW_HOURS * 3600
     )
 
@@ -411,7 +413,7 @@ async def _send_sms_code_with_purpose(
     # Store verification code in Redis BEFORE sending SMS
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
 
-    if not sms_storage.store(phone, code, purpose, ttl_seconds):
+    if not await sms_storage.store(phone, code, purpose, ttl_seconds):
         phone_masked = phone[:3] + "****" + phone[-4:]
         logger.error("Failed to store SMS code in Redis for %s", phone_masked)
         raise HTTPException(
@@ -423,13 +425,11 @@ async def _send_sms_code_with_purpose(
     try:
         success, message, _ = await sms_middleware.send_verification_code(phone, purpose, code=code, lang=lang)
     except SMSServiceError as e:
-        # SMS middleware error - remove the Redis record since SMS won't be sent
-        sms_storage.remove(phone, purpose)
+        await sms_storage.remove(phone, purpose)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
 
     if not success:
-        # SMS sending failed - remove the Redis record
-        sms_storage.remove(phone, purpose)
+        await sms_storage.remove(phone, purpose)
         if message and message != "SMS service not available":
             error_detail = message
         else:

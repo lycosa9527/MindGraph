@@ -232,7 +232,7 @@ async def list_posts(
     # Try community list cache for non-personal feeds (mine=False).
     # is_liked and can_edit are user-specific; we overlay them after the cache read.
     if not mine:
-        cached_resp = get_cached_list(mine, type_filter, category, sort, page, page_size)
+        cached_resp = await get_cached_list(mine, type_filter, category, sort, page, page_size)
         if cached_resp is not None:
             post_ids_in_cache = [p["id"] for p in cached_resp.get("posts", [])]
             liked_post_ids_cache: Set[str] = set()
@@ -305,16 +305,13 @@ async def list_posts(
     # Populate cache for non-personal feeds; strip user-specific fields before storing.
     if not mine:
         cacheable = {
-            "posts": [
-                {**p, "is_liked": False, "can_edit": False}
-                for p in formatted
-            ],
+            "posts": [{**p, "is_liked": False, "can_edit": False} for p in formatted],
             "total": total,
             "page": page,
             "page_size": page_size,
             "total_pages": response["total_pages"],
         }
-        set_cached_list(mine, type_filter, category, sort, page, page_size, cacheable)
+        await set_cached_list(mine, type_filter, category, sort, page, page_size, cacheable)
 
     return response
 
@@ -381,7 +378,7 @@ async def create_post(
     post = result.unique().scalar_one()
 
     logger.info("[Community] User %s created post %s", current_user.id, post_id)
-    invalidate_all()
+    await invalidate_all()
 
     return {
         "message": "Post created successfully",
@@ -399,7 +396,7 @@ async def get_post(
     _validate_post_id(post_id)
 
     # Try post cache first; is_liked and can_edit are user-specific so we overlay them.
-    cached_post = get_cached_post(post_id)
+    cached_post = await get_cached_post(post_id)
     if cached_post is not None:
         is_liked = False
         result_like = await db.execute(
@@ -440,7 +437,7 @@ async def get_post(
 
     # Populate cache with non-user-specific data.
     cacheable = {**resp, "is_liked": False, "can_edit": False}
-    set_cached_post(post_id, cacheable)
+    await set_cached_post(post_id, cacheable)
 
     return resp
 
@@ -567,8 +564,8 @@ async def create_comment(
             detail="Failed to add comment",
         ) from exc
 
-    invalidate_post(post_id)
-    invalidate_all()
+    await invalidate_post(post_id)
+    await invalidate_all()
 
     return {
         "message": "Comment added",
@@ -646,8 +643,8 @@ async def delete_comment(
             detail="Failed to delete comment",
         ) from exc
 
-    invalidate_post(post_id)
-    invalidate_all()
+    await invalidate_post(post_id)
+    await invalidate_all()
 
     logger.info(
         "User %s deleted comment %s on community post %s",
@@ -719,8 +716,8 @@ async def update_post(
     post = result.unique().scalar_one()
 
     logger.info("[Community] User %s updated post %s", current_user.id, post_id)
-    invalidate_post(post_id)
-    invalidate_all()
+    await invalidate_post(post_id)
+    await invalidate_all()
 
     return {
         "message": "Post updated successfully",
@@ -775,8 +772,8 @@ async def delete_post(
         delete_spec_json(post_id)
     except Exception as exc:
         logger.warning("[Community] Failed to delete spec JSON for post %s: %s", post_id, exc)
-    invalidate_post(post_id)
-    invalidate_all()
+    await invalidate_post(post_id)
+    await invalidate_all()
 
     return {"message": "Post deleted successfully"}
 
@@ -851,7 +848,7 @@ async def toggle_like(
             detail="Failed to toggle like",
         ) from exc
 
-    invalidate_post(post_id)
-    invalidate_all()
+    await invalidate_post(post_id)
+    await invalidate_all()
 
     return {"is_liked": is_liked, "likes_count": post.likes_count}

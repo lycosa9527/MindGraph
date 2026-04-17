@@ -5,7 +5,7 @@ import os
 import secrets
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Request, Response, status
 from fastapi.responses import HTMLResponse, PlainTextResponse
 from pydantic import BaseModel, Field
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -64,12 +64,18 @@ class OrderOut(BaseModel):
 
 @router.get("/listings", response_model=list[ListingOut])
 async def list_listings(
+    response: Response,
     listing_kind: Optional[str] = None,
     scene: Optional[str] = None,
     subject: Optional[str] = None,
     product_type: Optional[str] = None,
-    offset: int = 0,
-    limit: int = 50,
+    after_id: Optional[int] = Query(
+        None,
+        ge=1,
+        description="Keyset cursor: id of the last row from the previous page.",
+    ),
+    offset: int = Query(0, ge=0, description="Legacy offset; ignored when after_id is supplied."),
+    limit: int = Query(50, ge=1, le=100),
     db: AsyncSession = Depends(get_async_db),
 ) -> list[ListingOut]:
     require_markets_enabled()
@@ -79,9 +85,12 @@ async def list_listings(
         scene=scene,
         subject=subject,
         product_type=product_type,
+        after_id=after_id,
         offset=offset,
-        limit=min(limit, 100),
+        limit=limit,
     )
+    if rows and len(rows) == limit:
+        response.headers["X-Next-Cursor"] = str(rows[-1].id)
     return [
         ListingOut(
             id=r.id,
@@ -189,14 +198,27 @@ async def pay_order(
 
 @router.get("/orders", response_model=list[OrderOut])
 async def my_orders(
+    response: Response,
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(get_current_user),
-    offset: int = 0,
-    limit: int = 50,
+    before_id: Optional[int] = Query(
+        None,
+        ge=1,
+        description="Keyset cursor: id of the last row from the previous page.",
+    ),
+    offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
+    limit: int = Query(50, ge=1, le=100),
 ) -> list[OrderOut]:
     require_markets_enabled()
     repo = MarketOrderRepository(db)
-    rows = await repo.list_for_user(user.id, offset=offset, limit=min(limit, 100))
+    rows = await repo.list_for_user(
+        user.id,
+        before_id=before_id,
+        offset=offset,
+        limit=limit,
+    )
+    if rows and len(rows) == limit:
+        response.headers["X-Next-Cursor"] = str(rows[-1].id)
     return [
         OrderOut(
             id=r.id,

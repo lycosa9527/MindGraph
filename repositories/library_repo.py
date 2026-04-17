@@ -21,16 +21,25 @@ class LibraryDocumentRepository(BaseRepository[LibraryDocument]):
     async def list_published(
         self,
         *,
+        before_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 20,
     ) -> Sequence[LibraryDocument]:
-        result = await self.session.execute(
+        """List active documents ordered by ``id DESC``.
+
+        Prefer ``before_id`` keyset cursor over ``offset`` for deep pages.
+        """
+        stmt = (
             select(LibraryDocument)
             .where(LibraryDocument.is_active.is_(True))
-            .order_by(LibraryDocument.created_at.desc())
-            .offset(offset)
+            .order_by(LibraryDocument.id.desc())
             .limit(limit)
         )
+        if before_id is not None:
+            stmt = stmt.where(LibraryDocument.id < before_id)
+        elif offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def get_with_uploader(self, doc_id: int) -> Optional[LibraryDocument]:
@@ -68,17 +77,27 @@ class LibraryBookmarkRepository(BaseRepository[LibraryBookmark]):
         self,
         user_id: int,
         *,
+        before_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[LibraryBookmark]:
-        result = await self.session.execute(
+        """User bookmarks ordered by ``id DESC`` (newest first).
+
+        Prefer ``before_id`` keyset cursor over ``offset`` for deep pages.
+        """
+        conditions = [LibraryBookmark.user_id == user_id]
+        if before_id is not None:
+            conditions.append(LibraryBookmark.id < before_id)
+        stmt = (
             select(LibraryBookmark)
             .options(selectinload(LibraryBookmark.document))
-            .where(LibraryBookmark.user_id == user_id)
-            .order_by(LibraryBookmark.created_at.desc())
-            .offset(offset)
+            .where(*conditions)
+            .order_by(LibraryBookmark.id.desc())
             .limit(limit)
         )
+        if before_id is None and offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def has_bookmark(self, user_id: int, document_id: int) -> bool:

@@ -15,7 +15,7 @@ export function readClientRegionCookie(): ClientRegion | null {
     return null
   }
   const match = document.cookie.match(
-    new RegExp(`(?:^|; )${CLIENT_REGION_COOKIE}=(cn|intl|both)(?:;|$)`),
+    new RegExp(`(?:^|; )${CLIENT_REGION_COOKIE}=(cn|intl|both)(?:;|$)`)
   )
   if (!match) {
     return null

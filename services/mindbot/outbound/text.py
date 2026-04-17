@@ -5,13 +5,14 @@ from __future__ import annotations
 import json
 import logging
 import re
-import ssl
 from typing import Any, Optional
 
 import aiohttp
-import aiohttp.resolver
 
-from services.mindbot.infra.http_client import get_outbound_session
+from services.mindbot.infra.http_client import (
+    get_outbound_session,
+    get_pinned_outbound_session,
+)
 from models.domain.mindbot_config import OrganizationMindbotConfig
 from services.mindbot.telemetry.pipeline_log import session_webhook_host
 from utils.env_helpers import env_bool
@@ -43,37 +44,6 @@ def _sanitize_webhook_snippet(body_txt: str, max_len: int = 400) -> str:
     """Return a truncated, token-redacted snippet safe for WARNING logs."""
     snippet = body_txt[:max_len]
     return _SENSITIVE_PATTERN.sub(r'\1: "***"', snippet)
-
-
-class _PinnedIPResolver(aiohttp.resolver.AbstractResolver):
-    """aiohttp resolver that returns a pre-resolved IP, bypassing DNS at request time.
-
-    This prevents DNS rebinding attacks: the hostname was resolved and validated
-    at callback time; subsequent requests use the pinned IP so a rogue DNS TTL-0
-    response cannot redirect the connection to a private address.
-
-    TLS SNI and certificate verification still use the original hostname because
-    aiohttp derives ``server_hostname`` from the URL's host component, not the
-    resolved IP.
-    """
-
-    def __init__(self, pinned_ip: str) -> None:
-        self._pinned_ip = pinned_ip
-
-    async def resolve(self, host: str, port: int = 0, family: int = 0) -> list[dict]:
-        return [
-            {
-                "hostname": host,
-                "host": self._pinned_ip,
-                "port": port,
-                "family": family,
-                "proto": 0,
-                "flags": 0,
-            }
-        ]
-
-    async def close(self) -> None:
-        pass
 
 
 def is_group_conversation(body: dict[str, Any]) -> bool:
@@ -169,9 +139,7 @@ async def reply_via_openapi(
                 path,
             )
             await invalidate_access_token_cache(cfg.organization_id, app_key, app_secret)
-            new_token, _err2 = await get_access_token_with_error(
-                cfg.organization_id, app_key, app_secret
-            )
+            new_token, _err2 = await get_access_token_with_error(cfg.organization_id, app_key, app_secret)
             if new_token:
                 effective_token = new_token
                 continue
@@ -205,7 +173,7 @@ async def _do_post_session_webhook(
             timeout=timeout,
             allow_redirects=False,
         ) as r:
-            if not (200 <= r.status < 300):
+            if r.status < 200 or r.status >= 300:
                 body_txt = await r.text()
                 logger.warning(
                     "[MindBot] outbound_session_webhook_http %s host=%s status=%s body=%s",
@@ -258,13 +226,10 @@ async def post_session_webhook(
     url = session_webhook.strip()
 
     if pinned_ip:
-        resolver = _PinnedIPResolver(pinned_ip)
-        ssl_ctx = ssl.create_default_context()
-        connector = aiohttp.TCPConnector(resolver=resolver, ssl=ssl_ctx)
-        async with aiohttp.ClientSession(connector=connector) as pinned_session:
-            return await _do_post_session_webhook(
-                pinned_session, url, payload_str, timeout, host, stream_chunk, pipeline_ctx
-            )
+        pinned_session = await get_pinned_outbound_session(host, pinned_ip)
+        return await _do_post_session_webhook(
+            pinned_session, url, payload_str, timeout, host, stream_chunk, pipeline_ctx
+        )
     return await _do_post_session_webhook(
         get_outbound_session(), url, payload_str, timeout, host, stream_chunk, pipeline_ctx
     )

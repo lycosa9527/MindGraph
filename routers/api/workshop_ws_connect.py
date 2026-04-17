@@ -9,7 +9,7 @@ from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.features.workshop_ws_connection_state import (
     ACTIVE_EDITORS as active_editors,
 )
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_live_spec import spec_for_snapshot
 from services.workshop.workshop_live_spec_ops import ensure_live_spec_seeded
 from services.workshop.workshop_redis_ttl import get_workshop_redis_ttl_seconds
@@ -28,7 +28,7 @@ async def _send_live_spec_snapshot(
     diagram_id: str,
 ) -> None:
     """Push authoritative diagram JSON after ``joined`` (Phase 2)."""
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return
     try:
@@ -107,7 +107,7 @@ async def send_canvas_collab_join_handshake(
 
     await _send_live_spec_snapshot(websocket, code, diagram_id)
 
-    editor_map = load_editors(code) if is_ws_fanout_enabled() else active_editors.get(code, {})
+    editor_map = await load_editors(code) if is_ws_fanout_enabled() else active_editors.get(code, {})
     await _replay_remote_node_editing_states(
         websocket,
         user,

@@ -26,7 +26,8 @@ import numpy as np
 from clients.dashscope_embedding import DashScopeEmbeddingClient, get_embedding_client
 from config.settings import config
 from models.domain.knowledge_space import Embedding
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -144,7 +145,7 @@ class EmbeddingCache:
         """Redis key for the VSET used for semantic similarity search."""
         return f"query_embeddings:vset:{model_name}"
 
-    def _vset_lookup(self, redis_client: Any, vset_key: str, embedding: List[float]) -> Optional[List[float]]:
+    async def _vset_lookup(self, redis_client: Any, vset_key: str, embedding: List[float]) -> Optional[List[float]]:
         """
         Search the VSET for a semantically similar cached embedding (Redis >= 8.0).
 
@@ -154,7 +155,7 @@ class EmbeddingCache:
         threshold = float(os.getenv("VSET_SIMILARITY_THRESHOLD", "0.95"))
         try:
             embedding_array = np.array(embedding, dtype=np.float32)
-            results = redis_client.execute_command(
+            results = await redis_client.execute_command(
                 "VSIM",
                 vset_key,
                 "VALUES",
@@ -180,11 +181,11 @@ class EmbeddingCache:
             logger.debug("[EmbeddingCache] VSET lookup skipped: %s", exc)
         return None
 
-    def _vset_add(self, redis_client: Any, vset_key: str, embedding: List[float], encoded: str) -> None:
+    async def _vset_add(self, redis_client: Any, vset_key: str, embedding: List[float], encoded: str) -> None:
         """Add an embedding vector to the VSET (Redis >= 8.0). Errors are silently ignored."""
         try:
             embedding_array = np.array(embedding, dtype=np.float32)
-            redis_client.execute_command(
+            await redis_client.execute_command(
                 "VADD",
                 vset_key,
                 "VALUES",
@@ -195,7 +196,7 @@ class EmbeddingCache:
         except Exception as exc:
             logger.debug("[EmbeddingCache] VSET add skipped: %s", exc)
 
-    def get_query_embedding(self, query: str) -> Optional[List[float]]:
+    async def get_query_embedding(self, query: str) -> Optional[List[float]]:
         """
         Get query embedding from Redis cache via exact key lookup (GETEX).
 
@@ -208,7 +209,7 @@ class EmbeddingCache:
         if not is_redis_available():
             return None
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return None
 
@@ -220,7 +221,7 @@ class EmbeddingCache:
             cache_key = f"query_embedding:dashscope:{model_name}{dim_suffix}:{query_hash}"
 
             # GETEX atomically fetches the value and resets the TTL in one round-trip.
-            cached = redis.getex(cache_key, ex=self.query_cache_ttl)
+            cached = await redis.getex(cache_key, ex=self.query_cache_ttl)
             if cached:
                 decoded_bytes = base64.b64decode(cached)
                 decoded = np.frombuffer(decoded_bytes, dtype=np.float32)
@@ -232,7 +233,7 @@ class EmbeddingCache:
 
         return None
 
-    def get_query_embedding_semantic(self, embedding: List[float]) -> Optional[List[float]]:
+    async def get_query_embedding_semantic(self, embedding: List[float]) -> Optional[List[float]]:
         """
         Search the VSET for a semantically similar cached embedding (Redis >= 8.0).
 
@@ -249,14 +250,14 @@ class EmbeddingCache:
         if not is_redis_available():
             return None
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return None
 
         model_name = config.DASHSCOPE_EMBEDDING_MODEL or "text-embedding-v4"
-        return self._vset_lookup(redis, self._vset_key(model_name), embedding)
+        return await self._vset_lookup(redis, self._vset_key(model_name), embedding)
 
-    def cache_query_embedding(self, query: str, embedding: List[float]) -> None:
+    async def cache_query_embedding(self, query: str, embedding: List[float]) -> None:
         """
         Cache query embedding in Redis (10min TTL).
 
@@ -271,7 +272,7 @@ class EmbeddingCache:
         if not is_redis_available():
             return
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return
 
@@ -285,15 +286,15 @@ class EmbeddingCache:
             embedding_array = np.array(embedding, dtype=np.float32)
             encoded = base64.b64encode(embedding_array.tobytes()).decode("utf-8")
 
-            redis.setex(cache_key, self.query_cache_ttl, encoded)
+            await redis.setex(cache_key, self.query_cache_ttl, encoded)
 
             # Also register in the VSET so semantically similar queries get a hit.
-            self._vset_add(redis, self._vset_key(model_name), embedding, encoded)
+            await self._vset_add(redis, self._vset_key(model_name), embedding, encoded)
 
         except Exception as exc:
             logger.warning("[EmbeddingCache] Failed to cache query embedding: %s", exc)
 
-    def embed_query_cached(self, query: str) -> List[float]:
+    async def embed_query_cached(self, query: str) -> List[float]:
         """
         Embed query with two-stage caching.
 
@@ -308,28 +309,28 @@ class EmbeddingCache:
         Returns:
             Normalized embedding vector
         """
-        # Stage 1: exact key hit.
-        cached = self.get_query_embedding(query)
+        cached = await self.get_query_embedding(query)
         if cached:
             if self._validate_embedding(cached):
                 return cached
             logger.warning("[EmbeddingCache] Cached embedding invalid, regenerating")
 
-        # Stage 2: need the actual embedding to search the VSET — compute it cheaply first
-        # by calling the embedding API, then immediately check the VSET before storing.
-        embedding = self.embedding_client.embed_query(query)
+        # The DashScope embedding client is synchronous; offload its blocking HTTP
+        # call to a worker thread so the event loop is not stalled while we
+        # compute the vector before the VSET semantic-similarity probe.
+        import asyncio  # local import to avoid module-level cost
+
+        embedding = await asyncio.to_thread(self.embedding_client.embed_query, query)
 
         if not self._validate_embedding(embedding):
             raise ValueError("Generated embedding is invalid (contains NaN/Inf or zero norm)")
 
-        # Stage 2: semantic VSET search using the just-computed vector.
-        semantic_hit = self.get_query_embedding_semantic(embedding)
+        semantic_hit = await self.get_query_embedding_semantic(embedding)
         if semantic_hit and self._validate_embedding(semantic_hit):
             logger.debug("[EmbeddingCache] Query embedding semantic cache hit")
             return semantic_hit
 
-        # Stage 3: genuine miss — store in exact key and VSET for future hits.
-        self.cache_query_embedding(query, embedding)
+        await self.cache_query_embedding(query, embedding)
 
         return embedding
 

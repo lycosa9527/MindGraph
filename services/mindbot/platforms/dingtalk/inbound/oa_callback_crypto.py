@@ -71,23 +71,27 @@ class DingTalkOaCallbackCrypto:
             raw = base64.b64decode(content.encode("UTF-8"))
         except binascii.Error as exc:
             raise ValueError("invalid base64 in encrypt field") from exc
+        if len(raw) < 16 or (len(raw) % 16) != 0:
+            raise ValueError("decrypt: ciphertext length is not a non-empty AES block multiple")
         iv = self.aes_key[:16]
         aes_decode = AES.new(self.aes_key, AES.MODE_CBC, iv)
         decode_res = aes_decode.decrypt(raw)
-        pad = int(decode_res[-1])
-        if pad > 32:
+        if not decode_res:
+            raise ValueError("decrypt: empty plaintext")
+        pad = decode_res[-1]
+        if pad < 1 or pad > 32 or pad > len(decode_res):
             raise ValueError("Input is not padded or padding is corrupt")
         decode_res = decode_res[:-pad]
         if len(decode_res) < 20:
             raise ValueError("decrypt: payload too short to contain header")
         msg_len = struct.unpack("!i", decode_res[16:20])[0]
         if msg_len < 0 or 20 + msg_len > len(decode_res):
-            raise ValueError(
-                f"decrypt: msg_len={msg_len} out of bounds for payload_len={len(decode_res)}"
-            )
+            raise ValueError(f"decrypt: msg_len={msg_len} out of bounds for payload_len={len(decode_res)}")
         tail = decode_res[(20 + msg_len) :].decode("utf-8")
-        if tail != self.owner_key:
-            raise ValueError("corpId 校验错误")
+        # Constant-time compare to avoid leaking owner-key bytes via timing,
+        # even though signature verification above already gates this path.
+        if not hmac.compare_digest(tail, self.owner_key):
+            raise ValueError("owner key mismatch")
         return decode_res[20 : (20 + msg_len)].decode("utf-8")
 
     def _encrypt(self, content: str) -> str:

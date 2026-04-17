@@ -17,7 +17,8 @@ export default {
   'notification.deleted': 'Item berjaya dipadam',
   'notification.feedbackCancelled': 'Maklum balas dialih keluar',
   'notification.feedbackThanks': 'Terima kasih atas maklum balas anda',
-  'notification.feedbackThanksDislike': 'Terima kasih atas maklum balas anda — kami akan menambah baik',
+  'notification.feedbackThanksDislike':
+    'Terima kasih atas maklum balas anda — kami akan menambah baik',
   'notification.focusQuestionTooShort': 'Masukkan soalan fokus yang lebih panjang dahulu',
   'notification.fullscreenFailed': 'Tidak boleh masuk skrin penuh',
   'notification.generationCancelled': 'Penjanaan dibatalkan',

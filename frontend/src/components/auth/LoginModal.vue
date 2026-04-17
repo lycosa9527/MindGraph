@@ -125,617 +125,184 @@ function focusSesLogin() {
           <div class="relative w-full max-w-sm">
             <!-- Card -->
             <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
-            <!-- Close button -->
-            <el-button
-              class="close-btn"
-              :icon="Close"
-              circle
-              text
-              @click="closeModal"
-            />
-            <!-- Header -->
-            <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100">
-              <div
-                class="w-12 h-12 bg-stone-900 rounded-lg mx-auto mb-4 flex items-center justify-center"
-              >
-                <span class="text-white font-semibold text-lg tracking-tight">M</span>
-              </div>
-              <h2 class="text-xl font-semibold text-stone-900 tracking-tight leading-none">
-                {{ t('auth.modal.productTitle') }}
-              </h2>
-              <p class="text-xs text-stone-400 tracking-wide mt-1.5">
-                {{ t('auth.modal.tagline') }}
-              </p>
-            </div>
-
-            <!-- Login / Register switch (custom; Element Plus tabs use scroll/transform and mis-align in narrow modals) -->
-            <div
-              v-if="currentView === 'login' || currentView === 'register'"
-              class="auth-tab-switch"
-              role="tablist"
-              :aria-label="t('auth.loginRegister')"
-            >
-              <button
-                type="button"
-                role="tab"
-                :aria-selected="activeTab === 'login'"
-                class="auth-tab-switch__btn"
-                :class="{ 'auth-tab-switch__btn--active': activeTab === 'login' }"
-                @click="switchLoginRegisterTab('login')"
-              >
-                {{ t('auth.login') }}
-              </button>
-              <button
-                type="button"
-                role="tab"
-                :aria-selected="activeTab === 'register'"
-                class="auth-tab-switch__btn"
-                :class="{ 'auth-tab-switch__btn--active': activeTab === 'register' }"
-                @click="switchLoginRegisterTab('register')"
-              >
-                {{ t('auth.register') }}
-              </button>
-            </div>
-
-            <!-- Sub-view header: back control is icon + label on one line (not el-page-header — it stacks title). -->
-            <div
-              v-if="currentView === 'sms-login' || currentView === 'forgot-password'"
-              class="page-header"
-            >
-              <div class="page-header__row">
-                <button
-                  type="button"
-                  class="page-header__back"
-                  @click="backToLogin"
+              <!-- Close button -->
+              <el-button
+                class="close-btn"
+                :icon="Close"
+                circle
+                text
+                @click="closeModal"
+              />
+              <!-- Header -->
+              <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100">
+                <div
+                  class="w-12 h-12 bg-stone-900 rounded-lg mx-auto mb-4 flex items-center justify-center"
                 >
-                  <ArrowLeft
-                    class="page-header__back-icon"
-                    aria-hidden="true"
-                  />
-                  {{ t('auth.backToLogin') }}
-                </button>
-                <span
-                  v-if="currentView === 'sms-login'"
-                  class="page-header-title"
-                >
-                  {{ pageHeaderTitle }}
-                </span>
-              </div>
-            </div>
-
-            <!-- Login Form -->
-            <form
-              v-if="currentView === 'login'"
-              class="p-6 space-y-4"
-              @submit.prevent="handleLogin"
-            >
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="login-phone"
-                >
-                  {{ t('auth.loginPhoneOrEmail') }}
-                </label>
-                <input
-                  id="login-phone"
-                  ref="loginIdentifierRef"
-                  v-model="loginForm.phone"
-                  type="text"
-                  name="login-phone"
-                  :placeholder="t('auth.modal.phonePlaceholder11')"
-                  maxlength="254"
-                  autocomplete="username"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                />
-              </div>
-
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="login-password"
-                >
-                  {{ t('auth.password') }}
-                </label>
-                <div class="relative">
-                  <input
-                    id="login-password"
-                    v-model="loginForm.password"
-                    :type="showPassword ? 'text' : 'password'"
-                    name="login-password"
-                    :placeholder="t('auth.modal.passwordPlaceholder')"
-                    autocomplete="current-password"
-                    class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <button
-                    type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-                    @click="showPassword = !showPassword"
-                  >
-                    <Eye
-                      v-if="showPassword"
-                      class="w-4 h-4"
-                    />
-                    <EyeOff
-                      v-else
-                      class="w-4 h-4"
-                    />
-                  </button>
+                  <span class="text-white font-semibold text-lg tracking-tight">M</span>
                 </div>
-              </div>
-
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="login-captcha"
-                >
-                  {{ t('auth.captcha') }}
-                </label>
-                <div class="flex gap-3 items-center">
-                  <input
-                    id="login-captcha"
-                    v-model="loginForm.captcha"
-                    type="text"
-                    name="login-captcha"
-                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
-                    maxlength="4"
-                    class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <img
-                    v-if="captchaImage && !captchaLoading"
-                    :src="captchaImage"
-                    :alt="t('auth.captcha')"
-                    class="captcha-image"
-                    :title="t('auth.clickToRefresh')"
-                    @click="refreshCaptcha"
-                  />
-                  <div
-                    v-else
-                    class="captcha-placeholder"
-                    @click="refreshCaptcha"
-                  >
-                    <Loader2
-                      v-if="captchaLoading"
-                      class="w-5 h-5 text-stone-400 animate-spin"
-                    />
-                    <RefreshCw
-                      v-else
-                      class="w-5 h-5 text-stone-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                :disabled="isLoading"
-                class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Loader2
-                  v-if="isLoading"
-                  class="w-4 h-4 animate-spin"
-                />
-                {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
-              </button>
-
-              <!-- Links -->
-              <div
-                class="flex flex-wrap justify-center items-center gap-x-1 gap-y-1 pt-2 text-sm"
-              >
-                <el-button
-                  type="primary"
-                  link
-                  @click="showForgotPassword"
-                >
-                  {{ t('auth.forgotPassword') }}
-                </el-button>
-                <span class="text-stone-300 select-none">|</span>
-                <el-button
-                  type="primary"
-                  link
-                  @click="showSmsLogin"
-                >
-                  {{ t('auth.smsLogin') }}
-                </el-button>
-                <span class="text-stone-300 select-none">|</span>
-                <el-button
-                  type="primary"
-                  link
-                  @click="focusSesLogin"
-                >
-                  {{ t('auth.sesLogin') }}
-                </el-button>
-              </div>
-            </form>
-
-            <!-- Register Form -->
-            <form
-              v-if="currentView === 'register'"
-              class="p-6 space-y-4"
-              @submit.prevent="handleRegister"
-            >
-              <div
-                v-if="registerRegionLoading"
-                class="flex items-center gap-2 text-sm text-stone-500 py-1"
-              >
-                <Loader2 class="w-4 h-4 animate-spin shrink-0" />
-                <span>{{ t('auth.modal.detectingRegion') }}</span>
-              </div>
-
-              <div
-                v-if="!registerRegionLoading && isBothRegister"
-                class="flex flex-wrap items-center justify-center gap-2"
-                role="group"
-                :aria-label="t('auth.modal.hybridRegisterGroupLabel')"
-              >
-                <button
-                  type="button"
-                  class="rounded-full px-4 py-2 text-xs font-medium transition-colors"
-                  :class="
-                    registerPath === 'email'
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  "
-                  @click="setRegisterPath('email')"
-                >
-                  {{ t('auth.modal.hybridRegisterEmailTab') }}
-                </button>
-                <button
-                  type="button"
-                  class="rounded-full px-4 py-2 text-xs font-medium transition-colors"
-                  :class="
-                    registerPath === 'phone'
-                      ? 'bg-stone-900 text-white'
-                      : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                  "
-                  @click="setRegisterPath('phone')"
-                >
-                  {{ t('auth.modal.hybridRegisterPhoneTab') }}
-                </button>
-              </div>
-
-              <div v-if="showMainlandPhoneFlow">
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="register-phone"
-                >
-                  {{ t('auth.phone') }} *
-                </label>
-                <input
-                  id="register-phone"
-                  v-model="registerForm.phone"
-                  type="tel"
-                  name="register-phone"
-                  :placeholder="t('auth.modal.phonePlaceholder11')"
-                  maxlength="11"
-                  autocomplete="username"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                />
-              </div>
-
-              <div v-if="showOverseasEmailFlow">
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="register-education-email"
-                >
-                  {{ t('auth.modal.registrationEmailLabel') }}
-                </label>
-                <input
-                  id="register-education-email"
-                  v-model="registerForm.registrationEmail"
-                  type="email"
-                  name="register-education-email"
-                  autocomplete="email"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                />
-                <p
-                  v-if="registrationEmailHint"
-                  class="text-xs text-stone-500 mt-1.5 leading-relaxed"
-                >
-                  {{ registrationEmailHint }}
+                <h2 class="text-xl font-semibold text-stone-900 tracking-tight leading-none">
+                  {{ t('auth.modal.productTitle') }}
+                </h2>
+                <p class="text-xs text-stone-400 tracking-wide mt-1.5">
+                  {{ t('auth.modal.tagline') }}
                 </p>
               </div>
 
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="register-password"
+              <!-- Login / Register switch (custom; Element Plus tabs use scroll/transform and mis-align in narrow modals) -->
+              <div
+                v-if="currentView === 'login' || currentView === 'register'"
+                class="auth-tab-switch"
+                role="tablist"
+                :aria-label="t('auth.loginRegister')"
+              >
+                <button
+                  type="button"
+                  role="tab"
+                  :aria-selected="activeTab === 'login'"
+                  class="auth-tab-switch__btn"
+                  :class="{ 'auth-tab-switch__btn--active': activeTab === 'login' }"
+                  @click="switchLoginRegisterTab('login')"
                 >
-                  {{ t('auth.password') }} *
-                </label>
-                <div class="relative">
-                  <input
-                    id="register-password"
-                    v-model="registerForm.password"
-                    :type="showPassword ? 'text' : 'password'"
-                    name="register-password"
-                    :placeholder="t('auth.modal.passwordMinPlaceholder')"
-                    autocomplete="new-password"
-                    class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
+                  {{ t('auth.login') }}
+                </button>
+                <button
+                  type="button"
+                  role="tab"
+                  :aria-selected="activeTab === 'register'"
+                  class="auth-tab-switch__btn"
+                  :class="{ 'auth-tab-switch__btn--active': activeTab === 'register' }"
+                  @click="switchLoginRegisterTab('register')"
+                >
+                  {{ t('auth.register') }}
+                </button>
+              </div>
+
+              <!-- Sub-view header: back control is icon + label on one line (not el-page-header — it stacks title). -->
+              <div
+                v-if="currentView === 'sms-login' || currentView === 'forgot-password'"
+                class="page-header"
+              >
+                <div class="page-header__row">
                   <button
                     type="button"
-                    class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-                    @click="showPassword = !showPassword"
+                    class="page-header__back"
+                    @click="backToLogin"
                   >
-                    <Eye
-                      v-if="showPassword"
-                      class="w-4 h-4"
+                    <ArrowLeft
+                      class="page-header__back-icon"
+                      aria-hidden="true"
                     />
-                    <EyeOff
-                      v-else
-                      class="w-4 h-4"
-                    />
+                    {{ t('auth.backToLogin') }}
                   </button>
-                </div>
-              </div>
-
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="register-name"
-                >
-                  {{ t('auth.name') }} *
-                </label>
-                <input
-                  id="register-name"
-                  v-model="registerForm.name"
-                  type="text"
-                  name="register-name"
-                  :placeholder="t('auth.modal.namePlaceholder')"
-                  autocomplete="name"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                />
-              </div>
-
-              <div v-if="showMainlandPhoneFlow">
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="register-invitation-code"
-                >
-                  {{ t('auth.invitationCode') }} *
-                </label>
-                <input
-                  id="register-invitation-code"
-                  v-model="registerForm.invitationCode"
-                  type="text"
-                  name="register-invitation-code"
-                  :placeholder="t('auth.modal.invitationPlaceholder')"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                />
-              </div>
-
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="register-captcha"
-                >
-                  {{ t('auth.captcha') }} *
-                </label>
-                <div class="flex gap-3 items-center">
-                  <input
-                    id="register-captcha"
-                    v-model="registerForm.captcha"
-                    type="text"
-                    name="register-captcha"
-                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
-                    maxlength="4"
-                    class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <img
-                    v-if="captchaImage && !captchaLoading"
-                    :src="captchaImage"
-                    :alt="t('auth.captcha')"
-                    class="captcha-image"
-                    :title="t('auth.clickToRefresh')"
-                    @click="refreshCaptcha"
-                  />
-                  <div
-                    v-else
-                    class="captcha-placeholder"
-                    @click="refreshCaptcha"
+                  <span
+                    v-if="currentView === 'sms-login'"
+                    class="page-header-title"
                   >
-                    <Loader2
-                      v-if="captchaLoading"
-                      class="w-5 h-5 text-stone-400 animate-spin"
-                    />
-                    <RefreshCw
-                      v-else
-                      class="w-5 h-5 text-stone-400"
-                    />
-                  </div>
+                    {{ pageHeaderTitle }}
+                  </span>
                 </div>
               </div>
 
-              <template v-if="showOverseasEmailFlow">
-                <div class="flex gap-2 items-end">
-                  <div class="flex-1">
-                    <label
-                      class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                      for="register-email-code"
-                    >
-                      {{ t('auth.modal.emailCodeLabel') }} *
-                    </label>
-                    <input
-                      id="register-email-code"
-                      v-model="registerForm.emailCode"
-                      type="text"
-                      name="register-email-code"
-                      maxlength="6"
-                      inputmode="numeric"
-                      autocomplete="one-time-code"
-                      class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                    />
-                  </div>
-                  <button
-                    type="button"
-                    class="shrink-0 py-3 px-3 text-sm font-medium rounded-lg border border-stone-200 text-stone-800 hover:bg-stone-50 disabled:opacity-50"
-                    :disabled="emailSending || emailCountdown > 0"
-                    @click="sendRegisterEmailCode"
-                  >
-                    {{
-                      emailCountdown > 0
-                        ? t('auth.modal.resendIn', { seconds: emailCountdown })
-                        : t('auth.modal.sendEmailCode')
-                    }}
-                  </button>
-                </div>
-                <label
-                  class="flex items-start gap-2 cursor-pointer text-xs text-stone-500 leading-relaxed"
-                >
-                  <input
-                    v-model="registerForm.outsideMainlandAcknowledged"
-                    type="checkbox"
-                    class="mt-0.5 shrink-0 rounded border-stone-300"
-                  />
-                  <span class="min-w-0">{{ overseasAcknowledgeCheckboxLabel }}</span>
-                </label>
-              </template>
-
-              <p
-                v-if="showMainlandPhoneFlow"
-                class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed"
+              <!-- Login Form -->
+              <form
+                v-if="currentView === 'login'"
+                class="p-6 space-y-4"
+                @submit.prevent="handleLogin"
               >
-                {{ t('auth.modal.mainlandSalesNotice') }}
-              </p>
-
-              <button
-                type="submit"
-                :disabled="isLoading || registerRegionLoading || registerRegion === null"
-                class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <Loader2
-                  v-if="isLoading"
-                  class="w-4 h-4 animate-spin"
-                />
-                {{ isLoading ? t('auth.modal.registering') : t('auth.register') }}
-              </button>
-            </form>
-
-            <!-- SMS Login Form -->
-            <form
-              v-if="currentView === 'sms-login'"
-              class="p-6 space-y-4"
-              @submit.prevent="handleSmsLogin"
-            >
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="sms-login-phone"
-                >
-                  {{ t('auth.loginPhoneOrEmail') }}
-                </label>
-                <input
-                  id="sms-login-phone"
-                  v-model="smsLoginForm.phone"
-                  type="text"
-                  name="sms-login-phone"
-                  :placeholder="
-                    smsLoginUsesEmail
-                      ? t('auth.modal.forgotPhoneOrEmailPlaceholder')
-                      : t('auth.modal.phoneRegisteredPlaceholder')
-                  "
-                  :maxlength="smsLoginUsesEmail ? 254 : 11"
-                  inputmode="text"
-                  autocomplete="username"
-                  :disabled="smsSent"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
-                />
-              </div>
-
-              <div v-if="!smsSent">
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="sms-login-captcha"
-                >
-                  {{ t('auth.captcha') }}
-                </label>
-                <div class="flex gap-3 items-center">
-                  <input
-                    id="sms-login-captcha"
-                    v-model="smsLoginForm.captcha"
-                    type="text"
-                    name="sms-login-captcha"
-                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
-                    maxlength="4"
-                    class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <img
-                    v-if="captchaImage && !captchaLoading"
-                    :src="captchaImage"
-                    :alt="t('auth.captcha')"
-                    class="captcha-image"
-                    :title="t('auth.clickToRefresh')"
-                    @click="refreshCaptcha"
-                  />
-                  <div
-                    v-else
-                    class="captcha-placeholder"
-                    @click="refreshCaptcha"
-                  >
-                    <Loader2
-                      v-if="captchaLoading"
-                      class="w-5 h-5 text-stone-400 animate-spin"
-                    />
-                    <RefreshCw
-                      v-else
-                      class="w-5 h-5 text-stone-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                v-if="!smsSent"
-                type="button"
-                :disabled="smsSending"
-                class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                @click="sendSmsCode('login')"
-              >
-                <Loader2
-                  v-if="smsSending"
-                  class="w-4 h-4 animate-spin"
-                />
-                {{
-                  smsSending
-                    ? smsLoginUsesEmail
-                      ? t('auth.modal.sendingEmailCode')
-                      : t('auth.modal.sendingSms')
-                    : smsLoginUsesEmail
-                      ? t('auth.modal.sendEmailCode')
-                      : t('auth.modal.sendSmsCode')
-                }}
-              </button>
-
-              <template v-if="smsSent">
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="sms-login-code"
+                    for="login-phone"
                   >
-                    {{
-                      smsLoginUsesEmail
-                        ? t('auth.modal.emailCodeLabel')
-                        : t('auth.modal.smsCodeLabel')
-                    }}
+                    {{ t('auth.loginPhoneOrEmail') }}
                   </label>
                   <input
-                    id="sms-login-code"
-                    v-model="smsLoginForm.smsCode"
+                    id="login-phone"
+                    ref="loginIdentifierRef"
+                    v-model="loginForm.phone"
                     type="text"
-                    name="sms-login-code"
-                    :placeholder="
-                      smsLoginUsesEmail
-                        ? t('auth.modal.emailCodePlaceholder')
-                        : t('auth.modal.smsCodePlaceholder')
-                    "
-                    maxlength="6"
-                    autocomplete="one-time-code"
+                    name="login-phone"
+                    :placeholder="t('auth.modal.phonePlaceholder11')"
+                    maxlength="254"
+                    autocomplete="username"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
-                  <p class="text-xs text-stone-400 mt-1">
-                    {{ t('auth.modal.codeSentTo') }}
-                    {{ maskIdentifierForCodeSent(smsLoginForm.phone) }}
-                  </p>
+                </div>
+
+                <div>
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="login-password"
+                  >
+                    {{ t('auth.password') }}
+                  </label>
+                  <div class="relative">
+                    <input
+                      id="login-password"
+                      v-model="loginForm.password"
+                      :type="showPassword ? 'text' : 'password'"
+                      name="login-password"
+                      :placeholder="t('auth.modal.passwordPlaceholder')"
+                      autocomplete="current-password"
+                      class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                    <button
+                      type="button"
+                      class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+                      @click="showPassword = !showPassword"
+                    >
+                      <Eye
+                        v-if="showPassword"
+                        class="w-4 h-4"
+                      />
+                      <EyeOff
+                        v-else
+                        class="w-4 h-4"
+                      />
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="login-captcha"
+                  >
+                    {{ t('auth.captcha') }}
+                  </label>
+                  <div class="flex gap-3 items-center">
+                    <input
+                      id="login-captcha"
+                      v-model="loginForm.captcha"
+                      type="text"
+                      name="login-captcha"
+                      :placeholder="t('auth.modal.captchaPlaceholderShort')"
+                      maxlength="4"
+                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                    <img
+                      v-if="captchaImage && !captchaLoading"
+                      :src="captchaImage"
+                      :alt="t('auth.captcha')"
+                      class="captcha-image"
+                      :title="t('auth.clickToRefresh')"
+                      @click="refreshCaptcha"
+                    />
+                    <div
+                      v-else
+                      class="captcha-placeholder"
+                      @click="refreshCaptcha"
+                    >
+                      <Loader2
+                        v-if="captchaLoading"
+                        class="w-5 h-5 text-stone-400 animate-spin"
+                      />
+                      <RefreshCw
+                        v-else
+                        class="w-5 h-5 text-stone-400"
+                      />
+                    </div>
+                  </div>
                 </div>
 
                 <button
@@ -750,145 +317,137 @@ function focusSesLogin() {
                   {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
                 </button>
 
-                <div class="text-center">
+                <!-- Links -->
+                <div
+                  class="flex flex-wrap justify-center items-center gap-x-1 gap-y-1 pt-2 text-sm"
+                >
+                  <el-button
+                    type="primary"
+                    link
+                    @click="showForgotPassword"
+                  >
+                    {{ t('auth.forgotPassword') }}
+                  </el-button>
+                  <span class="text-stone-300 select-none">|</span>
+                  <el-button
+                    type="primary"
+                    link
+                    @click="showSmsLogin"
+                  >
+                    {{ t('auth.smsLogin') }}
+                  </el-button>
+                  <span class="text-stone-300 select-none">|</span>
+                  <el-button
+                    type="primary"
+                    link
+                    @click="focusSesLogin"
+                  >
+                    {{ t('auth.sesLogin') }}
+                  </el-button>
+                </div>
+              </form>
+
+              <!-- Register Form -->
+              <form
+                v-if="currentView === 'register'"
+                class="p-6 space-y-4"
+                @submit.prevent="handleRegister"
+              >
+                <div
+                  v-if="registerRegionLoading"
+                  class="flex items-center gap-2 text-sm text-stone-500 py-1"
+                >
+                  <Loader2 class="w-4 h-4 animate-spin shrink-0" />
+                  <span>{{ t('auth.modal.detectingRegion') }}</span>
+                </div>
+
+                <div
+                  v-if="!registerRegionLoading && isBothRegister"
+                  class="flex flex-wrap items-center justify-center gap-2"
+                  role="group"
+                  :aria-label="t('auth.modal.hybridRegisterGroupLabel')"
+                >
                   <button
                     type="button"
-                    :disabled="smsCountdown > 0"
-                    class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
-                    @click="sendSmsCode('login')"
+                    class="rounded-full px-4 py-2 text-xs font-medium transition-colors"
+                    :class="
+                      registerPath === 'email'
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    "
+                    @click="setRegisterPath('email')"
                   >
-                    {{
-                      smsCountdown > 0
-                        ? t('auth.modal.resendIn', { seconds: smsCountdown })
-                        : t('auth.modal.resendCaptcha')
-                    }}
+                    {{ t('auth.modal.hybridRegisterEmailTab') }}
+                  </button>
+                  <button
+                    type="button"
+                    class="rounded-full px-4 py-2 text-xs font-medium transition-colors"
+                    :class="
+                      registerPath === 'phone'
+                        ? 'bg-stone-900 text-white'
+                        : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                    "
+                    @click="setRegisterPath('phone')"
+                  >
+                    {{ t('auth.modal.hybridRegisterPhoneTab') }}
                   </button>
                 </div>
-              </template>
-            </form>
 
-            <!-- Forgot Password Form -->
-            <form
-              v-if="currentView === 'forgot-password'"
-              class="p-6 space-y-4"
-              @submit.prevent="handleResetPassword"
-            >
-              <div>
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="forgot-phone"
-                >
-                  {{ t('auth.loginPhoneOrEmail') }}
-                </label>
-                <input
-                  id="forgot-phone"
-                  v-model="forgotForm.phone"
-                  type="text"
-                  name="forgot-phone"
-                  :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
-                  maxlength="254"
-                  inputmode="text"
-                  autocomplete="username"
-                  :disabled="smsSent"
-                  class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
-                />
-              </div>
-
-              <div v-if="!smsSent">
-                <label
-                  class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                  for="forgot-captcha"
-                >
-                  {{ t('auth.captcha') }}
-                </label>
-                <div class="flex gap-3 items-center">
-                  <input
-                    id="forgot-captcha"
-                    v-model="forgotForm.captcha"
-                    type="text"
-                    name="forgot-captcha"
-                    :placeholder="t('auth.modal.captchaPlaceholderShort')"
-                    maxlength="4"
-                    class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
-                  />
-                  <img
-                    v-if="captchaImage && !captchaLoading"
-                    :src="captchaImage"
-                    :alt="t('auth.captcha')"
-                    class="captcha-image"
-                    :title="t('auth.clickToRefresh')"
-                    @click="refreshCaptcha"
-                  />
-                  <div
-                    v-else
-                    class="captcha-placeholder"
-                    @click="refreshCaptcha"
-                  >
-                    <Loader2
-                      v-if="captchaLoading"
-                      class="w-5 h-5 text-stone-400 animate-spin"
-                    />
-                    <RefreshCw
-                      v-else
-                      class="w-5 h-5 text-stone-400"
-                    />
-                  </div>
-                </div>
-              </div>
-
-              <button
-                v-if="!smsSent"
-                type="button"
-                :disabled="smsSending"
-                class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                @click="sendSmsCode('reset')"
-              >
-                <Loader2
-                  v-if="smsSending"
-                  class="w-4 h-4 animate-spin"
-                />
-                {{
-                  smsSending
-                    ? t('auth.modal.sendingVerificationCode')
-                    : t('auth.modal.sendVerificationCode')
-                }}
-              </button>
-
-              <template v-if="smsSent">
-                <div>
+                <div v-if="showMainlandPhoneFlow">
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="forgot-sms-code"
+                    for="register-phone"
                   >
-                    {{
-                      forgotUsesEmail ? t('auth.modal.emailCodeLabel') : t('auth.modal.smsCodeLabel')
-                    }}
+                    {{ t('auth.phone') }} *
                   </label>
                   <input
-                    id="forgot-sms-code"
-                    v-model="forgotForm.smsCode"
-                    type="text"
-                    name="forgot-sms-code"
-                    :placeholder="t('auth.modal.smsCodePlaceholder')"
-                    maxlength="6"
-                    autocomplete="one-time-code"
+                    id="register-phone"
+                    v-model="registerForm.phone"
+                    type="tel"
+                    name="register-phone"
+                    :placeholder="t('auth.modal.phonePlaceholder11')"
+                    maxlength="11"
+                    autocomplete="username"
                     class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                   />
                 </div>
 
+                <div v-if="showOverseasEmailFlow">
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="register-education-email"
+                  >
+                    {{ t('auth.modal.registrationEmailLabel') }}
+                  </label>
+                  <input
+                    id="register-education-email"
+                    v-model="registerForm.registrationEmail"
+                    type="email"
+                    name="register-education-email"
+                    autocomplete="email"
+                    class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                  />
+                  <p
+                    v-if="registrationEmailHint"
+                    class="text-xs text-stone-500 mt-1.5 leading-relaxed"
+                  >
+                    {{ registrationEmailHint }}
+                  </p>
+                </div>
+
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="forgot-new-password"
+                    for="register-password"
                   >
-                    {{ t('auth.modal.newPassword') }}
+                    {{ t('auth.password') }} *
                   </label>
                   <div class="relative">
                     <input
-                      id="forgot-new-password"
-                      v-model="forgotForm.newPassword"
+                      id="register-password"
+                      v-model="registerForm.password"
                       :type="showPassword ? 'text' : 'password'"
-                      name="forgot-new-password"
+                      name="register-password"
                       :placeholder="t('auth.modal.passwordMinPlaceholder')"
                       autocomplete="new-password"
                       class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
@@ -913,65 +472,508 @@ function focusSesLogin() {
                 <div>
                   <label
                     class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
-                    for="forgot-confirm-password"
+                    for="register-name"
                   >
-                    {{ t('auth.modal.confirmPassword') }}
+                    {{ t('auth.name') }} *
                   </label>
-                  <div class="relative">
+                  <input
+                    id="register-name"
+                    v-model="registerForm.name"
+                    type="text"
+                    name="register-name"
+                    :placeholder="t('auth.modal.namePlaceholder')"
+                    autocomplete="name"
+                    class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                  />
+                </div>
+
+                <div v-if="showMainlandPhoneFlow">
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="register-invitation-code"
+                  >
+                    {{ t('auth.invitationCode') }} *
+                  </label>
+                  <input
+                    id="register-invitation-code"
+                    v-model="registerForm.invitationCode"
+                    type="text"
+                    name="register-invitation-code"
+                    :placeholder="t('auth.modal.invitationPlaceholder')"
+                    class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="register-captcha"
+                  >
+                    {{ t('auth.captcha') }} *
+                  </label>
+                  <div class="flex gap-3 items-center">
                     <input
-                      id="forgot-confirm-password"
-                      v-model="forgotForm.confirmPassword"
-                      :type="showConfirmPassword ? 'text' : 'password'"
-                      name="forgot-confirm-password"
-                      :placeholder="t('auth.modal.confirmPasswordPlaceholder')"
-                      autocomplete="new-password"
-                      class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      id="register-captcha"
+                      v-model="registerForm.captcha"
+                      type="text"
+                      name="register-captcha"
+                      :placeholder="t('auth.modal.captchaPlaceholderShort')"
+                      maxlength="4"
+                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
                     />
-                    <button
-                      type="button"
-                      class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
-                      @click="showConfirmPassword = !showConfirmPassword"
+                    <img
+                      v-if="captchaImage && !captchaLoading"
+                      :src="captchaImage"
+                      :alt="t('auth.captcha')"
+                      class="captcha-image"
+                      :title="t('auth.clickToRefresh')"
+                      @click="refreshCaptcha"
+                    />
+                    <div
+                      v-else
+                      class="captcha-placeholder"
+                      @click="refreshCaptcha"
                     >
-                      <Eye
-                        v-if="showConfirmPassword"
-                        class="w-4 h-4"
+                      <Loader2
+                        v-if="captchaLoading"
+                        class="w-5 h-5 text-stone-400 animate-spin"
                       />
-                      <EyeOff
+                      <RefreshCw
                         v-else
-                        class="w-4 h-4"
+                        class="w-5 h-5 text-stone-400"
                       />
-                    </button>
+                    </div>
                   </div>
                 </div>
 
+                <template v-if="showOverseasEmailFlow">
+                  <div class="flex gap-2 items-end">
+                    <div class="flex-1">
+                      <label
+                        class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                        for="register-email-code"
+                      >
+                        {{ t('auth.modal.emailCodeLabel') }} *
+                      </label>
+                      <input
+                        id="register-email-code"
+                        v-model="registerForm.emailCode"
+                        type="text"
+                        name="register-email-code"
+                        maxlength="6"
+                        inputmode="numeric"
+                        autocomplete="one-time-code"
+                        class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      class="shrink-0 py-3 px-3 text-sm font-medium rounded-lg border border-stone-200 text-stone-800 hover:bg-stone-50 disabled:opacity-50"
+                      :disabled="emailSending || emailCountdown > 0"
+                      @click="sendRegisterEmailCode"
+                    >
+                      {{
+                        emailCountdown > 0
+                          ? t('auth.modal.resendIn', { seconds: emailCountdown })
+                          : t('auth.modal.sendEmailCode')
+                      }}
+                    </button>
+                  </div>
+                  <label
+                    class="flex items-start gap-2 cursor-pointer text-xs text-stone-500 leading-relaxed"
+                  >
+                    <input
+                      v-model="registerForm.outsideMainlandAcknowledged"
+                      type="checkbox"
+                      class="mt-0.5 shrink-0 rounded border-stone-300"
+                    />
+                    <span class="min-w-0">{{ overseasAcknowledgeCheckboxLabel }}</span>
+                  </label>
+                </template>
+
+                <p
+                  v-if="showMainlandPhoneFlow"
+                  class="text-xs text-amber-800 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 leading-relaxed"
+                >
+                  {{ t('auth.modal.mainlandSalesNotice') }}
+                </p>
+
                 <button
                   type="submit"
-                  :disabled="isLoading"
+                  :disabled="isLoading || registerRegionLoading || registerRegion === null"
                   class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                 >
                   <Loader2
                     v-if="isLoading"
                     class="w-4 h-4 animate-spin"
                   />
-                  {{ isLoading ? t('auth.modal.resetting') : t('auth.resetPassword') }}
+                  {{ isLoading ? t('auth.modal.registering') : t('auth.register') }}
+                </button>
+              </form>
+
+              <!-- SMS Login Form -->
+              <form
+                v-if="currentView === 'sms-login'"
+                class="p-6 space-y-4"
+                @submit.prevent="handleSmsLogin"
+              >
+                <div>
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="sms-login-phone"
+                  >
+                    {{ t('auth.loginPhoneOrEmail') }}
+                  </label>
+                  <input
+                    id="sms-login-phone"
+                    v-model="smsLoginForm.phone"
+                    type="text"
+                    name="sms-login-phone"
+                    :placeholder="
+                      smsLoginUsesEmail
+                        ? t('auth.modal.forgotPhoneOrEmailPlaceholder')
+                        : t('auth.modal.phoneRegisteredPlaceholder')
+                    "
+                    :maxlength="smsLoginUsesEmail ? 254 : 11"
+                    inputmode="text"
+                    autocomplete="username"
+                    :disabled="smsSent"
+                    class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
+                  />
+                </div>
+
+                <div v-if="!smsSent">
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="sms-login-captcha"
+                  >
+                    {{ t('auth.captcha') }}
+                  </label>
+                  <div class="flex gap-3 items-center">
+                    <input
+                      id="sms-login-captcha"
+                      v-model="smsLoginForm.captcha"
+                      type="text"
+                      name="sms-login-captcha"
+                      :placeholder="t('auth.modal.captchaPlaceholderShort')"
+                      maxlength="4"
+                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                    <img
+                      v-if="captchaImage && !captchaLoading"
+                      :src="captchaImage"
+                      :alt="t('auth.captcha')"
+                      class="captcha-image"
+                      :title="t('auth.clickToRefresh')"
+                      @click="refreshCaptcha"
+                    />
+                    <div
+                      v-else
+                      class="captcha-placeholder"
+                      @click="refreshCaptcha"
+                    >
+                      <Loader2
+                        v-if="captchaLoading"
+                        class="w-5 h-5 text-stone-400 animate-spin"
+                      />
+                      <RefreshCw
+                        v-else
+                        class="w-5 h-5 text-stone-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  v-if="!smsSent"
+                  type="button"
+                  :disabled="smsSending"
+                  class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  @click="sendSmsCode('login')"
+                >
+                  <Loader2
+                    v-if="smsSending"
+                    class="w-4 h-4 animate-spin"
+                  />
+                  {{
+                    smsSending
+                      ? smsLoginUsesEmail
+                        ? t('auth.modal.sendingEmailCode')
+                        : t('auth.modal.sendingSms')
+                      : smsLoginUsesEmail
+                        ? t('auth.modal.sendEmailCode')
+                        : t('auth.modal.sendSmsCode')
+                  }}
                 </button>
 
-                <div class="text-center">
+                <template v-if="smsSent">
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                      for="sms-login-code"
+                    >
+                      {{
+                        smsLoginUsesEmail
+                          ? t('auth.modal.emailCodeLabel')
+                          : t('auth.modal.smsCodeLabel')
+                      }}
+                    </label>
+                    <input
+                      id="sms-login-code"
+                      v-model="smsLoginForm.smsCode"
+                      type="text"
+                      name="sms-login-code"
+                      :placeholder="
+                        smsLoginUsesEmail
+                          ? t('auth.modal.emailCodePlaceholder')
+                          : t('auth.modal.smsCodePlaceholder')
+                      "
+                      maxlength="6"
+                      autocomplete="one-time-code"
+                      class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                    <p class="text-xs text-stone-400 mt-1">
+                      {{ t('auth.modal.codeSentTo') }}
+                      {{ maskIdentifierForCodeSent(smsLoginForm.phone) }}
+                    </p>
+                  </div>
+
                   <button
-                    type="button"
-                    :disabled="smsCountdown > 0"
-                    class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
-                    @click="sendSmsCode('reset')"
+                    type="submit"
+                    :disabled="isLoading"
+                    class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    {{
-                      smsCountdown > 0
-                        ? t('auth.modal.resendIn', { seconds: smsCountdown })
-                        : t('auth.modal.resendCaptcha')
-                    }}
+                    <Loader2
+                      v-if="isLoading"
+                      class="w-4 h-4 animate-spin"
+                    />
+                    {{ isLoading ? t('auth.modal.loggingIn') : t('auth.login') }}
                   </button>
+
+                  <div class="text-center">
+                    <button
+                      type="button"
+                      :disabled="smsCountdown > 0"
+                      class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
+                      @click="sendSmsCode('login')"
+                    >
+                      {{
+                        smsCountdown > 0
+                          ? t('auth.modal.resendIn', { seconds: smsCountdown })
+                          : t('auth.modal.resendCaptcha')
+                      }}
+                    </button>
+                  </div>
+                </template>
+              </form>
+
+              <!-- Forgot Password Form -->
+              <form
+                v-if="currentView === 'forgot-password'"
+                class="p-6 space-y-4"
+                @submit.prevent="handleResetPassword"
+              >
+                <div>
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="forgot-phone"
+                  >
+                    {{ t('auth.loginPhoneOrEmail') }}
+                  </label>
+                  <input
+                    id="forgot-phone"
+                    v-model="forgotForm.phone"
+                    type="text"
+                    name="forgot-phone"
+                    :placeholder="t('auth.modal.forgotPhoneOrEmailPlaceholder')"
+                    maxlength="254"
+                    inputmode="text"
+                    autocomplete="username"
+                    :disabled="smsSent"
+                    class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all disabled:opacity-60"
+                  />
                 </div>
-              </template>
-            </form>
+
+                <div v-if="!smsSent">
+                  <label
+                    class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                    for="forgot-captcha"
+                  >
+                    {{ t('auth.captcha') }}
+                  </label>
+                  <div class="flex gap-3 items-center">
+                    <input
+                      id="forgot-captcha"
+                      v-model="forgotForm.captcha"
+                      type="text"
+                      name="forgot-captcha"
+                      :placeholder="t('auth.modal.captchaPlaceholderShort')"
+                      maxlength="4"
+                      class="flex-1 px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                    <img
+                      v-if="captchaImage && !captchaLoading"
+                      :src="captchaImage"
+                      :alt="t('auth.captcha')"
+                      class="captcha-image"
+                      :title="t('auth.clickToRefresh')"
+                      @click="refreshCaptcha"
+                    />
+                    <div
+                      v-else
+                      class="captcha-placeholder"
+                      @click="refreshCaptcha"
+                    >
+                      <Loader2
+                        v-if="captchaLoading"
+                        class="w-5 h-5 text-stone-400 animate-spin"
+                      />
+                      <RefreshCw
+                        v-else
+                        class="w-5 h-5 text-stone-400"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                <button
+                  v-if="!smsSent"
+                  type="button"
+                  :disabled="smsSending"
+                  class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  @click="sendSmsCode('reset')"
+                >
+                  <Loader2
+                    v-if="smsSending"
+                    class="w-4 h-4 animate-spin"
+                  />
+                  {{
+                    smsSending
+                      ? t('auth.modal.sendingVerificationCode')
+                      : t('auth.modal.sendVerificationCode')
+                  }}
+                </button>
+
+                <template v-if="smsSent">
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                      for="forgot-sms-code"
+                    >
+                      {{
+                        forgotUsesEmail
+                          ? t('auth.modal.emailCodeLabel')
+                          : t('auth.modal.smsCodeLabel')
+                      }}
+                    </label>
+                    <input
+                      id="forgot-sms-code"
+                      v-model="forgotForm.smsCode"
+                      type="text"
+                      name="forgot-sms-code"
+                      :placeholder="t('auth.modal.smsCodePlaceholder')"
+                      maxlength="6"
+                      autocomplete="one-time-code"
+                      class="w-full px-4 py-3 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                    />
+                  </div>
+
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                      for="forgot-new-password"
+                    >
+                      {{ t('auth.modal.newPassword') }}
+                    </label>
+                    <div class="relative">
+                      <input
+                        id="forgot-new-password"
+                        v-model="forgotForm.newPassword"
+                        :type="showPassword ? 'text' : 'password'"
+                        name="forgot-new-password"
+                        :placeholder="t('auth.modal.passwordMinPlaceholder')"
+                        autocomplete="new-password"
+                        class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      />
+                      <button
+                        type="button"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+                        @click="showPassword = !showPassword"
+                      >
+                        <Eye
+                          v-if="showPassword"
+                          class="w-4 h-4"
+                        />
+                        <EyeOff
+                          v-else
+                          class="w-4 h-4"
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label
+                      class="block text-xs font-medium text-stone-500 tracking-wide mb-2"
+                      for="forgot-confirm-password"
+                    >
+                      {{ t('auth.modal.confirmPassword') }}
+                    </label>
+                    <div class="relative">
+                      <input
+                        id="forgot-confirm-password"
+                        v-model="forgotForm.confirmPassword"
+                        :type="showConfirmPassword ? 'text' : 'password'"
+                        name="forgot-confirm-password"
+                        :placeholder="t('auth.modal.confirmPasswordPlaceholder')"
+                        autocomplete="new-password"
+                        class="w-full px-4 py-3 pr-11 bg-stone-50 border-0 rounded-lg text-stone-900 placeholder-stone-400 focus:ring-2 focus:ring-stone-900 focus:bg-white transition-all"
+                      />
+                      <button
+                        type="button"
+                        class="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-stone-400 hover:text-stone-600 transition-colors"
+                        @click="showConfirmPassword = !showConfirmPassword"
+                      >
+                        <Eye
+                          v-if="showConfirmPassword"
+                          class="w-4 h-4"
+                        />
+                        <EyeOff
+                          v-else
+                          class="w-4 h-4"
+                        />
+                      </button>
+                    </div>
+                  </div>
+
+                  <button
+                    type="submit"
+                    :disabled="isLoading"
+                    class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <Loader2
+                      v-if="isLoading"
+                      class="w-4 h-4 animate-spin"
+                    />
+                    {{ isLoading ? t('auth.modal.resetting') : t('auth.resetPassword') }}
+                  </button>
+
+                  <div class="text-center">
+                    <button
+                      type="button"
+                      :disabled="smsCountdown > 0"
+                      class="text-sm text-stone-500 hover:text-stone-900 transition-colors disabled:opacity-50"
+                      @click="sendSmsCode('reset')"
+                    >
+                      {{
+                        smsCountdown > 0
+                          ? t('auth.modal.resendIn', { seconds: smsCountdown })
+                          : t('auth.modal.resendCaptcha')
+                      }}
+                    </button>
+                  </div>
+                </template>
+              </form>
             </div>
           </div>
         </div>

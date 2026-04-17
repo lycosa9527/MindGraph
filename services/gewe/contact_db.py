@@ -21,7 +21,8 @@ from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.gewe_contact import GeweContact
-from services.redis.redis_client import RedisOperations, is_redis_available
+from services.redis.redis_async_ops import AsyncRedisOperations
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,6 @@ class GeweContactDB:
             db: SQLAlchemy database session
         """
         self.db = db
-        self._redis = RedisOperations()
 
     async def save_contact(
         self,
@@ -124,7 +124,7 @@ class GeweContactDB:
             if is_redis_available():
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
-                    self._redis.delete(cache_key)
+                    await AsyncRedisOperations.delete(cache_key)
                 except Exception as e:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, e)
 
@@ -162,9 +162,7 @@ class GeweContactDB:
 
         # Bulk-load existing contacts in one query.
         existing_result = await self.db.execute(
-            select(GeweContact).where(
-                and_(GeweContact.app_id == app_id, GeweContact.wxid.in_(wxids))
-            )
+            select(GeweContact).where(and_(GeweContact.app_id == app_id, GeweContact.wxid.in_(wxids)))
         )
         existing_by_wxid = {c.wxid: c for c in existing_result.scalars().all()}
 
@@ -174,11 +172,7 @@ class GeweContactDB:
             try:
                 nickname = contact.get("nickname") or contact.get("NickName")
                 remark = contact.get("remark") or contact.get("Remark")
-                avatar = (
-                    contact.get("avatar")
-                    or contact.get("BigHeadImgUrl")
-                    or contact.get("SmallHeadImgUrl")
-                )
+                avatar = contact.get("avatar") or contact.get("BigHeadImgUrl") or contact.get("SmallHeadImgUrl")
                 alias = contact.get("alias") or contact.get("Alias")
                 contact_type = contact.get("type")
                 region = contact.get("region")
@@ -234,7 +228,7 @@ class GeweContactDB:
             for wxid in invalidate_wxids:
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
-                    self._redis.delete(cache_key)
+                    await AsyncRedisOperations.delete(cache_key)
                 except Exception as exc:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, exc)
 
@@ -258,7 +252,7 @@ class GeweContactDB:
         if is_redis_available():
             cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
             try:
-                cached = self._redis.get(cache_key)
+                cached = await AsyncRedisOperations.get(cache_key)
                 if cached:
                     try:
                         result = json.loads(cached)
@@ -267,7 +261,7 @@ class GeweContactDB:
                     except (json.JSONDecodeError, TypeError) as e:
                         logger.warning("Corrupted cache for contact %s:%s: %s", app_id, wxid, e)
                         # Invalidate corrupted cache
-                        self._redis.delete(cache_key)
+                        await AsyncRedisOperations.delete(cache_key)
             except Exception as e:
                 logger.debug("Redis error for contact %s:%s: %s", app_id, wxid, e)
 
@@ -305,7 +299,7 @@ class GeweContactDB:
             if is_redis_available():
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
-                    self._redis.set_with_ttl(
+                    await AsyncRedisOperations.set_with_ttl(
                         cache_key,
                         json.dumps(result, ensure_ascii=False),
                         CONTACT_CACHE_TTL,
@@ -402,7 +396,7 @@ class GeweContactDB:
             if is_redis_available():
                 try:
                     cache_key = f"{CONTACT_KEY_PREFIX}{app_id}:{wxid}"
-                    self._redis.delete(cache_key)
+                    await AsyncRedisOperations.delete(cache_key)
                 except Exception as e:
                     logger.debug("Failed to invalidate contact cache %s:%s: %s", app_id, wxid, e)
 

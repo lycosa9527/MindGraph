@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'റൂട്ട് കൺസെപ്റ്റ് ലിങ്ക് കണ്ടെത്തിയില്ല',
   'notification.saved': 'മാറ്റങ്ങൾ സേവ് ചെയ്തു',
   'notification.selectNodeToClear': 'മായ്‌ക്കാൻ ഒരു നോഡ് തിരഞ്ഞെടുക്കുക',
-  'notification.sessionInvalidated':
-    'പരമാവധി ഉപകരണങ്ങൾ കവിഞ്ഞതിനാൽ നിങ്ങളെ ലോഗൗട്ട് ചെയ്തു',
+  'notification.sessionInvalidated': 'പരമാവധി ഉപകരണങ്ങൾ കവിഞ്ഞതിനാൽ നിങ്ങളെ ലോഗൗട്ട് ചെയ്തു',
   'notification.signInToUse': 'ഇത് ഉപയോഗിക്കാൻ സൈൻ ഇൻ ചെയ്യുക',
   'notification.signInToValidateFocus': 'ഫോക്കസ് ചോദ്യം സാധൂകരിക്കാൻ സൈൻ ഇൻ ചെയ്യുക',
 } as const

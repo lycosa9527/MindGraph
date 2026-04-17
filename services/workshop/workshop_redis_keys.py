@@ -52,18 +52,21 @@ def live_last_db_flush_key(code: str) -> str:
     return WORKSHOP_LIVE_LAST_DB_FLUSH_KEY.format(code=code)
 
 
-def purge_workshop_redis_keys(redis: Any, code: str) -> None:
+async def purge_workshop_redis_keys(redis: Any, code: str) -> None:
     """Remove Redis keys for a workshop code (best-effort)."""
     if not redis:
         return
-    redis.delete(session_key(code))
-    redis.delete(diagram_key(code))
-    redis.delete(participants_key(code))
-    redis.delete(code_to_diagram_key(code))
-    redis.delete(live_spec_key(code))
-    redis.delete(live_last_db_flush_key(code))
+    await redis.delete(session_key(code))
+    await redis.delete(diagram_key(code))
+    await redis.delete(participants_key(code))
+    await redis.delete(code_to_diagram_key(code))
+    await redis.delete(live_spec_key(code))
+    await redis.delete(live_last_db_flush_key(code))
     try:
-        for key in redis.scan_iter(match=f"workshop:mutation_idle:{code}:*", count=50):
-            redis.delete(key)
+        async for key in redis.scan_iter(
+            match=f"workshop:mutation_idle:{code}:*",
+            count=50,
+        ):
+            await redis.delete(key)
     except (TypeError, AttributeError, RuntimeError):
         pass

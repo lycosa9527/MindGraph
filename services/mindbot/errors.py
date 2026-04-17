@@ -8,15 +8,17 @@ from typing import Optional
 # Codes that are safe for the caller to retry without side-effects.
 # Permanent failures (signature mismatch, feature disabled, empty message, etc.)
 # must NOT be retried — they indicate a logic/config problem, not a transient error.
-_RETRYABLE_CODES = frozenset({
-    "MINDBOT_DIFY_FAILED",
-    "MINDBOT_SESSION_WEBHOOK_FAILED",
-    "MINDBOT_DINGTALK_TOKEN_FAILED",
-    "MINDBOT_DINGTALK_OPENAPI_REPLY_FAILED",
-    "MINDBOT_REDIS_UNAVAILABLE_FOR_DEDUP",
-    "MINDBOT_CIRCUIT_OPEN",
-    "MINDBOT_PIPELINE_INTERNAL_ERROR",
-})
+_RETRYABLE_CODES = frozenset(
+    {
+        "MINDBOT_DIFY_FAILED",
+        "MINDBOT_SESSION_WEBHOOK_FAILED",
+        "MINDBOT_DINGTALK_TOKEN_FAILED",
+        "MINDBOT_DINGTALK_OPENAPI_REPLY_FAILED",
+        "MINDBOT_REDIS_UNAVAILABLE_FOR_DEDUP",
+        "MINDBOT_CIRCUIT_OPEN",
+        "MINDBOT_PIPELINE_INTERNAL_ERROR",
+    }
+)
 
 
 class MindbotErrorCode(str, Enum):

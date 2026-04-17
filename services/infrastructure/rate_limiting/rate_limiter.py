@@ -26,7 +26,8 @@ import os
 import time
 import uuid
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 
 logger = logging.getLogger(__name__)
@@ -209,7 +210,7 @@ class DashscopeRateLimiter:
         and incrementing counters. This ensures that concurrent requests cannot
         exceed limits even when checking simultaneously.
         """
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             raise RuntimeError(
                 "Rate limiting requires Redis. Redis connection unavailable. "
@@ -261,7 +262,7 @@ class DashscopeRateLimiter:
             # Register script once (idempotent)
             if self._acquire_script_sha is None:
                 try:
-                    self._acquire_script_sha = redis.script_load(acquire_script)
+                    self._acquire_script_sha = await redis.script_load(acquire_script)
                 except Exception as e:
                     logger.error("[RateLimiter] Failed to load Lua script: %s", e)
                     raise RuntimeError(
@@ -278,7 +279,7 @@ class DashscopeRateLimiter:
 
                 # Execute atomic check-and-increment script
                 try:
-                    result = redis.evalsha(
+                    result = await redis.evalsha(
                         self._acquire_script_sha,
                         3,  # Number of keys
                         self.concurrent_key,
@@ -295,9 +296,9 @@ class DashscopeRateLimiter:
                     if "NOSCRIPT" in str(script_error) or "not found" in str(script_error).lower():
                         logger.warning("[RateLimiter] Lua script not found, reloading...")
                         try:
-                            self._acquire_script_sha = redis.script_load(acquire_script)
+                            self._acquire_script_sha = await redis.script_load(acquire_script)
                             # Retry once
-                            result = redis.evalsha(
+                            result = await redis.evalsha(
                                 self._acquire_script_sha,
                                 3,
                                 self.concurrent_key,
@@ -341,8 +342,8 @@ class DashscopeRateLimiter:
                         wait_duration = time.time() - wait_start
                         self._local_total_wait_time += wait_duration
                         try:
-                            redis.hincrbyfloat(RATE_STATS_KEY, "total_wait_time", wait_duration)
-                            redis.hincrby(RATE_STATS_KEY, "total_waits", 1)
+                            await redis.hincrbyfloat(RATE_STATS_KEY, "total_wait_time", wait_duration)
+                            await redis.hincrby(RATE_STATS_KEY, "total_waits", 1)
                         except Exception as e:
                             logger.warning("[RateLimiter] Failed to update wait stats: %s", e)
                         # Log at INFO level if wait was significant (>1s), DEBUG otherwise
@@ -363,8 +364,14 @@ class DashscopeRateLimiter:
 
                     # Get current stats for debug log
                     try:
-                        current_concurrent = result[2] if len(result) > 2 else int(redis.get(self.concurrent_key) or 0)
-                        current_qpm = result[3] if len(result) > 3 else redis.zcard(self.qpm_key) or 0
+                        if len(result) > 2:
+                            current_concurrent = result[2]
+                        else:
+                            current_concurrent = int(await redis.get(self.concurrent_key) or 0)
+                        if len(result) > 3:
+                            current_qpm = result[3]
+                        else:
+                            current_qpm = await redis.zcard(self.qpm_key) or 0
 
                         logger.debug(
                             "[RateLimiter] Acquired (Redis): %s/%s concurrent, %s/%s QPM",
@@ -513,7 +520,7 @@ class DashscopeRateLimiter:
 
     async def _redis_release(self) -> None:
         """Release using Redis."""
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             raise RuntimeError(
                 "Rate limiting requires Redis. Redis connection unavailable. "
@@ -521,10 +528,10 @@ class DashscopeRateLimiter:
             )
 
         try:
-            current = redis.decr(self.concurrent_key)
+            current = await redis.decr(self.concurrent_key)
             # Ensure non-negative (safety check)
             if current < 0:
-                redis.set(self.concurrent_key, 0)
+                await redis.set(self.concurrent_key, 0)
                 current = 0
 
             logger.debug(
@@ -547,7 +554,7 @@ class DashscopeRateLimiter:
                 self.concurrent_limit,
             )
 
-    def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> Dict[str, Any]:
         """Get rate limiter statistics."""
         stats = {
             "enabled": self.enabled,
@@ -565,19 +572,19 @@ class DashscopeRateLimiter:
         }
 
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
                     now = time.time()
                     one_minute_ago = now - 60
 
                     # Clean and get current QPM
-                    redis.zremrangebyscore(self.qpm_key, 0, one_minute_ago)
-                    current_qpm = redis.zcard(self.qpm_key) or 0
-                    current_concurrent = int(redis.get(self.concurrent_key) or 0)
+                    await redis.zremrangebyscore(self.qpm_key, 0, one_minute_ago)
+                    current_qpm = await redis.zcard(self.qpm_key) or 0
+                    current_concurrent = int(await redis.get(self.concurrent_key) or 0)
 
                     # Get global stats
-                    global_stats = redis.hgetall(RATE_STATS_KEY) or {}
+                    global_stats = await redis.hgetall(RATE_STATS_KEY) or {}
 
                     stats.update(
                         {
@@ -616,7 +623,7 @@ class DashscopeRateLimiter:
 
         return stats
 
-    def clear_state(self) -> None:
+    async def clear_state(self) -> None:
         """
         Clear rate limiter state in Redis (for testing purposes).
 
@@ -626,13 +633,13 @@ class DashscopeRateLimiter:
         if not self._use_redis():
             return
 
-        redis = get_redis()
+        redis = get_async_redis()
         if redis:
             try:
                 # Clear QPM entries
-                redis.delete(self.qpm_key)
+                await redis.delete(self.qpm_key)
                 # Clear concurrent counter
-                redis.delete(self.concurrent_key)
+                await redis.delete(self.concurrent_key)
                 logger.debug(
                     "[RateLimiter] Cleared state: QPM=%s, Concurrent=%s",
                     self.qpm_key,
@@ -816,7 +823,7 @@ class LoadBalancerRateLimiter:
         limiter = self.get_limiter(provider)
         await limiter.release()
 
-    def can_acquire_now(self, provider: str) -> bool:
+    async def can_acquire_now(self, provider: str) -> bool:
         """
         Check if a provider can accept a request immediately (non-blocking).
 
@@ -833,7 +840,7 @@ class LoadBalancerRateLimiter:
             return True
 
         limiter = self.get_limiter(provider)
-        stats = limiter.get_stats()
+        stats = await limiter.get_stats()
 
         # Check concurrent limit
         # FIXED: Removed incorrect 'or' operator - use active_requests directly
@@ -852,11 +859,11 @@ class LoadBalancerRateLimiter:
 
         return True
 
-    def get_stats(self) -> Dict[str, Any]:
+    async def get_stats(self) -> Dict[str, Any]:
         """Get statistics for Volcengine provider."""
         return {
             "enabled": self.enabled,
-            "volcengine": self.volcengine_limiter.get_stats(),
+            "volcengine": await self.volcengine_limiter.get_stats(),
             "note": "Dashscope route uses shared Dashscope rate limiter (not included here)",
         }
 

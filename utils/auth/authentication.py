@@ -154,7 +154,7 @@ async def get_current_user(request: Request, credentials: HTTPAuthorizationCrede
         exp_info,
     )
 
-    if not session_manager.is_session_valid(int(user_id), token):
+    if not await session_manager.is_session_valid(int(user_id), token):
         logger.info(
             "[Auth] get_current_user FAILED: user=%s, token=%s... - session invalid",
             user_id,
@@ -210,7 +210,7 @@ async def get_user_from_cookie(token: str, db: AsyncSession) -> Optional[User]:
             return None
 
         session_manager = _redis.get_session_manager()
-        if not session_manager.is_session_valid(int(user_id), token):
+        if not await session_manager.is_session_valid(int(user_id), token):
             logger.debug("Session invalid for user %s in get_user_from_cookie", user_id)
             return None
 
@@ -223,7 +223,7 @@ async def get_user_from_cookie(token: str, db: AsyncSession) -> Optional[User]:
             if user:
                 db.expunge(user)
                 if _redis.user_cache:
-                    _redis.user_cache.cache_user(user)
+                    await _redis.user_cache.cache_user(user)
         return user
 
     except JWTError as e:
@@ -294,7 +294,7 @@ async def get_current_user_or_api_key(
                     user = None
                 else:
                     session_manager = _redis.get_session_manager()
-                    if session_manager.is_session_valid(int(user_id), token):
+                    if await session_manager.is_session_valid(int(user_id), token):
                         if _redis.user_cache is not None:
                             user = await _redis.user_cache.get_by_id(int(user_id))
                         else:

@@ -56,9 +56,7 @@ async def get_enterprise_user() -> User:
         HTTPException: If enterprise organization not found
     """
     async with AsyncSessionLocal() as db:
-        result = await db.execute(
-            select(Organization).where(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE)
-        )
+        result = await db.execute(select(Organization).where(Organization.code == ENTERPRISE_DEFAULT_ORG_CODE))
         org = result.scalar_one_or_none()
         if not org:
             raise HTTPException(
@@ -66,9 +64,7 @@ async def get_enterprise_user() -> User:
                 detail=f"Enterprise organization {ENTERPRISE_DEFAULT_ORG_CODE} not found",
             )
 
-        result = await db.execute(
-            select(User).where(User.phone == ENTERPRISE_DEFAULT_USER_PHONE)
-        )
+        result = await db.execute(select(User).where(User.phone == ENTERPRISE_DEFAULT_USER_PHONE))
         user = result.scalar_one_or_none()
 
         if not user:

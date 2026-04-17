@@ -80,7 +80,7 @@ async def refresh_token(request: Request, response: Response):
     logger.info("[TokenAudit] /refresh called: ip=%s", client_ip)
 
     # Rate limiting: 10 refresh attempts per minute per IP
-    is_allowed, count, _ = _rate_limiter.check_and_record(
+    is_allowed, count, _ = await _rate_limiter.check_and_record(
         category="token_refresh",
         identifier=client_ip,
         max_attempts=10,
@@ -156,7 +156,7 @@ async def refresh_token(request: Request, response: Response):
 
     # If we don't have user_id from access token, try reverse lookup from refresh token hash
     if not user_id:
-        user_id = refresh_manager.find_user_id_from_token(old_token_hash)
+        user_id = await refresh_manager.find_user_id_from_token(old_token_hash)
 
         if not user_id:
             logger.info(
@@ -201,7 +201,7 @@ async def refresh_token(request: Request, response: Response):
         current_device_hash,
     )
 
-    is_valid, token_data, error_msg = refresh_manager.validate_refresh_token(
+    is_valid, token_data, error_msg = await refresh_manager.validate_refresh_token(
         user_id=user_id,
         token_hash=old_token_hash,
         current_device_hash=current_device_hash,
@@ -250,7 +250,7 @@ async def refresh_token(request: Request, response: Response):
     new_refresh_token, new_refresh_hash = create_refresh_token(user_id)
     user_agent = request.headers.get("User-Agent", "")
 
-    refresh_manager.rotate_refresh_token(
+    await refresh_manager.rotate_refresh_token(
         user_id=user_id,
         old_token_hash=old_token_hash,
         new_token_hash=new_refresh_hash,
@@ -264,12 +264,12 @@ async def refresh_token(request: Request, response: Response):
     session_manager = get_session_manager()
     old_access_token = request.cookies.get("access_token")
     if old_access_token:
-        session_manager.delete_session(user_id, token=old_access_token)
+        await session_manager.delete_session(user_id, token=old_access_token)
 
     # Store new session with device hash for same-device session tracking
-    session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
+    await session_manager.store_session(user_id, new_access_token, device_hash=current_device_hash)
 
-    _record_vpn_refresh_last_ip(user_id, request)
+    await _record_vpn_refresh_last_ip(user_id, request)
 
     # Set new cookies
     set_auth_cookies(response, new_access_token, new_refresh_token, request)
@@ -386,10 +386,10 @@ async def get_session_status(
         token_hash = hashlib.sha256(token.encode("utf-8")).hexdigest()
 
         # Check for invalidation notification
-        notification = session_manager.check_invalidation_notification(current_user.id, token_hash)
+        notification = await session_manager.check_invalidation_notification(current_user.id, token_hash)
         if notification:
             # Clear notification after checking
-            session_manager.clear_invalidation_notification(current_user.id, token_hash)
+            await session_manager.clear_invalidation_notification(current_user.id, token_hash)
             logger.info(
                 "[TokenAudit] Session status: INVALIDATED (max devices): user=%s, notification_ip=%s",
                 current_user.id,
@@ -451,7 +451,7 @@ async def logout(
             current_user.id,
             token_hint,
         )
-        session_manager.delete_session(current_user.id, token=token)
+        await session_manager.delete_session(current_user.id, token=token)
     except Exception as delete_error:
         logger.info(
             "[TokenAudit] Logout session delete failed: user=%s, error=%s",
@@ -470,7 +470,7 @@ async def logout(
                 refresh_token_hash[:8],
             )
             refresh_manager = get_refresh_token_manager()
-            refresh_manager.revoke_refresh_token(
+            await refresh_manager.revoke_refresh_token(
                 user_id=current_user.id, token_hash=refresh_token_hash, reason="logout"
             )
         else:
@@ -499,7 +499,7 @@ async def logout(
     # End user sessions in activity tracker
     try:
         tracker = get_activity_tracker()
-        tracker.end_session(user_id=current_user.id)
+        await tracker.end_session(user_id=current_user.id)
     except Exception as tracker_error:
         logger.debug("Failed to end user session on logout: %s", tracker_error)
 

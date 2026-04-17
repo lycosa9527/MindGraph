@@ -171,7 +171,7 @@ async def check_database_on_startup() -> bool:
         logger.debug("[Recovery] Integrity check skipped (SKIP_INTEGRITY_CHECK=true)")
         return True
 
-    if not acquire_integrity_check_lock():
+    if not await acquire_integrity_check_lock():
         return True
 
     try:
@@ -180,7 +180,7 @@ async def check_database_on_startup() -> bool:
             logger.info("[Recovery] PostgreSQL connectivity check passed")
             return True
     finally:
-        release_integrity_check_lock()
+        await release_integrity_check_lock()
 
     logger.error("[Recovery] PostgreSQL connectivity check FAILED")
 

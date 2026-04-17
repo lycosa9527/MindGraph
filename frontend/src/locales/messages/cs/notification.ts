@@ -1,13 +1,11 @@
 /** cs UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Nelze vymazat uzly tématu nebo středu',
-  'notification.cannotResetSelectDiagramType':
-    'Nelze obnovit: nejprve vyberte typ diagramu',
+  'notification.cannotResetSelectDiagramType': 'Nelze obnovit: nejprve vyberte typ diagramu',
   'notification.canvasClearNodes': 'Vymazáno {count} uzlů',
   'notification.canvasClearNodesLearning': 'Vyprázdněno {count} uzlů, přidáno do odpovědí',
   'notification.canvasSomeoneEditingNode': 'Jiný uživatel upravuje tento uzel',
-  'notification.collabDeleteBlocked':
-    'Nelze smazat, zatímco jiný uživatel upravuje vybraný uzel',
+  'notification.collabDeleteBlocked': 'Nelze smazat, zatímco jiný uživatel upravuje vybraný uzel',
   'notification.collabRedoBlocked': 'Nelze znovu provést, zatímco jiný uživatel upravuje',
   'notification.collabUndoBlocked': 'Nelze vrátit zpět, zatímco jiný uživatel upravuje',
   'notification.conversationDeleted': 'Konverzace smazána',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'Import se nezdařil: neplatná data diagramu',
   'notification.importLoadFailed': 'Import se nezdařil: diagram nelze načíst',
   'notification.importSavePartial': 'Importováno, ale uložení do knihovny se nezdařilo',
-  'notification.importSlotsFull':
-    'Knihovna je plná; diagram importován, ale neuložen do knihovny',
+  'notification.importSlotsFull': 'Knihovna je plná; diagram importován, ale neuložen do knihovny',
   'notification.importSuccess': 'Diagram importován a uložen do knihovny',
   'notification.importUnsupportedType': 'Import se nezdařil: nepodporovaný typ diagramu',
   'notification.loadMoreFailed': 'Nelze načíst více',

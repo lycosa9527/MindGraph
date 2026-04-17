@@ -21,7 +21,8 @@ from sqlalchemy.sql.functions import count as sql_count
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from models.domain.gewe_group_member import GeweGroupMember
-from services.redis.redis_client import RedisOperations, is_redis_available
+from services.redis.redis_async_ops import AsyncRedisOperations
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -47,7 +48,6 @@ class GeweGroupMemberDB:
             db: SQLAlchemy database session
         """
         self.db = db
-        self._redis = RedisOperations()
 
     async def save_group_members(self, app_id: str, group_wxid: str, members: List[Dict[str, Any]]) -> int:
         """
@@ -69,14 +69,24 @@ class GeweGroupMemberDB:
         )
         existing_by_wxid = {m.member_wxid: m for m in existing_result.scalars().all()}
 
-        _SKIP_KEYS = frozenset([
-            "wxid", "Wxid", "UserName",
-            "nickname", "NickName",
-            "display_name", "DisplayName",
-            "avatar", "BigHeadImgUrl", "SmallHeadImgUrl", "HeadImgUrl",
-            "InviterUserName", "inviter_wxid",
-            "join_time",
-        ])
+        _skip_keys = frozenset(
+            [
+                "wxid",
+                "Wxid",
+                "UserName",
+                "nickname",
+                "NickName",
+                "display_name",
+                "DisplayName",
+                "avatar",
+                "BigHeadImgUrl",
+                "SmallHeadImgUrl",
+                "HeadImgUrl",
+                "InviterUserName",
+                "inviter_wxid",
+                "join_time",
+            ]
+        )
 
         saved_count = 0
         for member in members:
@@ -102,7 +112,7 @@ class GeweGroupMemberDB:
                     elif isinstance(member["join_time"], (int, float)):
                         join_time = datetime.fromtimestamp(member["join_time"])
 
-                extra_data = {k: v for k, v in member.items() if k not in _SKIP_KEYS}
+                extra_data = {k: v for k, v in member.items() if k not in _skip_keys}
                 extra_data_val = extra_data if extra_data else None
 
                 existing = existing_by_wxid.get(member_wxid)
@@ -142,13 +152,13 @@ class GeweGroupMemberDB:
             if is_redis_available():
                 try:
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
-                    self._redis.delete(list_cache_key)
+                    await AsyncRedisOperations.delete(list_cache_key)
                     # Also invalidate individual member caches
                     for member in members:
                         member_wxid = member.get("wxid") or member.get("Wxid") or member.get("UserName") or ""
                         if member_wxid:
                             member_cache_key = f"{GROUP_MEMBER_KEY_PREFIX}{app_id}:{group_wxid}:{member_wxid}"
-                            self._redis.delete(member_cache_key)
+                            await AsyncRedisOperations.delete(member_cache_key)
                 except Exception as e:
                     logger.debug(
                         "Failed to invalidate group member cache %s:%s: %s",
@@ -180,7 +190,7 @@ class GeweGroupMemberDB:
         if is_redis_available():
             cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
             try:
-                cached = self._redis.get(cache_key)
+                cached = await AsyncRedisOperations.get(cache_key)
                 if cached:
                     try:
                         members = json.loads(cached)
@@ -194,7 +204,7 @@ class GeweGroupMemberDB:
                             e,
                         )
                         # Invalidate corrupted cache
-                        self._redis.delete(cache_key)
+                        await AsyncRedisOperations.delete(cache_key)
             except Exception as e:
                 logger.debug("Redis error for group members %s:%s: %s", app_id, group_wxid, e)
 
@@ -237,7 +247,7 @@ class GeweGroupMemberDB:
             if is_redis_available():
                 try:
                     cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
-                    self._redis.set_with_ttl(
+                    await AsyncRedisOperations.set_with_ttl(
                         cache_key,
                         json.dumps(members, ensure_ascii=False),
                         GROUP_MEMBER_CACHE_TTL,
@@ -271,7 +281,7 @@ class GeweGroupMemberDB:
         if is_redis_available():
             cache_key = f"{GROUP_MEMBER_KEY_PREFIX}{app_id}:{group_wxid}:{member_wxid}"
             try:
-                cached = self._redis.get(cache_key)
+                cached = await AsyncRedisOperations.get(cache_key)
                 if cached:
                     try:
                         member_dict = json.loads(cached)
@@ -291,7 +301,7 @@ class GeweGroupMemberDB:
                             e,
                         )
                         # Invalidate corrupted cache
-                        self._redis.delete(cache_key)
+                        await AsyncRedisOperations.delete(cache_key)
             except Exception as e:
                 logger.debug(
                     "Redis error for group member %s:%s:%s: %s",
@@ -340,7 +350,7 @@ class GeweGroupMemberDB:
             if is_redis_available():
                 try:
                     cache_key = f"{GROUP_MEMBER_KEY_PREFIX}{app_id}:{group_wxid}:{member_wxid}"
-                    self._redis.set_with_ttl(
+                    await AsyncRedisOperations.set_with_ttl(
                         cache_key,
                         json.dumps(member_dict, ensure_ascii=False),
                         GROUP_MEMBER_CACHE_TTL,
@@ -388,8 +398,8 @@ class GeweGroupMemberDB:
                 try:
                     member_cache_key = f"{GROUP_MEMBER_KEY_PREFIX}{app_id}:{group_wxid}:{member_wxid}"
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
-                    self._redis.delete(member_cache_key)
-                    self._redis.delete(list_cache_key)
+                    await AsyncRedisOperations.delete(member_cache_key)
+                    await AsyncRedisOperations.delete(list_cache_key)
                 except Exception as e:
                     logger.debug(
                         "Failed to invalidate group member cache %s:%s:%s: %s",
@@ -431,7 +441,7 @@ class GeweGroupMemberDB:
             if is_redis_available() and result.rowcount > 0:
                 try:
                     list_cache_key = f"{GROUP_MEMBER_LIST_KEY_PREFIX}{app_id}:{group_wxid}"
-                    self._redis.delete(list_cache_key)
+                    await AsyncRedisOperations.delete(list_cache_key)
                 except Exception as e:
                     logger.debug(
                         "Failed to invalidate group members list cache %s:%s: %s",

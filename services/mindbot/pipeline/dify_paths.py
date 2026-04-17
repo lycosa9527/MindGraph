@@ -206,9 +206,7 @@ async def run_streaming_dify_branch(
                 card_state.use_card = False
                 # QPS exhaustion path: accumulate the rest silently, send one
                 # complete plain robot message when Dify finishes streaming.
-                if dingtalk_streaming_body_is_qps_throttle(
-                    {"code": s_code or "", "message": s_detail or ""}
-                ):
+                if dingtalk_streaming_body_is_qps_throttle({"code": s_code or "", "message": s_detail or ""}):
                     logger.warning(
                         "[MindBot] ai_card_qps_exhausted_fallback %s switching_to_plain_message",
                         pipeline_ctx,
@@ -216,10 +214,8 @@ async def run_streaming_dify_branch(
                     card_state.qps_exhausted = True
                     return True, False
                 # Non-QPS failure: send the unconfirmed tail immediately as plain text.
-                full_cum = (
-                    card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
-                )
-                unsent = full_cum[card_state.card_chars_confirmed:]
+                full_cum = card_state.hidden_reply_from_cum(cfg) if not eff_show_cot else card_state.cum
+                unsent = full_cum[card_state.card_chars_confirmed :]
                 if not unsent.strip():
                     return True, False
                 return await send_one_reply_chunk(
@@ -273,24 +269,22 @@ async def run_streaming_dify_branch(
         think_filter.reset()
         card_state.reset(cfg)
 
-    full, new_conv, err_tok, usage_dify, native_reasoning = (
-        await mindbot_consume_dify_stream_batched(
-            dify,
-            text=text_in,
-            user_id=user_id,
-            conversation_id=dify_conv,
-            files=files,
-            min_chars=min_c,
-            flush_interval_s=flush_s,
-            max_parts=max_p,
-            on_batch=on_batch,
-            inputs=dify_inputs,
-            on_stale_conversation=stale_cb,
-            pipeline_ctx=pipeline_ctx,
-            on_media=on_media,
-            on_message_replace=on_dify_message_replace,
-            on_stream_started=release_semaphore_slot,
-        )
+    full, new_conv, err_tok, usage_dify, native_reasoning = await mindbot_consume_dify_stream_batched(
+        dify,
+        text=text_in,
+        user_id=user_id,
+        conversation_id=dify_conv,
+        files=files,
+        min_chars=min_c,
+        flush_interval_s=flush_s,
+        max_parts=max_p,
+        on_batch=on_batch,
+        inputs=dify_inputs,
+        on_stale_conversation=stale_cb,
+        pipeline_ctx=pipeline_ctx,
+        on_media=on_media,
+        on_message_replace=on_dify_message_replace,
+        on_stream_started=release_semaphore_slot,
     )
     full_str = full if isinstance(full, str) else ""
     formatted_full = format_mindbot_reply_for_dingtalk(
@@ -299,10 +293,7 @@ async def run_streaming_dify_branch(
         chain_of_thought_max_chars=int(cfg.chain_of_thought_max_chars),
         native_reasoning=native_reasoning,
     )
-    use_cum_for_reply = not err_tok and (
-        (card_state.created and card_state.use_card)
-        or card_state.buffer_only
-    )
+    use_cum_for_reply = not err_tok and ((card_state.created and card_state.use_card) or card_state.buffer_only)
     reply_text = (
         format_mindbot_reply_for_dingtalk(
             card_state.cum,
@@ -367,7 +358,7 @@ async def run_streaming_dify_branch(
                     pinned_ip=session_webhook_pinned_ip,
                 )
         if not fin_ok:
-            unsent_final = reply_text[card_state.card_chars_confirmed:]
+            unsent_final = reply_text[card_state.card_chars_confirmed :]
             if unsent_final.strip():
                 await send_one_reply_chunk(
                     cfg,
@@ -478,11 +469,7 @@ async def run_blocking_send_branch(
     if not isinstance(answer, str):
         answer = str(answer)
     eff_show_cot = effective_show_chain_of_thought(cfg, body)
-    native_blocking = (
-        native_reasoning_from_dify_blocking_response(resp)
-        if isinstance(resp, dict)
-        else ""
-    )
+    native_blocking = native_reasoning_from_dify_blocking_response(resp) if isinstance(resp, dict) else ""
     answer = format_mindbot_reply_for_dingtalk(
         answer,
         show_chain_of_thought=eff_show_cot,
@@ -630,7 +617,8 @@ async def run_blocking_send_branch(
             return 200, hdr(MindbotErrorCode.SESSION_WEBHOOK_INVALID_URL)
 
         if await post_session_webhook(
-            session_webhook_valid, answer,
+            session_webhook_valid,
+            answer,
             pipeline_ctx=pipeline_ctx,
             pinned_ip=session_webhook_pinned_ip,
         ):

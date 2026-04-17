@@ -41,9 +41,7 @@ const s = reactive(_raw)
 
 const route = useRoute()
 /** Fullpage `/mindmate`: show more chats in the sidebar by default (API returns up to 50). */
-const mindmatePageChatHistoryLimit = computed(() =>
-  route.path.startsWith('/mindmate') ? 50 : 10
-)
+const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/mindmate') ? 50 : 10))
 </script>
 
 <template>

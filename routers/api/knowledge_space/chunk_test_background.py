@@ -10,7 +10,9 @@ import threading
 from datetime import UTC, datetime, timedelta
 from typing import List, Optional, Set
 
-from config.database import SyncSessionLocal
+from sqlalchemy import select, update
+
+from config.database import AsyncSessionLocal, SyncSessionLocal
 from models.domain.knowledge_space import ChunkTestResult
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
 
@@ -69,7 +71,9 @@ def _cleanup_active_tests():
             db = SyncSessionLocal()
             for test_id in _active_tests:
                 try:
-                    test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
+                    test_result = db.execute(
+                        select(ChunkTestResult).where(ChunkTestResult.id == test_id)
+                    ).scalar_one_or_none()
                     if test_result and test_result.status in ("pending", "processing"):
                         test_result.status = "failed"
                         test_result.current_stage = "interrupted"
@@ -107,82 +111,88 @@ def _cleanup_active_tests():
 atexit.register(_cleanup_active_tests)
 
 
-def detect_and_mark_stuck_tests() -> int:
+async def detect_and_mark_stuck_tests_async() -> int:
     """
-    Detect and mark stuck tests as failed.
+    Detect and mark stuck tests as failed (async variant).
 
-    A test is considered stuck if it has been in 'pending' or 'processing'
-    status for more than STUCK_TEST_THRESHOLD_MINUTES minutes.
+    A test is considered stuck if it has been in ``pending`` or ``processing``
+    status for more than :data:`STUCK_TEST_THRESHOLD_MINUTES` minutes.  Used
+    by FastAPI endpoints that run on the asyncio event loop; performs the
+    scan through ``AsyncSessionLocal`` so detection never blocks the loop on
+    a synchronous DB session.
 
     Returns:
-        Number of stuck tests detected and marked as failed
+        Number of stuck tests detected and marked as failed.
     """
-    db = SyncSessionLocal()
     stuck_count = 0
+    threshold_time = datetime.now(UTC) - timedelta(minutes=STUCK_TEST_THRESHOLD_MINUTES)
 
     try:
-        threshold_time = datetime.now(UTC) - timedelta(minutes=STUCK_TEST_THRESHOLD_MINUTES)
-
-        stuck_tests = (
-            db.query(ChunkTestResult)
-            .filter(
-                ChunkTestResult.status.in_(["pending", "processing"]),
-                ChunkTestResult.created_at < threshold_time,
+        async with AsyncSessionLocal() as db:
+            result = await db.execute(
+                select(ChunkTestResult).where(
+                    ChunkTestResult.status.in_(["pending", "processing"]),
+                    ChunkTestResult.created_at < threshold_time,
+                )
             )
-            .all()
-        )
+            stuck_tests = list(result.scalars().all())
 
-        if not stuck_tests:
-            logger.debug("[ChunkTestBackground] No stuck tests detected")
-            return 0
+            if not stuck_tests:
+                logger.debug("[ChunkTestBackground] No stuck tests detected")
+                return 0
 
-        logger.warning(
-            "[ChunkTestBackground] Detected %d stuck test(s) older than %d minutes",
-            len(stuck_tests),
-            STUCK_TEST_THRESHOLD_MINUTES,
-        )
-
-        for test in stuck_tests:
-            try:
-                age_minutes = (datetime.now(UTC) - test.created_at).total_seconds() / 60
-                logger.warning(
-                    "[ChunkTestBackground] Marking stuck test as failed: "
-                    "test_id=%s, status=%s, age=%.1f minutes, stage=%s, progress=%s%%",
-                    test.id,
-                    test.status,
-                    age_minutes,
-                    test.current_stage,
-                    test.progress_percent,
-                )
-
-                test.status = "failed"
-                test.current_stage = "stuck_timeout"
-                test.progress_percent = 0
-                stuck_count += 1
-
-                # Unregister from active tests if it was registered
-                unregister_active_test(test.id)
-
-            except Exception as e:
-                logger.error(
-                    "[ChunkTestBackground] Failed to mark stuck test %s as failed: %s",
-                    test.id,
-                    e,
-                    exc_info=True,
-                )
-
-        if stuck_count > 0:
-            db.commit()
-            logger.info(
-                "[ChunkTestBackground] Successfully marked %d stuck test(s) as failed",
-                stuck_count,
+            logger.warning(
+                "[ChunkTestBackground] Detected %d stuck test(s) older than %d minutes",
+                len(stuck_tests),
+                STUCK_TEST_THRESHOLD_MINUTES,
             )
 
-    except Exception as e:
-        logger.error("[ChunkTestBackground] Error detecting stuck tests: %s", e, exc_info=True)
-        db.rollback()
-    finally:
-        db.close()
+            stuck_ids: List[int] = []
+            for test in stuck_tests:
+                try:
+                    age_minutes = (datetime.now(UTC) - test.created_at).total_seconds() / 60
+                    logger.warning(
+                        "[ChunkTestBackground] Marking stuck test as failed: "
+                        "test_id=%s, status=%s, age=%.1f minutes, stage=%s, progress=%s%%",
+                        test.id,
+                        test.status,
+                        age_minutes,
+                        test.current_stage,
+                        test.progress_percent,
+                    )
+                    stuck_ids.append(test.id)
+                    unregister_active_test(test.id)
+                except Exception as exc:
+                    logger.error(
+                        "[ChunkTestBackground] Failed to schedule stuck test %s update: %s",
+                        test.id,
+                        exc,
+                        exc_info=True,
+                    )
+
+            if stuck_ids:
+                await db.execute(
+                    update(ChunkTestResult)
+                    .where(ChunkTestResult.id.in_(stuck_ids))
+                    .values(
+                        status="failed",
+                        current_stage="stuck_timeout",
+                        progress_percent=0,
+                    )
+                )
+                await db.commit()
+                stuck_count = len(stuck_ids)
+                logger.info(
+                    "[ChunkTestBackground] Successfully marked %d stuck test(s) as failed",
+                    stuck_count,
+                )
+
+    except Exception as exc:
+        logger.error(
+            "[ChunkTestBackground] Error detecting stuck tests (async): %s",
+            exc,
+            exc_info=True,
+        )
 
     return stuck_count
 
@@ -214,7 +224,7 @@ def run_test_in_background(
         # Create database session with proper error handling
         db = SyncSessionLocal()
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
-        test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
+        test_result = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
         if not test_result:
             logger.error("[ChunkTestBackground] Test result %s not found in database", test_id)
             return
@@ -386,8 +396,10 @@ def run_test_in_background(
             exc_info=True,
         )
         try:
-            if test_result is None:
-                test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
+            if test_result is None and db is not None:
+                test_result = db.execute(
+                    select(ChunkTestResult).where(ChunkTestResult.id == test_id)
+                ).scalar_one_or_none()
             if test_result:
                 test_result.status = "failed"
                 test_result.current_stage = "failed"
@@ -400,7 +412,8 @@ def run_test_in_background(
                 update_error,
                 exc_info=True,
             )
-            db.rollback()
+            if db is not None:
+                db.rollback()
     finally:
         logger.debug("[ChunkTestBackground] Cleaning up test %s", test_id)
         unregister_active_test(test_id)
@@ -457,7 +470,7 @@ def run_benchmark_in_background(
         # Create database session with proper error handling
         db = SyncSessionLocal()
         logger.debug("[ChunkTestBackground] Querying test result %s from database", test_id)
-        test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
+        test_result = db.execute(select(ChunkTestResult).where(ChunkTestResult.id == test_id)).scalar_one_or_none()
         if not test_result:
             logger.error("[ChunkTestBackground] Test result %s not found in database", test_id)
             return
@@ -631,8 +644,10 @@ def run_benchmark_in_background(
             exc_info=True,
         )
         try:
-            if test_result is None:
-                test_result = db.query(ChunkTestResult).filter(ChunkTestResult.id == test_id).first()
+            if test_result is None and db is not None:
+                test_result = db.execute(
+                    select(ChunkTestResult).where(ChunkTestResult.id == test_id)
+                ).scalar_one_or_none()
             if test_result:
                 test_result.status = "failed"
                 test_result.current_stage = "failed"
@@ -645,7 +660,8 @@ def run_benchmark_in_background(
                 update_error,
                 exc_info=True,
             )
-            db.rollback()
+            if db is not None:
+                db.rollback()
     finally:
         logger.debug("[ChunkTestBackground] Cleaning up test %s", test_id)
         unregister_active_test(test_id)

@@ -28,9 +28,15 @@ class MarketListingRepository(BaseRepository[MarketListing]):
         scene: Optional[str] = None,
         subject: Optional[str] = None,
         product_type: Optional[str] = None,
+        after_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[MarketListing]:
+        """Active market listings ordered by ``id ASC``.
+
+        Prefer ``after_id`` (id of the last row returned) over ``offset`` for
+        keyset pagination; ``offset`` remains for backwards compatibility.
+        """
         stmt = select(MarketListing).where(MarketListing.is_active.is_(True))
         if listing_kind:
             stmt = stmt.where(MarketListing.listing_kind == listing_kind)
@@ -40,7 +46,11 @@ class MarketListingRepository(BaseRepository[MarketListing]):
             stmt = stmt.where(MarketListing.subject == subject)
         if product_type and product_type != "全部":
             stmt = stmt.where(MarketListing.product_type == product_type)
-        stmt = stmt.order_by(MarketListing.id.asc()).offset(offset).limit(limit)
+        if after_id is not None:
+            stmt = stmt.where(MarketListing.id > after_id)
+        stmt = stmt.order_by(MarketListing.id.asc()).limit(limit)
+        if after_id is None and offset:
+            stmt = stmt.offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -58,24 +68,43 @@ class MarketOrderRepository(BaseRepository[MarketOrder]):
         result = await self.session.execute(select(MarketOrder).where(MarketOrder.out_trade_no == out_trade_no))
         return result.scalar_one_or_none()
 
-    async def list_for_user(self, user_id: int, *, offset: int = 0, limit: int = 50) -> Sequence[MarketOrder]:
-        result = await self.session.execute(
+    async def list_for_user(
+        self,
+        user_id: int,
+        *,
+        before_id: Optional[int] = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> Sequence[MarketOrder]:
+        """User's orders ordered by ``id DESC`` (≈ newest first)."""
+        conditions = [MarketOrder.user_id == user_id]
+        if before_id is not None:
+            conditions.append(MarketOrder.id < before_id)
+        stmt = (
             select(MarketOrder)
             .options(selectinload(MarketOrder.listing))
-            .where(MarketOrder.user_id == user_id)
-            .order_by(MarketOrder.created_at.desc())
-            .offset(offset)
+            .where(*conditions)
+            .order_by(MarketOrder.id.desc())
             .limit(limit)
         )
+        if before_id is None and offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def admin_list(
         self,
         *,
         status: Optional[str] = None,
+        before_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[MarketOrder]:
+        """Admin order list ordered by ``id DESC``.
+
+        Prefer ``before_id`` keyset cursor over ``offset`` to keep deep
+        admin pages cheap on the orders table.
+        """
         stmt = select(MarketOrder).options(
             selectinload(MarketOrder.listing),
             selectinload(MarketOrder.user),
@@ -83,7 +112,11 @@ class MarketOrderRepository(BaseRepository[MarketOrder]):
         )
         if status:
             stmt = stmt.where(MarketOrder.status == status)
-        stmt = stmt.order_by(MarketOrder.created_at.desc()).offset(offset).limit(limit)
+        if before_id is not None:
+            stmt = stmt.where(MarketOrder.id < before_id)
+        stmt = stmt.order_by(MarketOrder.id.desc()).limit(limit)
+        if before_id is None and offset:
+            stmt = stmt.offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -130,14 +163,25 @@ class MarketSubscriptionRepository(BaseRepository[MarketSubscription]):
         )
         return result.scalars().all()
 
-    async def admin_list(self, *, offset: int = 0, limit: int = 50) -> Sequence[MarketSubscription]:
-        result = await self.session.execute(
+    async def admin_list(
+        self,
+        *,
+        before_id: Optional[int] = None,
+        offset: int = 0,
+        limit: int = 50,
+    ) -> Sequence[MarketSubscription]:
+        """Admin subscription list ordered by ``id DESC``."""
+        stmt = (
             select(MarketSubscription)
             .options(selectinload(MarketSubscription.listing), selectinload(MarketSubscription.user))
-            .order_by(MarketSubscription.created_at.desc())
-            .offset(offset)
+            .order_by(MarketSubscription.id.desc())
             .limit(limit)
         )
+        if before_id is not None:
+            stmt = stmt.where(MarketSubscription.id < before_id)
+        elif offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
 

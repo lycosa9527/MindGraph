@@ -11,7 +11,8 @@ import logging
 from typing import Dict, Optional
 
 from models.domain.feature_org_access import FeatureOrgAccessEntry
-from services.redis.redis_client import RedisOps, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from services.redis import keys as _keys
 
 logger = logging.getLogger(__name__)
@@ -38,7 +39,7 @@ def _deserialize(text: str) -> Optional[Dict[str, FeatureOrgAccessEntry]]:
         return None
 
 
-def get_cached_map() -> Optional[Dict[str, FeatureOrgAccessEntry]]:
+async def get_cached_map() -> Optional[Dict[str, FeatureOrgAccessEntry]]:
     """
     Return the cached map if present and valid.
 
@@ -46,32 +47,53 @@ def get_cached_map() -> Optional[Dict[str, FeatureOrgAccessEntry]]:
     """
     if not is_redis_available():
         return None
-    text = RedisOps.get(CACHE_KEY)
+    redis = get_async_redis()
+    if not redis:
+        return None
+    try:
+        text = await redis.get(CACHE_KEY)
+    except Exception as exc:
+        logger.debug("Feature access cache read failed: %s", exc)
+        return None
     if text is None:
         return None
     if isinstance(text, bytes):
         text = text.decode("utf-8")
     result = _deserialize(text)
     if result is None:
-        RedisOps.delete(CACHE_KEY)
+        try:
+            await redis.delete(CACHE_KEY)
+        except Exception:
+            pass
         return None
     return result
 
 
-def set_cached_map(data: Dict[str, FeatureOrgAccessEntry]) -> None:
+async def set_cached_map(data: Dict[str, FeatureOrgAccessEntry]) -> None:
     """Store the map in Redis with TTL (refreshed on every admin write)."""
     if not is_redis_available():
+        return
+    redis = get_async_redis()
+    if not redis:
         return
     try:
         payload = {k: v.model_dump() for k, v in data.items()}
         text = json.dumps(payload, sort_keys=True, ensure_ascii=False)
-        RedisOps.set_with_ttl(CACHE_KEY, text, CACHE_TTL_SECONDS)
+        await redis.setex(CACHE_KEY, CACHE_TTL_SECONDS, text)
     except (TypeError, ValueError) as exc:
         logger.warning("Failed to serialize feature org access cache: %s", exc)
+    except Exception as exc:
+        logger.debug("Feature access cache write failed: %s", exc)
 
 
-def invalidate_cached_map() -> None:
+async def invalidate_cached_map() -> None:
     """Delete cache key (e.g. after manual DB repair outside the app)."""
     if not is_redis_available():
         return
-    RedisOps.delete(CACHE_KEY)
+    redis = get_async_redis()
+    if not redis:
+        return
+    try:
+        await redis.delete(CACHE_KEY)
+    except Exception as exc:
+        logger.debug("Feature access cache invalidate failed: %s", exc)

@@ -48,7 +48,7 @@ async def create_user_api_token(
     result = await db.execute(select(UserAPIToken).where(UserAPIToken.user_id == current_user.id))
     existing = result.scalar_one_or_none()
     if existing:
-        user_token_cache.invalidate_by_token_hash_64(existing.token_hash)
+        await user_token_cache.invalidate_by_token_hash_64(existing.token_hash)
         existing.token_hash = token_hash_full
         existing.expires_at = expires_at
         existing.is_active = True
@@ -69,7 +69,7 @@ async def create_user_api_token(
     await db.commit()
     await db.refresh(existing)
 
-    user_token_cache.set_from_row(raw, existing)
+    await user_token_cache.set_from_row(raw, existing)
 
     return {
         "token": raw,
@@ -118,7 +118,7 @@ async def revoke_user_api_token(
     row = result.scalar_one_or_none()
     if not row:
         return {"ok": True, "revoked": False}
-    user_token_cache.invalidate_by_token_hash_64(row.token_hash)
+    await user_token_cache.invalidate_by_token_hash_64(row.token_hash)
     row.is_active = False
     await db.commit()
     return {"ok": True, "revoked": True}

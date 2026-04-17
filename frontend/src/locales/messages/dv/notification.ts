@@ -1,6 +1,7 @@
 /** dv UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter': 'މައޫދު ނުވަތަ މެދު ނޯޑްތައް ސާފު ކުރެވޭނެ ގޮތެއް ނުވާނެ',
+  'notification.cannotClearTopicOrCenter':
+    'މައޫދު ނުވަތަ މެދު ނޯޑްތައް ސާފު ކުރެވޭނެ ގޮތެއް ނުވާނެ',
   'notification.cannotResetSelectDiagramType':
     'ރީސެޓް ކުރެވޭނެ ގޮތެއް ނުވާނެ: ފުރަތަމަ ޑައިގްރާމް ޓައިޕް ޚިޔަރީގަނޑާ',
   'notification.canvasClearNodes': '{count} ނޯޑް ސާފު ކުރެވޭނެ',
@@ -9,7 +10,8 @@ export default {
   'notification.collabDeleteBlocked':
     'ވެނެ އެހެން ޔޫސަރު ޚިޔަރީގަނޑު ނޯޑް އެޑިޓް ކުރޭތާ ޑިލީޓް ކުރެވޭނެ ގޮތެއް ނުވާނެ',
   'notification.collabRedoBlocked': 'ވެނެ އެހެން ޔޫސަރު އެޑިޓް ކުރޭތާ ރީޑޫ ކުރެވޭނެ ގޮތެއް ނުވާނެ',
-  'notification.collabUndoBlocked': 'ވެނެ އެހެން ޔޫސަރު އެޑިޓް ކުރޭތާ އަންޑޫ ކުރެވޭނެ ގޮތެއް ނުވާނެ',
+  'notification.collabUndoBlocked':
+    'ވެނެ އެހެން ޔޫސަރު އެޑިޓް ކުރޭތާ އަންޑޫ ކުރެވޭނެ ގޮތެއް ނުވާނެ',
   'notification.conversationDeleted': 'ވާހަކަ ޑިލީޓް ކުރެވޭނެ',
   'notification.copied': 'ކްލިޕް ބޯޑަށް ކޮޕީ ކުރެވޭނެ',
   'notification.copyFailed': 'ކޮޕީ ކުރުމް ފޭލް ވީ',
@@ -25,7 +27,8 @@ export default {
   'notification.historyEmptyLearning': 'ނޯޑް ހުސްކޮށް ޖަވާބު އިތުރުކޮށް',
   'notification.importInvalidData': 'އިމްޕޯޓް ފޭލް: ޑައިގްރާމް ޑޭޓާ ވެލިޑް ނޫން',
   'notification.importLoadFailed': 'އިމްޕޯޓް ފޭލް: ޑައިގްރާމް ލޯޑް ކުރެވޭނެ ގޮތެއް ނުވާނެ',
-  'notification.importSavePartial': 'އިމްޕޯޓް ކުރެވޭނެ، ނަމަވެސް ލައިބްރަރީގައި ސޭވް ކުރުމް ފޭލް ވީ',
+  'notification.importSavePartial':
+    'އިމްޕޯޓް ކުރެވޭނެ، ނަމަވެސް ލައިބްރަރީގައި ސޭވް ކުރުމް ފޭލް ވީ',
   'notification.importSlotsFull':
     'ލައިބްރަރީ ފުރިފައި؛ ޑައިގްރާމް އިމްޕޯޓް ކުރެވޭނެ ނަމަވެސް ލައިބްރަރީގައި ސޭވް ނުވާނެ',
   'notification.importSuccess': 'ޑައިގްރާމް އިމްޕޯޓް ކޮށް ލައިބްރަރީގައި ސޭވް ކުރެވޭނެ',
@@ -39,8 +42,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'ރޫޓް ކޮންސެޕްޓް ލިންކް ނުފެނޭ',
   'notification.saved': 'ބަދަލުތައް ސޭވް ކުރެވޭނެ',
   'notification.selectNodeToClear': 'ސާފު ކުރަން ނޯޑް ޚިޔަރީގަނޑާ',
-  'notification.sessionInvalidated':
-    'ގިނަ ޑިވައިސް އަދަދަށް ވުރެ ގިނަ ވީތީ ލޮގް އައުޓް ކުރެވޭނެ',
+  'notification.sessionInvalidated': 'ގިނަ ޑިވައިސް އަދަދަށް ވުރެ ގިނަ ވީތީ ލޮގް އައުޓް ކުރެވޭނެ',
   'notification.signInToUse': 'މި ބޭނުން ކުރަން ސައިން އިން ކޮށް',
   'notification.signInToValidateFocus': 'ފޯކަސް ސުވާލު ވެލިޑޭޓް ކުރަން ސައިން އިން ކޮށް',
 } as const

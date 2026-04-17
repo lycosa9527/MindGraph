@@ -30,11 +30,11 @@ def _import_sdk() -> Any:
     """Return the dingtalk_stream module, raising ImportError with a helpful message."""
     try:
         import dingtalk_stream  # pylint: disable=import-outside-toplevel
+
         return dingtalk_stream
     except ImportError as exc:
         raise ImportError(
-            "dingtalk-stream is required for group AI card streaming. "
-            "Run: pip install dingtalk-stream>=0.24.3"
+            "dingtalk-stream is required for group AI card streaming. Run: pip install dingtalk-stream>=0.24.3"
         ) from exc
 
 
@@ -121,6 +121,7 @@ class DingTalkStreamManager:
                 return
             sdk = _import_sdk()
             from dingtalk_stream import Card_Callback_Router_Topic  # pylint: disable=import-outside-toplevel
+
             credential = sdk.Credential(client_id, client_secret)
             client = sdk.DingTalkStreamClient(credential)
             handler_cls = _make_card_callback_handler_class(sdk)
@@ -195,9 +196,7 @@ class DingTalkStreamManager:
                         # Long-backoff self-healing: wait, then exit the loop so the
                         # finally block clears the entry from _clients/_tasks.
                         # ensure_client will recreate the client on the next card request.
-                        recovery_backoff = float(
-                            max(60, env_int("MINDBOT_STREAM_CLIENT_RECOVERY_BACKOFF_S", 300))
-                        )
+                        recovery_backoff = float(max(60, env_int("MINDBOT_STREAM_CLIENT_RECOVERY_BACKOFF_S", 300)))
                         await asyncio.sleep(recovery_backoff)
                         logger.warning(
                             "[MindBot] dingtalk_stream_client_recovery_attempt client_id=%s "

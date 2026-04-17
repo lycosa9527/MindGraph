@@ -8,6 +8,7 @@ https://docs.crowdsec.net/u/integrations/rawiplist/
 
 from __future__ import annotations
 
+import asyncio
 import json
 import logging
 import os
@@ -20,15 +21,14 @@ import httpx
 from redis.exceptions import RedisError
 
 from services.infrastructure.security import abuseipdb_service
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
 KEY_CROWDSEC_META = "crowdsec:blocklist:meta"
 
-_DEFAULT_CROWDSEC_INTEGRATION_API_BASE = (
-    "https://admin.api.crowdsec.net/v1/integrations"
-)
+_DEFAULT_CROWDSEC_INTEGRATION_API_BASE = "https://admin.api.crowdsec.net/v1/integrations"
 
 
 def _mindgraph_root() -> Path:
@@ -78,16 +78,12 @@ def crowdsec_blocklist_master_enabled() -> bool:
 
 
 def crowdsec_blocklist_sync_enabled() -> bool:
-    return crowdsec_blocklist_master_enabled() and _env_bool(
-        "CROWDSEC_BLOCKLIST_SYNC_ENABLED", True
-    )
+    return crowdsec_blocklist_master_enabled() and _env_bool("CROWDSEC_BLOCKLIST_SYNC_ENABLED", True)
 
 
 def crowdsec_blocklist_lookup_enabled() -> bool:
     """Use shared Redis blacklist for blocking (CrowdSec-only or with AbuseIPDB)."""
-    return crowdsec_blocklist_master_enabled() and _env_bool(
-        "CROWDSEC_BLOCKLIST_LOOKUP_ENABLED", True
-    )
+    return crowdsec_blocklist_master_enabled() and _env_bool("CROWDSEC_BLOCKLIST_LOOKUP_ENABLED", True)
 
 
 def get_crowdsec_sync_interval_seconds() -> int:
@@ -119,11 +115,12 @@ def crowdsec_baseline_blacklist_path() -> Path:
     return _mindgraph_root() / "data" / "crowdsec" / "blocklist_baseline.txt"
 
 
-def apply_crowdsec_baseline_from_file() -> int:
-    """
-    SADD baseline IPs from data/crowdsec/blocklist_baseline.txt into shared blacklist.
+async def apply_crowdsec_baseline_from_file_async() -> int:
+    """SADD baseline IPs from data/crowdsec/blocklist_baseline.txt into shared blacklist.
 
-    Same pattern as AbuseIPDB baseline: call at startup and after AbuseIPDB replace sync.
+    Same pattern as :func:`abuseipdb_service.apply_blacklist_baseline_from_file_async`:
+    call at startup and after each AbuseIPDB replace sync.  Filesystem read is
+    offloaded with ``asyncio.to_thread``; all Redis work uses the async client.
     """
     if not crowdsec_baseline_file_enabled():
         return 0
@@ -138,7 +135,7 @@ def apply_crowdsec_baseline_from_file() -> int:
         return 0
 
     try:
-        text = path.read_text(encoding="utf-8")
+        text = await asyncio.to_thread(path.read_text, encoding="utf-8")
     except OSError as exc:
         logger.warning("[CrowdSec] could not read baseline file %s: %s", path, exc)
         return 0
@@ -148,15 +145,15 @@ def apply_crowdsec_baseline_from_file() -> int:
         logger.debug("[CrowdSec] baseline file has no valid IPs: %s", path)
         return 0
 
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return 0
 
     batch = list(ips)
     chunk_size = 2000
     try:
-        added_total = abuseipdb_service.pipeline_sadd_chunks(
-            r, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size
+        added_total = await abuseipdb_service.pipeline_sadd_chunks_async(
+            redis, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size
         )
     except (OSError, RedisError) as exc:
         logger.warning("[CrowdSec] baseline SADD failed: %s", exc)
@@ -201,14 +198,14 @@ def _basic_auth() -> Tuple[str, str]:
     return user, password
 
 
-def _get_last_merge_unix() -> Optional[float]:
+async def _get_last_merge_unix_async() -> Optional[float]:
     if not is_redis_available():
         return None
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return None
     try:
-        raw = r.get(KEY_CROWDSEC_META)
+        raw = await redis.get(KEY_CROWDSEC_META)
         if not raw:
             return None
         data = json.loads(raw)
@@ -220,38 +217,36 @@ def _get_last_merge_unix() -> Optional[float]:
     return None
 
 
-def _set_last_merge_meta(count: int) -> None:
+async def _set_last_merge_meta_async(count: int) -> None:
     if not is_redis_available():
         return
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return
     payload = json.dumps({"last_merge_unix": time.time(), "count": count})
     try:
-        r.set(KEY_CROWDSEC_META, payload)
+        await redis.set(KEY_CROWDSEC_META, payload)
     except OSError as exc:
         logger.debug("[CrowdSec] could not write meta: %s", exc)
 
 
-def _should_skip_due_to_min_interval() -> bool:
-    last = _get_last_merge_unix()
+async def _should_skip_due_to_min_interval_async() -> bool:
+    last = await _get_last_merge_unix_async()
     if last is None:
         return False
     elapsed = time.time() - last
     return elapsed < float(get_crowdsec_min_interval_seconds())
 
 
-def _sadd_ips_chunked(ips: set[str]) -> int:
+async def _sadd_ips_chunked_async(ips: set[str]) -> int:
     if not is_redis_available() or not ips:
         return 0
-    r = get_redis()
-    if not r:
+    redis = get_async_redis()
+    if not redis:
         return 0
     batch = list(ips)
     chunk_size = 2000
-    return abuseipdb_service.pipeline_sadd_chunks(
-        r, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size
-    )
+    return await abuseipdb_service.pipeline_sadd_chunks_async(redis, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size)
 
 
 async def merge_crowdsec_blocklist_from_network() -> Dict[str, Any]:
@@ -273,7 +268,7 @@ async def merge_crowdsec_blocklist_from_network() -> Dict[str, Any]:
         result["error"] = "disabled"
         return result
 
-    if _should_skip_due_to_min_interval():
+    if await _should_skip_due_to_min_interval_async():
         result["skipped"] = True
         result["ok"] = True
         return result
@@ -321,13 +316,13 @@ async def merge_crowdsec_blocklist_from_network() -> Dict[str, Any]:
         return result
 
     try:
-        added = _sadd_ips_chunked(ips)
+        added = await _sadd_ips_chunked_async(ips)
     except (OSError, RedisError) as exc:
         result["error"] = str(exc)
         logger.warning("[CrowdSec] blocklist Redis SADD failed: %s", exc)
         return result
 
-    _set_last_merge_meta(len(ips))
+    await _set_last_merge_meta_async(len(ips))
     result["ok"] = True
     result["count"] = len(ips)
     logger.info(

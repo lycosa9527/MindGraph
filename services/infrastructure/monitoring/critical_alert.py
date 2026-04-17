@@ -27,11 +27,12 @@ import time
 from typing import Optional
 
 try:
-    from services.redis.redis_client import get_redis, is_redis_available
+    from services.redis.redis_client import is_redis_available
+    from services.redis.redis_async_client import get_async_redis
 
     _REDIS_AVAILABLE = True
 except ImportError:
-    get_redis = None
+    get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
@@ -111,14 +112,14 @@ class CriticalAlertService:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
             key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
-            exists = await asyncio.to_thread(redis_client.exists, key)
+            exists = await redis_client.exists(key)
             return bool(exists)
         except Exception as e:
             logger.debug("[CriticalAlert] Failed to check alert sent status: %s", e)
@@ -138,14 +139,14 @@ class CriticalAlertService:
             return
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return
 
             key = f"{ALERT_SENT_KEY_PREFIX}{component}:{error_hash}"
-            await asyncio.to_thread(redis_client.setex, key, cooldown_seconds, str(time.time()))
+            await redis_client.setex(key, cooldown_seconds, str(time.time()))
         except Exception as e:
             logger.warning("[CriticalAlert] Failed to mark alert as sent: %s", e)
 

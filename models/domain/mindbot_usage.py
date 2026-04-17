@@ -28,7 +28,12 @@ class MindbotUsageEvent(Base):
         Index("ix_mindbot_usage_org_created", "organization_id", "created_at"),
         Index("ix_mindbot_usage_staff_org", "dingtalk_staff_id", "organization_id"),
         Index("ix_mindbot_usage_org_id_desc", "organization_id", "id"),
-        Index("ix_mindbot_usage_dt_conv", "dingtalk_conversation_id"),
+        Index(
+            "ix_mindbot_usage_org_thread_id",
+            "organization_id",
+            "dingtalk_conversation_id",
+            "id",
+        ),
         Index("ix_mindbot_usage_dify_conv", "dify_conversation_id"),
     )
 
@@ -37,7 +42,6 @@ class MindbotUsageEvent(Base):
         Integer,
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
     mindbot_config_id: Mapped[int | None] = mapped_column(
         Integer,
@@ -80,7 +84,6 @@ class MindbotUsageEvent(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         default=lambda: datetime.now(UTC),
-        index=True,
     )
 
     organization = relationship("Organization", lazy="select")

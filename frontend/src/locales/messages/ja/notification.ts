@@ -5,8 +5,7 @@ export default {
   'notification.canvasClearNodes': '{count} 個のノードをクリアしました',
   'notification.canvasClearNodesLearning': '{count} 個のノードを空にし、解答に追加しました',
   'notification.canvasSomeoneEditingNode': '他のユーザーがこのノードを編集中です',
-  'notification.collabDeleteBlocked':
-    '他のユーザーが選択中のノードを編集中のため削除できません',
+  'notification.collabDeleteBlocked': '他のユーザーが選択中のノードを編集中のため削除できません',
   'notification.collabRedoBlocked': '他のユーザーが編集中のためやり直せません',
   'notification.collabUndoBlocked': '他のユーザーが編集中のため元に戻せません',
   'notification.conversationDeleted': '会話を削除しました',
@@ -38,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'ルート概念のリンクが見つかりません',
   'notification.saved': '変更を保存しました',
   'notification.selectNodeToClear': 'クリアするノードを選択してください',
-  'notification.sessionInvalidated':
-    '登録デバイス数の上限を超えたため、ログアウトされました',
+  'notification.sessionInvalidated': '登録デバイス数の上限を超えたため、ログアウトされました',
   'notification.signInToUse': '利用するにはサインインしてください',
   'notification.signInToValidateFocus': '焦点の質問を確認するにはサインインしてください',
 } as const

@@ -7,7 +7,7 @@ from models.domain.diagrams import Diagram
 from services.workshop.workshop_redis_keys import code_to_diagram_key, session_key
 
 
-def restore_workshop_redis_from_db_row(
+async def restore_workshop_redis_from_db_row(
     redis: Any,
     code: str,
     diagram_id: str,
@@ -15,7 +15,7 @@ def restore_workshop_redis_from_db_row(
     ttl: int,
 ) -> None:
     """Re-seed Redis session + code_to_diagram after a DB fallback lookup."""
-    redis.setex(
+    await redis.setex(
         code_to_diagram_key(code),
         ttl,
         diagram_id,
@@ -27,7 +27,7 @@ def restore_workshop_redis_from_db_row(
             diagram.workshop_started_at.isoformat() if diagram.workshop_started_at else datetime.now(tz=UTC).isoformat()
         ),
     }
-    redis.setex(
+    await redis.setex(
         session_key(code),
         ttl,
         str(session_data),

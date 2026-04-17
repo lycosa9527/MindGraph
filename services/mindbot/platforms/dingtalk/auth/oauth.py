@@ -94,10 +94,7 @@ def _oauth_credential_cache_suffix(app_key: str, app_secret: str) -> str:
 
 
 def _token_cache_key(organization_id: int, app_key: str, app_secret: str) -> str:
-    return (
-        f"mindbot:dt_oauth:{organization_id}:"
-        f"{_oauth_credential_cache_suffix(app_key, app_secret)}"
-    )
+    return f"mindbot:dt_oauth:{organization_id}:{_oauth_credential_cache_suffix(app_key, app_secret)}"
 
 
 def _parse_access_token(data: dict[str, Any]) -> str:

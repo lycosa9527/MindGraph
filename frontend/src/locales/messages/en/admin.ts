@@ -184,7 +184,8 @@ export default {
   'admin.mindbot.dingtalkAiCardStreamFail': 'Check failed',
   'admin.mindbot.dingtalkAiCardStreamCheckTooltip':
     'Verifies OAuth and streaming AI card permissions.',
-  'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit': 'Save the MindBot config for this school first.',
+  'admin.mindbot.dingtalkAiCardStreamCheckNeedEdit':
+    'Save the MindBot config for this school first.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedSavedSecret': 'Save the Client Secret first.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedClientId': 'Enter the Client ID.',
   'admin.mindbot.dingtalkAiCardStreamCheckNeedTemplate': 'Enter the AI card template ID.',

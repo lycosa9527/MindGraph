@@ -17,7 +17,8 @@ export default {
   'notification.deleted': 'Ставката е успешно избришана',
   'notification.feedbackCancelled': 'Повратната информација е отстранета',
   'notification.feedbackThanks': 'Ви благодариме за повратната информација',
-  'notification.feedbackThanksDislike': 'Ви благодариме за повратната информација — ќе се подобриме',
+  'notification.feedbackThanksDislike':
+    'Ви благодариме за повратната информација — ќе се подобриме',
   'notification.focusQuestionTooShort': 'Прво внесете подолго прашање за фокус',
   'notification.fullscreenFailed': 'Не можеше да се прејде на цел екран',
   'notification.generationCancelled': 'Генерирањето е откажано',
@@ -39,8 +40,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Врската на коренскиот концепт не е најдена',
   'notification.saved': 'Промените се зачувани',
   'notification.selectNodeToClear': 'Изберете јазол за чистење',
-  'notification.sessionInvalidated':
-    'Одјавени сте бидејќи го надминавте максималниот број уреди',
+  'notification.sessionInvalidated': 'Одјавени сте бидејќи го надминавте максималниот број уреди',
   'notification.signInToUse': 'Најавете се за да користите',
   'notification.signInToValidateFocus': 'Најавете се за да ја потврдите прашањето за фокус',
 } as const

@@ -41,6 +41,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 
+from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import get_redis, is_redis_available
 
 
@@ -309,6 +310,162 @@ def is_backup_lock_holder() -> bool:
         return holder == _backup_scheduler_lock.worker_lock_id
     except Exception as e:
         # On error, fail safe - do not assume we hold the lock
+        logger.warning("[Backup] Error checking lock ownership: %s", e)
+        return False
+
+
+# ============================================================================
+# Async variants of the lock helpers
+#
+# These mirror the sync helpers above but use the shared async Redis client.
+# They are intended for callers running on the asyncio event loop (e.g.
+# ``start_backup_scheduler`` / ``run_backup_now``), so the loop is never
+# blocked on a synchronous Redis round-trip.  The sync variants are kept for
+# code paths that genuinely run off-loop (the synchronous ``create_backup``
+# helper executed via ``asyncio.to_thread``).
+# ============================================================================
+
+
+async def acquire_backup_scheduler_lock_async() -> bool:
+    """Async counterpart of :func:`acquire_backup_scheduler_lock`."""
+    if not is_redis_available():
+        logger.error(
+            "[Backup] Redis unavailable - cannot coordinate backups across workers. Backup scheduler disabled."
+        )
+        return False
+
+    redis = get_async_redis()
+    if not redis:
+        logger.error(
+            "[Backup] Redis async client not available - cannot coordinate backups. Backup scheduler disabled."
+        )
+        return False
+
+    try:
+        if _backup_scheduler_lock.worker_lock_id is None:
+            _backup_scheduler_lock.worker_lock_id = _generate_lock_id()
+
+        acquired = await redis.set(
+            BACKUP_LOCK_KEY,
+            _backup_scheduler_lock.worker_lock_id,
+            nx=True,
+            ex=BACKUP_LOCK_TTL,
+        )
+
+        if acquired:
+            logger.info(
+                "[Backup] Lock acquired by this worker (id=%s)",
+                _backup_scheduler_lock.worker_lock_id,
+            )
+            return True
+
+        holder = await redis.get(BACKUP_LOCK_KEY)
+        logger.debug(
+            "[Backup] Another worker holds the scheduler lock (holder=%s), this worker will not run backups",
+            holder,
+        )
+        return False
+
+    except Exception as e:
+        logger.error(
+            "[Backup] Lock acquisition failed: %s. Backup scheduler disabled to prevent duplicate backups.",
+            e,
+        )
+        return False
+
+
+async def release_backup_scheduler_lock_async() -> bool:
+    """Async counterpart of :func:`release_backup_scheduler_lock`."""
+    if not is_redis_available() or _backup_scheduler_lock.worker_lock_id is None:
+        return True
+
+    redis = get_async_redis()
+    if not redis:
+        return True
+
+    try:
+        lua_script = """
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+            return redis.call("del", KEYS[1])
+        else
+            return 0
+        end
+        """
+        result = await redis.eval(lua_script, 1, BACKUP_LOCK_KEY, _backup_scheduler_lock.worker_lock_id)
+
+        if result == 1:
+            logger.info(
+                "[Backup] Lock released by this worker (id=%s)",
+                _backup_scheduler_lock.worker_lock_id,
+            )
+
+        return result == 1
+
+    except Exception as e:
+        logger.warning("[Backup] Lock release failed: %s", e)
+        return False
+
+
+async def refresh_backup_scheduler_lock_async() -> bool:
+    """Async counterpart of :func:`refresh_backup_scheduler_lock`."""
+    if not is_redis_available() or _backup_scheduler_lock.worker_lock_id is None:
+        logger.error("[Backup] Cannot refresh lock: Redis unavailable or lock ID not set")
+        return False
+
+    redis = get_async_redis()
+    if not redis:
+        logger.error("[Backup] Cannot refresh lock: Redis async client not available")
+        return False
+
+    try:
+        lua_script = """
+        if redis.call("get", KEYS[1]) == ARGV[1] then
+            redis.call("expire", KEYS[1], ARGV[2])
+            return 1
+        else
+            return 0
+        end
+        """
+        result = await redis.eval(
+            lua_script,
+            1,
+            BACKUP_LOCK_KEY,
+            _backup_scheduler_lock.worker_lock_id,
+            BACKUP_LOCK_TTL,
+        )
+
+        if result == 1:
+            logger.debug("[Backup] Lock refreshed (TTL=%ss)", BACKUP_LOCK_TTL)
+            return True
+
+        holder = await redis.get(BACKUP_LOCK_KEY)
+        logger.warning(
+            "[Backup] Lock lost! Holder: %s, our ID: %s",
+            holder,
+            _backup_scheduler_lock.worker_lock_id,
+        )
+        return False
+
+    except Exception as e:
+        logger.warning("[Backup] Lock refresh failed: %s", e)
+        return False
+
+
+async def is_backup_lock_holder_async() -> bool:
+    """Async counterpart of :func:`is_backup_lock_holder`."""
+    if not is_redis_available() or _backup_scheduler_lock.worker_lock_id is None:
+        logger.error("[Backup] Cannot verify lock ownership: Redis unavailable or lock ID not set")
+        return False
+
+    redis = get_async_redis()
+    if not redis:
+        logger.error("[Backup] Cannot verify lock ownership: Redis async client not available")
+        return False
+
+    try:
+        holder = await redis.get(BACKUP_LOCK_KEY)
+        return holder == _backup_scheduler_lock.worker_lock_id
+    except Exception as e:
         logger.warning("[Backup] Error checking lock ownership: %s", e)
         return False
 
@@ -1347,14 +1504,14 @@ async def start_backup_scheduler():
 
     # Attempt to acquire distributed lock
     # Only ONE worker across all processes will succeed
-    if not acquire_backup_scheduler_lock():
+    if not await acquire_backup_scheduler_lock_async():
         # Lock acquisition already logged the skip message
         # Keep running but don't do anything - just monitor
         # If the lock holder dies, this worker can try to acquire on next check
         while True:
             try:
                 await asyncio.sleep(60)  # Check every minute
-                if acquire_backup_scheduler_lock():
+                if await acquire_backup_scheduler_lock_async():
                     logger.info("[Backup] Lock acquired, this worker will now run backups")
                     break
             except asyncio.CancelledError:
@@ -1387,7 +1544,7 @@ async def start_backup_scheduler():
     while True:
         try:
             # Refresh lock to prevent expiration during long waits
-            if not refresh_backup_scheduler_lock():
+            if not await refresh_backup_scheduler_lock_async():
                 logger.warning("[Backup] Lost scheduler lock, stopping scheduler on this worker")
                 break
 
@@ -1407,13 +1564,13 @@ async def start_backup_scheduler():
                 wait_seconds -= sleep_time
 
                 # Refresh lock during wait
-                if wait_seconds > 0 and not refresh_backup_scheduler_lock():
+                if wait_seconds > 0 and not await refresh_backup_scheduler_lock_async():
                     logger.warning("[Backup] Lost scheduler lock during wait")
                     return
 
             # CRITICAL: Verify we still hold the lock before running backup
             # Use atomic refresh to verify ownership and extend TTL in one operation
-            if not refresh_backup_scheduler_lock():
+            if not await refresh_backup_scheduler_lock_async():
                 logger.warning("[Backup] Lock lost before backup execution, skipping")
                 continue
 
@@ -1434,7 +1591,7 @@ async def start_backup_scheduler():
                 )
 
             # Refresh lock after backup completes
-            refresh_backup_scheduler_lock()
+            await refresh_backup_scheduler_lock_async()
 
             # Wait a bit to avoid running twice in the same minute
             await asyncio.sleep(60)
@@ -1442,7 +1599,7 @@ async def start_backup_scheduler():
         except asyncio.CancelledError:
             logger.info("[Backup] Scheduler stopped")
             # Release lock on shutdown
-            release_backup_scheduler_lock()
+            await release_backup_scheduler_lock_async()
             break
         except Exception as e:
             logger.error("[Backup] Scheduler error: %s", e, exc_info=True)
@@ -1462,16 +1619,16 @@ async def run_backup_now() -> bool:
     """
     # Only the lock holder can run manual backups
     # This prevents duplicate backups from multiple workers
-    if not is_backup_lock_holder():
+    if not await is_backup_lock_holder_async():
         logger.warning("[Backup] Manual backup rejected: this worker does not hold the scheduler lock")
         return False
 
     logger.info("[Backup] Manual backup triggered")
-    refresh_backup_scheduler_lock()
+    await refresh_backup_scheduler_lock_async()
 
     try:
         result = await asyncio.to_thread(create_backup)
-        refresh_backup_scheduler_lock()
+        await refresh_backup_scheduler_lock_async()
         return result
     except Exception as e:
         logger.error("[Backup] Backup failed with exception: %s", e, exc_info=True)

@@ -5,13 +5,14 @@ Admin-only API endpoints for library management: scan, register, and visibility.
 Author: lycosa9527
 Made by: MindSpring Team
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 ???????????? (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
 
 import logging
 import shutil
+from collections.abc import Sequence
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -48,10 +49,10 @@ def _canonical_path(stored_path: str, storage_dir: Path, project_root: Path) -> 
     Convert a stored pages_dir_path to a canonical forward-slash relative form.
 
     Handles three legacy formats produced by different environments:
-      1. Already relative with forward slashes:  ``storage/library/Book``  → unchanged
-      2. Windows back-slashes (dev machine):     ``storage\\library\\Book`` → ``storage/library/Book``
+      1. Already relative with forward slashes:  ``storage/library/Book``  <-unchanged
+      2. Windows back-slashes (dev machine):     ``storage\\library\\Book`` <-``storage/library/Book``
       3. Absolute paths (Linux or Windows):      ``/app/storage/library/Book``
-                                                 ``C:\\Users\\...\\Book``   → ``storage/library/Book``
+                                                 ``C:\\Users\\...\\Book``   <-``storage/library/Book``
     """
     normalized = stored_path.replace("\\", "/")
 
@@ -97,7 +98,11 @@ def _pages_dir_key_for_lookup(
     return _canonical_path(pages_dir_path, storage_dir, project_root)
 
 
-def _build_doc_lookups(all_docs: list, storage_dir: Path, project_root: Path) -> tuple:
+def _build_doc_lookups(
+    all_docs: Sequence[LibraryDocument],
+    storage_dir: Path,
+    project_root: Path,
+) -> tuple[dict, dict]:
     """Build path-keyed and folder-name-keyed lookups from a list of LibraryDocuments."""
     docs_by_path: dict = {}
     docs_by_folder: dict = {}
@@ -323,7 +328,7 @@ async def update_document_visibility(
         ) from exc
 
     service = LibraryService(db, user_id=current_user.id)
-    service.invalidate_document_cache(document_id)
+    await service.invalidate_document_cache(document_id)
 
     logger.info(
         "[Library] Document visibility updated",
@@ -381,8 +386,8 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
     """
     Two-phase rename to avoid filename conflicts.
 
-    Phase 1: each file → temporary name.
-    Phase 2: temporary name → final sequential name.
+    Phase 1: each file <-temporary name.
+    Phase 2: temporary name <-final sequential name.
 
     Returns (renamed_count, error_count).
     """
@@ -398,7 +403,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
             temp_files.append((temp_path, target_path))
         except Exception as exc:
             logger.error(
-                "[Library] Rename phase-1 error: %s → %s: %s",
+                "[Library] Rename phase-1 error: %s <-%s: %s",
                 img_path.name,
                 temp_name,
                 exc,
@@ -411,7 +416,7 @@ def _execute_rename(folder_path: Path, plan: list) -> tuple:
             renamed += 1
         except Exception as exc:
             logger.error(
-                "[Library] Rename phase-2 error: %s → %s: %s",
+                "[Library] Rename phase-2 error: %s <-%s: %s",
                 temp_path.name,
                 target_path.name,
                 exc,
@@ -439,7 +444,7 @@ async def rename_book_pages(
     if any(c in data.folder_name for c in ("/", "\\", "..")):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Invalid folder name — must be a direct subfolder of storage/library/",
+            detail="Invalid folder name 'must be a direct subfolder of storage/library/",
         )
 
     service = LibraryService(db, user_id=current_user.id)
@@ -528,7 +533,7 @@ async def generate_document_cover(
     if not cover_path:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to process cover image — check that the folder contains valid images",
+            detail="Failed to process cover image 'check that the folder contains valid images",
         )
 
     logger.info(
@@ -614,7 +619,7 @@ async def delete_document_record(
             break
 
     try:
-        service.invalidate_document_cache(document_id)
+        await service.invalidate_document_cache(document_id)
     except Exception as exc:
         logger.warning("[Library] Cache invalidation failed for %s: %s", document_id, exc)
 

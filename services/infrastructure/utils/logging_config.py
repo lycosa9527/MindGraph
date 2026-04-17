@@ -383,9 +383,7 @@ class UnifiedFormatter(logging.Formatter):
         # Normalize message spacing: strip leading whitespace and normalize multiple spaces to single space
         message = record.getMessage().lstrip()
         message = re.sub(r" +", " ", message)  # Normalize multiple spaces to single space
-        message = _colorize_leading_module_tag(
-            message, self.MODULE_TAG_COLORS, self.COLORS["RESET"]
-        )
+        message = _colorize_leading_module_tag(message, self.MODULE_TAG_COLORS, self.COLORS["RESET"])
 
         return f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
 

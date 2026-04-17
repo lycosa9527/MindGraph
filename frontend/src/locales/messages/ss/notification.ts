@@ -1,13 +1,14 @@
 /** ss UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter': 'Akukwati kuhlanta tinyatselo tesihloko noma emphakathini',
+  'notification.cannotClearTopicOrCenter':
+    'Akukwati kuhlanta tinyatselo tesihloko noma emphakathini',
   'notification.cannotResetSelectDiagramType':
     'Akukwati kubuyisela: khetsa inhlobo yesifundo kuqala',
   'notification.canvasClearNodes': 'Tinyatselo letingu-{count} tihlantisiwe',
-  'notification.canvasClearNodesLearning': 'Tinyatselo letingu-{count} tikhaliwe, kwengezwe empendulo',
+  'notification.canvasClearNodesLearning':
+    'Tinyatselo letingu-{count} tikhaliwe, kwengezwe empendulo',
   'notification.canvasSomeoneEditingNode': 'Lomunye ulungisa le tinyatselo',
-  'notification.collabDeleteBlocked':
-    'Akukwati kususa uma lomunye usebenta tinyatselo letikhetfwa',
+  'notification.collabDeleteBlocked': 'Akukwati kususa uma lomunye usebenta tinyatselo letikhetfwa',
   'notification.collabRedoBlocked': 'Akukwati kuphindze uma lomunye usebenta',
   'notification.collabUndoBlocked': 'Akukwati kubuyisa uma lomunye usebenta',
   'notification.conversationDeleted': 'Ingxoxo isusiwe',
@@ -39,8 +40,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Isixhumanisi somqondo wesisekelo asitholakali',
   'notification.saved': 'Linguqu lilondvoloziwe',
   'notification.selectNodeToClear': 'Khetsa tinyatselo lokusula',
-  'notification.sessionInvalidated':
-    'Uphumile ngoba udlule inani eliphezulu lezixhobo',
+  'notification.sessionInvalidated': 'Uphumile ngoba udlule inani eliphezulu lezixhobo',
   'notification.signInToUse': 'Ngena ukuze usebenzise',
   'notification.signInToValidateFocus': 'Ngena ukuze uqinisekise umbuto wekugxila',
 } as const

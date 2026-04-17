@@ -153,7 +153,7 @@ async def generate_captcha(
 
         # Rate limit by session token (Redis-backed, shared across workers)
         try:
-            is_allowed, _ = check_captcha_rate_limit(session_token)
+            is_allowed, _ = await check_captcha_rate_limit(session_token)
         except Exception as e:
             logger.error("Error checking captcha rate limit: %s", e, exc_info=True)
             # Fail open - allow captcha generation if rate limit check fails
@@ -204,7 +204,7 @@ async def generate_captcha(
         # Store code with expiration (5 minutes)
         try:
             storage = _ensure_captcha_storage()
-            success = storage.store(session_id, code, expires_in_seconds=300)
+            success = await storage.store(session_id, code, expires_in_seconds=300)
         except Exception as e:
             logger.error("Exception storing captcha %s: %s", session_id, e, exc_info=True)
             success = False
@@ -239,9 +239,9 @@ async def generate_captcha(
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg) from e
 
 
-def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
+async def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]]:
     """
-    Verify captcha code (synchronous wrapper for storage layer).
+    Verify captcha code (native async wrapper for storage layer).
 
     Note: Verification is CASE-INSENSITIVE for better user experience.
 
@@ -251,7 +251,7 @@ def verify_captcha(captcha_id: str, user_code: str) -> Tuple[bool, Optional[str]
     Removes captcha after verification (one-time use)
     """
     storage = _ensure_captcha_storage()
-    return storage.verify_and_remove(captcha_id, user_code)
+    return await storage.verify_and_remove(captcha_id, user_code)
 
 
 async def verify_captcha_with_retry(
@@ -273,7 +273,7 @@ async def verify_captcha_with_retry(
         error_reason can be: "not_found", "expired", "incorrect", "database_locked", "error", or None if valid
     """
     for attempt in range(max_endpoint_retries):
-        captcha_valid, captcha_error = verify_captcha(captcha_id, user_code)
+        captcha_valid, captcha_error = await verify_captcha(captcha_id, user_code)
 
         if captcha_valid:
             return captcha_valid, captcha_error

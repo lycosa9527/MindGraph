@@ -1,0 +1,5 @@
+# Baseline of SyncSessionLocal() usage inside async def bodies.
+# One entry per line: <relative/path> :: <line snippet>.
+# Remove a line when you migrate the call to AsyncSessionLocal/get_db.
+# Regenerate with: python scripts/lint/lint_sync_session_in_async.py --update-baseline
+

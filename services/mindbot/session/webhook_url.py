@@ -69,7 +69,13 @@ def _literal_ip_allowed(addr: ipaddress.IPv4Address | ipaddress.IPv6Address) -> 
     return True, ""
 
 
-def _getaddrinfo_timeout(host: str, port: int, timeout_sec: float) -> list[tuple]:
+async def _getaddrinfo_timeout(host: str, port: int, timeout_sec: float) -> list[tuple]:
+    """Run ``socket.getaddrinfo`` off-loop with a hard timeout.
+
+    Declared ``async def`` so the previous accidental coroutine-of-coroutine
+    return type cannot reappear under refactor; callers ``await`` it directly.
+    """
+
     def _resolve() -> list[tuple]:
         return socket.getaddrinfo(
             host,
@@ -78,7 +84,7 @@ def _getaddrinfo_timeout(host: str, port: int, timeout_sec: float) -> list[tuple
             proto=socket.IPPROTO_TCP,
         )
 
-    return asyncio.wait_for(asyncio.to_thread(_resolve), timeout=timeout_sec)
+    return await asyncio.wait_for(asyncio.to_thread(_resolve), timeout=timeout_sec)
 
 
 async def validate_session_webhook_url(url: str) -> tuple[bool, str, str]:

@@ -219,8 +219,23 @@ class LibraryBookmarkMixin:
         if not content:
             return None
 
+        # Drop dangerous tag bodies (script/style/iframe/object/embed) BEFORE
+        # the generic tag stripper so their inner text never survives. Without
+        # this ordering, "<[^>]+>" would remove the surrounding tags first and
+        # leave the executable body as plain text in the output.
+        content = re.sub(
+            r"<(script|style|iframe|object|embed)\b[^>]*>.*?</\1\s*>",
+            "",
+            content,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        content = re.sub(
+            r"<(script|style|iframe|object|embed)\b[^>]*>.*",
+            "",
+            content,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
         content = re.sub(r"<[^>]+>", "", content)
-        content = re.sub(r"<script[^>]*>.*?</script>", "", content, flags=re.IGNORECASE | re.DOTALL)
         content = re.sub(r"javascript:", "", content, flags=re.IGNORECASE)
         content = re.sub(r"on\w+\s*=", "", content, flags=re.IGNORECASE)
         content = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", content)

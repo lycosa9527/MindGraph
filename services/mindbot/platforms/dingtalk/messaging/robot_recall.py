@@ -53,8 +53,7 @@ async def batch_recall_group_robot_messages(
         )
         if status != 200 or body is None:
             logger.warning(
-                "[MindBot] group batchRecall failed chunk_idx=%s/%s "
-                "status=%s succeeded_before=%s total_chunks=%s",
+                "[MindBot] group batchRecall failed chunk_idx=%s/%s status=%s succeeded_before=%s total_chunks=%s",
                 chunk_idx,
                 total_chunks - 1,
                 status,
@@ -105,8 +104,7 @@ async def batch_recall_oto_robot_messages(
         )
         if status != 200 or body is None:
             logger.warning(
-                "[MindBot] oTo batchRecall failed chunk_idx=%s/%s "
-                "status=%s succeeded_before=%s total_chunks=%s",
+                "[MindBot] oTo batchRecall failed chunk_idx=%s/%s status=%s succeeded_before=%s total_chunks=%s",
                 chunk_idx,
                 total_chunks - 1,
                 status,

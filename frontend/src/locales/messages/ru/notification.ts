@@ -1,8 +1,7 @@
 /** ru UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Нельзя очистить узлы темы или центра',
-  'notification.cannotResetSelectDiagramType':
-    'Сброс невозможен: сначала выберите тип диаграммы',
+  'notification.cannotResetSelectDiagramType': 'Сброс невозможен: сначала выберите тип диаграммы',
   'notification.canvasClearNodes': 'Очищено узлов: {count}',
   'notification.canvasClearNodesLearning': 'Очищено узлов: {count}, добавлено в ответы',
   'notification.canvasSomeoneEditingNode': 'Другой пользователь редактирует этот узел',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Связь корневого понятия не найдена',
   'notification.saved': 'Изменения сохранены',
   'notification.selectNodeToClear': 'Выберите узел для очистки',
-  'notification.sessionInvalidated':
-    'Вы вышли из системы: превышено максимальное число устройств',
+  'notification.sessionInvalidated': 'Вы вышли из системы: превышено максимальное число устройств',
   'notification.signInToUse': 'Войдите, чтобы использовать',
   'notification.signInToValidateFocus': 'Войдите, чтобы подтвердить вопрос фокуса',
 } as const

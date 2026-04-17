@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'මූල සංකල්ප සබැඳිය හමු නොවීය',
   'notification.saved': 'වෙනස්කම් සුරැකිණි',
   'notification.selectNodeToClear': 'හිස් කිරීමට නෝඩයක් තෝරන්න',
-  'notification.sessionInvalidated':
-    'උපකරණ උපරිම සංඛ්‍යාව ඉක්මවූ බැවින් ඔබ පිටවී ඇත',
+  'notification.sessionInvalidated': 'උපකරණ උපරිම සංඛ්‍යාව ඉක්මවූ බැවින් ඔබ පිටවී ඇත',
   'notification.signInToUse': 'මෙය භාවිතා කිරීමට පුරනය වන්න',
   'notification.signInToValidateFocus': 'ධෛර්ය ප්‍රශ්නය තහවුරු කිරීමට පුරනය වන්න',
 } as const

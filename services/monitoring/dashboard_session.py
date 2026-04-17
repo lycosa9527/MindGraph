@@ -4,7 +4,8 @@ import json
 import logging
 import secrets
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 """
 Dashboard Session Manager Service
@@ -69,7 +70,7 @@ class DashboardSessionManager:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def create_session(self, ip_address: str) -> str:
+    async def create_session(self, ip_address: str) -> str:
         """
         Create a new dashboard session.
 
@@ -110,9 +111,9 @@ class DashboardSessionManager:
 
             # Store in Redis with TTL
             session_key = _get_session_key(token)
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
-                redis.setex(session_key, SESSION_TTL_SECONDS, json.dumps(session_data))
+                await redis.setex(session_key, SESSION_TTL_SECONDS, json.dumps(session_data))
                 token_preview = token[:20] + "..."
                 logger.debug("[DashboardSession] Created session: %s", token_preview)
 
@@ -124,7 +125,7 @@ class DashboardSessionManager:
             token = f"dashboard_{int(datetime.now(timezone.utc).timestamp())}_{secrets.token_hex(8)}"
             return token
 
-    def verify_session(self, token: str, client_ip: Optional[str] = None) -> bool:
+    async def verify_session(self, token: str, client_ip: Optional[str] = None) -> bool:
         """
         Verify if a dashboard session token is valid.
 
@@ -147,12 +148,12 @@ class DashboardSessionManager:
 
         try:
             session_key = _get_session_key(token)
-            redis = get_redis()
+            redis = get_async_redis()
             if not redis:
                 logger.warning("[DashboardSession] Redis connection unavailable, rejecting session")
                 return False  # Fail-closed
 
-            session_data_str = redis.get(session_key)
+            session_data_str = await redis.get(session_key)
             if not session_data_str:
                 token_preview = token[:20] + "..."
                 logger.debug("[DashboardSession] Session not found: %s", token_preview)
@@ -169,7 +170,7 @@ class DashboardSessionManager:
                     if datetime.now(timezone.utc) > expires_at:
                         token_preview = token[:20] + "..."
                         logger.debug("[DashboardSession] Session expired: %s", token_preview)
-                        redis.delete(session_key)  # Clean up expired session
+                        await redis.delete(session_key)  # Clean up expired session
                         return False
 
                 # Validate IP address if provided (lenient - only reject if both are present and don't match)
@@ -189,14 +190,14 @@ class DashboardSessionManager:
 
             except (json.JSONDecodeError, ValueError) as e:
                 logger.warning("[DashboardSession] Invalid session data format: %s", e)
-                redis.delete(session_key)  # Clean up invalid session
+                await redis.delete(session_key)  # Clean up invalid session
                 return False
 
         except Exception as e:
             logger.error("[DashboardSession] Error verifying session: %s", e)
             return False  # Fail-closed on errors
 
-    def delete_session(self, token: str) -> bool:
+    async def delete_session(self, token: str) -> bool:
         """
         Delete a dashboard session.
 
@@ -214,9 +215,9 @@ class DashboardSessionManager:
 
         try:
             session_key = _get_session_key(token)
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
-                deleted = redis.delete(session_key)
+                deleted = await redis.delete(session_key)
                 token_preview = token[:20] + "..."
                 logger.debug("[DashboardSession] Deleted session: %s", token_preview)
                 return deleted > 0
@@ -226,7 +227,7 @@ class DashboardSessionManager:
             logger.error("[DashboardSession] Error deleting session: %s", e)
             return False
 
-    def get_session_info(self, token: str) -> Optional[Dict]:
+    async def get_session_info(self, token: str) -> Optional[Dict]:
         """
         Get session information.
 
@@ -241,11 +242,11 @@ class DashboardSessionManager:
 
         try:
             session_key = _get_session_key(token)
-            redis = get_redis()
+            redis = get_async_redis()
             if not redis:
                 return None
 
-            session_data_str = redis.get(session_key)
+            session_data_str = await redis.get(session_key)
             if not session_data_str:
                 return None
 

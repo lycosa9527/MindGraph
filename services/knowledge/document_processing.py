@@ -306,7 +306,7 @@ async def generate_embeddings_with_cache(
         client_batch_size = getattr(embedding_client, "batch_size", 10)
         estimated_api_calls = (len(texts_to_embed) + client_batch_size - 1) // client_batch_size
 
-        remaining, _ = kb_rate_limiter.get_embedding_remaining(user_id)
+        remaining, _ = await kb_rate_limiter.get_embedding_remaining(user_id)
         if remaining < estimated_api_calls:
             error_msg = (
                 f"嵌入向量生成速率限制: 需要约 {estimated_api_calls} 次API调用（{len(texts_to_embed)} 个文本，"

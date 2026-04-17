@@ -101,7 +101,8 @@ watch(
         <span
           class="ulog-header__divider"
           aria-hidden="true"
-          >·</span>
+          >·</span
+        >
         <span class="ulog-header__note">{{ t('auth.updateLogMaintainerNote') }}</span>
       </div>
     </template>
@@ -162,12 +163,7 @@ watch(
   align-items: baseline;
   gap: 0.35rem 0.5rem;
   font-family:
-    ui-monospace,
-    'JetBrains Mono',
-    'Cascadia Code',
-    'SFMono-Regular',
-    Consolas,
-    monospace;
+    ui-monospace, 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
 }
 
 .ulog-header__glyph {
@@ -237,12 +233,7 @@ watch(
   justify-content: center;
   gap: 0.5rem;
   padding: 2.5rem 1rem;
-  font-family:
-    ui-monospace,
-    'JetBrains Mono',
-    'Cascadia Code',
-    Consolas,
-    monospace;
+  font-family: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
   font-size: 0.875rem;
   color: #4ade80;
   text-shadow: 0 0 10px rgba(74, 222, 128, 0.45);
@@ -278,11 +269,7 @@ watch(
   position: relative;
   z-index: 1;
   padding: 1.25rem 1rem;
-  font-family:
-    ui-monospace,
-    'JetBrains Mono',
-    Consolas,
-    monospace;
+  font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace;
   font-size: 0.8125rem;
   line-height: 1.5;
   color: #fb923c;
@@ -332,11 +319,7 @@ watch(
   justify-content: center;
   min-width: 2.25rem;
   padding: 0.35rem 0.4rem;
-  font-family:
-    ui-monospace,
-    'JetBrains Mono',
-    Consolas,
-    monospace;
+  font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace;
   font-size: 0.7rem;
   font-weight: 700;
   letter-spacing: 0.08em;
@@ -349,11 +332,7 @@ watch(
   flex: 1;
   margin: 0;
   padding: 0.5rem 0.65rem;
-  font-family:
-    ui-monospace,
-    'JetBrains Mono',
-    Consolas,
-    monospace;
+  font-family: ui-monospace, 'JetBrains Mono', Consolas, monospace;
   font-size: 0.75rem;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -364,12 +343,7 @@ watch(
 
 .ulog-md {
   padding: 0.65rem 0.75rem 0.85rem;
-  font-family:
-    ui-monospace,
-    'JetBrains Mono',
-    'Cascadia Code',
-    Consolas,
-    monospace;
+  font-family: ui-monospace, 'JetBrains Mono', 'Cascadia Code', Consolas, monospace;
   font-size: 0.75rem;
   line-height: 1.55;
   letter-spacing: 0.02em;

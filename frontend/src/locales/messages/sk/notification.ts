@@ -1,8 +1,7 @@
 /** sk UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Nie je možné vymazať uzly témy alebo stredu',
-  'notification.cannotResetSelectDiagramType':
-    'Nie je možné obnoviť: najprv vyberte typ diagramu',
+  'notification.cannotResetSelectDiagramType': 'Nie je možné obnoviť: najprv vyberte typ diagramu',
   'notification.canvasClearNodes': 'Vymazaných {count} uzlov',
   'notification.canvasClearNodesLearning': 'Vyprázdnených {count} uzlov, pridané do odpovedí',
   'notification.canvasSomeoneEditingNode': 'Iný používateľ upravuje tento uzol',

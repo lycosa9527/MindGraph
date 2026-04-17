@@ -26,8 +26,7 @@ export default {
   'notification.importInvalidData': 'كىرگۈزۈش مەغلۇپ: چىزما سانلىق مەلۇماتى ئىناۋەتسىز',
   'notification.importLoadFailed': 'كىرگۈزۈش مەغلۇپ: چىزما يۈكلەنمىدى',
   'notification.importSavePartial': 'كىرگۈزۈلدى، لېكىن كتۇپخانىغا ساقلاش مەغلۇپ',
-  'notification.importSlotsFull':
-    'كتۇپخانا تولدى؛ چىزما كىرگۈزۈلدى لېكىن كتۇپخانىغا ساقلانمىدى',
+  'notification.importSlotsFull': 'كتۇپخانا تولدى؛ چىزما كىرگۈزۈلدى لېكىن كتۇپخانىغا ساقلانمىدى',
   'notification.importSuccess': 'چىزما كىرگۈزۈلۈپ كتۇپخانىغا ساقلاندى',
   'notification.importUnsupportedType': 'كىرگۈزۈش مەغلۇپ: چىزما تۈرى قوللىمايدۇ',
   'notification.loadMoreFailed': 'تېخىمۇ كۆپ يۈكلەش مەغلۇپ',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'يىلتىز تەسەۋۋۇر ئۇلانمىسى تېپىلمىدى',
   'notification.saved': 'ئۆزگەرتىشلەر ساقلاندى',
   'notification.selectNodeToClear': 'تازىلاش ئۈچۈن بۆلەكنى تاللاڭ',
-  'notification.sessionInvalidated':
-    'ئەڭ كۆپ ئۈسكۈنە سانىدىن ئاشقانلىقىڭىز ئۈچۈن چېكىندىڭىز',
+  'notification.sessionInvalidated': 'ئەڭ كۆپ ئۈسكۈنە سانىدىن ئاشقانلىقىڭىز ئۈچۈن چېكىندىڭىز',
   'notification.signInToUse': 'بۇنى ئىشلىتىش ئۈچۈن كىرىڭ',
   'notification.signInToValidateFocus': 'مەركەز سوئالىنى دەلىللەش ئۈچۈن كىرىڭ',
 } as const

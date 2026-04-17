@@ -23,6 +23,7 @@ from services.mindbot.platforms.dingtalk.messaging.robot_templates import (
     msg_param_sample_video,
 )
 
+
 async def send_group_robot_message(
     access_token: str,
     robot_code: str,

@@ -137,7 +137,7 @@ class LibraryDocumentMixin:
 
         try:
             redis_cache = LibraryRedisCache()
-            cached_metadata = redis_cache.get_document_metadata(document_id)
+            cached_metadata = await redis_cache.get_document_metadata(document_id)
 
             if cached_metadata:
                 logger.debug("[Library] Redis cache hit for document %s", document_id)
@@ -171,7 +171,7 @@ class LibraryDocumentMixin:
                     "is_active": document.is_active,
                     "title": document.title,
                 }
-                redis_cache.cache_document_metadata(document_id, metadata)
+                await redis_cache.cache_document_metadata(document_id, metadata)
             except Exception as exc:
                 logger.debug("[Library] Redis cache write failed: %s", exc)
 
@@ -215,7 +215,7 @@ class LibraryDocumentMixin:
                 "cached_at": time.time(),
             }
 
-    def get_cached_document_metadata(self, document_id: int) -> Optional[Dict[str, Any]]:
+    async def get_cached_document_metadata(self, document_id: int) -> Optional[Dict[str, Any]]:
         """
         Get cached document metadata without DB query.
 
@@ -229,7 +229,7 @@ class LibraryDocumentMixin:
         """
         try:
             redis_cache = LibraryRedisCache()
-            cached = redis_cache.get_document_metadata(document_id)
+            cached = await redis_cache.get_document_metadata(document_id)
             if cached:
                 logger.debug("[Library] Redis cache hit for document metadata %s", document_id)
                 return cached
@@ -248,7 +248,7 @@ class LibraryDocumentMixin:
 
             return cached["data"]
 
-    def invalidate_document_cache(self, document_id: int) -> None:
+    async def invalidate_document_cache(self, document_id: int) -> None:
         """
         Invalidate cached document metadata.
 
@@ -259,7 +259,7 @@ class LibraryDocumentMixin:
         """
         try:
             redis_cache = LibraryRedisCache()
-            redis_cache.invalidate_document(document_id)
+            await redis_cache.invalidate_document(document_id)
         except Exception as exc:
             logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
@@ -440,7 +440,7 @@ class LibraryDocumentMixin:
             await self.db.rollback()
             raise
 
-        self.invalidate_document_cache(document_id)
+        await self.invalidate_document_cache(document_id)
         return cover_path
 
     async def _update_existing_book_document(
@@ -477,7 +477,7 @@ class LibraryDocumentMixin:
         except Exception:
             await self.db.rollback()
             raise
-        self.invalidate_document_cache(cast(int, existing_doc.id))
+        await self.invalidate_document_cache(cast(int, existing_doc.id))
         logger.info(
             "[Library] Book folder updated",
             extra={
@@ -646,7 +646,7 @@ class LibraryDocumentMixin:
             await self.db.rollback()
             raise
 
-        self.invalidate_document_cache(document_id)
+        await self.invalidate_document_cache(document_id)
 
         return document
 
@@ -672,7 +672,7 @@ class LibraryDocumentMixin:
             await self.db.rollback()
             raise
 
-        self.invalidate_document_cache(document_id)
+        await self.invalidate_document_cache(document_id)
 
         logger.info(
             "[Library] Document deleted",

@@ -11,7 +11,7 @@ from __future__ import annotations
 import logging
 from datetime import UTC, datetime
 
-from sqlalchemy import select
+from sqlalchemy import update
 from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -23,11 +23,9 @@ logger = logging.getLogger(__name__)
 async def record_workshop_last_seen(db: AsyncSession, user_id: int) -> None:
     """Set workshop_last_seen_at to now (UTC) for the given user."""
     try:
-        result = await db.execute(select(UserModel).where(UserModel.id == user_id))
-        row = result.scalar_one_or_none()
-        if not row:
-            return
-        row.workshop_last_seen_at = datetime.now(UTC)
+        await db.execute(
+            update(UserModel).where(UserModel.id == user_id).values(workshop_last_seen_at=datetime.now(UTC))
+        )
         await db.commit()
     except SQLAlchemyError as exc:
         logger.debug("[WorkshopLastSeen] record failed user_id=%s: %s", user_id, exc)

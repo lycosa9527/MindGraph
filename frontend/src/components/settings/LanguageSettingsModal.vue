@@ -79,8 +79,8 @@ const promptLangOptionsFiltered = computed(() =>
 const interfaceLanguageOptionCount = computed(() =>
   getInterfaceLanguagePickerLocaleCount(allowSimplifiedChinesePicker.value)
 )
-const promptLanguageOptionCount = computed(() =>
-  getPromptLanguageOptionsForPicker(allowSimplifiedChinesePicker.value).length
+const promptLanguageOptionCount = computed(
+  () => getPromptLanguageOptionsForPicker(allowSimplifiedChinesePicker.value).length
 )
 
 /**

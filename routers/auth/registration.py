@@ -140,7 +140,7 @@ async def register(
         # Cache organization after database query for next time
         if org:
             try:
-                org_cache.cache_org(org)
+                await org_cache.cache_org(org)
             except Exception as e:
                 logger.debug("[Auth] Failed to cache org after database query: %s", e)
 
@@ -217,7 +217,7 @@ async def register(
         """Cache user in Redis (non-blocking)."""
         nonlocal cache_write_success
         try:
-            user_cache.cache_user(new_user)
+            await user_cache.cache_user(new_user)
             cache_write_success = True
             phone_prefix = new_user.phone[:3] if len(new_user.phone) >= 3 else "***"
             phone_suffix = new_user.phone[-4:] if len(new_user.phone) >= 4 else ""
@@ -234,7 +234,7 @@ async def register(
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
-            session_manager.store_session(new_user.id, token, device_hash=device_hash)
+            await session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
             logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, e)
 
@@ -242,7 +242,7 @@ async def register(
         """Store refresh token in Redis with device binding."""
         try:
             refresh_manager = get_refresh_token_manager()
-            refresh_manager.store_refresh_token(
+            await refresh_manager.store_refresh_token(
                 user_id=new_user.id,
                 token_hash=refresh_token_hash,
                 ip_address=client_ip,
@@ -271,7 +271,7 @@ async def register(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
-    record_vpn_login_geo(new_user.id, http_request)
+    await record_vpn_login_geo(new_user.id, http_request)
 
     org_name = org.name if org else "None"
     logger.info(
@@ -360,7 +360,7 @@ async def register_with_sms(
         # Cache organization after database query for next time
         if org:
             try:
-                org_cache.cache_org(org)
+                await org_cache.cache_org(org)
             except Exception as e:
                 logger.debug("[Auth] Failed to cache org after database query: %s", e)
 
@@ -376,7 +376,7 @@ async def register_with_sms(
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
             # All validations passed - now consume the SMS code
-            _verify_and_consume_sms_code(request.phone, request.sms_code, "register", db, lang)
+            await _verify_and_consume_sms_code(request.phone, request.sms_code, "register", db, lang)
 
             logger.debug(
                 "User registering with SMS for organization: %s (%s)",
@@ -421,8 +421,8 @@ async def register_with_sms(
     # Session management: Invalidate old sessions before creating new one
     session_manager = get_session_manager()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    old_token_hash = session_manager.get_session_token(new_user.id)
-    session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
+    old_token_hash = await session_manager.get_session_token(new_user.id)
+    await session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
 
     # Generate JWT access token
     token = create_access_token(new_user)
@@ -439,7 +439,7 @@ async def register_with_sms(
         """Cache user in Redis (non-blocking)."""
         nonlocal cache_write_success
         try:
-            user_cache.cache_user(new_user)
+            await user_cache.cache_user(new_user)
             cache_write_success = True
             phone_prefix = new_user.phone[:3] if len(new_user.phone) >= 3 else "***"
             phone_suffix = new_user.phone[-4:] if len(new_user.phone) >= 4 else ""
@@ -456,7 +456,7 @@ async def register_with_sms(
     async def store_session_async():
         """Store session in Redis (non-blocking)."""
         try:
-            session_manager.store_session(new_user.id, token, device_hash=device_hash)
+            await session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as e:
             logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, e)
 
@@ -464,7 +464,7 @@ async def register_with_sms(
         """Store refresh token in Redis with device binding."""
         try:
             refresh_manager = get_refresh_token_manager()
-            refresh_manager.store_refresh_token(
+            await refresh_manager.store_refresh_token(
                 user_id=new_user.id,
                 token_hash=refresh_token_hash,
                 ip_address=client_ip,
@@ -493,7 +493,7 @@ async def register_with_sms(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
-    record_vpn_login_geo(new_user.id, http_request)
+    await record_vpn_login_geo(new_user.id, http_request)
 
     org_name = org.name if org else "None"
     logger.info(

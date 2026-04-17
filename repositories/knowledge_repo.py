@@ -32,16 +32,21 @@ class KnowledgeDocumentRepository(BaseRepository[KnowledgeDocument]):
         self,
         space_id: int,
         *,
+        before_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[KnowledgeDocument]:
-        result = await self.session.execute(
-            select(KnowledgeDocument)
-            .where(KnowledgeDocument.space_id == space_id)
-            .order_by(KnowledgeDocument.created_at.desc())
-            .offset(offset)
-            .limit(limit)
-        )
+        """Documents in a space ordered by ``id DESC``.
+
+        Prefer ``before_id`` keyset cursor over ``offset`` for deep pages.
+        """
+        conditions = [KnowledgeDocument.space_id == space_id]
+        if before_id is not None:
+            conditions.append(KnowledgeDocument.id < before_id)
+        stmt = select(KnowledgeDocument).where(*conditions).order_by(KnowledgeDocument.id.desc()).limit(limit)
+        if before_id is None and offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def get_with_chunks(self, document_id: int) -> Optional[KnowledgeDocument]:

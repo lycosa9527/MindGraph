@@ -29,13 +29,13 @@ from enum import Enum
 from typing import Dict, Optional, Any
 
 try:
-    from services.redis.redis_client import get_redis, is_redis_available, RedisOps
+    from services.redis.redis_client import is_redis_available
+    from services.redis.redis_async_client import get_async_redis
 
     _REDIS_AVAILABLE = True
 except ImportError:
-    get_redis = None
+    get_async_redis = None
     is_redis_available = None
-    RedisOps = None
     _REDIS_AVAILABLE = False
 
 from services.infrastructure.process.process_manager import (
@@ -205,15 +205,13 @@ class ProcessMonitor:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
-            # Try to acquire lock using SETNX (SET if Not eXists)
-            lock_acquired = await asyncio.to_thread(
-                redis_client.set,
+            lock_acquired = await redis_client.set(
                 MONITOR_LOCK_KEY,
                 f"{os.getpid()}:{time.time()}",
                 ex=MONITOR_LOCK_TTL,
@@ -238,21 +236,20 @@ class ProcessMonitor:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
-            # Check if we hold the lock and refresh TTL
-            lock_value = await asyncio.to_thread(redis_client.get, MONITOR_LOCK_KEY)
+            lock_value = await redis_client.get(MONITOR_LOCK_KEY)
             if lock_value:
                 if isinstance(lock_value, bytes):
                     lock_pid = lock_value.decode("utf-8").split(":", maxsplit=1)[0]
                 else:
                     lock_pid = str(lock_value).split(":", maxsplit=1)[0]
                 if lock_pid == str(os.getpid()):
-                    await asyncio.to_thread(redis_client.expire, MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
+                    await redis_client.expire(MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
                     return True
             return False
         except Exception as e:
@@ -271,10 +268,13 @@ class ProcessMonitor:
                 return ServiceStatus.UNHEALTHY
             if is_redis_available is None or not is_redis_available():
                 return ServiceStatus.UNHEALTHY
-            if RedisOps is None:
+            if get_async_redis is None:
+                return ServiceStatus.UNHEALTHY
+            redis_client = get_async_redis()
+            if redis_client is None:
                 return ServiceStatus.UNHEALTHY
 
-            ping_result = await asyncio.wait_for(asyncio.to_thread(RedisOps.ping), timeout=2.0)
+            ping_result = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
 
             if ping_result:
                 return ServiceStatus.HEALTHY
@@ -439,14 +439,14 @@ class ProcessMonitor:
             return 0
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return 0
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return 0
 
             key = f"{RESTART_COUNTER_KEY_PREFIX}{service_name}"
-            count = await asyncio.to_thread(redis_client.get, key)
+            count = await redis_client.get(key)
             return int(count) if count else 0
         except Exception:
             return 0
@@ -464,15 +464,15 @@ class ProcessMonitor:
             return 0
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return 0
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return 0
 
             key = f"{RESTART_COUNTER_KEY_PREFIX}{service_name}"
-            count = await asyncio.to_thread(redis_client.incr, key)
-            await asyncio.to_thread(redis_client.expire, key, PROCESS_MONITOR_RESTART_WINDOW_SECONDS)
+            count = await redis_client.incr(key)
+            await redis_client.expire(key, PROCESS_MONITOR_RESTART_WINDOW_SECONDS)
             return int(count)
         except Exception as e:
             logger.warning("[ProcessMonitor] Failed to increment restart count: %s", e)
@@ -491,14 +491,14 @@ class ProcessMonitor:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
             key = f"{SMS_ALERT_COOLDOWN_KEY_PREFIX}{service_name}"
-            exists = await asyncio.to_thread(redis_client.exists, key)
+            exists = await redis_client.exists(key)
             return bool(exists)
         except Exception:
             return False
@@ -511,15 +511,14 @@ class ProcessMonitor:
             return
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return
 
             key = f"{SMS_ALERT_COOLDOWN_KEY_PREFIX}{service_name}"
-            await asyncio.to_thread(
-                redis_client.setex,
+            await redis_client.setex(
                 key,
                 PROCESS_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
                 str(time.time()),

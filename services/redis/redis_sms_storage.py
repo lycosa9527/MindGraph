@@ -26,7 +26,9 @@ from typing import Optional, Tuple
 import logging
 
 from services.redis import keys as _keys
-from services.redis.redis_client import is_redis_available, get_redis, RedisOps
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -56,7 +58,7 @@ class RedisSMSStorage:
         """Generate Redis key for phone/purpose combination."""
         return f"{SMS_PREFIX}{purpose}:{phone}"
 
-    def store(
+    async def store(
         self,
         phone: str,
         code: str,
@@ -81,8 +83,7 @@ class RedisSMSStorage:
 
         key = self._get_key(phone, purpose)
 
-        # Store with TTL
-        success = RedisOps.set_with_ttl(key, code, ttl_seconds)
+        success = await AsyncRedisOps.set_with_ttl(key, code, ttl_seconds)
 
         if success:
             phone_masked = phone[:3] + "***" + phone[-4:]
@@ -97,7 +98,7 @@ class RedisSMSStorage:
 
         return success
 
-    def verify_and_remove(self, phone: str, code: str, purpose: str = "verification") -> bool:
+    async def verify_and_remove(self, phone: str, code: str, purpose: str = "verification") -> bool:
         """
         Verify SMS code and remove it (one-time use).
 
@@ -120,7 +121,7 @@ class RedisSMSStorage:
         key = self._get_key(phone, purpose)
         phone_masked = phone[:3] + "***" + phone[-4:]
 
-        deleted = RedisOps.compare_and_delete(key, code)
+        deleted = await AsyncRedisOps.compare_and_delete(key, code)
 
         if deleted:
             logger.info(
@@ -130,24 +131,20 @@ class RedisSMSStorage:
             )
             return True
 
-        # compare_and_delete returned False: value mismatch or key missing.
-        # A single EXISTS distinguishes the two cases without reading the code.
-        redis_client = get_redis()
-        if redis_client:
-            try:
-                if redis_client.exists(key):
-                    logger.warning(
-                        "[SMS] Invalid code for %s (purpose: %s) - code preserved for retry",
-                        phone_masked,
-                        purpose,
-                    )
-                else:
-                    logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
-            except Exception as exc:
-                logger.debug("[SMS] exists check failed: %s", exc)
+        try:
+            if await AsyncRedisOps.exists(key):
+                logger.warning(
+                    "[SMS] Invalid code for %s (purpose: %s) - code preserved for retry",
+                    phone_masked,
+                    purpose,
+                )
+            else:
+                logger.debug("[SMS] No code found for %s (purpose: %s)", phone_masked, purpose)
+        except Exception as exc:
+            logger.debug("[SMS] exists check failed: %s", exc)
         return False
 
-    def check_exists(self, phone: str, purpose: str = "verification") -> bool:
+    async def check_exists(self, phone: str, purpose: str = "verification") -> bool:
         """
         Check if a code exists for this phone (without consuming it).
 
@@ -164,9 +161,9 @@ class RedisSMSStorage:
             return False
 
         key = self._get_key(phone, purpose)
-        return RedisOps.exists(key)
+        return await AsyncRedisOps.exists(key)
 
-    def peek(self, phone: str, purpose: str = "verification") -> Optional[str]:
+    async def peek(self, phone: str, purpose: str = "verification") -> Optional[str]:
         """
         Get stored code without consuming it (for verification preview).
 
@@ -184,9 +181,9 @@ class RedisSMSStorage:
             return None
 
         key = self._get_key(phone, purpose)
-        return RedisOps.get(key)
+        return await AsyncRedisOps.get(key)
 
-    def check_exists_and_get_ttl(self, phone: str, purpose: str = "verification") -> Tuple[bool, int]:
+    async def check_exists_and_get_ttl(self, phone: str, purpose: str = "verification") -> Tuple[bool, int]:
         """
         Atomically check if code exists and get its remaining TTL.
 
@@ -205,18 +202,17 @@ class RedisSMSStorage:
         if not is_redis_available():
             return False, -2
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return False, -2
 
         key = self._get_key(phone, purpose)
 
         try:
-            # Atomic pipeline: check existence and get TTL in one operation
-            pipe = redis.pipeline()
-            pipe.exists(key)
-            pipe.ttl(key)
-            results = pipe.execute()
+            async with redis.pipeline(transaction=False) as pipe:
+                pipe.exists(key)
+                pipe.ttl(key)
+                results = await pipe.execute()
 
             exists = bool(results[0])
             ttl = results[1] if results[1] is not None else -2
@@ -226,7 +222,7 @@ class RedisSMSStorage:
             logger.error("[SMS] Pipeline execution failed: %s", e)
             return False, -2
 
-    def get_remaining_ttl(self, phone: str, purpose: str = "verification") -> int:
+    async def get_remaining_ttl(self, phone: str, purpose: str = "verification") -> int:
         """
         Get remaining TTL for an SMS code.
 
@@ -241,9 +237,9 @@ class RedisSMSStorage:
             return -2
 
         key = self._get_key(phone, purpose)
-        return RedisOps.get_ttl(key)
+        return await AsyncRedisOps.get_ttl(key)
 
-    def remove(self, phone: str, purpose: str = "verification") -> bool:
+    async def remove(self, phone: str, purpose: str = "verification") -> bool:
         """
         Remove SMS code without verification.
 
@@ -258,7 +254,7 @@ class RedisSMSStorage:
             return False
 
         key = self._get_key(phone, purpose)
-        return RedisOps.delete(key)
+        return await AsyncRedisOps.delete(key)
 
 
 class _SMSStorageHolder:

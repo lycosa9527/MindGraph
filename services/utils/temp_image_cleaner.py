@@ -28,11 +28,12 @@ from typing import Optional
 import aiofiles.os  # Async file system operations
 
 try:
-    from services.redis.redis_client import get_redis, is_redis_available
+    from services.redis.redis_client import is_redis_available
+    from services.redis.redis_async_client import get_async_redis
 
     _REDIS_AVAILABLE = True
 except ImportError:
-    get_redis = None
+    get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
@@ -101,16 +102,14 @@ async def refresh_cleanup_lock() -> bool:
     if lock_id is None:
         return False
 
-    if not get_redis:
+    if not get_async_redis:
         return False
 
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return False
 
     try:
-        # Atomic check-and-refresh using Lua script
-        # Only refreshes TTL if current holder matches our ID
         lua_script = """
         if redis.call("get", KEYS[1]) == ARGV[1] then
             redis.call("expire", KEYS[1], ARGV[2])
@@ -119,12 +118,11 @@ async def refresh_cleanup_lock() -> bool:
             return 0
         end
         """
-        result = await asyncio.to_thread(redis.eval, lua_script, 1, CLEANUP_LOCK_KEY, lock_id, CLEANUP_LOCK_TTL)
+        result = await redis.eval(lua_script, 1, CLEANUP_LOCK_KEY, lock_id, CLEANUP_LOCK_TTL)
 
         if result == 1:
             return True
-        # Lock not held by us
-        holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
+        holder = await redis.get(CLEANUP_LOCK_KEY)
         logger.debug("[Cleanup] Lock lost! Holder: %s, our ID: %s", holder, lock_id)
         return False
 
@@ -153,33 +151,27 @@ async def acquire_cleanup_lock() -> bool:
         logger.debug("[Cleanup] Redis unavailable, assuming single worker mode")
         return True
 
-    if not get_redis:
+    if not get_async_redis:
         return True  # Fallback to single worker mode
 
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return True  # Fallback to single worker mode
 
     try:
-        # Generate unique ID for this worker
         lock_id = _cleanup_lock_state.generate_lock_id()
 
-        # Attempt atomic lock acquisition: SETNX with TTL
-        # Returns True only if key did not exist (lock acquired)
-        # Use asyncio.to_thread() to avoid blocking event loop
-        acquired = await asyncio.to_thread(
-            redis.set,
+        acquired = await redis.set(
             CLEANUP_LOCK_KEY,
             lock_id,
-            nx=True,  # Only set if not exists
-            ex=CLEANUP_LOCK_TTL,  # TTL in seconds
+            nx=True,
+            ex=CLEANUP_LOCK_TTL,
         )
 
         if acquired:
             logger.debug("[Cleanup] Lock acquired by this worker (id=%s)", lock_id)
             return True
-        # Lock held by another worker - check who
-        holder = await asyncio.to_thread(redis.get, CLEANUP_LOCK_KEY)
+        holder = await redis.get(CLEANUP_LOCK_KEY)
         logger.info(
             "[Cleanup] Another worker holds the cleanup lock (holder=%s), skipping cleanup",
             holder,

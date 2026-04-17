@@ -25,14 +25,16 @@ Proprietary License
 """
 
 from datetime import UTC, datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 import logging
 
 from sqlalchemy import select
 
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
-from services.redis.redis_client import is_redis_available, RedisOps, get_redis
+from services.redis.cache.redis_cache_stampede import with_stampede_lock
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 
 logger = logging.getLogger(__name__)
@@ -78,12 +80,8 @@ class UserCache:
             "last_login": user.last_login.isoformat() if user.last_login else "",
             "ui_language": getattr(user, "ui_language", None) or "",
             "prompt_language": getattr(user, "prompt_language", None) or "",
-            "allows_simplified_chinese": "1"
-            if getattr(user, "allows_simplified_chinese", True)
-            else "0",
-            "email_login_whitelisted_from_cn": "1"
-            if getattr(user, "email_login_whitelisted_from_cn", False)
-            else "0",
+            "allows_simplified_chinese": "1" if getattr(user, "allows_simplified_chinese", True) else "0",
+            "email_login_whitelisted_from_cn": "1" if getattr(user, "email_login_whitelisted_from_cn", False) else "0",
         }
 
     def _deserialize_user(self, data: Dict[str, str]) -> User:
@@ -147,23 +145,61 @@ class UserCache:
 
         return user
 
-    async def _load_from_database(
+    async def _read_cached_by_id(self, user_id: int) -> Optional[User]:
+        """Re-read cached user hash by ID without DB fallback (G6 loser path)."""
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        try:
+            cached = await redis.hgetall(_keys.USER_BY_ID.format(user_id=user_id))
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not cached:
+            return None
+        try:
+            return self._deserialize_user(cached)
+        except Exception:  # pylint: disable=broad-except
+            return None
+
+    async def _read_cached_by_phone(self, phone: str) -> Optional[User]:
+        """Re-read cached user via phone index (G6 loser path)."""
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        try:
+            user_id_str = await redis.get(_keys.USER_BY_PHONE.format(phone=phone))
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not user_id_str:
+            return None
+        try:
+            return await self._read_cached_by_id(int(user_id_str))
+        except (ValueError, TypeError):
+            return None
+
+    async def _read_cached_by_email(self, email: str) -> Optional[User]:
+        """Re-read cached user via email index (G6 loser path)."""
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        try:
+            user_id_str = await redis.get(_keys.USER_BY_EMAIL.format(email=email))
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not user_id_str:
+            return None
+        try:
+            return await self._read_cached_by_id(int(user_id_str))
+        except (ValueError, TypeError):
+            return None
+
+    async def _query_database(
         self,
         user_id: Optional[int] = None,
         phone: Optional[str] = None,
         email: Optional[str] = None,
     ) -> Optional[User]:
-        """
-        Load user from database.
-
-        Args:
-            user_id: User ID to load (if provided)
-            phone: Phone number to load (if provided)
-            email: Normalized email to load (if provided)
-
-        Returns:
-            User object or None if not found
-        """
+        """Inner DB load — runs under the stampede lock when one was acquired."""
         try:
             async with AsyncSessionLocal() as db:
                 if user_id:
@@ -180,7 +216,7 @@ class UserCache:
 
                 if user:
                     try:
-                        self.cache_user(user)
+                        await self.cache_user(user)
                     except Exception as e:
                         logger.debug("[UserCache] Failed to cache user loaded from database: %s", e)
 
@@ -188,6 +224,49 @@ class UserCache:
         except Exception as e:
             logger.error("[UserCache] Database query failed: %s", e, exc_info=True)
             raise
+
+    async def _load_from_database(
+        self,
+        user_id: Optional[int] = None,
+        phone: Optional[str] = None,
+        email: Optional[str] = None,
+    ) -> Optional[User]:
+        """
+        Load user from database, protected against cache stampedes (G6).
+
+        Args:
+            user_id: User ID to load (if provided)
+            phone: Phone number to load (if provided)
+            email: Normalized email to load (if provided)
+
+        Returns:
+            User object or None if not found
+        """
+        if user_id:
+            cache_key = _keys.USER_BY_ID.format(user_id=user_id)
+
+            async def _reader() -> Optional[User]:
+                return await self._read_cached_by_id(user_id)
+
+        elif phone:
+            cache_key = _keys.USER_BY_PHONE.format(phone=phone)
+
+            async def _reader() -> Optional[User]:
+                return await self._read_cached_by_phone(phone)
+
+        elif email:
+            cache_key = _keys.USER_BY_EMAIL.format(email=email)
+
+            async def _reader() -> Optional[User]:
+                return await self._read_cached_by_email(email)
+
+        else:
+            return None
+
+        async def _loader() -> Optional[User]:
+            return await self._query_database(user_id=user_id, phone=phone, email=email)
+
+        return await with_stampede_lock(cache_key, _loader, _reader)
 
     async def get_by_id(self, user_id: int) -> Optional[User]:
         """
@@ -206,9 +285,13 @@ class UserCache:
             )
             return await self._load_from_database(user_id=user_id)
 
+        redis = get_async_redis()
+        if not redis:
+            return await self._load_from_database(user_id=user_id)
+
         try:
             key = _keys.USER_BY_ID.format(user_id=user_id)
-            cached = RedisOps.hash_get_all(key)
+            cached = await redis.hgetall(key)
 
             if cached:
                 try:
@@ -223,7 +306,7 @@ class UserCache:
                         exc_info=True,
                     )
                     try:
-                        RedisOps.delete(key)
+                        await redis.delete(key)
                     except Exception as exc:
                         logger.debug(
                             "Corrupted user cache entry deletion failed for user ID %s: %s",
@@ -255,9 +338,13 @@ class UserCache:
         if not is_redis_available():
             return await self._load_from_database(email=email)
 
+        redis = get_async_redis()
+        if not redis:
+            return await self._load_from_database(email=email)
+
         try:
             index_key = _keys.USER_BY_EMAIL.format(email=email)
-            user_id_str = RedisOps.get(index_key)
+            user_id_str = await redis.get(index_key)
 
             if user_id_str:
                 try:
@@ -265,7 +352,7 @@ class UserCache:
                     return await self.get_by_id(user_id)
                 except (ValueError, TypeError):
                     try:
-                        RedisOps.delete(index_key)
+                        await redis.delete(index_key)
                     except Exception as exc:
                         logger.debug("Corrupted user email index deletion failed: %s", exc)
                     return await self._load_from_database(email=email)
@@ -296,9 +383,13 @@ class UserCache:
             )
             return await self._load_from_database(phone=phone)
 
+        redis = get_async_redis()
+        if not redis:
+            return await self._load_from_database(phone=phone)
+
         try:
             index_key = _keys.USER_BY_PHONE.format(phone=phone)
-            user_id_str = RedisOps.get(index_key)
+            user_id_str = await redis.get(index_key)
 
             if user_id_str:
                 try:
@@ -312,7 +403,7 @@ class UserCache:
                         e,
                     )
                     try:
-                        RedisOps.delete(index_key)
+                        await redis.delete(index_key)
                     except Exception as exc:
                         logger.debug("Corrupted user phone index deletion failed: %s", exc)
                     return await self._load_from_database(phone=phone)
@@ -329,7 +420,7 @@ class UserCache:
         logger.debug("[UserCache] Cache miss for phone %s, loading from database", phone_masked)
         return await self._load_from_database(phone=phone)
 
-    def cache_user(self, user: User) -> bool:
+    async def cache_user(self, user: User) -> bool:
         """
         Cache user in Redis (non-blocking).
 
@@ -346,7 +437,7 @@ class UserCache:
             logger.debug("[UserCache] Redis unavailable, skipping cache write")
             return False
 
-        redis_client = get_redis()
+        redis_client = get_async_redis()
         if not redis_client:
             logger.debug("[UserCache] Redis client unavailable, skipping cache write")
             return False
@@ -355,19 +446,19 @@ class UserCache:
             user_dict = self._serialize_user(user)
             user_key = _keys.USER_BY_ID.format(user_id=user.id)
 
-            pipe = redis_client.pipeline()
-            # DELETE before HSET to clear any stale key with wrong type.
-            pipe.delete(user_key)
-            pipe.hset(user_key, mapping=user_dict)
-            pipe.expire(user_key, USER_CACHE_TTL)
-            if user.phone:
-                phone_index_key = _keys.USER_BY_PHONE.format(phone=user.phone)
-                pipe.set(phone_index_key, str(user.id), ex=USER_CACHE_TTL)
-            user_email = getattr(user, "email", None)
-            if user_email:
-                email_index_key = _keys.USER_BY_EMAIL.format(email=user_email)
-                pipe.set(email_index_key, str(user.id), ex=USER_CACHE_TTL)
-            pipe.execute()
+            async with redis_client.pipeline(transaction=False) as pipe:
+                # DELETE before HSET to clear any stale key with wrong type.
+                pipe.delete(user_key)
+                pipe.hset(user_key, mapping=user_dict)
+                pipe.expire(user_key, USER_CACHE_TTL)
+                if user.phone:
+                    phone_index_key = _keys.USER_BY_PHONE.format(phone=user.phone)
+                    pipe.set(phone_index_key, str(user.id), ex=USER_CACHE_TTL)
+                user_email = getattr(user, "email", None)
+                if user_email:
+                    email_index_key = _keys.USER_BY_EMAIL.format(email=user_email)
+                    pipe.set(email_index_key, str(user.id), ex=USER_CACHE_TTL)
+                await pipe.execute()
 
             phone_prefix = user.phone[:3] if user.phone and len(user.phone) >= 3 else "***"
             phone_suffix = user.phone[-4:] if user.phone and len(user.phone) >= 4 else ""
@@ -379,7 +470,77 @@ class UserCache:
             logger.warning("[UserCache] Failed to cache user ID %s: %s", user.id, exc)
             return False
 
-    def invalidate(self, user_id: int, phone: Optional[str] = None, email: Optional[str] = None) -> bool:
+    async def bulk_cache_users(self, users: List[User]) -> int:
+        """Cache many users in a single Redis pipeline (G9).
+
+        Used by the startup cache loader to amortise the per-user round-trip
+        cost: one ``MULTI`` round-trip per *batch* instead of one per user.
+        Returns the number of users we attempted to write — the caller is
+        expected to compare against ``len(users)`` to detect partial failure.
+
+        Behaves like ``cache_user`` per record (delete-then-hset, plus phone
+        and email indexes when present), but keeps the entire batch in a
+        single non-transactional pipeline so a single bad record cannot abort
+        the rest.
+        """
+        if not users:
+            return 0
+        if not is_redis_available():
+            logger.debug("[UserCache] Redis unavailable, skipping bulk cache write")
+            return 0
+        redis_client = get_async_redis()
+        if not redis_client:
+            logger.debug("[UserCache] Redis client unavailable, skipping bulk cache write")
+            return 0
+
+        prepared: List[tuple] = []
+        for user in users:
+            try:
+                prepared.append(
+                    (
+                        int(user.id),
+                        self._serialize_user(user),
+                        getattr(user, "phone", None),
+                        getattr(user, "email", None),
+                    )
+                )
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning(
+                    "[UserCache] Skipping user %s in bulk write: %s",
+                    getattr(user, "id", "?"),
+                    exc,
+                )
+
+        if not prepared:
+            return 0
+
+        try:
+            async with redis_client.pipeline(transaction=False) as pipe:
+                for user_id, user_dict, phone, email in prepared:
+                    user_key = _keys.USER_BY_ID.format(user_id=user_id)
+                    pipe.delete(user_key)
+                    pipe.hset(user_key, mapping=user_dict)
+                    pipe.expire(user_key, USER_CACHE_TTL)
+                    if phone:
+                        pipe.set(
+                            _keys.USER_BY_PHONE.format(phone=phone),
+                            str(user_id),
+                            ex=USER_CACHE_TTL,
+                        )
+                    if email:
+                        pipe.set(
+                            _keys.USER_BY_EMAIL.format(email=email),
+                            str(user_id),
+                            ex=USER_CACHE_TTL,
+                        )
+                await pipe.execute()
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.warning("[UserCache] Bulk pipeline execute failed: %s", exc)
+            return 0
+
+        return len(prepared)
+
+    async def invalidate(self, user_id: int, phone: Optional[str] = None, email: Optional[str] = None) -> bool:
         """
         Invalidate user cache entries (non-blocking).
 
@@ -397,7 +558,7 @@ class UserCache:
             logger.debug("[UserCache] Redis unavailable, skipping cache invalidation")
             return False
 
-        redis_client = get_redis()
+        redis_client = get_async_redis()
         if not redis_client:
             return False
 
@@ -409,7 +570,7 @@ class UserCache:
             if email:
                 keys_to_delete.append(_keys.USER_BY_EMAIL.format(email=email))
 
-            redis_client.delete(*keys_to_delete)
+            await redis_client.delete(*keys_to_delete)
 
             logger.info("[UserCache] Invalidated cache for user ID %s", user_id)
             return True

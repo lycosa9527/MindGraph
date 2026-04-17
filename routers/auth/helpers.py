@@ -24,7 +24,7 @@ from fastapi import HTTPException, Request, Response, status
 from sqlalchemy.exc import OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
-
+from config.database import AsyncSessionLocal
 from models.domain.auth import User
 from models.domain.user_activity_log import UserActivityLog
 from services.redis.redis_activity_tracker import get_activity_tracker
@@ -122,20 +122,19 @@ async def track_user_activity(
         # For login activities, start a new session (or reuse existing)
         # For other activities, just record (will find/create session automatically)
         if activity_type == "login":
-            session_id = tracker.start_session(
+            session_id = await tracker.start_session(
                 user_id=user.id,
                 user_phone=user.phone,
                 user_name=user.name,
                 ip_address=ip_address,
-                reuse_existing=True,  # Reuse existing session if user already has one
+                reuse_existing=True,
             )
             if db and user.role == "user":
                 await _log_login_and_compute_stats(user.id, db)
         else:
             session_id = None  # Let record_activity find/create session
 
-        # Record activity
-        tracker.record_activity(
+        await tracker.record_activity(
             user_id=user.id,
             user_phone=user.phone,
             activity_type=activity_type,
@@ -150,7 +149,13 @@ async def track_user_activity(
 
 
 async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
-    """Persist login to user_activity_log and trigger stats compute (fire-and-forget)."""
+    """Persist login to user_activity_log and trigger stats compute (fire-and-forget).
+
+    The login activity log is committed on the caller's session so that it stays
+    within the request transaction boundary.  The usage-stats computation runs in
+    its own isolated session so a stats failure can never corrupt or partially
+    roll back the already-committed login record.
+    """
     try:
         log_entry = UserActivityLog(
             user_id=user_id,
@@ -159,62 +164,48 @@ async def _log_login_and_compute_stats(user_id: int, db: AsyncSession) -> None:
         )
         db.add(log_entry)
         await db.commit()
-
-        await compute_and_upsert_user_usage_stats_async(user_id, db)
-    except Exception as e:
-        logger.debug("Failed to log login or compute stats: %s", e)
+    except Exception as exc:
+        logger.debug("Failed to persist login activity log: %s", exc)
         try:
             await db.rollback()
-        except Exception as exc:
-            logger.debug("Rollback after login activity log failure: %s", exc)
+        except Exception as rollback_exc:
+            logger.debug("Rollback after login log failure: %s", rollback_exc)
+        return
 
-
-def _record_city_flag_async(ip_address: str):
-    """
-    Record city flag asynchronously (fire-and-forget).
-
-    This function schedules the city flag recording in a background task
-    to avoid blocking the login request.
-    """
     try:
+        async with AsyncSessionLocal() as stats_session:
+            await compute_and_upsert_user_usage_stats_async(user_id, stats_session)
+    except Exception as exc:
+        logger.debug("Failed to compute login usage stats: %s", exc)
 
-        async def _record_flag():
-            try:
-                geolocation = get_geolocation_service()
-                location = await geolocation.get_location(ip_address)
-                if location and not location.get("is_fallback"):
-                    city = location.get("city", "")
-                    province = location.get("province", "")
-                    lat = location.get("lat")
-                    lng = location.get("lng")
-                    if city or province:
-                        flag_tracker = get_city_flag_tracker()
-                        flag_tracker.record_city_flag(city, province, lat, lng)
-            except Exception as e:
-                logger.debug("Failed to record city flag: %s", e)
 
-        # Schedule async task (fire-and-forget)
+def _record_city_flag_async(ip_address: str) -> None:
+    """Schedule city flag recording as a fire-and-forget background task.
+
+    Must be called from within a running asyncio event loop (i.e. inside a
+    FastAPI request handler).  If no loop is running the call is silently
+    skipped — it is never worth blocking or crashing a login for analytics.
+    """
+
+    async def _record_flag() -> None:
         try:
-            # Try to get the current event loop
-            try:
-                loop = asyncio.get_running_loop()
-                # Event loop is running, create a task
-                asyncio.create_task(_record_flag())
-            except RuntimeError:
-                # No running event loop, try to get/create one
-                try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        asyncio.create_task(_record_flag())
-                    else:
-                        loop.run_until_complete(_record_flag())
-                except RuntimeError:
-                    # No event loop available, create new one
-                    asyncio.run(_record_flag())
-        except Exception as e:
-            logger.debug("Failed to schedule city flag recording: %s", e)
-    except Exception as e:
-        logger.debug("Failed to schedule city flag recording: %s", e)
+            geolocation = get_geolocation_service()
+            location = await geolocation.get_location(ip_address)
+            if location and not location.get("is_fallback"):
+                city = location.get("city", "")
+                province = location.get("province", "")
+                lat = location.get("lat")
+                lng = location.get("lng")
+                if city or province:
+                    flag_tracker = get_city_flag_tracker()
+                    await flag_tracker.record_city_flag(city, province, lat, lng)
+        except Exception as exc:
+            logger.debug("Failed to record city flag: %s", exc)
+
+    try:
+        asyncio.get_running_loop().create_task(_record_flag())
+    except RuntimeError:
+        logger.debug("[Auth] City flag recording skipped: no running event loop")
 
 
 # ============================================================================
@@ -251,6 +242,13 @@ async def commit_user_with_retry(db: AsyncSession, new_user: User, max_retries: 
             # PostgreSQL deadlock detection
             if "deadlock detected" in error_msg.lower() or "could not obtain lock" in error_msg.lower():
                 if attempt < max_retries - 1:
+                    # After a deadlock PostgreSQL aborts the transaction; SQLAlchemy's
+                    # session enters a rollback-required state.  We MUST rollback and
+                    # re-add the object before the next commit attempt, otherwise the
+                    # retry fails immediately with "session is in a failed state".
+                    await db.rollback()
+                    db.add(new_user)
+
                     # Retry with exponential backoff + jitter (prevents thundering herd)
                     base_delay = 0.1 * (2**attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
                     jitter = random.uniform(0, 0.05)  # Random jitter up to 50ms
@@ -340,9 +338,9 @@ async def create_user_session(
     device_hash = compute_device_hash(http_request) if http_request else ""
 
     # Store new session in Redis (automatically limits concurrent sessions)
-    session_manager.store_session(user.id, token, device_hash=device_hash)
+    await session_manager.store_session(user.id, token, device_hash=device_hash)
 
-    record_vpn_login_geo(user.id, http_request)
+    await record_vpn_login_geo(user.id, http_request)
 
     # If cache_user_func is provided (for registration), execute it in parallel
     if cache_user_func:
@@ -354,14 +352,14 @@ async def create_user_session(
     return token, client_ip
 
 
-def issue_access_token_with_vpn_geo(user: User, http_request: Request) -> str:
+async def issue_access_token_with_vpn_geo(user: User, http_request: Request) -> str:
     """
     Issue an access JWT and record VPN geo baseline (no-op when enforcement is off or demo modes).
 
     Use for any path that issues a browser session token outside the main auth routers.
     """
     token = create_access_token(user)
-    record_vpn_login_geo(user.id, http_request)
+    await record_vpn_login_geo(user.id, http_request)
     return token
 
 

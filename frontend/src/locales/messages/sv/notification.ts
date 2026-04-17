@@ -1,8 +1,7 @@
 /** sv UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan inte rensa ämnes- eller centrumnoder',
-  'notification.cannotResetSelectDiagramType':
-    'Kan inte återställa: välj en diagramtyp först',
+  'notification.cannotResetSelectDiagramType': 'Kan inte återställa: välj en diagramtyp först',
   'notification.canvasClearNodes': '{count} noder rensade',
   'notification.canvasClearNodesLearning': '{count} noder tömda, tillagda i svar',
   'notification.canvasSomeoneEditingNode': 'Någon annan redigerar denna nod',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Rotkonceptlänk hittades inte',
   'notification.saved': 'Ändringar sparade',
   'notification.selectNodeToClear': 'Välj en nod att rensa',
-  'notification.sessionInvalidated':
-    'Du har loggats ut eftersom du överskred max antal enheter',
+  'notification.sessionInvalidated': 'Du har loggats ut eftersom du överskred max antal enheter',
   'notification.signInToUse': 'Logga in för att använda detta',
   'notification.signInToValidateFocus': 'Logga in för att validera fokusfrågan',
 } as const

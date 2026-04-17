@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Lidhja e konceptit rrënjë nuk u gjet',
   'notification.saved': 'Ndryshimet u ruajtën',
   'notification.selectNodeToClear': 'Zgjidh një nyjë për të pastruar',
-  'notification.sessionInvalidated':
-    'U dolët sepse keni tejkaluar numrin maksimal të pajisjeve',
+  'notification.sessionInvalidated': 'U dolët sepse keni tejkaluar numrin maksimal të pajisjeve',
   'notification.signInToUse': 'Hyni për ta përdorur',
   'notification.signInToValidateFocus': 'Hyni për të verifikuar pyetjen e fokusit',
 } as const

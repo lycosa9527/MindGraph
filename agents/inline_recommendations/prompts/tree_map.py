@@ -28,9 +28,7 @@ def build_tree_dimensions_prompt(
     """
     topic = (context.get("topic") or "").strip()
     context_desc = context.get("context_desc") or "General K12 teaching"
-    dim_types = (
-        TREE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else TREE_DIMENSION_TYPES_EN
-    )
+    dim_types = TREE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else TREE_DIMENSION_TYPES_EN
     existing = existing or []
 
     if is_chinese_inline_prompt_language(language):

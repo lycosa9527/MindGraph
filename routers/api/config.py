@@ -37,16 +37,8 @@ def _sanitize_feature_org_access_map(
     oid = getattr(user, "organization_id", None)
     out: dict[str, FeatureOrgAccessEntry] = {}
     for key, entry in full_map.items():
-        org_ids = [
-            x
-            for x in entry.organization_ids
-            if oid is not None and int(x) == int(oid)
-        ]
-        user_ids = [
-            x
-            for x in entry.user_ids
-            if uid is not None and int(x) == int(uid)
-        ]
+        org_ids = [x for x in entry.organization_ids if oid is not None and int(x) == int(oid)]
+        user_ids = [x for x in entry.user_ids if uid is not None and int(x) == int(uid)]
         out[key] = FeatureOrgAccessEntry(
             restrict=entry.restrict,
             organization_ids=org_ids,
@@ -91,11 +83,7 @@ async def get_feature_flags(
     """
     external_base = os.getenv("EXTERNAL_BASE_URL", "").strip().rstrip("/")
     raw_access = await load_feature_org_access_map() if current_user is not None else {}
-    access_map = (
-        _sanitize_feature_org_access_map(current_user, raw_access)
-        if current_user is not None
-        else {}
-    )
+    access_map = _sanitize_feature_org_access_map(current_user, raw_access) if current_user is not None else {}
     return FeatureFlagsResponse(
         external_base_url=external_base,
         feature_rag_chunk_test=config.FEATURE_RAG_CHUNK_TEST,

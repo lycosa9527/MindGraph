@@ -341,9 +341,7 @@ class AsyncDifyClient:
             headers.update(custom_headers)
 
         session = await _DifySharedHttpPool.session_blocking(self.api_url, self.timeout)
-        async with session.request(
-            method, url, json=json_data, params=params, data=data, headers=headers
-        ) as response:
+        async with session.request(method, url, json=json_data, params=params, data=data, headers=headers) as response:
             if response.status == 204:
                 return {"result": "success"}
             if response.status != 200:

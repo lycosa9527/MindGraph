@@ -21,9 +21,7 @@ const { t } = useLanguage()
 const isGuest = computed(() => !authStore.isAuthenticated)
 const isOnLanding = computed(() => route.path === '/mindgraph')
 /** Simplified (international) gallery: no sidebar; other routes use full sidebar like Chinese mode. */
-const showAppSidebar = computed(
-  () => uiStore.uiVersion !== 'international' || !isOnLanding.value
-)
+const showAppSidebar = computed(() => uiStore.uiVersion !== 'international' || !isOnLanding.value)
 
 /** CN `/mindgraph`: show content clearly for guests; other main routes keep blur + login hint overlay. */
 const shouldBlurGuestMain = computed(() => {

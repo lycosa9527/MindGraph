@@ -90,7 +90,8 @@ export default {
   'auth.modal.sendingEmailCode': 'Envoi…',
   'auth.modal.emailCodePlaceholder': 'Code à 6 chiffres (e-mail)',
   'auth.modal.enter6DigitEmailCode': 'Saisissez le code à 6 chiffres reçu par e-mail',
-  'auth.modal.acknowledgeOverseas': 'Je comprends et n’utiliserai le logiciel qu’à des fins éducatives.',
+  'auth.modal.acknowledgeOverseas':
+    'Je comprends et n’utiliserai le logiciel qu’à des fins éducatives.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Veuillez confirmer l’avis ci-dessus.',
   'auth.modal.waitCaptchaLoad': 'Veuillez patienter pendant le chargement du captcha',

@@ -20,7 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sql_count
 
 from models.domain.gewe_message import GeweMessage
-from services.redis.redis_client import RedisOperations
+from services.redis.redis_async_ops import AsyncRedisOperations
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ class GeweMessageDB:
             db: SQLAlchemy database session
         """
         self.db = db
-        self._redis = RedisOperations()
 
     async def save_message(
         self,
@@ -71,7 +70,7 @@ class GeweMessageDB:
         # Check for duplicate using Redis (similar to xxxbot-pad's deduplication)
         message_key = f"gewe_msg:{app_id}:{msg_id}"
         try:
-            if self._redis.exists(message_key):
+            if await AsyncRedisOperations.exists(message_key):
                 logger.debug("Duplicate message detected: %s", message_key)
                 return False
         except Exception as e:
@@ -98,7 +97,7 @@ class GeweMessageDB:
 
         # Mark as processed in Redis (24 hour TTL) — non-fatal if it fails.
         try:
-            self._redis.set_with_ttl(message_key, "1", 86400)
+            await AsyncRedisOperations.set_with_ttl(message_key, "1", 86400)
         except Exception as e:
             logger.warning("Failed to mark message in Redis: %s", e)
 

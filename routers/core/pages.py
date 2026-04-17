@@ -8,7 +8,7 @@ Page rendering is handled by Vue SPA (v5.0.0+).
 Author: lycosa9527
 Made by: MindSpring Team
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 ???????????? (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
@@ -67,7 +67,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
     1. IP Whitelist: If client IP is whitelisted, grant immediate access
        - No token required
        - No session limits
-       - Simple IP check → grant access
+       - Simple IP check ??grant access
     2. Token Authentication: If IP not whitelisted, require encrypted token
        - Token must be valid and within 5 minutes
        - Full decryption and validation required
@@ -98,7 +98,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         logger.info("Bayi authentication attempt from IP: %s", client_ip)
 
         # Priority 1: Check IP whitelist (skip token if whitelisted)
-        if is_ip_whitelisted(client_ip):
+        if await is_ip_whitelisted(client_ip):
             # IP is whitelisted - grant immediate access, no token needed
             logger.info(
                 "IP %s is whitelisted, granting immediate access (skipping token verification)",
@@ -123,7 +123,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         await db.refresh(org)
                         logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                         try:
-                            org_cache.cache_org(org)
+                            await org_cache.cache_org(org)
                         except Exception as cache_err:
                             logger.warning("Failed to cache bayi org: %s", cache_err)
                     except IntegrityError as integrity_err:
@@ -140,7 +140,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             logger.error("Failed to create or retrieve bayi organization")
                             return RedirectResponse(url="/demo", status_code=303)
                         try:
-                            org_cache.cache_org(org)
+                            await org_cache.cache_org(org)
                         except Exception as cache_err:
                             logger.debug(
                                 "Failed to cache org after race condition: %s",
@@ -195,7 +195,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             return RedirectResponse(url="/demo", status_code=303)
                         logger.info("Created shared bayi IP user: %s", user_phone)
                         try:
-                            user_cache.cache_user(bayi_user)
+                            await user_cache.cache_user(bayi_user)
                         except Exception as cache_err:
                             logger.warning("Failed to cache bayi user: %s", cache_err)
                     except IntegrityError as integrity_err:
@@ -207,7 +207,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             logger.error("Failed to create or retrieve bayi IP user after race condition")
                             return RedirectResponse(url="/demo", status_code=303)
                         try:
-                            user_cache.cache_user(bayi_user)
+                            await user_cache.cache_user(bayi_user)
                         except Exception as cache_err:
                             logger.debug(
                                 "Failed to cache user after race condition: %s",
@@ -222,7 +222,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                             return RedirectResponse(url="/demo", status_code=303)
                         if bayi_user:
                             try:
-                                user_cache.cache_user(bayi_user)
+                                await user_cache.cache_user(bayi_user)
                             except Exception as cache_err:
                                 logger.debug(
                                     "Failed to cache user after error recovery: %s",
@@ -230,10 +230,10 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                                 )
 
                 session_manager = get_session_manager()
-                jwt_token = _issue_bayi_access_token(bayi_user, request)
+                jwt_token = await _issue_bayi_access_token(bayi_user, request)
                 device_hash = compute_device_hash(request)
 
-                session_manager.store_session(
+                await session_manager.store_session(
                     bayi_user.id,
                     jwt_token,
                     device_hash=device_hash,
@@ -283,7 +283,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         # Rate limiting: Prevent brute force attacks (10 attempts per 5 minutes per IP)
         try:
             token_tracker = get_bayi_token_tracker()
-            is_allowed, attempt_count, _ = token_tracker.check_rate_limit(client_ip)
+            is_allowed, attempt_count, _ = await token_tracker.check_rate_limit(client_ip)
             if not is_allowed:
                 logger.warning(
                     "Bayi token rate limit exceeded for IP %s: %s attempts",
@@ -298,7 +298,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         # Replay attack prevention: Check if token was already used
         try:
             token_tracker = get_bayi_token_tracker()
-            if token_tracker.is_token_used(token):
+            if await token_tracker.is_token_used(token):
                 logger.warning(
                     "Bayi token replay attack detected for IP %s - token already used",
                     client_ip,
@@ -353,7 +353,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
             # Cache invalid result (performance optimization)
             try:
                 token_tracker = get_bayi_token_tracker()
-                token_tracker.cache_token_validation(token, False)
+                await token_tracker.cache_token_validation(token, False)
             except Exception as e:
                 logger.debug("Failed to cache invalid token: %s", e)
             # Invalid or expired token: redirect to demo passkey page
@@ -364,9 +364,9 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
         # Mark token as used (replay attack prevention) and cache validation result
         try:
             token_tracker = get_bayi_token_tracker()
-            token_tracker.mark_token_used(token)  # Prevent replay attacks
-            token_tracker.cache_token_validation(token, True)  # Cache valid result
-            token_tracker.clear_rate_limit(client_ip)  # Clear rate limit on success (better UX)
+            await token_tracker.mark_token_used(token)
+            await token_tracker.cache_token_validation(token, True)
+            await token_tracker.clear_rate_limit(client_ip)
         except Exception as e:
             logger.debug("Failed to mark token as used/cache result: %s", e)
             # Non-critical - continue with authentication
@@ -392,7 +392,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     raise
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 try:
-                    org_cache.cache_org(org)
+                    await org_cache.cache_org(org)
                 except Exception as e:
                     logger.warning("Failed to cache bayi org: %s", e)
 
@@ -416,7 +416,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                     await db.refresh(bayi_user)
                     logger.info("Created bayi user: %s", user_phone)
                     try:
-                        user_cache.cache_user(bayi_user)
+                        await user_cache.cache_user(bayi_user)
                     except Exception as e:
                         logger.warning("Failed to cache bayi user: %s", e)
                 except Exception as e:
@@ -428,7 +428,7 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         logger.error("Failed to create bayi user after retry: %s", e)
                         return RedirectResponse(url="/demo", status_code=303)
                     try:
-                        user_cache.cache_user(bayi_user)
+                        await user_cache.cache_user(bayi_user)
                     except Exception as cache_err:
                         logger.debug(
                             "Failed to cache user after error recovery: %s",
@@ -436,12 +436,16 @@ async def login_by_xz(request: Request, token: Optional[str] = None):
                         )
 
             session_manager = get_session_manager()
-            old_token_hash = session_manager.get_session_token(bayi_user.id)
-            session_manager.invalidate_user_sessions(bayi_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
+            old_token_hash = await session_manager.get_session_token(bayi_user.id)
+            await session_manager.invalidate_user_sessions(
+                bayi_user.id,
+                old_token_hash=old_token_hash,
+                ip_address=client_ip,
+            )
 
-            jwt_token = _issue_bayi_access_token(bayi_user, request)
+            jwt_token = await _issue_bayi_access_token(bayi_user, request)
             device_hash = compute_device_hash(request)
-            session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
+            await session_manager.store_session(bayi_user.id, jwt_token, device_hash=device_hash)
 
             logger.info("Bayi mode authentication successful: %s", user_phone)
 

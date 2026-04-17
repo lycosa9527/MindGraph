@@ -24,7 +24,7 @@ from routers.api.knowledge_space.chunk_test_background import (
     run_test_in_background,
     run_benchmark_in_background,
     cancel_test,
-    detect_and_mark_stuck_tests,
+    detect_and_mark_stuck_tests_async,
 )
 from routers.api.knowledge_space.chunk_test_utils import check_feature_enabled
 from services.knowledge.rag_chunk_test import get_rag_chunk_test_service
@@ -294,7 +294,7 @@ async def get_chunk_test_progress(
     Automatically detects and marks stuck tests before returning progress.
     """
     check_feature_enabled()
-    stuck_count = detect_and_mark_stuck_tests()
+    stuck_count = await detect_and_mark_stuck_tests_async()
     if stuck_count > 0:
         logger.info(
             "[ChunkTestExecution] Detected and marked %d stuck test(s) while checking progress",
@@ -525,7 +525,7 @@ async def detect_stuck_tests(
     """
     check_feature_enabled()
     try:
-        stuck_count = detect_and_mark_stuck_tests()
+        stuck_count = await detect_and_mark_stuck_tests_async()
         return {
             "success": True,
             "stuck_tests_detected": stuck_count,

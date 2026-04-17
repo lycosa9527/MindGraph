@@ -175,9 +175,13 @@ async def list_shared_diagrams(
     """
     require_organization(current_user)
 
-    stmt = select(SharedDiagram).options(selectinload(SharedDiagram.author)).where(
-        SharedDiagram.organization_id == current_user.organization_id,
-        SharedDiagram.is_active.is_(True),
+    stmt = (
+        select(SharedDiagram)
+        .options(selectinload(SharedDiagram.author))
+        .where(
+            SharedDiagram.organization_id == current_user.organization_id,
+            SharedDiagram.is_active.is_(True),
+        )
     )
 
     if content_type:
@@ -298,9 +302,7 @@ async def get_shared_diagram(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Diagram not found")
 
     await db.execute(
-        update(SharedDiagram)
-        .where(SharedDiagram.id == post_id)
-        .values(views_count=SharedDiagram.views_count + 1)
+        update(SharedDiagram).where(SharedDiagram.id == post_id).values(views_count=SharedDiagram.views_count + 1)
     )
     try:
         await db.commit()
@@ -408,9 +410,7 @@ async def toggle_like(
         )
         db.add(like)
         await db.execute(
-            update(SharedDiagram)
-            .where(SharedDiagram.id == post_id)
-            .values(likes_count=SharedDiagram.likes_count + 1)
+            update(SharedDiagram).where(SharedDiagram.id == post_id).values(likes_count=SharedDiagram.likes_count + 1)
         )
         is_liked = True
 
@@ -421,9 +421,7 @@ async def toggle_like(
         raise
 
     # Re-fetch the authoritative count after the atomic update.
-    result = await db.execute(
-        select(SharedDiagram.likes_count).where(SharedDiagram.id == post_id)
-    )
+    result = await db.execute(select(SharedDiagram.likes_count).where(SharedDiagram.id == post_id))
     likes_count = result.scalar_one_or_none() or 0
     return {"is_liked": is_liked, "likes_count": likes_count}
 
@@ -522,9 +520,7 @@ async def create_comment(
 
     db.add(comment)
     await db.execute(
-        update(SharedDiagram)
-        .where(SharedDiagram.id == post_id)
-        .values(comments_count=SharedDiagram.comments_count + 1)
+        update(SharedDiagram).where(SharedDiagram.id == post_id).values(comments_count=SharedDiagram.comments_count + 1)
     )
     try:
         await db.commit()

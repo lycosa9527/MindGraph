@@ -118,7 +118,7 @@ async def generate_graph(
                 tracker = get_activity_tracker()
                 activity_type = "autocomplete" if request_type == "autocomplete" else "diagram_generation"
                 diagram_type_str = req.diagram_type.value if req.diagram_type else "unknown"
-                tracker.record_activity(
+                await tracker.record_activity(
                     user_id=current_user.id,
                     user_phone=getattr(current_user, "phone", None) or "",
                     activity_type=activity_type,

@@ -2,12 +2,13 @@
 
 from typing import Any, Optional
 
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Response
 from pydantic import BaseModel
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from models.domain.markets import MarketListing
 from repositories.markets_repo import (
     MarketListingRepository,
     MarketOrderRepository,
@@ -58,15 +59,26 @@ class AdminSubscriptionRow(BaseModel):
 
 @router.get("/admin/orders", response_model=list[AdminOrderRow])
 async def admin_list_orders(
+    response: Response,
     status: Optional[str] = None,
-    offset: int = Query(0, ge=0),
+    before_id: Optional[int] = Query(
+        None, ge=1, description="Keyset cursor: id of the last row from the previous page."
+    ),
+    offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_async_db),
     _admin: User = Depends(require_admin),
 ) -> list[AdminOrderRow]:
     require_markets_enabled()
     repo = MarketOrderRepository(db)
-    rows = await repo.admin_list(status=status, offset=offset, limit=limit)
+    rows = await repo.admin_list(
+        status=status,
+        before_id=before_id,
+        offset=offset,
+        limit=limit,
+    )
+    if rows and len(rows) == limit:
+        response.headers["X-Next-Cursor"] = str(rows[-1].id)
     out: list[AdminOrderRow] = []
     for r in rows:
         email = await MarketUserLookup.get_email_or_phone(db, r.user_id)
@@ -92,14 +104,26 @@ async def admin_list_orders(
 
 @router.get("/admin/listings", response_model=list[AdminListingRow])
 async def admin_list_listings(
-    offset: int = Query(0, ge=0),
+    response: Response,
+    after_id: Optional[int] = Query(
+        None, ge=1, description="Keyset cursor: id of the last row from the previous page."
+    ),
+    offset: int = Query(0, ge=0, description="Legacy offset; ignored when after_id is supplied."),
     limit: int = Query(100, ge=1, le=500),
     db: AsyncSession = Depends(get_async_db),
     _admin: User = Depends(require_admin),
 ) -> list[AdminListingRow]:
     require_markets_enabled()
     repo = MarketListingRepository(db)
-    rows = await repo.get_all(offset=offset, limit=limit, order_by=[repo.model.id.asc()])
+    filters = [MarketListing.id > after_id] if after_id is not None else None
+    rows = await repo.get_all(
+        filters=filters,
+        offset=offset if after_id is None else 0,
+        limit=limit,
+        order_by=[repo.model.id.asc()],
+    )
+    if rows and len(rows) == limit:
+        response.headers["X-Next-Cursor"] = str(rows[-1].id)
     return [
         AdminListingRow(
             id=r.id,
@@ -116,14 +140,20 @@ async def admin_list_listings(
 
 @router.get("/admin/subscriptions", response_model=list[AdminSubscriptionRow])
 async def admin_list_subscriptions(
-    offset: int = Query(0, ge=0),
+    response: Response,
+    before_id: Optional[int] = Query(
+        None, ge=1, description="Keyset cursor: id of the last row from the previous page."
+    ),
+    offset: int = Query(0, ge=0, description="Legacy offset; ignored when before_id is supplied."),
     limit: int = Query(50, ge=1, le=200),
     db: AsyncSession = Depends(get_async_db),
     _admin: User = Depends(require_admin),
 ) -> list[AdminSubscriptionRow]:
     require_markets_enabled()
     repo = MarketSubscriptionRepository(db)
-    rows = await repo.admin_list(offset=offset, limit=limit)
+    rows = await repo.admin_list(before_id=before_id, offset=offset, limit=limit)
+    if rows and len(rows) == limit:
+        response.headers["X-Next-Cursor"] = str(rows[-1].id)
     out: list[AdminSubscriptionRow] = []
     for r in rows:
         email = await MarketUserLookup.get_email_or_phone(db, r.user_id)

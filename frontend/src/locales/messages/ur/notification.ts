@@ -6,8 +6,7 @@ export default {
   'notification.canvasClearNodes': '{count} نوڈز صاف کیے گئے',
   'notification.canvasClearNodesLearning': '{count} نوڈز خالی کیے، جوابات میں شامل',
   'notification.canvasSomeoneEditingNode': 'کوئی اور اس نوڈ میں ترمیم کر رہا ہے',
-  'notification.collabDeleteBlocked':
-    'جب کوئی اور منتخب نوڈ میں ترمیم کرے تو حذف نہیں ہو سکتا',
+  'notification.collabDeleteBlocked': 'جب کوئی اور منتخب نوڈ میں ترمیم کرے تو حذف نہیں ہو سکتا',
   'notification.collabRedoBlocked': 'جب کوئی اور ترمیم کرے تو دوبارہ نہیں ہو سکتا',
   'notification.collabUndoBlocked': 'جب کوئی اور ترمیم کرے تو واپس نہیں ہو سکتا',
   'notification.conversationDeleted': 'گفتگو حذف ہو گئی',

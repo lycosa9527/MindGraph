@@ -24,9 +24,7 @@ def build_bridge_dimensions_prompt(
     pair_texts = context.get("pair_texts") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
     thinking = THINKING_APPROACH["bridge_map"][thinking_locale_key(language)]
-    dim_types = (
-        BRIDGE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRIDGE_DIMENSION_TYPES_EN
-    )
+    dim_types = BRIDGE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRIDGE_DIMENSION_TYPES_EN
     existing = existing or []
 
     if is_chinese_inline_prompt_language(language):

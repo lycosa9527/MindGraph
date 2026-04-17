@@ -173,7 +173,7 @@ async def chat_websocket(websocket: WebSocket):
         "[ChatWS] connection accepted user_id=%s",
         user.id,
     )
-    chat_ws_manager.connect(
+    await chat_ws_manager.connect(
         websocket,
         user.id,
         user.name or f"User {user.id}",
@@ -221,9 +221,9 @@ async def chat_websocket(websocket: WebSocket):
     except Exception:
         logger.exception("[ChatWS] Error in WS loop for user %d", user.id)
     finally:
-        old_channels, presence_org = chat_ws_manager.disconnect(user.id)
+        old_channels, presence_org = await chat_ws_manager.disconnect(user.id)
         if presence_org is not None:
-            await chat_ws_manager.broadcast_presence_to_presence_org(
+            await chat_ws_manager.broadcast_org_presence(
                 user.id,
                 "offline",
                 presence_org,
@@ -290,8 +290,8 @@ async def _handle_subscribe_presence(
             user.id,
         )
         return
-    chat_ws_manager.set_presence_org(user.id, effective)
-    online_here = chat_ws_manager.online_user_ids_for_presence_org(effective)
+    await chat_ws_manager.set_presence_org(user.id, effective)
+    online_here = await chat_ws_manager.presence_org_online_ids(effective)
     others = [uid for uid in online_here if uid != user.id]
     await websocket.send_text(
         json.dumps(
@@ -301,7 +301,7 @@ async def _handle_subscribe_presence(
             }
         )
     )
-    await chat_ws_manager.broadcast_presence_to_presence_org(
+    await chat_ws_manager.broadcast_org_presence(
         user.id,
         "active",
         effective,
@@ -583,10 +583,10 @@ async def _handle_presence(
     presence_status = data.get("status")
     if presence_status not in ("active", "idle"):
         return
-    chat_ws_manager.touch_presence_heartbeat(user.id)
+    await chat_ws_manager.touch_presence_heartbeat(user.id)
     org_pid = chat_ws_manager.get_presence_org_id(user.id)
     if org_pid is not None:
-        await chat_ws_manager.broadcast_presence_to_presence_org(
+        await chat_ws_manager.broadcast_org_presence(
             user.id,
             presence_status,
             org_pid,

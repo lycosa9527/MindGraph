@@ -235,7 +235,7 @@ async def process_updated_chunks(
         # Get or generate embedding
         cached_embedding = await embedding_cache.get_document_embedding(db, new_chunk.text)
         if not cached_embedding:
-            allowed, _count, _error_msg = kb_rate_limiter.check_embedding_limit(user_id)
+            allowed, _count, _error_msg = await kb_rate_limiter.check_embedding_limit(user_id)
             if not allowed:
                 logger.warning(
                     "[KnowledgeSpace] Embedding rate limit exceeded during update. Skipping remaining chunks."
@@ -300,7 +300,7 @@ async def process_new_chunks(
         # Get or generate embedding
         cached_embedding = await embedding_cache.get_document_embedding(db, new_chunk.text)
         if not cached_embedding:
-            allowed, _count, _error_msg = kb_rate_limiter.check_embedding_limit(user_id)
+            allowed, _count, _error_msg = await kb_rate_limiter.check_embedding_limit(user_id)
             if not allowed:
                 logger.warning(
                     "[KnowledgeSpace] Embedding rate limit exceeded during update. Skipping remaining chunks."

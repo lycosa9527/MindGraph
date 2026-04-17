@@ -3,7 +3,8 @@ from typing import Any, Dict, List, Optional
 import json
 import logging
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 """
 City Flag Tracker Service
@@ -56,7 +57,7 @@ class CityFlagTracker:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def record_city_flag(
+    async def record_city_flag(
         self,
         city_name: str,
         province_name: Optional[str] = None,
@@ -87,11 +88,11 @@ class CityFlagTracker:
 
         if self._use_redis():
             try:
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
                     flag_key = f"{CITY_FLAG_PREFIX}{city_name}"
                     # Store flag data with coordinates
-                    redis.setex(
+                    await redis.setex(
                         flag_key,
                         FLAG_DURATION_SECONDS,
                         json.dumps(flag_data, ensure_ascii=False),
@@ -132,7 +133,7 @@ class CityFlagTracker:
         for city in expired_cities:
             del self._memory_flags[city]
 
-    def get_active_flags(self) -> List[Dict[str, Any]]:
+    async def get_active_flags(self) -> List[Dict[str, Any]]:
         """
         Get list of cities with active flags (within last hour).
 
@@ -144,17 +145,17 @@ class CityFlagTracker:
 
         if self._use_redis():
             try:
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
                     # Scan for all city flag keys
                     pattern = f"{CITY_FLAG_PREFIX}*"
                     cursor = 0
                     while True:
-                        cursor, keys = redis.scan(cursor, match=pattern, count=100)
+                        cursor, keys = await redis.scan(cursor, match=pattern, count=100)
                         for key in keys:
                             try:
                                 city_name = key.decode("utf-8").replace(CITY_FLAG_PREFIX, "")
-                                flag_data_str = redis.get(key)
+                                flag_data_str = await redis.get(key)
                                 if flag_data_str:
                                     # Try to parse as JSON (new format with coordinates)
                                     try:

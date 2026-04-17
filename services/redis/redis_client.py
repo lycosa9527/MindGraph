@@ -38,6 +38,10 @@ from services.infrastructure.utils.launch_commands import (
     error_footer_launch_reference,
     lines_redis_connection_failed,
 )
+from services.redis.redis_circuit_breaker import (
+    get_breaker as _get_breaker,
+    is_breaker_enabled as _breaker_enabled,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -100,10 +104,19 @@ def _with_retry(operation_name: str, default_return: Any = None):
             if redis is None:
                 return default_return
 
+            # G8: short-circuit when the per-process breaker is OPEN so a
+            # downed Redis cannot multiply tail latency by the worker count.
+            breaker = _get_breaker() if _breaker_enabled() else None
+            if breaker is not None and not breaker.allow_request():
+                return default_return
+
             last_error = None
             for attempt in range(_RETRY_MAX_ATTEMPTS):
                 try:
-                    return func(*args, **kwargs)
+                    result = func(*args, **kwargs)
+                    if breaker is not None:
+                        breaker.record_success()
+                    return result
                 except (redis.ConnectionError, redis.TimeoutError) as e:  # type: ignore[attr-defined]
                     last_error = e
                     if attempt < _RETRY_MAX_ATTEMPTS - 1:
@@ -121,7 +134,8 @@ def _with_retry(operation_name: str, default_return: Any = None):
                     logger.warning("[Redis] %s failed: %s", operation_name, e)
                     return default_return
 
-            # All retries exhausted
+            if breaker is not None:
+                breaker.record_failure()
             logger.warning(
                 "[Redis] %s failed after %d retries: %s",
                 operation_name,
@@ -192,6 +206,19 @@ def _parse_redis_version(version_str: str) -> tuple:
         return (0, 0, 0)
 
 
+class _RedisCapabilities:
+    """Cache of feature detection results computed once per process at startup.
+
+    Keeping detection here avoids hot-path try/except trees that would mask
+    real connection errors. Each capability defaults to ``False`` until
+    ``init_redis_sync`` calls :func:`_apply_redis_startup_config`.
+    """
+
+    version: tuple = (0, 0, 0)
+    delex: bool = False  # Redis 8.4+ DELEX command for compare-and-delete
+    idmpauto: bool = False  # Redis 8.6+ IDMPAUTO stream id
+
+
 def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
     """
     Apply runtime CONFIG SET options based on detected Redis version.
@@ -200,6 +227,9 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
     All options are overridable via environment variables.
     """
     version_tuple = _parse_redis_version(redis_version)
+    _RedisCapabilities.version = version_tuple
+    _RedisCapabilities.delex = version_tuple >= (8, 4, 0)
+    _RedisCapabilities.idmpauto = version_tuple >= (8, 6, 0)
 
     if version_tuple >= (8, 6, 0):
         policy = os.getenv("REDIS_EVICTION_POLICY", "volatile-lru")
@@ -223,6 +253,40 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
         logger.debug(
             "[Redis] Version %s < 8.6 — skipping volatile-lru and key-memory-histograms",
             redis_version,
+        )
+
+    # Generic Redis 7+ tuning: these options are safe across the supported
+    # range and reduce tail latency under load. Each setting is best-effort —
+    # managed Redis providers often disable CONFIG SET for some keys.
+    if version_tuple >= (7, 0, 0):
+        cpu_count = os.cpu_count() or 1
+        io_threads = max(1, min(8, cpu_count - 1))
+        runtime_settings: Dict[str, str] = {
+            "lazyfree-lazy-eviction": "yes",
+            "lazyfree-lazy-expire": "yes",
+            "lazyfree-lazy-server-del": "yes",
+            "lazyfree-lazy-user-del": "yes",
+            "lazyfree-lazy-user-flush": "yes",
+            "io-threads": str(io_threads),
+            "io-threads-do-reads": "yes",
+            "activedefrag": "yes",
+            "latency-monitor-threshold": "100",
+            "slowlog-log-slower-than": "10000",
+            "slowlog-max-len": "256",
+        }
+        for cfg_key, cfg_val in runtime_settings.items():
+            try:
+                redis_client.config_set(cfg_key, cfg_val)
+            except Exception as exc:
+                logger.debug(
+                    "[Redis] CONFIG SET %s=%s skipped (%s)",
+                    cfg_key,
+                    cfg_val,
+                    exc,
+                )
+        logger.info(
+            "[Redis] Applied runtime tuning: io-threads=%d, lazyfree=*, activedefrag, latency-monitor-threshold=100ms",
+            io_threads,
         )
 
 
@@ -561,9 +625,10 @@ class RedisOperations:
     def compare_and_delete(key: str, expected_value: str) -> bool:
         """Atomically delete ``key`` only when its value equals ``expected_value``.
 
-        Tries DELEX (Redis >= 8.4) first.  Falls back to an equivalent
-        single-round-trip Lua script so behaviour is identical across all
-        Redis versions in production.
+        Uses DELEX on Redis >= 8.4 (capability detected once at startup),
+        otherwise an equivalent single-round-trip Lua script. Behaviour is
+        identical across versions; the per-call try/except for DELEX has
+        been removed so connection errors surface immediately.
 
         Returns True if the key was deleted, False if value did not match or
         the key did not exist.
@@ -571,19 +636,31 @@ class RedisOperations:
         redis_client = _RedisState.get_client()
         if not _RedisState.is_available() or not redis_client:
             return False
-        try:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore", UserWarning)
-                return bool(redis_client.delex(key, expected_value))
-        except (redis.ConnectionError, redis.TimeoutError) as exc:  # type: ignore[union-attr]
-            logger.warning("[Redis] compare_and_delete connection error for %s: %s", key[:20], exc)
-            return False
-        except Exception:
-            pass  # DELEX not supported — fall through to Lua CAS
+
+        if _RedisCapabilities.delex:
+            try:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore", UserWarning)
+                    return bool(redis_client.delex(key, expected_value))
+            except (redis.ConnectionError, redis.TimeoutError) as exc:  # type: ignore[union-attr]
+                logger.warning(
+                    "[Redis] compare_and_delete connection error for %s: %s",
+                    key[:20],
+                    exc,
+                )
+                return False
+            except redis.ResponseError as exc:  # type: ignore[attr-defined]
+                # Capability marker was wrong (very rare) — disable for the
+                # rest of the process and fall through to the Lua path.
+                logger.warning(
+                    "[Redis] DELEX rejected by server (%s); disabling for this process",
+                    exc,
+                )
+                _RedisCapabilities.delex = False
+
         try:
             result = redis_client.eval(
-                "if redis.call('get',KEYS[1])==ARGV[1] then"
-                " return redis.call('del',KEYS[1]) else return 0 end",
+                "if redis.call('get',KEYS[1])==ARGV[1] then return redis.call('del',KEYS[1]) else return 0 end",
                 1,
                 key,
                 expected_value,

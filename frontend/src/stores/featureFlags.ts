@@ -101,26 +101,26 @@ export const useFeatureFlagsStore = defineStore('featureFlags', () => {
       if (flags.value) {
         return flags.value
       }
-        const defaultFlags: FeatureFlagsResponse = {
-          external_base_url: '',
-          feature_rag_chunk_test: false,
-          feature_course: false,
-          feature_template: false,
-          feature_community: false,
-          feature_askonce: true,
-          feature_school_zone: false,
-          feature_debateverse: false,
-          feature_knowledge_space: false,
-          feature_library: false,
-          feature_gewe: false,
-          feature_smart_response: false,
-          feature_teacher_usage: false,
-          feature_workshop_chat: false,
-          feature_markets: false,
-          feature_mindbot: false,
-          workshop_chat_preview_org_ids: [],
-          feature_org_access: {},
-        }
+      const defaultFlags: FeatureFlagsResponse = {
+        external_base_url: '',
+        feature_rag_chunk_test: false,
+        feature_course: false,
+        feature_template: false,
+        feature_community: false,
+        feature_askonce: true,
+        feature_school_zone: false,
+        feature_debateverse: false,
+        feature_knowledge_space: false,
+        feature_library: false,
+        feature_gewe: false,
+        feature_smart_response: false,
+        feature_teacher_usage: false,
+        feature_workshop_chat: false,
+        feature_markets: false,
+        feature_mindbot: false,
+        workshop_chat_preview_org_ids: [],
+        feature_org_access: {},
+      }
       flags.value = defaultFlags
       return defaultFlags
     } finally {

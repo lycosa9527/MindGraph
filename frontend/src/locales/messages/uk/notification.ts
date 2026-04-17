@@ -1,8 +1,7 @@
 /** uk UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Неможливо очистити вузли теми або центру',
-  'notification.cannotResetSelectDiagramType':
-    'Неможливо скинути: спочатку виберіть тип діаграми',
+  'notification.cannotResetSelectDiagramType': 'Неможливо скинути: спочатку виберіть тип діаграми',
   'notification.canvasClearNodes': 'Очищено вузлів: {count}',
   'notification.canvasClearNodesLearning': 'Спорожнено {count} вузлів, додано до відповідей',
   'notification.canvasSomeoneEditingNode': 'Інший користувач редагує цей вузол',

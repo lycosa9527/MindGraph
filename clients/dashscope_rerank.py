@@ -6,17 +6,17 @@ Made by: MindSpring Team
 Client for DashScope Rerank API.
 Supports qwen3-rerank and gte-rerank-v2 models.
 
-Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
+Copyright 2024-2025 ???????????? (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
 
 from typing import List, Dict, Any, Optional
+import asyncio
 import hashlib
 import json
 import logging
 import os
-import time
 
 import httpx
 
@@ -26,7 +26,8 @@ except ImportError:
     redis_module = None
 
 from config.settings import config
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from utils.dashscope_error_handler import (
     handle_dashscope_response,
     DashScopeError,
@@ -111,20 +112,20 @@ class DashScopeRerankClient:
         cache_hash = hashlib.md5(cache_str.encode("utf-8")).hexdigest()
         return f"rerank:{self.model}:{cache_hash}"
 
-    def _get_cached_result(self, cache_key: str) -> Optional[List[Dict[str, Any]]]:
+    async def _get_cached_result(self, cache_key: str) -> Optional[List[Dict[str, Any]]]:
         """Get cached rerank result from Redis."""
         if not self.cache_enabled or not is_redis_available():
             return None
 
-        redis_client = get_redis()
+        redis_client = get_async_redis()
         if not redis_client:
             return None
 
         try:
-            cached = redis_client.get(cache_key)
+            cached = await redis_client.get(cache_key)
             if cached:
                 # Refresh TTL
-                redis_client.expire(cache_key, self.cache_ttl)
+                await redis_client.expire(cache_key, self.cache_ttl)
                 result = json.loads(cached)
                 logger.debug("[DashScopeRerank] Cache hit for rerank request")
                 return result
@@ -142,18 +143,18 @@ class DashScopeRerankClient:
 
         return None
 
-    def _cache_result(self, cache_key: str, result: List[Dict[str, Any]]) -> None:
+    async def _cache_result(self, cache_key: str, result: List[Dict[str, Any]]) -> None:
         """Cache rerank result in Redis."""
         if not self.cache_enabled or not is_redis_available():
             return
 
-        redis_client = get_redis()
+        redis_client = get_async_redis()
         if not redis_client:
             return
 
         try:
             cached_data = json.dumps(result)
-            redis_client.setex(cache_key, self.cache_ttl, cached_data)
+            await redis_client.setex(cache_key, self.cache_ttl, cached_data)
             logger.debug("[DashScopeRerank] Cached rerank result")
         except (TypeError, ValueError) as e:
             logger.debug("[DashScopeRerank] Failed to serialize result: %s", e)
@@ -167,7 +168,7 @@ class DashScopeRerankClient:
             else:
                 logger.debug("[DashScopeRerank] Failed to cache result: %s", e)
 
-    def rerank(
+    async def rerank(
         self,
         query: str,
         documents: List[str],
@@ -204,12 +205,12 @@ class DashScopeRerankClient:
         max_documents = 500
         max_total_tokens = 30000
 
-        # Estimate tokens (rough: 1 token ≈ 1.5 chars for Chinese, 4 chars for English)
+        # Estimate tokens (rough: 1 token ??1.5 chars for Chinese, 4 chars for English)
         # Use conservative estimate of 2 chars per token
         def estimate_tokens(text: str) -> int:
             return len(text) // 2 + 1
 
-        # Truncate query if too long (4000 tokens ≈ 8000 chars)
+        # Truncate query if too long (4000 tokens ??8000 chars)
         max_chars = max_tokens_per_text * 2
         if len(query) > max_chars:
             logger.warning(
@@ -275,7 +276,7 @@ class DashScopeRerankClient:
 
         # Check cache first (after truncation to ensure consistent cache keys)
         cache_key = self._generate_cache_key(query, documents, top_n, score_threshold, instruct)
-        cached_result = self._get_cached_result(cache_key)
+        cached_result = await self._get_cached_result(cache_key)
         if cached_result is not None:
             return cached_result
 
@@ -327,8 +328,8 @@ class DashScopeRerankClient:
 
         for attempt in range(1, max_retries + 1):
             try:
-                with httpx.Client(timeout=60.0) as client:
-                    response = client.post(
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    response = await client.post(
                         self.rerank_url,
                         headers=headers,
                         json=payload,
@@ -356,7 +357,7 @@ class DashScopeRerankClient:
                                 error.message,
                                 delay,
                             )
-                            time.sleep(delay)
+                            await asyncio.sleep(delay)
                             continue
                         else:
                             # Don't retry, raise the error
@@ -405,7 +406,7 @@ class DashScopeRerankClient:
                 )
 
                 # Cache the result
-                self._cache_result(cache_key, reranked)
+                await self._cache_result(cache_key, reranked)
 
                 # Success - return reranked results
                 return reranked
@@ -423,7 +424,7 @@ class DashScopeRerankClient:
                         e.message,
                         delay,
                     )
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
                     continue
                 # Don't retry, raise immediately
                 logger.error(
@@ -459,7 +460,7 @@ class DashScopeRerankClient:
                         except (ValueError, TypeError, KeyError):
                             response_text = getattr(response, "text", "N/A")
                             logger.debug("[DashScopeRerank] Response text: %s", response_text)
-                    time.sleep(delay)
+                    await asyncio.sleep(delay)
                     continue
                 logger.error("[DashScopeRerank] HTTP error: %s", e)
                 if response is not None:

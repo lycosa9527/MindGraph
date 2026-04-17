@@ -43,9 +43,7 @@ class MarketListing(Base):
         onupdate=lambda: datetime.now(UTC),
     )
 
-    orders: Mapped[list["MarketOrder"]] = relationship(
-        "MarketOrder", back_populates="listing", lazy="selectin"
-    )
+    orders: Mapped[list["MarketOrder"]] = relationship("MarketOrder", back_populates="listing", lazy="selectin")
 
 
 class MarketOrder(Base):
@@ -61,9 +59,7 @@ class MarketOrder(Base):
         Integer, ForeignKey("market_listings.id", ondelete="RESTRICT"), nullable=False, index=True
     )
     out_trade_no: Mapped[str] = mapped_column(String(64), unique=True, nullable=False, index=True)
-    status: Mapped[str] = mapped_column(
-        String(32), nullable=False, index=True
-    )  # pending | paid | closed | cancelled
+    status: Mapped[str] = mapped_column(String(32), nullable=False, index=True)  # pending | paid | closed | cancelled
     amount_minor: Mapped[int] = mapped_column(Integer, nullable=False)
     currency: Mapped[str] = mapped_column(String(10), default="CNY", nullable=False)
     alipay_trade_no: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)

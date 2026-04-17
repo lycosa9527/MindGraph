@@ -32,7 +32,8 @@ export default {
   'notification.importUnsupportedType': 'Import eșuat: tip de diagramă neacceptat',
   'notification.loadMoreFailed': 'Nu s-a putut încărca mai mult',
   'notification.networkError': 'Eroare de rețea',
-  'notification.newVersionAvailable': 'Versiune nouă disponibilă. Faceți clic pentru a reîmprospăta.',
+  'notification.newVersionAvailable':
+    'Versiune nouă disponibilă. Faceți clic pentru a reîmprospăta.',
   'notification.recommendationFailed': 'Recomandare eșuată: {msg}',
   'notification.relationshipGenerationFailed': 'Generarea relațiilor a eșuat',
   'notification.resetDefaultTemplate': 'Resetare la șablonul implicit',

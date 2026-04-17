@@ -6,8 +6,7 @@ export default {
   'notification.canvasClearNodes': 'Wyczyszczono {count} węzłów',
   'notification.canvasClearNodesLearning': 'Opróżniono {count} węzłów, dodano do odpowiedzi',
   'notification.canvasSomeoneEditingNode': 'Ktoś inny edytuje ten węzeł',
-  'notification.collabDeleteBlocked':
-    'Nie można usunąć, gdy inny użytkownik edytuje wybrany węzeł',
+  'notification.collabDeleteBlocked': 'Nie można usunąć, gdy inny użytkownik edytuje wybrany węzeł',
   'notification.collabRedoBlocked': 'Nie można ponowić, gdy inny użytkownik edytuje',
   'notification.collabUndoBlocked': 'Nie można cofnąć, gdy inny użytkownik edytuje',
   'notification.conversationDeleted': 'Rozmowa usunięta',

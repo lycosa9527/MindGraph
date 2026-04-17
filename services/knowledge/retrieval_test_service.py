@@ -134,7 +134,7 @@ class RetrievalTestService:
             if self.rag_service.reranking_mode == RerankMode.RERANKING_MODEL and len(texts) > 1:
                 # Step 3: Rerank
                 try:
-                    reranked = self.rag_service.rerank_client.rerank(
+                    reranked = await self.rag_service.rerank_client.rerank(
                         query=query,
                         documents=texts,
                         top_n=top_k,

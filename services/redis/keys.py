@@ -80,12 +80,8 @@ SESSION_INVALIDATED = "session_invalidated:{user_id}:{token_hash}"
 REFRESH_TOKEN = "refresh:{user_id}:{token_hash}"
 REFRESH_USER_SET = "refresh:user:{user_id}"
 REFRESH_LOOKUP = "refresh:lookup:{token_hash}"
-TTL_ACCESS_SESSION = (
-    int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60")) * 60
-)  # default 3600 s
-TTL_REFRESH_TOKEN = (
-    int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7")) * 86_400
-)  # default 604800 s
+TTL_ACCESS_SESSION = int(os.getenv("ACCESS_TOKEN_EXPIRY_MINUTES", "60")) * 60  # default 3600 s
+TTL_REFRESH_TOKEN = int(os.getenv("REFRESH_TOKEN_EXPIRY_DAYS", "7")) * 86_400  # default 604800 s
 
 # ---------------------------------------------------------------------------
 # VPN / CN transition geo baseline  (vpn_geo_enforcement.py)
@@ -98,9 +94,7 @@ TTL_GEO_VPN = TTL_ACCESS_SESSION
 # Rate limiting  (redis_rate_limiter.py)
 # ---------------------------------------------------------------------------
 RATE_KEY = "rate:{category}:{identifier}"
-TTL_RATE_DEFAULT = (
-    int(os.getenv("RATE_LIMIT_DEFAULT_WINDOW_MINUTES", "15")) * 60
-)  # default 900 s
+TTL_RATE_DEFAULT = int(os.getenv("RATE_LIMIT_DEFAULT_WINDOW_MINUTES", "15")) * 60  # default 900 s
 
 # ---------------------------------------------------------------------------
 # Token usage buffer  (redis_token_buffer.py)

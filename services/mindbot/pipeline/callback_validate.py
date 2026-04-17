@@ -164,14 +164,18 @@ async def validate_callback_fast(
                 "robot_code": cfg.dingtalk_robot_code.strip(),
             },
         )
-        return False, (
-            404,
-            mindbot_error_headers(
-                MindbotErrorCode.CONFIG_NOT_FOUND,
-                organization_id=cfg.organization_id,
-                robot_code=cfg.dingtalk_robot_code.strip(),
+        return (
+            False,
+            (
+                404,
+                mindbot_error_headers(
+                    MindbotErrorCode.CONFIG_NOT_FOUND,
+                    organization_id=cfg.organization_id,
+                    robot_code=cfg.dingtalk_robot_code.strip(),
+                ),
             ),
-        ), None
+            None,
+        )
 
     if resolved_config is not None:
         rc_in_body = body.get("robotCode") or body.get("robot_code")
@@ -208,8 +212,16 @@ async def validate_callback_fast(
         return False, (401, hdr_for_cfg(cfg, MindbotErrorCode.INVALID_SIGNATURE)), None
 
     msg_id_raw = body.get("msgId") or body.get("msg_id")
-    msg_id = str(msg_id_raw) if msg_id_raw else None
-    if msg_id and isinstance(msg_id, str):
+    # Accept only scalar string / int identifiers; reject dicts/lists/etc that
+    # would otherwise produce useless ``str(repr)`` keys and balloon Redis use.
+    msg_id: Optional[str] = None
+    if isinstance(msg_id_raw, str):
+        candidate = msg_id_raw.strip()
+        if candidate:
+            msg_id = candidate[:128]
+    elif isinstance(msg_id_raw, int):
+        msg_id = str(msg_id_raw)
+    if msg_id:
         dedup_key = f"{MSG_DEDUP_PREFIX}{cfg.organization_id}:{msg_id}"
         first = await redis_setnx_ttl(dedup_key, "1", MSG_DEDUP_TTL)
         if first is False:
@@ -220,10 +232,14 @@ async def validate_callback_fast(
                 cfg.organization_id,
                 msg_id,
             )
-            return False, (
-                503,
-                hdr_for_cfg(cfg, MindbotErrorCode.REDIS_UNAVAILABLE_FOR_DEDUP),
-            ), None
+            return (
+                False,
+                (
+                    503,
+                    hdr_for_cfg(cfg, MindbotErrorCode.REDIS_UNAVAILABLE_FOR_DEDUP),
+                ),
+                None,
+            )
 
     msg = parse_inbound_message(body)
     text_in = msg.text_in

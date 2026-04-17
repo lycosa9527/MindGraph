@@ -233,7 +233,7 @@ async def get_document_page_image(
     """
     # Rate limit: 150 pages per minute per user
     rate_limiter = RedisRateLimiter()
-    is_allowed, _, error_msg = rate_limiter.check_and_record(
+    is_allowed, _, error_msg = await rate_limiter.check_and_record(
         category="library_image_download",
         identifier=str(current_user.id),
         max_attempts=150,
@@ -248,7 +248,7 @@ async def get_document_page_image(
     service = LibraryService(db)
 
     try:
-        cached_metadata = service.get_cached_document_metadata(document_id)
+        cached_metadata = await service.get_cached_document_metadata(document_id)
         if cached_metadata:
             image_path, document_title = _resolve_page_image_from_cache(
                 service, cached_metadata, document_id, page_number
@@ -540,7 +540,7 @@ async def upload_cover_image(
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Document not found")
 
         # Invalidate cache since cover image changed
-        service.invalidate_document_cache(document_id)
+        await service.invalidate_document_cache(document_id)
 
         return {
             "id": document.id,

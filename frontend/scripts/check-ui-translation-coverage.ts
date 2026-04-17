@@ -48,9 +48,13 @@ function compareNamespace(en: Messages, loc: Messages): { total: number; transla
 }
 
 /** Keys in auth related to SMS/email OTP, captcha send, region hybrid (subset for quick audit). */
-const AUTH_SMS_EMAIL_KEY = /sms|Sms|email|Email|sesLogin|verification|Verification|codeSent|sendSms|sendEmail|resend|networkSms|networkEmail|enter6Digit|hybridRegister|mainland|educationEmail|registrationEmail|acknowledgeOverseas|loginPhoneOrEmail|forgotPhoneOrEmail|detectingRegion|waitRegion/
+const AUTH_SMS_EMAIL_KEY =
+  /sms|Sms|email|Email|sesLogin|verification|Verification|codeSent|sendSms|sendEmail|resend|networkSms|networkEmail|enter6Digit|hybridRegister|mainland|educationEmail|registrationEmail|acknowledgeOverseas|loginPhoneOrEmail|forgotPhoneOrEmail|detectingRegion|waitRegion/
 
-function compareAuthSmsEmailSubset(en: Messages, loc: Messages): { total: number; translated: number } {
+function compareAuthSmsEmailSubset(
+  en: Messages,
+  loc: Messages
+): { total: number; translated: number } {
   let translated = 0
   let total = 0
   for (const key of Object.keys(en)) {
@@ -107,14 +111,12 @@ async function main(): Promise<void> {
 
     const englishName = ENGLISH_NAME_BY_CODE.get(code) ?? code
     console.log(
-      `[${code}] ${englishName}: ${overall}% keys differ from English (${totalTranslated}/${totalKeys})`,
+      `[${code}] ${englishName}: ${overall}% keys differ from English (${totalTranslated}/${totalKeys})`
     )
     console.log(
-      `  auth (SMS/email/OTP-related key subset): ${otpPct}% (${otpSub.translated}/${otpSub.total} keys)`,
+      `  auth (SMS/email/OTP-related key subset): ${otpPct}% (${otpSub.translated}/${otpSub.total} keys)`
     )
-    console.log(
-      `  by namespace: ${NS_FILES.map((ns) => `${ns}:${nsPct[ns]}%`).join(' | ')}`,
-    )
+    console.log(`  by namespace: ${NS_FILES.map((ns) => `${ns}:${nsPct[ns]}%`).join(' | ')}`)
     console.log('')
   }
 }

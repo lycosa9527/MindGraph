@@ -216,7 +216,9 @@ function handlePhoneChangeSuccess() {
                 </div>
 
                 <div>
-                  <label class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2">
+                  <label
+                    class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
+                  >
                     {{ t('auth.accountPlugin') }}
                   </label>
                   <div class="flex flex-wrap items-center gap-2">

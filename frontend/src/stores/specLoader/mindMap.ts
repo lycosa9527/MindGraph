@@ -92,7 +92,12 @@ export function measureBranchNodeHeight(text: string): number {
   if (!text) return BRANCH_NODE_HEIGHT
   const branchFontSize = 16
   const wrapThreshold = computeScriptAwareMaxWidth(text, BRANCH_BASE_MAX_TEXT_WIDTH)
-  const maxTextWidth = computeBalancedMaxWidth(text, wrapThreshold, BRANCH_BASE_MAX_TEXT_WIDTH, branchFontSize)
+  const maxTextWidth = computeBalancedMaxWidth(
+    text,
+    wrapThreshold,
+    BRANCH_BASE_MAX_TEXT_WIDTH,
+    branchFontSize
+  )
 
   if (diagramLabelLikelyNeedsRenderedMeasure(text)) {
     const contentH = measureRenderedDiagramLabelHeight(text, branchFontSize, maxTextWidth)
@@ -129,7 +134,10 @@ export function estimateTopicNodeWidth(text: string): number {
     const cjkCount = cjkMatches ? cjkMatches.length : 0
     const otherCount = text.length - cjkCount
     const rawWidth = cjkCount * 19 + otherCount * 11
-    return Math.max(minTopicWidth, Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicPaddingX + topicBorderX)
+    return Math.max(
+      minTopicWidth,
+      Math.min(rawWidth, TOPIC_BASE_MAX_TEXT_WIDTH) + topicPaddingX + topicBorderX
+    )
   }
 
   const fullWidth = measureTextWidth(text, topicFontSize, { fontWeight: 'bold' })
@@ -151,7 +159,13 @@ export function estimateTopicNodeWidth(text: string): number {
 export function estimateTopicNodeHeight(text: string): number {
   if (!text) return DEFAULT_NODE_HEIGHT
   const topicFontSize = 18
-  const maxTextWidth = computeBalancedMaxWidth(text, TOPIC_BASE_MAX_TEXT_WIDTH, TOPIC_BASE_MAX_TEXT_WIDTH, topicFontSize, 'bold')
+  const maxTextWidth = computeBalancedMaxWidth(
+    text,
+    TOPIC_BASE_MAX_TEXT_WIDTH,
+    TOPIC_BASE_MAX_TEXT_WIDTH,
+    topicFontSize,
+    'bold'
+  )
   const paddingY = 32
   const borderY = 6
 

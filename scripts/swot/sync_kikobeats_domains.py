@@ -6,6 +6,7 @@ Raw JSON: https://raw.githubusercontent.com/kikobeats/free-email-domains/master/
 
 Commit message hint: Update Kikobeats free-email domains (MIT, github.com/kikobeats/free-email-domains)
 """
+
 from __future__ import annotations
 
 import json
@@ -14,9 +15,7 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-SOURCE_URL = (
-    "https://raw.githubusercontent.com/kikobeats/free-email-domains/master/domains.json"
-)
+SOURCE_URL = "https://raw.githubusercontent.com/kikobeats/free-email-domains/master/domains.json"
 OUT_REL = Path("data") / "kikobeats_free_email_domains.json"
 
 
@@ -44,10 +43,7 @@ def main() -> int:
 
     out_path.write_text(json.dumps(data, indent=2, sort_keys=True) + "\n", encoding="utf-8")
     print(f"Wrote {out_path} ({len(data)} domains)")
-    print(
-        "Attribution: MIT — github.com/kikobeats/free-email-domains "
-        "(domains.json on master)"
-    )
+    print("Attribution: MIT — github.com/kikobeats/free-email-domains (domains.json on master)")
     return 0
 
 

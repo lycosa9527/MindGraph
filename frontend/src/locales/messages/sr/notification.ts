@@ -1,8 +1,7 @@
 /** sr UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Не могу се очистити чворови теме или центра',
-  'notification.cannotResetSelectDiagramType':
-    'Сбрајање није могуће: прво изаберите тип дијаграма',
+  'notification.cannotResetSelectDiagramType': 'Сбрајање није могуће: прво изаберите тип дијаграма',
   'notification.canvasClearNodes': 'Очищено {count} чвор(ова)',
   'notification.canvasClearNodesLearning': 'Испражњено {count} чвор(ова), додато у одговоре',
   'notification.canvasSomeoneEditingNode': 'Неко други уређује овај чвор',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Веза кореног концепта није пронађена',
   'notification.saved': 'Промене су сачуване',
   'notification.selectNodeToClear': 'Изаберите чвор за чишћење',
-  'notification.sessionInvalidated':
-    'Одјављени сте јер сте премашили максималан број уређаја',
+  'notification.sessionInvalidated': 'Одјављени сте јер сте премашили максималан број уређаја',
   'notification.signInToUse': 'Пријавите се да бисте користили',
   'notification.signInToValidateFocus': 'Пријавите се да бисте потврдили питање фокуса',
 } as const

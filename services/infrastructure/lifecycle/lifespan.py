@@ -62,7 +62,7 @@ from services.redis.redis_distributed_lock import (
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
 from services.redis.redis_token_buffer import get_token_tracker
 from services.infrastructure.security.abuseipdb_service import (
-    apply_blacklist_baseline_from_file,
+    apply_blacklist_baseline_from_file_async,
     clear_ip_reputation_sismember_cache,
     warm_sismember_cache_ttl_snapshot,
 )
@@ -75,7 +75,7 @@ from services.infrastructure.security.ip_reputation_env_snapshot import (
 )
 from services.infrastructure.security.abuseipdb_scheduler import start_abuseipdb_blacklist_scheduler
 from services.infrastructure.security.crowdsec_blocklist_service import (
-    apply_crowdsec_baseline_from_file,
+    apply_crowdsec_baseline_from_file_async,
     crowdsec_blocklist_sync_enabled,
     merge_crowdsec_blocklist_from_network,
 )
@@ -238,8 +238,8 @@ async def lifespan(fastapi_app: FastAPI):
         logger.error("Application startup failed. Exiting.")
         os._exit(1)  # pylint: disable=protected-access
 
-    await asyncio.to_thread(apply_blacklist_baseline_from_file)
-    await asyncio.to_thread(apply_crowdsec_baseline_from_file)
+    await apply_blacklist_baseline_from_file_async()
+    await apply_crowdsec_baseline_from_file_async()
     if crowdsec_blocklist_sync_enabled():
         try:
             await merge_crowdsec_blocklist_from_network()
@@ -248,6 +248,19 @@ async def lifespan(fastapi_app: FastAPI):
                 logger.warning("[CrowdSec] Startup blocklist merge failed: %s", crowdsec_exc)
 
     clear_ip_reputation_sismember_cache()
+
+    try:
+        from utils.auth import warmup_jwt_secret_async
+
+        await warmup_jwt_secret_async()
+        if is_main_worker:
+            logger.debug("[LIFESPAN] JWT secret cache warmed via async Redis client")
+    except Exception as jwt_warm_exc:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning(
+                "[LIFESPAN] JWT secret async warmup failed (sync fallback will be used on first call): %s",
+                jwt_warm_exc,
+            )
 
     # Initialize Qdrant (REQUIRED only if Knowledge Space feature is enabled)
     knowledge_space_enabled = config.FEATURE_KNOWLEDGE_SPACE
@@ -501,7 +514,7 @@ async def lifespan(fastapi_app: FastAPI):
         try:
             if AUTH_MODE == "bayi":
                 whitelist = get_bayi_whitelist()
-                count = whitelist.load_from_env()
+                count = await whitelist.load_from_env()
                 # Only log from first worker to avoid duplicate messages
                 if count > 0 and is_main_worker:
                     logger.info("Loaded %s IP(s) from BAYI_IP_WHITELIST into Redis", count)
@@ -860,6 +873,7 @@ async def lifespan(fastapi_app: FastAPI):
             from services.mindbot.platforms.dingtalk.cards.stream_client import (  # pylint: disable=import-outside-toplevel
                 get_stream_manager,
             )
+
             await get_stream_manager().stop_all()
             if is_main_worker:
                 logger.info("DingTalk Stream SDK clients stopped")
@@ -872,6 +886,7 @@ async def lifespan(fastapi_app: FastAPI):
             from services.mindbot.infra.http_client import (  # pylint: disable=import-outside-toplevel
                 close_mindbot_http_sessions,
             )
+
             await close_mindbot_http_sessions()
             if is_main_worker:
                 logger.info("MindBot HTTP sessions closed")
@@ -884,6 +899,7 @@ async def lifespan(fastapi_app: FastAPI):
             from services.mindbot.infra.redis_async import (  # pylint: disable=import-outside-toplevel
                 close_async_redis,
             )
+
             await close_async_redis()
             if is_main_worker:
                 logger.info("MindBot async Redis client closed")

@@ -31,6 +31,7 @@ logger = logging.getLogger(__name__)
 # Async helpers (called via asyncio.run from Celery tasks)
 # ---------------------------------------------------------------------------
 
+
 async def _process_document_async(user_id: int, document_id: int) -> None:
     """Run document processing in an async context."""
     async with AsyncSessionLocal() as db:
@@ -123,6 +124,7 @@ async def _update_document_async(user_id: int, document_id: int) -> None:
 # Sync helpers (called directly from Celery tasks — no event loop needed)
 # ---------------------------------------------------------------------------
 
+
 def _start_batch_sync(batch_id: int, user_id: int) -> List[int]:
     """Mark batch as processing and return the list of document IDs.
 
@@ -130,11 +132,12 @@ def _start_batch_sync(batch_id: int, user_id: int) -> List[int]:
     Celery task without blocking an asyncio event loop.
     """
     with SyncSessionLocal() as db:
-        batch = (
-            db.query(DocumentBatch)
-            .filter(DocumentBatch.id == batch_id, DocumentBatch.user_id == user_id)
-            .first()
-        )
+        batch = db.execute(
+            select(DocumentBatch).where(
+                DocumentBatch.id == batch_id,
+                DocumentBatch.user_id == user_id,
+            )
+        ).scalar_one_or_none()
         if not batch:
             logger.error("[KnowledgeSpaceTask] Batch %s not found for user %s", batch_id, user_id)
             return []
@@ -146,7 +149,7 @@ def _start_batch_sync(batch_id: int, user_id: int) -> List[int]:
             db.rollback()
             raise
 
-        documents = db.query(KnowledgeDocument).filter(KnowledgeDocument.batch_id == batch_id).all()
+        documents = db.execute(select(KnowledgeDocument).where(KnowledgeDocument.batch_id == batch_id)).scalars().all()
         return [doc.id for doc in documents]
 
 
@@ -154,11 +157,12 @@ def _mark_batch_failed_sync(user_id: int, batch_id: int, error: Exception) -> No
     """Mark a batch as failed.  Plain sync — safe to call from a Celery task."""
     with SyncSessionLocal() as db:
         try:
-            batch = (
-                db.query(DocumentBatch)
-                .filter(DocumentBatch.id == batch_id, DocumentBatch.user_id == user_id)
-                .first()
-            )
+            batch = db.execute(
+                select(DocumentBatch).where(
+                    DocumentBatch.id == batch_id,
+                    DocumentBatch.user_id == user_id,
+                )
+            ).scalar_one_or_none()
             if batch:
                 batch.status = "failed"
                 batch.error_message = str(error)
@@ -174,6 +178,7 @@ def _mark_batch_failed_sync(user_id: int, batch_id: int, error: Exception) -> No
 # ---------------------------------------------------------------------------
 # Celery tasks
 # ---------------------------------------------------------------------------
+
 
 @celery_app.task(name="knowledge_space.process_document", bind=True, max_retries=3)
 def process_document_task(self, user_id: int, document_id: int):

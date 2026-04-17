@@ -165,7 +165,7 @@ async def send_email_code(
     rate_limiter = get_rate_limiter()
 
     send_window_seconds = config.EMAIL_SEND_WINDOW_MINUTES * 60
-    allowed_ip_send, _ip_send_count, _ = rate_limiter.check_and_record(
+    allowed_ip_send, _ip_send_count, _ = await rate_limiter.check_and_record(
         "email_send_ip",
         client_ip,
         config.EMAIL_SEND_MAX_ATTEMPTS_PER_IP,
@@ -175,7 +175,7 @@ async def send_email_code(
         error_msg = Messages.error("too_many_email_send_attempts_ip", lang, config.EMAIL_SEND_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
-    exists, remaining_ttl = email_storage.check_exists_and_get_ttl(email_validated, purpose)
+    exists, remaining_ttl = await email_storage.check_exists_and_get_ttl(email_validated, purpose)
 
     if exists and remaining_ttl > 0:
         total_ttl = EMAIL_CODE_EXPIRY_MINUTES * 60
@@ -189,7 +189,7 @@ async def send_email_code(
                 error_msg = Messages.error("email_cooldown_seconds", lang, wait_seconds)
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
-    allowed, window_count, _ = rate_limiter.check_and_record(
+    allowed, window_count, _ = await rate_limiter.check_and_record(
         "email",
         email_norm,
         EMAIL_MAX_ATTEMPTS_PER_ADDRESS,
@@ -208,7 +208,7 @@ async def send_email_code(
     code = email_middleware.generate_code()
     ttl_seconds = EMAIL_CODE_EXPIRY_MINUTES * 60
 
-    if not email_storage.store(email_validated, code, purpose, ttl_seconds):
+    if not await email_storage.store(email_validated, code, purpose, ttl_seconds):
         logger.error("Failed to store email code in Redis for %s", mask_email_for_log(email_validated))
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -223,11 +223,11 @@ async def send_email_code(
             lang=lang,
         )
     except SESServiceError as exc:
-        email_storage.remove(email_validated, purpose)
+        await email_storage.remove(email_validated, purpose)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(exc)) from exc
 
     if not success:
-        email_storage.remove(email_validated, purpose)
+        await email_storage.remove(email_validated, purpose)
         if message and message != "SES service not available":
             error_detail = message
         else:
@@ -259,16 +259,19 @@ async def verify_email_code(
 
     email_norm = normalize_verification_email(email_validated)
 
-    if request.purpose in ("login", "reset_password") and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in (
-        "demo",
-        "bayi",
+    if (
+        request.purpose in ("login", "reset_password")
+        and EMAIL_LOGIN_CN_BLOCK_ENABLED
+        and AUTH_MODE
+        not in (
+            "demo",
+            "bayi",
+        )
     ):
         client_ip_geo = get_client_ip(http_request) if http_request else "unknown"
         if request.purpose == "login":
             cached_verify = await user_cache.get_by_email(email_norm)
-            whitelisted = (
-                getattr(cached_verify, "email_login_whitelisted_from_cn", False) if cached_verify else False
-            )
+            whitelisted = getattr(cached_verify, "email_login_whitelisted_from_cn", False) if cached_verify else False
         else:
             whitelisted = False
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
@@ -286,7 +289,7 @@ async def verify_email_code(
     combo_id = f"{email_norm}:{request.purpose}"
     rate_limiter = get_rate_limiter()
 
-    allowed_combo, _combo_count, _ = rate_limiter.check_and_record(
+    allowed_combo, _combo_count, _ = await rate_limiter.check_and_record(
         "email_verify_combo",
         combo_id,
         config.EMAIL_VERIFY_MAX_ATTEMPTS_PER_COMBO,
@@ -297,7 +300,7 @@ async def verify_email_code(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     client_ip = get_client_ip(http_request) if http_request else "unknown"
-    allowed_ip, _ip_count, _ = rate_limiter.check_and_record(
+    allowed_ip, _ip_count, _ = await rate_limiter.check_and_record(
         "email_verify_ip",
         client_ip,
         config.EMAIL_VERIFY_MAX_ATTEMPTS_PER_IP,
@@ -308,7 +311,7 @@ async def verify_email_code(
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     email_storage = get_email_storage()
-    stored_code = email_storage.peek(email_validated, request.purpose)
+    stored_code = await email_storage.peek(email_validated, request.purpose)
 
     if stored_code is None:
         error_msg = Messages.error("email_code_invalid", lang)
@@ -323,9 +326,9 @@ async def verify_email_code(
     return {"valid": True, "message": Messages.success("verification_code_valid", lang)}
 
 
-def verify_and_consume_email_code(email: str, code: str, purpose: str, lang: Language = "en") -> bool:
+async def verify_and_consume_email_code(email: str, code: str, purpose: str, lang: Language = "en") -> bool:
     """
-    Verify and consume email code (atomic). For use by future registration flows.
+    Verify and consume email code (atomic). For use by registration flows.
 
     Returns True if valid; raises HTTPException otherwise.
 
@@ -339,7 +342,7 @@ def verify_and_consume_email_code(email: str, code: str, purpose: str, lang: Lan
     require_academic_email_if_configured(email_validated, purpose, lang)
     validate_email_code_digits(code, lang)
     email_storage = get_email_storage()
-    if email_storage.verify_and_remove(email_validated, code, purpose):
+    if await email_storage.verify_and_remove(email_validated, code, purpose):
         return True
     error_msg = Messages.error("email_code_invalid", lang)
     raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)

@@ -91,7 +91,8 @@ export default {
   'auth.modal.sendEmailCode': 'Send email code',
   'auth.modal.sendingEmailCode': 'Sending...',
   'auth.modal.emailCodePlaceholder': '6-digit code from email',
-  'auth.modal.acknowledgeOverseas': 'I understand and will use the software for educational purposes only.',
+  'auth.modal.acknowledgeOverseas':
+    'I understand and will use the software for educational purposes only.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Please confirm the notice above.',
   'auth.loginPhoneOrEmail': 'Phone or email',

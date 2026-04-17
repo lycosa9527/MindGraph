@@ -17,7 +17,7 @@ from sqlalchemy import select
 
 from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_live_spec import (
     apply_live_update,
     read_live_spec,
@@ -41,7 +41,7 @@ async def ensure_live_spec_seeded(
     ttl_sec: int,
 ) -> Dict[str, Any]:
     """Load live spec from Redis or hydrate from ``Diagram.spec``."""
-    existing = read_live_spec(redis, code)
+    existing = await read_live_spec(redis, code)
     if existing:
         return existing
     async with AsyncSessionLocal() as db:
@@ -54,7 +54,7 @@ async def ensure_live_spec_seeded(
         diagram = result.scalars().first()
         if not diagram:
             return {}
-        return seed_live_spec_from_diagram(redis, code, diagram, ttl_sec)
+        return await seed_live_spec_from_diagram(redis, code, diagram, ttl_sec)
 
 
 async def mutate_live_spec_after_ws_update(
@@ -71,19 +71,19 @@ async def mutate_live_spec_after_ws_update(
     """
     current = await ensure_live_spec_seeded(redis, code, diagram_id, ttl_sec)
     merged, _ver = apply_live_update(current, spec, nodes, connections)
-    write_live_spec(redis, code, merged, ttl_sec)
+    await write_live_spec(redis, code, merged, ttl_sec)
     return merged
 
 
 async def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
     """After a participant leaves: if nobody remains, persist live Redis spec to Postgres."""
     try:
-        remaining = redis.scard(participants_key(code))
+        remaining = await redis.scard(participants_key(code))
     except (TypeError, AttributeError, RuntimeError):
         return
     if remaining != 0:
         return
-    raw_did = redis.get(code_to_diagram_key(code))
+    raw_did = await redis.get(code_to_diagram_key(code))
     if not raw_did:
         return
     diagram_id_val = raw_did if isinstance(raw_did, str) else raw_did.decode("utf-8")
@@ -92,10 +92,10 @@ async def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
 
 async def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
     """Write Redis live spec to ``Diagram.spec``. Returns True if a row was updated."""
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return False
-    doc = read_live_spec(redis, code)
+    doc = await read_live_spec(redis, code)
     if not doc:
         return False
     payload = spec_for_snapshot(doc)
@@ -118,7 +118,7 @@ async def flush_live_spec_to_db(code: str, diagram_id: str) -> bool:
                 return False
             diagram.spec = text
             await db.commit()
-            redis.set(live_last_db_flush_key(code), str(int(time.time())))
+            await redis.set(live_last_db_flush_key(code), str(int(time.time())))
             logger.debug("[LiveSpec] Flushed diagram %s from workshop %s", diagram_id, code)
             return True
         except Exception as exc:

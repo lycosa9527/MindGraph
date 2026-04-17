@@ -1,8 +1,7 @@
 /** sw UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Haiwezi kusafisha nodi za mada au kituo',
-  'notification.cannotResetSelectDiagramType':
-    'Haiwezi kuweka upya: chagua aina ya mchoro kwanza',
+  'notification.cannotResetSelectDiagramType': 'Haiwezi kuweka upya: chagua aina ya mchoro kwanza',
   'notification.canvasClearNodes': 'Nodi {count} zimesafishwa',
   'notification.canvasClearNodesLearning': 'Nodi {count} zimefutwa, zimeongezwa kwenye majibu',
   'notification.canvasSomeoneEditingNode': 'Mtu mwingine anahariri nodi hii',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kiungo cha dhana ya mzizi hakijapatikana',
   'notification.saved': 'Mabadiliko yamehifadhiwa',
   'notification.selectNodeToClear': 'Chagua nodi ya kusafisha',
-  'notification.sessionInvalidated':
-    'Umetolewa nje kwa sababu umezidi idadi ya juu ya vifaa',
+  'notification.sessionInvalidated': 'Umetolewa nje kwa sababu umezidi idadi ya juu ya vifaa',
   'notification.signInToUse': 'Ingia kutumia hii',
   'notification.signInToValidateFocus': 'Ingia kuthibitisha swali la lengo',
 } as const

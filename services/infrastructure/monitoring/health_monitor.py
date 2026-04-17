@@ -27,11 +27,12 @@ from dataclasses import dataclass
 from typing import Dict, Optional, Any
 
 try:
-    from services.redis.redis_client import get_redis, is_redis_available
+    from services.redis.redis_client import is_redis_available
+    from services.redis.redis_async_client import get_async_redis
 
     _REDIS_AVAILABLE = True
 except ImportError:
-    get_redis = None
+    get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
@@ -153,14 +154,13 @@ class HealthMonitor:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
-            lock_acquired = await asyncio.to_thread(
-                redis_client.set,
+            lock_acquired = await redis_client.set(
                 MONITOR_LOCK_KEY,
                 f"{os.getpid()}:{time.time()}",
                 ex=MONITOR_LOCK_TTL,
@@ -183,20 +183,20 @@ class HealthMonitor:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
-            lock_value = await asyncio.to_thread(redis_client.get, MONITOR_LOCK_KEY)
+            lock_value = await redis_client.get(MONITOR_LOCK_KEY)
             if lock_value:
                 if isinstance(lock_value, bytes):
                     lock_pid = lock_value.decode("utf-8").split(":", maxsplit=1)[0]
                 else:
                     lock_pid = str(lock_value).split(":", maxsplit=1)[0]
                 if lock_pid == str(os.getpid()):
-                    await asyncio.to_thread(redis_client.expire, MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
+                    await redis_client.expire(MONITOR_LOCK_KEY, MONITOR_LOCK_TTL)
                     return True
             return False
         except Exception as e:
@@ -214,13 +214,13 @@ class HealthMonitor:
             return False
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return False
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return False
 
-            exists = await asyncio.to_thread(redis_client.exists, SMS_ALERT_COOLDOWN_KEY)
+            exists = await redis_client.exists(SMS_ALERT_COOLDOWN_KEY)
             return bool(exists)
         except Exception:
             return False
@@ -231,14 +231,13 @@ class HealthMonitor:
             return
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return
-            redis_client = get_redis()
+            redis_client = get_async_redis()
             if redis_client is None:
                 return
 
-            await asyncio.to_thread(
-                redis_client.setex,
+            await redis_client.setex(
                 SMS_ALERT_COOLDOWN_KEY,
                 HEALTH_MONITOR_SMS_ALERT_COOLDOWN_SECONDS,
                 str(time.time()),
@@ -293,7 +292,7 @@ class HealthMonitor:
             logger.debug("[HealthMonitor] Failed to get process monitor status: %s", e)
             return None
 
-    def _is_process_monitor_handling_issue(
+    def _process_monitor_handles_issue(
         self,
         health_response: Dict[str, Any],
         process_monitor_status: Optional[Dict[str, Any]],
@@ -578,7 +577,7 @@ class HealthMonitor:
 
                             process_monitor_status = await self._check_process_monitor_status()
                             if process_monitor_status:
-                                is_handling, handling_reason = self._is_process_monitor_handling_issue(
+                                is_handling, handling_reason = self._process_monitor_handles_issue(
                                     response_data, process_monitor_status
                                 )
                                 if is_handling:

@@ -1,14 +1,15 @@
 /** nl UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan onderwerp- of centrumknopen niet wissen',
-  'notification.cannotResetSelectDiagramType':
-    'Kan niet resetten: selecteer eerst een diagramtype',
+  'notification.cannotResetSelectDiagramType': 'Kan niet resetten: selecteer eerst een diagramtype',
   'notification.canvasClearNodes': '{count} knoop/knopen gewist',
-  'notification.canvasClearNodesLearning': '{count} knoop/knopen geleegd, toegevoegd aan antwoorden',
+  'notification.canvasClearNodesLearning':
+    '{count} knoop/knopen geleegd, toegevoegd aan antwoorden',
   'notification.canvasSomeoneEditingNode': 'Iemand anders bewerkt deze knoop',
   'notification.collabDeleteBlocked':
     'Kan niet verwijderen terwijl een andere gebruiker een geselecteerde knoop bewerkt',
-  'notification.collabRedoBlocked': 'Kan niet opnieuw uitvoeren terwijl een andere gebruiker bewerkt',
+  'notification.collabRedoBlocked':
+    'Kan niet opnieuw uitvoeren terwijl een andere gebruiker bewerkt',
   'notification.collabUndoBlocked': 'Kan niet ongedaan maken terwijl een andere gebruiker bewerkt',
   'notification.conversationDeleted': 'Gesprek verwijderd',
   'notification.copied': 'Gekopieerd naar klembord',

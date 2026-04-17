@@ -31,8 +31,7 @@ class BaseRepository(Generic[ModelT]):
         # checked; generic or abstract intermediates are allowed to skip it.
         if "model" in cls.__dict__ and not isinstance(cls.__dict__["model"], type):
             raise TypeError(
-                f"{cls.__name__}.model must be a SQLAlchemy model class, "
-                f"got {type(cls.__dict__['model'])!r}"
+                f"{cls.__name__}.model must be a SQLAlchemy model class, got {type(cls.__dict__['model'])!r}"
             )
 
     def __init__(self, session: AsyncSession) -> None:
@@ -84,9 +83,7 @@ class BaseRepository(Generic[ModelT]):
             await self.session.flush()
         return obj
 
-    async def create_many(
-        self, objects: Sequence[ModelT], *, commit: bool = False
-    ) -> Sequence[ModelT]:
+    async def create_many(self, objects: Sequence[ModelT], *, commit: bool = False) -> Sequence[ModelT]:
         self.session.add_all(objects)
         if commit:
             await self.session.commit()
@@ -96,14 +93,9 @@ class BaseRepository(Generic[ModelT]):
             await self.session.flush()
         return objects
 
-    async def update_by_id(
-        self, record_id: int, *, commit: bool = False, **values: Any
-    ) -> Optional[ModelT]:
-        stmt = (
-            update(self.model)
-            .where(self.model.id == record_id)
-            .values(**values)
-            .returning(self.model)  # type: ignore[attr-defined]
+    async def update_by_id(self, record_id: int, *, commit: bool = False, **values: Any) -> Optional[ModelT]:
+        stmt = update(self.model).where(self.model.id == record_id).values(**values).returning(
+            self.model  # type: ignore[attr-defined]
         )
         result = await self.session.execute(stmt)
         obj = result.scalars().one_or_none()
@@ -113,9 +105,7 @@ class BaseRepository(Generic[ModelT]):
             await self.session.flush()
         return obj
 
-    async def bulk_update(
-        self, *filters: Any, commit: bool = False, **values: Any
-    ) -> int:
+    async def bulk_update(self, *filters: Any, commit: bool = False, **values: Any) -> int:
         stmt = update(self.model).where(*filters).values(**values)
         result = await self.session.execute(stmt)
         if commit:
@@ -125,9 +115,7 @@ class BaseRepository(Generic[ModelT]):
         return result.rowcount  # type: ignore[return-value]
 
     async def delete_by_id(self, record_id: int, *, commit: bool = False) -> bool:
-        stmt = delete(self.model).where(
-            self.model.id == record_id
-        )
+        stmt = delete(self.model).where(self.model.id == record_id)
         result = await self.session.execute(stmt)
         if commit:
             await self.session.commit()

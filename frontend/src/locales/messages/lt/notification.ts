@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Šakninės sąvokos nuoroda nerasta',
   'notification.saved': 'Pakeitimai išsaugoti',
   'notification.selectNodeToClear': 'Pasirinkite mazgą išvalymui',
-  'notification.sessionInvalidated':
-    'Jūs atjungtas, nes viršijote didžiausią įrenginių skaičių',
+  'notification.sessionInvalidated': 'Jūs atjungtas, nes viršijote didžiausią įrenginių skaičių',
   'notification.signInToUse': 'Prisijunkite, kad naudotumėte',
   'notification.signInToValidateFocus': 'Prisijunkite, kad patvirtintumėte fokuso klausimą',
 } as const

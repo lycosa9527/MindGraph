@@ -1,13 +1,11 @@
 /** lo UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'ລ້າງໂຫນດຫົວຂໍ້ ຫຼື ກາງບໍ່ໄດ້',
-  'notification.cannotResetSelectDiagramType':
-    'ຕັ້ງຄືນໃໝ່ບໍ່ໄດ້: ເລືອກປະເພດແຜນກ່ອນ',
+  'notification.cannotResetSelectDiagramType': 'ຕັ້ງຄືນໃໝ່ບໍ່ໄດ້: ເລືອກປະເພດແຜນກ່ອນ',
   'notification.canvasClearNodes': 'ລ້າງໂຫນດ {count} ແລ້ວ',
   'notification.canvasClearNodesLearning': 'ເປົ່າໂຫນດ {count}, ເພີ່ມໃສ່ຄຳຕອບ',
   'notification.canvasSomeoneEditingNode': 'ຜູ້ໃຊ້ອື່ນກຳລັງແກ້ໄຂໂຫນດນີ້',
-  'notification.collabDeleteBlocked':
-    'ລົບບໍ່ໄດ້ເມື່ອຜູ້ໃຊ້ອື່ນແກ້ໄຂໂຫນດທີ່ເລືອກ',
+  'notification.collabDeleteBlocked': 'ລົບບໍ່ໄດ້ເມື່ອຜູ້ໃຊ້ອື່ນແກ້ໄຂໂຫນດທີ່ເລືອກ',
   'notification.collabRedoBlocked': 'ເຮັດຄືນໃໝ່ບໍ່ໄດ້ເມື່ອຜູ້ໃຊ້ອື່ນແກ້ໄຂ',
   'notification.collabUndoBlocked': 'ຍົກເລີກບໍ່ໄດ້ເມື່ອຜູ້ໃຊ້ອື່ນແກ້ໄຂ',
   'notification.conversationDeleted': 'ລຶບການສົນທະນາແລ້ວ',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'ນຳເຂົ້າບໍ່ສຳເລັດ: ຂໍ້ມູນແຜນບໍ່ຖືກຕ້ອງ',
   'notification.importLoadFailed': 'ນຳເຂົ້າບໍ່ສຳເລັດ: ໂຫຼດແຜນບໍ່ໄດ້',
   'notification.importSavePartial': 'ນຳເຂົ້າແລ້ວ ແຕ່ບັນທຶກໃສ່ຫ້ອງສະໝຸດບໍ່ສຳເລັດ',
-  'notification.importSlotsFull':
-    'ຫ້ອງສະໝຸດເຕັມ; ນຳເຂົ້າແຜນແລ້ວແຕ່ບໍ່ໄດ້ບັນທຶກ',
+  'notification.importSlotsFull': 'ຫ້ອງສະໝຸດເຕັມ; ນຳເຂົ້າແຜນແລ້ວແຕ່ບໍ່ໄດ້ບັນທຶກ',
   'notification.importSuccess': 'ນຳເຂົ້າແຜນ ແລະ ບັນທຶກໃສ່ຫ້ອງສະໝຸດແລ້ວ',
   'notification.importUnsupportedType': 'ນຳເຂົ້າບໍ່ສຳເລັດ: ປະເພດແຜນບໍ່ຮອງຮັບ',
   'notification.loadMoreFailed': 'ໂຫຼດເພີ່ມບໍ່ໄດ້',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'ບໍ່ພົບລິງຄໍາຄິດຮາກ',
   'notification.saved': 'ບັນທຶກການປ່ຽນແປງແລ້ວ',
   'notification.selectNodeToClear': 'ເລືອກໂຫນດທີ່ຈະລ້າງ',
-  'notification.sessionInvalidated':
-    'ອອກຈາກລະບົບເພາະເກີນຈຳນວນອຸປະກອນສູງສຸດ',
+  'notification.sessionInvalidated': 'ອອກຈາກລະບົບເພາະເກີນຈຳນວນອຸປະກອນສູງສຸດ',
   'notification.signInToUse': 'ເຂົ້າສູ່ລະບົບເພື່ອໃຊ້',
   'notification.signInToValidateFocus': 'ເຂົ້າສູ່ລະບົບເພື່ອຢືນຢັນຄຳຖາມໂຟກັດ',
 } as const

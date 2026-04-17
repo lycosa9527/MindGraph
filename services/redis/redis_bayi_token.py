@@ -28,8 +28,9 @@ import logging
 import time
 
 from services.redis import keys as _keys
-from services.redis.redis_client import is_redis_available, RedisOps
 from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_client import is_redis_available
 
 
 logger = logging.getLogger(__name__)
@@ -72,7 +73,7 @@ class BayiTokenTracker:
         """
         return hashlib.sha256(token.encode("utf-8")).hexdigest()
 
-    def is_token_used(self, token: str) -> bool:
+    async def is_token_used(self, token: str) -> bool:
         """
         Check if token was already used (replay attack prevention).
 
@@ -83,25 +84,25 @@ class BayiTokenTracker:
             True if token was already used, False otherwise
         """
         if not self._use_redis():
-            # If Redis unavailable, skip replay prevention (backward compatibility)
             return False
 
         token_hash = self._hash_token(token)
         key = _keys.BAYI_TOKEN_USED.format(sha256=token_hash)
 
         try:
-            # Check if token hash exists in Redis
-            exists = RedisOps.exists(key)
+            exists = await AsyncRedisOps.exists(key)
             if exists:
                 logger.debug("[BayiToken] Token already used (replay attack prevented)")
                 return True
             return False
         except Exception as e:
-            logger.warning("[BayiToken] Redis error checking token usage, allowing request: %s", e)
-            # Fail-open: if Redis fails, allow request (backward compatibility)
+            logger.warning(
+                "[BayiToken] Redis error checking token usage, allowing request: %s",
+                e,
+            )
             return False
 
-    def mark_token_used(self, token: str) -> bool:
+    async def mark_token_used(self, token: str) -> bool:
         """
         Mark token as used (prevent replay attacks).
 
@@ -118,10 +119,8 @@ class BayiTokenTracker:
         key = _keys.BAYI_TOKEN_USED.format(sha256=token_hash)
 
         try:
-            # Store token hash with TTL (matches token expiration)
-            # Use current timestamp as value (for potential audit trail)
             timestamp = str(int(time.time()))
-            success = RedisOps.set_with_ttl(key, timestamp, TOKEN_TTL)
+            success = await AsyncRedisOps.set_with_ttl(key, timestamp, TOKEN_TTL)
             if success:
                 logger.debug("[BayiToken] Marked token as used (TTL: %ss)", TOKEN_TTL)
             return success
@@ -129,7 +128,7 @@ class BayiTokenTracker:
             logger.warning("[BayiToken] Failed to mark token as used: %s", e)
             return False
 
-    def is_token_validated(self, token: str) -> Optional[bool]:
+    async def is_token_validated(self, token: str) -> Optional[bool]:
         """
         Check if token validation result is cached.
 
@@ -146,19 +145,19 @@ class BayiTokenTracker:
         key = _keys.BAYI_TOKEN_VALID.format(sha256=token_hash)
 
         try:
-            cached = RedisOps.get(key)
+            cached = await AsyncRedisOps.get(key)
             if cached == "1":
                 logger.debug("[BayiToken] Token validation cached (valid)")
                 return True
-            elif cached == "0":
+            if cached == "0":
                 logger.debug("[BayiToken] Token validation cached (invalid)")
                 return False
-            return None  # Not cached
+            return None
         except Exception as e:
             logger.warning("[BayiToken] Redis error checking validation cache: %s", e)
             return None
 
-    def cache_token_validation(self, token: str, valid: bool) -> bool:
+    async def cache_token_validation(self, token: str, valid: bool) -> bool:
         """
         Cache token validation result (performance optimization).
 
@@ -176,9 +175,8 @@ class BayiTokenTracker:
         key = _keys.BAYI_TOKEN_VALID.format(sha256=token_hash)
 
         try:
-            # Cache validation result with TTL (matches token expiration)
             value = "1" if valid else "0"
-            success = RedisOps.set_with_ttl(key, value, TOKEN_TTL)
+            success = await AsyncRedisOps.set_with_ttl(key, value, TOKEN_TTL)
             if success:
                 logger.debug(
                     "[BayiToken] Cached token validation result: %s (TTL: %ss)",
@@ -190,7 +188,7 @@ class BayiTokenTracker:
             logger.warning("[BayiToken] Failed to cache token validation: %s", e)
             return False
 
-    def check_rate_limit(self, ip: str) -> Tuple[bool, int, str]:
+    async def check_rate_limit(self, ip: str) -> Tuple[bool, int, str]:
         """
         Check rate limit for token verification attempts.
 
@@ -200,14 +198,14 @@ class BayiTokenTracker:
         Returns:
             Tuple of (is_allowed, attempt_count, error_message)
         """
-        return self._rate_limiter.check_and_record(
+        return await self._rate_limiter.check_and_record(
             category="bayi_token",
             identifier=ip,
             max_attempts=RATE_LIMIT_MAX_ATTEMPTS,
             window_seconds=RATE_LIMIT_WINDOW,
         )
 
-    def clear_rate_limit(self, ip: str) -> bool:
+    async def clear_rate_limit(self, ip: str) -> bool:
         """
         Clear rate limit for IP (e.g., on successful login).
 
@@ -217,7 +215,7 @@ class BayiTokenTracker:
         Returns:
             True if cleared successfully, False otherwise
         """
-        return self._rate_limiter.clear("bayi_token", ip)
+        return await self._rate_limiter.clear("bayi_token", ip)
 
 
 def get_bayi_token_tracker() -> BayiTokenTracker:

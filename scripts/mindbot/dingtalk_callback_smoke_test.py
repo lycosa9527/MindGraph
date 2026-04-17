@@ -41,10 +41,7 @@ def _compute_sign(timestamp_str: str, app_secret: str) -> str:
     return base64.b64encode(digest).decode("utf-8")
 
 
-_DEFAULT_URL = (
-    "https://roy.mindspringedu.com/api/mindbot/dingtalk/callback/t/"
-    "3RrrAv6rsoSzKODHcZUB-A"
-)
+_DEFAULT_URL = "https://roy.mindspringedu.com/api/mindbot/dingtalk/callback/t/3RrrAv6rsoSzKODHcZUB-A"
 
 
 def _print_result(
@@ -166,8 +163,7 @@ def main() -> int:
                 return 1
 
     print(
-        "Done. If the server still shows nothing, middleware may block before MindBot "
-        "(check 403/access logs).",
+        "Done. If the server still shows nothing, middleware may block before MindBot (check 403/access logs).",
     )
     return 0
 

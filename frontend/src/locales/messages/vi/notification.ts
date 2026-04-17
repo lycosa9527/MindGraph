@@ -1,13 +1,11 @@
 /** vi UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Không thể xóa nút chủ đề hoặc trung tâm',
-  'notification.cannotResetSelectDiagramType':
-    'Không thể đặt lại: hãy chọn loại sơ đồ trước',
+  'notification.cannotResetSelectDiagramType': 'Không thể đặt lại: hãy chọn loại sơ đồ trước',
   'notification.canvasClearNodes': 'Đã xóa {count} nút',
   'notification.canvasClearNodesLearning': 'Đã làm trống {count} nút, thêm vào câu trả lời',
   'notification.canvasSomeoneEditingNode': 'Người khác đang chỉnh sửa nút này',
-  'notification.collabDeleteBlocked':
-    'Không thể xóa khi người khác đang chỉnh sửa nút đã chọn',
+  'notification.collabDeleteBlocked': 'Không thể xóa khi người khác đang chỉnh sửa nút đã chọn',
   'notification.collabRedoBlocked': 'Không thể làm lại khi người khác đang chỉnh sửa',
   'notification.collabUndoBlocked': 'Không thể hoàn tác khi người khác đang chỉnh sửa',
   'notification.conversationDeleted': 'Đã xóa cuộc trò chuyện',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'Nhập thất bại: dữ liệu sơ đồ không hợp lệ',
   'notification.importLoadFailed': 'Nhập thất bại: không tải được sơ đồ',
   'notification.importSavePartial': 'Đã nhập nhưng lưu vào thư viện thất bại',
-  'notification.importSlotsFull':
-    'Thư viện đầy; sơ đồ đã nhập nhưng chưa lưu vào thư viện',
+  'notification.importSlotsFull': 'Thư viện đầy; sơ đồ đã nhập nhưng chưa lưu vào thư viện',
   'notification.importSuccess': 'Đã nhập sơ đồ và lưu vào thư viện',
   'notification.importUnsupportedType': 'Nhập thất bại: loại sơ đồ không được hỗ trợ',
   'notification.loadMoreFailed': 'Không tải thêm được',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Không tìm thấy liên kết khái niệm gốc',
   'notification.saved': 'Đã lưu thay đổi thành công',
   'notification.selectNodeToClear': 'Chọn một nút để xóa',
-  'notification.sessionInvalidated':
-    'Bạn đã bị đăng xuất vì vượt quá số thiết bị tối đa',
+  'notification.sessionInvalidated': 'Bạn đã bị đăng xuất vì vượt quá số thiết bị tối đa',
   'notification.signInToUse': 'Đăng nhập để sử dụng',
   'notification.signInToValidateFocus': 'Đăng nhập để xác nhận câu hỏi trọng tâm',
 } as const

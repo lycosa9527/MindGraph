@@ -81,7 +81,7 @@ async def check_endpoint_rate_limit(
     logger = logging.getLogger(__name__)
     rate_limiter = RedisRateLimiter()
 
-    is_allowed, count, error_msg = rate_limiter.check_and_record(
+    is_allowed, count, error_msg = await rate_limiter.check_and_record(
         category=f"api_{endpoint_name}",
         identifier=identifier,
         max_attempts=max_requests,

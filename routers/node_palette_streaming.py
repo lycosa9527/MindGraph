@@ -241,9 +241,7 @@ async def stream_node_palette(
     effective_lang = effective_language_for_thinking_user(current_user, raw_lang, *text_blobs)
 
     try:
-        batch_kwargs = _build_batch_kwargs(
-            req, session_id, center_topic, endpoint_path, current_user, effective_lang
-        )
+        batch_kwargs = _build_batch_kwargs(req, session_id, center_topic, endpoint_path, current_user, effective_lang)
         if req.diagram_type in [
             "tree_map",
             "brace_map",
@@ -300,9 +298,7 @@ async def stream_node_palette(
             session_id[:8],
             str(exc),
         )
-        yield _yield_error_event(
-            req, error_type, getattr(exc, "user_message", None), language_for_ui=effective_lang
-        )
+        yield _yield_error_event(req, error_type, getattr(exc, "user_message", None), language_for_ui=effective_lang)
 
     except Exception as exc:
         logger.error(

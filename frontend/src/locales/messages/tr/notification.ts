@@ -1,13 +1,11 @@
 /** tr UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Konu veya merkez düğümleri temizlenemez',
-  'notification.cannotResetSelectDiagramType':
-    'Sıfırlanamıyor: önce bir diyagram türü seçin',
+  'notification.cannotResetSelectDiagramType': 'Sıfırlanamıyor: önce bir diyagram türü seçin',
   'notification.canvasClearNodes': '{count} düğüm temizlendi',
   'notification.canvasClearNodesLearning': '{count} düğüm boşaltıldı, yanıtlara eklendi',
   'notification.canvasSomeoneEditingNode': 'Başka biri bu düğümü düzenliyor',
-  'notification.collabDeleteBlocked':
-    'Başka bir kullanıcı seçili düğümü düzenlerken silinemez',
+  'notification.collabDeleteBlocked': 'Başka bir kullanıcı seçili düğümü düzenlerken silinemez',
   'notification.collabRedoBlocked': 'Başka bir kullanıcı düzenlerken yineleme yapılamaz',
   'notification.collabUndoBlocked': 'Başka bir kullanıcı düzenlerken geri alınamaz',
   'notification.conversationDeleted': 'Konuşma silindi',
@@ -39,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kök kavram bağlantısı bulunamadı',
   'notification.saved': 'Değişiklikler kaydedildi',
   'notification.selectNodeToClear': 'Temizlemek için bir düğüm seçin',
-  'notification.sessionInvalidated':
-    'Maksimum cihaz sayısını aştığınız için oturumunuz kapatıldı',
+  'notification.sessionInvalidated': 'Maksimum cihaz sayısını aştığınız için oturumunuz kapatıldı',
   'notification.signInToUse': 'Bunu kullanmak için giriş yapın',
   'notification.signInToValidateFocus': 'Odak sorusunu doğrulamak için giriş yapın',
 } as const

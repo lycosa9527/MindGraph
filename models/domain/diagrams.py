@@ -39,10 +39,8 @@ class Diagram(Base):
 
     __tablename__ = "diagrams"
 
-    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid, index=True)
-    user_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, index=True
-    )
+    id: Mapped[str] = mapped_column(String(36), primary_key=True, default=generate_uuid)
+    user_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False)
 
     # Metadata (queryable)
     title: Mapped[str] = mapped_column(String(200), nullable=False)
@@ -55,11 +53,13 @@ class Diagram(Base):
     # Optional: thumbnail for gallery view (base64 data URL)
     thumbnail: Mapped[Optional[str]] = mapped_column(Text, nullable=True)
 
-    # Soft delete support
-    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # Soft delete support — partial index ix_diagrams_active covers the
+    # ``WHERE NOT is_deleted`` access pattern; no standalone btree needed.
+    is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
-    # Pin support - pinned diagrams appear at top
-    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # Pin support — partial index ix_diagrams_pinned covers the
+    # ``WHERE is_pinned`` access pattern; no standalone btree needed.
+    is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Workshop support - shareable code for collaborative editing
     workshop_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)

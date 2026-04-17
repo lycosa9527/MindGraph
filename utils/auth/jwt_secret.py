@@ -19,13 +19,15 @@ from .config import JWT_SECRET_REDIS_KEY, JWT_SECRET_BACKUP_FILE
 
 logger = logging.getLogger(__name__)
 
-# Cached JWT secret (to avoid Redis lookup on every request)
+# Cached JWT secret (to avoid Redis lookup on every request).
+# After startup warmup via warmup_jwt_secret_async(), all callers (sync or async)
+# read from this cache and never hit Redis on the hot path.
 _jwt_secret_cache: Optional[str] = None
 
-# Redis module availability flag
 _redis_available = False
 _get_redis = None
 _is_redis_available = None
+_get_async_redis = None
 
 try:
     from services.redis.redis_client import get_redis as redis_get_redis
@@ -34,6 +36,13 @@ try:
     _redis_available = True
     _get_redis = redis_get_redis
     _is_redis_available = redis_is_available
+except ImportError:
+    pass
+
+try:
+    from services.redis.redis_async_client import get_async_redis as redis_get_async
+
+    _get_async_redis = redis_get_async
 except ImportError:
     pass
 
@@ -190,4 +199,76 @@ def get_jwt_secret() -> str:
         raise RuntimeError("Redis client not available. Redis is required for JWT secret storage.") from exc
     except Exception as e:
         logger.error("[Auth] JWT secret retrieval failed: %s", e)
+        raise
+
+
+async def warmup_jwt_secret_async() -> str:
+    """
+    Warm the JWT secret cache using the shared async Redis client.
+
+    Intended to be awaited once during the FastAPI lifespan startup so that
+    every subsequent ``get_jwt_secret()`` call (from sync or async paths) is a
+    pure in-memory cache hit. If the cache is already populated this is a no-op.
+
+    Behaviour mirrors :func:`get_jwt_secret` (existing key wins, backup file is
+    consulted, otherwise a new secret is generated under SET NX) but performs
+    every Redis round-trip via the asyncio client to avoid blocking the event
+    loop on application startup.
+
+    Returns:
+        The active JWT secret string.
+
+    Raises:
+        RuntimeError: If neither Redis nor a backup file is available.
+    """
+    global _jwt_secret_cache
+
+    if _jwt_secret_cache:
+        return _jwt_secret_cache
+
+    if _get_async_redis is None:
+        raise RuntimeError("Async Redis client not available. Cannot warm JWT secret cache.")
+
+    redis = _get_async_redis()
+    if not redis:
+        raise RuntimeError("Failed to connect to async Redis for JWT secret warmup")
+
+    try:
+        secret = await redis.get(JWT_SECRET_REDIS_KEY)
+        if secret:
+            secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
+            _jwt_secret_cache = secret_str
+            logger.debug("[Auth] Warmed JWT secret cache from Redis")
+            return secret_str
+
+        backup_secret = _load_jwt_secret_backup()
+        if backup_secret:
+            if await redis.set(JWT_SECRET_REDIS_KEY, backup_secret, nx=True):
+                logger.info("[Auth] Restored JWT secret from backup to Redis (warmup)")
+                _jwt_secret_cache = backup_secret
+                return backup_secret
+
+            secret = await redis.get(JWT_SECRET_REDIS_KEY)
+            if secret:
+                secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
+                _jwt_secret_cache = secret_str
+                return secret_str
+
+        new_secret = secrets.token_urlsafe(48)
+        if await redis.set(JWT_SECRET_REDIS_KEY, new_secret, nx=True):
+            logger.info("[Auth] Generated new JWT secret during async warmup")
+            _jwt_secret_cache = new_secret
+            _save_jwt_secret_backup(new_secret)
+            return new_secret
+
+        secret = await redis.get(JWT_SECRET_REDIS_KEY)
+        if secret:
+            secret_str = secret.decode("utf-8") if isinstance(secret, bytes) else secret
+            _jwt_secret_cache = secret_str
+            _save_jwt_secret_backup(secret_str)
+            return secret_str
+
+        raise RuntimeError("Failed to retrieve or generate JWT secret during async warmup")
+    except Exception as exc:
+        logger.error("[Auth] JWT secret async warmup failed: %s", exc)
         raise

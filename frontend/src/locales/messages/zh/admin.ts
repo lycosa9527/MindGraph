@@ -236,14 +236,12 @@ export default {
     'MindBot 使用元数据，供教学研究使用；不保存消息正文，记录仅为遥测数据。',
   'admin.mindbot.logTabHint':
     '本校 MindBot 原始使用记录（新在上）。点击一行查看完整元数据。不保存用户与机器人消息正文。',
-  'admin.mindbot.monitorTabHint':
-    '按当前页数据聚合同一会话。点击行打开会话；点击轮次查看详情。',
+  'admin.mindbot.monitorTabHint': '按当前页数据聚合同一会话。点击行打开会话；点击轮次查看详情。',
   'admin.mindbot.colConvThread': '会话',
   'admin.mindbot.colTurnsLoaded': '轮次(本页)',
   'admin.mindbot.convNoThreadId': '（无会话 ID）',
   'admin.mindbot.conversationDrawerTitle': '会话轮次',
-  'admin.mindbot.conversationDrawerHint':
-    '不保存消息正文，以下为该校 MindBot 相关元数据。',
+  'admin.mindbot.conversationDrawerHint': '不保存消息正文，以下为该校 MindBot 相关元数据。',
   'admin.mindbot.threadEmpty': '未找到会话记录。',
   'admin.mindbot.threadLoadMore': '加载更早的轮次',
   'admin.mindbot.usageEventDetailTitle': '使用事件',

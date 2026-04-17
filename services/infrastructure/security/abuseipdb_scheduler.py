@@ -14,7 +14,8 @@ from typing import Optional
 
 from services.infrastructure.security import abuseipdb_service
 from services.infrastructure.security import crowdsec_blocklist_service
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -36,17 +37,17 @@ def _generate_lock_id() -> str:
     return f"{os.getpid()}:{uuid.uuid4().hex[:8]}"
 
 
-def acquire_abuseipdb_scheduler_lock() -> bool:
+async def acquire_abuseipdb_scheduler_lock() -> bool:
     if not is_redis_available():
         logger.debug("[AbuseIPDB] Redis unavailable; scheduler lock not acquired")
         return False
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return False
     try:
         if _lock_state.worker_lock_id is None:
             _lock_state.worker_lock_id = _generate_lock_id()
-        acquired = redis.set(
+        acquired = await redis.set(
             ABUSEIPDB_LOCK_KEY,
             _lock_state.worker_lock_id,
             nx=True,
@@ -64,10 +65,10 @@ def acquire_abuseipdb_scheduler_lock() -> bool:
         return False
 
 
-def refresh_abuseipdb_scheduler_lock() -> bool:
+async def refresh_abuseipdb_scheduler_lock() -> bool:
     if not is_redis_available() or _lock_state.worker_lock_id is None:
         return False
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return False
     try:
@@ -79,7 +80,7 @@ def refresh_abuseipdb_scheduler_lock() -> bool:
             return 0
         end
         """
-        result = redis.eval(
+        result = await redis.eval(
             lua_script,
             1,
             ABUSEIPDB_LOCK_KEY,
@@ -99,8 +100,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
     Only the Redis lock holder runs the loop; other workers sleep and retry.
     """
     abuseipdb_sync = (
-        abuseipdb_service.abuseipdb_master_enabled()
-        and abuseipdb_service.abuseipdb_blacklist_sync_enabled()
+        abuseipdb_service.abuseipdb_master_enabled() and abuseipdb_service.abuseipdb_blacklist_sync_enabled()
     )
     crowdsec_sync = crowdsec_blocklist_service.crowdsec_blocklist_sync_enabled()
 
@@ -118,7 +118,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
         else crowdsec_blocklist_service.get_crowdsec_sync_interval_seconds()
     )
 
-    if not acquire_abuseipdb_scheduler_lock():
+    if not await acquire_abuseipdb_scheduler_lock():
         logger.debug("[AbuseIPDB] Another worker holds the scheduler lock; monitoring")
         follower_round = 0
         while True:
@@ -130,7 +130,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                         "[AbuseIPDB] Still waiting for blacklist scheduler lock (%s min)",
                         follower_round * 5,
                     )
-                if acquire_abuseipdb_scheduler_lock():
+                if await acquire_abuseipdb_scheduler_lock():
                     logger.info("[AbuseIPDB] Scheduler lock acquired on retry")
                     break
             except asyncio.CancelledError:
@@ -146,7 +146,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
 
     while True:
         try:
-            if not refresh_abuseipdb_scheduler_lock():
+            if not await refresh_abuseipdb_scheduler_lock():
                 logger.warning("[AbuseIPDB] Lost scheduler lock; stopping sync loop")
                 return
 
@@ -167,10 +167,8 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                         sleep_chunk = min(300.0, retry_after - waited)
                         await asyncio.sleep(sleep_chunk)
                         waited += sleep_chunk
-                        if not refresh_abuseipdb_scheduler_lock():
-                            logger.warning(
-                                "[AbuseIPDB] Lost lock during rate-limit wait; exiting"
-                            )
+                        if not await refresh_abuseipdb_scheduler_lock():
+                            logger.warning("[AbuseIPDB] Lost lock during rate-limit wait; exiting")
                             return
                     continue
                 else:
@@ -179,9 +177,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network()
                 if cs.get("ok") and not cs.get("skipped"):
                     logger.info("[CrowdSec] Sync OK: %s IPs", cs.get("count"))
-                    abuseipdb_service.log_shared_blacklist_redis_size(
-                        "after CrowdSec-only scheduler merge"
-                    )
+                    await abuseipdb_service.log_shared_blacklist_redis_size_async("after CrowdSec-only scheduler merge")
                 elif cs.get("rate_limited"):
                     retry_after = float(cs.get("retry_after_seconds") or 3600)
                     logger.warning(
@@ -193,10 +189,8 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                         sleep_chunk = min(300.0, retry_after - waited)
                         await asyncio.sleep(sleep_chunk)
                         waited += sleep_chunk
-                        if not refresh_abuseipdb_scheduler_lock():
-                            logger.warning(
-                                "[CrowdSec] Lost lock during rate-limit wait; exiting"
-                            )
+                        if not await refresh_abuseipdb_scheduler_lock():
+                            logger.warning("[CrowdSec] Lost lock during rate-limit wait; exiting")
                             return
                     continue
                 else:
@@ -212,7 +206,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 sleep_chunk = min(300.0, float(interval) - waited)
                 await asyncio.sleep(sleep_chunk)
                 waited += sleep_chunk
-                if not refresh_abuseipdb_scheduler_lock():
+                if not await refresh_abuseipdb_scheduler_lock():
                     logger.warning("[AbuseIPDB] Lost lock during wait; exiting")
                     return
 

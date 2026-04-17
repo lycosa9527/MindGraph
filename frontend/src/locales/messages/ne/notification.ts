@@ -6,8 +6,7 @@ export default {
   'notification.canvasClearNodes': '{count} नोड खाली गरियो',
   'notification.canvasClearNodesLearning': '{count} नोड खाली, उत्तरहरूमा थपियो',
   'notification.canvasSomeoneEditingNode': 'अरू कसैले यो नोड सम्पादन गर्दैछ',
-  'notification.collabDeleteBlocked':
-    'अरू प्रयोगकर्ताले छानिएको नोड सम्पादन गर्दा मेटाउन सकिँदैन',
+  'notification.collabDeleteBlocked': 'अरू प्रयोगकर्ताले छानिएको नोड सम्पादन गर्दा मेटाउन सकिँदैन',
   'notification.collabRedoBlocked': 'अरू प्रयोगकर्ताले सम्पादन गर्दा पुनः गर्न सकिँदैन',
   'notification.collabUndoBlocked': 'अरू प्रयोगकर्ताले सम्पादन गर्दा पूर्ववत गर्न सकिँदैन',
   'notification.conversationDeleted': 'कुराकानी मेटियो',
@@ -26,8 +25,7 @@ export default {
   'notification.importInvalidData': 'आयात असफल: अमान्य डायाग्राम डाटा',
   'notification.importLoadFailed': 'आयात असफल: डायाग्राम लोड हुन सकेन',
   'notification.importSavePartial': 'आयात भयो, तर पुस्तकालयमा बचत असफल',
-  'notification.importSlotsFull':
-    'पुस्तकालय भरियो; डायाग्राम आयात भयो तर पुस्तकालयमा बचत भएन',
+  'notification.importSlotsFull': 'पुस्तकालय भरियो; डायाग्राम आयात भयो तर पुस्तकालयमा बचत भएन',
   'notification.importSuccess': 'डायाग्राम आयात भई पुस्तकालयमा बचत भयो',
   'notification.importUnsupportedType': 'आयात असफल: असमर्थित डायाग्राम प्रकार',
   'notification.loadMoreFailed': 'थप लोड गर्न सकिएन',
@@ -39,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'मूल अवधारणा लिङ्क फेला परेन',
   'notification.saved': 'परिवर्तन बचत भयो',
   'notification.selectNodeToClear': 'खाली गर्न नोड छान्नुहोस्',
-  'notification.sessionInvalidated':
-    'अधिकतम उपकरण सङ्ख्या नाघेकाले लगआउट गरियो',
+  'notification.sessionInvalidated': 'अधिकतम उपकरण सङ्ख्या नाघेकाले लगआउट गरियो',
   'notification.signInToUse': 'प्रयोग गर्न साइन इन गर्नुहोस्',
   'notification.signInToValidateFocus': 'फोकस प्रश्न प्रमाणित गर्न साइन इन गर्नुहोस्',
 } as const

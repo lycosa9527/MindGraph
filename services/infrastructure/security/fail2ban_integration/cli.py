@@ -56,7 +56,7 @@ def _print_result(result: Fail2banCheckResult) -> None:
     for msg in result.messages:
         print(f"Note: {msg}")
     print()
-    if result.ok():
+    if result.is_ok():
         print("Summary: OK — MindGraph Fail2ban jail looks configured.")
     else:
         print("Summary: action needed — see notes above or docs/FAIL2BAN_SETUP.md")
@@ -68,7 +68,7 @@ def cmd_check(etc_dir: Path) -> int:
         return 2
     result = check_fail2ban_install(etc_dir)
     _print_result(result)
-    return 0 if result.ok() else 1
+    return 0 if result.is_ok() else 1
 
 
 def cmd_deploy(
@@ -90,11 +90,7 @@ def cmd_deploy(
 
     if dry_run:
         print(f"Would copy templates to {etc_dir}")
-        logpath = (
-            npm_access_log_path(npm_home, proxy_host)
-            if npm_home is not None
-            else "(unchanged)"
-        )
+        logpath = npm_access_log_path(npm_home, proxy_host) if npm_home is not None else "(unchanged)"
         print(f"Would set MindGraph root: {mindgraph_root.resolve()}")
         print(f"Would set logpath: {logpath}")
         return 0

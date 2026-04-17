@@ -172,7 +172,7 @@ async def start_node_palette(
     if current_user:
         try:
             tracker = get_activity_tracker()
-            tracker.record_activity(
+            await tracker.record_activity(
                 user_id=current_user.id,
                 user_phone=current_user.phone,
                 activity_type="node_palette",

@@ -250,7 +250,7 @@ class LLMMultiService:
         physical_to_logical = {m: m for m in models}
 
         if self.llm_service.load_balancer and self.llm_service.load_balancer.enabled:
-            physical_models = [self.llm_service.load_balancer.map_model(m) for m in models]
+            physical_models = [await self.llm_service.load_balancer.map_model(m) for m in models]
             physical_to_logical = {physical: logical for logical, physical in zip(models, physical_models)}
             logger.info(
                 "[LLMMultiService] stream_progressive: models=%s → %s",
@@ -553,7 +553,7 @@ class LLMMultiService:
         provider = None
 
         if self.llm_service.load_balancer and self.llm_service.load_balancer.enabled:
-            actual_model = self.llm_service.load_balancer.map_model(model)
+            actual_model = await self.llm_service.load_balancer.map_model(model)
             if hasattr(self.llm_service.load_balancer, "get_provider_from_model"):
                 provider = self.llm_service.load_balancer.get_provider_from_model(actual_model)
 
@@ -592,7 +592,7 @@ class LLMMultiService:
 
             # Record provider metrics for load balancing (if DeepSeek)
             if provider and self.llm_service.load_balancer:
-                self.llm_service.load_balancer.record_provider_metrics(
+                await self.llm_service.load_balancer.record_provider_metrics(
                     provider=provider, success=True, duration=duration
                 )
 
@@ -613,7 +613,7 @@ class LLMMultiService:
 
             # Record provider metrics for load balancing (if DeepSeek)
             if provider and self.llm_service.load_balancer:
-                self.llm_service.load_balancer.record_provider_metrics(
+                await self.llm_service.load_balancer.record_provider_metrics(
                     provider=provider, success=False, duration=duration, error=str(e)
                 )
 

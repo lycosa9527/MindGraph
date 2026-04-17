@@ -2,18 +2,18 @@
  * IP-based registration UI mode (mainland China vs international vs both).
  * Reads mg_client_region cookie first; otherwise GET /api/auth/client-region.
  */
-import { computed, ref, watch, type Ref } from 'vue'
+import { type Ref, computed, ref, watch } from 'vue'
 
 import {
+  type ClientRegion,
   readClientRegionCookie,
   readUnknownRegionSessionFallback,
   setUnknownRegionSessionFallback,
-  type ClientRegion,
 } from '@/utils/clientRegion'
 
 export function useRegisterRegionDetection(
   modalVisible: Ref<boolean>,
-  currentView: Ref<'login' | 'register' | 'sms-login' | 'forgot-password'>,
+  currentView: Ref<'login' | 'register' | 'sms-login' | 'forgot-password'>
 ) {
   const registerRegion = ref<ClientRegion | null>(null)
   const registerRegionLoading = ref(false)
@@ -71,7 +71,7 @@ export function useRegisterRegionDetection(
         void ensureRegisterRegion()
       }
     },
-    { immediate: true },
+    { immediate: true }
   )
 
   return {

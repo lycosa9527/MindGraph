@@ -114,7 +114,7 @@ def _json_snippet(obj: Any) -> str:
     except (TypeError, ValueError):
         s = str(obj)
     if len(s) > _MAX_JSON_SNIPPET:
-        return s[: _MAX_JSON_SNIPPET] + "…"
+        return s[:_MAX_JSON_SNIPPET] + "…"
     return s
 
 
@@ -211,10 +211,7 @@ def extract_dingtalk_sender_profile(body: dict[str, Any]) -> tuple[str, str | No
         staff = "unknown"
 
     nick_raw = (
-        body.get("senderNick")
-        or body.get("sender_nick")
-        or body.get("senderNickName")
-        or body.get("sender_nickname")
+        body.get("senderNick") or body.get("sender_nick") or body.get("senderNickName") or body.get("sender_nickname")
     )
     if isinstance(nick_raw, str) and nick_raw.strip():
         sender_nick = nick_raw.strip()
@@ -245,9 +242,7 @@ def _extract_plain_text(body: dict[str, Any]) -> str:
 def _extract_picture(body: dict[str, Any]) -> str:
     cd = _content_dict(body)
     pic = _as_str(
-        cd.get("pictureDownloadCode")
-        or cd.get("picture_download_code")
-        or body.get("pictureDownloadCode"),
+        cd.get("pictureDownloadCode") or cd.get("picture_download_code") or body.get("pictureDownloadCode"),
     )
     dcode = _as_str(cd.get("downloadCode") or cd.get("download_code") or body.get("downloadCode"))
     media_id = _as_str(cd.get("mediaId") or cd.get("media_id"))
@@ -303,9 +298,7 @@ def _extract_file(body: dict[str, Any]) -> str:
     else:
         blob = cd if cd else {}
     file_id = _as_str(
-        (blob.get("fileId") if isinstance(blob, dict) else None)
-        or body.get("fileId")
-        or cd.get("fileId"),
+        (blob.get("fileId") if isinstance(blob, dict) else None) or body.get("fileId") or cd.get("fileId"),
     )
     name = _as_str((blob.get("fileName") if isinstance(blob, dict) else None) or cd.get("fileName"))
     lines = ["[DingTalk file message] The user sent a file."]
@@ -365,10 +358,7 @@ def _extract_unknown(mt: str, body: dict[str, Any]) -> str:
     if fallback:
         return f"[DingTalk msgtype={mt}]\n{fallback}"
     copied = {k: v for k, v in body.items() if k not in ("text", "markdown", "link")}
-    return (
-        f"[DingTalk message msgtype={mt}]\n"
-        f"Structured summary (truncated):\n{_json_snippet(copied)}"
-    )
+    return f"[DingTalk message msgtype={mt}]\nStructured summary (truncated):\n{_json_snippet(copied)}"
 
 
 def extract_download_code_for_openapi(body: dict[str, Any], normalized_msg_type: str) -> str:
@@ -403,9 +393,7 @@ def extract_download_code_for_openapi(body: dict[str, Any], normalized_msg_type:
         if c:
             return c
     return _as_str(
-        cd.get("downloadCode")
-        or cd.get("download_code")
-        or body.get("downloadCode"),
+        cd.get("downloadCode") or cd.get("download_code") or body.get("downloadCode"),
     )
 
 
@@ -433,11 +421,15 @@ def media_filename_and_types(
     if ext in ("pdf",):
         mime = "application/pdf"
     elif ext in ("doc", "docx"):
-        mime = "application/msword" if ext == "doc" else (
-            "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
+        mime = (
+            "application/msword"
+            if ext == "doc"
+            else ("application/vnd.openxmlformats-officedocument.wordprocessingml.document")
         )
     elif ext in ("xlsx", "xls"):
-        mime = "application/vnd.ms-excel" if ext == "xls" else (
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        mime = (
+            "application/vnd.ms-excel"
+            if ext == "xls"
+            else ("application/vnd.openxmlformats-officedocument.spreadsheetml.sheet")
         )
     return (name, mime, "document")

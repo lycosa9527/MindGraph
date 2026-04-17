@@ -141,7 +141,7 @@ def _legacy_workshop_preview_or_open(feature_key: str, current_user) -> bool:
     return org_id in config.WORKSHOP_CHAT_PREVIEW_ORG_IDS
 
 
-def user_has_feature_access(current_user, feature_key: str) -> bool:
+async def user_has_feature_access(current_user, feature_key: str) -> bool:
     """
     Whether the user may use this feature (global FEATURE_* + DB rules).
 
@@ -160,7 +160,7 @@ def user_has_feature_access(current_user, feature_key: str) -> bool:
         return True
     if is_manager(current_user) and feature_key != "feature_mindbot":
         return True
-    doc = _get_feature_access_map_cached() or {}
+    doc = await _get_feature_access_map_cached() or {}
     entry = doc.get(feature_key)
     if entry is None:
         return _legacy_workshop_preview_or_open(feature_key, current_user)
@@ -173,11 +173,11 @@ def user_has_feature_access(current_user, feature_key: str) -> bool:
     return ok_user or ok_org
 
 
-def can_access_workshop_chat(current_user) -> bool:
+async def can_access_workshop_chat(current_user) -> bool:
     """
     Workshop Chat gate: global flag, then DB rules or WORKSHOP_CHAT_PREVIEW_ORG_IDS.
     """
-    return user_has_feature_access(current_user, "feature_workshop_chat")
+    return await user_has_feature_access(current_user, "feature_workshop_chat")
 
 
 def get_user_role(current_user) -> str:

@@ -1,10 +1,10 @@
 /** hy UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Չի կարելի մաքրել թեմայի կամ կենտրոնական հանգույցները',
-  'notification.cannotResetSelectDiagramType':
-    'Չի կարելի վերակայել․ նախ ընտրեք դիագրամի տեսակը',
+  'notification.cannotResetSelectDiagramType': 'Չի կարելի վերակայել․ նախ ընտրեք դիագրամի տեսակը',
   'notification.canvasClearNodes': 'Մաքրվել է {count} հանգույց',
-  'notification.canvasClearNodesLearning': 'Դատարկվել է {count} հանգույց, ավելացվել է պատասխաններին',
+  'notification.canvasClearNodesLearning':
+    'Դատարկվել է {count} հանգույց, ավելացվել է պատասխաններին',
   'notification.canvasSomeoneEditingNode': 'Ուրիշը խմբագրում է այս հանգույցը',
   'notification.collabDeleteBlocked':
     'Չի կարելի ջնջել, երբ մեկ այլ օգտվող խմբագրում է ընտրված հանգույցը',

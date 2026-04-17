@@ -38,7 +38,7 @@ async def submit_feedback(req: FeedbackRequest, request: Request):
 
         # Validate captcha first (anti-spam protection)
         # verify_and_remove() atomically verifies and removes (one-time use)
-        is_valid, error_reason = captcha_storage.verify_and_remove(req.captcha_id, req.captcha)
+        is_valid, error_reason = await captcha_storage.verify_and_remove(req.captcha_id, req.captcha)
 
         if not is_valid:
             if error_reason == "not_found":

@@ -98,8 +98,7 @@ export default {
   'workshop.contactsOnlineNow': 'Online',
   'workshop.contactsRecentlyOnline': 'Kürzlich online',
   'workshop.conversationTitle': 'Titel der Unterhaltung',
-  'workshop.conversationTitlePlaceholder':
-    'z. B. Unterrichtsplanung, Unterrichtsreflexion',
+  'workshop.conversationTitlePlaceholder': 'z. B. Unterrichtsplanung, Unterrichtsreflexion',
   'workshop.conversations': 'Unterhaltungen',
   'workshop.copyLink': 'Link kopieren',
   'workshop.copyMentionSyntax': 'Erwähnungssyntax kopieren',
@@ -133,8 +132,7 @@ export default {
   'workshop.edited': '(bearbeitet)',
   'workshop.emailNotifications': 'E-Mail-Benachrichtigungen',
   'workshop.emoji': 'Emoji',
-  'workshop.expandCollapseGroup':
-    'Unterrichtsliste in der Seitenleiste ein- oder ausklappen',
+  'workshop.expandCollapseGroup': 'Unterrichtsliste in der Seitenleiste ein- oder ausklappen',
   'workshop.filterSidebar': 'Lehrgruppen und Direktnachrichten filtern',
   'workshop.filterUsers': 'Nutzer filtern',
   'workshop.followTopic': 'Unterhaltung folgen',
@@ -350,16 +348,13 @@ export default {
   'workshop.youAnd': 'Du und',
   'workshopCanvas.connectFailed': 'Verbindung zur Zusammenarbeit fehlgeschlagen',
   'workshopCanvas.connectionClosed': 'Verbindung geschlossen',
-  'workshopCanvas.connectionClosedReason':
-    'Verbindung zur Zusammenarbeit geschlossen: {reason}',
+  'workshopCanvas.connectionClosedReason': 'Verbindung zur Zusammenarbeit geschlossen: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bearbeitet diesen Knoten',
   'workshopCanvas.errorGeneric': 'Fehler bei der Zusammenarbeit',
   'workshopCanvas.reconnectFailed':
     'Wiederverbindung zur Zusammenarbeit fehlgeschlagen – bitte Seite neu laden',
-  'workshopCanvas.returnedHomeIdle':
-    'Zurück zur Startseite – 30 Minuten keine Diagrammänderungen.',
+  'workshopCanvas.returnedHomeIdle': 'Zurück zur Startseite – 30 Minuten keine Diagrammänderungen.',
   'workshopCanvas.userJoined': 'Nutzer {userId} ist beigetreten',
   'workshopCanvas.userLeft': 'Nutzer {userId} hat verlassen',
-  'workshopCanvas.wsError':
-    'Fehler bei der Verbindung zur Zusammenarbeit – bitte Netzwerk prüfen',
+  'workshopCanvas.wsError': 'Fehler bei der Verbindung zur Zusammenarbeit – bitte Netzwerk prüfen',
 } as const

@@ -96,9 +96,7 @@ def upgrade() -> None:
     # -- organizations.invitation_code ----------------------------------------
     # Baseline ORM uses unique=True on the column (implicit unique constraint name).
     if not _has_unique_on_invitation_code(bind):
-        op.create_unique_constraint(
-            _ORG_INVITE_UQ, "organizations", ["invitation_code"]
-        )
+        op.create_unique_constraint(_ORG_INVITE_UQ, "organizations", ["invitation_code"])
 
 
 def downgrade() -> None:

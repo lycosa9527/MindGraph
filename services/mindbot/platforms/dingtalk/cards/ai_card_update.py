@@ -122,11 +122,7 @@ async def _card_put_with_retry(
                 pipeline_ctx,
             )
             break
-        if (
-            status == 403
-            and dingtalk_streaming_body_is_qps_throttle(resp_body)
-            and qps_retries_done < max_qps_retries
-        ):
+        if status == 403 and dingtalk_streaming_body_is_qps_throttle(resp_body) and qps_retries_done < max_qps_retries:
             qps_retries_done += 1
             if on_qps_retry is not None:
                 on_qps_retry(payload)
@@ -231,8 +227,7 @@ async def streaming_update_ai_card(
         return False, None, "empty_body", prop_tok
     if dingtalk_v1_response_ok(resp_body):
         logger.debug(
-            "[MindBot] ai_card_streaming_put_ok %s out_track=%s finalize=%s "
-            "is_error=%s oauth_refreshed=%s",
+            "[MindBot] ai_card_streaming_put_ok %s out_track=%s finalize=%s is_error=%s oauth_refreshed=%s",
             pipeline_ctx,
             out_short,
             is_finalize,
@@ -279,8 +274,7 @@ async def update_ai_card_receiver(
     content = _clip_streaming_content(sanitized, cap)
     out_short = (out_track_id.strip()[:12] + "…") if len(out_track_id.strip()) > 12 else out_track_id.strip()
     logger.debug(
-        "[MindBot] ai_card_receiver_put %s out_track=%s finalize=%s "
-        "param_key=%s wire_chars=%s",
+        "[MindBot] ai_card_receiver_put %s out_track=%s finalize=%s param_key=%s wire_chars=%s",
         pipeline_ctx,
         out_short,
         is_finalize,
@@ -430,11 +424,7 @@ async def probe_ai_card_streaming_update_api(
     if not token:
         et = "token_failed"
         detail = (oauth_err or "").strip()
-        friendly = (
-            describe_ai_card_failure(None, detail)
-            if detail
-            else _probe_friendly(False, et, None, None)
-        )
+        friendly = describe_ai_card_failure(None, detail) if detail else _probe_friendly(False, et, None, None)
         return AiCardProbeResult(
             False,
             None,

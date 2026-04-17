@@ -94,7 +94,9 @@ export function getLocalesForInterfaceLanguagePicker(
 }
 
 /** Count of interface languages shown in Settings (respects SC policy). */
-export function getInterfaceLanguagePickerLocaleCount(allowSimplifiedChinese: boolean = true): number {
+export function getInterfaceLanguagePickerLocaleCount(
+  allowSimplifiedChinese: boolean = true
+): number {
   return getLocalesForInterfaceLanguagePicker(undefined, allowSimplifiedChinese).length
 }
 

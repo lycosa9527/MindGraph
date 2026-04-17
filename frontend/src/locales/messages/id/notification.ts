@@ -17,8 +17,10 @@ export default {
   'notification.deleted': 'Item berhasil dihapus',
   'notification.feedbackCancelled': 'Umpan balik dihapus',
   'notification.feedbackThanks': 'Terima kasih atas umpan balik Anda',
-  'notification.feedbackThanksDislike': 'Terima kasih atas umpan balik Anda — kami akan memperbaiki',
-  'notification.focusQuestionTooShort': 'Masukkan pertanyaan fokus yang lebih panjang terlebih dahulu',
+  'notification.feedbackThanksDislike':
+    'Terima kasih atas umpan balik Anda — kami akan memperbaiki',
+  'notification.focusQuestionTooShort':
+    'Masukkan pertanyaan fokus yang lebih panjang terlebih dahulu',
   'notification.fullscreenFailed': 'Tidak dapat masuk layar penuh',
   'notification.generationCancelled': 'Pembuatan dibatalkan',
   'notification.historyClearNodes': 'Hapus teks node',
@@ -39,8 +41,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Tautan konsep akar tidak ditemukan',
   'notification.saved': 'Perubahan berhasil disimpan',
   'notification.selectNodeToClear': 'Pilih node untuk dikosongkan',
-  'notification.sessionInvalidated':
-    'Anda telah keluar karena melebihi jumlah perangkat maksimum',
+  'notification.sessionInvalidated': 'Anda telah keluar karena melebihi jumlah perangkat maksimum',
   'notification.signInToUse': 'Masuk untuk menggunakan ini',
   'notification.signInToValidateFocus': 'Masuk untuk memvalidasi pertanyaan fokus',
 } as const

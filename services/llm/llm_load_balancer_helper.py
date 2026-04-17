@@ -19,7 +19,7 @@ class LLMLoadBalancerHelper:
     """Helper for load balancing and provider detection."""
 
     @staticmethod
-    def apply_load_balancing(
+    async def apply_load_balancing(
         model: str, skip_load_balancing: bool, load_balancer: Optional[Any]
     ) -> Tuple[str, Optional[str]]:
         """
@@ -47,7 +47,7 @@ class LLMLoadBalancerHelper:
             return actual_model, provider
 
         if load_balancer and load_balancer.enabled:
-            actual_model = load_balancer.map_model(model)
+            actual_model = await load_balancer.map_model(model)
             logger.debug("[LLMLoadBalancerHelper] Load balanced: %s → %s", model, actual_model)
             # Track provider for DeepSeek load balancing metrics
             if model == "deepseek":

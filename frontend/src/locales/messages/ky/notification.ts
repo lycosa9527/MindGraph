@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Түп түшүнүк шилтемеси табылган жок',
   'notification.saved': 'Өзгөрүүлөр сакталды',
   'notification.selectNodeToClear': 'Тазалоо үчүн түйүн тандаңыз',
-  'notification.sessionInvalidated':
-    'Түзмөктөрдүн эң көп саныndan ашып кеткендиктен чыгарылды',
+  'notification.sessionInvalidated': 'Түзмөктөрдүн эң көп саныndan ашып кеткендиктен чыгарылды',
   'notification.signInToUse': 'Колдонуу үчүн кириңиз',
   'notification.signInToValidateFocus': 'Фокус суроосун ырастоо үчүн кириңиз',
 } as const

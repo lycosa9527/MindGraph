@@ -19,6 +19,7 @@ import logging
 import multiprocessing
 from typing import Literal, cast, Any
 
+
 def _is_stream_usable(stream: object) -> bool:
     """Return True if *stream* is open and writable."""
     if stream is None:

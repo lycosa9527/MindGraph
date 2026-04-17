@@ -22,16 +22,26 @@ class CommunityPostRepository(BaseRepository[CommunityPost]):
     async def list_recent(
         self,
         *,
+        before_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 20,
     ) -> Sequence[CommunityPost]:
+        """List recent community posts ordered by ``id DESC``.
+
+        For high-traffic feeds prefer ``before_id`` (keyset cursor) over
+        ``offset`` so deep pagination stays cheap (covered by the primary
+        key index).  ``offset`` is kept for backwards compatibility.
+        """
         stmt = (
             select(CommunityPost)
             .options(selectinload(CommunityPost.author).selectinload(User.organization))
-            .order_by(CommunityPost.created_at.desc())
-            .offset(offset)
+            .order_by(CommunityPost.id.desc())
             .limit(limit)
         )
+        if before_id is not None:
+            stmt = stmt.where(CommunityPost.id < before_id)
+        elif offset:
+            stmt = stmt.offset(offset)
         result = await self.session.execute(stmt)
         return result.scalars().all()
 
@@ -71,17 +81,27 @@ class CommunityCommentRepository(BaseRepository[CommunityPostComment]):
         self,
         post_id: int,
         *,
+        after_id: Optional[int] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[CommunityPostComment]:
-        result = await self.session.execute(
+        """Comments for a post in chronological order (``id ASC``).
+
+        Use ``after_id`` (keyset cursor) for the next page; falls back to
+        ``offset`` when no cursor is supplied for backwards compatibility.
+        """
+        stmt = (
             select(CommunityPostComment)
             .options(selectinload(CommunityPostComment.user))
             .where(CommunityPostComment.post_id == post_id)
-            .order_by(CommunityPostComment.created_at)
-            .offset(offset)
+            .order_by(CommunityPostComment.id.asc())
             .limit(limit)
         )
+        if after_id is not None:
+            stmt = stmt.where(CommunityPostComment.id > after_id)
+        elif offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
 

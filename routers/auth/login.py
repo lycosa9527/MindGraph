@@ -137,7 +137,7 @@ async def _complete_login_after_otp_verified(
             await db.refresh(db_user)
             user = db_user
             try:
-                user_cache.cache_user(db_user)
+                await user_cache.cache_user(db_user)
             except Exception as cache_exc:
                 logger.warning("[%s OTP login] failed to refresh user cache: %s", method, cache_exc)
 
@@ -164,10 +164,10 @@ async def _complete_login_after_otp_verified(
         sec_ch_mobile,
     )
 
-    session_manager.store_session(user.id, token, device_hash=device_hash)
+    await session_manager.store_session(user.id, token, device_hash=device_hash)
 
     refresh_manager = get_refresh_token_manager()
-    refresh_manager.store_refresh_token(
+    await refresh_manager.store_refresh_token(
         user_id=user.id,
         token_hash=refresh_token_hash,
         ip_address=client_ip,
@@ -177,7 +177,7 @@ async def _complete_login_after_otp_verified(
 
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
-    record_vpn_login_geo(user.id, http_request)
+    await record_vpn_login_geo(user.id, http_request)
 
     org = await org_cache.get_by_id(user.organization_id) if user.organization_id else None
     if not org and user.organization_id:
@@ -185,7 +185,7 @@ async def _complete_login_after_otp_verified(
         org = result_org.scalar_one_or_none()
         if org:
             db.expunge(org)
-            org_cache.cache_org(org)
+            await org_cache.cache_org(org)
     org_name = org.name if org else "None"
 
     logger.info(
@@ -252,14 +252,14 @@ async def login(
         login_key = (request.phone or "").strip()
         cached_user = await user_cache.get_by_phone(login_key)
 
-    is_allowed, _ = check_login_rate_limit(login_key)
+    is_allowed, _ = await check_login_rate_limit(login_key)
     if not is_allowed:
         logger.warning("Rate limit exceeded for login key %s", login_key[:8] + "***")
         error_msg = Messages.error("too_many_login_attempts", lang, RATE_LIMIT_WINDOW_MINUTES)
         raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     if not cached_user:
-        attempts_left = get_login_attempts_remaining(login_key)
+        attempts_left = await get_login_attempts_remaining(login_key)
         if attempts_left > 0:
             error_msg = Messages.error("login_failed_identifier_not_found", lang, attempts_left)
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail=error_msg)
@@ -275,12 +275,7 @@ async def login(
 
     # Email login: block GeoIP CN unless whitelisted (phone login unchanged).
     # Skipped in demo/bayi for predictable local and showcase environments.
-    if (
-        request.email
-        and cached_user
-        and EMAIL_LOGIN_CN_BLOCK_ENABLED
-        and AUTH_MODE not in ("demo", "bayi")
-    ):
+    if request.email and cached_user and EMAIL_LOGIN_CN_BLOCK_ENABLED and AUTH_MODE not in ("demo", "bayi"):
         whitelisted = getattr(cached_user, "email_login_whitelisted_from_cn", False)
         must_deny, geo_msg_key, stamp_cn = email_cn_geo_blocked(
             get_client_ip(http_request),
@@ -356,7 +351,7 @@ async def login(
         raise HTTPException(status_code=status.HTTP_423_LOCKED, detail=error_msg)
 
     # Successful login - clear rate limit attempts in Redis
-    clear_login_attempts(login_key)
+    await clear_login_attempts(login_key)
     # Need user attached to session for modification - reload from DB
     result = await db.execute(select(User).where(User.id == cached_user.id))
     db_user = result.scalar_one_or_none()
@@ -428,11 +423,11 @@ async def login(
     )
 
     # Store access token session in Redis (automatically limits concurrent sessions)
-    session_manager.store_session(user.id, token, device_hash=device_hash)
+    await session_manager.store_session(user.id, token, device_hash=device_hash)
 
     # Store refresh token with device binding
     refresh_manager = get_refresh_token_manager()
-    refresh_manager.store_refresh_token(
+    await refresh_manager.store_refresh_token(
         user_id=user.id,
         token_hash=refresh_token_hash,
         ip_address=client_ip,
@@ -443,7 +438,7 @@ async def login(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
-    record_vpn_login_geo(user.id, http_request)
+    await record_vpn_login_geo(user.id, http_request)
 
     org_name = org.name if org else "None"
     logger.info(
@@ -524,7 +519,7 @@ async def login_with_sms(
             raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
 
     # All validations passed - now consume the SMS code
-    _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
+    await _verify_and_consume_sms_code(request.phone, request.sms_code, "login", db, lang)
 
     return await _complete_login_after_otp_verified(
         user,
@@ -586,7 +581,7 @@ async def login_with_email(
                 detail=detail,
             )
 
-    verify_and_consume_email_code(request.email, request.email_code, "login", lang)
+    await verify_and_consume_email_code(request.email, request.email_code, "login", lang)
 
     return await _complete_login_after_otp_verified(
         user,
@@ -666,7 +661,7 @@ async def verify_demo(
                 logger.info("Created bayi organization: %s", BAYI_DEFAULT_ORG_CODE)
                 # Cache the newly created org (non-blocking)
                 try:
-                    org_cache.cache_org(org)
+                    await org_cache.cache_org(org)
                 except Exception as e:
                     logger.warning("Failed to cache bayi org: %s", e)
         else:
@@ -697,9 +692,9 @@ async def verify_demo(
 
             # Cache the newly created user and org (non-blocking)
             try:
-                user_cache.cache_user(auth_user)
+                await user_cache.cache_user(auth_user)
                 if org:
-                    org_cache.cache_org(org)
+                    await org_cache.cache_org(org)
             except Exception as e:
                 logger.warning("Failed to cache demo user/org: %s", e)
         except Exception as e:
@@ -742,11 +737,11 @@ async def verify_demo(
     )
 
     # Store access token session in Redis (automatically limits concurrent sessions)
-    session_manager.store_session(auth_user.id, token, device_hash=device_hash)
+    await session_manager.store_session(auth_user.id, token, device_hash=device_hash)
 
     # Store refresh token with device binding
     refresh_manager = get_refresh_token_manager()
-    refresh_manager.store_refresh_token(
+    await refresh_manager.store_refresh_token(
         user_id=auth_user.id,
         token_hash=refresh_token_hash,
         ip_address=client_ip,
@@ -757,7 +752,7 @@ async def verify_demo(
     # Set cookies (both access and refresh tokens)
     set_auth_cookies(response, token, refresh_token_value, request)
 
-    record_vpn_login_geo(auth_user.id, request)
+    await record_vpn_login_geo(auth_user.id, request)
 
     logger.info(
         "[TokenAudit] Login success: user=%s, mode=%s, admin=%s, ip=%s, device=%s",
@@ -803,7 +798,7 @@ async def verify_public_dashboard(
 
     # Rate limiting: 5 attempts per IP per 15 minutes
     rate_limiter = RedisRateLimiter()
-    is_allowed, attempt_count, error_msg = rate_limiter.check_and_record(
+    is_allowed, attempt_count, error_msg = await rate_limiter.check_and_record(
         category="dashboard_passkey",
         identifier=client_ip,
         max_attempts=5,
@@ -837,7 +832,7 @@ async def verify_public_dashboard(
 
     # Create dashboard session
     session_manager = get_dashboard_session_manager()
-    dashboard_token = session_manager.create_session(client_ip)
+    dashboard_token = await session_manager.create_session(client_ip)
 
     # Set dashboard access cookie
     response.set_cookie(

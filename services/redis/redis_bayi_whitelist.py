@@ -30,7 +30,8 @@ import types
 import uuid
 
 from services.redis import keys as _keys
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 if TYPE_CHECKING:
     pass
@@ -104,7 +105,7 @@ class WhitelistLoadLockManager:
             self._lock_id = self._generate_lock_id()
         return self._lock_id
 
-    def acquire(self) -> bool:
+    async def acquire(self) -> bool:
         """
         Attempt to acquire the whitelist load lock.
 
@@ -119,19 +120,24 @@ class WhitelistLoadLockManager:
             logger.debug("[BayiWhitelist] Redis unavailable, assuming single worker mode for whitelist loading")
             return True
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return True
 
         try:
             lock_id = self.get_lock_id()
-            acquired = redis.set(WHITELIST_LOAD_LOCK_KEY, lock_id, nx=True, ex=WHITELIST_LOAD_LOCK_TTL)
+            acquired = await redis.set(
+                WHITELIST_LOAD_LOCK_KEY,
+                lock_id,
+                nx=True,
+                ex=WHITELIST_LOAD_LOCK_TTL,
+            )
 
             if acquired:
                 logger.debug("[BayiWhitelist] Lock acquired by this worker (id=%s)", lock_id)
                 return True
 
-            holder = redis.get(WHITELIST_LOAD_LOCK_KEY)
+            holder = await redis.get(WHITELIST_LOAD_LOCK_KEY)
             logger.info(
                 "[BayiWhitelist] Another worker holds the whitelist load lock (holder=%s), skipping whitelist load",
                 holder,
@@ -146,7 +152,7 @@ class WhitelistLoadLockManager:
 _lock_manager = WhitelistLoadLockManager()
 
 
-def acquire_whitelist_load_lock() -> bool:
+async def acquire_whitelist_load_lock() -> bool:
     """
     Attempt to acquire the whitelist load lock.
 
@@ -157,7 +163,7 @@ def acquire_whitelist_load_lock() -> bool:
         True if lock acquired (this worker should load whitelist)
         False if lock held by another worker
     """
-    return _lock_manager.acquire()
+    return await _lock_manager.acquire()
 
 
 class BayiIPWhitelist:
@@ -194,7 +200,7 @@ class BayiIPWhitelist:
         """Check if Redis should be used."""
         return is_redis_available()
 
-    def is_ip_whitelisted(self, ip: str) -> bool:
+    async def is_ip_whitelisted(self, ip: str) -> bool:
         """
         Check if IP is whitelisted.
 
@@ -209,13 +215,15 @@ class BayiIPWhitelist:
             return False
 
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
-                    # O(1) lookup in Redis Set
-                    is_member = redis.sismember(WHITELIST_KEY, normalized_ip)
+                    is_member = await redis.sismember(WHITELIST_KEY, normalized_ip)
                     if is_member:
-                        logger.debug("[BayiWhitelist] IP %s matched whitelist entry (Redis)", ip)
+                        logger.debug(
+                            "[BayiWhitelist] IP %s matched whitelist entry (Redis)",
+                            ip,
+                        )
                         return True
                     return False
                 except Exception as e:
@@ -224,17 +232,18 @@ class BayiIPWhitelist:
                         ip,
                         e,
                     )
-                    # Fall through to in-memory fallback
 
-        # Fallback to in-memory set (backward compatibility)
         auth_module = _get_auth_module()
         if auth_module and normalized_ip in auth_module.BAYI_IP_WHITELIST:
-            logger.debug("[BayiWhitelist] IP %s matched whitelist entry (in-memory fallback)", ip)
+            logger.debug(
+                "[BayiWhitelist] IP %s matched whitelist entry (in-memory fallback)",
+                ip,
+            )
             return True
 
         return False
 
-    def add_ip(self, ip: str, added_by: str = "system") -> bool:
+    async def add_ip(self, ip: str, added_by: str = "system") -> bool:
         """
         Add IP to whitelist.
 
@@ -254,13 +263,12 @@ class BayiIPWhitelist:
             logger.warning("[BayiWhitelist] Redis unavailable, cannot add IP %s", ip)
             return False
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return False
 
         try:
-            # Add to Redis Set (SADD returns number of members added)
-            added = redis.sadd(WHITELIST_KEY, normalized_ip)
+            added = await redis.sadd(WHITELIST_KEY, normalized_ip)
             if added > 0:
                 logger.info("[BayiWhitelist] Added IP %s to whitelist (by %s)", ip, added_by)
                 return True
@@ -270,7 +278,7 @@ class BayiIPWhitelist:
             logger.error("[BayiWhitelist] Failed to add IP %s: %s", ip, e)
             return False
 
-    def remove_ip(self, ip: str) -> bool:
+    async def remove_ip(self, ip: str) -> bool:
         """
         Remove IP from whitelist.
 
@@ -289,13 +297,12 @@ class BayiIPWhitelist:
             logger.warning("[BayiWhitelist] Redis unavailable, cannot remove IP %s", ip)
             return False
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return False
 
         try:
-            # Remove from Redis Set (SREM returns number of members removed)
-            removed = redis.srem(WHITELIST_KEY, normalized_ip)
+            removed = await redis.srem(WHITELIST_KEY, normalized_ip)
             if removed > 0:
                 logger.info("[BayiWhitelist] Removed IP %s from whitelist", ip)
                 return True
@@ -305,7 +312,7 @@ class BayiIPWhitelist:
             logger.error("[BayiWhitelist] Failed to remove IP %s: %s", ip, e)
             return False
 
-    def list_ips(self) -> List[str]:
+    async def list_ips(self) -> List[str]:
         """
         List all whitelisted IPs.
 
@@ -318,13 +325,12 @@ class BayiIPWhitelist:
                 return list(auth_module.BAYI_IP_WHITELIST)
             return []
 
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return []
 
         try:
-            # Get all members of Redis Set
-            ips = redis.smembers(WHITELIST_KEY)
+            ips = await redis.smembers(WHITELIST_KEY)
             return sorted(list(ips)) if ips else []
         except Exception as e:
             logger.error("[BayiWhitelist] Failed to list IPs: %s", e)
@@ -333,7 +339,7 @@ class BayiIPWhitelist:
                 return list(auth_module.BAYI_IP_WHITELIST)
             return []
 
-    def load_from_env(self) -> int:
+    async def load_from_env(self) -> int:
         """
         Load IPs from environment variable into Redis.
 
@@ -346,8 +352,7 @@ class BayiIPWhitelist:
         Returns:
             Number of IPs successfully loaded
         """
-        # Try to acquire lock - only one worker should load whitelist
-        if not acquire_whitelist_load_lock():
+        if not await acquire_whitelist_load_lock():
             return 0
 
         auth_module = _get_auth_module()
@@ -371,7 +376,7 @@ class BayiIPWhitelist:
 
             normalized_ip = self._normalize_ip(ip_entry)
             if normalized_ip:
-                if self.add_ip(normalized_ip, added_by="startup"):
+                if await self.add_ip(normalized_ip, added_by="startup"):
                     count += 1
                 else:
                     errors += 1

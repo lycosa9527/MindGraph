@@ -369,7 +369,7 @@ class RAGService:
         method = method or self.default_method
 
         # Check KB rate limit for retrieval
-        allowed, _, error_msg = self.kb_rate_limiter.check_retrieval_limit(user_id)
+        allowed, _, error_msg = await self.kb_rate_limiter.check_retrieval_limit(user_id)
         if not allowed:
             logger.warning("[RAGService] Rate limit exceeded for user %s: %s", user_id, error_msg)
             raise HTTPException(
@@ -444,7 +444,7 @@ class RAGService:
                     # Use rerank model
                     texts = [text for text, _ in deduplicated_texts]
                     try:
-                        reranked = self.rerank_client.rerank(
+                        reranked = await self.rerank_client.rerank(
                             query=query,
                             documents=texts,
                             top_n=top_k,
@@ -468,7 +468,7 @@ class RAGService:
                 # Non-hybrid search with rerank model
                 texts = [text for text, _ in chunk_texts]
                 try:
-                    reranked = self.rerank_client.rerank(
+                    reranked = await self.rerank_client.rerank(
                         query=query,
                         documents=texts,
                         top_n=top_k,
@@ -552,7 +552,7 @@ class RAGService:
         """
         try:
             # Generate query embedding (with cache)
-            query_embedding = self.embedding_cache.embed_query_cached(query)
+            query_embedding = await self.embedding_cache.embed_query_cached(query)
 
             logger.debug(
                 "[RAGService] vector_search: user=%s, query_len=%s, embedding_dim=%s",
@@ -706,7 +706,7 @@ class RAGService:
     ) -> List[Dict[str, Any]]:
         """Vector search returning results with scores."""
         try:
-            query_embedding = self.embedding_cache.embed_query_cached(query)
+            query_embedding = await self.embedding_cache.embed_query_cached(query)
             results = self.qdrant.search(
                 user_id=user_id,
                 query_embedding=query_embedding,

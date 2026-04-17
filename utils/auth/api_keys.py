@@ -57,7 +57,7 @@ async def validate_api_key(api_key: str, db: AsyncSession) -> bool:
 
     # Redis-first: skip DB entirely on cache hit.
     if _api_key_cache:
-        cached = _api_key_cache.get(api_key)
+        cached = await _api_key_cache.get(api_key)
         if cached is not None:
             if not cached.get("is_active"):
                 fp = hashlib.sha256(api_key.encode("utf-8")).hexdigest()[:16]
@@ -99,9 +99,8 @@ async def validate_api_key(api_key: str, db: AsyncSession) -> bool:
             detail=f"API key quota exceeded. Limit: {key_record.quota_limit}",
         )
 
-    # Populate cache for future requests.
     if _api_key_cache:
-        _api_key_cache.set(api_key, key_record)
+        await _api_key_cache.set(api_key, key_record)
 
     return True
 
@@ -121,7 +120,7 @@ async def get_api_key_record(api_key: str, db: AsyncSession) -> Optional[APIKey]
         APIKey record or None
     """
     if _api_key_cache:
-        cached = _api_key_cache.get(api_key)
+        cached = await _api_key_cache.get(api_key)
         if cached is not None:
             # Reconstruct a lightweight object from cached data so callers can
             # read .id and .name without hitting the DB again.
@@ -151,11 +150,10 @@ async def track_api_key_usage(api_key: str, db: AsyncSession) -> None:
         db: Async database session
     """
     if _api_key_cache:
-        # Attempt to get the key ID from cache to avoid a DB lookup.
-        cached = _api_key_cache.get(api_key)
+        cached = await _api_key_cache.get(api_key)
         if cached is not None:
             key_id = cached["id"]
-            _api_key_cache.incr_usage(key_id)
+            await _api_key_cache.incr_usage(key_id)
             logger.debug("[Auth] API key usage tracked via Redis INCR: id=%s", key_id)
             return
 
@@ -183,9 +181,7 @@ async def track_api_key_usage(api_key: str, db: AsyncSession) -> None:
         logger.error("[Auth] Failed to track API key usage: %s", exc, exc_info=True)
 
 
-async def generate_api_key(
-    name: str, description: str, quota_limit: Optional[int], db: AsyncSession
-) -> str:
+async def generate_api_key(name: str, description: str, quota_limit: Optional[int], db: AsyncSession) -> str:
     """
     Generate a new API key.
 

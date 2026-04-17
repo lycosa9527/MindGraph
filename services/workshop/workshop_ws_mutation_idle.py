@@ -7,7 +7,7 @@ from fastapi import WebSocket
 
 logger = logging.getLogger(__name__)
 
-from services.redis.redis_client import get_redis as get_redis_client
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_redis_keys import mutation_idle_key
 
 
@@ -22,12 +22,12 @@ async def run_mutation_idle_monitor(
     """
     while True:
         await asyncio.sleep(30)
-        redis = get_redis_client()
+        redis = get_async_redis()
         if not redis:
             continue
         mut_key = mutation_idle_key(code, user_id)
         try:
-            exists = await asyncio.to_thread(redis.exists, mut_key)
+            exists = await redis.exists(mut_key)
         except (RuntimeError, TypeError, ValueError, OSError):
             continue
         if not exists:

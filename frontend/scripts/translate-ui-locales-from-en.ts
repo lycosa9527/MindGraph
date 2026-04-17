@@ -236,7 +236,7 @@ function parseArgs(): {
           .split(',')
           .map((s) => s.trim())
           .filter(Boolean)
-      : [],
+      : []
   )
   const onlyNs = onlyArg
     ? new Set(
@@ -244,13 +244,16 @@ function parseArgs(): {
           .slice('--only-ns='.length)
           .split(',')
           .map((s) => s.trim())
-          .filter(Boolean),
+          .filter(Boolean)
       )
     : null
   return { locales, dryRun, skipNs, onlyNs }
 }
 
-function namespacesToProcess(skipNs: Set<string>, onlyNs: Set<string> | null): (typeof NS_FILES)[number][] {
+function namespacesToProcess(
+  skipNs: Set<string>,
+  onlyNs: Set<string> | null
+): (typeof NS_FILES)[number][] {
   const list: (typeof NS_FILES)[number][] = []
   for (const ns of NS_FILES) {
     if (onlyNs !== null && !onlyNs.has(ns)) {
@@ -268,7 +271,7 @@ async function translateLocale(
   localeCode: LocaleCode,
   googleTo: string,
   dryRun: boolean,
-  nsToRun: (typeof NS_FILES)[number][],
+  nsToRun: (typeof NS_FILES)[number][]
 ): Promise<void> {
   console.log(`\n=== ${localeCode} -> ${googleTo} ===`)
   if (dryRun) {
@@ -277,7 +280,7 @@ async function translateLocale(
       n += Object.keys(EN_BY_NS[ns]).length
     }
     console.log(
-      `  (dry-run: would write ${n} keys across ${nsToRun.length} namespace(s): ${nsToRun.join(', ')})`,
+      `  (dry-run: would write ${n} keys across ${nsToRun.length} namespace(s): ${nsToRun.join(', ')})`
     )
     return
   }
@@ -302,7 +305,9 @@ async function main(): Promise<void> {
   if (onlyNs !== null) {
     for (const n of onlyNs) {
       if (!NS_FILES.includes(n as (typeof NS_FILES)[number])) {
-        console.error(`Unknown namespace in --only-ns: ${n}. Expected one of: ${NS_FILES.join(', ')}`)
+        console.error(
+          `Unknown namespace in --only-ns: ${n}. Expected one of: ${NS_FILES.join(', ')}`
+        )
         process.exit(1)
       }
     }
@@ -338,7 +343,7 @@ async function main(): Promise<void> {
     dryRun ? 'DRY RUN (no network)' : 'Translating',
     targets.map((t) => t.code).join(', '),
     '| namespaces:',
-    nsToRun.join(', '),
+    nsToRun.join(', ')
   )
 
   for (const entry of targets) {

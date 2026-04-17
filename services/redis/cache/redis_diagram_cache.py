@@ -29,12 +29,15 @@ import logging
 import time
 import uuid
 from datetime import UTC, datetime
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
+import orjson
 from sqlalchemy import desc, select, update as sa_update
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.cache.redis_cache_stampede import with_stampede_lock
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from services.redis.cache._redis_diagram_cache_helpers import (
     _redis_json_set_paths,
     count_diagrams_from_db,
@@ -97,12 +100,12 @@ class RedisDiagramCache:
         Falls back to database when Redis is unavailable or key is missing.
         """
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
                     meta_key = self._get_user_meta_key(user_id)
-                    if redis.exists(meta_key):
-                        count = redis.zcard(meta_key)
+                    if await redis.exists(meta_key):
+                        count = await redis.zcard(meta_key)
                         if count is not None:
                             return count
                 except Exception as exc:
@@ -199,22 +202,22 @@ class RedisDiagramCache:
 
         # Then update Redis cache — all four Redis operations in a single pipeline.
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
                     diagram_key = self._get_diagram_key(user_id, diagram_id)
                     meta_key = self._get_user_meta_key(user_id)
                     list_key = self._get_user_list_key(user_id)
 
-                    pipe = redis.pipeline()
-                    # DELETE before JSON.SET to clear any stale key with wrong type.
-                    pipe.delete(diagram_key)
-                    pipe.json().set(diagram_key, "$", diagram_data)
-                    pipe.expire(diagram_key, CACHE_TTL)
-                    pipe.zadd(meta_key, {str(diagram_id): now_ts})
-                    pipe.expire(meta_key, CACHE_TTL)
-                    pipe.delete(list_key)
-                    pipe.execute()
+                    async with redis.pipeline(transaction=False) as pipe:
+                        # DELETE before JSON.SET to clear any stale key with wrong type.
+                        pipe.delete(diagram_key)
+                        pipe.json().set(diagram_key, "$", diagram_data)
+                        pipe.expire(diagram_key, CACHE_TTL)
+                        pipe.zadd(meta_key, {str(diagram_id): now_ts})
+                        pipe.expire(meta_key, CACHE_TTL)
+                        pipe.delete(list_key)
+                        await pipe.execute()
 
                     action = "Created" if is_new else "Updated"
                     logger.debug(
@@ -317,16 +320,15 @@ class RedisDiagramCache:
         """
         # Try Redis first (cache-aside pattern)
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
+                diagram_key = self._get_diagram_key(user_id, diagram_id)
                 try:
-                    diagram_key = self._get_diagram_key(user_id, diagram_id)
-
                     # Pipeline JSON.GET + EXPIRE in a single round-trip.
-                    pipe = redis.pipeline()
-                    pipe.json().get(diagram_key, "$")
-                    pipe.expire(diagram_key, CACHE_TTL)
-                    results = pipe.execute()
+                    async with redis.pipeline(transaction=False) as pipe:
+                        pipe.json().get(diagram_key, "$")
+                        pipe.expire(diagram_key, CACHE_TTL)
+                        results = await pipe.execute()
 
                     json_result = results[0]
                     if json_result:
@@ -341,15 +343,34 @@ class RedisDiagramCache:
                     # Stale key with wrong type — remove it so the cache-aside
                     # write in _load_from_database can succeed with JSON type.
                     try:
-                        redis.delete(diagram_key)
+                        await redis.delete(diagram_key)
                     except Exception:
                         pass
 
         # Fallback to database (cache-aside pattern)
         return await self._load_from_database(user_id, diagram_id)
 
-    async def _load_from_database(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
-        """Load diagram from database and cache in Redis."""
+    async def _read_cached_diagram(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
+        """Re-read cached diagram JSON without DB fallback (G6 loser path)."""
+        if not self._use_redis():
+            return None
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        diagram_key = self._get_diagram_key(user_id, diagram_id)
+        try:
+            json_result = await redis.json().get(diagram_key, "$")
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not json_result:
+            return None
+        diagram = json_result[0] if isinstance(json_result, list) else json_result
+        if diagram is None or diagram.get("is_deleted", False):
+            return None
+        return diagram
+
+    async def _query_diagram_from_db(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
+        """Inner DB load — runs under the stampede lock when one was acquired."""
         try:
             async with AsyncSessionLocal() as db:
                 result = await db.execute(
@@ -392,20 +413,20 @@ class RedisDiagramCache:
                 }
 
             if self._use_redis():
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
                     try:
                         diagram_key = self._get_diagram_key(user_id, diagram_id)
                         meta_key = self._get_user_meta_key(user_id)
                         updated_ts = updated_at_val.timestamp() if updated_at_val is not None else time.time()
 
-                        pipe = redis.pipeline()
-                        pipe.delete(diagram_key)
-                        pipe.json().set(diagram_key, "$", diagram_data)
-                        pipe.expire(diagram_key, CACHE_TTL)
-                        pipe.zadd(meta_key, {str(diagram_id): updated_ts})
-                        pipe.expire(meta_key, CACHE_TTL)
-                        pipe.execute()
+                        async with redis.pipeline(transaction=False) as pipe:
+                            pipe.delete(diagram_key)
+                            pipe.json().set(diagram_key, "$", diagram_data)
+                            pipe.expire(diagram_key, CACHE_TTL)
+                            pipe.zadd(meta_key, {str(diagram_id): updated_ts})
+                            pipe.expire(meta_key, CACHE_TTL)
+                            await pipe.execute()
                     except Exception as exc:
                         logger.debug("[DiagramCache] Redis cache-aside write failed: %s", exc)
 
@@ -413,6 +434,18 @@ class RedisDiagramCache:
         except Exception as e:
             logger.error("[DiagramCache] Database load failed: %s", e)
             return None
+
+    async def _load_from_database(self, user_id: int, diagram_id: str) -> Optional[Dict[str, Any]]:
+        """Load diagram from database, protected against cache stampedes (G6)."""
+        cache_key = self._get_diagram_key(user_id, diagram_id)
+
+        async def _loader() -> Optional[Dict[str, Any]]:
+            return await self._query_diagram_from_db(user_id, diagram_id)
+
+        async def _reader() -> Optional[Dict[str, Any]]:
+            return await self._read_cached_diagram(user_id, diagram_id)
+
+        return await with_stampede_lock(cache_key, _loader, _reader)
 
     async def list_diagrams(self, user_id: int, page: int = 1, page_size: int = 10) -> Dict[str, Any]:
         """
@@ -428,10 +461,10 @@ class RedisDiagramCache:
 
         # Try Redis cache first
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
-                    cached = redis.get(list_key)
+                    cached = await redis.get(list_key)
                     if cached:
                         data = json.loads(cached)
                         items = data.get("items", [])
@@ -466,11 +499,11 @@ class RedisDiagramCache:
 
         # Cache the full list in Redis
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
                     cache_data = {"items": items, "total": total}
-                    redis.setex(list_key, CACHE_TTL, json.dumps(cache_data))
+                    await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
                 except Exception as e:
                     logger.warning("[DiagramCache] Redis list cache write failed: %s", e)
 
@@ -556,7 +589,7 @@ class RedisDiagramCache:
         # Then update Redis cache
         diagram_key = self._get_diagram_key(user_id, diagram_id)
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
                     meta_key = self._get_user_meta_key(user_id)
@@ -565,17 +598,17 @@ class RedisDiagramCache:
                     # Attempt targeted JSON field update — avoids reading the full blob.
                     # If the key doesn't exist as JSON (cache miss) we skip the update;
                     # the next read will load from DB with is_deleted=True and skip caching.
-                    _redis_json_set_paths(
+                    await _redis_json_set_paths(
                         redis,
                         diagram_key,
                         [("$.is_deleted", True), ("$.updated_at", now.isoformat())],
                         CACHE_TTL,
                     )
 
-                    pipe = redis.pipeline()
-                    pipe.zrem(meta_key, str(diagram_id))
-                    pipe.delete(list_key)
-                    pipe.execute()
+                    async with redis.pipeline(transaction=False) as pipe:
+                        pipe.zrem(meta_key, str(diagram_id))
+                        pipe.delete(list_key)
+                        await pipe.execute()
 
                     logger.debug(
                         "[DiagramCache] Deleted diagram %s for user %s (write-through)",
@@ -665,18 +698,18 @@ class RedisDiagramCache:
         # Then update Redis cache using targeted JSON path updates — no full blob read needed.
         diagram_key = self._get_diagram_key(user_id, diagram_id)
         if self._use_redis():
-            redis = get_redis()
+            redis = get_async_redis()
             if redis:
                 try:
                     list_key = self._get_user_list_key(user_id)
 
-                    _redis_json_set_paths(
+                    await _redis_json_set_paths(
                         redis,
                         diagram_key,
                         [("$.is_pinned", pinned), ("$.updated_at", now.isoformat())],
                         CACHE_TTL,
                     )
-                    redis.delete(list_key)
+                    await redis.delete(list_key)
 
                     action = "Pinned" if pinned else "Unpinned"
                     logger.debug(
@@ -714,8 +747,8 @@ class RedisDiagramCache:
 
         # Skip if already cached
         if self._use_redis():
-            redis = get_redis()
-            if redis and redis.exists(list_key):
+            redis = get_async_redis()
+            if redis and await redis.exists(list_key):
                 logger.debug(
                     "[DiagramCache] Preload skipped for user %s - already cached",
                     user_id,
@@ -728,10 +761,10 @@ class RedisDiagramCache:
 
             # Cache in Redis
             if self._use_redis():
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
                     cache_data = {"items": items, "total": len(items)}
-                    redis.setex(list_key, CACHE_TTL, json.dumps(cache_data))
+                    await redis.setex(list_key, CACHE_TTL, orjson.dumps(cache_data))
                     logger.debug(
                         "[DiagramCache] Preloaded %s diagrams for user %s",
                         len(items),

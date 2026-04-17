@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import io
 import logging
+import wave
 from typing import Any
 
 from models.domain.mindbot_config import OrganizationMindbotConfig
@@ -69,9 +71,7 @@ async def send_openapi_image_by_url(
     if is_group_conversation(body):
         if not conv_s:
             return False, False
-        res = await send_group_image_by_photo_url(
-            token, robot_code, conv_s, url
-        )
+        res = await send_group_image_by_photo_url(token, robot_code, conv_s, url)
         ok = res is not None
         if ok:
             logger.info(
@@ -81,9 +81,7 @@ async def send_openapi_image_by_url(
         return ok, False
     if not sender_s:
         return False, False
-    res = await send_private_image_by_photo_url(
-        token, robot_code, [sender_s], url
-    )
+    res = await send_private_image_by_photo_url(token, robot_code, [sender_s], url)
     ok = res is not None
     if ok:
         logger.info("[MindBot] outbound_openapi_image %s chat=oto", pipeline_ctx)
@@ -123,9 +121,7 @@ async def send_openapi_voice_bytes(
     if is_group_conversation(body):
         if not conv_s:
             return False, False
-        res = await send_group_audio_from_upload(
-            token, robot_code, conv_s, voice_bytes, filename, dur
-        )
+        res = await send_group_audio_from_upload(token, robot_code, conv_s, voice_bytes, filename, dur)
         ok = res is not None
         if ok:
             logger.info(
@@ -136,9 +132,7 @@ async def send_openapi_voice_bytes(
         return ok, False
     if not sender_s:
         return False, False
-    res = await send_private_audio_from_upload(
-        token, robot_code, [sender_s], voice_bytes, filename, dur
-    )
+    res = await send_private_audio_from_upload(token, robot_code, [sender_s], voice_bytes, filename, dur)
     ok = res is not None
     if ok:
         logger.info(
@@ -181,9 +175,7 @@ async def send_openapi_file_bytes(
     if is_group_conversation(body):
         if not conv_s:
             return False, False
-        res = await send_group_file_from_upload(
-            token, robot_code, conv_s, file_bytes, fn
-        )
+        res = await send_group_file_from_upload(token, robot_code, conv_s, file_bytes, fn)
         ok = res is not None
         if ok:
             logger.info(
@@ -194,9 +186,7 @@ async def send_openapi_file_bytes(
         return ok, False
     if not sender_s:
         return False, False
-    res = await send_private_file_from_upload(
-        token, robot_code, [sender_s], file_bytes, fn
-    )
+    res = await send_private_file_from_upload(token, robot_code, [sender_s], file_bytes, fn)
     ok = res is not None
     if ok:
         logger.info(
@@ -240,9 +230,7 @@ async def send_openapi_markdown_snippet(
     if is_group_conversation(body):
         if not conv_s:
             return False, False
-        res = await send_group_markdown_sample(
-            token, robot_code, conv_s, title, body_md
-        )
+        res = await send_group_markdown_sample(token, robot_code, conv_s, title, body_md)
         ok = res is not None
         if ok:
             logger.info(
@@ -252,9 +240,7 @@ async def send_openapi_markdown_snippet(
         return ok, False
     if not sender_s:
         return False, False
-    res = await send_private_markdown_sample(
-        token, robot_code, [sender_s], title, body_md
-    )
+    res = await send_private_markdown_sample(token, robot_code, [sender_s], title, body_md)
     ok = res is not None
     if ok:
         logger.info(
@@ -277,16 +263,12 @@ async def send_dify_native_segment(
         url = payload.get("url")
         if not isinstance(url, str) or not url.strip():
             return True, False
-        return await send_openapi_image_by_url(
-            cfg, body, url, pipeline_ctx=pipeline_ctx
-        )
+        return await send_openapi_image_by_url(cfg, body, url, pipeline_ctx=pipeline_ctx)
     if kind == "markdown":
         text = payload.get("text")
         if not isinstance(text, str) or not text.strip():
             return True, False
-        return await send_openapi_markdown_snippet(
-            cfg, body, text, pipeline_ctx=pipeline_ctx
-        )
+        return await send_openapi_markdown_snippet(cfg, body, text, pipeline_ctx=pipeline_ctx)
     if kind == "audio":
         raw = payload.get("bytes")
         if not isinstance(raw, (bytes, bytearray)):
@@ -332,9 +314,7 @@ async def send_blocking_response_attachments(
         type_s = str(item.get("type") or "document")
         fn = str(item.get("filename") or "")
         if is_image_file_type(type_s):
-            ok, tf = await send_openapi_image_by_url(
-                cfg, body, url, pipeline_ctx=pipeline_ctx
-            )
+            ok, tf = await send_openapi_image_by_url(cfg, body, url, pipeline_ctx=pipeline_ctx)
             if tf:
                 token_failed_any = True
             if not ok and not tf:
@@ -343,9 +323,7 @@ async def send_blocking_response_attachments(
         link_md = f"[file]({url})"
         if fn:
             link_md = f"**{fn}**\n{link_md}"
-        ok, tf = await send_openapi_markdown_snippet(
-            cfg, body, link_md, pipeline_ctx=pipeline_ctx
-        )
+        ok, tf = await send_openapi_markdown_snippet(cfg, body, link_md, pipeline_ctx=pipeline_ctx)
         if tf:
             token_failed_any = True
         if not ok and not tf:
@@ -357,9 +335,6 @@ def estimate_voice_duration_ms(voice_bytes: bytes) -> int:
     """Best-effort duration for DingTalk ``sampleAudio``."""
     if len(voice_bytes) >= 12 and voice_bytes[:4] == b"RIFF":
         try:
-            import io
-            import wave
-
             with wave.open(io.BytesIO(voice_bytes), "rb") as wf:
                 frames = wf.getnframes()
                 rate = wf.getframerate() or 1

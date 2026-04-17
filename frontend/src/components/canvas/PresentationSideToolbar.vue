@@ -141,7 +141,11 @@ function toolClass(tool: PresentationToolId): string {
           <ElButton
             text
             size="small"
-            :class="props.virtualKeyboardOpen ? 'presentation-tool-btn is-active' : 'presentation-tool-btn'"
+            :class="
+              props.virtualKeyboardOpen
+                ? 'presentation-tool-btn is-active'
+                : 'presentation-tool-btn'
+            "
             @click="emit('toggleVirtualKeyboard')"
           >
             <Keyboard class="h-5 w-5 shrink-0" />

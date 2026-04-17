@@ -20,8 +20,9 @@ import logging
 import os
 import re
 import time
+import warnings
 
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, func, select, text
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import sessionmaker
 
@@ -66,11 +67,17 @@ def libpq_database_url(db_url: str) -> str:
     return _LIBPQ_SCHEME.sub("postgresql://", db_url, count=1)
 
 
-_raw_db_url = os.getenv(
-    "DATABASE_URL",
-    "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
-)
-DATABASE_URL = _normalise_db_url(_raw_db_url)
+_DEFAULT_DB_URL = "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph"
+_RAW_DB_URL = os.getenv("DATABASE_URL")
+if _RAW_DB_URL is None:
+    warnings.warn(
+        "DATABASE_URL environment variable is not set. "
+        "Falling back to the insecure default credentials. "
+        "This MUST be explicitly configured before deploying to production.",
+        stacklevel=2,
+    )
+    _RAW_DB_URL = _DEFAULT_DB_URL
+DATABASE_URL = _normalise_db_url(_RAW_DB_URL)
 
 # Create SQLAlchemy engine with proper pool configuration
 # PostgreSQL/MySQL pool configuration for production workloads
@@ -80,28 +87,99 @@ DATABASE_URL = _normalise_db_url(_raw_db_url)
 # - pool_pre_ping: Check connection validity before using (handles stale connections)
 # - pool_recycle: Recycle connections after N seconds (prevents stale connections)
 
-# Default pool configuration (per process: each uvicorn/async worker has its own pool).
-# Raised for concurrent MindBot pipelines (each holds a session for the full Dify/outbound
-# path). Size PostgreSQL max_connections for: workers × (pool_size + max_overflow) + margin.
-DEFAULT_POOL_SIZE = 50
-DEFAULT_MAX_OVERFLOW = 100
-DEFAULT_POOL_TIMEOUT = 60  # Wait time for connection (seconds)
+# Per-process pool sizing (each uvicorn worker / Celery process has its own
+# pool). FastAPI handlers always use the async engine; the sync engine is
+# kept small because it is only used by Alembic, the migration lock, Celery
+# tasks, and a few legacy sync code paths.
+#
+# Total connections demanded per uvicorn worker = async_pool + async_overflow
+# (+ sync_pool + sync_overflow if Celery shares the process).
+# Size PostgreSQL ``max_connections`` accordingly — see docs/db-tuning.md.
+DEFAULT_ASYNC_POOL_SIZE = 50
+DEFAULT_ASYNC_MAX_OVERFLOW = 100
+DEFAULT_SYNC_POOL_SIZE = 5
+DEFAULT_SYNC_MAX_OVERFLOW = 10
+DEFAULT_POOL_TIMEOUT = 60  # Wait time for a connection (seconds)
 
-# Allow environment variable overrides
-pool_size_str = os.getenv("DATABASE_POOL_SIZE", str(DEFAULT_POOL_SIZE))
-max_overflow_str = os.getenv("DATABASE_MAX_OVERFLOW", str(DEFAULT_MAX_OVERFLOW))
-pool_timeout_str = os.getenv("DATABASE_POOL_TIMEOUT", str(DEFAULT_POOL_TIMEOUT))
-pool_size = int(pool_size_str)
-max_overflow = int(max_overflow_str)
-pool_timeout = int(pool_timeout_str)
+# Allow environment variable overrides. ``DATABASE_POOL_SIZE`` /
+# ``DATABASE_MAX_OVERFLOW`` are kept as legacy aliases that govern the async
+# pool (the dominant FastAPI workload).
+async_pool_size = int(
+    os.getenv("DATABASE_ASYNC_POOL_SIZE") or os.getenv("DATABASE_POOL_SIZE") or str(DEFAULT_ASYNC_POOL_SIZE)
+)
+async_max_overflow = int(
+    os.getenv("DATABASE_ASYNC_MAX_OVERFLOW") or os.getenv("DATABASE_MAX_OVERFLOW") or str(DEFAULT_ASYNC_MAX_OVERFLOW)
+)
+sync_pool_size = int(os.getenv("DATABASE_SYNC_POOL_SIZE", str(DEFAULT_SYNC_POOL_SIZE)))
+sync_max_overflow = int(os.getenv("DATABASE_SYNC_MAX_OVERFLOW", str(DEFAULT_SYNC_MAX_OVERFLOW)))
+pool_timeout = int(os.getenv("DATABASE_POOL_TIMEOUT", str(DEFAULT_POOL_TIMEOUT)))
+
+# Backwards-compatible aliases consumed by older modules / tests.
+pool_size = async_pool_size
+max_overflow = async_max_overflow
+
+# ---------------------------------------------------------------------------
+# Per-connection PostgreSQL safety settings (G1 from db-tuning audit).
+#
+# These guard the application against runaway queries and idle transactions
+# that can pin connections forever and starve the pool.  Each value is an
+# env override so operators can tune for different workloads (e.g. raise the
+# statement timeout for analytics jobs).
+#
+# Setting any of these to ``0`` reproduces legacy unbounded behaviour.
+# ---------------------------------------------------------------------------
+DEFAULT_STATEMENT_TIMEOUT_MS = 60_000
+DEFAULT_IDLE_IN_TXN_TIMEOUT_MS = 30_000
+DEFAULT_CONNECT_TIMEOUT_S = 10
+
+statement_timeout_ms = int(os.getenv("DATABASE_STATEMENT_TIMEOUT_MS", str(DEFAULT_STATEMENT_TIMEOUT_MS)))
+idle_in_txn_timeout_ms = int(os.getenv("DATABASE_IDLE_IN_TXN_TIMEOUT_MS", str(DEFAULT_IDLE_IN_TXN_TIMEOUT_MS)))
+connect_timeout_s = int(os.getenv("DATABASE_CONNECT_TIMEOUT_S", str(DEFAULT_CONNECT_TIMEOUT_S)))
+application_name = os.getenv(
+    "DATABASE_APPLICATION_NAME",
+    f"mindgraph-w{os.getpid()}",
+)
+
+
+def _build_connect_args() -> dict:
+    """Assemble psycopg3 connect_args from current environment settings.
+
+    ``options`` is forwarded verbatim to libpq, which applies each ``-c key=val``
+    pair on every new physical connection.  Zero-valued timeouts are omitted so
+    operators can opt back into PostgreSQL's default unlimited behaviour.
+    """
+    options_parts: list[str] = []
+    if statement_timeout_ms > 0:
+        options_parts.append(f"-c statement_timeout={statement_timeout_ms}")
+    if idle_in_txn_timeout_ms > 0:
+        options_parts.append(f"-c idle_in_transaction_session_timeout={idle_in_txn_timeout_ms}")
+
+    args: dict = {
+        "application_name": application_name,
+        "connect_timeout": connect_timeout_s,
+    }
+    if options_parts:
+        args["options"] = " ".join(options_parts)
+    return args
+
+
+_CONNECT_ARGS = _build_connect_args()
+
+# ``pool_use_lifo=True`` keeps the most recently used connection at the top
+# of the pool (G5).  Under bursty traffic this lets idle connections close
+# naturally via ``pool_recycle`` instead of getting refreshed in round-robin
+# fashion, which is also friendlier to PgBouncer transaction pooling.
+_POOL_USE_LIFO = os.getenv("DATABASE_POOL_USE_LIFO", "true").lower() == "true"
 
 engine = create_engine(
     DATABASE_URL,
-    pool_size=pool_size,  # Default: 50, override via DATABASE_POOL_SIZE
-    max_overflow=max_overflow,  # Default: 100, override via DATABASE_MAX_OVERFLOW
-    pool_timeout=pool_timeout,  # Default: 60 seconds, override via DATABASE_POOL_TIMEOUT
-    pool_pre_ping=True,  # Test connection before using
-    pool_recycle=1800,  # Recycle connections every 30 minutes
+    pool_size=sync_pool_size,
+    max_overflow=sync_max_overflow,
+    pool_timeout=pool_timeout,
+    pool_pre_ping=True,
+    pool_recycle=1800,
+    pool_use_lifo=_POOL_USE_LIFO,
+    connect_args=_CONNECT_ARGS,
     echo=False,
 )
 
@@ -115,11 +193,13 @@ SessionLocal = SyncSessionLocal  # backward-compat alias (will be removed)
 # ---------------------------------------------------------------------------
 async_engine = create_async_engine(
     DATABASE_URL,
-    pool_size=pool_size,
-    max_overflow=max_overflow,
+    pool_size=async_pool_size,
+    max_overflow=async_max_overflow,
     pool_timeout=pool_timeout,
     pool_pre_ping=True,
     pool_recycle=1800,
+    pool_use_lifo=_POOL_USE_LIFO,
+    connect_args=_CONNECT_ARGS,
     echo=False,
 )
 
@@ -134,7 +214,8 @@ def _seed_organizations_if_empty() -> None:
     """Insert organizations when the table is empty (INVITATION_CODES or demo defaults)."""
     db = SyncSessionLocal()
     try:
-        if db.query(Organization).count() != 0:
+        org_count = db.execute(select(func.count()).select_from(Organization)).scalar_one()
+        if org_count != 0:
             logger.info("Organizations already exist, skipping seed")
             return
 
@@ -200,7 +281,7 @@ _MIGRATION_LOCK_KEY = "lock:mindgraph:alembic_migration"
 _MIGRATION_LOCK_TTL = 3600
 _MIGRATION_WAIT_INTERVAL_SEC = 2.0
 _MIGRATION_WAIT_MAX_ATTEMPTS = 1800
-_migration_lock_id: "str | None" = None
+_MIGRATION_LOCK_ID: "str | None" = None
 
 
 def _get_alembic_version_num() -> str | None:
@@ -252,6 +333,15 @@ def _run_alembic_upgrade() -> None:
         logger.info("[Database] Schema is up to date (revision %s)", current_rev)
         return
 
+    if head_rev is None:
+        logger.error(
+            "[Database] Database has revision %s but no Alembic head revision found on disk.",
+            current_rev,
+        )
+        raise RuntimeError(
+            "Alembic script directory has no head revision; cannot apply migrations or wait for a peer."
+        )
+
     if current_rev is None:
         logger.info("[Database] No alembic_version found — running initial migration")
     else:
@@ -281,7 +371,7 @@ def _acquire_migration_lock() -> bool:
     worker already holds the lock.  Falls back to True (run anyway) when
     Redis is unavailable (single-worker or dev setup).
     """
-    global _migration_lock_id  # pylint: disable=global-statement
+    global _MIGRATION_LOCK_ID
 
     try:
         from services.redis.redis_client import get_redis, is_redis_available
@@ -303,7 +393,7 @@ def _acquire_migration_lock() -> bool:
         ex=_MIGRATION_LOCK_TTL,
     )
     if acquired:
-        _migration_lock_id = lock_id
+        _MIGRATION_LOCK_ID = lock_id
         logger.info("[Database] Migration lock acquired (id %s)", lock_id)
         return True
 
@@ -318,23 +408,23 @@ def _release_migration_lock() -> None:
     acquisition time, so a worker that outlasts its own TTL cannot
     accidentally evict a lock legitimately held by a different worker.
     """
-    global _migration_lock_id  # pylint: disable=global-statement
+    global _MIGRATION_LOCK_ID
 
-    if not _migration_lock_id:
+    if not _MIGRATION_LOCK_ID:
         return
 
     try:
         from services.redis.redis_client import RedisOps, is_redis_available
     except ImportError:
-        _migration_lock_id = None
+        _MIGRATION_LOCK_ID = None
         return
 
     if not is_redis_available():
-        _migration_lock_id = None
+        _MIGRATION_LOCK_ID = None
         return
 
-    lock_id = _migration_lock_id
-    _migration_lock_id = None
+    lock_id = _MIGRATION_LOCK_ID
+    _MIGRATION_LOCK_ID = None
 
     try:
         RedisOps.compare_and_delete(_MIGRATION_LOCK_KEY, lock_id)
@@ -376,10 +466,19 @@ def _wait_for_migration_completion(expected_head: str) -> None:
 
 
 def _check_pool_vs_max_connections() -> None:
-    """Warn if configured pool exceeds PostgreSQL max_connections."""
+    """Warn if configured pool exceeds PostgreSQL max_connections.
+
+    Counts both the sync and async engines, plus a small reserve for
+    Alembic / superuser sessions. The check is intentionally conservative:
+    it warns when the *worst-case* concurrent demand crosses
+    ``max_connections``.
+    """
     workers = int(os.getenv("UVICORN_WORKERS", "1"))
-    per_worker = pool_size + max_overflow
-    total_needed = workers * per_worker
+    async_per_worker = async_pool_size + async_max_overflow
+    sync_per_worker = sync_pool_size + sync_max_overflow
+    per_worker = async_per_worker + sync_per_worker
+    reserve = 10  # Alembic, ad-hoc psql, replication, ...
+    total_needed = workers * per_worker + reserve
     try:
         with engine.connect() as conn:
             row = conn.execute(text("SHOW max_connections")).fetchone()
@@ -392,23 +491,52 @@ def _check_pool_vs_max_connections() -> None:
     if total_needed > pg_max:
         logger.warning(
             "[Database] Pool config may exceed PostgreSQL capacity: "
-            "%d workers × %d (pool_size %d + max_overflow %d) = %d, "
-            "but max_connections = %d. Risk of connection exhaustion.",
+            "%d workers × (async %d + sync %d = %d) + %d reserve = %d, "
+            "but max_connections = %d. Risk of connection exhaustion — "
+            "either lower DATABASE_*_POOL_SIZE / DATABASE_*_MAX_OVERFLOW, "
+            "raise POSTGRESQL_MAX_CONNECTIONS, or front Postgres with PgBouncer.",
             workers,
+            async_per_worker,
+            sync_per_worker,
             per_worker,
-            pool_size,
-            max_overflow,
+            reserve,
             total_needed,
             pg_max,
         )
     else:
         logger.info(
-            "[Database] Pool check OK: %d workers × %d = %d ≤ max_connections %d",
+            "[Database] Pool check OK: %d workers × (async %d + sync %d) + %d reserve = %d ≤ max_connections %d",
             workers,
-            per_worker,
+            async_per_worker,
+            sync_per_worker,
+            reserve,
             total_needed,
             pg_max,
         )
+
+
+def _ensure_pg_extensions() -> None:
+    """Create observability extensions if they are missing.
+
+    ``pg_stat_statements`` and ``auto_explain`` are loaded via
+    ``shared_preload_libraries`` in the managed ``postgresql.conf`` template,
+    but the extension itself still needs to be registered in each database
+    so its views become queryable. This is idempotent and silent on
+    permission errors (Aurora / managed Postgres often pre-installs them).
+    """
+    statements = (
+        "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
+        "CREATE EXTENSION IF NOT EXISTS pg_trgm",
+    )
+    try:
+        with engine.begin() as conn:
+            for sql in statements:
+                try:
+                    conn.execute(text(sql))
+                except Exception as exc:
+                    logger.debug("[Database] Could not run %r (continuing): %s", sql, exc)
+    except Exception as exc:
+        logger.debug("[Database] Skipped extension setup: %s", exc)
 
 
 def init_db(seed_organizations: bool = True):
@@ -434,6 +562,7 @@ def init_db(seed_organizations: bool = True):
         logger.error("[Database] Alembic migration failed: %s", exc, exc_info=True)
         raise
 
+    _ensure_pg_extensions()
     _check_pool_vs_max_connections()
 
     if not seed_organizations:
@@ -520,6 +649,22 @@ def check_integrity() -> bool:
         return True
     except Exception as e:
         logger.error("[Database] Integrity check error: %s", e)
+        return False
+
+
+async def check_integrity_async() -> bool:
+    """Async variant of ``check_integrity`` using the async engine.
+
+    Performs a lightweight ``SELECT 1`` against the async engine so health
+    probes invoked from FastAPI endpoints never block the event loop.
+    """
+    try:
+        async with async_engine.connect() as conn:
+            result = await conn.execute(text("SELECT 1"))
+            result.fetchone()
+        return True
+    except Exception as e:
+        logger.error("[Database] Async integrity check error: %s", e)
         return False
 
 

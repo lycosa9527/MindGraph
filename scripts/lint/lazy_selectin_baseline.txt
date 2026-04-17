@@ -1,0 +1,69 @@
+# Baseline of lazy="selectin" declarations grandfathered into the build.
+# One entry per line: <relative/path> :: <line snippet>.
+# Remove a line as you migrate the matching relationship to lazy="select".
+# Regenerate with: python scripts/lint/lint_lazy_selectin.py --update-baseline
+
+models/domain/community.py :: author: Mapped["User"] = relationship("User", lazy="selectin")
+models/domain/community.py :: post: Mapped["CommunityPost"] = relationship("CommunityPost", lazy="selectin")
+models/domain/community.py :: user: Mapped["User"] = relationship("User", lazy="selectin")
+models/domain/debateverse.py :: lazy="selectin",
+models/domain/debateverse.py :: session = relationship("DebateSession", back_populates="judgment", lazy="selectin")
+models/domain/debateverse.py :: session = relationship("DebateSession", back_populates="messages", lazy="selectin")
+models/domain/debateverse.py :: user = relationship("User", backref="debate_participations", lazy="selectin")
+models/domain/debateverse.py :: user = relationship("User", backref="debate_sessions", lazy="selectin")
+models/domain/device.py :: lazy="selectin",
+models/domain/diagram_snapshots.py :: diagram: Mapped["Diagram"] = relationship("Diagram", back_populates="snapshots", lazy="selectin")
+models/domain/diagrams.py :: lazy="selectin",
+models/domain/diagrams.py :: user: Mapped["User"] = relationship("User", back_populates="diagrams", lazy="selectin")
+models/domain/knowledge_space.py :: chunk = relationship("DocumentChunk", back_populates="attachments", lazy="selectin")
+models/domain/knowledge_space.py :: dataset = relationship("EvaluationDataset", back_populates="results", lazy="selectin")
+models/domain/knowledge_space.py :: document = relationship("ChunkTestDocument", back_populates="chunks", lazy="selectin")
+models/domain/knowledge_space.py :: document = relationship("KnowledgeDocument", back_populates="chunks", lazy="selectin")
+models/domain/knowledge_space.py :: document = relationship("KnowledgeDocument", back_populates="versions", lazy="selectin")
+models/domain/knowledge_space.py :: evaluation_datasets = relationship("EvaluationDataset", back_populates="space", lazy="selectin")
+models/domain/knowledge_space.py :: evaluation_results = relationship("EvaluationResult", back_populates="query", lazy="selectin")
+models/domain/knowledge_space.py :: lazy="selectin",
+models/domain/knowledge_space.py :: parent_chunk = relationship("DocumentChunk", back_populates="child_chunks", lazy="selectin")
+models/domain/knowledge_space.py :: queries = relationship("KnowledgeQuery", back_populates="space", lazy="selectin")
+models/domain/knowledge_space.py :: query = relationship("KnowledgeQuery", back_populates="evaluation_results", lazy="selectin")
+models/domain/knowledge_space.py :: query = relationship("KnowledgeQuery", back_populates="feedbacks", lazy="selectin")
+models/domain/knowledge_space.py :: query_templates = relationship("QueryTemplate", back_populates="space", lazy="selectin")
+models/domain/knowledge_space.py :: space = relationship("KnowledgeSpace", back_populates="documents", lazy="selectin")
+models/domain/knowledge_space.py :: space = relationship("KnowledgeSpace", back_populates="evaluation_datasets", lazy="selectin")
+models/domain/knowledge_space.py :: space = relationship("KnowledgeSpace", back_populates="queries", lazy="selectin")
+models/domain/knowledge_space.py :: space = relationship("KnowledgeSpace", back_populates="query_templates", lazy="selectin")
+models/domain/knowledge_space.py :: user = relationship("User", backref="chunk_test_documents", lazy="selectin")
+models/domain/knowledge_space.py :: user = relationship("User", backref="chunk_test_results", lazy="selectin")
+models/domain/library.py :: danmaku = relationship("LibraryDanmaku", back_populates="likes", lazy="selectin")
+models/domain/library.py :: danmaku = relationship("LibraryDanmaku", back_populates="replies", lazy="selectin")
+models/domain/library.py :: document = relationship("LibraryDocument", back_populates="danmaku", lazy="selectin")
+models/domain/library.py :: document = relationship("LibraryDocument", lazy="selectin")
+models/domain/library.py :: lazy="selectin",
+models/domain/library.py :: uploader: Mapped["User"] = relationship("User", lazy="selectin")
+models/domain/library.py :: user = relationship("User", lazy="selectin")
+models/domain/markets.py :: "MarketOrder", back_populates="listing", lazy="selectin"
+models/domain/markets.py :: lazy="selectin",
+models/domain/markets.py :: listing: Mapped["MarketListing"] = relationship("MarketListing", back_populates="orders", lazy="selectin")
+models/domain/markets.py :: listing: Mapped["MarketListing"] = relationship("MarketListing", lazy="selectin")
+models/domain/markets.py :: order: Mapped["MarketOrder"] = relationship("MarketOrder", back_populates="payment", lazy="selectin")
+models/domain/markets.py :: user: Mapped["User"] = relationship("User", lazy="selectin")
+models/domain/pinned_conversations.py :: user = relationship("User", backref="pinned_conversations", lazy="selectin")
+models/domain/school_zone.py :: author = relationship("User", lazy="selectin")
+models/domain/school_zone.py :: diagram = relationship("SharedDiagram", lazy="selectin")
+models/domain/school_zone.py :: organization = relationship("Organization", lazy="selectin")
+models/domain/school_zone.py :: user = relationship("User", lazy="selectin")
+models/domain/workshop_chat.py :: channel = relationship("ChatChannel", back_populates="members", lazy="selectin")
+models/domain/workshop_chat.py :: channel = relationship("ChatChannel", back_populates="messages", lazy="selectin")
+models/domain/workshop_chat.py :: channel = relationship("ChatChannel", back_populates="topics", lazy="selectin")
+models/domain/workshop_chat.py :: dm = relationship("DirectMessage", backref="attachments", lazy="selectin")
+models/domain/workshop_chat.py :: lazy="selectin",
+models/domain/workshop_chat.py :: message = relationship("ChatMessage", backref="attachments", lazy="selectin")
+models/domain/workshop_chat.py :: message = relationship("ChatMessage", backref="reactions", lazy="selectin")
+models/domain/workshop_chat.py :: message = relationship("ChatMessage", backref="stars", lazy="selectin")
+models/domain/workshop_chat.py :: sender = relationship("User", backref="chat_messages", lazy="selectin")
+models/domain/workshop_chat.py :: topic = relationship("ChatTopic", backref="user_preferences", lazy="selectin")
+models/domain/workshop_chat.py :: uploader = relationship("User", backref="uploaded_attachments", lazy="selectin")
+models/domain/workshop_chat.py :: user = relationship("User", backref="channel_memberships", lazy="selectin")
+models/domain/workshop_chat.py :: user = relationship("User", backref="message_reactions", lazy="selectin")
+models/domain/workshop_chat.py :: user = relationship("User", backref="starred_messages_rel", lazy="selectin")
+models/domain/workshop_chat.py :: user = relationship("User", backref="topic_preferences", lazy="selectin")

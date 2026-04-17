@@ -12,7 +12,7 @@ from sqlalchemy import select
 
 from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_expiry import is_workshop_expired
 from services.workshop.workshop_redis_keys import purge_workshop_redis_keys
 from services.workshop.workshop_session_fields import (
@@ -27,7 +27,7 @@ async def cleanup_expired_workshops_impl() -> int:
     """
     Clear diagrams whose ``workshop_expires_at`` is in the past.
     """
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         logger.error("[WorkshopCleanup] Redis client not available")
         return 0
@@ -50,7 +50,7 @@ async def cleanup_expired_workshops_impl() -> int:
                 await backfill_workshop_expiry_if_needed(diagram, db)
                 if not diagram.workshop_expires_at or not is_workshop_expired(diagram.workshop_expires_at):
                     continue
-                purge_workshop_redis_keys(redis, code)
+                await purge_workshop_redis_keys(redis, code)
                 clear_workshop_session_fields(diagram)
                 cleaned_count += 1
                 logger.info(

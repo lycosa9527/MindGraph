@@ -26,8 +26,7 @@ export default {
   'notification.importInvalidData': 'واردات ناموفق: دادهٔ نمودار نامعتبر',
   'notification.importLoadFailed': 'واردات ناموفق: نمودار بارگذاری نشد',
   'notification.importSavePartial': 'وارد شد اما ذخیره در کتابخانه ناموفق بود',
-  'notification.importSlotsFull':
-    'کتابخانه پر است؛ نمودار وارد شد اما در کتابخانه ذخیره نشد',
+  'notification.importSlotsFull': 'کتابخانه پر است؛ نمودار وارد شد اما در کتابخانه ذخیره نشد',
   'notification.importSuccess': 'نمودار وارد و در کتابخانه ذخیره شد',
   'notification.importUnsupportedType': 'واردات ناموفق: نوع نمودار پشتیبانی نمی‌شود',
   'notification.loadMoreFailed': 'بارگذاری بیشتر ممکن نبود',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'پیوند مفهوم ریشه یافت نشد',
   'notification.saved': 'تغییرات ذخیره شد',
   'notification.selectNodeToClear': 'گره‌ای برای پاک کردن انتخاب کنید',
-  'notification.sessionInvalidated':
-    'به‌دلیل تجاوز از حداکثر تعداد دستگاه‌ها، از حساب خارج شدید',
+  'notification.sessionInvalidated': 'به‌دلیل تجاوز از حداکثر تعداد دستگاه‌ها، از حساب خارج شدید',
   'notification.signInToUse': 'برای استفاده وارد شوید',
   'notification.signInToValidateFocus': 'برای اعتبارسنجی سؤال تمرکز وارد شوید',
 } as const

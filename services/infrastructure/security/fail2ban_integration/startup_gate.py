@@ -78,11 +78,7 @@ def evaluate_fail2ban_startup(etc_dir: Optional[Path] = None) -> Optional[str]:
             """
         ).strip()
 
-    if not (
-        result.jail_config_present
-        and result.filter_config_present
-        and result.action_config_present
-    ):
+    if not (result.jail_config_present and result.filter_config_present and result.action_config_present):
         return textwrap.dedent(
             """
             MindGraph Fail2ban templates are not deployed under /etc/fail2ban

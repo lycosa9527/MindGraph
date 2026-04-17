@@ -33,7 +33,7 @@ USER_META_KEY = _keys.DIAGRAMS_USER_META
 USER_LIST_KEY = _keys.DIAGRAMS_USER_LIST
 
 
-def _redis_json_set_paths(
+async def _redis_json_set_paths(
     redis_client: Any,
     key: str,
     path_value_pairs: List[Tuple[str, Any]],
@@ -47,11 +47,11 @@ def _redis_json_set_paths(
     (e.g. key does not exist, RedisJSON not loaded, connection failure).
     """
     try:
-        pipe = redis_client.pipeline()
-        for path, value in path_value_pairs:
-            pipe.json().set(key, path, value)
-        pipe.expire(key, ttl)
-        pipe.execute()
+        async with redis_client.pipeline(transaction=False) as pipe:
+            for path, value in path_value_pairs:
+                pipe.json().set(key, path, value)
+            pipe.expire(key, ttl)
+            await pipe.execute()
         return True
     except Exception as exc:
         logger.debug("[DiagramCache] JSON.SET paths failed for %s: %s", key, exc)

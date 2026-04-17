@@ -38,10 +38,7 @@ def upgrade() -> None:
                 used.add(tok)
                 break
         conn.execute(
-            text(
-                "UPDATE organization_mindbot_configs SET public_callback_token = :t "
-                "WHERE id = :id"
-            ),
+            text("UPDATE organization_mindbot_configs SET public_callback_token = :t WHERE id = :id"),
             {"t": tok, "id": rid},
         )
     op.alter_column(

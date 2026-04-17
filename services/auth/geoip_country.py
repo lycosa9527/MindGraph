@@ -22,9 +22,7 @@ from services.auth.geo_cn_mainland_cookie import GEO_CN_MAINLAND_COOKIE_NAME, ve
 logger = logging.getLogger(__name__)
 
 # MaxMind GeoLite2 Country (free tier) — download and place MMDB on disk; see log / admin UI.
-GEOIP_GEOLITE_DOWNLOAD_URL = (
-    "https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/?lang=en"
-)
+GEOIP_GEOLITE_DOWNLOAD_URL = "https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/?lang=en"
 
 
 class _GeoReaderState:

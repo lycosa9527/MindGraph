@@ -222,9 +222,11 @@ export default {
   'canvas.toolbar.moreAppSnapshot': 'Snapshot',
   'canvas.toolbar.moreAppSnapshotDesc': 'Save a version of this diagram (max 10)',
   'canvas.toolbar.moreAppVirtualKeyboard': 'Virtual Keyboard',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'On-screen keyboard synced to your interface language',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc':
+    'On-screen keyboard synced to your interface language',
   'canvas.toolbar.virtualKeyboardClose': 'Close keyboard',
-  'canvas.toolbar.virtualKeyboardFocusHint': 'Double-click or double-tap a node label first, then type with the keyboard',
+  'canvas.toolbar.virtualKeyboardFocusHint':
+    'Double-click or double-tap a node label first, then type with the keyboard',
   'canvas.toolbar.snapshotSaveFirst': 'Please save the diagram first before taking a snapshot',
   'canvas.toolbar.snapshotTaken': 'Snapshot {n} saved',
   'canvas.toolbar.snapshotFailed': 'Failed to save snapshot, please try again',

@@ -1,8 +1,9 @@
 """Diagram async repository."""
 
-from typing import Optional, Sequence
+from datetime import datetime
+from typing import Optional, Sequence, Tuple
 
-from sqlalchemy import func, select
+from sqlalchemy import and_, func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
@@ -20,15 +21,35 @@ class DiagramRepository(BaseRepository[Diagram]):
         user_id: int,
         *,
         include_deleted: bool = False,
+        before: Optional[Tuple[datetime, int]] = None,
         offset: int = 0,
         limit: int = 50,
     ) -> Sequence[Diagram]:
+        """List a user's diagrams ordered by ``updated_at DESC, id DESC``.
+
+        ``before`` is a tuple cursor ``(updated_at, id)`` of the last row from
+        the previous page; new callers should pass it instead of ``offset`` so
+        deep pages stay O(page_size) (covered by ``ix_diagrams_user_updated``).
+        ``offset`` is kept only for backwards-compatible API surfaces.
+        """
         conditions = [Diagram.user_id == user_id]
         if not include_deleted:
             conditions.append(~Diagram.is_deleted)
-        result = await self.session.execute(
-            select(Diagram).where(*conditions).order_by(Diagram.updated_at.desc()).offset(offset).limit(limit)
-        )
+        if before is not None:
+            cursor_updated_at, cursor_id = before
+            conditions.append(
+                or_(
+                    Diagram.updated_at < cursor_updated_at,
+                    and_(
+                        Diagram.updated_at == cursor_updated_at,
+                        Diagram.id < cursor_id,
+                    ),
+                )
+            )
+        stmt = select(Diagram).where(*conditions).order_by(Diagram.updated_at.desc(), Diagram.id.desc()).limit(limit)
+        if before is None and offset:
+            stmt = stmt.offset(offset)
+        result = await self.session.execute(stmt)
         return result.scalars().all()
 
     async def get_with_user(self, diagram_id: int) -> Optional[Diagram]:

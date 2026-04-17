@@ -44,7 +44,7 @@ from .config import (
 )
 
 # JWT Secret exports
-from .jwt_secret import get_jwt_secret
+from .jwt_secret import get_jwt_secret, warmup_jwt_secret_async
 
 # Password exports
 from .password import hash_password, verify_password
@@ -152,6 +152,7 @@ __all__ = [
     "BCRYPT_ROUNDS",
     # JWT Secret
     "get_jwt_secret",
+    "warmup_jwt_secret_async",
     # Password
     "hash_password",
     "verify_password",

@@ -12,7 +12,7 @@ import json
 import logging
 from typing import Dict, Tuple
 
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -23,13 +23,13 @@ def _key(code: str) -> str:
     return f"mg:ws:workshop:editors:{code}"
 
 
-def load_editors(code: str) -> Dict[str, Dict[int, str]]:
+async def load_editors(code: str) -> Dict[str, Dict[int, str]]:
     """Load node_id -> {user_id: username} from Redis."""
     try:
-        r = get_redis()
+        r = get_async_redis()
         if not r:
             return {}
-        raw = r.get(_key(code))
+        raw = await r.get(_key(code))
         if not raw:
             return {}
         parsed = json.loads(raw)
@@ -52,25 +52,25 @@ def load_editors(code: str) -> Dict[str, Dict[int, str]]:
         return {}
 
 
-def save_editors(code: str, editors: Dict[str, Dict[int, str]]) -> None:
+async def save_editors(code: str, editors: Dict[str, Dict[int, str]]) -> None:
     """Persist editor map; delete key if empty."""
     try:
-        r = get_redis()
+        r = get_async_redis()
         if not r:
             return
         key = _key(code)
         if not editors:
-            r.delete(key)
+            await r.delete(key)
             return
         serializable: Dict[str, Dict[str, str]] = {}
         for nid, ed in editors.items():
             serializable[str(nid)] = {str(uid): name for uid, name in ed.items()}
-        r.setex(key, _TTL_SECONDS, json.dumps(serializable, ensure_ascii=False))
+        await r.setex(key, _TTL_SECONDS, json.dumps(serializable, ensure_ascii=False))
     except Exception as exc:  # pylint: disable=broad-except
         logger.debug("[WorkshopEditorsRedis] save failed: %s", exc)
 
 
-def remove_user_from_all_nodes(
+async def remove_user_from_all_nodes(
     code: str,
     user_id: int,
     editors: Dict[str, Dict[int, str]],
@@ -87,5 +87,5 @@ def remove_user_from_all_nodes(
     for nid in nodes_to_drop:
         del editors[nid]
     if changed:
-        save_editors(code, editors)
+        await save_editors(code, editors)
     return editors, changed

@@ -1,13 +1,11 @@
 /** fi UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Aihe- tai keskussolmuja ei voi tyhjentää',
-  'notification.cannotResetSelectDiagramType':
-    'Ei voi nollata: valitse ensin kaaviotyyppi',
+  'notification.cannotResetSelectDiagramType': 'Ei voi nollata: valitse ensin kaaviotyyppi',
   'notification.canvasClearNodes': '{count} solmua tyhjennetty',
   'notification.canvasClearNodesLearning': '{count} solmua tyhjennetty, lisätty vastauksiin',
   'notification.canvasSomeoneEditingNode': 'Joku muu muokkaa tätä solmua',
-  'notification.collabDeleteBlocked':
-    'Ei voi poistaa, kun toinen käyttäjä muokkaa valittua solmua',
+  'notification.collabDeleteBlocked': 'Ei voi poistaa, kun toinen käyttäjä muokkaa valittua solmua',
   'notification.collabRedoBlocked': 'Ei voi tehdä uudelleen, kun toinen käyttäjä muokkaa',
   'notification.collabUndoBlocked': 'Ei voi kumota, kun toinen käyttäjä muokkaa',
   'notification.conversationDeleted': 'Keskustelu poistettu',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'Tuonti epäonnistui: virheelliset kaaviotiedot',
   'notification.importLoadFailed': 'Tuonti epäonnistui: kaaviota ei voitu ladata',
   'notification.importSavePartial': 'Tuotu, mutta tallennus kirjastoon epäonnistui',
-  'notification.importSlotsFull':
-    'Kirjasto täynnä; kaavio tuotu mutta ei tallennettu kirjastoon',
+  'notification.importSlotsFull': 'Kirjasto täynnä; kaavio tuotu mutta ei tallennettu kirjastoon',
   'notification.importSuccess': 'Kaavio tuotu ja tallennettu kirjastoon',
   'notification.importUnsupportedType': 'Tuonti epäonnistui: kaaviotyyppiä ei tueta',
   'notification.loadMoreFailed': 'Ei voitu ladata lisää',

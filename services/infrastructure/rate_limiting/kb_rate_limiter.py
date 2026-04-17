@@ -57,7 +57,7 @@ class KBRateLimiter:
             self.upload_per_hour,
         )
 
-    def check_retrieval_limit(self, user_id: int) -> Tuple[bool, int, str]:
+    async def check_retrieval_limit(self, user_id: int) -> Tuple[bool, int, str]:
         """
         Check if user can make a retrieval request.
 
@@ -67,14 +67,14 @@ class KBRateLimiter:
         Returns:
             Tuple of (is_allowed, count, error_message)
         """
-        return self.rate_limiter.check_and_record(
+        return await self.rate_limiter.check_and_record(
             category="kb_retrieval",
             identifier=str(user_id),
             max_attempts=self.retrieval_rpm,
             window_seconds=self.retrieval_window,
         )
 
-    def check_embedding_limit(self, user_id: int) -> Tuple[bool, int, str]:
+    async def check_embedding_limit(self, user_id: int) -> Tuple[bool, int, str]:
         """
         Check if user can generate embeddings (cost-based limiting).
 
@@ -84,14 +84,14 @@ class KBRateLimiter:
         Returns:
             Tuple of (is_allowed, count, error_message)
         """
-        return self.rate_limiter.check_and_record(
+        return await self.rate_limiter.check_and_record(
             category="kb_embedding",
             identifier=str(user_id),
             max_attempts=self.embedding_rpm,
             window_seconds=self.embedding_window,
         )
 
-    def check_upload_limit(self, user_id: int) -> Tuple[bool, int, str]:
+    async def check_upload_limit(self, user_id: int) -> Tuple[bool, int, str]:
         """
         Check if user can upload a document.
 
@@ -101,14 +101,14 @@ class KBRateLimiter:
         Returns:
             Tuple of (is_allowed, count, error_message)
         """
-        return self.rate_limiter.check_and_record(
+        return await self.rate_limiter.check_and_record(
             category="kb_upload",
             identifier=str(user_id),
             max_attempts=self.upload_per_hour,
             window_seconds=self.upload_window,
         )
 
-    def get_retrieval_remaining(self, user_id: int) -> Tuple[int, int]:
+    async def get_retrieval_remaining(self, user_id: int) -> Tuple[int, int]:
         """
         Get remaining retrieval attempts and seconds until reset.
 
@@ -118,14 +118,14 @@ class KBRateLimiter:
         Returns:
             Tuple of (remaining_attempts, seconds_until_reset)
         """
-        return self.rate_limiter.get_remaining(
+        return await self.rate_limiter.get_remaining(
             category="kb_retrieval",
             identifier=str(user_id),
             max_attempts=self.retrieval_rpm,
             window_seconds=self.retrieval_window,
         )
 
-    def get_embedding_remaining(self, user_id: int) -> Tuple[int, int]:
+    async def get_embedding_remaining(self, user_id: int) -> Tuple[int, int]:
         """
         Get remaining embedding attempts and seconds until reset.
 
@@ -135,14 +135,14 @@ class KBRateLimiter:
         Returns:
             Tuple of (remaining_attempts, seconds_until_reset)
         """
-        return self.rate_limiter.get_remaining(
+        return await self.rate_limiter.get_remaining(
             category="kb_embedding",
             identifier=str(user_id),
             max_attempts=self.embedding_rpm,
             window_seconds=self.embedding_window,
         )
 
-    def get_upload_remaining(self, user_id: int) -> Tuple[int, int]:
+    async def get_upload_remaining(self, user_id: int) -> Tuple[int, int]:
         """
         Get remaining upload attempts and seconds until reset.
 
@@ -152,24 +152,24 @@ class KBRateLimiter:
         Returns:
             Tuple of (remaining_attempts, seconds_until_reset)
         """
-        return self.rate_limiter.get_remaining(
+        return await self.rate_limiter.get_remaining(
             category="kb_upload",
             identifier=str(user_id),
             max_attempts=self.upload_per_hour,
             window_seconds=self.upload_window,
         )
 
-    def clear_retrieval_limit(self, user_id: int) -> bool:
+    async def clear_retrieval_limit(self, user_id: int) -> bool:
         """Clear retrieval rate limit for user (e.g., admin override)."""
-        return self.rate_limiter.clear("kb_retrieval", str(user_id))
+        return await self.rate_limiter.clear("kb_retrieval", str(user_id))
 
-    def clear_embedding_limit(self, user_id: int) -> bool:
+    async def clear_embedding_limit(self, user_id: int) -> bool:
         """Clear embedding rate limit for user (e.g., admin override)."""
-        return self.rate_limiter.clear("kb_embedding", str(user_id))
+        return await self.rate_limiter.clear("kb_embedding", str(user_id))
 
-    def clear_upload_limit(self, user_id: int) -> bool:
+    async def clear_upload_limit(self, user_id: int) -> bool:
         """Clear upload rate limit for user (e.g., admin override)."""
-        return self.rate_limiter.clear("kb_upload", str(user_id))
+        return await self.rate_limiter.clear("kb_upload", str(user_id))
 
 
 # Global singleton

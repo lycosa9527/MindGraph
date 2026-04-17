@@ -116,7 +116,8 @@ export default {
   'meta.pageTitle.workshopChat': 'Werkswinkel-klets',
   'publicDashboard.networkError': 'Netwerkfout, dashbord kon nie gelaai word nie',
   'settings.language.interface': 'Koppelvlaktaal',
-  'settings.language.matchPrompt': 'Keep AI assistant, interface and virtual keyboard language in sync',
+  'settings.language.matchPrompt':
+    'Keep AI assistant, interface and virtual keyboard language in sync',
   'settings.language.prompt': 'KI / aanvraagtaal',
   'settings.language.promptSelectPlaceholder': 'Soek tale…',
   'settings.language.supportsCount': 'Supports {n} languages',

@@ -64,7 +64,7 @@ class LibraryDanmakuMixin:
                 from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
-                cached_list = redis_cache.get_danmaku_list(
+                cached_list = await redis_cache.get_danmaku_list(
                     document_id=document_id,
                     page_number=page_number,
                     selected_text=selected_text,
@@ -157,7 +157,7 @@ class LibraryDanmakuMixin:
                 from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
-                redis_cache.cache_danmaku_list(
+                await redis_cache.cache_danmaku_list(
                     document_id=document_id,
                     danmaku_list=result_list,
                     page_number=page_number,
@@ -257,7 +257,7 @@ class LibraryDanmakuMixin:
                 from services.library.redis_cache import LibraryRedisCache
 
                 redis_cache = LibraryRedisCache()
-                redis_cache.cache_recent_danmaku(limit, result_list)
+                await redis_cache.cache_recent_danmaku(limit, result_list)
             except Exception as exc:
                 logger.debug("[Library] Redis cache write failed: %s", exc)
 
@@ -600,8 +600,24 @@ class LibraryDanmakuMixin:
         if not content:
             return None
 
+        # Drop dangerous tag bodies (script/style/iframe/object/embed) BEFORE
+        # the generic tag stripper so their inner text never survives. Without
+        # this ordering, "<[^>]+>" would remove the surrounding tags first and
+        # leave the executable body as plain text in the output.
+        content = re.sub(
+            r"<(script|style|iframe|object|embed)\b[^>]*>.*?</\1\s*>",
+            "",
+            content,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
+        # Also drop unterminated dangerous tags (e.g., truncated "<script>...").
+        content = re.sub(
+            r"<(script|style|iframe|object|embed)\b[^>]*>.*",
+            "",
+            content,
+            flags=re.IGNORECASE | re.DOTALL,
+        )
         content = re.sub(r"<[^>]+>", "", content)
-        content = re.sub(r"<script[^>]*>.*?</script>", "", content, flags=re.IGNORECASE | re.DOTALL)
         content = re.sub(r"javascript:", "", content, flags=re.IGNORECASE)
         content = re.sub(r"on\w+\s*=", "", content, flags=re.IGNORECASE)
         content = re.sub(r"[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]", "", content)

@@ -253,8 +253,7 @@ class Messages:
         "email_login_mainland_china_domain": {
             "zh": "该邮箱域名属于中国大陆常用或 .cn 域名，不能使用邮箱登录。请改用手机号登录，或联系销售。",
             "en": (
-                "This email domain is associated with mainland China. "
-                "Sign in with your phone number, or contact sales."
+                "This email domain is associated with mainland China. Sign in with your phone number, or contact sales."
             ),
             "az": (
                 "Bu e-poçt domeni Çin materiki ilə əlaqəlidir. "
@@ -293,8 +292,7 @@ class Messages:
                 "where you signed in. Please sign in again."
             ),
             "az": (
-                "Şəbəkə məkanınız daxil olduğunuz məkandan fərqləndiyi üçün sessiya "
-                "sonlandırıldı. Yenidən daxil olun."
+                "Şəbəkə məkanınız daxil olduğunuz məkandan fərqləndiyi üçün sessiya sonlandırıldı. Yenidən daxil olun."
             ),
         },
         "email_already_registered": {
@@ -496,46 +494,26 @@ class Messages:
         "email_cooldown_minutes": {
             "zh": ("请等待 {} 分钟后再请求新的邮件验证码。该邮箱最近已收到验证码。"),
             "en": (
-                "Please wait {} minute(s) before requesting a new email code. "
-                "A code was recently sent to this address."
+                "Please wait {} minute(s) before requesting a new email code. A code was recently sent to this address."
             ),
-            "az": (
-                "Yeni e-poçt kodu tələb etməzdən əvvəl {} dəqiqə gözləyin. "
-                "Bu ünvana yaxınlarda kod göndərilib."
-            ),
+            "az": ("Yeni e-poçt kodu tələb etməzdən əvvəl {} dəqiqə gözləyin. Bu ünvana yaxınlarda kod göndərilib."),
         },
         "email_cooldown_seconds": {
             "zh": ("请等待 {} 秒后再请求新的邮件验证码。该邮箱最近已收到验证码。"),
             "en": (
-                "Please wait {} second(s) before requesting a new email code. "
-                "A code was recently sent to this address."
+                "Please wait {} second(s) before requesting a new email code. A code was recently sent to this address."
             ),
-            "az": (
-                "Yeni e-poçt kodu tələb etməzdən əvvəl {} saniyə gözləyin. "
-                "Bu ünvana yaxınlarda kod göndərilib."
-            ),
+            "az": ("Yeni e-poçt kodu tələb etməzdən əvvəl {} saniyə gözləyin. Bu ünvana yaxınlarda kod göndərilib."),
         },
         "too_many_email_requests": {
             "zh": ("邮件验证码请求过多（{} 次请求在 {} 小时内）。请稍后再试。"),
-            "en": (
-                "Too many email verification code requests ({} requests in {} hour(s)). "
-                "Please try again later."
-            ),
-            "az": (
-                "Çox sayda e-poçt təsdiq kodu sorğusu ({} sorğu {} saat ərzində). "
-                "Daha sonra yenidən cəhd edin."
-            ),
+            "en": ("Too many email verification code requests ({} requests in {} hour(s)). Please try again later."),
+            "az": ("Çox sayda e-poçt təsdiq kodu sorğusu ({} sorğu {} saat ərzində). Daha sonra yenidən cəhd edin."),
         },
         "too_many_email_verify_attempts": {
             "zh": ("邮件验证码校验尝试过多（{} 分钟内）。请稍后再试。"),
-            "en": (
-                "Too many email verification attempts in the last {} minute(s). "
-                "Please try again later."
-            ),
-            "az": (
-                "Son {} dəqiqə ərzində çox sayda e-poçt təsdiq cəhdi. "
-                "Daha sonra yenidən cəhd edin."
-            ),
+            "en": ("Too many email verification attempts in the last {} minute(s). Please try again later."),
+            "az": ("Son {} dəqiqə ərzində çox sayda e-poçt təsdiq cəhdi. Daha sonra yenidən cəhd edin."),
         },
         "too_many_email_send_attempts_ip": {
             "zh": ("邮件发送请求过多（当前 IP 在 {} 分钟内）。请稍后再试。"),
@@ -543,43 +521,24 @@ class Messages:
                 "Too many email verification requests from this network in the last {} minute(s). "
                 "Please try again later."
             ),
-            "az": (
-                "Son {} dəqiqə ərzində bu şəbəkədən çox sayda e-poçt sorğusu. "
-                "Daha sonra yenidən cəhd edin."
-            ),
+            "az": ("Son {} dəqiqə ərzində bu şəbəkədən çox sayda e-poçt sorğusu. Daha sonra yenidən cəhd edin."),
         },
         "too_many_sms_send_attempts_ip": {
             "zh": ("短信发送请求过多（当前 IP 在 {} 分钟内）。请稍后再试。"),
             "en": (
-                "Too many SMS verification requests from this network in the last {} minute(s). "
-                "Please try again later."
+                "Too many SMS verification requests from this network in the last {} minute(s). Please try again later."
             ),
-            "az": (
-                "Son {} dəqiqə ərzində bu şəbəkədən çox sayda SMS sorğusu. "
-                "Daha sonra yenidən cəhd edin."
-            ),
+            "az": ("Son {} dəqiqə ərzində bu şəbəkədən çox sayda SMS sorğusu. Daha sonra yenidən cəhd edin."),
         },
         "too_many_sms_verify_attempts": {
             "zh": ("短信验证码校验尝试过多（{} 分钟内）。请稍后再试。"),
-            "en": (
-                "Too many SMS verification attempts in the last {} minute(s). "
-                "Please try again later."
-            ),
-            "az": (
-                "Son {} dəqiqə ərzində çox sayda SMS təsdiq cəhdi. "
-                "Daha sonra yenidən cəhd edin."
-            ),
+            "en": ("Too many SMS verification attempts in the last {} minute(s). Please try again later."),
+            "az": ("Son {} dəqiqə ərzində çox sayda SMS təsdiq cəhdi. Daha sonra yenidən cəhd edin."),
         },
         "email_code_invalid": {
             "zh": "邮件验证码无效。请检查验证码后重试，或申请新的验证码。",
-            "en": (
-                "Invalid email verification code. Please check the code and try again, "
-                "or request a new code."
-            ),
-            "az": (
-                "Etibarsız e-poçt təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin "
-                "və ya yeni kod tələb edin."
-            ),
+            "en": ("Invalid email verification code. Please check the code and try again, or request a new code."),
+            "az": ("Etibarsız e-poçt təsdiq kodu. Kodu yoxlayın və yenidən cəhd edin və ya yeni kod tələb edin."),
         },
         "email_service_temporarily_unavailable": {
             "zh": ("邮件服务暂时不可用。请稍后重试，如果问题持续存在，请联系支持。"),

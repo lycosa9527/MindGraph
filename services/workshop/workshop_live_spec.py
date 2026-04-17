@@ -166,13 +166,13 @@ def spec_for_snapshot(doc: Dict[str, Any]) -> Dict[str, Any]:
     return out
 
 
-def read_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
+async def read_live_spec(redis: Any, code: str) -> Optional[Dict[str, Any]]:
     """Read live spec JSON from Redis."""
-    raw = redis.get(live_spec_key(code))
+    raw = await redis.get(live_spec_key(code))
     return deserialize_live_spec(raw)
 
 
-def write_live_spec(
+async def write_live_spec(
     redis: Any,
     code: str,
     doc: Dict[str, Any],
@@ -180,10 +180,10 @@ def write_live_spec(
 ) -> None:
     """Persist live spec with session-aligned TTL."""
     ttl = max(1, min(int(ttl_sec), 86400 * 14))
-    redis.setex(live_spec_key(code), ttl, serialize_live_spec(doc))
+    await redis.setex(live_spec_key(code), ttl, serialize_live_spec(doc))
 
 
-def seed_live_spec_from_diagram(
+async def seed_live_spec_from_diagram(
     redis: Any,
     code: str,
     diagram: Diagram,
@@ -194,5 +194,5 @@ def seed_live_spec_from_diagram(
     if "type" not in parsed and diagram.diagram_type:
         parsed["type"] = diagram.diagram_type
     parsed["v"] = 1
-    write_live_spec(redis, code, parsed, ttl_sec)
+    await write_live_spec(redis, code, parsed, ttl_sec)
     return parsed

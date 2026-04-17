@@ -1,10 +1,12 @@
 /** st UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter': 'Ha ho khone ho hlwekisa litekete tsa sehlooho kapa bohare',
+  'notification.cannotClearTopicOrCenter':
+    'Ha ho khone ho hlwekisa litekete tsa sehlooho kapa bohare',
   'notification.cannotResetSelectDiagramType':
     'Ha ho khone ho bulela hape: kgetha mofuta wa setshwantsho pele',
   'notification.canvasClearNodes': 'Litekete tse {count} li hlwekisitswe',
-  'notification.canvasClearNodesLearning': 'Litekete tse {count} li se nang letho, li kentsoe likarabo',
+  'notification.canvasClearNodesLearning':
+    'Litekete tse {count} li se nang letho, li kentsoe likarabo',
   'notification.canvasSomeoneEditingNode': 'Ya mong a ntse a fetola tekete ena',
   'notification.collabDeleteBlocked':
     'Ha ho khone ho hlakola ha motho a fetola tekete e kgethilweng',
@@ -29,7 +31,8 @@ export default {
   'notification.importSlotsFull':
     'Poloko e tletse; setshwantsho se kentsoe empa ha se bolokilwe polokong',
   'notification.importSuccess': 'Setshwantsho se kentsoe mme se bolokilwe polokong',
-  'notification.importUnsupportedType': 'Ho kenya ha hlolile: mofuta wa setshwantsho ha o tshegetsoe',
+  'notification.importUnsupportedType':
+    'Ho kenya ha hlolile: mofuta wa setshwantsho ha o tshegetsoe',
   'notification.loadMoreFailed': 'Ha ho khone ho laoda ho feta',
   'notification.networkError': 'Phoso ya neteweke',
   'notification.newVersionAvailable': 'Ho na le mofuta o mocha. Tobetsa ho ntlafatsa.',
@@ -39,8 +42,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kgokagano ya kgopolo ya motso ha e fumanwe',
   'notification.saved': 'Liphetoho li bolokilwe',
   'notification.selectNodeToClear': 'Kgetha tekete ya ho hlwekisa',
-  'notification.sessionInvalidated':
-    'O tswile ka lebaka la ho feta palo e hodimo ya lisebelisoa',
+  'notification.sessionInvalidated': 'O tswile ka lebaka la ho feta palo e hodimo ya lisebelisoa',
   'notification.signInToUse': 'Kena ho sebelisa',
   'notification.signInToValidateFocus': 'Kena ho netefatsa potso ya kgopolo',
 } as const

@@ -27,7 +27,7 @@ async def list_bayi_ip_whitelist(
 
     try:
         whitelist = get_bayi_whitelist()
-        ips = whitelist.list_ips()
+        ips = await whitelist.list_ips()
 
         return {"ips": ips, "count": len(ips)}
     except Exception as e:
@@ -58,7 +58,7 @@ async def add_bayi_ip_whitelist(
 
     try:
         whitelist = get_bayi_whitelist()
-        success = whitelist.add_ip(ip, added_by=current_user.phone)
+        success = await whitelist.add_ip(ip, added_by=current_user.phone)
 
         if success:
             logger.info("Admin %s added IP %s to bayi whitelist", current_user.phone, ip)
@@ -93,7 +93,7 @@ async def remove_bayi_ip_whitelist(
 
     try:
         whitelist = get_bayi_whitelist()
-        success = whitelist.remove_ip(ip)
+        success = await whitelist.remove_ip(ip)
 
         if success:
             logger.info("Admin %s removed IP %s from bayi whitelist", current_user.phone, ip)

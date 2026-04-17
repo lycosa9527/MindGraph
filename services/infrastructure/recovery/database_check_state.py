@@ -17,18 +17,18 @@ All Rights Reserved
 Proprietary License
 """
 
-import asyncio
 import logging
 import os
 import time
 from typing import Optional, Tuple
 
 try:
-    from services.redis.redis_client import get_redis, is_redis_available
+    from services.redis.redis_client import is_redis_available
+    from services.redis.redis_async_client import get_async_redis
 
     _REDIS_AVAILABLE = True
 except ImportError:
-    get_redis = None
+    get_async_redis = None
     is_redis_available = None
     _REDIS_AVAILABLE = False
 
@@ -51,14 +51,14 @@ class DatabaseCheckStateManager:
         self._in_memory_start_time: Optional[float] = None
 
     def _get_redis_client(self):
-        """Get Redis client if available"""
+        """Get the shared async Redis client if available."""
         if not _REDIS_AVAILABLE or is_redis_available is None or not is_redis_available():
             return None
 
         try:
-            if get_redis is None:
+            if get_async_redis is None:
                 return None
-            return get_redis()
+            return get_async_redis()
         except Exception as e:
             logger.debug("[DatabaseCheckState] Redis not available: %s", e)
             return None
@@ -74,17 +74,14 @@ class DatabaseCheckStateManager:
 
         if redis_client:
             try:
-                # Try to set state atomically (only if not exists)
-                result = await asyncio.to_thread(
-                    redis_client.set,
+                result = await redis_client.set(
                     DB_CHECK_STATE_KEY,
                     "in_progress",
                     ex=DB_CHECK_TIMEOUT_SECONDS,
                     nx=True,
                 )
                 if result:
-                    await asyncio.to_thread(
-                        redis_client.set,
+                    await redis_client.set(
                         DB_CHECK_START_TIME_KEY,
                         str(time.time()),
                         ex=DB_CHECK_TIMEOUT_SECONDS,
@@ -128,11 +125,10 @@ class DatabaseCheckStateManager:
         if redis_client:
             try:
                 state = "completed_success" if success else "completed_failure"
-                await asyncio.to_thread(
-                    redis_client.set,
+                await redis_client.set(
                     DB_CHECK_STATE_KEY,
                     state,
-                    ex=60,  # Keep state for 1 minute after completion
+                    ex=60,
                 )
                 logger.debug("[DatabaseCheckState] Database check completed: %s (Redis)", state)
                 return
@@ -156,13 +152,12 @@ class DatabaseCheckStateManager:
 
         if redis_client:
             try:
-                state = await asyncio.to_thread(redis_client.get, DB_CHECK_STATE_KEY)
+                state = await redis_client.get(DB_CHECK_STATE_KEY)
                 if state:
                     if isinstance(state, bytes):
                         state = state.decode("utf-8")
                     if state == "in_progress":
-                        # Check if it's been too long (stale state)
-                        start_time_str = await asyncio.to_thread(redis_client.get, DB_CHECK_START_TIME_KEY)
+                        start_time_str = await redis_client.get(DB_CHECK_START_TIME_KEY)
                         if start_time_str:
                             if isinstance(start_time_str, bytes):
                                 start_time_str = start_time_str.decode("utf-8")
@@ -174,7 +169,7 @@ class DatabaseCheckStateManager:
                                         "[DatabaseCheckState] Stale check state detected (%.1fs old), clearing",
                                         elapsed,
                                     )
-                                    await asyncio.to_thread(redis_client.delete, DB_CHECK_STATE_KEY)
+                                    await redis_client.delete(DB_CHECK_STATE_KEY)
                                     return False
                             except (ValueError, TypeError):
                                 pass
@@ -212,7 +207,7 @@ class DatabaseCheckStateManager:
 
         if redis_client:
             try:
-                state = await asyncio.to_thread(redis_client.get, DB_CHECK_STATE_KEY)
+                state = await redis_client.get(DB_CHECK_STATE_KEY)
                 if state:
                     if isinstance(state, bytes):
                         return state.decode("utf-8")

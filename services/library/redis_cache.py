@@ -28,7 +28,8 @@ import logging
 import hashlib
 from typing import Optional, Dict, Any, List
 
-from services.redis.redis_client import is_redis_available, RedisOps
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -84,7 +85,7 @@ class LibraryRedisCache:
         """Get Redis key for recent danmaku."""
         return f"{DANMAKU_RECENT_PREFIX}{limit}"
 
-    def get_document_metadata(self, document_id: int) -> Optional[Dict[str, Any]]:
+    async def get_document_metadata(self, document_id: int) -> Optional[Dict[str, Any]]:
         """
         Get document metadata from Redis cache.
 
@@ -99,7 +100,7 @@ class LibraryRedisCache:
 
         try:
             key = self._get_document_key(document_id)
-            cached = RedisOps.get(key)
+            cached = await AsyncRedisOps.get(key)
 
             if cached:
                 try:
@@ -113,7 +114,7 @@ class LibraryRedisCache:
                         e,
                     )
                     # Invalidate corrupted entry
-                    RedisOps.delete(key)
+                    await AsyncRedisOps.delete(key)
                     return None
         except Exception as e:
             logger.warning("[LibraryCache] Redis error getting document %s: %s", document_id, e)
@@ -121,7 +122,7 @@ class LibraryRedisCache:
 
         return None
 
-    def cache_document_metadata(self, document_id: int, metadata: Dict[str, Any]) -> bool:
+    async def cache_document_metadata(self, document_id: int, metadata: Dict[str, Any]) -> bool:
         """
         Cache document metadata in Redis.
 
@@ -138,7 +139,7 @@ class LibraryRedisCache:
         try:
             key = self._get_document_key(document_id)
             data = json.dumps(metadata, default=str)
-            success = RedisOps.set_with_ttl(key, data, DOCUMENT_CACHE_TTL)
+            success = await AsyncRedisOps.set_with_ttl(key, data, DOCUMENT_CACHE_TTL)
 
             if success:
                 logger.debug("[LibraryCache] Cached document metadata for %s", document_id)
@@ -147,7 +148,7 @@ class LibraryRedisCache:
             logger.warning("[LibraryCache] Redis error caching document %s: %s", document_id, e)
             return False
 
-    def invalidate_document(self, document_id: int) -> bool:
+    async def invalidate_document(self, document_id: int) -> bool:
         """
         Invalidate document cache and related caches.
 
@@ -163,7 +164,7 @@ class LibraryRedisCache:
         try:
             # Delete document metadata
             doc_key = self._get_document_key(document_id)
-            RedisOps.delete(doc_key)
+            await AsyncRedisOps.delete(doc_key)
 
             # Note: Danmaku caches are TTL-based and will expire naturally
             # For immediate invalidation, we could use pattern matching, but it's expensive
@@ -179,7 +180,7 @@ class LibraryRedisCache:
             )
             return False
 
-    def get_danmaku_list(
+    async def get_danmaku_list(
         self,
         document_id: int,
         page_number: Optional[int] = None,
@@ -208,7 +209,7 @@ class LibraryRedisCache:
                 # No cache key for unfiltered danmaku (too variable)
                 return None
 
-            cached = RedisOps.get(key)
+            cached = await AsyncRedisOps.get(key)
 
             if cached:
                 try:
@@ -217,7 +218,7 @@ class LibraryRedisCache:
                     return data
                 except (json.JSONDecodeError, KeyError, ValueError) as e:
                     logger.warning("[LibraryCache] Corrupted danmaku cache: %s", e)
-                    RedisOps.delete(key)
+                    await AsyncRedisOps.delete(key)
                     return None
         except Exception as e:
             logger.warning("[LibraryCache] Redis error getting danmaku: %s", e)
@@ -225,7 +226,7 @@ class LibraryRedisCache:
 
         return None
 
-    def cache_danmaku_list(
+    async def cache_danmaku_list(
         self,
         document_id: int,
         danmaku_list: List[Dict[str, Any]],
@@ -257,7 +258,7 @@ class LibraryRedisCache:
                 return False
 
             data = json.dumps(danmaku_list, default=str)
-            success = RedisOps.set_with_ttl(key, data, DANMAKU_CACHE_TTL)
+            success = await AsyncRedisOps.set_with_ttl(key, data, DANMAKU_CACHE_TTL)
 
             if success:
                 logger.debug("[LibraryCache] Cached danmaku list doc=%s", document_id)
@@ -287,7 +288,7 @@ class LibraryRedisCache:
         )
         return True
 
-    def get_recent_danmaku(self, limit: int) -> Optional[List[Dict[str, Any]]]:
+    async def get_recent_danmaku(self, limit: int) -> Optional[List[Dict[str, Any]]]:
         """
         Get cached recent danmaku list.
 
@@ -302,7 +303,7 @@ class LibraryRedisCache:
 
         try:
             key = self._get_danmaku_recent_key(limit)
-            cached = RedisOps.get(key)
+            cached = await AsyncRedisOps.get(key)
 
             if cached:
                 try:
@@ -311,7 +312,7 @@ class LibraryRedisCache:
                     return data
                 except (json.JSONDecodeError, KeyError, ValueError) as e:
                     logger.warning("[LibraryCache] Corrupted recent danmaku cache: %s", e)
-                    RedisOps.delete(key)
+                    await AsyncRedisOps.delete(key)
                     return None
         except Exception as e:
             logger.warning("[LibraryCache] Redis error getting recent danmaku: %s", e)
@@ -319,7 +320,7 @@ class LibraryRedisCache:
 
         return None
 
-    def cache_recent_danmaku(self, limit: int, danmaku_list: List[Dict[str, Any]]) -> bool:
+    async def cache_recent_danmaku(self, limit: int, danmaku_list: List[Dict[str, Any]]) -> bool:
         """
         Cache recent danmaku list.
 
@@ -336,7 +337,7 @@ class LibraryRedisCache:
         try:
             key = self._get_danmaku_recent_key(limit)
             data = json.dumps(danmaku_list, default=str)
-            success = RedisOps.set_with_ttl(key, data, DANMAKU_RECENT_TTL)
+            success = await AsyncRedisOps.set_with_ttl(key, data, DANMAKU_RECENT_TTL)
 
             if success:
                 logger.debug("[LibraryCache] Cached recent danmaku")

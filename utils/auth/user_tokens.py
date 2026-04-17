@@ -41,7 +41,7 @@ async def _load_user(user_id: int) -> Optional[User]:
         result = await db.execute(select(User).where(User.id == int(user_id)))
         row = result.scalar_one_or_none()
         if row and _redis.available and _redis.user_cache:
-            _redis.user_cache.cache_user(row)
+            await _redis.user_cache.cache_user(row)
         return row
 
 
@@ -112,7 +112,7 @@ async def validate_user_token(
     user_id: Optional[int] = None
     record: Optional[UserAPIToken] = None
 
-    cached = user_token_cache.get_by_raw_token(token)
+    cached = await user_token_cache.get_by_raw_token(token)
     if cached:
         if user_token_cache.is_expired(cached) or not cached.get("is_active", True):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
@@ -130,7 +130,7 @@ async def validate_user_token(
             if not record:
                 raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid or expired token")
             user_id = record.user_id
-            user_token_cache.set_from_row(token, record)
+            await user_token_cache.set_from_row(token, record)
             record.last_used_at = datetime.now(UTC)
             try:
                 await db.commit()

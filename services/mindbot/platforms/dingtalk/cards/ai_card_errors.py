@@ -26,9 +26,7 @@ _CREATE_FRIENDLY: dict[str, str] = {
     "param.outTrackIdEmpty": "Create card: outTrackId is empty.",
     "param.openSpaceIdEmpty": "Create card: openSpaceId is empty.",
     "param.openDeliverModelEmpty": "Create card: deliver model block is empty.",
-    "param.openDeliverModelError": (
-        "Create card: space deliver model format is invalid."
-    ),
+    "param.openDeliverModelError": ("Create card: space deliver model format is invalid."),
     "param.openSpaceIdInvalid": "Create card: openSpaceId does not match the required format.",
     "param.cardTemplateIdEmpty": "Create card: cardTemplateId is empty.",
     "param.userIdEmpty": "Create card: userId is empty.",
@@ -37,15 +35,11 @@ _CREATE_FRIENDLY: dict[str, str] = {
     "param.dynamicDataMappingEmpty": "Create card: dynamic data mapping is empty.",
     "param.dynamicSourceIdEmpty": "Create card: dynamic data source id is empty.",
     "param.dynamicDataPullConfigEmpty": "Create card: dynamic data pull config is empty.",
-    "param.dynamicDataPullIntervalInvalid": (
-        "Create card: dynamic data pull interval is empty or invalid."
-    ),
+    "param.dynamicDataPullIntervalInvalid": ("Create card: dynamic data pull interval is empty or invalid."),
     "param.dynamicDataPullIntervalTimeUnitInvalid": (
         "Create card: dynamic data pull interval time unit is empty or invalid."
     ),
-    "param.dynamicDataSourcePullStrategyEmpty": (
-        "Create card: dynamic data pull strategy is empty."
-    ),
+    "param.dynamicDataSourcePullStrategyEmpty": ("Create card: dynamic data pull strategy is empty."),
     "param.dynamicDataMappingPathEmpty": "Create card: dynamic data mapping path is empty.",
     "param.dynamicDataValueTypeEmpty": "Create card: dynamic data value type is empty.",
     "param.contentUnsafe": "Create card: card data failed security review.",

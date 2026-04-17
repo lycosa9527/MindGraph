@@ -130,7 +130,7 @@ async def reset_password_with_sms(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Verify SMS code
-    _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
+    await _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
 
     # Reload user from database for modification (cached users are detached)
     result = await db.execute(select(User).where(User.id == cached_user.id))
@@ -157,8 +157,8 @@ async def reset_password_with_sms(
             detail="Failed to reset password",
         ) from e
 
-    invalidate_user_cache_after_password_write(user, "Password reset")
-    revoke_refresh_tokens_and_sessions(user.id, "password_reset")
+    await invalidate_user_cache_after_password_write(user, "Password reset")
+    await revoke_refresh_tokens_and_sessions(user.id, "password_reset")
 
     # Get client IP address
     client_ip = get_client_ip(http_request) if http_request else "unknown"
@@ -198,7 +198,7 @@ async def reset_password_with_email(
     if blocked is not None:
         return blocked
 
-    verify_and_consume_email_code(request.email, request.email_code, "reset_password", lang)
+    await verify_and_consume_email_code(request.email, request.email_code, "reset_password", lang)
 
     result = await db.execute(select(User).where(User.id == cached_user.id))
     user = result.scalar_one_or_none()
@@ -220,8 +220,8 @@ async def reset_password_with_email(
             detail="Failed to reset password",
         ) from exc
 
-    invalidate_user_cache_after_password_write(user, "Password reset (email)")
-    revoke_refresh_tokens_and_sessions(user.id, "password_reset")
+    await invalidate_user_cache_after_password_write(user, "Password reset (email)")
+    await revoke_refresh_tokens_and_sessions(user.id, "password_reset")
 
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     logger.info(
@@ -283,8 +283,8 @@ async def change_password(
             detail="Failed to change password",
         ) from e
 
-    invalidate_user_cache_after_password_write(user, "Password changed")
-    revoke_refresh_tokens_and_sessions(user.id, "password_change")
+    await invalidate_user_cache_after_password_write(user, "Password changed")
+    await revoke_refresh_tokens_and_sessions(user.id, "password_change")
 
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     logger.info(

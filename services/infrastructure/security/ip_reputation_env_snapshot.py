@@ -24,9 +24,7 @@ def warm_ip_reputation_env_snapshot() -> None:
 
     abuse_master = abuseipdb_service.abuseipdb_master_enabled()
     crowd_lu = crowdsec_blocklist_service.crowdsec_blocklist_lookup_enabled()
-    lookup_active = (
-        abuse_master and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
-    ) or crowd_lu
+    lookup_active = (abuse_master and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()) or crowd_lu
     check_enabled = abuseipdb_service.abuseipdb_check_enabled()
     check_min = abuseipdb_service.get_check_min_score()
     _IP_REPUTATION_SNAPSHOT = (abuse_master, crowd_lu, lookup_active, check_enabled, check_min)
@@ -38,16 +36,17 @@ def log_ip_reputation_startup_summary() -> None:
     """
     if _IP_REPUTATION_SNAPSHOT is None:
         warm_ip_reputation_env_snapshot()
-    abuse_master, crowd_lu, lookup_active, check_enabled, check_min = (
-        _IP_REPUTATION_SNAPSHOT
-        or (False, False, False, False, 80)
+    abuse_master, crowd_lu, lookup_active, check_enabled, check_min = _IP_REPUTATION_SNAPSHOT or (
+        False,
+        False,
+        False,
+        False,
+        80,
     )
     from services.infrastructure.security import abuseipdb_service
     from services.infrastructure.security import crowdsec_blocklist_service
 
-    abuse_bl = (
-        bool(abuse_master) and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
-    )
+    abuse_bl = bool(abuse_master) and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
     if should_skip_ip_reputation_middleware():
         logger.info(
             "[IP reputation] Middleware inactive (enable ABUSEIPDB_* and/or "
@@ -67,15 +66,9 @@ def log_ip_reputation_startup_summary() -> None:
     )
     sync_bits = []
     if abuseipdb_service.abuseipdb_master_enabled():
-        sync_bits.append(
-            "abuseipdb_sync="
-            + str(abuseipdb_service.abuseipdb_blacklist_sync_enabled())
-        )
+        sync_bits.append("abuseipdb_sync=" + str(abuseipdb_service.abuseipdb_blacklist_sync_enabled()))
     if crowdsec_blocklist_service.crowdsec_blocklist_master_enabled():
-        sync_bits.append(
-            "crowdsec_sync="
-            + str(crowdsec_blocklist_service.crowdsec_blocklist_sync_enabled())
-        )
+        sync_bits.append("crowdsec_sync=" + str(crowdsec_blocklist_service.crowdsec_blocklist_sync_enabled()))
     if sync_bits:
         logger.info("[IP reputation] Scheduled blocklist refresh: %s", ", ".join(sync_bits))
 
@@ -111,10 +104,7 @@ def blacklist_lookup_active() -> bool:
     from services.infrastructure.security import abuseipdb_service
     from services.infrastructure.security import crowdsec_blocklist_service
 
-    abuse = (
-        abuseipdb_service.abuseipdb_master_enabled()
-        and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
-    )
+    abuse = abuseipdb_service.abuseipdb_master_enabled() and abuseipdb_service.abuseipdb_blacklist_lookup_enabled()
     crowd = crowdsec_blocklist_service.crowdsec_blocklist_lookup_enabled()
     return abuse or crowd
 

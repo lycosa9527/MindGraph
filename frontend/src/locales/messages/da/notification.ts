@@ -1,8 +1,7 @@
 /** da UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan ikke rydde emne- eller centernoder',
-  'notification.cannotResetSelectDiagramType':
-    'Kan ikke nulstille: vælg først en diagramtype',
+  'notification.cannotResetSelectDiagramType': 'Kan ikke nulstille: vælg først en diagramtype',
   'notification.canvasClearNodes': '{count} noder ryddet',
   'notification.canvasClearNodesLearning': '{count} noder tømt, tilføjet til svar',
   'notification.canvasSomeoneEditingNode': 'En anden bruger redigerer denne knude',
@@ -26,8 +25,7 @@ export default {
   'notification.importInvalidData': 'Import mislykkedes: ugyldige diagramdata',
   'notification.importLoadFailed': 'Import mislykkedes: diagram kunne ikke indlæses',
   'notification.importSavePartial': 'Importeret, men gem til bibliotek mislykkedes',
-  'notification.importSlotsFull':
-    'Bibliotek fuldt; diagram importeret men ikke gemt i biblioteket',
+  'notification.importSlotsFull': 'Bibliotek fuldt; diagram importeret men ikke gemt i biblioteket',
   'notification.importSuccess': 'Diagram importeret og gemt i biblioteket',
   'notification.importUnsupportedType': 'Import mislykkedes: diagramtype understøttes ikke',
   'notification.loadMoreFailed': 'Kunne ikke indlæse mere',

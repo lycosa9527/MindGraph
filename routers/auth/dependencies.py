@@ -77,7 +77,7 @@ async def get_current_user_optional(
 
         # Check session validity
         session_manager = get_session_manager()
-        if not session_manager.is_session_valid(int(user_id), token):
+        if not await session_manager.is_session_valid(int(user_id), token):
             logger.debug("[Auth] Session invalid for user %s in optional auth", user_id)
             return None
 
@@ -188,7 +188,7 @@ def require_admin_or_manager(
     return current_user
 
 
-def require_mindbot_admin_access(
+async def require_mindbot_admin_access(
     current_user: User = Depends(require_admin_or_manager),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
@@ -199,13 +199,13 @@ def require_mindbot_admin_access(
     when ``feature_access_rules`` restricts ``feature_mindbot``, the manager's
     organization (or user id) must appear in the corresponding grants.
     """
-    if not user_has_feature_access(current_user, "feature_mindbot"):
+    if not await user_has_feature_access(current_user, "feature_mindbot"):
         error_msg = Messages.error("mindbot_feature_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user
 
 
-def require_workshop_chat_access(
+async def require_workshop_chat_access(
     current_user: User = Depends(get_current_user),
     lang: Language = Depends(get_language_dependency),
 ) -> User:
@@ -214,7 +214,7 @@ def require_workshop_chat_access(
 
     See ``utils.auth.roles.user_has_feature_access`` / ``can_access_workshop_chat``.
     """
-    if not can_access_workshop_chat(current_user):
+    if not await can_access_workshop_chat(current_user):
         error_msg = Messages.error("elevated_access_required", lang)
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=error_msg)
     return current_user

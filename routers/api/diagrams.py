@@ -520,7 +520,7 @@ async def list_organization_workshop_sessions(
     identifier = get_rate_limit_identifier(current_user, request)
     await check_endpoint_rate_limit("workshop", identifier, max_requests=30, window_seconds=60)
 
-    sessions = await workshop_service.list_organization_workshop_sessions(current_user.id)
+    sessions = await workshop_service.list_org_workshop_sessions(current_user.id)
     return {"success": True, "sessions": sessions}
 
 

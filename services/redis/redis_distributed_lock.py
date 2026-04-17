@@ -30,7 +30,9 @@ from typing import Optional
 from contextlib import asynccontextmanager
 
 from services.redis import keys as _keys
-from services.redis.redis_client import RedisOps, get_redis, is_redis_available
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -84,42 +86,29 @@ class DistributedLock:
         self._acquired = False
 
     async def acquire(self) -> bool:
-        """
-        Attempt to acquire the lock.
+        """Attempt to acquire the lock via the shared async Redis pool.
 
         Returns:
-            True if lock acquired, False if max retries exhausted
+            True if lock acquired, False if max retries exhausted.
         """
         if not is_redis_available():
             logger.warning(
                 "[DistributedLock] Redis unavailable, assuming single worker mode for %s",
                 self.resource,
             )
-            return True  # Fallback: assume single worker if Redis unavailable
+            return True  # Fail-open: single-worker fallback when Redis is gone.
 
-        redis = get_redis()
-        if not redis:
-            logger.warning(
-                "[DistributedLock] Redis client unavailable, assuming single worker mode for %s",
-                self.resource,
-            )
-            return True
-
-        # Generate unique lock ID for this process
+        redis = get_async_redis()
         if self.lock_id is None:
             self.lock_id = _generate_lock_id()
 
         for attempt in range(self.max_retries):
             try:
-                # Attempt atomic lock acquisition: SETNX with TTL
-                # Returns True only if key did not exist (lock acquired)
-                # Use asyncio.to_thread() to avoid blocking event loop (Redis client is synchronous)
-                acquired = await asyncio.to_thread(
-                    redis.set,
+                acquired = await redis.set(
                     self.lock_key,
                     self.lock_id,
-                    nx=True,  # Only set if not exists
-                    ex=self.ttl,  # TTL in seconds
+                    nx=True,
+                    ex=self.ttl,
                 )
 
                 if acquired:
@@ -130,68 +119,49 @@ class DistributedLock:
                         self.lock_id,
                     )
                     return True
-                else:
-                    # Lock held by another process - check who
-                    holder = await asyncio.to_thread(redis.get, self.lock_key)
-                    if attempt < self.max_retries - 1:
-                        # Retry with exponential backoff
-                        delay = self.retry_base_delay * (2**attempt)
-                        logger.debug(
-                            "[DistributedLock] Lock held for %s (holder=%s, attempt %s/%s), retrying after %.2fs",
-                            self.resource,
-                            holder,
-                            attempt + 1,
-                            self.max_retries,
-                            delay,
-                        )
-                        await asyncio.sleep(delay)
-                        continue
-                    else:
-                        # All retries exhausted
-                        logger.warning(
-                            "[DistributedLock] Failed to acquire lock for %s after %s attempts (holder=%s)",
-                            self.resource,
-                            self.max_retries,
-                            holder,
-                        )
-                        return False
 
-            except Exception as e:
+                holder = await redis.get(self.lock_key)
+                if attempt < self.max_retries - 1:
+                    delay = self.retry_base_delay * (2**attempt)
+                    logger.debug(
+                        "[DistributedLock] Lock held for %s (holder=%s, attempt %s/%s), retrying after %.2fs",
+                        self.resource,
+                        holder,
+                        attempt + 1,
+                        self.max_retries,
+                        delay,
+                    )
+                    await asyncio.sleep(delay)
+                    continue
+
+                logger.warning(
+                    "[DistributedLock] Failed to acquire lock for %s after %s attempts (holder=%s)",
+                    self.resource,
+                    self.max_retries,
+                    holder,
+                )
+                return False
+
+            except Exception as exc:  # pylint: disable=broad-except
                 logger.warning(
                     "[DistributedLock] Lock acquisition error for %s: %s",
                     self.resource,
-                    e,
+                    exc,
                 )
-                # On error, assume single worker mode (fail open)
-                return True
+                return True  # Fail-open as before to avoid wedging callers.
 
         return False
 
     async def release(self) -> bool:
-        """
-        Release the lock if held by this process.
-
-        Uses Lua script to ensure we only release our own lock.
-        This prevents accidentally releasing another process's lock.
-
-        Returns:
-            True if lock released, False otherwise
-        """
+        """Release the lock if held by this process (atomic compare-and-delete)."""
         if not self._acquired or not self.lock_id:
             return False
 
         if not is_redis_available():
             return False
 
-        redis = get_redis()
-        if not redis:
-            return False
-
         try:
-            result = await asyncio.to_thread(
-                RedisOps.compare_and_delete, self.lock_key, self.lock_id
-            )
-
+            result = await AsyncRedisOps.compare_and_delete(self.lock_key, self.lock_id)
             if result:
                 self._acquired = False
                 logger.debug(
@@ -201,7 +171,7 @@ class DistributedLock:
                 )
                 return True
 
-            current_holder = await asyncio.to_thread(redis.get, self.lock_key)
+            current_holder = await get_async_redis().get(self.lock_key)
             logger.warning(
                 "[DistributedLock] Lock not released (not held by us or already released): %s. Current holder: %s",
                 self.resource,
@@ -209,7 +179,7 @@ class DistributedLock:
             )
             return False
 
-        except Exception as exc:
+        except Exception as exc:  # pylint: disable=broad-except
             logger.warning("[DistributedLock] Lock release error for %s: %s", self.resource, exc)
             return False
 
@@ -246,14 +216,10 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
     if not is_redis_available():
         return None
 
-    redis = get_redis()
-    if not redis:
-        return None
-
+    redis = get_async_redis()
     lock_id = _generate_lock_id()
     try:
-        acquired = await asyncio.to_thread(
-            redis.set,
+        acquired = await redis.set(
             STARTUP_SMS_NOTIFICATION_LOCK_KEY,
             lock_id,
             nx=True,
@@ -261,13 +227,13 @@ async def acquire_startup_sms_notification_lock() -> Optional[str]:
         )
         if acquired:
             return lock_id
-        holder = await asyncio.to_thread(redis.get, STARTUP_SMS_NOTIFICATION_LOCK_KEY)
+        holder = await redis.get(STARTUP_SMS_NOTIFICATION_LOCK_KEY)
         logger.debug(
             "[LIFESPAN] Startup SMS skipped — lock held by another worker (%s)",
             holder,
         )
         return None
-    except Exception as exc:
+    except Exception as exc:  # pylint: disable=broad-except
         logger.warning(
             "[LIFESPAN] Startup SMS lock acquisition failed (skipping send): %s",
             exc,
@@ -281,16 +247,9 @@ async def release_startup_sms_notification_lock(lock_id: str) -> None:
         return
     if not is_redis_available():
         return
-    redis = get_redis()
-    if not redis:
-        return
     try:
-        await asyncio.to_thread(
-            RedisOps.compare_and_delete,
-            STARTUP_SMS_NOTIFICATION_LOCK_KEY,
-            lock_id,
-        )
-    except Exception as exc:
+        await AsyncRedisOps.compare_and_delete(STARTUP_SMS_NOTIFICATION_LOCK_KEY, lock_id)
+    except Exception as exc:  # pylint: disable=broad-except
         logger.debug(
             "[LIFESPAN] Startup SMS lock release (non-critical): %s",
             exc,

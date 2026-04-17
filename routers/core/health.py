@@ -20,7 +20,7 @@ from fastapi.responses import JSONResponse
 from sqlalchemy import text
 
 from config.settings import config
-from config.database import check_integrity, engine, DATABASE_URL
+from config.database import async_engine, check_integrity_async, DATABASE_URL, engine
 from models.domain.auth import User
 from models.responses import DatabaseHealthResponse
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
@@ -28,7 +28,8 @@ from services.infrastructure.recovery.database_check_state import (
     get_database_check_state_manager,
 )
 from services.llm import llm_service
-from services.redis.redis_client import is_redis_available, RedisOps
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from utils.auth import get_current_user
 
 logger = logging.getLogger(__name__)
@@ -85,58 +86,83 @@ async def _check_application_health() -> Dict[str, Any]:
         return {"status": "error", "error": str(e)}
 
 
-def _fetch_redis_memory_stats(redis_client: Any) -> Dict[str, Any]:
-    """Fetch memory stats from Redis INFO memory section."""
-    try:
-        mem_info = redis_client.info("memory")
-        return {
-            "used_memory_human": mem_info.get("used_memory_human", "unknown"),
-            "used_memory_peak_human": mem_info.get("used_memory_peak_human", "unknown"),
-            "mem_fragmentation_ratio": mem_info.get("mem_fragmentation_ratio", None),
-        }
-    except Exception as exc:  # pylint: disable=broad-except
-        logger.debug("Redis memory info fetch failed: %s", exc)
+_REDIS_INFO_TTL_S = 5.0
+_redis_info_cache: Dict[str, tuple] = {}
+_redis_info_lock = asyncio.Lock()
+
+
+async def _cached_redis_info(redis_client: Any, section: str) -> Dict[str, Any]:
+    """Per-process TTL cache around ``INFO`` (G12).
+
+    The health endpoint can be polled aggressively by load balancers and
+    orchestrators (every second is common).  Each ``INFO`` call serialises a
+    full server snapshot inside Redis and is one of the slowest read commands
+    available — caching the result for a few seconds removes the foot-gun
+    without hiding genuine outages (the cache is flushed once stale).
+    """
+    now = time.monotonic()
+    cached = _redis_info_cache.get(section)
+    if cached is not None and (now - cached[0]) < _REDIS_INFO_TTL_S:
+        return cached[1]
+
+    async with _redis_info_lock:
+        cached = _redis_info_cache.get(section)
+        if cached is not None and (time.monotonic() - cached[0]) < _REDIS_INFO_TTL_S:
+            return cached[1]
+        try:
+            data = await redis_client.info(section)
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.debug("Redis INFO(%s) fetch failed: %s", section, exc)
+            data = {}
+        _redis_info_cache[section] = (time.monotonic(), data or {})
+        return _redis_info_cache[section][1]
+
+
+async def _fetch_redis_memory_stats(redis_client: Any) -> Dict[str, Any]:
+    """Fetch memory stats from Redis INFO memory section using the async client."""
+    mem_info = await _cached_redis_info(redis_client, "memory")
+    if not mem_info:
         return {}
+    return {
+        "used_memory_human": mem_info.get("used_memory_human", "unknown"),
+        "used_memory_peak_human": mem_info.get("used_memory_peak_human", "unknown"),
+        "mem_fragmentation_ratio": mem_info.get("mem_fragmentation_ratio", None),
+    }
 
 
-def _fetch_redis_hotkeys(redis_client: Any) -> Any:
-    """Fetch hot keys using the HOTKEYS command (Redis >= 8.6). Returns None on older versions."""
+async def _fetch_redis_hotkeys(redis_client: Any) -> Any:
+    """Fetch hot keys using HOTKEYS (Redis >= 8.6). Returns None on older versions."""
     try:
-        return redis_client.execute_command("HOTKEYS")
+        return await redis_client.execute_command("HOTKEYS")
     except Exception:  # pylint: disable=broad-except
         return None
 
 
 async def _check_redis_health() -> Dict[str, Any]:
-    """Check Redis health status with timeout."""
+    """Check Redis health status with timeout using the native async client."""
     try:
         if not is_redis_available():
             return {"status": "unavailable", "message": "Redis not connected"}
 
-        # Add timeout protection
-        ping_result = await asyncio.wait_for(asyncio.to_thread(RedisOps.ping), timeout=2.0)
+        redis_client = get_async_redis()
+        if redis_client is None:
+            return {"status": "unavailable", "message": "Async Redis client not initialized"}
+
+        ping_result = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
 
         if ping_result:
-            info = await asyncio.wait_for(asyncio.to_thread(RedisOps.info, "server"), timeout=2.0)
-            # Check if info() returned empty dict (indicates failure)
+            info = await asyncio.wait_for(_cached_redis_info(redis_client, "server"), timeout=2.0)
             if not info:
                 return {"status": "unhealthy", "message": "Redis info failed"}
 
-            from services.redis.redis_client import get_redis  # pylint: disable=import-outside-toplevel
-
-            redis_client = get_redis()
-
-            memory = {}
-            hotkeys = None
-            if redis_client:
-                memory = await asyncio.wait_for(
-                    asyncio.to_thread(_fetch_redis_memory_stats, redis_client),
-                    timeout=2.0,
-                )
-                hotkeys = await asyncio.wait_for(
-                    asyncio.to_thread(_fetch_redis_hotkeys, redis_client),
-                    timeout=2.0,
-                )
+            memory = await asyncio.wait_for(
+                _fetch_redis_memory_stats(redis_client),
+                timeout=2.0,
+            )
+            hotkeys = await asyncio.wait_for(
+                _fetch_redis_hotkeys(redis_client),
+                timeout=2.0,
+            )
 
             result: Dict[str, Any] = {
                 "status": "healthy",
@@ -187,35 +213,30 @@ async def _check_database_health() -> Dict[str, Any]:
 
         # Add timeout protection for database check
         async def _do_check():
-            # Use database-agnostic integrity check
-            is_healthy = await asyncio.to_thread(check_integrity)
+            is_healthy = await check_integrity_async()
 
             if is_healthy:
                 message = "Database connection and integrity check passed"
             else:
                 message = "Database integrity check failed"
 
-            # Get basic database stats (database-agnostic)
-            current_stats = {}
+            current_stats: Dict[str, Any] = {}
             try:
-                # For PostgreSQL, get database size using pg_database_size
-                # For other databases, skip size stats
                 if "postgresql" in DATABASE_URL.lower():
-                    with engine.connect() as conn:
-                        # Extract database name from URL
+                    async with async_engine.connect() as conn:
                         db_name = DATABASE_URL.split("/")[-1].split("?")[0]
-                        result = conn.execute(
+                        result = await conn.execute(
                             text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
                             {"db_name": db_name},
                         )
                         size_row = result.fetchone()
                         if size_row:
-                            current_stats = {"size": size_row[0] if size_row else "unknown"}
-                else:
-                    current_stats = {}
+                            current_stats["size"] = size_row[0] if size_row else "unknown"
             except Exception as e:  # pylint: disable=broad-except
                 logger.debug("Failed to get database stats: %s", e)
-                # Stats are optional, continue without them
+
+            current_stats["pool"] = _collect_pool_stats(async_engine.pool)
+            current_stats["sync_pool"] = _collect_pool_stats(engine.pool)
 
             return {
                 "status": "healthy" if is_healthy else "unhealthy",
@@ -350,7 +371,7 @@ async def websocket_metrics_check(_current_user: User = Depends(get_current_user
     WebSocket counters (per process) and optional Redis aggregate active count.
     Requires authentication.
     """
-    return get_ws_metrics_snapshot()
+    return await get_ws_metrics_snapshot()
 
 
 @router.get("/health/redis")
@@ -359,40 +380,31 @@ async def redis_health_check(_current_user: User = Depends(get_current_user)):
     Redis health check endpoint.
 
     Returns Redis connection status, memory usage, and hot keys (Redis >= 8.6).
-    All sync Redis calls are wrapped in ``asyncio.to_thread`` with a 2-second
-    timeout so the endpoint never blocks the event loop or hangs indefinitely.
+    All Redis I/O uses the native async client with a 2-second timeout so the
+    endpoint never blocks the event loop or hangs indefinitely.
     """
     if not is_redis_available():
         return {"status": "unavailable", "message": "Redis not connected"}
 
+    redis_client = get_async_redis()
+    if redis_client is None:
+        return {"status": "unavailable", "message": "Async Redis client not initialized"}
+
     try:
-        ping_ok = await asyncio.wait_for(
-            asyncio.to_thread(RedisOps.ping),
-            timeout=2.0,
-        )
+        ping_ok = await asyncio.wait_for(redis_client.ping(), timeout=2.0)
         if not ping_ok:
             return {"status": "unhealthy", "message": "Ping failed"}
 
-        info = await asyncio.wait_for(
-            asyncio.to_thread(RedisOps.info, "server"),
+        info = await asyncio.wait_for(_cached_redis_info(redis_client, "server"), timeout=2.0)
+
+        memory = await asyncio.wait_for(
+            _fetch_redis_memory_stats(redis_client),
             timeout=2.0,
         )
-
-        from services.redis.redis_client import get_redis  # pylint: disable=import-outside-toplevel
-
-        redis_client = get_redis()
-
-        memory: Dict[str, Any] = {}
-        hotkeys = None
-        if redis_client:
-            memory = await asyncio.wait_for(
-                asyncio.to_thread(_fetch_redis_memory_stats, redis_client),
-                timeout=2.0,
-            )
-            hotkeys = await asyncio.wait_for(
-                asyncio.to_thread(_fetch_redis_hotkeys, redis_client),
-                timeout=2.0,
-            )
+        hotkeys = await asyncio.wait_for(
+            _fetch_redis_hotkeys(redis_client),
+            timeout=2.0,
+        )
 
         result: Dict[str, Any] = {
             "status": "healthy",
@@ -410,29 +422,54 @@ async def redis_health_check(_current_user: User = Depends(get_current_user)):
         return {"status": "error", "error": str(exc)}
 
 
-def _sync_database_health_check() -> Dict[str, Any]:
-    """Run the synchronous database health probe (called via ``to_thread``)."""
-    is_healthy = check_integrity()
+def _collect_pool_stats(pool_obj: Any) -> Dict[str, Any]:
+    """Snapshot a SQLAlchemy ``QueuePool`` for the health endpoint (G4).
+
+    Returns ``{}`` on any error so a probe failure on the introspection side
+    never poisons the response.  All pool methods are synchronous and very
+    cheap (in-memory counters), so this is safe to call from async contexts
+    without offloading.
+    """
+    try:
+        size = pool_obj.size()
+        checked_in = pool_obj.checkedin()
+        checked_out = pool_obj.checkedout()
+        overflow = pool_obj.overflow()
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.debug("[health] pool stats unavailable: %s", exc)
+        return {}
+
+    return {
+        "size": int(size),
+        "checked_in": int(checked_in),
+        "checked_out": int(checked_out),
+        "overflow": int(overflow),
+        "total": int(size) + int(overflow),
+    }
+
+
+async def _async_database_health_check() -> Dict[str, Any]:
+    """Run the database health probe natively against the async engine."""
+    is_healthy = await check_integrity_async()
     message = "Database connection and integrity check passed" if is_healthy else "Database integrity check failed"
 
     current_stats: Dict[str, Any] = {}
     try:
         if "postgresql" in DATABASE_URL.lower():
-            with engine.connect() as conn:
+            async with async_engine.connect() as conn:
                 db_name = DATABASE_URL.split("/")[-1].split("?")[0]
-                result = conn.execute(
+                result = await conn.execute(
                     text("SELECT pg_size_pretty(pg_database_size(:db_name)) as size"),
                     {"db_name": db_name},
                 )
                 size_row = result.fetchone()
                 if size_row:
-                    current_stats = {
-                        "size": size_row[0] if size_row else "unknown",
-                    }
-        else:
-            current_stats = {}
+                    current_stats["size"] = size_row[0] if size_row else "unknown"
     except Exception as exc:  # pylint: disable=broad-except
         logger.debug("Failed to get database stats: %s", exc)
+
+    current_stats["pool"] = _collect_pool_stats(async_engine.pool)
+    current_stats["sync_pool"] = _collect_pool_stats(engine.pool)
 
     return {
         "is_healthy": is_healthy,
@@ -446,9 +483,9 @@ async def database_health_check(_current_user: User = Depends(get_current_user))
     """
     Database health check endpoint.
 
-    Returns database integrity status and statistics.  All sync DB I/O is
-    offloaded via ``asyncio.to_thread`` with a 5-second timeout so the
-    endpoint never blocks the event loop or hangs indefinitely.
+    Returns database integrity status and statistics.  All DB I/O uses the
+    native async engine with a 5-second timeout so the endpoint never blocks
+    the event loop or hangs indefinitely.
 
     Returns:
         - 200 OK: Database is healthy
@@ -457,7 +494,7 @@ async def database_health_check(_current_user: User = Depends(get_current_user))
     """
     try:
         probe = await asyncio.wait_for(
-            asyncio.to_thread(_sync_database_health_check),
+            _async_database_health_check(),
             timeout=5.0,
         )
 

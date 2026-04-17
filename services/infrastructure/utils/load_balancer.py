@@ -23,7 +23,8 @@ import random
 import time
 
 from services.infrastructure.rate_limiting.rate_limiter import LoadBalancerRateLimiter
-from services.redis.redis_client import is_redis_available, RedisOps
+from services.redis.redis_async_ops import AsyncRedisOps
+from services.redis.redis_client import is_redis_available
 
 if TYPE_CHECKING:
     from services.infrastructure.rate_limiting.rate_limiter import DashscopeRateLimiter
@@ -146,7 +147,7 @@ class LLMLoadBalancer:
 
         return normalized
 
-    def _select_deepseek_provider(self) -> str:
+    async def _select_deepseek_provider(self) -> str:
         """
         Select provider for DeepSeek based on strategy.
 
@@ -190,7 +191,7 @@ class LLMLoadBalancer:
             # Check Dashscope availability using shared Dashscope rate limiter
             dashscope_available = True
             if self.dashscope_rate_limiter:
-                stats = self.dashscope_rate_limiter.get_stats()
+                stats = await self.dashscope_rate_limiter.get_stats()
                 current_qpm = stats.get("current_qpm", 0)
                 active_requests = stats.get("active_requests", 0)
                 dashscope_available = (
@@ -201,7 +202,7 @@ class LLMLoadBalancer:
             # Check Volcengine availability using load balancer rate limiter
             volcengine_available = True
             if self.load_balancer_rate_limiter:
-                volcengine_available = self.load_balancer_rate_limiter.can_acquire_now(self.PROVIDER_VOLCENGINE)
+                volcengine_available = await self.load_balancer_rate_limiter.can_acquire_now(self.PROVIDER_VOLCENGINE)
 
             # If only one provider has capacity, use it
             if dashscope_available and not volcengine_available:
@@ -248,7 +249,7 @@ class LLMLoadBalancer:
             # Redis INCR is atomic, so even if all 5 workers call it simultaneously,
             # they get sequential counter values (1, 2, 3, 4, 5), ensuring even distribution.
             if self._use_redis:
-                counter = RedisOps.increment(ROUND_ROBIN_KEY, ttl_seconds=86400)  # 24h TTL
+                counter = await AsyncRedisOps.increment(ROUND_ROBIN_KEY, ttl_seconds=86400)  # 24h TTL
                 if counter is not None:
                     # Even counter → Dashscope, odd → Volcengine
                     provider = self.PROVIDER_DASHSCOPE if counter % 2 == 0 else self.PROVIDER_VOLCENGINE
@@ -281,7 +282,7 @@ class LLMLoadBalancer:
 
         return self.PROVIDER_DASHSCOPE  # Default to Dashscope
 
-    def map_model(self, logical_model: str) -> str:
+    async def map_model(self, logical_model: str) -> str:
         """
         Map logical model name to physical model.
 
@@ -305,7 +306,7 @@ class LLMLoadBalancer:
         """
         # DeepSeek is the only load-balanced model
         if logical_model == "deepseek":
-            provider = self._select_deepseek_provider()
+            provider = await self._select_deepseek_provider()
             if provider == self.PROVIDER_VOLCENGINE:
                 physical = "ark-deepseek"
             else:
@@ -359,7 +360,7 @@ class LLMLoadBalancer:
         # So return None for logical 'deepseek' - caller should use map_model() first
         return None
 
-    def record_provider_metrics(
+    async def record_provider_metrics(
         self, provider: str, success: bool, duration: float, error: Optional[str] = None
     ) -> None:
         """
@@ -395,17 +396,17 @@ class LLMLoadBalancer:
             failed_requests_key = f"{metrics_key}:failed_requests"
             total_duration_key = f"{metrics_key}:total_duration"
 
-            RedisOps.increment(total_requests_key, ttl_seconds=3600)
-            RedisOps.increment_float(total_duration_key, duration, ttl_seconds=3600)
+            await AsyncRedisOps.increment(total_requests_key, ttl_seconds=3600)
+            await AsyncRedisOps.increment_float(total_duration_key, duration, ttl_seconds=3600)
 
             if success:
-                RedisOps.increment(successful_requests_key, ttl_seconds=3600)
+                await AsyncRedisOps.increment(successful_requests_key, ttl_seconds=3600)
             else:
-                RedisOps.increment(failed_requests_key, ttl_seconds=3600)
+                await AsyncRedisOps.increment(failed_requests_key, ttl_seconds=3600)
 
             # Update metadata (min/max duration, last_updated) - acceptable race condition
             # This is approximate data, so minor race conditions are acceptable
-            metrics_json = RedisOps.get(metrics_key)
+            metrics_json = await AsyncRedisOps.get(metrics_key)
             if metrics_json:
                 metrics = json.loads(metrics_json)
             else:
@@ -420,7 +421,7 @@ class LLMLoadBalancer:
             metrics["last_updated"] = time.time()
 
             # Store metadata with 1 hour TTL
-            RedisOps.set_with_ttl(metrics_key, json.dumps(metrics), ttl_seconds=3600)
+            await AsyncRedisOps.set_with_ttl(metrics_key, json.dumps(metrics), ttl_seconds=3600)
 
             # Track recent requests in sliding window (last 100 requests)
             window_data = {
@@ -428,10 +429,10 @@ class LLMLoadBalancer:
                 "success": success,
                 "duration": duration,
             }
-            RedisOps.list_push(window_key, json.dumps(window_data))
+            await AsyncRedisOps.list_push(window_key, json.dumps(window_data))
 
             # Trim window to last 100 entries
-            window_length = RedisOps.list_length(window_key)
+            window_length = await AsyncRedisOps.list_length(window_key)
             if window_length > 100:
                 # Keep only last 100 entries
                 # Note: ltrim keeps elements from start to end index
@@ -439,16 +440,16 @@ class LLMLoadBalancer:
                 # Workaround: Use list_pop_many to remove excess from front
                 excess = window_length - 100
                 if excess > 0:
-                    RedisOps.list_pop_many(window_key, excess)
+                    await AsyncRedisOps.list_pop_many(window_key, excess)
 
             # Set TTL on window key
-            RedisOps.set_ttl(window_key, 3600)
+            await AsyncRedisOps.set_ttl(window_key, 3600)
 
         except Exception as e:
             # Non-critical: metrics tracking failure shouldn't break load balancing
             logger.debug("[LoadBalancer] Failed to record metrics in Redis: %s", e)
 
-    def get_provider_health(self, provider: str) -> Dict[str, Any]:
+    async def get_provider_health(self, provider: str) -> Dict[str, Any]:
         """
         Get health metrics for a provider from Redis.
 
@@ -479,7 +480,7 @@ class LLMLoadBalancer:
             window_key = f"{METRICS_KEY_PREFIX}{provider}:window"
 
             # Get metrics
-            metrics_json = RedisOps.get(metrics_key)
+            metrics_json = await AsyncRedisOps.get(metrics_key)
             if not metrics_json:
                 return {
                     "success_rate": 1.0,
@@ -494,9 +495,9 @@ class LLMLoadBalancer:
             successful_requests_key = f"{metrics_key}:successful_requests"
             total_duration_key = f"{metrics_key}:total_duration"
 
-            total_str = RedisOps.get(total_requests_key)
-            successful_str = RedisOps.get(successful_requests_key)
-            total_duration_str = RedisOps.get(total_duration_key)
+            total_str = await AsyncRedisOps.get(total_requests_key)
+            successful_str = await AsyncRedisOps.get(successful_requests_key)
+            total_duration_str = await AsyncRedisOps.get(total_duration_key)
 
             total = int(total_str) if total_str else 0
             successful = int(successful_str) if successful_str else 0
@@ -510,11 +511,11 @@ class LLMLoadBalancer:
 
             # Count recent failures (last 100 requests)
             recent_failures = 0
-            window_length = RedisOps.list_length(window_key)
+            window_length = await AsyncRedisOps.list_length(window_key)
             if window_length > 0:
                 # Get last 100 entries (negative indices: -100 to -1)
                 start_idx = -min(100, window_length)
-                window_data = RedisOps.list_range(window_key, start_idx, -1)
+                window_data = await AsyncRedisOps.list_range(window_key, start_idx, -1)
                 for entry_json in window_data:
                     try:
                         entry = json.loads(entry_json)
@@ -544,7 +545,7 @@ class LLMLoadBalancer:
                 "healthy": True,
             }
 
-    def _select_health_aware_provider(self) -> str:
+    async def _select_health_aware_provider(self) -> str:
         """
         Select provider based on health metrics (if available).
 
@@ -555,10 +556,10 @@ class LLMLoadBalancer:
         """
         if not self._use_redis:
             # Fallback to weighted if Redis unavailable
-            return self._select_deepseek_provider()
+            return await self._select_deepseek_provider()
 
-        dashscope_health = self.get_provider_health(self.PROVIDER_DASHSCOPE)
-        volcengine_health = self.get_provider_health(self.PROVIDER_VOLCENGINE)
+        dashscope_health = await self.get_provider_health(self.PROVIDER_DASHSCOPE)
+        volcengine_health = await self.get_provider_health(self.PROVIDER_VOLCENGINE)
 
         # If both healthy, use weighted selection
         if dashscope_health["healthy"] and volcengine_health["healthy"]:

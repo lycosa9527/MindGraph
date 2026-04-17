@@ -25,9 +25,7 @@ FAIL2BAN_SETUP_CMD = (
 CELERY_WORKER_CMD = "celery -A config.celery worker --loglevel=info"
 
 # Same URL as services.auth.geoip_country.GEOIP_GEOLITE_DOWNLOAD_URL (keep in sync).
-GEOLITE_MAXMIND_INFO_URL = (
-    "https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/?lang=en"
-)
+GEOLITE_MAXMIND_INFO_URL = "https://dev.maxmind.com/geoip/geolite2-free-geolocation-data/?lang=en"
 
 LIFESPAN_ORDER_TEXT = """
   1. Fail2ban gate (Linux only; FAIL2BAN_STARTUP_CHECK=false to skip)

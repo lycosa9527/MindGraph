@@ -1,4 +1,5 @@
 """Report SMS/SES-related ERRORS keys in messages.py missing zh/en/az."""
+
 from __future__ import annotations
 
 import re

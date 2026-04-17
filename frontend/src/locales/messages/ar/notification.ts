@@ -1,13 +1,11 @@
 /** ar UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'لا يمكن مسح عقدة الموضوع أو المركز',
-  'notification.cannotResetSelectDiagramType':
-    'لا يمكن إعادة التعيين: اختر نوع المخطط أولاً',
+  'notification.cannotResetSelectDiagramType': 'لا يمكن إعادة التعيين: اختر نوع المخطط أولاً',
   'notification.canvasClearNodes': 'تم مسح {count} عقدة/عقد',
   'notification.canvasClearNodesLearning': 'تم إفراغ {count} عقدة وإضافتها إلى الإجابات',
   'notification.canvasSomeoneEditingNode': 'مستخدم آخر يحرّر هذه العقدة',
-  'notification.collabDeleteBlocked':
-    'لا يمكن الحذف بينما يحرّر مستخدم آخر عقدة محددة',
+  'notification.collabDeleteBlocked': 'لا يمكن الحذف بينما يحرّر مستخدم آخر عقدة محددة',
   'notification.collabRedoBlocked': 'لا يمكن الإعادة بينما يحرّر مستخدم آخر',
   'notification.collabUndoBlocked': 'لا يمكن التراجع بينما يحرّر مستخدم آخر',
   'notification.conversationDeleted': 'تم حذف المحادثة',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'فشل الاستيراد: بيانات المخطط غير صالحة',
   'notification.importLoadFailed': 'فشل الاستيراد: تعذر تحميل المخطط',
   'notification.importSavePartial': 'تم الاستيراد، لكن فشل الحفظ في المكتبة',
-  'notification.importSlotsFull':
-    'المكتبة ممتلئة؛ تم استيراد المخطط لكن لم يُحفظ في المكتبة',
+  'notification.importSlotsFull': 'المكتبة ممتلئة؛ تم استيراد المخطط لكن لم يُحفظ في المكتبة',
   'notification.importSuccess': 'تم استيراد المخطط وحفظه في المكتبة',
   'notification.importUnsupportedType': 'فشل الاستيراد: نوع المخطط غير مدعوم',
   'notification.loadMoreFailed': 'تعذر تحميل المزيد',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'لم يُعثر على رابط المفهوم الجذري',
   'notification.saved': 'تم حفظ التغييرات بنجاح',
   'notification.selectNodeToClear': 'يُرجى تحديد عقدة لمسحها',
-  'notification.sessionInvalidated':
-    'تم تسجيل خروجك لأنك تجاوزت الحد الأقصى لعدد الأجهزة',
+  'notification.sessionInvalidated': 'تم تسجيل خروجك لأنك تجاوزت الحد الأقصى لعدد الأجهزة',
   'notification.signInToUse': 'سجّل الدخول لاستخدام هذا',
   'notification.signInToValidateFocus': 'سجّل الدخول للتحقق من سؤال التركيز',
 } as const

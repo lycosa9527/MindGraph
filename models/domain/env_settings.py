@@ -188,7 +188,10 @@ class FeatureFlagSettings(BaseModel):
     FEATURE_MARKETS: bool = Field(default=False, description="Enable Market (市场) catalog and Alipay checkout")
     FEATURE_MINDBOT: bool = Field(
         default=True,
-        description="Enable MindBot (DingTalk HTTP callback ↔ per-organization Dify); disable with FEATURE_MINDBOT=false",
+        description=(
+            "Enable MindBot (DingTalk HTTP callback ↔ per-organization Dify); "
+            "disable with FEATURE_MINDBOT=false"
+        ),
     )
 
 

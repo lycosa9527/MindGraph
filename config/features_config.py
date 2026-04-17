@@ -258,10 +258,13 @@ class FeaturesConfigMixin:
     @property
     def MINDBOT_DIFY_HEALTH_BASE_URL(self) -> str:
         """Dify app API base (no trailing slash) for admin GET /parameters probe."""
-        raw = (self._get_cached_value(
-            "MINDBOT_DIFY_HEALTH_BASE_URL",
-            "https://dify.mindspringedu.com/v1",
-        ) or "").strip()
+        raw = (
+            self._get_cached_value(
+                "MINDBOT_DIFY_HEALTH_BASE_URL",
+                "https://dify.mindspringedu.com/v1",
+            )
+            or ""
+        ).strip()
         return raw.rstrip("/")
 
     @property

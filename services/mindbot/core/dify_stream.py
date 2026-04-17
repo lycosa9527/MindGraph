@@ -138,9 +138,7 @@ async def mindbot_consume_dify_stream_batched(
     inputs: Optional[dict[str, Any]] = None,
     on_stale_conversation: Optional[Callable[[], Awaitable[None]]] = None,
     pipeline_ctx: str = "",
-    on_media: Optional[
-        Callable[[str, dict[str, Any]], Awaitable[tuple[bool, bool]]]
-    ] = None,
+    on_media: Optional[Callable[[str, dict[str, Any]], Awaitable[tuple[bool, bool]]]] = None,
     on_message_replace: Optional[Callable[[], Awaitable[None]]] = None,
     on_stream_started: Optional[Callable[[], None]] = None,
 ) -> tuple[str, Optional[str], Optional[str], Optional[dict[str, int]], str]:
@@ -203,8 +201,7 @@ async def mindbot_consume_dify_stream_batched(
             return None
         flush_chars = len(buf)
         logger.debug(
-            "[MindBot] dify_sse_buffer_flush %s reason=coalesce chunk_chars=%s "
-            "full_acc_chars=%s",
+            "[MindBot] dify_sse_buffer_flush %s reason=coalesce chunk_chars=%s full_acc_chars=%s",
             pipeline_ctx,
             flush_chars,
             len(full),
@@ -302,11 +299,7 @@ async def mindbot_consume_dify_stream_batched(
             err = ev.get("message") or ev.get("error") or "dify stream error"
             code = ev.get("code")
             status = ev.get("status")
-            if (
-                _active_conv_id
-                and _stream_error_is_conversation_not_exists(ev)
-                and on_stale_conversation is not None
-            ):
+            if _active_conv_id and _stream_error_is_conversation_not_exists(ev) and on_stale_conversation is not None:
                 logger.warning(
                     "[MindBot] dify_sse_stale_conversation %s retry_without_conv",
                     pipeline_ctx,
@@ -398,9 +391,7 @@ async def mindbot_consume_dify_stream_batched(
                 err_t = await flush_buf_if_any()
                 if err_t:
                     return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
-            err_t = await enqueue_or_send_file(
-                url, type_s, fn, immediate=immediate
-            )
+            err_t = await enqueue_or_send_file(url, type_s, fn, immediate=immediate)
             if err_t:
                 return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
             saw_answer = True
@@ -426,14 +417,11 @@ async def mindbot_consume_dify_stream_batched(
                 )
             ):
                 to_send = buf
-                flush_reason = (
-                    "min_chars" if len(to_send) >= min_chars else "flush_interval"
-                )
+                flush_reason = "min_chars" if len(to_send) >= min_chars else "flush_interval"
                 buf = ""
                 last_flush = time.monotonic()
                 logger.debug(
-                    "[MindBot] dify_sse_buffer_flush %s reason=%s chunk_chars=%s "
-                    "batch_index=%s full_acc_chars=%s",
+                    "[MindBot] dify_sse_buffer_flush %s reason=%s chunk_chars=%s batch_index=%s full_acc_chars=%s",
                     pipeline_ctx,
                     flush_reason,
                     len(to_send),
@@ -526,9 +514,7 @@ async def mindbot_consume_dify_stream_batched(
                     continue
                 t = str(hint.get("type") or "document")
                 fn = str(hint.get("filename") or "")
-                err_t = await enqueue_or_send_file(
-                    u.strip(), t, fn, immediate=False
-                )
+                err_t = await enqueue_or_send_file(u.strip(), t, fn, immediate=False)
                 if err_t:
                     return full, conv_id, err_t, usage_snapshot, native_reasoning_accum
                 saw_answer = True
@@ -568,8 +554,7 @@ async def mindbot_consume_dify_stream_batched(
             if outbound_count >= max_parts:
                 break
             logger.debug(
-                "[MindBot] dify_sse_buffer_flush %s reason=defer_tail part=%s "
-                "chunk_chars=%s full_acc_chars=%s",
+                "[MindBot] dify_sse_buffer_flush %s reason=defer_tail part=%s chunk_chars=%s full_acc_chars=%s",
                 pipeline_ctx,
                 idx,
                 len(part),
@@ -588,8 +573,7 @@ async def mindbot_consume_dify_stream_batched(
 
     if buf:
         logger.debug(
-            "[MindBot] dify_sse_buffer_flush %s reason=stream_end_residual chunk_chars=%s "
-            "full_acc_chars=%s",
+            "[MindBot] dify_sse_buffer_flush %s reason=stream_end_residual chunk_chars=%s full_acc_chars=%s",
             pipeline_ctx,
             len(buf),
             len(full),

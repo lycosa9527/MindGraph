@@ -1,6 +1,7 @@
 /** tn UI — notification */
 export default {
-  'notification.cannotClearTopicOrCenter': 'Ga go kgona go phimola dikgato tsa setlhogo kgotsa bogare',
+  'notification.cannotClearTopicOrCenter':
+    'Ga go kgona go phimola dikgato tsa setlhogo kgotsa bogare',
   'notification.cannotResetSelectDiagramType':
     'Ga go kgona go busetsa: tlola mofuta wa setshwantsho pele',
   'notification.canvasClearNodes': 'Dikgato tse {count} di phimotswe',
@@ -23,13 +24,15 @@ export default {
   'notification.generationCancelled': 'Tlhagiso e khanselletswe',
   'notification.historyClearNodes': 'Phimola mafoko a kgato',
   'notification.historyEmptyLearning': 'Tlolela kgato o oketse karabo',
-  'notification.importInvalidData': 'Go tsenisa go palelwe: tshedimosetso ya setshwantsho e sa siame',
+  'notification.importInvalidData':
+    'Go tsenisa go palelwe: tshedimosetso ya setshwantsho e sa siame',
   'notification.importLoadFailed': 'Go tsenisa go palelwe: setshwantsho ga se ka laodiwa',
   'notification.importSavePartial': 'Se tsentswe, mme go boloka mo polokong go palelwe',
   'notification.importSlotsFull':
     'Poloko e tletse; setshwantsho se tsentswe mme ga se bolokwe mo polokong',
   'notification.importSuccess': 'Setshwantsho se tsentswe mme se bolokilwe mo polokong',
-  'notification.importUnsupportedType': 'Go tsenisa go palelwe: mofuta wa setshwantsho o sa tshegetsweng',
+  'notification.importUnsupportedType':
+    'Go tsenisa go palelwe: mofuta wa setshwantsho o sa tshegetsweng',
   'notification.loadMoreFailed': 'Ga go kgona go laoda go oketsegileng',
   'notification.networkError': 'Phoso ya neteweke',
   'notification.newVersionAvailable': 'Go na le mofuta o moswa. Tobetsa go ntšha.',
@@ -39,8 +42,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kgokagano ya kgopolo ya motso ga e bonwe',
   'notification.saved': 'Diphetogo di bolokilwe',
   'notification.selectNodeToClear': 'Tlhopha kgato ya go phimola',
-  'notification.sessionInvalidated':
-    'O tswile ka lebaka la go feta palo ya godimo ya didiriswa',
+  'notification.sessionInvalidated': 'O tswile ka lebaka la go feta palo ya godimo ya didiriswa',
   'notification.signInToUse': 'Tsena o dirise',
   'notification.signInToValidateFocus': 'Tsena o netefatse potso ya kgopolo',
 } as const

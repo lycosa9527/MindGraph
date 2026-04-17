@@ -2,7 +2,7 @@
 export default {
   'notification.cannotClearTopicOrCenter': 'Ba za a iya share takaddun jigo na batu ko tsakiya ba',
   'notification.cannotResetSelectDiagramType':
-    'Ba za a iya sake saita ba: farko zaɓi nau\'in zanen-gizo',
+    "Ba za a iya sake saita ba: farko zaɓi nau'in zanen-gizo",
   'notification.canvasClearNodes': 'An share jigogi {count}',
   'notification.canvasClearNodesLearning': 'An fice jigogi {count}, an ƙara zuwa amsoshi',
   'notification.canvasSomeoneEditingNode': 'Wani yana gyara wannan jigo',
@@ -18,7 +18,8 @@ export default {
   'notification.feedbackCancelled': 'An cire martani',
   'notification.feedbackThanks': 'Na gode da martaninka',
   'notification.feedbackThanksDislike': 'Na gode da martaninka — za mu inganta',
-  'notification.focusQuestionTooShort': 'Farko shigar da tambaya mai tsayi game da mayar da hankali',
+  'notification.focusQuestionTooShort':
+    'Farko shigar da tambaya mai tsayi game da mayar da hankali',
   'notification.fullscreenFailed': 'Ba za a iya shiga cikakken allo ba',
   'notification.generationCancelled': 'An soke samarwa',
   'notification.historyClearNodes': 'Share rubutun jigo',
@@ -29,7 +30,7 @@ export default {
   'notification.importSlotsFull':
     'ɗakin karatu ya cika; an shigo zanen-gizo amma ba a ajiye a ɗakin karatu ba',
   'notification.importSuccess': 'An shigo zanen-gizo kuma an ajiye a ɗakin karatu',
-  'notification.importUnsupportedType': 'Shigowa ta gaza: nau\'in zanen-gizo ba a goyarda ba',
+  'notification.importUnsupportedType': "Shigowa ta gaza: nau'in zanen-gizo ba a goyarda ba",
   'notification.loadMoreFailed': 'Ba za a iya lodin ƙari ba',
   'notification.networkError': 'Kuskuren hanyar sadarwa',
   'notification.newVersionAvailable': 'Akwai sabon sigar. Danna don sabuntawa.',
@@ -39,8 +40,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Ba a sami hanyar haɗin fahimtar tushe ba',
   'notification.saved': 'An adana canje-canje',
   'notification.selectNodeToClear': 'Zaɓi jigo don sharewa',
-  'notification.sessionInvalidated':
-    'An fitar da ku saboda kun wuce yawan mafi yawan na\'urori',
+  'notification.sessionInvalidated': "An fitar da ku saboda kun wuce yawan mafi yawan na'urori",
   'notification.signInToUse': 'Shiga don amfani',
   'notification.signInToValidateFocus': 'Shiga don tabbatar da tambayar mayar da hankali',
 } as const

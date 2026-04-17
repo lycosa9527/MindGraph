@@ -89,7 +89,7 @@ async def create_danmaku(
     """
     # Rate limit: 1 danmaku per minute per user (prevents spam)
     rate_limiter = RedisRateLimiter()
-    is_allowed, _, error_msg = rate_limiter.check_and_record(
+    is_allowed, _, error_msg = await rate_limiter.check_and_record(
         category="library_danmaku_create",
         identifier=str(current_user.id),
         max_attempts=1,

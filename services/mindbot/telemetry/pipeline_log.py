@@ -39,9 +39,7 @@ class MindBotLogAdapter(logging.LoggerAdapter):
     python-json-logger, structlog) will automatically surface these.
     """
 
-    def process(
-        self, msg: Any, kwargs: MutableMapping[str, Any]
-    ) -> tuple[Any, MutableMapping[str, Any]]:
+    def process(self, msg: Any, kwargs: MutableMapping[str, Any]) -> tuple[Any, MutableMapping[str, Any]]:
         extra = dict(self.extra or {})
         existing = kwargs.get("extra") or {}
         extra.update(existing)

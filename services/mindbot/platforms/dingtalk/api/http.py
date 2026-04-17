@@ -182,7 +182,7 @@ async def put_v1_json(
     payload: dict[str, Any],
     *,
     timeout_seconds: int = 60,
-) -> Tuple[int, Optional[dict[str, Any]]]:
+) -> tuple[int, Optional[dict[str, Any]]]:
     """
     PUT JSON to ``api.dingtalk.com`` with ``x-acs-dingtalk-access-token``.
 

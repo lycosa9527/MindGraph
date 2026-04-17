@@ -40,11 +40,7 @@ _LOOSE_BLOCK_NAMES: Tuple[str, ...] = ("redacted_thinking", "thinking", "think",
 
 _LOOSE_COMPLETE_RES: Tuple[Pattern[str], ...] = tuple(
     re.compile(
-        r"(<\s*"
-        + re.escape(name)
-        + r"\b[^>]*>)((?:.|\n)*?)(<\s*/\s*"
-        + re.escape(name)
-        + r"\s*>)",
+        r"(<\s*" + re.escape(name) + r"\b[^>]*>)((?:.|\n)*?)(<\s*/\s*" + re.escape(name) + r"\s*>)",
         re.DOTALL | re.IGNORECASE,
     )
     for name in _LOOSE_BLOCK_NAMES

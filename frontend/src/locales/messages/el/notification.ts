@@ -4,7 +4,8 @@ export default {
   'notification.cannotResetSelectDiagramType':
     'Δεν είναι δυνατή η επαναφορά: επιλέξτε πρώτα τύπο διαγράμματος',
   'notification.canvasClearNodes': 'Εκκαθαρίστηκαν {count} κόμβοι',
-  'notification.canvasClearNodesLearning': 'Αδειάστηκαν {count} κόμβοι, προστέθηκαν στις απαντήσεις',
+  'notification.canvasClearNodesLearning':
+    'Αδειάστηκαν {count} κόμβοι, προστέθηκαν στις απαντήσεις',
   'notification.canvasSomeoneEditingNode': 'Κάποιος άλλος επεξεργάζεται αυτόν τον κόμβο',
   'notification.collabDeleteBlocked':
     'Δεν είναι δυνατή η διαγραφή ενώ άλλος χρήστης επεξεργάζεται επιλεγμένο κόμβο',
@@ -39,8 +40,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Ο σύνδεσμος ριζικής έννοιας δεν βρέθηκε',
   'notification.saved': 'Οι αλλαγές αποθηκεύτηκαν',
   'notification.selectNodeToClear': 'Επιλέξτε κόμβο για εκκαθάριση',
-  'notification.sessionInvalidated':
-    'Αποσυνδεθήκατε επειδή υπερβήκατε τον μέγιστο αριθμό συσκευών',
+  'notification.sessionInvalidated': 'Αποσυνδεθήκατε επειδή υπερβήκατε τον μέγιστο αριθμό συσκευών',
   'notification.signInToUse': 'Συνδεθείτε για να χρησιμοποιήσετε αυτό',
   'notification.signInToValidateFocus': 'Συνδεθείτε για να επικυρώσετε την ερώτηση εστίασης',
 } as const

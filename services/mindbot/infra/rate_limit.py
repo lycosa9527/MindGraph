@@ -76,9 +76,7 @@ def _mem_incr(org_id: int, window: int) -> int:
         _mem_counters[org_id] = (count, entry[1])
 
     if len(_mem_counters) > _mem_max_keys():
-        expired_keys = [
-            k for k, (_, start) in _mem_counters.items() if (now - start) >= window
-        ]
+        expired_keys = [k for k, (_, start) in _mem_counters.items() if (now - start) >= window]
         for k in expired_keys:
             del _mem_counters[k]
         if len(_mem_counters) > _mem_max_keys():

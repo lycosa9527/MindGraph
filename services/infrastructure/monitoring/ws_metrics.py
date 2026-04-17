@@ -15,7 +15,7 @@ import threading
 import time
 from typing import Any, Dict
 
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
@@ -78,15 +78,15 @@ def record_ws_rate_limit_hit() -> None:
     _bump("ws_rate_limit_hits")
 
 
-def get_ws_metrics_snapshot() -> Dict[str, Any]:
+async def get_ws_metrics_snapshot() -> Dict[str, Any]:
     """Return a copy of in-process WebSocket counters plus optional Redis gauge."""
     with _lock:
         snap = dict(_local)
     snap["timestamp"] = time.time()
     try:
-        r = get_redis()
+        r = get_async_redis()
         if r:
-            raw = r.get("mg:ws:metrics:active_total")
+            raw = await r.get("mg:ws:metrics:active_total")
             if raw is not None:
                 snap["ws_active_total_redis"] = int(raw)
     except (ValueError, TypeError, Exception) as exc:  # pylint: disable=broad-except
@@ -94,16 +94,16 @@ def get_ws_metrics_snapshot() -> Dict[str, Any]:
     return snap
 
 
-def redis_increment_active_total(delta: int) -> None:
+async def redis_increment_active_total(delta: int) -> None:
     """Best-effort global active WebSocket count in Redis (all workers)."""
     try:
-        r = get_redis()
+        r = get_async_redis()
         if not r:
             return
         key = "mg:ws:metrics:active_total"
-        pipe = r.pipeline()
-        pipe.incrby(key, delta)
-        pipe.expire(key, 86400)
-        pipe.execute()
+        async with r.pipeline() as pipe:
+            pipe.incrby(key, delta)
+            pipe.expire(key, 86400)
+            await pipe.execute()
     except Exception as exc:  # pylint: disable=broad-except
         logger.debug("[WSMetrics] Redis increment failed: %s", exc)

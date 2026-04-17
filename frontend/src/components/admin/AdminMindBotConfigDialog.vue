@@ -263,9 +263,7 @@ function onDialogClosed(): void {
                 <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-3">
                   <code
                     class="mindbot-callback-url mindbot-swiss-code block flex-1 min-w-0 max-w-full break-all rounded-sm border border-[var(--mindbot-swiss-border)] bg-[#050505] px-3 py-2.5 text-xs font-mono leading-snug text-[var(--mindbot-swiss-text)]"
-                    >{{
-                      buildCallbackUrl(editingOrgRow.public_callback_token)
-                    }}</code
+                    >{{ buildCallbackUrl(editingOrgRow.public_callback_token) }}</code
                   >
                   <div class="flex flex-wrap items-center gap-2 shrink-0 sm:self-center">
                     <el-button

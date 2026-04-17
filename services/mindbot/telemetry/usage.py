@@ -64,9 +64,7 @@ async def persist_mindbot_usage_event(
         dingtalk_sender_id=(sender_ding_id[:128] if sender_ding_id else None),
         dify_user_key=user_id[:256],
         msg_id=(msg_id[:128] if isinstance(msg_id, str) and msg_id.strip() else None),
-        dingtalk_conversation_id=(
-            conversation_id_dt[:256] if (conversation_id_dt or "").strip() else None
-        ),
+        dingtalk_conversation_id=(conversation_id_dt[:256] if (conversation_id_dt or "").strip() else None),
         dify_conversation_id=(
             dify_conversation_id[:128]
             if isinstance(dify_conversation_id, str) and dify_conversation_id.strip()
@@ -91,8 +89,7 @@ async def persist_mindbot_usage_event(
             await session.commit()
     except Exception as exc:  # pylint: disable=broad-except
         logger.warning(
-            "[MindBot] usage_persist_failed org_id=%s error=%s msg_id=%s — "
-            "usage event dropped; pipeline continues",
+            "[MindBot] usage_persist_failed org_id=%s error=%s msg_id=%s — usage event dropped; pipeline continues",
             cfg.organization_id,
             exc,
             msg_id or "",

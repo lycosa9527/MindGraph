@@ -6,8 +6,7 @@ export default {
   'notification.canvasClearNodes': 'Notīrīti {count} mezgli',
   'notification.canvasClearNodesLearning': 'Iztukšoti {count} mezgli, pievienoti atbildēm',
   'notification.canvasSomeoneEditingNode': 'Cits lietotājs rediģē šo mezglu',
-  'notification.collabDeleteBlocked':
-    'Nevar dzēst, kamēr cits lietotājs rediģē atlasīto mezglu',
+  'notification.collabDeleteBlocked': 'Nevar dzēst, kamēr cits lietotājs rediģē atlasīto mezglu',
   'notification.collabRedoBlocked': 'Nevar atkārtot, kamēr cits lietotājs rediģē',
   'notification.collabUndoBlocked': 'Nevar atsaukt, kamēr cits lietotājs rediģē',
   'notification.conversationDeleted': 'Saruna dzēsta',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Saknes jēdziena saite nav atrasta',
   'notification.saved': 'Izmaiņas saglabātas',
   'notification.selectNodeToClear': 'Izvēlieties mezglu notīrīšanai',
-  'notification.sessionInvalidated':
-    'Jūs esat izrakstīts, jo pārsniedzāt maksimālo ierīču skaitu',
+  'notification.sessionInvalidated': 'Jūs esat izrakstīts, jo pārsniedzāt maksimālo ierīču skaitu',
   'notification.signInToUse': 'Pierakstieties, lai izmantotu',
   'notification.signInToValidateFocus': 'Pierakstieties, lai apstiprinātu fokusa jautājumu',
 } as const

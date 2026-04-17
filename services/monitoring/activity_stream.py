@@ -5,7 +5,8 @@ import json
 import logging
 import re
 
-from services.redis.redis_client import is_redis_available, get_redis
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 
 """
 Activity Stream Service
@@ -118,7 +119,7 @@ class ActivityStreamService:
                     masked_words.append(f"{first_char}{masked}")
             return " ".join(masked_words)
 
-    def _get_anon_username(self, user_id: int) -> str:
+    async def _get_anon_username(self, user_id: int) -> str:
         """
         Get anonymized username for a user_id.
 
@@ -129,20 +130,20 @@ class ActivityStreamService:
         """
         if self._use_redis():
             try:
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
                     anon_key = f"{ANON_USER_PREFIX}{user_id}"
-                    cached_username = redis.get(anon_key)
+                    cached_username = await redis.get(anon_key)
                     if cached_username:
                         return cached_username
 
                     # Generate new anonymized username
                     # Use atomic Redis counter for consistent mapping across workers
                     counter_key = "dashboard:anon_counter"
-                    counter = redis.incr(counter_key)  # Atomic increment, starts at 1
+                    counter = await redis.incr(counter_key)  # Atomic increment, starts at 1
                     # chr(65) = 'A', chr(66) = 'B', etc.
                     username = f"User {chr(64 + counter)}"  # counter=1 -> 'A', counter=2 -> 'B'
-                    redis.set(anon_key, username)  # No expiration (persistent mapping)
+                    await redis.set(anon_key, username)  # No expiration (persistent mapping)
                     return username
             except Exception as e:
                 logger.error("[ActivityStream] Error getting anonymized username: %s", e)
@@ -191,7 +192,7 @@ class ActivityStreamService:
                 len(self._connections),
             )
 
-    def _check_and_set_dedup(self, user_id: int, action: str, diagram_type: str) -> bool:
+    async def _check_and_set_dedup(self, user_id: int, action: str, diagram_type: str) -> bool:
         """
         Check if activity was already broadcast recently (deduplication).
         Uses Redis SETNX with TTL for atomic check-and-set operation.
@@ -208,7 +209,7 @@ class ActivityStreamService:
         dedup_key = f"{DEDUP_PREFIX}{user_id}:{action}:{diagram_type}"
 
         try:
-            redis = get_redis()
+            redis = get_async_redis()
             if not redis:
                 # Redis unavailable - allow broadcast (shouldn't happen in production)
                 logger.warning("[ActivityStream] Redis unavailable, skipping deduplication check")
@@ -216,7 +217,7 @@ class ActivityStreamService:
 
             # SETNX: Set if not exists, returns True if set, False if already exists
             # This is atomic - perfect for deduplication
-            was_set = redis.set(
+            was_set = await redis.set(
                 dedup_key,
                 "1",
                 ex=DEDUP_WINDOW_SECONDS,  # TTL: 60 seconds
@@ -230,7 +231,7 @@ class ActivityStreamService:
             # On error, allow broadcast (fail open)
             return False
 
-    def _store_activity(self, activity: Dict):
+    async def _store_activity(self, activity: Dict):
         """
         Store activity in Redis and memory.
 
@@ -241,14 +242,16 @@ class ActivityStreamService:
         # Store in Redis (for real-time access and page load history)
         if self._use_redis():
             try:
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
                     # Add to list (left push)
-                    redis.lpush(ACTIVITIES_KEY, json.dumps(activity, ensure_ascii=False))  # Preserve UTF-8 characters
+                    await redis.lpush(
+                        ACTIVITIES_KEY, json.dumps(activity, ensure_ascii=False)
+                    )  # Preserve UTF-8 characters
                     # Trim to max size
-                    redis.ltrim(ACTIVITIES_KEY, 0, MAX_ACTIVITIES - 1)
+                    await redis.ltrim(ACTIVITIES_KEY, 0, MAX_ACTIVITIES - 1)
                     # Set TTL
-                    redis.expire(ACTIVITIES_KEY, ACTIVITIES_TTL_SECONDS)
+                    await redis.expire(ACTIVITIES_KEY, ACTIVITIES_TTL_SECONDS)
             except Exception as e:
                 logger.error("[ActivityStream] Error storing activity in Redis: %s", e)
 
@@ -282,7 +285,7 @@ class ActivityStreamService:
         """
         # Check for duplicate activity (deduplication)
         # This prevents multiple broadcasts when auto-complete makes concurrent requests
-        is_duplicate = self._check_and_set_dedup(user_id, action, diagram_type)
+        is_duplicate = await self._check_and_set_dedup(user_id, action, diagram_type)
         if is_duplicate:
             logger.debug(
                 "[ActivityStream] Skipping duplicate activity: user %s, %s %s",
@@ -306,9 +309,9 @@ class ActivityStreamService:
             "topic": topic,  # Include topic for database storage
         }
 
-        # Store activity (Redis and memory - synchronous, fast)
+        # Store activity (Redis and memory)
         # Note: Database write removed - history is not important, Redis is sufficient
-        self._store_activity(activity)
+        await self._store_activity(activity)
 
         # Broadcast to all connections
         activity_json = json.dumps(activity, ensure_ascii=False)  # Preserve UTF-8 characters
@@ -332,7 +335,7 @@ class ActivityStreamService:
             diagram_type,
         )
 
-    def get_recent_activities(self, limit: int = 50) -> list:
+    async def get_recent_activities(self, limit: int = 50) -> list:
         """
         Get recent activities.
 
@@ -344,9 +347,9 @@ class ActivityStreamService:
         """
         if self._use_redis():
             try:
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
-                    activities_str = redis.lrange(ACTIVITIES_KEY, 0, limit - 1)
+                    activities_str = await redis.lrange(ACTIVITIES_KEY, 0, limit - 1)
                     activities = []
                     for act_str in activities_str:
                         try:

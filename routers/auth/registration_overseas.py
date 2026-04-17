@@ -121,7 +121,7 @@ async def register_overseas(
         error_msg = Messages.error("email_already_registered", lang)
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
-    verify_and_consume_email_code(request.email, request.email_code, "register", lang)
+    await verify_and_consume_email_code(request.email, request.email_code, "register", lang)
 
     new_user = User(
         phone=None,
@@ -147,7 +147,7 @@ async def register_overseas(
     async def cache_user_async() -> None:
         nonlocal cache_write_success
         try:
-            user_cache.cache_user(new_user)
+            await user_cache.cache_user(new_user)
             cache_write_success = True
             logger.info("[Auth] Overseas user registered: ID %s email=%s", new_user.id, email_norm[:3] + "***")
         except Exception as exc:
@@ -156,14 +156,14 @@ async def register_overseas(
 
     async def store_session_async() -> None:
         try:
-            session_manager.store_session(new_user.id, token, device_hash=device_hash)
+            await session_manager.store_session(new_user.id, token, device_hash=device_hash)
         except Exception as exc:
             logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, exc)
 
     async def store_refresh_token_async() -> None:
         try:
             refresh_manager = get_refresh_token_manager()
-            refresh_manager.store_refresh_token(
+            await refresh_manager.store_refresh_token(
                 user_id=new_user.id,
                 token_hash=refresh_token_hash,
                 ip_address=client_ip,
@@ -189,7 +189,7 @@ async def register_overseas(
 
     set_auth_cookies(response, token, refresh_token_value, http_request)
 
-    record_vpn_login_geo(new_user.id, http_request)
+    await record_vpn_login_geo(new_user.id, http_request)
 
     logger.info(
         "[TokenAudit] Registration success (overseas email): user=%s ip=%s",

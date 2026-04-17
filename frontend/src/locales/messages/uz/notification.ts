@@ -29,7 +29,8 @@ export default {
   'notification.importSlotsFull':
     'Kutubxona toʻliq; diagramma import qilindi lekin kutubxonaga saqlanmadi',
   'notification.importSuccess': 'Diagramma import qilindi va kutubxonaga saqlandi',
-  'notification.importUnsupportedType': 'Import muvaffaqiyatsiz: qoʻllab-quvvatlanmaydigan diagramma turi',
+  'notification.importUnsupportedType':
+    'Import muvaffaqiyatsiz: qoʻllab-quvvatlanmaydigan diagramma turi',
   'notification.loadMoreFailed': 'Yana yuklab boʻlmadi',
   'notification.networkError': 'Tarmoq xatosi',
   'notification.newVersionAvailable': 'Yangi versiya mavjud. Yangilash uchun bosing.',

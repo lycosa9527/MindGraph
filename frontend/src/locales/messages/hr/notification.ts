@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Veza korijenskog koncepta nije pronađena',
   'notification.saved': 'Promjene su spremljene',
   'notification.selectNodeToClear': 'Odaberite čvor za čišćenje',
-  'notification.sessionInvalidated':
-    'Odjavljeni ste jer ste premašili maksimalan broj uređaja',
+  'notification.sessionInvalidated': 'Odjavljeni ste jer ste premašili maksimalan broj uređaja',
   'notification.signInToUse': 'Prijavite se za korištenje',
   'notification.signInToValidateFocus': 'Prijavite se za potvrdu pitanja fokusa',
 } as const

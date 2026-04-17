@@ -212,8 +212,7 @@ export default {
   'canvas.toolbar.moreAppWaterfallDesc':
     'เลือกข้ามโหนดแบบชุด ทำให้การคิดแบบแยกส่วนและรวมส่วนเห็นได้ชัด',
   'canvas.toolbar.moreAppVirtualKeyboard': 'คีย์บอร์ดเสมือน',
-  'canvas.toolbar.moreAppVirtualKeyboardDesc':
-    'คีย์บอร์ดบนหน้าจอซิงค์กับภาษาของอินเทอร์เฟซ',
+  'canvas.toolbar.moreAppVirtualKeyboardDesc': 'คีย์บอร์ดบนหน้าจอซิงค์กับภาษาของอินเทอร์เฟซ',
   'canvas.toolbar.virtualKeyboardClose': 'ปิดคีย์บอร์ด',
   'canvas.toolbar.virtualKeyboardFocusHint':
     'ดับเบิลคลิกหรือแตะป้ายโหนดสองครั้งก่อน แล้วพิมพ์ด้วยคีย์บอร์ด',

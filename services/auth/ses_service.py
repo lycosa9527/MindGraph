@@ -28,9 +28,7 @@ logger = logging.getLogger(__name__)
 
 _DEFAULT_TEMPLATE_ID = "123456"
 
-TENCENT_SES_SECRET_ID = (
-    os.getenv("TENCENT_SES_SECRET_ID", "").strip() or os.getenv("TENCENT_SMS_SECRET_ID", "").strip()
-)
+TENCENT_SES_SECRET_ID = os.getenv("TENCENT_SES_SECRET_ID", "").strip() or os.getenv("TENCENT_SMS_SECRET_ID", "").strip()
 TENCENT_SES_SECRET_KEY = (
     os.getenv("TENCENT_SES_SECRET_KEY", "").strip() or os.getenv("TENCENT_SMS_SECRET_KEY", "").strip()
 )
@@ -107,9 +105,7 @@ class SESService:
         canonical_uri = "/"
         canonical_querystring = ""
         content_type = "application/json"
-        canonical_headers = (
-            f"content-type:{content_type}\nhost:{TENCENT_SES_HOST}\nx-tc-action:{action.lower()}\n"
-        )
+        canonical_headers = f"content-type:{content_type}\nhost:{TENCENT_SES_HOST}\nx-tc-action:{action.lower()}\n"
         signed_headers = "content-type;host;x-tc-action"
         hashed_payload = hashlib.sha256(payload.encode("utf-8")).hexdigest()
         canonical_request = (

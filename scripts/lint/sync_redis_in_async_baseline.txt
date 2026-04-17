@@ -1,0 +1,5 @@
+# Baseline of synchronous Redis usage inside async def bodies.
+# One entry per line: <relative/path> :: <line snippet>.
+# Remove a line when you migrate the call to the native async client.
+# Regenerate with: python scripts/lint/lint_sync_redis_in_async.py --update-baseline
+

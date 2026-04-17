@@ -4,7 +4,8 @@ export default {
   'notification.cannotResetSelectDiagramType':
     'மீட்டமைக்க முடியாது: முதலில் வரைபட வகையைத் தேர்ந்தெடுக்கவும்',
   'notification.canvasClearNodes': '{count} முனை(கள்) அழிக்கப்பட்டன',
-  'notification.canvasClearNodesLearning': '{count} முனை(கள்) காலியாக்கப்பட்டு பதில்களில் சேர்க்கப்பட்டன',
+  'notification.canvasClearNodesLearning':
+    '{count} முனை(கள்) காலியாக்கப்பட்டு பதில்களில் சேர்க்கப்பட்டன',
   'notification.canvasSomeoneEditingNode': 'வேறொருவர் இந்த முனையைத் திருத்துகிறார்',
   'notification.collabDeleteBlocked':
     'மற்றொரு பயனர் தேர்ந்தெடுக்கப்பட்ட முனையைத் திருத்தும்போது நீக்க முடியாது',

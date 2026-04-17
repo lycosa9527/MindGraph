@@ -30,7 +30,7 @@ except ImportError:
     pass
 
 
-def is_ip_whitelisted(client_ip: str) -> bool:
+async def is_ip_whitelisted(client_ip: str) -> bool:
     """
     Check if client IP is in bayi IP whitelist.
 
@@ -46,11 +46,10 @@ def is_ip_whitelisted(client_ip: str) -> bool:
     Returns:
         True if IP is whitelisted, False otherwise
     """
-    # Try Redis first (for multi-worker support and dynamic management)
     if _redis_available and _get_bayi_whitelist is not None:
         try:
             whitelist = _get_bayi_whitelist()
-            result = whitelist.is_ip_whitelisted(client_ip)
+            result = await whitelist.is_ip_whitelisted(client_ip)
             if result:
                 return True
         except Exception as e:
@@ -59,16 +58,13 @@ def is_ip_whitelisted(client_ip: str) -> bool:
                 e,
             )
 
-    # Fallback to in-memory set (backward compatibility)
     if not BAYI_IP_WHITELIST:
         return False
 
     try:
-        # Normalize IP address for comparison
         normalized_ip = ipaddress.ip_address(client_ip)
         ip_str = str(normalized_ip)
 
-        # O(1) lookup in set
         if ip_str in BAYI_IP_WHITELIST:
             logger.debug("IP %s matched whitelist entry (in-memory fallback)", client_ip)
             return True

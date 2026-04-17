@@ -6,9 +6,9 @@ import { computed, ref, watch } from 'vue'
 
 import MindbotUsageEventDetailDialog from '@/components/admin/MindbotUsageEventDetailDialog.vue'
 import {
+  type MindbotUsageEventRow,
   isMindbotUsageSuccess,
   mindbotThreadKey,
-  type MindbotUsageEventRow,
 } from '@/components/admin/mindbotUsageTypes'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
@@ -431,9 +431,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
         {{ t('admin.mindbot.monitorTabHint') }}
       </p>
 
-      <div
-        class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap"
-      >
+      <div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:flex-wrap">
         <span class="text-xs text-gray-500 dark:text-gray-400 shrink-0">{{
           t('admin.mindbot.monitorFilterStaff')
         }}</span>
@@ -598,9 +596,7 @@ function onMonitorRowClick(row: ThreadGroup): void {
               min-width="148"
             >
               <template #default="{ row }">
-                <span class="whitespace-nowrap text-xs">{{
-                  formatTime(row.created_at)
-                }}</span>
+                <span class="whitespace-nowrap text-xs">{{ formatTime(row.created_at) }}</span>
               </template>
             </el-table-column>
             <el-table-column

@@ -1,68 +1,42 @@
-"""Native async Redis client for MindBot hot-path operations.
+"""Async Redis helpers historically used by MindBot.
 
-Uses ``redis.asyncio`` (ships with redis-py >= 4.2, already in requirements.txt)
-so every Redis call is a genuine coroutine — no thread-pool hops via
-``asyncio.to_thread``.
+This module is now a **thin compatibility shim** around the shared async
+client at :mod:`services.redis.redis_async_client`.  All MindBot call sites
+keep their existing imports while the actual connection pool, RESP3
+negotiation, keepalive and retry policy are managed centrally so cache,
+session, rate-limit and bot subsystems share one pool with one set of
+operational knobs.
 
-Key design principle: ``redis_setnx_ttl`` returns ``Optional[bool]`` (True/False/None)
-so callers can distinguish "key already existed" (False) from "Redis error" (None).
-This prevents silent message drops when Redis is temporarily unreachable.
-
-Intended callers: callback.py, conv_gate.py, oauth.py, metrics.py.
-
-Pool sizing
-----------
-``MINDBOT_REDIS_MAX_CONNECTIONS`` (default 150) should be at least as large as
-the peak number of concurrent MindBot handlers that touch Redis simultaneously.
-With ``MINDBOT_MAX_CONCURRENT_STREAMING`` / ``MINDBOT_MAX_CONCURRENT_BLOCKING``
-(default 64 each) coroutines potentially each making Redis calls, the default
-pool provides headroom for bursts without saturating the pool and introducing
-wait time.
+Key design principle: ``redis_setnx_ttl`` returns ``Optional[bool]``
+(True/False/None) so callers can distinguish "key already existed" (False)
+from "Redis error" (None).  This prevents silent message drops when Redis is
+temporarily unreachable.
 """
 
 from __future__ import annotations
 
 import logging
-import os
 from typing import Awaitable, Optional, cast
 
 import redis.asyncio as aioredis
-from utils.env_helpers import env_int
+
+from services.redis.redis_async_client import (
+    close_async_redis as _shared_close_async_redis,
+)
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
-_client: Optional[aioredis.Redis] = None
-
-_DEFAULT_MAX_CONNECTIONS = 150
-
 
 def _get_client() -> aioredis.Redis:
-    """
-    Return (and lazily create) the process-wide async Redis client.
+    """Return the shared process-wide async Redis client.
 
-    ``redis.asyncio.from_url`` creates a connection pool; the first actual
-    network connection is established on the first command, not here.
-
-    Thread-safety: this function relies on the single-threaded asyncio event
-    loop for safe lazy initialisation.  It is **not** thread-safe and must
-    not be called from worker threads (e.g. Celery tasks).
+    Kept as a module-private helper so existing call sites do not need to
+    change; new code should import ``get_async_redis`` from
+    :mod:`services.redis.redis_async_client` directly.
     """
-    global _client
-    # No asyncio.Lock needed: from_url() construction has no await, so the
-    # check-and-assign block is atomic within one event-loop tick.
-    # This function must NOT be called from threads outside the event loop.
-    if _client is None:
-        url = os.getenv("REDIS_URL", "redis://localhost:6379/0")
-        max_conn = max(1, env_int("MINDBOT_REDIS_MAX_CONNECTIONS", _DEFAULT_MAX_CONNECTIONS))
-        _client = aioredis.from_url(
-            url,
-            decode_responses=True,
-            max_connections=max_conn,
-            socket_timeout=5.0,
-            socket_connect_timeout=5.0,
-            retry_on_timeout=True,
-        )
-    return _client
+
+    return get_async_redis()
 
 
 async def redis_get(key: str) -> Optional[str]:
@@ -171,11 +145,7 @@ async def redis_incr_fixed_window(key: str, ttl: int) -> Optional[int]:
 
     Uses a Lua script executed atomically on the Redis server.
     """
-    lua = (
-        "local v = redis.call('INCR', KEYS[1]) "
-        "if v == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end "
-        "return v"
-    )
+    lua = "local v = redis.call('INCR', KEYS[1]) if v == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end return v"
     try:
         client = _get_client()
         result = await client.execute_command("EVAL", lua, 1, key, str(ttl))
@@ -198,11 +168,6 @@ async def redis_ping() -> bool:
 
 
 async def close_async_redis() -> None:
-    """Close the connection pool — call once during application shutdown."""
-    global _client
-    if _client is not None:
-        try:
-            await _client.aclose()
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.warning("[MindBot] redis_async close error: %s", exc)
-        _client = None
+    """Close the shared async Redis pool — see :mod:`services.redis.redis_async_client`."""
+
+    await _shared_close_async_redis()

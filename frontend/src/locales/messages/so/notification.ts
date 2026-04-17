@@ -17,15 +17,17 @@ export default {
   'notification.deleted': 'Shayga si guul leh ayaa loo tirtiray',
   'notification.feedbackCancelled': 'Jawaab celinta waa la saaray',
   'notification.feedbackThanks': 'Waad ku mahadsan tahay jawaab celintaada',
-  'notification.feedbackThanksDislike': 'Waad ku mahadsan tahay jawaab celintaada — waan hagaajin doonaa',
-  'notification.focusQuestionTooShort': 'Marka hore geli su\'aal diiradda saaran oo dheer',
+  'notification.feedbackThanksDislike':
+    'Waad ku mahadsan tahay jawaab celintaada — waan hagaajin doonaa',
+  'notification.focusQuestionTooShort': "Marka hore geli su'aal diiradda saaran oo dheer",
   'notification.fullscreenFailed': 'Lama geli karo shaashadda buuxa',
   'notification.generationCancelled': 'Abuurista waa la joojiyay',
   'notification.historyClearNodes': 'Nadi qoraalka xuduudka',
   'notification.historyEmptyLearning': 'Faafo xuduud oo ku dar jawaab',
   'notification.importInvalidData': 'Soo dejintii way fashilantay: xogta sawirka ma aha mid sax ah',
   'notification.importLoadFailed': 'Soo dejintii way fashilantay: sawirka lama soo dejin karo',
-  'notification.importSavePartial': 'Waa la soo dejiyay, laakiin kaydinta maktabadda way fashilantay',
+  'notification.importSavePartial':
+    'Waa la soo dejiyay, laakiin kaydinta maktabadda way fashilantay',
   'notification.importSlotsFull':
     'Maktabaddu way buux dhammaatay; sawirka waa la soo dejiyay laakiin lama kaydin maktabadda',
   'notification.importSuccess': 'Sawirka waa la soo dejiyay oo lagu kaydiyey maktabadda',
@@ -42,5 +44,5 @@ export default {
   'notification.sessionInvalidated':
     'Waxaa lagaa saaray maxaa yeelay waxaad ka badatay tirada ugu badan ee qalabka',
   'notification.signInToUse': 'Gal si aad u isticmaasho',
-  'notification.signInToValidateFocus': 'Gal si aad u xaqiijiso su\'aasha diiradda saaran',
+  'notification.signInToValidateFocus': "Gal si aad u xaqiijiso su'aasha diiradda saaran",
 } as const

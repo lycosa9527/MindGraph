@@ -77,7 +77,8 @@ class ChatChannel(Base):
         index=True,
     )
     avatar: Mapped[Optional[str]] = mapped_column(String(50), nullable=True)
-    is_archived: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # Partial index ix_chat_channels_active covers ``WHERE NOT is_archived``.
+    is_archived: Mapped[bool] = mapped_column(Boolean, default=False)
 
     channel_type: Mapped[str] = mapped_column(
         String(20),
@@ -146,23 +147,26 @@ class ChatChannel(Base):
         foreign_keys=[diagram_id],
         lazy="selectin",
     )
+    # Large 1:N collections. Default to ``select`` to avoid N+1 fan-out on
+    # channel list endpoints; eager-load explicitly with ``selectinload(...)``
+    # only in the queries that actually render members/topics/messages.
     members = relationship(
         "ChannelMember",
         back_populates="channel",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     topics = relationship(
         "ChatTopic",
         back_populates="channel",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
     messages = relationship(
         "ChatMessage",
         back_populates="channel",
         cascade="all, delete-orphan",
-        lazy="selectin",
+        lazy="select",
     )
 
     __table_args__ = (
@@ -284,12 +288,13 @@ class ChatTopic(Base):
         foreign_keys=[created_by],
         lazy="selectin",
     )
+    # Large 1:N collection — load explicitly with ``selectinload`` when needed.
     messages = relationship(
         "ChatMessage",
         back_populates="topic",
         cascade="all, delete-orphan",
         foreign_keys="ChatMessage.topic_id",
-        lazy="selectin",
+        lazy="select",
     )
 
     __table_args__ = (Index("ix_chat_topics_channel_updated", "channel_id", "updated_at"),)
@@ -384,7 +389,8 @@ class DirectMessage(Base):
     recipient_id: Mapped[int] = mapped_column(Integer, ForeignKey("users.id"), nullable=False, index=True)
     content: Mapped[str] = mapped_column(Text, nullable=False)
     message_type: Mapped[str] = mapped_column(String(20), nullable=False, default="text")
-    is_read: Mapped[bool] = mapped_column(Boolean, default=False, index=True)
+    # Partial index ix_dm_unread covers the ``WHERE NOT is_read AND NOT is_deleted`` access pattern.
+    is_read: Mapped[bool] = mapped_column(Boolean, default=False)
     is_deleted: Mapped[bool] = mapped_column(Boolean, default=False)
 
     mentioned_user_ids: Mapped[Optional[List[int]]] = mapped_column(

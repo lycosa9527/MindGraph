@@ -435,9 +435,7 @@ export function recalculateTreeMapLayout(
   if (dimLabel) {
     const piniaDim = nodeDimensions['dimension-label']
     const labelWidth =
-      piniaDim && piniaDim.width > 0
-        ? piniaDim.width
-        : NODE_MIN_DIMENSIONS.label.minWidth
+      piniaDim && piniaDim.width > 0 ? piniaDim.width : NODE_MIN_DIMENSIONS.label.minWidth
     byId.set('dimension-label', {
       ...dimLabel,
       position: {

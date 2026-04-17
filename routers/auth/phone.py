@@ -112,7 +112,7 @@ async def send_change_phone_code(
     rate_limiter = get_rate_limiter()
 
     # Check rate limiting: cooldown between requests (via Redis TTL)
-    exists, remaining_ttl = sms_storage.check_exists_and_get_ttl(new_phone, purpose)
+    exists, remaining_ttl = await sms_storage.check_exists_and_get_ttl(new_phone, purpose)
 
     if exists and remaining_ttl > 0:
         total_ttl = SMS_CODE_EXPIRY_MINUTES * 60  # 300 seconds for 5 minutes
@@ -129,7 +129,7 @@ async def send_change_phone_code(
             raise HTTPException(status_code=status.HTTP_429_TOO_MANY_REQUESTS, detail=error_msg)
 
     # Check rate limit within time window using Redis rate limiter
-    allowed, window_count, _error_message = rate_limiter.check_and_record(
+    allowed, window_count, _error_message = await rate_limiter.check_and_record(
         "sms",
         new_phone,
         SMS_MAX_ATTEMPTS_PER_PHONE,
@@ -146,7 +146,7 @@ async def send_change_phone_code(
     # Store verification code in Redis BEFORE sending SMS
     ttl_seconds = SMS_CODE_EXPIRY_MINUTES * 60
 
-    if not sms_storage.store(new_phone, code, purpose, ttl_seconds):
+    if not await sms_storage.store(new_phone, code, purpose, ttl_seconds):
         phone_masked = new_phone[:3] + "****" + new_phone[-4:]
         logger.error("Failed to store SMS code in Redis for %s", phone_masked)
         raise HTTPException(
@@ -158,13 +158,11 @@ async def send_change_phone_code(
     try:
         success, message, _ = await sms_middleware.send_verification_code(new_phone, purpose, code=code, lang=lang)
     except SMSServiceError as e:
-        # SMS middleware error - remove the Redis record since SMS won't be sent
-        sms_storage.remove(new_phone, purpose)
+        await sms_storage.remove(new_phone, purpose)
         raise HTTPException(status_code=status.HTTP_503_SERVICE_UNAVAILABLE, detail=str(e)) from e
 
     if not success:
-        # SMS sending failed - remove the Redis record
-        sms_storage.remove(new_phone, purpose)
+        await sms_storage.remove(new_phone, purpose)
         if message and message != "SMS service not available":
             error_detail = message
         else:
@@ -217,7 +215,7 @@ async def change_phone(
     sms_storage = get_sms_storage()
     purpose = "change_phone"
 
-    if not sms_storage.verify_and_remove(new_phone, sms_code, purpose):
+    if not await sms_storage.verify_and_remove(new_phone, sms_code, purpose):
         error_msg = Messages.error("sms_code_invalid", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
@@ -232,11 +230,11 @@ async def change_phone(
 
     # Invalidate cache for both old and new phone (and email index if present)
     user_email = getattr(current_user, "email", None)
-    user_cache.invalidate(current_user.id, old_phone, user_email)
-    user_cache.invalidate(current_user.id, new_phone, user_email)
+    await user_cache.invalidate(current_user.id, old_phone, user_email)
+    await user_cache.invalidate(current_user.id, new_phone, user_email)
 
     # Re-cache user with new phone
-    user_cache.cache_user(current_user)
+    await user_cache.cache_user(current_user)
 
     old_phone_masked = old_phone[:3] + "****" + old_phone[-4:]
     new_phone_masked = new_phone[:3] + "****" + new_phone[-4:]

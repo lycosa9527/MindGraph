@@ -4,14 +4,7 @@
  */
 import { computed, inject, reactive } from 'vue'
 
-import {
-  ChevronDown,
-  Languages,
-  LogIn,
-  LogOut,
-  ScrollText,
-  UserRound,
-} from 'lucide-vue-next'
+import { ChevronDown, Languages, LogIn, LogOut, ScrollText, UserRound } from 'lucide-vue-next'
 
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 

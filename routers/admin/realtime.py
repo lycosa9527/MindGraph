@@ -56,7 +56,7 @@ async def get_realtime_stats(current_user: User = Depends(get_current_user)):
 
     try:
         tracker = get_activity_tracker()
-        stats = tracker.get_stats()
+        stats = await tracker.get_stats()
 
         return stats
 
@@ -81,12 +81,13 @@ async def get_active_users(current_user: User = Depends(get_current_user)):
 
     try:
         tracker = get_activity_tracker()
-        active_users = tracker.get_active_users()
+        active_users = await tracker.get_active_users()
+        stats = await tracker.get_stats()
 
         return {
             "users": active_users,
             "count": len(active_users),
-            "timestamp": tracker.get_stats()["timestamp"],
+            "timestamp": stats["timestamp"],
         }
 
     except Exception as e:
@@ -116,7 +117,7 @@ async def get_recent_activities(
 
     try:
         tracker = get_activity_tracker()
-        activities = tracker.get_recent_activities(limit=limit)
+        activities = await tracker.get_recent_activities(limit=limit)
 
         return {"activities": activities, "count": len(activities)}
 
@@ -217,22 +218,22 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
             events.append(f"data: {heartbeat_data}\n\n")
         return events
 
-    def _get_initial_state(tracker):
+    async def _get_initial_state(tracker):
         """Get initial state from tracker."""
         try:
-            stats = tracker.get_stats()
-            active_users = tracker.get_active_users()
+            stats = await tracker.get_stats()
+            active_users = await tracker.get_active_users()
             return stats, active_users, None
         except Exception as e:
             logger.error("Error getting initial state: %s", e)
             error_data = json.dumps({"type": "error", "error": "Failed to fetch initial state"})
             return None, None, f"data: {error_data}\n\n"
 
-    def _process_poll_update(tracker, last_stats, last_session_ids, heartbeat_counter):
+    async def _process_poll_update(tracker, last_stats, last_session_ids, heartbeat_counter):
         """Process a single poll update."""
         try:
-            current_stats = tracker.get_stats()
-            current_users = tracker.get_active_users()
+            current_stats = await tracker.get_stats()
+            current_users = await tracker.get_active_users()
         except Exception as e:
             logger.error("Error getting tracker data: %s", e)
             error_data = json.dumps({"type": "error", "error": "Failed to fetch activity data"})
@@ -260,7 +261,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
         last_stats = None
 
         try:
-            stats, active_users, error_msg = _get_initial_state(tracker)
+            stats, active_users, error_msg = await _get_initial_state(tracker)
             if error_msg:
                 yield error_msg
                 return
@@ -275,7 +276,7 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
             while True:
                 await asyncio.sleep(SSE_POLL_INTERVAL_SECONDS)
 
-                poll_result = _process_poll_update(tracker, last_stats, last_session_ids, heartbeat_counter)
+                poll_result = await _process_poll_update(tracker, last_stats, last_session_ids, heartbeat_counter)
                 (
                     _,
                     current_session_ids,

@@ -99,7 +99,7 @@ async def resolve_authenticated_user_optional(request: Request) -> Optional[User
     if not _redis.available or _redis.get_session_manager is None:
         return None
     session_manager = _redis.get_session_manager()
-    if not session_manager.is_session_valid(int(user_id), token):
+    if not await session_manager.is_session_valid(int(user_id), token):
         return None
     if _redis.user_cache is None:
         return None
@@ -121,7 +121,7 @@ async def load_user_from_jwt_session_token(token: str) -> Optional[User]:
     if not _redis.available or _redis.get_session_manager is None:
         return None
     session_manager = _redis.get_session_manager()
-    if not session_manager.is_session_valid(int(user_id), token):
+    if not await session_manager.is_session_valid(int(user_id), token):
         return None
     if _redis.user_cache is None:
         return None

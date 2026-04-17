@@ -27,11 +27,13 @@ Proprietary License
 
 import logging
 from datetime import UTC, datetime
-from typing import Optional, Dict
+from typing import Optional, Dict, List
 
 from sqlalchemy import select
 
-from services.redis.redis_client import is_redis_available, RedisOps, get_redis
+from services.redis.cache.redis_cache_stampede import with_stampede_lock
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from config.database import AsyncSessionLocal
 from models.domain.auth import Organization
 
@@ -119,23 +121,61 @@ class OrganizationCache:
 
         return org
 
-    async def _load_from_database(
+    async def _read_cached_by_id(self, org_id: int) -> Optional[Organization]:
+        """Re-read cached org hash by ID without DB fallback (G6 loser path)."""
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        try:
+            cached = await redis.hgetall(_keys.ORG_BY_ID.format(org_id=org_id))
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not cached:
+            return None
+        try:
+            return self._deserialize_org(cached)
+        except Exception:  # pylint: disable=broad-except
+            return None
+
+    async def _read_cached_by_code(self, code: str) -> Optional[Organization]:
+        """Re-read cached org via code index (G6 loser path)."""
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        try:
+            org_id_str = await redis.get(_keys.ORG_BY_CODE.format(code=code))
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not org_id_str:
+            return None
+        try:
+            return await self._read_cached_by_id(int(org_id_str))
+        except (ValueError, TypeError):
+            return None
+
+    async def _read_cached_by_invite(self, invite_code: str) -> Optional[Organization]:
+        """Re-read cached org via invitation index (G6 loser path)."""
+        redis = get_async_redis()
+        if redis is None:
+            return None
+        try:
+            org_id_str = await redis.get(_keys.ORG_BY_INVITE.format(invite_code=invite_code))
+        except Exception:  # pylint: disable=broad-except
+            return None
+        if not org_id_str:
+            return None
+        try:
+            return await self._read_cached_by_id(int(org_id_str))
+        except (ValueError, TypeError):
+            return None
+
+    async def _query_database(
         self,
         org_id: Optional[int] = None,
         code: Optional[str] = None,
         invite_code: Optional[str] = None,
     ) -> Optional[Organization]:
-        """
-        Load organization from database.
-
-        Args:
-            org_id: Organization ID to load (if provided)
-            code: Organization code to load (if provided)
-            invite_code: Invitation code to load (if provided)
-
-        Returns:
-            Organization object or None if not found
-        """
+        """Inner DB load — runs under the stampede lock when one was acquired."""
         try:
             async with AsyncSessionLocal() as db:
                 if org_id:
@@ -152,7 +192,7 @@ class OrganizationCache:
 
                 if org:
                     try:
-                        self.cache_org(org)
+                        await self.cache_org(org)
                     except Exception as e:
                         logger.debug("[OrgCache] Failed to cache org loaded from database: %s", e)
 
@@ -160,6 +200,49 @@ class OrganizationCache:
         except Exception as e:
             logger.error("[OrgCache] Database query failed: %s", e, exc_info=True)
             raise
+
+    async def _load_from_database(
+        self,
+        org_id: Optional[int] = None,
+        code: Optional[str] = None,
+        invite_code: Optional[str] = None,
+    ) -> Optional[Organization]:
+        """
+        Load organization from database, protected against cache stampedes (G6).
+
+        Args:
+            org_id: Organization ID to load (if provided)
+            code: Organization code to load (if provided)
+            invite_code: Invitation code to load (if provided)
+
+        Returns:
+            Organization object or None if not found
+        """
+        if org_id:
+            cache_key = _keys.ORG_BY_ID.format(org_id=org_id)
+
+            async def _reader() -> Optional[Organization]:
+                return await self._read_cached_by_id(org_id)
+
+        elif code:
+            cache_key = _keys.ORG_BY_CODE.format(code=code)
+
+            async def _reader() -> Optional[Organization]:
+                return await self._read_cached_by_code(code)
+
+        elif invite_code:
+            cache_key = _keys.ORG_BY_INVITE.format(invite_code=invite_code)
+
+            async def _reader() -> Optional[Organization]:
+                return await self._read_cached_by_invite(invite_code)
+
+        else:
+            return None
+
+        async def _loader() -> Optional[Organization]:
+            return await self._query_database(org_id=org_id, code=code, invite_code=invite_code)
+
+        return await with_stampede_lock(cache_key, _loader, _reader)
 
     async def get_by_id(self, org_id: int) -> Optional[Organization]:
         """
@@ -175,9 +258,13 @@ class OrganizationCache:
             logger.debug("[OrgCache] Redis unavailable, loading org ID %s from database", org_id)
             return await self._load_from_database(org_id=org_id)
 
+        redis = get_async_redis()
+        if not redis:
+            return await self._load_from_database(org_id=org_id)
+
         try:
             key = _keys.ORG_BY_ID.format(org_id=org_id)
-            cached = RedisOps.hash_get_all(key)
+            cached = await redis.hgetall(key)
 
             if cached:
                 try:
@@ -192,7 +279,7 @@ class OrganizationCache:
                         exc_info=True,
                     )
                     try:
-                        RedisOps.delete(key)
+                        await redis.delete(key)
                     except Exception as exc:
                         logger.debug(
                             "Corrupted org cache entry deletion failed for org ID %s: %s",
@@ -228,9 +315,13 @@ class OrganizationCache:
             )
             return await self._load_from_database(code=code)
 
+        redis = get_async_redis()
+        if not redis:
+            return await self._load_from_database(code=code)
+
         try:
             index_key = _keys.ORG_BY_CODE.format(code=code)
-            org_id_str = RedisOps.get(index_key)
+            org_id_str = await redis.get(index_key)
 
             if org_id_str:
                 try:
@@ -239,7 +330,7 @@ class OrganizationCache:
                 except (ValueError, TypeError) as e:
                     logger.error("[OrgCache] Invalid org ID in code index for %s: %s", code, e)
                     try:
-                        RedisOps.delete(index_key)
+                        await redis.delete(index_key)
                     except Exception as exc:
                         logger.debug(
                             "Corrupted org code index deletion failed for code %s: %s",
@@ -276,9 +367,13 @@ class OrganizationCache:
             )
             return await self._load_from_database(invite_code=invite_code)
 
+        redis = get_async_redis()
+        if not redis:
+            return await self._load_from_database(invite_code=invite_code)
+
         try:
             index_key = _keys.ORG_BY_INVITE.format(invite_code=invite_code)
-            org_id_str = RedisOps.get(index_key)
+            org_id_str = await redis.get(index_key)
 
             if org_id_str:
                 try:
@@ -292,7 +387,7 @@ class OrganizationCache:
                         e,
                     )
                     try:
-                        RedisOps.delete(index_key)
+                        await redis.delete(index_key)
                     except Exception as exc:
                         logger.debug("Corrupted org invite index deletion failed: %s", exc)
                     return await self._load_from_database(invite_code=invite_code)
@@ -312,7 +407,7 @@ class OrganizationCache:
         )
         return await self._load_from_database(invite_code=invite_code)
 
-    def cache_org(self, org: Organization) -> bool:
+    async def cache_org(self, org: Organization) -> bool:
         """
         Cache organization in Redis (non-blocking).
 
@@ -329,7 +424,7 @@ class OrganizationCache:
             logger.debug("[OrgCache] Redis unavailable, skipping cache write")
             return False
 
-        redis_client = get_redis()
+        redis_client = get_async_redis()
         if not redis_client:
             logger.debug("[OrgCache] Redis client unavailable, skipping cache write")
             return False
@@ -343,20 +438,20 @@ class OrganizationCache:
 
             org_key = _keys.ORG_BY_ID.format(org_id=org_id)
 
-            pipe = redis_client.pipeline()
-            # DELETE before HSET to clear any stale key with wrong type.
-            pipe.delete(org_key)
-            pipe.hset(org_key, mapping=org_dict)
-            pipe.expire(org_key, ORG_CACHE_TTL)
-            if org_code:
-                pipe.set(_keys.ORG_BY_CODE.format(code=org_code), str(org_id), ex=ORG_CACHE_TTL)
-            if org_invite:
-                pipe.set(
-                    _keys.ORG_BY_INVITE.format(invite_code=org_invite),
-                    str(org_id),
-                    ex=ORG_CACHE_TTL,
-                )
-            pipe.execute()
+            async with redis_client.pipeline(transaction=False) as pipe:
+                # DELETE before HSET to clear any stale key with wrong type.
+                pipe.delete(org_key)
+                pipe.hset(org_key, mapping=org_dict)
+                pipe.expire(org_key, ORG_CACHE_TTL)
+                if org_code:
+                    pipe.set(_keys.ORG_BY_CODE.format(code=org_code), str(org_id), ex=ORG_CACHE_TTL)
+                if org_invite:
+                    pipe.set(
+                        _keys.ORG_BY_INVITE.format(invite_code=org_invite),
+                        str(org_id),
+                        ex=ORG_CACHE_TTL,
+                    )
+                await pipe.execute()
 
             if org_invite and len(org_invite) >= 8:
                 masked_invite = f"{org_invite[:8]}***"
@@ -374,7 +469,77 @@ class OrganizationCache:
             logger.warning("[OrgCache] Failed to cache org ID %s: %s", getattr(org, "id", "?"), exc)
             return False
 
-    def invalidate(self, org_id: int, code: Optional[str] = None, invite_code: Optional[str] = None) -> bool:
+    async def bulk_cache_orgs(self, orgs: List[Organization]) -> int:
+        """Cache many organizations in a single Redis pipeline (G9).
+
+        Mirror of :meth:`RedisUserCache.bulk_cache_users` for the org cache.
+        Issues one ``MULTI`` round-trip per *batch* (delete + hset + expire +
+        code/invite indexes) so the startup loader is bounded by network
+        latency once per batch instead of once per row.
+        """
+        if not orgs:
+            return 0
+        if not is_redis_available():
+            logger.debug("[OrgCache] Redis unavailable, skipping bulk cache write")
+            return 0
+        redis_client = get_async_redis()
+        if not redis_client:
+            logger.debug("[OrgCache] Redis client unavailable, skipping bulk cache write")
+            return 0
+
+        prepared: List[tuple] = []
+        for org in orgs:
+            try:
+                prepared.append(
+                    (
+                        int(getattr(org, "id", 0)),
+                        self._serialize_org(org),
+                        getattr(org, "code", None),
+                        getattr(org, "invitation_code", None),
+                    )
+                )
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning(
+                    "[OrgCache] Skipping org %s in bulk write: %s",
+                    getattr(org, "id", "?"),
+                    exc,
+                )
+
+        if not prepared:
+            return 0
+
+        try:
+            async with redis_client.pipeline(transaction=False) as pipe:
+                for org_id, org_dict, code, invite in prepared:
+                    org_key = _keys.ORG_BY_ID.format(org_id=org_id)
+                    pipe.delete(org_key)
+                    pipe.hset(org_key, mapping=org_dict)
+                    pipe.expire(org_key, ORG_CACHE_TTL)
+                    if code:
+                        pipe.set(
+                            _keys.ORG_BY_CODE.format(code=code),
+                            str(org_id),
+                            ex=ORG_CACHE_TTL,
+                        )
+                    if invite:
+                        pipe.set(
+                            _keys.ORG_BY_INVITE.format(invite_code=invite),
+                            str(org_id),
+                            ex=ORG_CACHE_TTL,
+                        )
+                await pipe.execute()
+        except Exception as exc:  # pylint: disable=broad-except
+            logger.warning("[OrgCache] Bulk pipeline execute failed: %s", exc)
+            return 0
+
+        return len(prepared)
+
+    async def invalidate(
+        self,
+        org_id: int,
+        code: Optional[str] = None,
+        invite_code: Optional[str] = None,
+    ) -> bool:
         """
         Invalidate organization cache entries (non-blocking).
 
@@ -392,7 +557,7 @@ class OrganizationCache:
             logger.debug("[OrgCache] Redis unavailable, skipping cache invalidation")
             return False
 
-        redis_client = get_redis()
+        redis_client = get_async_redis()
         if not redis_client:
             return False
 
@@ -403,14 +568,14 @@ class OrganizationCache:
             if invite_code:
                 keys_to_delete.append(_keys.ORG_BY_INVITE.format(invite_code=invite_code))
 
-            redis_client.delete(*keys_to_delete)
+            await redis_client.delete(*keys_to_delete)
             logger.info("[OrgCache] Invalidated cache for org ID %s", org_id)
             return True
         except Exception as exc:
             logger.warning("[OrgCache] Failed to invalidate cache for org ID %s: %s", org_id, exc)
             return False
 
-    def write_through(self, org: Organization, old_code: Optional[str], old_invite: Optional[str]) -> bool:
+    async def write_through(self, org: Organization, old_code: Optional[str], old_invite: Optional[str]) -> bool:
         """
         Write-through: invalidate old entries then cache updated org.
         Call only after successful db.commit(). Database is source of truth.
@@ -423,8 +588,8 @@ class OrganizationCache:
         Returns:
             True if cache updated successfully
         """
-        self.invalidate(int(getattr(org, "id", 0)), old_code, old_invite)
-        return self.cache_org(org)
+        await self.invalidate(int(getattr(org, "id", 0)), old_code, old_invite)
+        return await self.cache_org(org)
 
 
 def get_org_cache() -> OrganizationCache:

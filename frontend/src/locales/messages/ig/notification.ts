@@ -1,13 +1,11 @@
 /** ig UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Enweghi ike ihichapụ ọdụ isiokwu ma ọ bụ etiti',
-  'notification.cannotResetSelectDiagramType':
-    'Enweghi ike ịtọgharị: họrọ ụdị eserese mbụ',
+  'notification.cannotResetSelectDiagramType': 'Enweghi ike ịtọgharị: họrọ ụdị eserese mbụ',
   'notification.canvasClearNodes': 'Ehichapụrụ ọdụ {count}',
   'notification.canvasClearNodesLearning': 'Emeghere ọdụ {count}, agbakwunyere na azịza',
   'notification.canvasSomeoneEditingNode': 'Onye ọzọ na-edezi ọdụ a',
-  'notification.collabDeleteBlocked':
-    'Enweghi ike ihichapụ mgbe onye ọzọ na-edezi ọdụ ahọpụtara',
+  'notification.collabDeleteBlocked': 'Enweghi ike ihichapụ mgbe onye ọzọ na-edezi ọdụ ahọpụtara',
   'notification.collabRedoBlocked': 'Enweghi ike imegharị mgbe onye ọzọ na-edezi',
   'notification.collabUndoBlocked': 'Enweghi ike ịlaghachi mgbe onye ọzọ na-edezi',
   'notification.conversationDeleted': 'Ehichapụla mkparịtaụka',
@@ -39,8 +37,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Ahụghị njikọ echiche mmụọ',
   'notification.saved': 'Echekwala mgbanwe',
   'notification.selectNodeToClear': 'Họrọ ọdụ ka ihichapụ',
-  'notification.sessionInvalidated':
-    'A pụrụ gị n’ihi na ị gafere ọnụọgụgụ ọkụụ kacha',
+  'notification.sessionInvalidated': 'A pụrụ gị n’ihi na ị gafere ọnụọgụgụ ọkụụ kacha',
   'notification.signInToUse': 'Banye iji nke a',
   'notification.signInToValidateFocus': 'Banye iji kwado ajụjụ ọchịchọ',
 } as const

@@ -1,13 +1,11 @@
 /** am UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'የርዕስ ወይም የመሃል ኖዶችን መጨረስ አይቻልም',
-  'notification.cannotResetSelectDiagramType':
-    'እንደገና ማስቀጠል አይቻልም፦ መጀመሪያ የአሳራፊ አይነት ይምረጡ',
+  'notification.cannotResetSelectDiagramType': 'እንደገና ማስቀጠል አይቻልም፦ መጀመሪያ የአሳራፊ አይነት ይምረጡ',
   'notification.canvasClearNodes': '{count} ኖዶች ተጨረሱ',
   'notification.canvasClearNodesLearning': '{count} ኖዶች ተወገዱ፣ ወደ መልሶች ተጨመሩ',
   'notification.canvasSomeoneEditingNode': 'ሌላ ተጠቃሚ ይህን ኖድ እንደሚያርም',
-  'notification.collabDeleteBlocked':
-    'ሌላ ተጠቃሚ የተመረጠውን ኖድ ያርማል እባክዎ ማስወገድ አይቻልም',
+  'notification.collabDeleteBlocked': 'ሌላ ተጠቃሚ የተመረጠውን ኖድ ያርማል እባክዎ ማስወገድ አይቻልም',
   'notification.collabRedoBlocked': 'ሌላ ተጠቃሚ ያርማል እባክዎ እንደገና ማድረግ አይቻልም',
   'notification.collabUndoBlocked': 'ሌላ ተጠቃሚ ያርማል እባክዎ ማስወራት አይቻልም',
   'notification.conversationDeleted': 'ውይይቱ ተሰረዘ',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'መግባት አልተሳካም፦ የማሳያ ውሂብ ልክ አይደለም',
   'notification.importLoadFailed': 'መግባት አልተሳካም፦ ማሳያ መጫን አልተቻለም',
   'notification.importSavePartial': 'ተገብቷል፣ ነገር ግን በቤተክርት ማስቀመጥ አልተሳካም',
-  'notification.importSlotsFull':
-    'ቤተክርት ሞልቷል፤ ማሳያ ገብቷል ነገር ግን በቤተክርት አልተቀመጠም',
+  'notification.importSlotsFull': 'ቤተክርት ሞልቷል፤ ማሳያ ገብቷል ነገር ግን በቤተክርት አልተቀመጠም',
   'notification.importSuccess': 'ማሳያ ገብቶ በቤተክርት ተቀምጧል',
   'notification.importUnsupportedType': 'መግባት አልተሳካም፦ የማሳያ አይነት አይደገፍም',
   'notification.loadMoreFailed': 'ተጨማሪ መጫን አልተቻለም',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'የሥር የሐሳብ አገናኝ አልተገኘም',
   'notification.saved': 'ለውጦች ተቀብለዋል',
   'notification.selectNodeToClear': 'ለማጽዳት ኖድ ይምረጡ',
-  'notification.sessionInvalidated':
-    'ከፍተኛውን የመሣሪያዎች ቁጥር ትተሃልና ወጥተሃል',
+  'notification.sessionInvalidated': 'ከፍተኛውን የመሣሪያዎች ቁጥር ትተሃልና ወጥተሃል',
   'notification.signInToUse': 'ለመጠቀም ይግቡ',
   'notification.signInToValidateFocus': 'የአተኩኮ ጥያቄ ለማረጋገጥ ይግቡ',
 } as const

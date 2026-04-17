@@ -87,7 +87,8 @@ function estimateBraceNodeHeight(text: string, depth: number): number {
   if (!trimmed || typeof document === 'undefined') return DEFAULT_NODE_HEIGHT
 
   const fontSize = getBraceFontSize(depth)
-  const maxTextWidth = depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
+  const maxTextWidth =
+    depth === 0 ? BRACE_TOPIC_BASE_MAX_TEXT_WIDTH : BRACE_NODE_BASE_MAX_TEXT_WIDTH
   const paddingY = depth === 0 ? 32 : 16
 
   if (diagramLabelLikelyNeedsRenderedMeasure(trimmed)) {

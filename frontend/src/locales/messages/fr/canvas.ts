@@ -524,8 +524,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Collaboration scolaire',
   'mindgraphLanding.dialogSharedTitle': 'Collaboration partagée',
   'mindgraphLanding.import': 'Importer',
-  'mindgraphLanding.inputPlaceholder':
-    'Décrivez votre schéma ou choisissez un modèle ci-dessous…',
+  'mindgraphLanding.inputPlaceholder': 'Décrivez votre schéma ou choisissez un modèle ci-dessous…',
   'mindgraphLanding.join': 'Rejoindre',
   'mindgraphLanding.joinFailed': 'Échec du raccordement',
   'mindgraphLanding.joinPresentationFailed': 'Échec du raccordement à la présentation',

@@ -86,27 +86,19 @@ def _org_stream_warn_threshold() -> int:
     return max(1, env_int("MINDBOT_ORG_STREAM_WARN_THRESHOLD", 10))
 
 
-_STREAMING_SEMAPHORE = asyncio.Semaphore(
-    max(1, env_int("MINDBOT_MAX_CONCURRENT_STREAMING", 64))
-)
+_STREAMING_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_CONCURRENT_STREAMING", 64)))
 # Tracks the number of streams that are **actively running** end-to-end (from first
 # SSE event through to card finalization / reply send).  _STREAMING_SEMAPHORE is
 # released as soon as the first SSE event arrives (to free the startup queue slot);
 # _ACTIVE_STREAMS_SEMAPHORE is held for the full lifetime of the stream so total
 # resource consumption (Dify connections, DingTalk API quota, Redis) remains bounded.
-_ACTIVE_STREAMS_SEMAPHORE = asyncio.Semaphore(
-    max(1, env_int("MINDBOT_MAX_ACTIVE_STREAMING", 128))
-)
+_ACTIVE_STREAMS_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_ACTIVE_STREAMING", 128)))
 # _BLOCKING_SEMAPHORE caps concurrent Dify blocking calls (the expensive, long-poll
 # step).  _ACTIVE_BLOCKING_SEMAPHORE is held for the *full* blocking pipeline
 # (Dify call + outbound send) so total in-flight blocking pipelines remain bounded,
 # consistent with the two-level semaphore design used by the streaming path.
-_BLOCKING_SEMAPHORE = asyncio.Semaphore(
-    max(1, env_int("MINDBOT_MAX_CONCURRENT_BLOCKING", 64))
-)
-_ACTIVE_BLOCKING_SEMAPHORE = asyncio.Semaphore(
-    max(1, env_int("MINDBOT_MAX_ACTIVE_BLOCKING", 128))
-)
+_BLOCKING_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_CONCURRENT_BLOCKING", 64)))
+_ACTIVE_BLOCKING_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_ACTIVE_BLOCKING", 128)))
 
 
 def mindbot_accept_ack_headers(cfg: OrganizationMindbotConfig) -> dict[str, str]:
@@ -239,12 +231,7 @@ async def execute_mindbot_pipeline(
     )
     redis_ok = await redis_ping()
     gate_acquired = False
-    if (
-        conv_gate_enabled()
-        and redis_ok
-        and conversation_id_dt.strip()
-        and not dify_conv
-    ):
+    if conv_gate_enabled() and redis_ok and conversation_id_dt.strip() and not dify_conv:
         gate_acquired = await redis_acquire_conv_gate_async(
             cfg.organization_id,
             conv_gate_scope,
@@ -469,11 +456,7 @@ async def execute_mindbot_pipeline(
                     return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
                 await record_dify_success(cb_key)
 
-                usage_block = (
-                    parse_dify_usage_from_blocking_response(resp)
-                    if isinstance(resp, dict)
-                    else None
-                )
+                usage_block = parse_dify_usage_from_blocking_response(resp) if isinstance(resp, dict) else None
 
             return await run_blocking_send_branch(
                 reply_ctx,

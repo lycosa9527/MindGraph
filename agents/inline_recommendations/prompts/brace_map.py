@@ -26,9 +26,7 @@ def build_brace_dimensions_prompt(
     """
     whole = (context.get("whole") or "").strip()
     context_desc = context.get("context_desc") or "General K12 teaching"
-    dim_types = (
-        BRACE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRACE_DIMENSION_TYPES_EN
-    )
+    dim_types = BRACE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRACE_DIMENSION_TYPES_EN
     existing = existing or []
 
     if is_chinese_inline_prompt_language(language):
@@ -82,9 +80,7 @@ def build_brace_parts_prompt(
     part_names = context.get("part_names") or []
     context_desc = context.get("context_desc") or "General K12 teaching"
     thinking = THINKING_APPROACH["brace_map"][thinking_locale_key(language)]
-    dim_types = (
-        BRACE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRACE_DIMENSION_TYPES_EN
-    )
+    dim_types = BRACE_DIMENSION_TYPES_ZH if is_chinese_inline_prompt_language(language) else BRACE_DIMENSION_TYPES_EN
     existing = existing or []
 
     if is_chinese_inline_prompt_language(language):

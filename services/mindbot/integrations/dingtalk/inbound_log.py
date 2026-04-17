@@ -33,13 +33,15 @@ _PREVIEW_LEN = 2048
 _DEFAULT_BODY_LOG_MAX = 65536
 _JSON_LOG_MAX = 65536
 
-_REDACTED_HEADER_NAMES = frozenset({
-    "sign",
-    "token",
-    "authorization",
-    "x-dingtalk-sign",
-    "cookie",
-})
+_REDACTED_HEADER_NAMES = frozenset(
+    {
+        "sign",
+        "token",
+        "authorization",
+        "x-dingtalk-sign",
+        "cookie",
+    }
+)
 
 
 def _redact_headers(headers: dict[str, str]) -> dict[str, str]:
@@ -72,9 +74,7 @@ def dingtalk_inbound_logging_enabled() -> bool:
 
 
 def dingtalk_inbound_full_logging() -> bool:
-    return env_bool("MINDBOT_LOG_CALLBACK_INBOUND_FULL", False) or (
-        debug_callback_failure_logging_enabled()
-    )
+    return env_bool("MINDBOT_LOG_CALLBACK_INBOUND_FULL", False) or (debug_callback_failure_logging_enabled())
 
 
 def _body_log_max() -> int:
@@ -123,8 +123,7 @@ def _log_compact(request: Request, raw: bytes, route_label: str) -> None:
     # filtering, so message content must not appear there.
     preview = raw.decode("utf-8", errors="replace")[:_PREVIEW_LEN]
     logger.debug(
-        "[MindBot] inbound_compact %s method=%s path=%s query=%s body_len=%s "
-        "timestamp=%s sign_len=%s preview=%r",
+        "[MindBot] inbound_compact %s method=%s path=%s query=%s body_len=%s timestamp=%s sign_len=%s preview=%r",
         route_label,
         request.method,
         request.url.path,

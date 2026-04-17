@@ -284,24 +284,17 @@ async def admin_upsert_mindbot_config(
         existing.show_chain_of_thought_cross_org_group = payload.show_chain_of_thought_cross_org_group
         existing.chain_of_thought_max_chars = payload.chain_of_thought_max_chars
         if "dingtalk_ai_card_template_id" in payload.model_fields_set:
-            existing.dingtalk_ai_card_template_id = (
-                (payload.dingtalk_ai_card_template_id or "").strip() or None
-            )
+            existing.dingtalk_ai_card_template_id = (payload.dingtalk_ai_card_template_id or "").strip() or None
         if "dingtalk_ai_card_param_key" in payload.model_fields_set:
-            existing.dingtalk_ai_card_param_key = (
-                (payload.dingtalk_ai_card_param_key or "").strip() or None
-            )
+            existing.dingtalk_ai_card_param_key = (payload.dingtalk_ai_card_param_key or "").strip() or None
         if "dingtalk_ai_card_streaming_max_chars" in payload.model_fields_set:
-            existing.dingtalk_ai_card_streaming_max_chars = (
-                payload.dingtalk_ai_card_streaming_max_chars
-            )
+            existing.dingtalk_ai_card_streaming_max_chars = payload.dingtalk_ai_card_streaming_max_chars
         existing.is_enabled = payload.is_enabled
         row = existing
     await db.commit()
     await db.refresh(row)
     logger.info(
-        "[MindBot] config %s organization_id=%s config_id=%s robot_code=%s enabled=%s "
-        "client_id_set=%s user_id=%s",
+        "[MindBot] config %s organization_id=%s config_id=%s robot_code=%s enabled=%s client_id_set=%s user_id=%s",
         "created" if existing is None else "updated",
         organization_id,
         row.id,
@@ -337,8 +330,7 @@ async def admin_upsert_mindbot_config(
         )
         if auth_changes:
             logger.info(
-                "[MindBot] config auth fields updated organization_id=%s config_id=%s user_id=%s "
-                "fields=%s",
+                "[MindBot] config auth fields updated organization_id=%s config_id=%s user_id=%s fields=%s",
                 organization_id,
                 row.id,
                 user.id,

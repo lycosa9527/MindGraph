@@ -4,10 +4,10 @@ export default {
   'notification.cannotResetSelectDiagramType':
     'Ayikwazi ukusetha kabusha: khetha uhlobo lwesifundo kuqala',
   'notification.canvasClearNodes': 'Kusuliwe izindawo ezingu-{count}',
-  'notification.canvasClearNodesLearning': 'Kukhaliwe izindawo ezingu-{count}, kwengezwe ezimpendulweni',
+  'notification.canvasClearNodesLearning':
+    'Kukhaliwe izindawo ezingu-{count}, kwengezwe ezimpendulweni',
   'notification.canvasSomeoneEditingNode': 'Omunye ulungisa le ndawo',
-  'notification.collabDeleteBlocked':
-    'Ayikwazi ukususa uma omunye usebenza endaweni ekhethiwe',
+  'notification.collabDeleteBlocked': 'Ayikwazi ukususa uma omunye usebenza endaweni ekhethiwe',
   'notification.collabRedoBlocked': 'Ayikwazi ukuphinda uma omunye usebenza',
   'notification.collabUndoBlocked': 'Ayikwazi ukubuyisa uma omunye usebenza',
   'notification.conversationDeleted': 'Ingxoxo isusiwe',
@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Isixhumanisi somqondo wemvelo asitholakali',
   'notification.saved': 'Izinguquko zilondoloziwe',
   'notification.selectNodeToClear': 'Khetha indawo ongayisula',
-  'notification.sessionInvalidated':
-    'Uphumile ngoba udlule inani eliphezulu lezinsiza',
+  'notification.sessionInvalidated': 'Uphumile ngoba udlule inani eliphezulu lezinsiza',
   'notification.signInToUse': 'Ngena ukuze usebenzise',
   'notification.signInToValidateFocus': 'Ngena ukuze uqinisekise umbuzo wokugxila',
 } as const

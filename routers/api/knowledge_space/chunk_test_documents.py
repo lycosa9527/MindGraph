@@ -4,7 +4,9 @@ Chunk test document management endpoints.
 Handles document upload, listing, deletion, and processing.
 """
 
+import asyncio
 import logging
+import os
 import tempfile
 import threading
 
@@ -13,7 +15,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import count as sa_count
 
-from config.database import SyncSessionLocal, get_async_db
+from config.database import AsyncSessionLocal, get_async_db
 from models.domain.auth import User
 from models.domain.knowledge_space import ChunkTestDocument, ChunkTestDocumentChunk
 from models.requests.requests_knowledge_space import ProcessSelectedRequest
@@ -26,58 +28,76 @@ logger = logging.getLogger(__name__)
 
 router = APIRouter()
 
+_MAX_CONCURRENT_DOC_THREADS = int(os.getenv("CHUNK_TEST_DOC_MAX_THREADS", "5"))
+_doc_processing_sem = threading.Semaphore(_MAX_CONCURRENT_DOC_THREADS)
+
+
+async def _run_process_document(user_id: int, document_id: int) -> None:
+    """Run document processing using the async session and service."""
+    async with AsyncSessionLocal() as db:
+        service = ChunkTestDocumentService(db, user_id)
+        await service.process_document(document_id)
+
+
+async def _mark_document_failed(user_id: int, document_id: int, error: Exception) -> None:
+    """Mark a chunk-test document as failed via an independent async session."""
+    async with AsyncSessionLocal() as db:
+        doc = await db.get(ChunkTestDocument, document_id)
+        if doc and doc.user_id == user_id and doc.status == "processing":
+            doc.status = "failed"
+            doc.error_message = str(error)
+            doc.processing_progress = "failed"
+            doc.processing_progress_percent = 0
+            try:
+                await db.commit()
+            except Exception as commit_err:
+                await db.rollback()
+                logger.debug(
+                    "[ChunkTestDocuments] Rollback during failure mark for document %s: %s",
+                    document_id,
+                    commit_err,
+                )
+
 
 def _process_chunk_test_document(user_id: int, document_id: int) -> None:
-    """Background function to process a chunk test document."""
+    """Background thread function that processes a chunk test document.
+
+    Uses ``asyncio.run`` so the async ``ChunkTestDocumentService.process_document``
+    coroutine executes properly inside a dedicated event loop for this thread.
+    A bounded semaphore caps the number of threads that run concurrently.
+    """
     logger.info(
         "[ChunkTestDocuments] Starting background processing for document %s (user %s)",
         document_id,
         user_id,
     )
-    db = SyncSessionLocal()
-    try:
-        service = ChunkTestDocumentService(db, user_id)
-        service.process_document(document_id)
-        logger.info(
-            "[ChunkTestDocuments] Successfully completed processing document %s",
-            document_id,
-        )
-    except Exception as e:
-        logger.error(
-            "[ChunkTestDocuments] Background processing failed for document %s: %s",
-            document_id,
-            e,
-            exc_info=True,
-        )
+    with _doc_processing_sem:
         try:
-            document = (
-                db.query(ChunkTestDocument)
-                .filter(
-                    ChunkTestDocument.id == document_id,
-                    ChunkTestDocument.user_id == user_id,
-                )
-                .first()
+            asyncio.run(_run_process_document(user_id, document_id))
+            logger.info(
+                "[ChunkTestDocuments] Successfully completed processing document %s",
+                document_id,
             )
-            if document and document.status == "processing":
-                document.status = "failed"
-                document.error_message = str(e)
-                document.processing_progress = "failed"
-                document.processing_progress_percent = 0
-                db.commit()
+        except Exception as e:
+            logger.error(
+                "[ChunkTestDocuments] Background processing failed for document %s: %s",
+                document_id,
+                e,
+                exc_info=True,
+            )
+            try:
+                asyncio.run(_mark_document_failed(user_id, document_id, e))
                 logger.info(
                     "[ChunkTestDocuments] Marked document %s as failed due to processing error",
                     document_id,
                 )
-        except Exception as update_error:
-            logger.error(
-                "[ChunkTestDocuments] Failed to update document %s status to failed: %s",
-                document_id,
-                update_error,
-                exc_info=True,
-            )
-            db.rollback()
-    finally:
-        db.close()
+            except Exception as update_error:
+                logger.error(
+                    "[ChunkTestDocuments] Failed to update document %s status to failed: %s",
+                    document_id,
+                    update_error,
+                    exc_info=True,
+                )
 
 
 @router.post("/chunk-test/documents/upload", response_model=DocumentResponse)
@@ -95,6 +115,7 @@ async def upload_chunk_test_document(
     check_feature_enabled()
     service = ChunkTestDocumentService(db, current_user.id)
 
+    tmp_path: "str | None" = None
     try:
         with tempfile.NamedTemporaryFile(delete=False) as tmp_file:
             content = await file.read()
@@ -129,6 +150,16 @@ async def upload_chunk_test_document(
     except Exception as e:
         logger.error("[ChunkTestDocuments] Upload failed for user %s: %s", current_user.id, e)
         raise HTTPException(status_code=500, detail="Upload failed") from e
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try:
+                os.unlink(tmp_path)
+            except OSError as unlink_err:
+                logger.debug(
+                    "[ChunkTestDocuments] Could not remove temp file %s: %s",
+                    tmp_path,
+                    unlink_err,
+                )
 
 
 @router.get("/chunk-test/documents", response_model=DocumentListResponse)

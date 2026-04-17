@@ -735,9 +735,7 @@ class ChannelService:
         if set(got) != expected or len(got) != len(expected):
             return False
         # Bulk-load all channels in one query instead of one SELECT per item.
-        bulk_result = await db.execute(
-            select(ChatChannel).where(ChatChannel.id.in_(got))
-        )
+        bulk_result = await db.execute(select(ChatChannel).where(ChatChannel.id.in_(got)))
         cid_to_channel = {ch.id: ch for ch in bulk_result.scalars().all()}
         for idx, cid in enumerate(got):
             channel = cid_to_channel.get(cid)

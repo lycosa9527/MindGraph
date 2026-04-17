@@ -62,7 +62,7 @@ watch(
       accountHint.value = ''
       void loadStatus()
     }
-  },
+  }
 )
 
 function closeModal() {
@@ -133,13 +133,24 @@ function doneTokenView() {
         <div class="relative w-full max-w-md">
           <div class="bg-white rounded-xl shadow-2xl overflow-hidden">
             <div class="px-8 pt-8 pb-4 text-center border-b border-stone-100 relative">
-              <el-button :icon="Close" circle text class="close-btn" @click="closeModal" />
+              <el-button
+                :icon="Close"
+                circle
+                text
+                class="close-btn"
+                @click="closeModal"
+              />
               <h2 class="text-lg font-semibold text-stone-900 tracking-tight">API Token</h2>
               <p class="text-xs text-stone-500 mt-1">用于 OpenClaw 等外部工具，有效期 7 天</p>
             </div>
 
             <div class="p-8 space-y-4">
-              <div v-if="loading && !status" class="text-center text-stone-500 text-sm">加载中…</div>
+              <div
+                v-if="loading && !status"
+                class="text-center text-stone-500 text-sm"
+              >
+                加载中…
+              </div>
 
               <template v-else-if="view === 'status'">
                 <div
@@ -150,7 +161,12 @@ function doneTokenView() {
                   <div v-if="status.expires_at">到期：{{ status.expires_at }}</div>
                   <div v-if="status.last_used_at">上次使用：{{ status.last_used_at }}</div>
                 </div>
-                <div v-else class="text-sm text-stone-500">尚未生成 Token</div>
+                <div
+                  v-else
+                  class="text-sm text-stone-500"
+                >
+                  尚未生成 Token
+                </div>
 
                 <div class="flex flex-wrap gap-2 justify-end pt-2">
                   <el-button
@@ -191,8 +207,18 @@ function doneTokenView() {
                 >
                   此 Token 仅显示一次，请立即复制保存；关闭窗口后将无法再次查看完整 Token。
                 </div>
-                <div v-if="accountHint" class="text-xs text-stone-500">账号：{{ accountHint }}</div>
-                <div v-if="tokenExpiresAt" class="text-xs text-stone-500">有效期至：{{ tokenExpiresAt }}</div>
+                <div
+                  v-if="accountHint"
+                  class="text-xs text-stone-500"
+                >
+                  账号：{{ accountHint }}
+                </div>
+                <div
+                  v-if="tokenExpiresAt"
+                  class="text-xs text-stone-500"
+                >
+                  有效期至：{{ tokenExpiresAt }}
+                </div>
                 <div class="flex gap-2">
                   <input
                     :value="rawToken"
@@ -200,10 +226,21 @@ function doneTokenView() {
                     readonly
                     class="flex-1 min-w-0 px-3 py-2 rounded-lg border border-stone-200 bg-stone-50 font-mono text-xs"
                   />
-                  <el-button round size="small" @click="copyToken">复制</el-button>
+                  <el-button
+                    round
+                    size="small"
+                    @click="copyToken"
+                    >复制</el-button
+                  >
                 </div>
                 <div class="flex justify-end pt-2">
-                  <el-button round size="small" type="primary" @click="doneTokenView">完成</el-button>
+                  <el-button
+                    round
+                    size="small"
+                    type="primary"
+                    @click="doneTokenView"
+                    >完成</el-button
+                  >
                 </div>
               </template>
             </div>

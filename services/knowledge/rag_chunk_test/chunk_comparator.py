@@ -207,18 +207,11 @@ class ChunkComparator:
             if not HAS_CHONKIE:
                 raise ValueError("Chonkie chunking requires chonkie library. Install with: pip install chonkie")
 
-            # Initialize tokenizer
-            encoding = tiktoken.get_encoding("cl100k_base")
-
-            def chonkie_token_counter(text: str) -> int:
-                """Count tokens in text for Chonkie."""
-                return len(encoding.encode(text))
-
-            # Create Chonkie TokenChunker
+            # Chonkie TokenChunker uses tokenizer= (tiktoken encoding name) in current chonkie releases.
             chunker = TokenChunker(
+                tokenizer="cl100k_base",
                 chunk_size=chunk_size,
                 chunk_overlap=chunk_overlap,
-                token_counter=chonkie_token_counter,
             )
 
             # Chunk the text

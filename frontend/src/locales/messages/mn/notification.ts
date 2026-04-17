@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Үндсэн ойлголтын холбоос олдсонгүй',
   'notification.saved': 'Өөрчлөлт хадгалагдсан',
   'notification.selectNodeToClear': 'Цэвэрлэх зангилааг сонгоно уу',
-  'notification.sessionInvalidated':
-    'Төхөөрөмжийн дээд хэмжээг давсан тул гаргагдсан',
+  'notification.sessionInvalidated': 'Төхөөрөмжийн дээд хэмжээг давсан тул гаргагдсан',
   'notification.signInToUse': 'Ашиглахын тулд нэвтэрнэ үү',
   'notification.signInToValidateFocus': 'Төвлөрсөн асуултыг баталгаажуулахын тулд нэвтэрнэ үү',
 } as const

@@ -94,7 +94,10 @@ onMounted(() => {
 </script>
 
 <template>
-  <div class="admin-markets-tab space-y-6" v-loading="loading">
+  <div
+    v-loading="loading"
+    class="admin-markets-tab space-y-6"
+  >
     <div>
       <h2 class="text-base font-semibold text-gray-900 mb-2">{{ t('admin.markets.stats') }}</h2>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
@@ -114,42 +117,154 @@ onMounted(() => {
     </div>
 
     <el-tabs v-model="activeTab">
-      <el-tab-pane :label="t('admin.markets.tabOrders')" name="orders">
-        <el-table :data="orders" stripe style="width: 100%" max-height="480">
-          <el-table-column prop="id" :label="t('admin.markets.colOrderId')" width="88" />
-          <el-table-column prop="user_email_or_phone" :label="t('admin.markets.colUser')" min-width="140" />
-          <el-table-column prop="listing_title" :label="t('admin.markets.colListing')" min-width="160" />
-          <el-table-column prop="amount_minor" :label="t('admin.markets.colAmount')" width="100" />
-          <el-table-column prop="status" :label="t('admin.markets.colStatus')" width="100" />
-          <el-table-column prop="out_trade_no" :label="t('admin.markets.colOutTradeNo')" min-width="160" />
-          <el-table-column prop="alipay_trade_no" :label="t('admin.markets.colTradeNo')" min-width="160" />
-          <el-table-column prop="created_at" :label="t('admin.markets.colCreated')" min-width="160" />
-          <el-table-column prop="paid_at" :label="t('admin.markets.colPaid')" min-width="160" />
+      <el-tab-pane
+        :label="t('admin.markets.tabOrders')"
+        name="orders"
+      >
+        <el-table
+          :data="orders"
+          stripe
+          style="width: 100%"
+          max-height="480"
+        >
+          <el-table-column
+            prop="id"
+            :label="t('admin.markets.colOrderId')"
+            width="88"
+          />
+          <el-table-column
+            prop="user_email_or_phone"
+            :label="t('admin.markets.colUser')"
+            min-width="140"
+          />
+          <el-table-column
+            prop="listing_title"
+            :label="t('admin.markets.colListing')"
+            min-width="160"
+          />
+          <el-table-column
+            prop="amount_minor"
+            :label="t('admin.markets.colAmount')"
+            width="100"
+          />
+          <el-table-column
+            prop="status"
+            :label="t('admin.markets.colStatus')"
+            width="100"
+          />
+          <el-table-column
+            prop="out_trade_no"
+            :label="t('admin.markets.colOutTradeNo')"
+            min-width="160"
+          />
+          <el-table-column
+            prop="alipay_trade_no"
+            :label="t('admin.markets.colTradeNo')"
+            min-width="160"
+          />
+          <el-table-column
+            prop="created_at"
+            :label="t('admin.markets.colCreated')"
+            min-width="160"
+          />
+          <el-table-column
+            prop="paid_at"
+            :label="t('admin.markets.colPaid')"
+            min-width="160"
+          />
         </el-table>
       </el-tab-pane>
-      <el-tab-pane :label="t('admin.markets.tabListings')" name="listings">
-        <el-table :data="listings" stripe style="width: 100%" max-height="480">
-          <el-table-column prop="id" width="72" label="ID" />
-          <el-table-column prop="slug" :label="t('admin.markets.colSlug')" min-width="140" />
-          <el-table-column prop="listing_kind" :label="t('admin.markets.colKind')" width="120" />
-          <el-table-column prop="title" :label="t('admin.markets.colTitle')" min-width="200" />
-          <el-table-column prop="price_minor" :label="t('admin.markets.colAmount')" width="100" />
-          <el-table-column prop="currency" label="CNY" width="72" />
-          <el-table-column prop="is_active" :label="t('admin.markets.colActive')" width="88">
+      <el-tab-pane
+        :label="t('admin.markets.tabListings')"
+        name="listings"
+      >
+        <el-table
+          :data="listings"
+          stripe
+          style="width: 100%"
+          max-height="480"
+        >
+          <el-table-column
+            prop="id"
+            width="72"
+            label="ID"
+          />
+          <el-table-column
+            prop="slug"
+            :label="t('admin.markets.colSlug')"
+            min-width="140"
+          />
+          <el-table-column
+            prop="listing_kind"
+            :label="t('admin.markets.colKind')"
+            width="120"
+          />
+          <el-table-column
+            prop="title"
+            :label="t('admin.markets.colTitle')"
+            min-width="200"
+          />
+          <el-table-column
+            prop="price_minor"
+            :label="t('admin.markets.colAmount')"
+            width="100"
+          />
+          <el-table-column
+            prop="currency"
+            label="CNY"
+            width="72"
+          />
+          <el-table-column
+            prop="is_active"
+            :label="t('admin.markets.colActive')"
+            width="88"
+          >
             <template #default="{ row }">
               <span>{{ row.is_active ? '✓' : '—' }}</span>
             </template>
           </el-table-column>
         </el-table>
       </el-tab-pane>
-      <el-tab-pane :label="t('admin.markets.tabSubscriptions')" name="subscriptions">
-        <el-table :data="subscriptions" stripe style="width: 100%" max-height="480">
-          <el-table-column prop="id" width="88" label="ID" />
-          <el-table-column prop="user_email_or_phone" :label="t('admin.markets.colUser')" min-width="140" />
-          <el-table-column prop="listing_title" :label="t('admin.markets.colListing')" min-width="160" />
-          <el-table-column prop="status" :label="t('admin.markets.colStatus')" width="100" />
-          <el-table-column prop="alipay_agreement_id" label="Agreement" min-width="160" />
-          <el-table-column prop="current_period_end" label="Period end" min-width="140" />
+      <el-tab-pane
+        :label="t('admin.markets.tabSubscriptions')"
+        name="subscriptions"
+      >
+        <el-table
+          :data="subscriptions"
+          stripe
+          style="width: 100%"
+          max-height="480"
+        >
+          <el-table-column
+            prop="id"
+            width="88"
+            label="ID"
+          />
+          <el-table-column
+            prop="user_email_or_phone"
+            :label="t('admin.markets.colUser')"
+            min-width="140"
+          />
+          <el-table-column
+            prop="listing_title"
+            :label="t('admin.markets.colListing')"
+            min-width="160"
+          />
+          <el-table-column
+            prop="status"
+            :label="t('admin.markets.colStatus')"
+            width="100"
+          />
+          <el-table-column
+            prop="alipay_agreement_id"
+            label="Agreement"
+            min-width="160"
+          />
+          <el-table-column
+            prop="current_period_end"
+            label="Period end"
+            min-width="140"
+          />
         </el-table>
       </el-tab-pane>
     </el-tabs>

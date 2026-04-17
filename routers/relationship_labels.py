@@ -73,9 +73,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
             yield f"data: {json.dumps(chunk)}\n\n"
     except LLMContentFilterError as e:
         msg = getattr(e, "user_message", None) or (
-            "无法处理您的请求。"
-            if is_chinese_ui_error_language(effective_lang)
-            else "Content could not be processed."
+            "无法处理您的请求。" if is_chinese_ui_error_language(effective_lang) else "Content could not be processed."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMRateLimitError as e:
@@ -87,9 +85,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMTimeoutError as e:
         msg = getattr(e, "user_message", None) or (
-            "请求超时，请重试。"
-            if is_chinese_ui_error_language(effective_lang)
-            else "Request timed out. Please retry."
+            "请求超时，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request timed out. Please retry."
         )
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except LLMServiceError as e:
@@ -101,11 +97,7 @@ async def _stream_labels(req, user: User | None, is_next: bool):
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     except Exception as e:
         logger.error("[RelLabels] Stream error: %s", str(e), exc_info=True)
-        msg = (
-            "请求失败，请重试。"
-            if is_chinese_ui_error_language(effective_lang)
-            else "Request failed. Please retry."
-        )
+        msg = "请求失败，请重试。" if is_chinese_ui_error_language(effective_lang) else "Request failed. Please retry."
         yield f"data: {json.dumps({'event': 'error', 'message': msg})}\n\n"
     finally:
         if chunk_count == 0:

@@ -120,7 +120,7 @@ async def canvas_collab_websocket(
 
     try:
         record_ws_workshop_connection_delta(1)
-        redis_increment_active_total(1)
+        await redis_increment_active_total(1)
     except Exception as exc:
         logger.debug("Failed to record WS connection metric: %s", exc)
 

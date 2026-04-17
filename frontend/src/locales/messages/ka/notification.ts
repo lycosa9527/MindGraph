@@ -1,8 +1,7 @@
 /** ka UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'თემის ან ცენტრალური კვანძების გასუფთავება შეუძლებელია',
-  'notification.cannotResetSelectDiagramType':
-    'ჩამოყრა შეუძლებელია: ჯერ აირჩიეთ დიაგრამის ტიპი',
+  'notification.cannotResetSelectDiagramType': 'ჩამოყრა შეუძლებელია: ჯერ აირჩიეთ დიაგრამის ტიპი',
   'notification.canvasClearNodes': 'გასუფთავებულია {count} კვანძი',
   'notification.canvasClearNodesLearning': 'ცარიელია {count} კვანძი, დაემატა პასუხებს',
   'notification.canvasSomeoneEditingNode': 'სხვა მომხმარებელი არედაქტირებს ამ კვანძს',

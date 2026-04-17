@@ -1,13 +1,11 @@
 /** ps UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'د موضوع یا مرکز نوډونه پاکولی نشي',
-  'notification.cannotResetSelectDiagramType':
-    'بیا تنظیم نشي: لومړی د نقشې ډول وټاکئ',
+  'notification.cannotResetSelectDiagramType': 'بیا تنظیم نشي: لومړی د نقشې ډول وټاکئ',
   'notification.canvasClearNodes': '{count} نوډونه پاک شول',
   'notification.canvasClearNodesLearning': '{count} نوډونه خالي شول، ځوابونو ته اضافه شول',
   'notification.canvasSomeoneEditingNode': 'بل یوڅوک دا نوډ سمون کوي',
-  'notification.collabDeleteBlocked':
-    'د هغه وخت حذف نشي چې بل کارن غوره شوی نوډ سمون کوي',
+  'notification.collabDeleteBlocked': 'د هغه وخت حذف نشي چې بل کارن غوره شوی نوډ سمون کوي',
   'notification.collabRedoBlocked': 'د هغه وخت بیا نشي چې بل کارن سمون کوي',
   'notification.collabUndoBlocked': 'د هغه وخت شاته نشي چې بل کارن سمون کوي',
   'notification.conversationDeleted': 'خبرې اترې حذف شوې',
@@ -26,8 +24,7 @@ export default {
   'notification.importInvalidData': 'واردات ناکام: د نقشې ناسم معلومات',
   'notification.importLoadFailed': 'واردات ناکام: نقشه پورته نشوه',
   'notification.importSavePartial': 'وارد شو، خو په کتابتون کې ساتل ناکام',
-  'notification.importSlotsFull':
-    'کتابتون ډک دی؛ نقشه وارد شوه خو په کتابتون کې ساتل نه شوه',
+  'notification.importSlotsFull': 'کتابتون ډک دی؛ نقشه وارد شوه خو په کتابتون کې ساتل نه شوه',
   'notification.importSuccess': 'نقشه وارد شوه او په کتابتون کې ساتل شوه',
   'notification.importUnsupportedType': 'واردات ناکام: د نقشې ناسم ډول',
   'notification.loadMoreFailed': 'نور پورته نشي',
@@ -39,8 +36,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'د ریښې مفهوم لینک ونه موندل شو',
   'notification.saved': 'بدلونونه ساتل شول',
   'notification.selectNodeToClear': 'د پاکولو لپاره نوډ وټاکئ',
-  'notification.sessionInvalidated':
-    'تاسو د وسایلو اعظمي شمېر څخه تیر شوي یاست نو وتل شوئ',
+  'notification.sessionInvalidated': 'تاسو د وسایلو اعظمي شمېر څخه تیر شوي یاست نو وتل شوئ',
   'notification.signInToUse': 'د کارولو لپاره ننوتل',
   'notification.signInToValidateFocus': 'د فوکس پوښتنې تأیید لپاره ننوتل',
 } as const

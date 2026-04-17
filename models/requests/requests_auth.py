@@ -386,9 +386,7 @@ class VerifyEmailCodeRequest(BaseModel):
     class Config:
         """Configuration for VerifyEmailCodeRequest model."""
 
-        json_schema_extra = {
-            "example": {"email": "user@example.com", "code": "123456", "purpose": "register"}
-        }
+        json_schema_extra = {"example": {"email": "user@example.com", "code": "123456", "purpose": "register"}}
 
 
 class ResetPasswordWithEmailRequest(BaseModel):

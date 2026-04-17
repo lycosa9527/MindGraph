@@ -21,7 +21,8 @@ from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import resolve_country_iso_from_request
 from services.auth.http_auth_token import extract_bearer_token, try_decode_access_token_payload
 from services.redis import keys as redis_keys
-from services.redis.redis_client import get_redis, is_redis_available
+from services.redis.redis_async_client import get_async_redis
+from services.redis.redis_client import is_redis_available
 from services.redis.session.redis_session_manager import get_refresh_token_manager, get_session_manager
 from utils.auth import get_client_ip
 from utils.auth.auth_resolution import AUTH_CONTEXT_USER_ATTR
@@ -71,23 +72,23 @@ def _vpn_geo_path_matches(request_path: str) -> bool:
     return False
 
 
-def _refresh_geo_keys_ttl(redis: object, user_id: int, ttl: int) -> None:
+async def _refresh_geo_keys_ttl(redis: object, user_id: int, ttl: int) -> None:
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
-    pipe = redis.pipeline()
-    pipe.expire(login_key, ttl)
-    pipe.expire(last_ip_key, ttl)
-    pipe.execute()
+    async with redis.pipeline(transaction=False) as pipe:
+        pipe.expire(login_key, ttl)
+        pipe.expire(last_ip_key, ttl)
+        await pipe.execute()
 
 
-def record_vpn_login_geo(user_id: int, request: Request) -> None:
+async def record_vpn_login_geo(user_id: int, request: Request) -> None:
     if not VPN_CN_KICKOUT_ENABLED:
         return
     if AUTH_MODE in ("demo", "bayi", "enterprise"):
         return
     if not is_redis_available():
         return
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return
     client_ip = get_client_ip(request)
@@ -96,31 +97,31 @@ def record_vpn_login_geo(user_id: int, request: Request) -> None:
     ttl = redis_keys.TTL_GEO_VPN
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
-    pipe = redis.pipeline()
-    pipe.setex(login_key, ttl, login_val)
-    pipe.setex(last_ip_key, ttl, client_ip)
-    pipe.execute()
+    async with redis.pipeline(transaction=False) as pipe:
+        pipe.setex(login_key, ttl, login_val)
+        pipe.setex(last_ip_key, ttl, client_ip)
+        await pipe.execute()
 
 
-def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
+async def record_vpn_refresh_last_ip(user_id: int, request: Request) -> None:
     if not VPN_CN_KICKOUT_ENABLED:
         return
     if AUTH_MODE in ("demo", "bayi", "enterprise"):
         return
     if not is_redis_available():
         return
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return
     client_ip = get_client_ip(request)
     ttl = redis_keys.TTL_GEO_VPN
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
-    pipe = redis.pipeline()
-    pipe.setex(last_ip_key, ttl, client_ip)
-    pipe.expire(login_key, ttl)
-    pipe.expire(last_ip_key, ttl)
-    pipe.execute()
+    async with redis.pipeline(transaction=False) as pipe:
+        pipe.setex(last_ip_key, ttl, client_ip)
+        pipe.expire(login_key, ttl)
+        pipe.expire(last_ip_key, ttl)
+        await pipe.execute()
 
 
 def _vpn_geo_prereqs_ok(request: Request) -> bool:
@@ -135,7 +136,7 @@ def _vpn_geo_prereqs_ok(request: Request) -> bool:
     return True
 
 
-def maybe_enforce_vpn_cn_geo_for_user(
+async def maybe_enforce_vpn_cn_geo_for_user(
     request: Request,
     user_id: int,
     phone_str: Optional[str],
@@ -151,7 +152,7 @@ def maybe_enforce_vpn_cn_geo_for_user(
 
     if not is_redis_available():
         return None
-    redis = get_redis()
+    redis = get_async_redis()
     if not redis:
         return None
 
@@ -160,32 +161,35 @@ def maybe_enforce_vpn_cn_geo_for_user(
     login_key = redis_keys.GEO_VPN_LOGIN_CC.format(user_id=user_id)
     last_ip_key = redis_keys.GEO_VPN_LAST_IP.format(user_id=user_id)
 
-    pipe = redis.pipeline()
-    pipe.get(login_key)
-    pipe.get(last_ip_key)
-    login_raw, last_ip_raw = pipe.execute()
+    async with redis.pipeline(transaction=False) as pipe:
+        pipe.get(login_key)
+        pipe.get(last_ip_key)
+        login_raw, last_ip_raw = await pipe.execute()
     login_cc = _decode_redis_value(login_raw)
     last_ip = _decode_redis_value(last_ip_raw)
 
     if login_raw is None:
         current = resolve_country_iso_from_request(request)
         login_val = current if current else ""
-        write_pipe = redis.pipeline()
-        write_pipe.setex(login_key, ttl, login_val)
-        write_pipe.setex(last_ip_key, ttl, client_ip)
-        write_pipe.execute()
+        async with redis.pipeline(transaction=False) as write_pipe:
+            write_pipe.setex(login_key, ttl, login_val)
+            write_pipe.setex(last_ip_key, ttl, client_ip)
+            await write_pipe.execute()
         return None
 
     if last_ip == client_ip:
-        _refresh_geo_keys_ttl(redis, user_id, ttl)
+        async with redis.pipeline(transaction=False) as ttl_pipe:
+            ttl_pipe.expire(login_key, ttl)
+            ttl_pipe.expire(last_ip_key, ttl)
+            await ttl_pipe.execute()
         return None
 
     current_cc = resolve_country_iso_from_request(request)
-    redis.setex(last_ip_key, ttl, client_ip)
+    await redis.setex(last_ip_key, ttl, client_ip)
 
     if should_kick_vpn_transition(login_cc, current_cc):
-        get_session_manager().invalidate_user_sessions(user_id, ip_address=client_ip)
-        revoked = get_refresh_token_manager().revoke_all_refresh_tokens(
+        await get_session_manager().invalidate_user_sessions(user_id, ip_address=client_ip)
+        revoked = await get_refresh_token_manager().revoke_all_refresh_tokens(
             user_id,
             reason="vpn_cn_geo",
         )
@@ -207,7 +211,7 @@ def maybe_enforce_vpn_cn_geo_for_user(
     return None
 
 
-def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
+async def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
     if not _vpn_geo_prereqs_ok(request):
         return None
 
@@ -224,7 +228,7 @@ def maybe_enforce_vpn_cn_geo(request: Request) -> Optional[JSONResponse]:
 
     raw_phone = payload.get("phone")
     phone_str = raw_phone if isinstance(raw_phone, str) else None
-    return maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
+    return await maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
 
 
 async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONResponse]:
@@ -241,7 +245,7 @@ async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONRespo
     state_user = getattr(request.state, AUTH_CONTEXT_USER_ATTR, None)
     if state_user is not None:
         phone_str = state_user.phone if isinstance(state_user.phone, str) else None
-        return maybe_enforce_vpn_cn_geo_for_user(request, state_user.id, phone_str)
+        return await maybe_enforce_vpn_cn_geo_for_user(request, state_user.id, phone_str)
 
     payload = try_decode_access_token_payload(request)
     if payload:
@@ -253,7 +257,7 @@ async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONRespo
             return None
         raw_phone = payload.get("phone")
         phone_str = raw_phone if isinstance(raw_phone, str) else None
-        return maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
+        return await maybe_enforce_vpn_cn_geo_for_user(request, user_id, phone_str)
 
     token = extract_bearer_token(request)
     if not token or not token.startswith("mgat_"):
@@ -263,7 +267,7 @@ async def maybe_enforce_vpn_cn_geo_async(request: Request) -> Optional[JSONRespo
         return None
 
     user = await validate_user_token(token, account, request=request)
-    return maybe_enforce_vpn_cn_geo_for_user(request, user.id, user.phone)
+    return await maybe_enforce_vpn_cn_geo_for_user(request, user.id, user.phone)
 
 
 def _close_reason_from_geo_json_response(resp: JSONResponse) -> Optional[str]:

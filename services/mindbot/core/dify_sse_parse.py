@@ -16,6 +16,7 @@ def _workflow_file_keys_from_env() -> list[str]:
         return []
     return [x.strip() for x in raw.split(",") if x.strip()]
 
+
 _IMAGE_TYPES = frozenset(
     {
         "image",
@@ -49,12 +50,7 @@ def parse_message_file_event(ev: dict[str, Any]) -> Optional[dict[str, Any]]:
     if not blob:
         blob = ev
 
-    url = (
-        blob.get("url")
-        or blob.get("remote_url")
-        or blob.get("source_url")
-        or ev.get("url")
-    )
+    url = blob.get("url") or blob.get("remote_url") or blob.get("source_url") or ev.get("url")
     if not isinstance(url, str) or not url.strip():
         return None
     url_s = url.strip()

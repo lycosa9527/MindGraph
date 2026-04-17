@@ -90,7 +90,7 @@ async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db
             raise WebSocketDisconnect(code=4001, reason="Session manager unavailable")
 
         session_manager = _redis.get_session_manager()
-        if not session_manager.is_session_valid(int(user_id), token):
+        if not await session_manager.is_session_valid(int(user_id), token):
             await websocket.close(code=4001, reason="Session expired or invalidated")
             raise WebSocketDisconnect(code=4001, reason="Session expired or invalidated")
 
@@ -105,7 +105,7 @@ async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db
             if user:
                 db.expunge(user)
                 if _redis.user_cache:
-                    _redis.user_cache.cache_user(user)
+                    await _redis.user_cache.cache_user(user)
 
         if not user:
             await websocket.close(code=4001, reason="User not found")

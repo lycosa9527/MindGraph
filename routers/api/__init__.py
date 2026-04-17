@@ -98,9 +98,7 @@ if MINDBOT_MODULE is not None:
     logger.info("[API] MindBot router registered at /api/mindbot")
 else:
     if app_config.FEATURE_MINDBOT:
-        logger.warning(
-            "[API] MindBot router NOT registered - import failed or router is None."
-        )
+        logger.warning("[API] MindBot router NOT registered - import failed or router is None.")
     else:
         logger.debug("[API] MindBot router not registered - feature disabled")
 

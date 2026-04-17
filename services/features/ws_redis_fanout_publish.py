@@ -8,7 +8,6 @@ Proprietary License
 
 from __future__ import annotations
 
-import asyncio
 import json
 import logging
 from typing import Any, Dict
@@ -22,13 +21,13 @@ from services.infrastructure.monitoring.ws_metrics import (
     record_ws_fanout_chat_published,
     record_ws_fanout_workshop_published,
 )
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
 
-def publish_chat_fanout(envelope: Dict[str, Any]) -> None:
-    """Publish a chat fan-out envelope (blocking)."""
+async def publish_chat_fanout_async(envelope: Dict[str, Any]) -> None:
+    """Publish a chat fan-out envelope using the native async Redis client."""
     if not is_ws_fanout_enabled():
         return
     try:
@@ -36,14 +35,18 @@ def publish_chat_fanout(envelope: Dict[str, Any]) -> None:
     except (TypeError, ValueError):
         logger.warning("[WSFanout] Chat publish skipped: invalid envelope")
         return
-    client = get_redis()
+    client = get_async_redis()
     if not client:
         return
-    client.publish(CHAT_FANOUT_CHANNEL, body)
+    try:
+        record_ws_fanout_chat_published()
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.debug("[WSFanout] chat publish metric failed: %s", exc)
+    await client.publish(CHAT_FANOUT_CHANNEL, body)
 
 
-def publish_workshop_fanout(envelope: Dict[str, Any]) -> None:
-    """Publish a workshop fan-out envelope (blocking)."""
+async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
+    """Publish a workshop fan-out envelope using the native async Redis client."""
     if not is_ws_fanout_enabled():
         return
     try:
@@ -51,19 +54,11 @@ def publish_workshop_fanout(envelope: Dict[str, Any]) -> None:
     except (TypeError, ValueError):
         logger.warning("[WSFanout] Workshop publish skipped: invalid envelope")
         return
-    client = get_redis()
+    client = get_async_redis()
     if not client:
         return
-    client.publish(WORKSHOP_FANOUT_CHANNEL, body)
-
-
-async def publish_chat_fanout_async(envelope: Dict[str, Any]) -> None:
-    """Publish chat fan-out without blocking the event loop."""
-    record_ws_fanout_chat_published()
-    await asyncio.to_thread(publish_chat_fanout, envelope)
-
-
-async def publish_workshop_fanout_async(envelope: Dict[str, Any]) -> None:
-    """Publish workshop fan-out without blocking the event loop."""
-    record_ws_fanout_workshop_published()
-    await asyncio.to_thread(publish_workshop_fanout, envelope)
+    try:
+        record_ws_fanout_workshop_published()
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.debug("[WSFanout] workshop publish metric failed: %s", exc)
+    await client.publish(WORKSHOP_FANOUT_CHANNEL, body)

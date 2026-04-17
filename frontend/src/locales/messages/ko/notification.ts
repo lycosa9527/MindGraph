@@ -1,7 +1,8 @@
 /** ko UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': '주제 또는 중앙 노드는 지울 수 없습니다',
-  'notification.cannotResetSelectDiagramType': '초기화할 수 없습니다: 먼저 다이어그램 유형을 선택하세요',
+  'notification.cannotResetSelectDiagramType':
+    '초기화할 수 없습니다: 먼저 다이어그램 유형을 선택하세요',
   'notification.canvasClearNodes': '{count}개 노드를 비웠습니다',
   'notification.canvasClearNodesLearning': '{count}개 노드를 비우고 답변에 추가했습니다',
   'notification.canvasSomeoneEditingNode': '다른 사용자가 이 노드를 편집 중입니다',
@@ -38,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': '루트 개념 링크를 찾을 수 없습니다',
   'notification.saved': '변경 사항이 저장되었습니다',
   'notification.selectNodeToClear': '지울 노드를 선택하세요',
-  'notification.sessionInvalidated':
-    '등록된 기기 수 한도를 초과하여 로그아웃되었습니다',
+  'notification.sessionInvalidated': '등록된 기기 수 한도를 초과하여 로그아웃되었습니다',
   'notification.signInToUse': '사용하려면 로그인하세요',
   'notification.signInToValidateFocus': '초점 질문을 확인하려면 로그인하세요',
 } as const

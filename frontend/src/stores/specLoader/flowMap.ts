@@ -144,8 +144,7 @@ export function recalculateFlowMapLayout(
     const substepNodesH = result.filter((n) => n.type === 'flowSubstep')
 
     const groupInfos = orderedSteps.map((stepNode) => {
-      const groupIdx =
-        ((stepNode.data as Record<string, unknown>)?.groupIndex as number) ?? 0
+      const groupIdx = ((stepNode.data as Record<string, unknown>)?.groupIndex as number) ?? 0
       const stepW = getEffectiveFlowWidth(
         stepNode.id,
         stepNode.text ?? '',
@@ -223,9 +222,7 @@ export function recalculateFlowMapLayout(
     })
 
     const firstOrderedStep = orderedSteps[0]
-    const firstOrderedStepDims = firstOrderedStep
-      ? nodeDimensions[firstOrderedStep.id]
-      : undefined
+    const firstOrderedStepDims = firstOrderedStep ? nodeDimensions[firstOrderedStep.id] : undefined
     if (firstOrderedStep && firstOrderedStepDims) {
       const firstStepResultNode = result.find((n) => n.id === firstOrderedStep.id)
       const stepPos = firstStepResultNode?.position
@@ -309,12 +306,9 @@ export function recalculateFlowMapLayout(
         FLOW_NODE_PADDING_X,
         nodeDimensions
       )
-      const substepBaseX =
-        (stepResultNode.position?.x ?? 0) + stepW + FLOW_SUBSTEP_OFFSET_X
+      const substepBaseX = (stepResultNode.position?.x ?? 0) + stepW + FLOW_SUBSTEP_OFFSET_X
 
-      const groupSubs = substepNodes.filter((n) =>
-        n.id.startsWith(`flow-substep-${stepOrder}-`)
-      )
+      const groupSubs = substepNodes.filter((n) => n.id.startsWith(`flow-substep-${stepOrder}-`))
       groupSubs.forEach((sub) => {
         const subResultIdx = result.findIndex((n) => n.id === sub.id)
         const subHorizPrevPos = result[subResultIdx].position

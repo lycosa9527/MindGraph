@@ -80,9 +80,7 @@ def _parse_int_id_allowlist(raw: str) -> Set[int]:
     return result
 
 
-VPN_CN_KICKOUT_ALLOWLIST_USER_IDS = _parse_int_id_allowlist(
-    os.getenv("VPN_CN_KICKOUT_ALLOWLIST_USER_IDS", "").strip()
-)
+VPN_CN_KICKOUT_ALLOWLIST_USER_IDS = _parse_int_id_allowlist(os.getenv("VPN_CN_KICKOUT_ALLOWLIST_USER_IDS", "").strip())
 
 # Enterprise Mode Configuration
 ENTERPRISE_DEFAULT_ORG_CODE = os.getenv("ENTERPRISE_DEFAULT_ORG_CODE", "DEMO-001").strip()

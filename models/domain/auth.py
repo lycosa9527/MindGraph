@@ -42,7 +42,7 @@ class Organization(Base):
     __tablename__ = "organizations"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    code = Column(String(50), unique=True, index=True, nullable=False)  # e.g., "DEMO-001"
+    code = Column(String(50), unique=True, nullable=False)  # e.g., "DEMO-001"
     name = Column(String(200), nullable=False)  # e.g., "Demo School for Testing"
     display_name = Column(String(200), nullable=True)  # Custom text shown in sidebar (e.g. "MindGraph专业版")
     invitation_code = Column(String(50), unique=True, nullable=True)  # For controlled registration
@@ -52,8 +52,9 @@ class Organization(Base):
     expires_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True)
     is_active: Mapped[bool] = mapped_column(Boolean, default=True)
 
-    # Relationship
-    users = relationship("User", back_populates="organization", lazy="selectin")
+    # Relationship — large collection. Use ``selectinload(Organization.users)``
+    # explicitly in the few queries that actually need eager loading.
+    users = relationship("User", back_populates="organization", lazy="select")
 
 
 class User(Base):
@@ -78,8 +79,8 @@ class User(Base):
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    phone: Mapped[str | None] = mapped_column(String(20), unique=True, index=True, nullable=True)
-    email: Mapped[str | None] = mapped_column(String(255), unique=True, index=True, nullable=True)
+    phone: Mapped[str | None] = mapped_column(String(20), unique=True, nullable=True)
+    email: Mapped[str | None] = mapped_column(String(255), unique=True, nullable=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     name: Mapped[str | None] = mapped_column(String(100), nullable=True)
     organization_id: Mapped[int | None] = mapped_column(
@@ -108,18 +109,25 @@ class User(Base):
     allows_simplified_chinese: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     # Sales whitelist: allow email/password login from mainland China (GeoIP CN) for this account
-    email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(
-        Boolean, nullable=False, default=False
-    )
+    email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     # Relationships
-    organization = relationship("Organization", back_populates="users", lazy="selectin")
+    # ``organization`` is M:1, but no production call path actually accesses
+    # the relationship attribute — every caller uses ``user.organization_id``
+    # plus ``org_cache.get_by_id(...)`` (the canonical Redis-backed lookup).
+    # Default-eager (selectin) therefore issued one wasted SELECT per User
+    # load on the auth hot path. Use ``select`` so the relationship is only
+    # materialised when explicitly requested via ``selectinload`` (G11).
+    organization = relationship("Organization", back_populates="users", lazy="select")
+    # ``diagrams`` is a large 1:N collection. Default to ``select`` so the auth
+    # hot path does not pull every user's full diagram set on every login;
+    # callers that genuinely need them must use ``selectinload(User.diagrams)``.
     diagrams = relationship(
         "Diagram",
         back_populates="user",
         cascade="all, delete-orphan",
         passive_deletes=True,
-        lazy="selectin",
+        lazy="select",
     )
 
 
@@ -138,7 +146,7 @@ class APIKey(Base):
     __tablename__ = "api_keys"
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    key: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
+    key: Mapped[str] = mapped_column(String, unique=True, nullable=False)
     name: Mapped[str] = mapped_column(String, nullable=False)  # e.g., "Dify Integration"
     description: Mapped[str | None] = mapped_column(String, nullable=True)
 

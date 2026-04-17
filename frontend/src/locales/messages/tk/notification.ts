@@ -39,8 +39,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Kök düşünje baglanyşygy tapylmady',
   'notification.saved': 'Üýtgeşmeler saklandy',
   'notification.selectNodeToClear': 'Arassalamak üçin düwümi saýlaň',
-  'notification.sessionInvalidated':
-    'Iň köp enjam sanyndan geçenligiňiz üçin çykaryldyňyz',
+  'notification.sessionInvalidated': 'Iň köp enjam sanyndan geçenligiňiz üçin çykaryldyňyz',
   'notification.signInToUse': 'Ulanmak üçin giriň',
   'notification.signInToValidateFocus': 'Fokus soragyny tassyklamak üçin giriň',
 } as const

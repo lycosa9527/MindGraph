@@ -1,7 +1,6 @@
 /** hu UI — common */
 export default {
-  'app.aiDisclaimer':
-    'A tartalom MI által generált; kérjük, mindig ellenőrizze.',
+  'app.aiDisclaimer': 'A tartalom MI által generált; kérjük, mindig ellenőrizze.',
   'app.brandName': 'Mind Platform',
   'app.guestMainLoginPrompt': 'Jelentkezzen be a terület használatához',
   'app.browserLocale.body':
@@ -22,11 +21,9 @@ export default {
   'askOnce.panel.stopGenerating': 'Generálás leállítása',
   'askOnce.panel.thinking': 'Gondolkodik…',
   'askOnce.panel.thoughtProcess': 'Gondolatmenet',
-  'askOnce.placeholder':
-    'Írja be a promptot… Ctrl+Enter vagy Küldés',
+  'askOnce.placeholder': 'Írja be a promptot… Ctrl+Enter vagy Küldés',
   'askOnce.promptContent': 'Prompt tartalom',
-  'askOnce.promptEditPlaceholder':
-    'Írjon be vagy válasszon sablont szerkesztéshez…',
+  'askOnce.promptEditPlaceholder': 'Írjon be vagy válasszon sablont szerkesztéshez…',
   'askOnce.promptTemplatesTitle': 'Prompt sablonok',
   'askOnce.selectTemplate': 'Sablon kiválasztása',
   'askOnce.selectTemplatePlaceholder': 'Előre beállított sablon…',
@@ -61,28 +58,20 @@ export default {
   'demo.loginOk': 'Sikeres bejelentkezés',
   'demo.loginSuccessNamed': 'Üdvözöljük, {name}!',
   'demo.networkError': 'Hálózati hiba, a bejelentkezés sikertelen',
-  'diagramTemplate.allModelsFailed':
-    'Minden modell hibázott, próbálja újra',
+  'diagramTemplate.allModelsFailed': 'Minden modell hibázott, próbálja újra',
   'diagramTemplate.generated': 'Diagram generálva ({model})',
   'diagramTemplate.generationFailed': 'A generálás sikertelen',
   'diagramTemplate.promptTooLong':
     'A prompt túl hosszú ({length} karakter). Maximum {max} karakter.',
   'diagramTemplates.brace_map': 'Bontsa szét a 【subject】 témát zárójel térképpel.',
-  'diagramTemplates.bridge_map':
-    'Rajzoljon híd térképet a 【relation】 kapcsolathoz.',
-  'diagramTemplates.bubble_map':
-    'Használjon buborék térképet a 【topic】 leírásához.',
-  'diagramTemplates.circle_map':
-    'Használjon kör térképet ötletbörzéhez a 【topic】 körül.',
-  'diagramTemplates.double_bubble_map':
-    'Hasonlítsa össze 【itemA】 és 【itemB】 elemet.',
+  'diagramTemplates.bridge_map': 'Rajzoljon híd térképet a 【relation】 kapcsolathoz.',
+  'diagramTemplates.bubble_map': 'Használjon buborék térképet a 【topic】 leírásához.',
+  'diagramTemplates.circle_map': 'Használjon kör térképet ötletbörzéhez a 【topic】 körül.',
+  'diagramTemplates.double_bubble_map': 'Hasonlítsa össze 【itemA】 és 【itemB】 elemet.',
   'diagramTemplates.flow_map': 'Vázolja a(z) 【process】 lépéseit.',
-  'diagramTemplates.mindmap':
-    'Készítsen agytérképet a(z) 【theme】 temára központozva.',
-  'diagramTemplates.multi_flow_map':
-    'Elemezze a(z) 【event】 okait és következményeit.',
-  'diagramTemplates.tree_map':
-    'Osztályozzon 【criterion】 szerint a(z) 【subject】 témában.',
+  'diagramTemplates.mindmap': 'Készítsen agytérképet a(z) 【theme】 temára központozva.',
+  'diagramTemplates.multi_flow_map': 'Elemezze a(z) 【event】 okait és következményeit.',
+  'diagramTemplates.tree_map': 'Osztályozzon 【criterion】 szerint a(z) 【subject】 témában.',
   'meta.pageTitle.admin': 'Admin',
   'meta.pageTitle.askOnce': 'AskOnce',
   'meta.pageTitle.auth': 'Bejelentkezés',
@@ -112,8 +101,7 @@ export default {
   'meta.pageTitle.template': 'Sablonok',
   'meta.pageTitle.teacherUsage': 'Tanári használat',
   'meta.pageTitle.workshopChat': 'Workshop chat',
-  'publicDashboard.networkError':
-    'Hálózati hiba, az irányítópult nem tölthető',
+  'publicDashboard.networkError': 'Hálózati hiba, az irányítópult nem tölthető',
   'settings.language.interface': 'Felület nyelve',
   'settings.language.matchPrompt':
     'Az MI asszisztens, a felület és a virtuális billentyűzet nyelvének egyeztetése',
@@ -124,15 +112,12 @@ export default {
   'settings.version.title': 'Felület verzió',
   'settings.version.chinese': 'Kínai verzió',
   'settings.version.international': 'Nemzetközi verzió',
-  'landing.international.subtitle':
-    'A világ legjobb MI gondolkodási diagram szoftvere',
-  'landing.international.promptPlaceholder':
-    'Írja le a diagramot, vagy válasszon típust alább…',
+  'landing.international.subtitle': 'A világ legjobb MI gondolkodási diagram szoftvere',
+  'landing.international.promptPlaceholder': 'Írja le a diagramot, vagy válasszon típust alább…',
   'landing.international.sectionTitle': 'Válasszon diagramtípust',
   'landing.international.modules': 'Modulok',
   'landing.international.mindmateCard.title': 'MindMate',
-  'landing.international.mindmateCard.desc':
-    'Virtuális tanári és kutatási partner',
+  'landing.international.mindmateCard.desc': 'Virtuális tanári és kutatási partner',
   'landing.international.shareSite': 'Oldal megosztása',
   'landing.international.shareSiteModalTitle': 'Oldal megosztása',
   'landing.international.shareSiteModalHint':

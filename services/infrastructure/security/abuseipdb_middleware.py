@@ -53,9 +53,7 @@ def _log_vetting_allowed(
         parts.append("shared_blacklist=miss")
     if check_enabled:
         if score is not None:
-            parts.append(
-                f"abuseipdb_score={score} ({provenance or '?'}) threshold={min_score}"
-            )
+            parts.append(f"abuseipdb_score={score} ({provenance or '?'}) threshold={min_score}")
         else:
             parts.append(f"abuseipdb_score=unavailable ({provenance or '?'})")
     else:
@@ -102,7 +100,7 @@ async def abuseipdb_middleware(request: Request, call_next):
     provenance: str | None = None
 
     if had_blacklist_lookup:
-        if abuseipdb_service.is_ip_in_blacklist_set(client_ip):
+        if await abuseipdb_service.is_ip_in_blacklist_set_async(client_ip):
             logger.warning(
                 "[IP reputation] Blocked request from blacklisted IP %s (shared Redis set)",
                 client_ip,
@@ -114,9 +112,7 @@ async def abuseipdb_middleware(request: Request, call_next):
 
     if check_enabled:
         try:
-            score, provenance = await abuseipdb_service.check_ip_score_cached_with_provenance(
-                client_ip
-            )
+            score, provenance = await abuseipdb_service.check_ip_score_cached_with_provenance(client_ip)
         except Exception as exc:  # pylint: disable=broad-except
             logger.debug("[AbuseIPDB] check failed open: %s", exc)
             return await call_next(request)

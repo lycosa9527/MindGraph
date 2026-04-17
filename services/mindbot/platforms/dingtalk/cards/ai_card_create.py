@@ -391,8 +391,7 @@ async def create_and_deliver_ai_card(
         }
         update_mode = "stream"
     logger.debug(
-        "[MindBot] ai_card_create_post %s path=%s template_id=%s group=%s "
-        "update_mode=%s out_track_prefix=%s",
+        "[MindBot] ai_card_create_post %s path=%s template_id=%s group=%s update_mode=%s out_track_prefix=%s",
         pipeline_ctx,
         PATH_CARD_INSTANCES_CREATE_AND_DELIVER,
         (template_id or "")[:20],

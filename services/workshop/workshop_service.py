@@ -14,7 +14,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
 from models.domain.diagrams import Diagram
-from services.redis.redis_client import get_redis
+from services.redis.redis_async_client import get_async_redis
 from services.workshop.workshop_cleanup_impl import cleanup_expired_workshops_impl
 from services.workshop.workshop_expiry import (
     DURATION_TODAY,
@@ -143,11 +143,11 @@ def _workshop_start_session_redis_value(
     )
 
 
-def _allocate_unique_workshop_code(redis: Any) -> Optional[str]:
+async def _allocate_unique_workshop_code(redis: Any) -> Optional[str]:
     """Pick a code with no existing code_to_diagram mapping, or None."""
     for _ in range(10):
         candidate = generate_workshop_code()
-        if not redis.get(code_to_diagram_key(candidate)):
+        if not await redis.get(code_to_diagram_key(candidate)):
             return candidate
     return None
 
@@ -185,7 +185,7 @@ class WorkshopService:
         if not is_workshop_expired(diagram.workshop_expires_at):
             return False
         code = diagram.workshop_code
-        purge_workshop_redis_keys(redis, code)
+        await purge_workshop_redis_keys(redis, code)
         clear_workshop_session_fields(diagram)
         try:
             await db.commit()
@@ -203,7 +203,7 @@ class WorkshopService:
             return redis_ttl_seconds_for_expires_at(diagram.workshop_expires_at)
         return WORKSHOP_SESSION_TTL
 
-    async def _finalize_join_after_diagram_loaded(
+    async def _finalize_join_after_load(
         self,
         db: AsyncSession,
         redis: Any,
@@ -234,15 +234,15 @@ class WorkshopService:
             return None
 
         p_key = participants_key(code)
-        redis.sadd(
+        await redis.sadd(
             p_key,
             str(user_id),
         )
-        redis.expire(
+        await redis.expire(
             p_key,
             WORKSHOP_PARTICIPANTS_TTL,
         )
-        redis.setex(
+        await redis.setex(
             mutation_idle_key(code, user_id),
             MUTATION_IDLE_KICK_SECONDS,
             "1",
@@ -303,13 +303,13 @@ class WorkshopService:
                 if verr:
                     return None, verr, None
 
-                redis = get_redis()
+                redis = get_async_redis()
                 if not redis:
                     error_msg = "Redis client not available. Presentation mode requires Redis."
                     logger.error("[WorkshopService] %s", error_msg)
                     return None, error_msg, None
 
-                code = _allocate_unique_workshop_code(redis)
+                code = await _allocate_unique_workshop_code(redis)
 
                 if not code:
                     error_msg = "Failed to generate unique presentation code after multiple attempts"
@@ -332,7 +332,7 @@ class WorkshopService:
                     await db.rollback()
                     raise
 
-                redis.setex(
+                await redis.setex(
                     session_key(code),
                     ttl_sec,
                     _workshop_start_session_redis_value(
@@ -341,7 +341,7 @@ class WorkshopService:
                         started_at,
                     ),
                 )
-                redis.setex(
+                await redis.setex(
                     code_to_diagram_key(code),
                     ttl_sec,
                     diagram_id,
@@ -401,9 +401,9 @@ class WorkshopService:
                     await db.rollback()
                     raise
 
-                redis = get_redis()
+                redis = get_async_redis()
                 if redis:
-                    purge_workshop_redis_keys(redis, code)
+                    await purge_workshop_redis_keys(redis, code)
 
                 logger.info(
                     "[WorkshopService] Stopped workshop %s for diagram %s",
@@ -436,10 +436,10 @@ class WorkshopService:
             try:
                 code = code.strip()
 
-                redis = get_redis()
+                redis = get_async_redis()
                 diagram_id = None
                 if redis:
-                    diagram_id_raw = redis.get(code_to_diagram_key(code))
+                    diagram_id_raw = await redis.get(code_to_diagram_key(code))
                     if diagram_id_raw:
                         diagram_id = (
                             diagram_id_raw if isinstance(diagram_id_raw, str) else diagram_id_raw.decode("utf-8")
@@ -458,7 +458,7 @@ class WorkshopService:
                         if redis:
                             await backfill_workshop_expiry_if_needed(diagram, db)
                             ttl = self._redis_ttl_seconds_for_diagram(diagram)
-                            restore_workshop_redis_from_db_row(
+                            await restore_workshop_redis_from_db_row(
                                 redis,
                                 code,
                                 diagram_id,
@@ -484,7 +484,7 @@ class WorkshopService:
                 if not diagram:
                     return None
 
-                return await self._finalize_join_after_diagram_loaded(
+                return await self._finalize_join_after_load(
                     db,
                     redis,
                     diagram,
@@ -501,12 +501,12 @@ class WorkshopService:
                 )
                 return None
 
-    def _participant_count_for_code(self, code: str) -> int:
-        redis = get_redis()
+    async def _participant_count_for_code(self, code: str) -> int:
+        redis = get_async_redis()
         if not redis:
             return 0
         try:
-            participants = redis.smembers(participants_key(code))
+            participants = await redis.smembers(participants_key(code))
             return len(participants) if participants else 0
         except (TypeError, ValueError, RuntimeError):
             return 0
@@ -537,7 +537,7 @@ class WorkshopService:
             code = diagram.workshop_code
         return await self.join_workshop(code, user_id)
 
-    async def list_organization_workshop_sessions(self, user_id: int) -> List[Dict[str, Any]]:
+    async def list_org_workshop_sessions(self, user_id: int) -> List[Dict[str, Any]]:
         """
         Active workshops visible within the same organization (校内 list).
         """
@@ -577,7 +577,7 @@ class WorkshopService:
                             "diagram_id": diagram.id,
                             "title": diagram.title,
                             "owner_username": getattr(owner, "username", None) or f"User {owner.id}",
-                            "participant_count": self._participant_count_for_code(code),
+                            "participant_count": await self._participant_count_for_code(code),
                             "expires_at": (
                                 diagram.workshop_expires_at.isoformat() + "Z" if diagram.workshop_expires_at else None
                             ),
@@ -587,13 +587,13 @@ class WorkshopService:
                 return out
             except Exception as exc:
                 logger.error(
-                    "[WorkshopService] list_organization_workshop_sessions: %s",
+                    "[WorkshopService] list_org_workshop_sessions: %s",
                     exc,
                     exc_info=True,
                 )
                 return []
 
-    async def _workshop_status_payload_for_viewer(
+    async def _workshop_status_for_viewer(
         self,
         db: AsyncSession,
         diagram: Diagram,
@@ -601,7 +601,7 @@ class WorkshopService:
     ) -> Tuple[Optional[Dict[str, Any]], str]:
         """Compute status payload; error is '' or 'not_found' or 'forbidden'."""
         await backfill_workshop_expiry_if_needed(diagram, db)
-        redis = get_redis()
+        redis = get_async_redis()
         if diagram.workshop_expires_at and is_workshop_expired(diagram.workshop_expires_at):
             if redis:
                 await self._clear_expired_workshop_session(diagram, db, redis)
@@ -616,7 +616,7 @@ class WorkshopService:
                 return None, "forbidden"
             return {"active": False}, ""
 
-        participant_count = self._participant_count_for_code(code)
+        participant_count = await self._participant_count_for_code(code)
         vis = _diagram_workshop_visibility(diagram)
 
         if await _viewer_may_see_workshop_code(db, diagram, viewer_user_id):
@@ -653,7 +653,7 @@ class WorkshopService:
                 if not diagram:
                     return None, "not_found"
 
-                return await self._workshop_status_payload_for_viewer(
+                return await self._workshop_status_for_viewer(
                     db,
                     diagram,
                     viewer_user_id,
@@ -677,13 +677,13 @@ class WorkshopService:
         Returns:
             List of user IDs
         """
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             logger.error("[WorkshopService] Redis client not available")
             return []
 
         try:
-            participants = redis.smembers(participants_key(code))
+            participants = await redis.smembers(participants_key(code))
             if not participants:
                 return []
 
@@ -705,16 +705,16 @@ class WorkshopService:
             code: Workshop code
             user_id: User ID
         """
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             logger.error("[WorkshopService] Redis client not available")
             return
 
         try:
             p_key = participants_key(code)
-            is_member = redis.sismember(p_key, str(user_id))
+            is_member = await redis.sismember(p_key, str(user_id))
             if is_member:
-                redis.expire(p_key, WORKSHOP_PARTICIPANTS_TTL)
+                await redis.expire(p_key, WORKSHOP_PARTICIPANTS_TTL)
                 logger.debug(
                     "[WorkshopService] Refreshed TTL for participant %s in workshop %s",
                     user_id,
@@ -735,17 +735,17 @@ class WorkshopService:
             code: Workshop code
             user_id: User ID to remove
         """
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             logger.error("[WorkshopService] Redis client not available")
             return
 
         try:
-            redis.srem(
+            await redis.srem(
                 participants_key(code),
                 str(user_id),
             )
-            redis.delete(mutation_idle_key(code, user_id))
+            await redis.delete(mutation_idle_key(code, user_id))
             await maybe_flush_live_spec_when_room_empty(redis, code)
             logger.debug(
                 "[WorkshopService] Removed participant %s from workshop %s",
@@ -759,13 +759,13 @@ class WorkshopService:
                 exc_info=True,
             )
 
-    async def refresh_mutation_idle_for_update(self, code: str, user_id: int) -> None:
+    async def refresh_idle_for_update(self, code: str, user_id: int) -> None:
         """Reset mutation-idle TTL after a diagram ``update`` message."""
-        redis = get_redis()
+        redis = get_async_redis()
         if not redis:
             return
         try:
-            redis.setex(
+            await redis.setex(
                 mutation_idle_key(code, user_id),
                 MUTATION_IDLE_KICK_SECONDS,
                 "1",

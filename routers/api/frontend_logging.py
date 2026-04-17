@@ -34,7 +34,7 @@ async def frontend_log(req: FrontendLogRequest, request: Request):
     rate_limiter = RedisRateLimiter()
 
     client_ip = request.client.host if request.client else "unknown"
-    is_allowed, count, error_msg = rate_limiter.check_and_record(
+    is_allowed, count, error_msg = await rate_limiter.check_and_record(
         category="frontend_log",
         identifier=client_ip,
         max_attempts=100,  # 100 logs per minute per IP
@@ -85,7 +85,7 @@ async def frontend_log_batch(req: FrontendLogBatchRequest, request: Request):
     rate_limiter = RedisRateLimiter()
 
     client_ip = request.client.host if request.client else "unknown"
-    is_allowed, count, error_msg = rate_limiter.check_and_record(
+    is_allowed, count, error_msg = await rate_limiter.check_and_record(
         category="frontend_log_batch",
         identifier=client_ip,
         max_attempts=10,  # 10 batches per minute per IP

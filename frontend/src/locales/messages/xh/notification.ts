@@ -6,8 +6,7 @@ export default {
   'notification.canvasClearNodes': 'Icocwe iindawo eziyi-{count}',
   'notification.canvasClearNodesLearning': 'Ikhaliwe iindawo eziyi-{count}, yongezwe kwiimpendulo',
   'notification.canvasSomeoneEditingNode': 'Omnye ulungisa le ndawo',
-  'notification.collabDeleteBlocked':
-    'Ayikwazi ukususa xa omnye usebenza endaweni ekhethiweyo',
+  'notification.collabDeleteBlocked': 'Ayikwazi ukususa xa omnye usebenza endaweni ekhethiweyo',
   'notification.collabRedoBlocked': 'Ayikwazi ukuphinda xa omnye usebenza',
   'notification.collabUndoBlocked': 'Ayikwazi ukubuyisa xa omnye usebenza',
   'notification.conversationDeleted': 'Ingxoxo isusiwe',
@@ -39,8 +38,7 @@ export default {
   'notification.rootConceptLinkNotFound': 'Isixhumanisi somqondo wesiseko asifumaneki',
   'notification.saved': 'Iinguqu zilondoloziwe',
   'notification.selectNodeToClear': 'Khetha indawo ongayicoca',
-  'notification.sessionInvalidated':
-    'Uphumile ngoba udlule inani eliphezulu lezixhobo',
+  'notification.sessionInvalidated': 'Uphumile ngoba udlule inani eliphezulu lezixhobo',
   'notification.signInToUse': 'Ngena ukuze usebenzise',
   'notification.signInToValidateFocus': 'Ngena ukuze uqinisekise umbuzo wokugxila',
 } as const

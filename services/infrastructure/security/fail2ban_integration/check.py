@@ -35,7 +35,7 @@ class Fail2banCheckResult:
     logpath_exists: bool = False
     messages: List[str] = field(default_factory=list)
 
-    def ok(self) -> bool:
+    def is_ok(self) -> bool:
         """True when the MindGraph jail is installed and the daemon sees it."""
         return (
             self.linux
@@ -142,8 +142,7 @@ def check_fail2ban_install(
     result.daemon_ok = fail2ban_daemon_responding()
     if not result.daemon_ok:
         result.messages.append(
-            "fail2ban-client status failed; start the service "
-            "(e.g. sudo systemctl enable --now fail2ban).",
+            "fail2ban-client status failed; start the service (e.g. sudo systemctl enable --now fail2ban).",
         )
 
     jail_path = etc_fail2ban / "jail.d" / JAIL_FILE

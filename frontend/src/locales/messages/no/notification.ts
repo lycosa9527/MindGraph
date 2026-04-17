@@ -1,8 +1,7 @@
 /** no UI — notification */
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan ikke tømme emne- eller senternoder',
-  'notification.cannotResetSelectDiagramType':
-    'Kan ikke tilbakestille: velg først en diagramtype',
+  'notification.cannotResetSelectDiagramType': 'Kan ikke tilbakestille: velg først en diagramtype',
   'notification.canvasClearNodes': '{count} noder tømt',
   'notification.canvasClearNodesLearning': '{count} noder tømt, lagt til i svar',
   'notification.canvasSomeoneEditingNode': 'Noen andre redigerer denne noden',

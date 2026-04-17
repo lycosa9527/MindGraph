@@ -240,7 +240,7 @@ export default {
     'Sleutelbord op die skerm, gesinkroniseer met jou koppelvlaktaal',
   'canvas.toolbar.virtualKeyboardClose': 'Maak sleutelbord toe',
   'canvas.toolbar.virtualKeyboardFocusHint':
-    'Dubbelklik of dubbeltik eers \'n nodusetiket, tik dan met die sleutelbord',
+    "Dubbelklik of dubbeltik eers 'n nodusetiket, tik dan met die sleutelbord",
   'canvas.toolbar.moreApps': 'Meer toepassings',
   'canvas.toolbar.newAssociation': 'Nuwe assosiasie',
   'canvas.toolbar.newAttribute': 'Nuwe eienskap',
@@ -514,7 +514,7 @@ export default {
   'mindgraphLanding.dialogSchoolTitle': 'Skool-samewerking',
   'mindgraphLanding.dialogSharedTitle': 'Gedeelde samewerking',
   'mindgraphLanding.import': 'Voer in',
-  'mindgraphLanding.inputPlaceholder': 'Beskryf jou diagram of kies \'n sjabloon hieronder...',
+  'mindgraphLanding.inputPlaceholder': "Beskryf jou diagram of kies 'n sjabloon hieronder...",
   'mindgraphLanding.join': 'Sluit aan',
   'mindgraphLanding.joinFailed': 'Kon nie aansluit nie',
   'mindgraphLanding.joinPresentationFailed': 'Kon nie aan die aanbieding aansluit nie',

@@ -46,12 +46,8 @@ class MindbotMetrics:
     def __init__(self) -> None:
         self._lock = Lock()
         self._counts: collections.OrderedDict[str, int] = collections.OrderedDict()
-        self._by_org: collections.OrderedDict[int, collections.OrderedDict[str, int]] = (
-            collections.OrderedDict()
-        )
-        self._by_robot: collections.OrderedDict[str, collections.OrderedDict[str, int]] = (
-            collections.OrderedDict()
-        )
+        self._by_org: collections.OrderedDict[int, collections.OrderedDict[str, int]] = collections.OrderedDict()
+        self._by_robot: collections.OrderedDict[str, collections.OrderedDict[str, int]] = collections.OrderedDict()
 
     def record_error_code(self, code: str) -> None:
         if not isinstance(code, str) or not code.strip():
@@ -96,9 +92,7 @@ class MindbotMetrics:
         with self._lock:
             return {
                 "by_error_code": dict(self._counts),
-                "by_organization_id": {
-                    oid: dict(codes) for oid, codes in self._by_org.items()
-                },
+                "by_organization_id": {oid: dict(codes) for oid, codes in self._by_org.items()},
                 "by_robot_code": {rk: dict(codes) for rk, codes in self._by_robot.items()},
             }
 
