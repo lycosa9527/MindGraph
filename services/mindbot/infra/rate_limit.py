@@ -26,6 +26,29 @@ MINDBOT_ORG_RATE_LIMIT           default 200    (requests per window)
 MINDBOT_ORG_RATE_WINDOW_SECONDS  default 60     (window size in seconds)
 MINDBOT_RATE_LIMIT_MEM_MAX_KEYS  default 5000   (max in-memory counter entries;
                                   expired entries purged when exceeded)
+
+Operational guidance (multi-school deployments)
+------------------------------------------------
+**Sizing MINDBOT_ORG_RATE_LIMIT for multiple workers:**
+Redis is the source of truth when available.  During a Redis outage, each
+Uvicorn worker tracks its own counter independently, so the effective limit
+becomes N × MINDBOT_ORG_RATE_LIMIT where N is the worker count.  To maintain
+accurate protection in the worst case, set::
+
+    MINDBOT_ORG_RATE_LIMIT = desired_hard_limit // N_WORKERS
+
+For example, with 4 workers and a desired cluster-wide limit of 200 req/min,
+set MINDBOT_ORG_RATE_LIMIT=50.  When Redis is healthy the counter accumulates
+across all workers giving the correct global limit of 200; during a Redis
+outage the per-process fallback allows up to 4 × 50 = 200 in the worst case
+(each worker permits 50 independently), which is equivalent to the desired
+limit.
+
+**Monitoring:**
+- Alert when Redis becomes unavailable (look for log lines containing
+  ``rate_limit_fallback_memory``).
+- Alert when any org is rate-limited (``rate_limit_exceeded``) to detect
+  unusual burst traffic early.
 """
 
 from __future__ import annotations

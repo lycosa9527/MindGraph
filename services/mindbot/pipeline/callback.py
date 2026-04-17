@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+import functools
 import json
 import logging
 import time
@@ -55,22 +56,136 @@ from services.mindbot.pipeline.callback_validate import (
     hdr_for_cfg,
 )
 from services.mindbot.infra.task_registry import register as register_background_task
-from utils.env_helpers import env_bool, env_int
+from utils.env_helpers import env_bool, env_float, env_int
 
 logger = logging.getLogger(__name__)
 
-# Per-org active-stream counters for noisy-neighbour detection.
-# Tracks how many streaming pipelines are currently running for each org.
-# Logged at WARNING when an org exceeds MINDBOT_ORG_STREAM_WARN_THRESHOLD.
+# Per-org active-stream counters backing the dynamic per-org cap.
+#
+# The effective cap per org per worker is NOT static — it expands when the
+# global active-stream pool has headroom and contracts to a safe base when the
+# system is loaded.  This lets one school run a 20–50 teacher workshop without
+# hitting a low hard limit while still preventing a single noisy school from
+# starving all others during genuine overload.
+#
+# Env vars (streaming):
+#   MINDBOT_ORG_MAX_CONCURRENT_STREAMING   base cap per org per worker (default 8)
+#   MINDBOT_ORG_BURST_FREE_THRESHOLD       burst activates when ≥ this fraction of
+#                                          MINDBOT_MAX_ACTIVE_STREAMING is free (default 0.5)
+#   MINDBOT_ORG_BURST_SHARE                org may claim up to this fraction of free
+#                                          slots in burst mode (default 0.4)
+#   MINDBOT_ORG_ABSOLUTE_MAX_STREAMING     hard ceiling per org per worker, even at
+#                                          100% pool free (default 40)
+#
+# Env vars (blocking path, same semantics):
+#   MINDBOT_ORG_MAX_CONCURRENT_BLOCKING / _BURST_FREE_THRESHOLD_BLOCKING /
+#   _BURST_SHARE_BLOCKING / _ABSOLUTE_MAX_BLOCKING
 _org_active_streams: dict[int, int] = {}
 _org_stream_lock = asyncio.Lock()
 
+# Per-org active-blocking counters (same purpose for the blocking path).
+_org_active_blocking: dict[int, int] = {}
+_org_blocking_lock = asyncio.Lock()
 
-async def _inc_org_stream(org_id: int) -> int:
+
+# ---------------------------------------------------------------------------
+# Config readers — all @functools.cache so env parsing runs once per process.
+# ---------------------------------------------------------------------------
+
+@functools.cache
+def _org_stream_warn_threshold() -> int:
+    return max(1, env_int("MINDBOT_ORG_STREAM_WARN_THRESHOLD", 10))
+
+
+@functools.cache
+def _org_max_concurrent_streaming() -> int:
+    return max(1, env_int("MINDBOT_ORG_MAX_CONCURRENT_STREAMING", 8))
+
+
+@functools.cache
+def _global_max_active_streaming() -> int:
+    return max(1, env_int("MINDBOT_MAX_ACTIVE_STREAMING", 128))
+
+
+@functools.cache
+def _org_burst_free_threshold() -> float:
+    return max(0.1, min(0.95, env_float("MINDBOT_ORG_BURST_FREE_THRESHOLD", 0.5)))
+
+
+@functools.cache
+def _org_burst_share() -> float:
+    return max(0.1, min(0.9, env_float("MINDBOT_ORG_BURST_SHARE", 0.4)))
+
+
+@functools.cache
+def _org_absolute_max_streaming() -> int:
+    return max(1, env_int("MINDBOT_ORG_ABSOLUTE_MAX_STREAMING", 40))
+
+
+@functools.cache
+def _org_max_concurrent_blocking() -> int:
+    return max(1, env_int("MINDBOT_ORG_MAX_CONCURRENT_BLOCKING", 4))
+
+
+@functools.cache
+def _global_max_active_blocking() -> int:
+    return max(1, env_int("MINDBOT_MAX_ACTIVE_BLOCKING", 128))
+
+
+@functools.cache
+def _org_burst_free_threshold_blocking() -> float:
+    return max(0.1, min(0.95, env_float("MINDBOT_ORG_BURST_FREE_THRESHOLD_BLOCKING", 0.5)))
+
+
+@functools.cache
+def _org_burst_share_blocking() -> float:
+    return max(0.1, min(0.9, env_float("MINDBOT_ORG_BURST_SHARE_BLOCKING", 0.4)))
+
+
+@functools.cache
+def _org_absolute_max_blocking() -> int:
+    return max(1, env_int("MINDBOT_ORG_ABSOLUTE_MAX_BLOCKING", 16))
+
+
+# ---------------------------------------------------------------------------
+# Atomic per-org counters with dynamic cap computation.
+# ---------------------------------------------------------------------------
+
+async def _try_inc_org_stream(org_id: int) -> Optional[tuple[int, int]]:
+    """Atomically compute dynamic cap and increment if under it.
+
+    Returns ``(new_count, effective_cap)`` on success, ``None`` if rejected.
+
+    The effective cap is computed entirely inside ``_org_stream_lock`` so the
+    read-compute-write sequence is atomic within asyncio's single-threaded event
+    loop (no other coroutine can interleave while we hold the lock).
+
+    Burst mode: when ≥ MINDBOT_ORG_BURST_FREE_THRESHOLD of the global active
+    pool is free the org may claim up to MINDBOT_ORG_BURST_SHARE of those free
+    slots, bounded by MINDBOT_ORG_ABSOLUTE_MAX_STREAMING.  Example with defaults:
+    50 idle teachers workshop → ~96% free → effective_cap = 40/worker →
+    all 50 teachers served across 4 workers without throttling.
+    """
+    base = _org_max_concurrent_streaming()
+    global_max = _global_max_active_streaming()
+    threshold = _org_burst_free_threshold()
+    share = _org_burst_share()
+    absolute = _org_absolute_max_streaming()
     async with _org_stream_lock:
-        count = _org_active_streams.get(org_id, 0) + 1
+        total_active = sum(_org_active_streams.values())
+        free = max(0, global_max - total_active)
+        free_fraction = free / global_max
+        if free_fraction >= threshold:
+            burst_limit = int(free * share)
+            effective_cap = max(base, min(burst_limit, absolute))
+        else:
+            effective_cap = base
+        count = _org_active_streams.get(org_id, 0)
+        if count >= effective_cap:
+            return None
+        count += 1
         _org_active_streams[org_id] = count
-        return count
+        return count, effective_cap
 
 
 async def _dec_org_stream(org_id: int) -> None:
@@ -82,8 +197,42 @@ async def _dec_org_stream(org_id: int) -> None:
             _org_active_streams[org_id] = count
 
 
-def _org_stream_warn_threshold() -> int:
-    return max(1, env_int("MINDBOT_ORG_STREAM_WARN_THRESHOLD", 10))
+async def _try_inc_org_blocking(org_id: int) -> Optional[tuple[int, int]]:
+    """Atomically compute dynamic cap and increment if under it (blocking path).
+
+    Same burst logic as ``_try_inc_org_stream`` using the blocking-specific
+    config vars and ``_org_active_blocking`` dict.
+    Returns ``(new_count, effective_cap)`` or ``None`` if rejected.
+    """
+    base = _org_max_concurrent_blocking()
+    global_max = _global_max_active_blocking()
+    threshold = _org_burst_free_threshold_blocking()
+    share = _org_burst_share_blocking()
+    absolute = _org_absolute_max_blocking()
+    async with _org_blocking_lock:
+        total_active = sum(_org_active_blocking.values())
+        free = max(0, global_max - total_active)
+        free_fraction = free / global_max
+        if free_fraction >= threshold:
+            burst_limit = int(free * share)
+            effective_cap = max(base, min(burst_limit, absolute))
+        else:
+            effective_cap = base
+        count = _org_active_blocking.get(org_id, 0)
+        if count >= effective_cap:
+            return None
+        count += 1
+        _org_active_blocking[org_id] = count
+        return count, effective_cap
+
+
+async def _dec_org_blocking(org_id: int) -> None:
+    async with _org_blocking_lock:
+        count = _org_active_blocking.get(org_id, 1) - 1
+        if count <= 0:
+            _org_active_blocking.pop(org_id, None)
+        else:
+            _org_active_blocking[org_id] = count
 
 
 _STREAMING_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_CONCURRENT_STREAMING", 64)))
@@ -380,42 +529,62 @@ async def execute_mindbot_pipeline(
                 else:
                     logger.debug("[MindBot] streaming semaphore double-release prevented")
 
-            await _ACTIVE_STREAMS_SEMAPHORE.acquire()
+            stream_result = await _try_inc_org_stream(cfg.organization_id)
+            if stream_result is None:
+                logger.warning(
+                    "[MindBot] org_stream_limit_exceeded org_id=%s — request rejected",
+                    cfg.organization_id,
+                )
+                return 200, _hdr(MindbotErrorCode.ORG_CONCURRENCY_LIMIT)
+            org_stream_count, effective_stream_cap = stream_result
             try:
-                org_stream_count = await _inc_org_stream(cfg.organization_id)
+                if effective_stream_cap > _org_max_concurrent_streaming():
+                    logger.info(
+                        "[MindBot] org_stream_burst_active org_id=%s active=%s "
+                        "effective_cap=%s base_cap=%s",
+                        cfg.organization_id,
+                        org_stream_count,
+                        effective_stream_cap,
+                        _org_max_concurrent_streaming(),
+                    )
                 if org_stream_count >= _org_stream_warn_threshold():
                     logger.warning(
                         "[MindBot] org_stream_monopoly_suspected org_id=%s active_streams=%s "
-                        "threshold=%s — one org may be starving shared Dify connection pool",
+                        "effective_cap=%s threshold=%s — one org may be consuming a large share "
+                        "of the Dify connection pool",
                         cfg.organization_id,
                         org_stream_count,
+                        effective_stream_cap,
                         _org_stream_warn_threshold(),
                     )
-                await _STREAMING_SEMAPHORE.acquire()
+                await _ACTIVE_STREAMS_SEMAPHORE.acquire()
                 try:
-                    files = await _maybe_dify_files_for_media(
-                        cfg,
-                        body,
-                        inbound_msg_type,
-                        dify_user_id,
-                        dify,
-                    )
-                    result = await run_streaming_dify_branch(
-                        reply_ctx,
-                        dify=dify,
-                        text_in=text_in,
-                        user_id=dify_user_id,
-                        dify_conv=dify_conv,
-                        files=files,
-                        dify_inputs=dify_inputs,
-                        stale_cb=stale_cb,
-                        release_semaphore_slot=_release_streaming_slot,
-                    )
+                    await _STREAMING_SEMAPHORE.acquire()
+                    try:
+                        files = await _maybe_dify_files_for_media(
+                            cfg,
+                            body,
+                            inbound_msg_type,
+                            dify_user_id,
+                            dify,
+                        )
+                        result = await run_streaming_dify_branch(
+                            reply_ctx,
+                            dify=dify,
+                            text_in=text_in,
+                            user_id=dify_user_id,
+                            dify_conv=dify_conv,
+                            files=files,
+                            dify_inputs=dify_inputs,
+                            stale_cb=stale_cb,
+                            release_semaphore_slot=_release_streaming_slot,
+                        )
+                    finally:
+                        _release_streaming_slot()
                 finally:
-                    _release_streaming_slot()
+                    _ACTIVE_STREAMS_SEMAPHORE.release()
             finally:
                 await _dec_org_stream(cfg.organization_id)
-                _ACTIVE_STREAMS_SEMAPHORE.release()
 
             resp_hdr = result[1]
             if resp_hdr.get("X-MindBot-Error-Code") == MindbotErrorCode.DIFY_FAILED.value:
@@ -424,48 +593,68 @@ async def execute_mindbot_pipeline(
                 await record_dify_success(cb_key)
             return result
 
-        await _ACTIVE_BLOCKING_SEMAPHORE.acquire()
-        try:
-            async with _BLOCKING_SEMAPHORE:
-                files = await _maybe_dify_files_for_media(
-                    cfg,
-                    body,
-                    inbound_msg_type,
-                    dify_user_id,
-                    dify,
-                )
-                resp = await mindbot_dify_chat_blocking(
-                    dify,
-                    text=text_in,
-                    user_id=dify_user_id,
-                    conversation_id=dify_conv,
-                    files=files,
-                    inputs=dify_inputs,
-                    on_stale_conversation=stale_cb,
-                    pipeline_ctx=pipeline_ctx,
-                )
-                if resp is None:
-                    await record_dify_failure(cb_key)
-                    await _record_usage(
-                        MindbotErrorCode.DIFY_FAILED,
-                        reply_text="",
-                        dify_conversation_id=None,
-                        usage=None,
-                        streaming=False,
-                    )
-                    return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
-                await record_dify_success(cb_key)
-
-                usage_block = parse_dify_usage_from_blocking_response(resp) if isinstance(resp, dict) else None
-
-            return await run_blocking_send_branch(
-                reply_ctx,
-                resp=resp,
-                usage_block=usage_block,
-                raw_sw=raw_sw,
+        blocking_result = await _try_inc_org_blocking(cfg.organization_id)
+        if blocking_result is None:
+            logger.warning(
+                "[MindBot] org_blocking_limit_exceeded org_id=%s — request rejected",
+                cfg.organization_id,
             )
+            return 200, _hdr(MindbotErrorCode.ORG_CONCURRENCY_LIMIT)
+        org_blocking_count, effective_blocking_cap = blocking_result
+        if effective_blocking_cap > _org_max_concurrent_blocking():
+            logger.info(
+                "[MindBot] org_blocking_burst_active org_id=%s active=%s "
+                "effective_cap=%s base_cap=%s",
+                cfg.organization_id,
+                org_blocking_count,
+                effective_blocking_cap,
+                _org_max_concurrent_blocking(),
+            )
+        try:
+            await _ACTIVE_BLOCKING_SEMAPHORE.acquire()
+            try:
+                async with _BLOCKING_SEMAPHORE:
+                    files = await _maybe_dify_files_for_media(
+                        cfg,
+                        body,
+                        inbound_msg_type,
+                        dify_user_id,
+                        dify,
+                    )
+                    resp = await mindbot_dify_chat_blocking(
+                        dify,
+                        text=text_in,
+                        user_id=dify_user_id,
+                        conversation_id=dify_conv,
+                        files=files,
+                        inputs=dify_inputs,
+                        on_stale_conversation=stale_cb,
+                        pipeline_ctx=pipeline_ctx,
+                    )
+                    if resp is None:
+                        await record_dify_failure(cb_key)
+                        await _record_usage(
+                            MindbotErrorCode.DIFY_FAILED,
+                            reply_text="",
+                            dify_conversation_id=None,
+                            usage=None,
+                            streaming=False,
+                        )
+                        return 200, _hdr(MindbotErrorCode.DIFY_FAILED)
+                    await record_dify_success(cb_key)
+
+                    usage_block = parse_dify_usage_from_blocking_response(resp) if isinstance(resp, dict) else None
+
+                return await run_blocking_send_branch(
+                    reply_ctx,
+                    resp=resp,
+                    usage_block=usage_block,
+                    raw_sw=raw_sw,
+                )
+            finally:
+                _ACTIVE_BLOCKING_SEMAPHORE.release()
         finally:
-            _ACTIVE_BLOCKING_SEMAPHORE.release()
+            await _dec_org_blocking(cfg.organization_id)
     finally:
         if gate_acquired:
             await redis_release_conv_gate_async(

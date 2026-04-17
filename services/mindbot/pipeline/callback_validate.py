@@ -5,6 +5,7 @@ from __future__ import annotations
 import dataclasses
 import logging
 import time
+from datetime import UTC, datetime
 from typing import Any, Optional
 
 from config.settings import config
@@ -39,6 +40,60 @@ from services.mindbot.infra.redis_async import redis_setnx_ttl
 from services.mindbot.telemetry.usage import persist_mindbot_usage_event
 
 logger = logging.getLogger(__name__)
+
+
+async def _check_org_active(organization_id: int) -> Optional[tuple[int, dict[str, str]]]:
+    """
+    Return an error tuple if the organization is locked or its subscription has
+    expired, or None if the org is in good standing.
+
+    Uses the Redis org cache to avoid a DB round-trip on every webhook call.
+    Falls through (returns None) when the cache is unavailable so a Redis
+    outage never blocks legitimate inbound messages.
+    """
+    try:
+        from services.redis.cache.redis_org_cache import org_cache
+
+        if org_cache is None:
+            return None
+        org = await org_cache.get_by_id(organization_id)
+    except Exception:
+        return None
+    if org is None:
+        return None
+    is_active = org.is_active if hasattr(org, "is_active") else True
+    if not is_active:
+        logger.warning(
+            "[MindBot] org_locked org_id=%s — rejecting inbound callback",
+            organization_id,
+        )
+        return (
+            403,
+            mindbot_error_headers(
+                MindbotErrorCode.ORG_LOCKED,
+                organization_id=organization_id,
+            ),
+        )
+    expires_at = getattr(org, "expires_at", None)
+    if expires_at is not None:
+        try:
+            exp = expires_at if expires_at.tzinfo else expires_at.replace(tzinfo=UTC)
+            if exp < datetime.now(UTC):
+                logger.warning(
+                    "[MindBot] org_expired org_id=%s expires_at=%s — rejecting inbound callback",
+                    organization_id,
+                    expires_at,
+                )
+                return (
+                    403,
+                    mindbot_error_headers(
+                        MindbotErrorCode.ORG_LOCKED,
+                        organization_id=organization_id,
+                    ),
+                )
+        except Exception:
+            pass
+    return None
 
 
 @dataclasses.dataclass
@@ -176,6 +231,18 @@ async def validate_callback_fast(
             ),
             None,
         )
+
+    org_error = await _check_org_active(cfg.organization_id)
+    if org_error is not None:
+        _log_callback_debug_failure(
+            debug_route_label=debug_route_label,
+            debug_raw_body=debug_raw_body,
+            debug_request_headers=debug_request_headers,
+            body=body,
+            reason="org_locked_or_expired",
+            extra={"organization_id": cfg.organization_id},
+        )
+        return False, org_error, None
 
     if resolved_config is not None:
         rc_in_body = body.get("robotCode") or body.get("robot_code")

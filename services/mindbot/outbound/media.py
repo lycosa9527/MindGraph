@@ -276,7 +276,10 @@ async def send_dify_native_segment(
         voice_bytes = bytes(raw)
         if not voice_bytes:
             return True, False
-        dur = int(payload.get("duration_ms") or 0)
+        try:
+            dur = int(float(payload.get("duration_ms") or 0))
+        except (TypeError, ValueError):
+            dur = 0
         if dur <= 0:
             dur = estimate_voice_duration_ms(voice_bytes)
         return await send_openapi_voice_bytes(

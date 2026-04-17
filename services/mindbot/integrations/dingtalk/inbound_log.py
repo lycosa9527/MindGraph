@@ -195,7 +195,7 @@ def log_dingtalk_callback_failure_details(
     """
     Log callback rejection: **WARNING** summary, **DEBUG** for headers/body when debug mode is on.
 
-    Skipped when MINDBOT_LOG_CALLBACK_DEBUG=0 (default is on). Safe only when debug_raw_body was captured.
+    Skipped when MINDBOT_LOG_CALLBACK_DEBUG is not set (default is off). Safe only when debug_raw_body was captured.
     """
     if not debug_callback_failure_logging_enabled():
         return

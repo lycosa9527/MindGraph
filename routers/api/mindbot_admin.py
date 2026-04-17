@@ -83,6 +83,41 @@ async def admin_dify_service_status(
     )
 
 
+@router.get("/admin/configs/{organization_id}/dify-health", response_model=DifyServiceStatusResponse)
+async def admin_org_dify_health(
+    organization_id: int,
+    db: AsyncSession = Depends(get_async_db),
+    user: User = Depends(require_mindbot_admin_access),
+) -> DifyServiceStatusResponse:
+    """Probe the org's own Dify app API (GET /parameters); does not expose secrets."""
+    _require_mindbot_feature()
+    _ensure_org_scope(user, organization_id)
+    repo = MindbotConfigRepository(db)
+    row = await repo.get_by_organization_id(organization_id)
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{MindbotErrorCode.ADMIN_CONFIG_NOT_FOUND.value}: MindBot config not found",
+        )
+    online, http_status, err = await check_dify_app_api_reachable(
+        row.dify_api_base_url.strip(),
+        row.dify_api_key.strip(),
+    )
+    logger.info(
+        "[MindBot] org_dify_health_probe organization_id=%s user_id=%s online=%s http_status=%s",
+        organization_id,
+        user.id,
+        online,
+        http_status,
+    )
+    return DifyServiceStatusResponse(
+        online=online,
+        http_status=http_status,
+        error=err,
+        probe_url=None,
+    )
+
+
 @router.get(
     "/admin/configs/{organization_id}/ai-card-streaming-status",
     response_model=DingtalkAiCardStreamingStatusResponse,
@@ -157,11 +192,16 @@ async def admin_ai_card_streaming_status(
 async def admin_list_mindbot_configs(
     db: AsyncSession = Depends(get_async_db),
     user: User = Depends(require_mindbot_admin_access),
+    limit: int = Query(50, ge=1, le=200),
+    after_org_id: Optional[int] = Query(
+        None,
+        description="Cursor: return orgs with organization_id strictly greater than this value",
+    ),
 ) -> list[MindbotConfigResponse]:
     _require_mindbot_feature()
     repo = MindbotConfigRepository(db)
     if is_admin(user):
-        rows = await repo.list_all()
+        rows = await repo.list_all(limit=limit, after_org_id=after_org_id)
         return [_to_response(r) for r in rows]
     oid = getattr(user, "organization_id", None)
     if oid is None:

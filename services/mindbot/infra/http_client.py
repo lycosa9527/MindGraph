@@ -93,7 +93,7 @@ def get_dingtalk_api_session() -> aiohttp.ClientSession:
     Created lazily on first call (requires a running event loop).
     Callers must pass ``timeout`` per-request — **not** per-session.
     """
-    global _dingtalk_session  # pylint: disable=global-statement
+    global _dingtalk_session
     if _shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     # No asyncio.Lock needed: ClientSession() construction has no await, so the
@@ -120,7 +120,7 @@ def get_outbound_session() -> aiohttp.ClientSession:
     health probes — targets vary per message so ``limit_per_host`` is wider.
     Created lazily on first call (requires a running event loop).
     """
-    global _outbound_session  # pylint: disable=global-statement
+    global _outbound_session
     if _shutting_down:
         raise RuntimeError("MindBot HTTP sessions have been closed (shutdown in progress)")
     # No asyncio.Lock needed: same rationale as get_dingtalk_api_session above.
@@ -172,7 +172,7 @@ async def get_pinned_outbound_session(
         if evicted is not None and not evicted.closed:
             try:
                 await evicted.close()
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.debug(
                     "[MindBot] pinned_session_evict_close_error host=%s err=%s",
                     evicted_key[0],
@@ -212,7 +212,7 @@ async def close_mindbot_http_sessions() -> None:
     Call once from the FastAPI lifespan ``finally`` block.  After this returns
     no further HTTP calls should be made via these sessions.
     """
-    global _dingtalk_session, _outbound_session, _shutting_down  # pylint: disable=global-statement
+    global _dingtalk_session, _outbound_session, _shutting_down
     _shutting_down = True
     for name, session in [
         ("dingtalk_api", _dingtalk_session),
@@ -222,7 +222,7 @@ async def close_mindbot_http_sessions() -> None:
             try:
                 await session.close()
                 logger.info("[MindBot] http_session_closed session=%s", name)
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     "[MindBot] http_session_close_error session=%s err=%s",
                     name,
@@ -237,7 +237,7 @@ async def close_mindbot_http_sessions() -> None:
         if sess is not None and not sess.closed:
             try:
                 await sess.close()
-            except Exception as exc:  # pylint: disable=broad-except
+            except Exception as exc:
                 logger.warning(
                     "[MindBot] pinned_session_close_error host=%s err=%s",
                     key[0],

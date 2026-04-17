@@ -43,7 +43,7 @@ async def redis_get(key: str) -> Optional[str]:
     """Return the string value for ``key``, or ``None`` on miss or error."""
     try:
         return await _get_client().get(key)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_get error key=%s: %s", key, exc)
         return None
 
@@ -53,7 +53,7 @@ async def redis_set_ttl(key: str, value: str, ttl: int) -> bool:
     try:
         result = await _get_client().set(key, value, ex=ttl)
         return bool(result)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_set_ttl error key=%s: %s", key, exc)
         return False
 
@@ -74,7 +74,7 @@ async def redis_setnx_ttl(key: str, value: str, ttl: int) -> Optional[bool]:
     try:
         result = await _get_client().set(key, value, ex=ttl, nx=True)
         return bool(result)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_setnx_ttl error key=%s: %s", key, exc)
         return None
 
@@ -83,7 +83,7 @@ async def redis_delete(key: str) -> None:
     """DEL key. Silently swallows errors."""
     try:
         await _get_client().delete(key)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_delete error key=%s: %s", key, exc)
 
 
@@ -91,7 +91,7 @@ async def redis_expire(key: str, ttl: int) -> None:
     """EXPIRE key ttl. Silently swallows errors."""
     try:
         await _get_client().expire(key, ttl)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_expire error key=%s: %s", key, exc)
 
 
@@ -112,7 +112,7 @@ async def redis_bind(key: str, value: str, ttl: int) -> None:
             pipe.set(key, value, ex=ttl, nx=True)
             pipe.expire(key, ttl)
             await pipe.execute()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_bind error key=%s: %s", key, exc)
 
 
@@ -130,7 +130,7 @@ async def redis_incr_with_ttl(key: str, ttl: int) -> Optional[int]:
             pipe.expire(key, ttl)
             results = await pipe.execute()
         return int(results[0]) if results else None
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_incr_with_ttl error key=%s: %s", key, exc)
         return None
 
@@ -152,7 +152,7 @@ async def redis_incr_fixed_window(key: str, ttl: int) -> Optional[int]:
         if result is None:
             return None
         return int(result)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_incr_fixed_window error key=%s: %s", key, exc)
         return None
 
@@ -162,7 +162,7 @@ async def redis_ping() -> bool:
     try:
         result = await cast(Awaitable[bool], _get_client().ping())
         return bool(result)
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning("[MindBot] redis_ping failed: %s", exc)
         return False
 

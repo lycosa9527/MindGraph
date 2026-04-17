@@ -320,7 +320,7 @@ async def mindbot_consume_dify_stream_batched(
                     pipeline_ctx=pipeline_ctx,
                     on_media=on_media,
                     on_message_replace=on_message_replace,
-                    on_stream_started=on_stream_started,
+                    on_stream_started=None,
                 )
             logger.warning(
                 "[MindBot] dify_sse_error_event %s err=%s code=%s status=%s",

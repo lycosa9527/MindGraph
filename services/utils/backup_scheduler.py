@@ -1084,18 +1084,10 @@ def list_cos_backups() -> List[dict]:
             return []
         if CosServiceError is not None and isinstance(e, CosServiceError):
             # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
-            try:
-                # Type checker doesn't know CosServiceError methods, use hasattr checks
-                status_code = e.get_status_code() if hasattr(e, "get_status_code") else "Unknown"  # type: ignore
-                error_code = e.get_error_code() if hasattr(e, "get_error_code") else "Unknown"  # type: ignore
-                error_msg = e.get_error_msg() if hasattr(e, "get_error_msg") else str(e)  # type: ignore
-                request_id = e.get_request_id() if hasattr(e, "get_request_id") else "N/A"  # type: ignore
-            except Exception:
-                status_code = "Unknown"
-                error_code = "Unknown"
-                error_msg = str(e)
-                request_id = "N/A"
-
+            status_code = _cos_exc_call(e, "get_status_code", "Unknown")
+            error_code = _cos_exc_call(e, "get_error_code", "Unknown")
+            error_msg = _cos_exc_call(e, "get_error_msg", "") or str(e)
+            request_id = _cos_exc_call(e, "get_request_id", "N/A")
             logger.error(
                 "[Backup] COS service error listing backups: HTTP %s, Error %s - %s (RequestID: %s)",
                 status_code,
@@ -1255,19 +1247,10 @@ def cleanup_old_cos_backups(retention_days: int = 2) -> int:
             logger.error("[Backup] COS client error cleaning up backups: %s", e, exc_info=True)
             return 0
         if CosServiceError is not None and isinstance(e, CosServiceError):
-            # Server-side errors - reference: https://cloud.tencent.com/document/product/436/7730
-            try:
-                # Type checker doesn't know CosServiceError methods, use hasattr checks
-                status_code = e.get_status_code() if hasattr(e, "get_status_code") else "Unknown"  # type: ignore
-                error_code = e.get_error_code() if hasattr(e, "get_error_code") else "Unknown"  # type: ignore
-                error_msg = e.get_error_msg() if hasattr(e, "get_error_msg") else str(e)  # type: ignore
-                request_id = e.get_request_id() if hasattr(e, "get_request_id") else "N/A"  # type: ignore
-            except Exception:
-                status_code = "Unknown"
-                error_code = "Unknown"
-                error_msg = str(e)
-                request_id = "N/A"
-
+            status_code = _cos_exc_call(e, "get_status_code", "Unknown")
+            error_code = _cos_exc_call(e, "get_error_code", "Unknown")
+            error_msg = _cos_exc_call(e, "get_error_msg", "") or str(e)
+            request_id = _cos_exc_call(e, "get_request_id", "N/A")
             logger.error(
                 "[Backup] COS service error cleaning up backups: HTTP %s, Error %s - %s (RequestID: %s)",
                 status_code,
@@ -1348,8 +1331,8 @@ def _write_backup_manifest(backup_path: Path) -> Optional[Path]:
         Path to the manifest file, or None on failure.
     """
     try:
-        from config.database import engine  # pylint: disable=import-outside-toplevel
-        from sqlalchemy import inspect, text  # pylint: disable=import-outside-toplevel
+        from config.database import engine
+        from sqlalchemy import inspect, text
 
         pg_inspector = inspect(engine)
         table_names = sorted(pg_inspector.get_table_names())
@@ -1451,9 +1434,6 @@ def create_backup() -> bool:
     if not backup_postgresql_database(backup_path):
         logger.error("[Backup] PostgreSQL backup failed")
         return False
-
-    size_mb = backup_path.stat().st_size / (1024 * 1024)
-    logger.info("[Backup] PostgreSQL backup created: %s (%.2f MB)", backup_path.name, size_mb)
 
     if verify_backup(backup_path):
         logger.info("[Backup] Integrity check passed")

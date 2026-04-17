@@ -7,6 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.92.0] - 2026-04-18
+
+### Added
+- **MindBot / concurrency — per-org dynamic cap with burst mode**: replaced the noisy-neighbour *detection-only* approach with an enforcing, burst-aware gate for both streaming and blocking pipelines.
+  - `_try_inc_org_stream` / `_try_inc_org_blocking` atomically compute an effective cap inside their respective asyncio locks (no inter-coroutine race) and return `(new_count, effective_cap)` on success or `None` when the org is already at its limit.  Callers receive an immediate `ORG_CONCURRENCY_LIMIT` response rather than blocking in a semaphore queue.
+  - **Burst mode**: when ≥ `MINDBOT_ORG_BURST_FREE_THRESHOLD` (default 0.5) of the global active-stream pool is free the org may claim up to `MINDBOT_ORG_BURST_SHARE` (default 0.4) of those free slots, bounded by `MINDBOT_ORG_ABSOLUTE_MAX_STREAMING` (default 40 per worker).  At low load a 50-teacher workshop is served without throttling; under genuine overload the cap contracts to `MINDBOT_ORG_MAX_CONCURRENT_STREAMING` (default 8) to enforce fairness.
+  - Equivalent vars for the blocking path: `MINDBOT_ORG_MAX_CONCURRENT_BLOCKING` / `_BURST_FREE_THRESHOLD_BLOCKING` / `_BURST_SHARE_BLOCKING` / `_ABSOLUTE_MAX_BLOCKING`.
+  - All config readers use `@functools.cache` so env parsing runs once per process.
+  - `MINDBOT_MAX_ACTIVE_STREAMING` (default 128) and `MINDBOT_MAX_ACTIVE_BLOCKING` (default 128) are the global denominators for free-fraction math; documented in `env.example`.
+- **MindBot / pipeline — org-active guard**: new `_check_org_active(organization_id)` in `callback_validate.py` — uses the Redis org cache to check `is_active` and `expires_at` before the pipeline runs; returns `ORG_LOCKED` (HTTP 403) for locked or subscription-expired orgs; falls through transparently when the cache is unavailable so a Redis outage never blocks legitimate traffic.
+- **MindBot / errors**: two new `MindbotErrorCode` entries — `ORG_CONCURRENCY_LIMIT` (`MINDBOT_ORG_CONCURRENCY_LIMIT`, retryable) and `ORG_LOCKED` (`MINDBOT_ORG_LOCKED`).
+- **MindBot / admin — per-org Dify health probe**: new `GET /admin/configs/{organization_id}/dify-health` endpoint that probes the org's own Dify app API (`GET /parameters`) without exposing secrets; requires `mindbot_admin_access` and respects org scope; returns the same `DifyServiceStatusResponse` schema as the global Dify-service status endpoint.
+- **MindBot / admin — paginated config list**: `GET /admin/configs` now accepts `limit` (1–200, default 50) and `after_org_id` (exclusive cursor) query parameters; `MindbotConfigRepository.list_all` uses keyset pagination capped at `_LIST_ALL_MAX = 200` to prevent runaway queries on large tenant sets.
+- **MindBot / rate limiter — multi-worker guidance**: `services/mindbot/infra/rate_limit.py` module docstring now explains the Redis-authoritative / per-process-fallback split and gives a worked sizing example for `MINDBOT_ORG_RATE_LIMIT` with N workers; new env var `MINDBOT_RATE_LIMIT_MEM_MAX_KEYS` (default 5000) caps the in-process fallback counter map.
+
+### Fixed
+- **MindBot / callback routing**: clarified that platform lifecycle events (token verification, OAuth callbacks) use `get_by_organization_id` rather than `get_enabled_by_organization_id` intentionally — DingTalk requires a 200 response even when the bot is disabled so the event-subscription contract remains valid; added inline comments to both `dingtalk_callback_per_org` and `dingtalk_callback_by_token` to prevent accidental regression.
+- **MindBot / inbound log**: corrected docstring for `log_dingtalk_callback_failure_details` — the default state of `MINDBOT_LOG_CALLBACK_DEBUG` is *off*, not on.
+- **Backup scheduler / COS**: extracted duplicated COS exception attribute introspection into a private `_cos_exc_call(exc, method, default)` helper; applied to both `list_cos_backups` and `cleanup_old_cos_backups`; removed the redundant post-dump size log line from `create_backup` (size was logged redundantly before integrity check).
+
+### Changed
+- **Pylint / inline suppression cleanup**: removed all `# pylint: disable=…` inline comments from `services/mindbot/infra/http_client.py`, `services/mindbot/infra/redis_async.py`, `services/mindbot/platforms/dingtalk/cards/stream_client.py`, `services/mindbot/telemetry/usage.py`, and `services/utils/backup_scheduler.py`; the underlying patterns are now clean (broad `except` with a bound variable, `global` statements, and `import-outside-toplevel` in a lazy-import helper are all idiomatic in these contexts and no longer need per-line suppressions).
+
 ## [5.91.0] - 2026-04-17
 
 ### Added

@@ -87,7 +87,7 @@ async def persist_mindbot_usage_event(
         async with AsyncSessionLocal() as session:
             session.add(row)
             await session.commit()
-    except Exception as exc:  # pylint: disable=broad-except
+    except Exception as exc:
         logger.warning(
             "[MindBot] usage_persist_failed org_id=%s error=%s msg_id=%s — usage event dropped; pipeline continues",
             cfg.organization_id,

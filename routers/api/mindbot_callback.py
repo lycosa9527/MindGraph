@@ -170,6 +170,11 @@ async def dingtalk_callback_per_org(
     log_dingtalk_inbound(request, raw, f"org_{organization_id}", parsed_body=body)
     repo = MindbotConfigRepository(db)
     if is_dingtalk_platform_event_request(request, body):
+        # Platform lifecycle events (token verification, OAuth callbacks) use
+        # get_by_organization_id rather than get_enabled_by_organization_id
+        # intentionally: DingTalk requires a 200 response even when the bot is
+        # disabled so the event-subscription contract remains valid.  Message
+        # delivery uses get_enabled_by_organization_id below.
         cfg_any = await repo.get_by_organization_id(organization_id)
         if cfg_any is None:
             resp = Response(
@@ -228,6 +233,9 @@ async def dingtalk_callback_by_token(
     log_dingtalk_inbound(request, raw, route_label, parsed_body=body)
     repo = MindbotConfigRepository(db)
     if is_dingtalk_platform_event_request(request, body):
+        # See comment in dingtalk_callback_per_org: platform events use the
+        # non-enabled variant intentionally so lifecycle callbacks are always
+        # acknowledged regardless of the bot's enabled state.
         cfg_any = await repo.get_by_public_callback_token(token)
         if cfg_any is None:
             resp = Response(

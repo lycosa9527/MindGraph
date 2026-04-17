@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 def _import_sdk() -> Any:
     """Return the dingtalk_stream module, raising ImportError with a helpful message."""
     try:
-        import dingtalk_stream  # pylint: disable=import-outside-toplevel
+        import dingtalk_stream
 
         return dingtalk_stream
     except ImportError as exc:
@@ -120,7 +120,7 @@ class DingTalkStreamManager:
                 )
                 return
             sdk = _import_sdk()
-            from dingtalk_stream import Card_Callback_Router_Topic  # pylint: disable=import-outside-toplevel
+            from dingtalk_stream import Card_Callback_Router_Topic
 
             credential = sdk.Credential(client_id, client_secret)
             client = sdk.DingTalkStreamClient(credential)
@@ -174,7 +174,7 @@ class DingTalkStreamManager:
                         client_id,
                     )
                     return
-                except Exception as exc:  # pylint: disable=broad-except
+                except Exception as exc:
                     consecutive_errors += 1
                     logger.warning(
                         "[MindBot] dingtalk_stream_client_error client_id=%s "
