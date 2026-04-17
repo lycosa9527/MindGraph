@@ -216,7 +216,7 @@ class _RedisCapabilities:
 
     version: tuple = (0, 0, 0)
     delex: bool = False  # Redis 8.4+ DELEX command for compare-and-delete
-    idmpauto: bool = False  # Redis 8.6+ IDMPAUTO stream id
+    idmpauto: bool = False  # Redis 8.6+ XADD IDMPAUTO (redis-py idmpauto= + id=*)
 
 
 def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:

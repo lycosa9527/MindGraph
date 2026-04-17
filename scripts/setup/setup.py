@@ -245,8 +245,9 @@ DOC_FAIL2BAN = "docs/FAIL2BAN_SETUP.md"
 MIN_REDIS_VERSION = (8, 6, 0)
 MIN_POSTGRESQL_VERSION = (18, 3, 0)
 
-# Qdrant server binary from GitHub Releases (see docs/QDRANT_SETUP.md)
-QDRANT_GITHUB_VERSION = "1.15.5"
+# Qdrant server binary from GitHub Releases (see docs/QDRANT_SETUP.md).
+# Keep aligned with scripts/setup/update_qdrant_server.py DEFAULT_QDRANT_VERSION and qdrant-client.
+QDRANT_GITHUB_VERSION = "1.17.1"
 QDRANT_LOCAL_BIN = "/usr/local/bin/qdrant"
 QDRANT_CONFIG_PATH = "/etc/qdrant/config.yaml"
 QDRANT_SYSTEMD_PATH = "/etc/systemd/system/qdrant.service"

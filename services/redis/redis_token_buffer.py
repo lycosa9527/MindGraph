@@ -46,6 +46,11 @@ MAX_STREAM_DELIVERY_COUNT = int(os.getenv("TOKEN_TRACKER_MAX_DELIVERY_COUNT", "5
 # Hard cap on the underlying Redis Stream so a long DB outage cannot grow Redis
 # memory unbounded. ``MAXLEN ~`` (approximate trimming) keeps the cost O(1).
 STREAM_HARD_CAP = MAX_BUFFER_SIZE * 5
+# Redis 8.6+ XADD IDMPAUTO requires a producer id (see redis-py ``idmpauto=``), not
+# ``id="IDMPAUTO"``. Override if multiple deployments must not share idempotency scope.
+_TOKEN_BUFFER_IDMP_PRODUCER_ID = os.getenv(
+    "TOKEN_BUFFER_IDMP_PRODUCER_ID", "mindgraph-token-buffer"
+)
 
 
 class RedisTokenBuffer:
@@ -483,9 +488,10 @@ class RedisTokenBuffer:
 
         Caps the underlying stream at ``STREAM_HARD_CAP`` via ``MAXLEN ~`` so a
         long DB outage cannot grow Redis memory without bound. The
-        approximate variant keeps trimming O(1). IDMPAUTO support is detected
-        once at startup by ``_apply_redis_startup_config``; we still guard
-        against a stale capability marker by catching ``ResponseError``.
+        approximate variant keeps trimming O(1). Redis 8.6+ idempotent mode is
+        enabled via ``idmpauto=`` (not ``id="IDMPAUTO"``, which is invalid).
+        Capability is set from version at startup; we still guard against a stale
+        marker by catching ``ResponseError``.
         """
         if self._use_redis():
             try:
@@ -502,7 +508,8 @@ class RedisTokenBuffer:
                         await redis.xadd(
                             STREAM_KEY,
                             payload,
-                            id="IDMPAUTO",
+                            id="*",
+                            idmpauto=_TOKEN_BUFFER_IDMP_PRODUCER_ID,
                             maxlen=STREAM_HARD_CAP,
                             approximate=True,
                         )

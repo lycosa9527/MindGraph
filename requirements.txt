@@ -102,7 +102,7 @@ pycryptodome>=3.23.0  # AES decryption for bayi mode
 # PERSONAL KNOWLEDGE SPACE (RAG) DEPENDENCIES - REQUIRED
 # ============================================================================
 numpy>=1.24.0  # Numerical operations for embedding normalization and validation
-qdrant-client>=1.16.2  # Vector database for document embeddings (REQUIRED - Qdrant server must be running)
+qdrant-client>=1.17.0,<1.18  # Match server minor (1.17.x); upgrade server via scripts/setup/update_qdrant_server.py
 jieba3>=1.0.2  # Chinese text segmentation for FTS5 full-text search (modern Python 3 rewrite, no pkg_resources)
 langdetect>=1.0.9  # Language detection for documents
 semchunk>=3.2.3  # Semantic text chunking (fast, token-aware, Chinese support)
