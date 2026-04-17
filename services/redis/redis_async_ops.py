@@ -371,12 +371,9 @@ class AsyncRedisOperations:
             try:
                 with warnings.catch_warnings():
                     warnings.simplefilter("ignore", UserWarning)
-                    return bool(
-                        await cast(
-                            Awaitable[int],
-                            client.execute_command("DELEX", key, expected_value),
-                        )
-                    )
+                    # Must use redis-py's delex(name, ifeq=...) — not raw
+                    # DELEX key value (server expects DELEX key IFEQ value).
+                    return bool(await client.delex(key, expected_value))
             except (RedisConnectionError, RedisTimeoutError) as exc:
                 logger.warning(
                     "[RedisAsync] compare_and_delete connection error for %s: %s",

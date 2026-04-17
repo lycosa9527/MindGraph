@@ -21,7 +21,6 @@ Status: Production Ready
 
 # Third-party imports
 from fastapi import FastAPI
-from fastapi.responses import ORJSONResponse
 
 # First-party imports
 from config.settings import config
@@ -54,10 +53,6 @@ app = FastAPI(
     # Disable OpenAPI JSON schema in production to avoid route/model enumeration
     openapi_url="/openapi.json" if config.debug else None,
     lifespan=lifespan,
-    # G7: orjson is significantly faster than the stdlib json encoder for the
-    # Pydantic models we ship (includes datetime/UUID/numpy support out of the
-    # box).  Routes that explicitly construct ``JSONResponse`` are unaffected.
-    default_response_class=ORJSONResponse,
 )
 
 # ============================================================================

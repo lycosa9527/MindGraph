@@ -19,7 +19,11 @@ from pathlib import Path
 from typing import Dict
 
 
-_CONFIG_VERSION = "v2-perf-2026-04"
+_CONFIG_VERSION = "v2-perf-2026-04-conn250"
+
+# Default max_connections for managed PostgreSQL. Must cover worst-case app demand:
+# UVICORN_WORKERS × (async pool+overflow + sync pool+overflow) + reserve; see config/database.py.
+_DEFAULT_MAX_CONNECTIONS = 250
 
 
 def _is_running_as_root() -> bool:
@@ -303,7 +307,7 @@ def update_postgresql_conf(data_path: Path, port: str, socket_dir: Path) -> None
         socket_dir: Socket directory path
     """
     postgresql_conf = data_path / "postgresql.conf"
-    max_connections = int(os.getenv("POSTGRESQL_MAX_CONNECTIONS", "200"))
+    max_connections = int(os.getenv("POSTGRESQL_MAX_CONNECTIONS", str(_DEFAULT_MAX_CONNECTIONS)))
 
     try:
         config_needs_update = True
