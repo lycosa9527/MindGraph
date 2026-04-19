@@ -229,9 +229,10 @@ _BLACKLIST_SYNC_MIN_INTERVAL_SECONDS = 86400
 
 def get_blacklist_sync_interval_seconds() -> int:
     """
-    Seconds between blacklist sync attempts (scheduler).
+    Minimum seconds between AbuseIPDB GET /blacklist pulls (API usage / tier hints).
 
-    Default 86400 (once per day). Without relax, clamped to at least 86400s.
+    The in-process scheduler runs on BACKUP_HOUR (see abuseipdb_scheduler), not on this
+    interval. Default 86400 (once per day). Without relax, clamped to at least 86400s.
     Set ABUSEIPDB_BLACKLIST_SYNC_RELAX_MIN_INTERVAL=true for higher API tiers
     that allow more frequent blacklist calls (minimum 3600s then).
     """
@@ -693,8 +694,12 @@ async def _store_blacklist_ips_async(ips: Set[str]) -> bool:
     return True
 
 
-async def sync_blacklist_to_redis() -> Dict[str, Any]:
-    """GET /blacklist and replace Redis SET KEY_BLACKLIST."""
+async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[str, Any]:
+    """GET /blacklist and replace Redis SET KEY_BLACKLIST.
+
+    When force_crowdsec_merge is True, CrowdSec network merge ignores the min-interval skip
+    (used for the daily scheduled run aligned with BACKUP_HOUR).
+    """
     result: Dict[str, Any] = {
         "ok": False,
         "count": 0,
@@ -785,7 +790,9 @@ async def sync_blacklist_to_redis() -> Dict[str, Any]:
 
     from services.infrastructure.security import crowdsec_blocklist_service
 
-    crowdsec_out = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network()
+    crowdsec_out = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network(
+        force=force_crowdsec_merge,
+    )
     if crowdsec_out.get("ok"):
         result["crowdsec"] = {
             "count": crowdsec_out.get("count"),

@@ -88,9 +88,10 @@ def crowdsec_blocklist_lookup_enabled() -> bool:
 
 def get_crowdsec_sync_interval_seconds() -> int:
     """
-    Seconds between CrowdSec pull attempts when AbuseIPDB sync is not driving the loop.
+    Minimum seconds between CrowdSec Raw IP List pulls (tier / documentation).
 
-    Default and minimum 86400 (once per day); community tiers are often limited to ~1 pull / 24h.
+    The in-process scheduler runs on BACKUP_HOUR (see abuseipdb_scheduler), not on this
+    value. Default and minimum 86400; community tiers are often limited to ~1 pull / 24h.
     """
     return max(86400, _env_int("CROWDSEC_BLOCKLIST_SYNC_INTERVAL_SECONDS", 86400))
 
@@ -249,11 +250,13 @@ async def _sadd_ips_chunked_async(ips: set[str]) -> int:
     return await abuseipdb_service.pipeline_sadd_chunks_async(redis, abuseipdb_service.KEY_BLACKLIST, batch, chunk_size)
 
 
-async def merge_crowdsec_blocklist_from_network() -> Dict[str, Any]:
+async def merge_crowdsec_blocklist_from_network(force: bool = False) -> Dict[str, Any]:
     """
     GET Raw IP List content and SADD into shared KEY_BLACKLIST.
 
-    Respects CROWDSEC_BLOCKLIST_MIN_INTERVAL_SECONDS to avoid 429 on community tiers.
+    Unless force is True, respects CROWDSEC_BLOCKLIST_MIN_INTERVAL_SECONDS to avoid 429
+    on community tiers. When force is True, the min-interval skip is not applied (daily
+    scheduled run aligned with BACKUP_HOUR).
     """
     result: Dict[str, Any] = {
         "ok": False,
@@ -268,7 +271,7 @@ async def merge_crowdsec_blocklist_from_network() -> Dict[str, Any]:
         result["error"] = "disabled"
         return result
 
-    if await _should_skip_due_to_min_interval_async():
+    if not force and await _should_skip_due_to_min_interval_async():
         result["skipped"] = True
         result["ok"] = True
         return result

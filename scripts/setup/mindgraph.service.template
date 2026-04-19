@@ -29,6 +29,12 @@ KillMode=mixed
 KillSignal=SIGTERM
 TimeoutStopSec=30
 
+# Uvicorn multi-worker: do NOT add ExecReload= that sends SIGHUP to the Uvicorn parent for
+# routine deploys. Uvicorn treats SIGHUP as "restart workers" and Python 3.13's
+# multiprocessing resource_tracker may log:
+#   resource_tracker: process died unexpectedly, relaunching. Some resources might leak.
+# Prefer: systemctl restart mindgraph (or your orchestrator's full restart), not reload/HUP.
+
 # Security hardening (optional but recommended)
 NoNewPrivileges=true
 PrivateTmp=true

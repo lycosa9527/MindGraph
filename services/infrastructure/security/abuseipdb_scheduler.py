@@ -1,7 +1,9 @@
 """
-Daily AbuseIPDB blacklist sync (Redis-coordinated single worker).
+Daily AbuseIPDB / CrowdSec blocklist sync (Redis-coordinated single worker).
 
 Uses the same coordination idea as backup_scheduler: one worker holds the lock.
+Scheduled runs align with BACKUP_HOUR (default 3:00 local time), matching the DB backup
+and COS upload window for easier log correlation.
 """
 
 from __future__ import annotations
@@ -10,12 +12,14 @@ import asyncio
 import logging
 import os
 import uuid
+from datetime import datetime
 from typing import Optional
 
 from services.infrastructure.security import abuseipdb_service
 from services.infrastructure.security import crowdsec_blocklist_service
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+from services.utils.backup_scheduler import BACKUP_HOUR, get_next_backup_time
 
 logger = logging.getLogger(__name__)
 
@@ -93,6 +97,25 @@ async def refresh_abuseipdb_scheduler_lock() -> bool:
         return False
 
 
+async def _sleep_until_next_blocklist_sync_time() -> None:
+    """Sleep until the next BACKUP_HOUR boundary (same clock as DB backup scheduler)."""
+    next_sync = get_next_backup_time()
+    wait_seconds = max(0.0, (next_sync - datetime.now()).total_seconds())
+    logger.info(
+        "[Blocklist] Next sync at %s (local time, BACKUP_HOUR=%02d:00, in %.0fs)",
+        next_sync.strftime("%Y-%m-%d %H:%M:%S"),
+        BACKUP_HOUR,
+        wait_seconds,
+    )
+    while wait_seconds > 0:
+        sleep_chunk = min(300.0, wait_seconds)
+        await asyncio.sleep(sleep_chunk)
+        wait_seconds = max(0.0, (next_sync - datetime.now()).total_seconds())
+        if not await refresh_abuseipdb_scheduler_lock():
+            logger.warning("[AbuseIPDB] Lost lock during wait until next scheduled sync")
+            return
+
+
 async def start_abuseipdb_blacklist_scheduler() -> None:
     """
     Run AbuseIPDB and/or CrowdSec blocklist sync when enabled.
@@ -111,12 +134,6 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
             crowdsec_sync,
         )
         return
-
-    interval = (
-        abuseipdb_service.get_blacklist_sync_interval_seconds()
-        if abuseipdb_sync
-        else crowdsec_blocklist_service.get_crowdsec_sync_interval_seconds()
-    )
 
     if not await acquire_abuseipdb_scheduler_lock():
         logger.debug("[AbuseIPDB] Another worker holds the scheduler lock; monitoring")
@@ -138,8 +155,9 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 return
 
     logger.info(
-        "[Blocklist] Scheduler started (interval=%ss abuseipdb=%s crowdsec=%s)",
-        interval,
+        "[Blocklist] Scheduler started (daily at %02d:00 local time, same as BACKUP_HOUR; "
+        "abuseipdb=%s crowdsec=%s)",
+        BACKUP_HOUR,
         abuseipdb_sync,
         crowdsec_sync,
     )
@@ -150,69 +168,73 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 logger.warning("[AbuseIPDB] Lost scheduler lock; stopping sync loop")
                 return
 
-            if abuseipdb_sync:
-                result = await abuseipdb_service.sync_blacklist_to_redis()
-                if result.get("ok"):
-                    logger.info("[AbuseIPDB] Sync OK: %s IPs", result.get("count"))
-                elif result.get("error") == "disabled":
-                    return
-                elif result.get("rate_limited"):
-                    retry_after = float(result.get("retry_after_seconds") or 3600)
-                    logger.warning(
-                        "[AbuseIPDB] Blacklist sync rate limited; waiting %.0fs before retry",
-                        retry_after,
-                    )
-                    waited = 0.0
-                    while waited < retry_after:
-                        sleep_chunk = min(300.0, retry_after - waited)
-                        await asyncio.sleep(sleep_chunk)
-                        waited += sleep_chunk
-                        if not await refresh_abuseipdb_scheduler_lock():
-                            logger.warning("[AbuseIPDB] Lost lock during rate-limit wait; exiting")
-                            return
-                    continue
-                else:
-                    logger.debug("[AbuseIPDB] Sync result: %s", result)
-            else:
-                cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network()
-                if cs.get("ok") and not cs.get("skipped"):
-                    logger.info("[CrowdSec] Sync OK: %s IPs", cs.get("count"))
-                    await abuseipdb_service.log_shared_blacklist_redis_size_async("after CrowdSec-only scheduler merge")
-                elif cs.get("rate_limited"):
-                    retry_after = float(cs.get("retry_after_seconds") or 3600)
-                    logger.warning(
-                        "[CrowdSec] rate limited; waiting %.0fs before retry",
-                        retry_after,
-                    )
-                    waited = 0.0
-                    while waited < retry_after:
-                        sleep_chunk = min(300.0, retry_after - waited)
-                        await asyncio.sleep(sleep_chunk)
-                        waited += sleep_chunk
-                        if not await refresh_abuseipdb_scheduler_lock():
-                            logger.warning("[CrowdSec] Lost lock during rate-limit wait; exiting")
-                            return
-                    continue
-                else:
-                    logger.debug("[CrowdSec] Sync result: %s", cs)
-
-            interval = (
-                abuseipdb_service.get_blacklist_sync_interval_seconds()
-                if abuseipdb_sync
-                else crowdsec_blocklist_service.get_crowdsec_sync_interval_seconds()
-            )
-            waited = 0.0
-            while waited < float(interval):
-                sleep_chunk = min(300.0, float(interval) - waited)
-                await asyncio.sleep(sleep_chunk)
-                waited += sleep_chunk
-                if not await refresh_abuseipdb_scheduler_lock():
-                    logger.warning("[AbuseIPDB] Lost lock during wait; exiting")
-                    return
-
+            await _sleep_until_next_blocklist_sync_time()
+            if not await refresh_abuseipdb_scheduler_lock():
+                logger.warning("[AbuseIPDB] Lost scheduler lock; stopping sync loop")
+                return
         except asyncio.CancelledError:
             logger.info("[AbuseIPDB] Blacklist scheduler cancelled")
             raise
         except Exception as exc:  # pylint: disable=broad-except
-            logger.warning("[AbuseIPDB] Scheduler loop error: %s", exc)
+            logger.warning("[AbuseIPDB] Error while waiting for next blocklist sync: %s", exc)
             await asyncio.sleep(60)
+            continue
+
+        while True:
+            try:
+                if abuseipdb_sync:
+                    result = await abuseipdb_service.sync_blacklist_to_redis(force_crowdsec_merge=True)
+                    if result.get("ok"):
+                        logger.info("[AbuseIPDB] Sync OK: %s IPs", result.get("count"))
+                    elif result.get("error") == "disabled":
+                        return
+                    elif result.get("rate_limited"):
+                        retry_after = float(result.get("retry_after_seconds") or 3600)
+                        logger.warning(
+                            "[AbuseIPDB] Blacklist sync rate limited; waiting %.0fs before retry",
+                            retry_after,
+                        )
+                        waited = 0.0
+                        while waited < retry_after:
+                            sleep_chunk = min(300.0, retry_after - waited)
+                            await asyncio.sleep(sleep_chunk)
+                            waited += sleep_chunk
+                            if not await refresh_abuseipdb_scheduler_lock():
+                                logger.warning("[AbuseIPDB] Lost lock during rate-limit wait; exiting")
+                                return
+                        continue
+                    else:
+                        logger.debug("[AbuseIPDB] Sync result: %s", result)
+                else:
+                    cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network(force=True)
+                    if cs.get("ok") and not cs.get("skipped"):
+                        logger.info("[CrowdSec] Sync OK: %s IPs", cs.get("count"))
+                        await abuseipdb_service.log_shared_blacklist_redis_size_async(
+                            "after CrowdSec-only scheduler merge",
+                        )
+                    elif cs.get("rate_limited"):
+                        retry_after = float(cs.get("retry_after_seconds") or 3600)
+                        logger.warning(
+                            "[CrowdSec] rate limited; waiting %.0fs before retry",
+                            retry_after,
+                        )
+                        waited = 0.0
+                        while waited < retry_after:
+                            sleep_chunk = min(300.0, retry_after - waited)
+                            await asyncio.sleep(sleep_chunk)
+                            waited += sleep_chunk
+                            if not await refresh_abuseipdb_scheduler_lock():
+                                logger.warning("[CrowdSec] Lost lock during rate-limit wait; exiting")
+                                return
+                        continue
+                    else:
+                        logger.debug("[CrowdSec] Sync result: %s", cs)
+
+                break
+            except asyncio.CancelledError:
+                logger.info("[AbuseIPDB] Blacklist scheduler cancelled")
+                raise
+            except Exception as exc:  # pylint: disable=broad-except
+                logger.warning("[AbuseIPDB] Blocklist sync error: %s", exc)
+                await asyncio.sleep(60)
+                continue

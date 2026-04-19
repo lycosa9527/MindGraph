@@ -174,6 +174,7 @@ API keys are created in the admin panel (`/admin`). See [docs/API_REFERENCE.md](
 - [Qdrant Setup](docs/QDRANT_SETUP.md)
 - [PostgreSQL Setup](docs/POSTGRES_SETUP.md)
 - [Fail2ban + AbuseIPDB](docs/FAIL2BAN_SETUP.md)
+- [Uvicorn `resource_tracker` / SIGHUP (operations)](docs/operations/UVICORN_RESOURCE_TRACKER.md)
 
 ---
 
