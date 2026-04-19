@@ -35,6 +35,11 @@ from clients.dify_http_errors import parse_dify_error_response, raise_for_dify_h
 
 logger = logging.getLogger(__name__)
 
+# Default aiohttp read_bufsize is 64 KiB; StreamReader high-water is 2× that. Large SSE
+# lines from Dify (single JSON event with long text) can exceed that and raise
+# ValueError: Chunk too big when reading the stream.
+_DIFY_AIOHTTP_READ_BUFSIZE = 2**20
+
 
 class _DifySharedHttpPool:
     """Process-wide aiohttp sessions for Dify API (connection reuse)."""
@@ -50,7 +55,7 @@ class _DifySharedHttpPool:
 
     @classmethod
     async def session_blocking(cls, api_url: str, timeout: int) -> aiohttp.ClientSession:
-        key = f"b:{api_url.rstrip('/')}|{timeout}"
+        key = f"b:{api_url.rstrip('/')}|{timeout}|{_DIFY_AIOHTTP_READ_BUFSIZE}"
         lock = await cls._get_lock()
         async with lock:
             existing = cls._sessions.get(key)
@@ -62,12 +67,13 @@ class _DifySharedHttpPool:
                 cls._sessions[key] = aiohttp.ClientSession(
                     timeout=client_timeout,
                     connector=connector,
+                    read_bufsize=_DIFY_AIOHTTP_READ_BUFSIZE,
                 )
             return cls._sessions[key]
 
     @classmethod
     async def session_streaming(cls, api_url: str, sock_read: int) -> aiohttp.ClientSession:
-        key = f"s:{api_url.rstrip('/')}|{sock_read}"
+        key = f"s:{api_url.rstrip('/')}|{sock_read}|{_DIFY_AIOHTTP_READ_BUFSIZE}"
         lock = await cls._get_lock()
         async with lock:
             existing = cls._sessions.get(key)
@@ -79,6 +85,7 @@ class _DifySharedHttpPool:
                 cls._sessions[key] = aiohttp.ClientSession(
                     timeout=client_timeout,
                     connector=connector,
+                    read_bufsize=_DIFY_AIOHTTP_READ_BUFSIZE,
                 )
             return cls._sessions[key]
 
