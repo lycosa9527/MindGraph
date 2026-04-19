@@ -430,39 +430,44 @@ class MindChunkAdapter(BaseChunkingService):
         """
         Chunk text using MindChunk (LLM-based chunking).
 
-        Synchronous wrapper around async LLM chunking service.
+        Synchronous entry point for callers that cannot use async.
+        Delegates to chunk_text_async via asyncio.run().
+        """
+        return asyncio.run(
+            self.chunk_text_async(
+                text=text,
+                metadata=metadata,
+                separator=separator,
+                extract_structure=extract_structure,
+                page_info=page_info,
+                language=language,
+            )
+        )
+
+    async def chunk_text_async(
+        self,
+        text: str,
+        metadata: Optional[Dict[str, Any]] = None,
+        separator: Optional[str] = None,
+        extract_structure: bool = False,
+        page_info: Optional[List[Dict[str, Any]]] = None,
+        language: Optional[str] = None,
+    ) -> List[Chunk]:
+        """
+        Chunk text using MindChunk (LLM-based chunking).
 
         Args:
             text: Text to chunk
             metadata: Optional metadata to attach to chunks
-            separator: Ignored (MindChunk uses semantic boundaries)
+            separator: Interface-only; MindChunk uses semantic boundaries
             extract_structure: If True, uses structure detection
             page_info: Optional page boundaries for PDFs
-            language: Optional language hint
+            language: Interface-only; MindChunk detects language automatically
 
         Returns:
             List of Chunk objects
         """
-        # Async/sync bridge: This adapter provides synchronous interface for async LLM chunking.
-        # In Flask/Quart sync context, we need to run the async coroutine in an event loop.
-        # Strategy: Get existing loop if available, otherwise create new one.
-        # Note: run_until_complete() works when called from sync context (Flask routes).
-        try:
-            # Try to get existing event loop (works in sync Flask context)
-            loop = asyncio.get_event_loop()
-            if loop.is_running():
-                # If loop is already running (async context), we can't use run_until_complete
-                # This shouldn't happen in Flask sync routes, but handle gracefully
-                logger.warning("[MindChunkAdapter] Event loop already running, this may indicate async context issue")
-                # Create new loop for this operation
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-        except RuntimeError:
-            # No event loop exists, create new one
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        # Run async chunking
+        del separator, language  # MindChunk ignores these; kept for interface parity
         document_id = metadata.get("document_id", "unknown") if metadata else "unknown"
 
         logger.debug(
@@ -475,21 +480,18 @@ class MindChunkAdapter(BaseChunkingService):
             self.overlap,
         )
 
-        # Determine structure type if extract_structure is True
         structure_type = None
         if extract_structure:
-            structure_type = "general"  # Can be enhanced to detect structure
+            structure_type = "general"
             logger.debug(
                 "[MindChunkAdapter] Structure extraction enabled, type=%s",
                 structure_type,
             )
 
-        # Extract PDF outline from page_info if available
         pdf_outline = None
         if page_info:
             pdf_outline = [{"page": p["page"], "title": f"Page {p['page']}"} for p in page_info]
 
-        # Call async method
         logger.info(
             "[MindChunkAdapter] Calling LLM chunker: doc_id=%s, text_length=%s, "
             "structure_type=%s, chunk_size=%s, overlap=%s",
@@ -500,15 +502,13 @@ class MindChunkAdapter(BaseChunkingService):
             self.overlap,
         )
         try:
-            llm_chunks = loop.run_until_complete(
-                self.chunker.chunk(
-                    text=text,
-                    document_id=document_id,
-                    structure_type=structure_type,
-                    pdf_outline=pdf_outline,
-                    chunk_size=self.chunk_size,
-                    overlap=self.overlap,
-                )
+            llm_chunks = await self.chunker.chunk(
+                text=text,
+                document_id=document_id,
+                structure_type=structure_type,
+                pdf_outline=pdf_outline,
+                chunk_size=self.chunk_size,
+                overlap=self.overlap,
             )
             logger.info(
                 "[MindChunkAdapter] LLM chunker returned: doc_id=%s, chunks_count=%s, chunks_type=%s",
@@ -526,13 +526,11 @@ class MindChunkAdapter(BaseChunkingService):
             logger.error(traceback.format_exc())
             logger.error("[MindChunkAdapter] Exception type: %s", type(e).__name__)
             logger.error("[MindChunkAdapter] Exception args: %s", e.args)
-            # Raise error instead of returning empty - we removed fallback
             raise RuntimeError(
                 f"[MindChunkAdapter] LLM chunking failed for doc_id={document_id}: {e}. "
                 "Check logs above for detailed error information."
             ) from e
 
-        # Handle empty result
         if not llm_chunks:
             raise RuntimeError(
                 f"[MindChunkAdapter] No chunks returned from LLM chunking for doc_id={document_id}. "
@@ -540,7 +538,6 @@ class MindChunkAdapter(BaseChunkingService):
                 "the LLM service, API configuration, or document content."
             )
 
-        # Convert to legacy Chunk format
         if not HAS_LLM_CHUNKING or ParentChunk is None or QAChunk is None:
             raise RuntimeError(
                 "[MindChunkAdapter] llm_chunking.models not available. Cannot convert chunks to legacy format."
@@ -549,7 +546,6 @@ class MindChunkAdapter(BaseChunkingService):
         chunks = []
         try:
             if isinstance(llm_chunks[0], ParentChunk):
-                # Parent-child structure: extract child chunks
                 logger.debug(
                     "[MindChunkAdapter] Converting %s parent chunks to legacy format for doc_id=%s",
                     len(llm_chunks),
@@ -572,7 +568,6 @@ class MindChunkAdapter(BaseChunkingService):
                         )
                         chunks.append(chunk)
             elif isinstance(llm_chunks[0], QAChunk):
-                # Q&A structure: convert to chunks
                 logger.debug(
                     "[MindChunkAdapter] Converting %s QA chunks to legacy format for doc_id=%s",
                     len(llm_chunks),
@@ -594,7 +589,6 @@ class MindChunkAdapter(BaseChunkingService):
                     )
                     chunks.append(chunk)
             else:
-                # General structure: direct conversion
                 logger.debug(
                     "[MindChunkAdapter] Converting %s general chunks to legacy format for doc_id=%s",
                     len(llm_chunks),
@@ -633,7 +627,6 @@ class MindChunkAdapter(BaseChunkingService):
                 "Chunk conversion failed. This may indicate an issue with chunk structure."
             )
 
-        # Log detailed chunking results
         total_chars = sum(len(c.text) for c in chunks)
         avg_chunk_size = total_chars / len(chunks) if chunks else 0
         logger.debug(
@@ -644,7 +637,6 @@ class MindChunkAdapter(BaseChunkingService):
             avg_chunk_size,
         )
 
-        # Log metadata presence for debugging vector storage compatibility
         if chunks:
             sample_metadata = chunks[0].metadata
             metadata_keys = list(sample_metadata.keys())
@@ -653,7 +645,6 @@ class MindChunkAdapter(BaseChunkingService):
                 document_id,
                 metadata_keys,
             )
-            # Verify critical metadata fields for vector storage
             required_fields = ["document_id", "structure_type"]
             missing_fields = [f for f in required_fields if f not in sample_metadata]
             if missing_fields:

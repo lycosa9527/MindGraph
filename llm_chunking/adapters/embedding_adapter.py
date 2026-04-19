@@ -41,7 +41,7 @@ class EmbeddingAdapter(ABC):
                     logger.warning("Embedding client not available: %s", e)
 
     @abstractmethod
-    def embed_chunks(
+    async def embed_chunks(
         self,
         chunks: Union[List[Chunk], List[ParentChunk], List[QAChunk]],
         structure_type: str,
@@ -61,7 +61,7 @@ class EmbeddingAdapter(ABC):
 class GeneralEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for General (flat) chunks."""
 
-    def embed_chunks(self, chunks: List[Chunk], structure_type: str = "general") -> List[Dict[str, Any]]:
+    async def embed_chunks(self, chunks: List[Chunk], structure_type: str = "general") -> List[Dict[str, Any]]:
         """
         Embed each chunk independently.
 
@@ -75,11 +75,9 @@ class GeneralEmbeddingAdapter(EmbeddingAdapter):
         if not self.embedding_client:
             raise ValueError("Embedding client not available")
 
-        # Extract texts
         texts = [chunk.text for chunk in chunks]
 
-        # Generate embeddings
-        embeddings = self.embedding_client.embed_texts(texts=texts, text_type="document")
+        embeddings = await self.embedding_client.embed_texts(texts=texts, text_type="document")
 
         # Build result list
         results = []
@@ -106,7 +104,9 @@ class GeneralEmbeddingAdapter(EmbeddingAdapter):
 class ParentChildEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for Parent-Child chunks."""
 
-    def embed_chunks(self, chunks: List[ParentChunk], structure_type: str = "parent_child") -> List[Dict[str, Any]]:
+    async def embed_chunks(
+        self, chunks: List[ParentChunk], structure_type: str = "parent_child"
+    ) -> List[Dict[str, Any]]:
         """
         Embed only child chunks, store parent in payload.
 
@@ -142,7 +142,7 @@ class ParentChildEmbeddingAdapter(EmbeddingAdapter):
 
         # Embed child chunks only
         child_texts = [child["text"] for child in all_child_chunks]
-        embeddings = self.embedding_client.embed_texts(texts=child_texts, text_type="document")
+        embeddings = await self.embedding_client.embed_texts(texts=child_texts, text_type="document")
 
         # Build result list
         results = []
@@ -170,7 +170,7 @@ class ParentChildEmbeddingAdapter(EmbeddingAdapter):
 class QAEmbeddingAdapter(EmbeddingAdapter):
     """Adapter for Q&A chunks."""
 
-    def embed_chunks(
+    async def embed_chunks(
         self,
         chunks: List[QAChunk],
         structure_type: str = "qa",
@@ -199,8 +199,7 @@ class QAEmbeddingAdapter(EmbeddingAdapter):
             texts = [f"Q: {qa.question}\nA: {qa.answer}" for qa in chunks]
             text_type = "document"
 
-        # Generate embeddings
-        embeddings = self.embedding_client.embed_texts(texts=texts, text_type=text_type)
+        embeddings = await self.embedding_client.embed_texts(texts=texts, text_type=text_type)
 
         # Build result list
         results = []

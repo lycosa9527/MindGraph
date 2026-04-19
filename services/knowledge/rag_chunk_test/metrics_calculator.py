@@ -218,7 +218,7 @@ class MetricsCalculator:
 
         return avg_metrics
 
-    def calculate_comprehensive_metrics(
+    async def calculate_comprehensive_metrics(
         self,
         all_chunks: Dict[str, List],
         retrieval_results: Dict[str, List[Dict[str, Any]]],
@@ -291,7 +291,7 @@ class MetricsCalculator:
 
                 # Semantic coherence
                 try:
-                    coherence = self.chunk_comparator.calculate_chunk_coherence(mode_chunks)
+                    coherence = await self.chunk_comparator.calculate_chunk_coherence(mode_chunks)
                     evaluation_results["chunk_quality"][mode]["semantic_coherence"] = coherence
                 except Exception as e:
                     logger.warning(
@@ -368,7 +368,7 @@ class MetricsCalculator:
                         retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])]
                         retrieved_chunks = [c for c in mode_chunks if c.chunk_index in retrieved_chunk_ids]
                         if len(retrieved_chunks) > 1:
-                            diversity = self.diversity_evaluator.calculate_intra_list_diversity(retrieved_chunks)
+                            diversity = await self.diversity_evaluator.calculate_intra_list_diversity(retrieved_chunks)
                             diversity_scores.append(diversity)
 
                     evaluation_results["diversity_efficiency"][mode]["semantic_diversity"] = (
@@ -385,7 +385,7 @@ class MetricsCalculator:
                             retrieved_chunk_ids = [r["chunk_id"] for r in result.get("results", [])[:k]]
                             retrieved_chunks = [c for c in mode_chunks if c.chunk_index in retrieved_chunk_ids]
                             if len(retrieved_chunks) > 1:
-                                diversity = self.diversity_evaluator.calculate_diversity_at_k(retrieved_chunks, k)
+                                diversity = await self.diversity_evaluator.calculate_diversity_at_k(retrieved_chunks, k)
                                 k_diversity_scores.append(diversity)
                         diversity_at_k[k] = (
                             sum(k_diversity_scores) / len(k_diversity_scores) if k_diversity_scores else 0.0
@@ -405,7 +405,7 @@ class MetricsCalculator:
 
             if chunks_a and chunks_b:
                 # Chunk alignment
-                alignment = self.cross_method_comparator.calculate_chunk_alignment(chunks_a, chunks_b)
+                alignment = await self.cross_method_comparator.calculate_chunk_alignment(chunks_a, chunks_b)
                 evaluation_results["cross_method"]["chunk_alignment"] = alignment
 
                 # Overlap analysis

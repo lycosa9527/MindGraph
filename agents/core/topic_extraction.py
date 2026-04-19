@@ -16,7 +16,7 @@ from services.llm import llm_service
 logger = logging.getLogger(__name__)
 
 
-def extract_central_topic_llm(user_prompt: str, language: str = "zh") -> str:
+async def extract_central_topic_llm(user_prompt: str, language: str = "zh") -> str:
     """
     Extract central topic using LLM instead of hardcoded string manipulation.
     This provides better semantic understanding and context preservation.
@@ -27,13 +27,11 @@ def extract_central_topic_llm(user_prompt: str, language: str = "zh") -> str:
         else:
             prompt = f"Extract the central topic from this user input, return only the topic:\n{user_prompt}"
 
-        result = llm_classification.invoke(prompt)
-        # Clean up the result - remove any extra whitespace or formatting
+        result = await llm_classification.invoke(prompt)
         if not isinstance(result, str):
             result = str(result)
         central_topic = result.strip()
 
-        # Fallback to original prompt if extraction fails
         if not central_topic or len(central_topic) < 2:
             logger.warning("LLM topic extraction failed, using original prompt: %s", user_prompt)
             central_topic = user_prompt.strip()
@@ -97,14 +95,13 @@ Your output:"""
         return user_prompt.strip()
 
 
-def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = "en") -> dict:
+async def extract_topics_and_styles_from_prompt_qwen(user_prompt: str, language: str = "en") -> dict:
     """
     Simple replacement for the removed complex style extraction function.
     Returns minimal data structure that existing code expects.
     Now uses LLM-based topic extraction instead of hardcoded string manipulation.
     """
-    # Use LLM-based topic extraction
-    central_topic = extract_central_topic_llm(user_prompt, language)
+    central_topic = await extract_central_topic_llm(user_prompt, language)
 
     return {
         "topics": [central_topic] if central_topic else [],

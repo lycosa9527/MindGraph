@@ -10,10 +10,10 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import json
 import logging
 import traceback
-from concurrent.futures import ThreadPoolExecutor, as_completed
 
 from prompts import get_prompt
 
@@ -25,10 +25,9 @@ from agents.core.utils import _parse_strict_json
 logger = logging.getLogger(__name__)
 
 
-def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
+async def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
     """Invoke LLM with a specific prompt template and variables, and return raw string."""
     safe_template = prompt_template
-    # Sanitize braces except for placeholders present in variables
     for k in variables.keys():
         placeholder = f"<<{k.upper()}>>"
         safe_template = safe_template.replace(f"{{{k}}}", placeholder)
@@ -36,21 +35,19 @@ def _invoke_llm_prompt(prompt_template: str, variables: dict) -> str:
     for k in variables.keys():
         placeholder = f"<<{k.upper()}>>"
         safe_template = safe_template.replace(placeholder, f"{{{k}}}")
-    # Use generation model for concept map generation tasks (high quality)
-    # Format the template with variables and call the LLM directly
     formatted_prompt = safe_template
     for key, value in variables.items():
         formatted_prompt = formatted_prompt.replace(f"{{{key}}}", str(value))
 
-    raw = llm_generation.invoke(formatted_prompt)
+    raw = await llm_generation.invoke(formatted_prompt)
     return raw if isinstance(raw, str) else str(raw)
 
 
-def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
+async def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     """Deterministic two-stage generation for concept maps (no fallback parsing errors)."""
     # Stage 1: keys
     key_prompt = get_prompt("concept_map_keys", language, "generation")
-    raw_keys = _invoke_llm_prompt(key_prompt, {"user_prompt": user_prompt})
+    raw_keys = await _invoke_llm_prompt(key_prompt, {"user_prompt": user_prompt})
 
     # Use improved parsing for better error handling
     try:
@@ -92,11 +89,9 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     remaining_budget = max(0, max_concepts_total - len(keys))
     per_key_cap = max(2, remaining_budget // max(1, len(keys))) if keys else 0
 
-    def fetch_parts(k: str) -> tuple:
+    async def fetch_parts(k: str) -> tuple:
         try:
-            raw = _invoke_llm_prompt(parts_prompt, {"topic": topic, "key": k})
-
-            # Use improved parsing for better error handling
+            raw = await _invoke_llm_prompt(parts_prompt, {"topic": topic, "key": k})
             try:
                 agent = ConceptMapAgent()
                 obj = agent.parse_json_response(raw)
@@ -106,7 +101,6 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
                     "ConceptMapAgent parsing failed for parts of key '%s', using strict parsing fallback",
                     k,
                 )
-                # Fallback to strict parsing if ConceptMapAgent is not available
                 obj = _parse_strict_json(raw)
             plist = obj.get("parts") or []
             parts_collected = []
@@ -126,13 +120,15 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
             return (k, [])
 
     parts_results = {k: [] for k in keys}
-    # Run in parallel to save time
-    max_workers = min(6, len(keys)) or 1
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = [executor.submit(fetch_parts, k) for k in keys]
-        for fut in as_completed(futures):
-            k, plist = fut.result()
-            parts_results[k] = plist
+    sem = asyncio.Semaphore(min(6, len(keys)) or 1)
+
+    async def fetch_parts_bounded(k: str) -> tuple:
+        async with sem:
+            return await fetch_parts(k)
+
+    gathered = await asyncio.gather(*[fetch_parts_bounded(k) for k in keys])
+    for k, plist in gathered:
+        parts_results[k] = plist
 
     # Merge into standard concept map spec
     concepts = []
@@ -185,10 +181,10 @@ def generate_concept_map_two_stage(user_prompt: str, language: str) -> dict:
     return spec
 
 
-def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
+async def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     """One-shot concept map generation with keys, parts, and relationships together."""
     unified_prompt = get_prompt("concept_map_unified", language, "generation")
-    raw = _invoke_llm_prompt(unified_prompt, {"user_prompt": user_prompt})
+    raw = await _invoke_llm_prompt(unified_prompt, {"user_prompt": user_prompt})
 
     # Use the improved ConceptMapAgent parsing for better error handling
     try:
@@ -304,7 +300,7 @@ def generate_concept_map_unified(user_prompt: str, language: str) -> dict:
     }
 
 
-def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
+async def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
     """
     Enhanced concept map generation that produces exactly 30 concepts.
 
@@ -313,7 +309,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
     """
     try:
         # Use LLM-based topic extraction instead of hardcoded string manipulation
-        central_topic = extract_central_topic_llm(user_prompt, language)
+        central_topic = await extract_central_topic_llm(user_prompt, language)
 
         if isinstance(central_topic, list):
             central_topic = " ".join(central_topic)
@@ -334,7 +330,7 @@ def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> dict:
                 concept_prompt = f"Generate 30 related concepts for topic {central_topic}, output JSON format"
 
         # Get concepts from LLM
-        concepts_response = _invoke_llm_prompt(concept_prompt, {"central_topic": central_topic})
+        concepts_response = await _invoke_llm_prompt(concept_prompt, {"central_topic": central_topic})
 
         if not concepts_response:
             raise ValueError("No response from LLM for concept generation")
@@ -438,7 +434,9 @@ Requirements:
 """
 
         # Get relationships from LLM
-        relationships_response = _invoke_llm_prompt(rel_prompt, {"central_topic": central_topic, "concepts": concepts})
+        relationships_response = await _invoke_llm_prompt(
+            rel_prompt, {"central_topic": central_topic, "concepts": concepts}
+        )
 
         if not relationships_response:
             raise ValueError("No response from LLM for relationship generation")
@@ -487,11 +485,10 @@ Requirements:
         logger.error("Enhanced 30-concept generation failed: %s", e)
         logger.error("Stack trace: %s", traceback.format_exc())
 
-        # Fallback to original method
-        return generate_concept_map_unified(user_prompt, language)
+        return await generate_concept_map_unified(user_prompt, language)
 
 
-def generate_concept_map_robust(user_prompt: str, language: str, method: str = "auto") -> dict:
+async def generate_concept_map_robust(user_prompt: str, language: str, method: str = "auto") -> dict:
     """Robust concept map generation with multiple approaches.
 
     Args:
@@ -506,13 +503,12 @@ def generate_concept_map_robust(user_prompt: str, language: str, method: str = "
     if method in ["auto", "three_stage"]:
         try:
             # Use existing topic extraction + enhanced 30-concept generation
-            return generate_concept_map_enhanced_30(user_prompt, language)
+            return await generate_concept_map_enhanced_30(user_prompt, language)
         except Exception as e:  # pylint: disable=broad-except
             logger.warning("Enhanced 30-concept generation failed: %s", e)
-            # Try with fewer concepts as fallback
             try:
                 logger.debug("Attempting fallback with simplified two-stage generation...")
-                result = generate_concept_map_two_stage(user_prompt, language)
+                result = await generate_concept_map_two_stage(user_prompt, language)
                 if isinstance(result, dict) and result.get("topic"):
                     return result
                 logger.warning(

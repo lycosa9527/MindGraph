@@ -85,6 +85,22 @@ from .helpers import set_auth_cookies, track_user_activity
 from .sms import _verify_and_consume_sms_code
 
 
+_bg_tasks: set[asyncio.Task] = set()
+
+
+def _fire_and_forget(coro: asyncio.coroutines.CoroutineType) -> None:
+    """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
+    task = asyncio.create_task(coro)
+    _bg_tasks.add(task)
+
+    def _on_done(t: asyncio.Task) -> None:
+        _bg_tasks.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            logger.debug("[bg_task] background task raised: %s", t.exception())
+
+    task.add_done_callback(_on_done)
+
+
 def _preload_user_diagrams(user_id: int):
     """
     Fire-and-forget preload of user's diagram list into Redis cache.
@@ -96,12 +112,12 @@ def _preload_user_diagrams(user_id: int):
             try:
                 cache = get_diagram_cache()
                 await cache.preload_user_diagrams(user_id)
-            except Exception as e:
-                logging.getLogger(__name__).debug("[Login] Diagram preload failed for user %s: %s", user_id, e)
+            except Exception as exc:
+                logging.getLogger(__name__).debug("[Login] Diagram preload failed for user %s: %s", user_id, exc)
 
         try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(_do_preload())
+            asyncio.get_running_loop()
+            _fire_and_forget(_do_preload())
         except RuntimeError:
             pass
     except Exception as exc:

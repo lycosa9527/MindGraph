@@ -14,9 +14,9 @@ from typing import Optional
 import logging
 import os
 
-import aiohttp
 from fastapi import APIRouter, HTTPException, Depends, UploadFile, File, Form
 
+from clients.dify import AsyncDifyClient
 from models import Messages, get_request_language
 from models.domain.auth import User
 from utils.auth import get_current_user_or_api_key
@@ -25,6 +25,19 @@ from utils.auth import get_current_user_or_api_key
 logger = logging.getLogger(__name__)
 
 router = APIRouter(tags=["api"])
+
+
+def _get_dify_client(lang: str) -> AsyncDifyClient:
+    """Instantiate AsyncDifyClient from environment, raising 500 if unconfigured."""
+    api_key = os.getenv("DIFY_API_KEY")
+    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
+    timeout = int(os.getenv("DIFY_TIMEOUT", "300"))
+
+    if not api_key:
+        logger.error("DIFY_API_KEY not configured")
+        raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))
+
+    return AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
 
 
 @router.post("/dify/files/upload")
@@ -51,25 +64,15 @@ async def upload_file_to_dify(
         mime_type: File MIME type
     """
     lang = get_request_language(x_language)
+    client = _get_dify_client(lang)
 
-    # Get Dify configuration
-    api_key = os.getenv("DIFY_API_KEY")
-    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
-
-    if not api_key:
-        logger.error("DIFY_API_KEY not configured")
-        raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))
-
-    # Validate file
     if not file.filename:
         raise HTTPException(status_code=400, detail="No filename provided")
 
-    # Read file content
     content = await file.read()
     file_size = len(content)
 
-    # Check file size (15MB limit for documents, 10MB for images)
-    max_size = 15 * 1024 * 1024  # 15MB
+    max_size = 15 * 1024 * 1024
     if file_size > max_size:
         raise HTTPException(
             status_code=413,
@@ -84,55 +87,26 @@ async def upload_file_to_dify(
     )
 
     try:
-        # Create form data for Dify upload
-        form_data = aiohttp.FormData()
-        form_data.add_field("user", user_id)
-        form_data.add_field(
-            "file",
-            content,
+        result = await client.upload_file(
+            user_id=user_id,
+            file_bytes=content,
             filename=file.filename,
             content_type=file.content_type or "application/octet-stream",
         )
+        logger.info("File uploaded successfully: %s", result.get("id"))
 
-        # Upload to Dify
-        async with aiohttp.ClientSession() as session:
-            headers = {"Authorization": f"Bearer {api_key}"}
-            url = f"{api_url.rstrip('/')}/files/upload"
+        return {
+            "success": True,
+            "data": {
+                "id": result.get("id"),
+                "name": result.get("name"),
+                "size": result.get("size"),
+                "extension": result.get("extension"),
+                "mime_type": result.get("mime_type"),
+                "created_at": result.get("created_at"),
+            },
+        }
 
-            async with session.post(url, data=form_data, headers=headers) as response:
-                if response.status != 200:
-                    error_text = await response.text()
-                    logger.error("Dify upload failed: %s - %s", response.status, error_text)
-
-                    # Map Dify errors
-                    if response.status == 413:
-                        raise HTTPException(status_code=413, detail="File too large")
-                    elif response.status == 415:
-                        raise HTTPException(status_code=415, detail="Unsupported file type")
-                    else:
-                        raise HTTPException(
-                            status_code=response.status,
-                            detail=f"File upload failed: {error_text}",
-                        )
-
-                result = await response.json()
-                logger.info("File uploaded successfully: %s", result.get("id"))
-
-                return {
-                    "success": True,
-                    "data": {
-                        "id": result.get("id"),
-                        "name": result.get("name"),
-                        "size": result.get("size"),
-                        "extension": result.get("extension"),
-                        "mime_type": result.get("mime_type"),
-                        "created_at": result.get("created_at"),
-                    },
-                }
-
-    except aiohttp.ClientError as e:
-        logger.error("Dify upload connection error: %s", e)
-        raise HTTPException(status_code=503, detail="Failed to connect to AI service") from e
     except HTTPException:
         raise
     except Exception as e:
@@ -150,24 +124,10 @@ async def get_dify_parameters(
     file upload settings, etc.
     """
     lang = get_request_language(x_language)
-
-    api_key = os.getenv("DIFY_API_KEY")
-    api_url = os.getenv("DIFY_API_URL", "https://api.dify.ai/v1")
-
-    if not api_key:
-        raise HTTPException(status_code=500, detail=Messages.error("ai_not_configured", lang))
+    client = _get_dify_client(lang)
 
     try:
-        async with aiohttp.ClientSession() as session:
-            headers = {"Authorization": f"Bearer {api_key}"}
-            url = f"{api_url.rstrip('/')}/parameters"
-
-            async with session.get(url, headers=headers) as response:
-                if response.status != 200:
-                    raise HTTPException(status_code=response.status, detail="Failed to get parameters")
-
-                return await response.json()
-
-    except aiohttp.ClientError as e:
+        return await client.get_app_parameters()
+    except Exception as e:
         logger.error("Dify parameters error: %s", e)
         raise HTTPException(status_code=503, detail="Failed to connect to AI service") from e

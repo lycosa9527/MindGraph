@@ -32,8 +32,22 @@ from websockets.exceptions import ConnectionClosed
 
 from config.settings import config
 
+_bg_tasks: set[asyncio.Task] = set()
 
 logger = logging.getLogger("OMNI")
+
+
+def _fire_and_forget(coro: Coroutine) -> None:
+    """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
+    task = asyncio.create_task(coro)
+    _bg_tasks.add(task)
+
+    def _on_done(t: asyncio.Task) -> None:
+        _bg_tasks.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            logger.debug("[bg_task] background task raised: %s", t.exception())
+
+    task.add_done_callback(_on_done)
 
 
 class TurnDetectionMode(Enum):
@@ -610,13 +624,9 @@ class OmniClient:
             def wrapper(*args, **kwargs):
                 event = event_factory(*args, **kwargs)
                 try:
-                    loop = asyncio.get_event_loop()
-                    if loop.is_running():
-                        loop.create_task(queue_event(event))
-                    else:
-                        loop.run_until_complete(queue_event(event))
+                    asyncio.get_running_loop()
+                    _fire_and_forget(queue_event(event))
                 except RuntimeError:
-                    # If no event loop, create a new one (shouldn't happen in async context)
                     asyncio.run(queue_event(event))
 
             return wrapper

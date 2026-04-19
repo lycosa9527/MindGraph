@@ -562,7 +562,7 @@ class RAGService:
             )
 
             # Search Qdrant with metadata filter
-            results = self.qdrant.search(
+            results = await self.qdrant.search(
                 user_id=user_id,
                 query_embedding=query_embedding,
                 top_k=top_k,
@@ -707,7 +707,7 @@ class RAGService:
         """Vector search returning results with scores."""
         try:
             query_embedding = await self.embedding_cache.embed_query_cached(query)
-            results = self.qdrant.search(
+            results = await self.qdrant.search(
                 user_id=user_id,
                 query_embedding=query_embedding,
                 top_k=top_k,
@@ -821,7 +821,7 @@ class RAGService:
                     # Local file path
                     image_contents.append({"image": attachment.file_path})
 
-            image_embeddings = embedding_client.embed_multimodal(image_contents)
+            image_embeddings = await embedding_client.embed_multimodal(image_contents)
 
             if not image_embeddings:
                 logger.warning("[RAGService] Failed to generate image embeddings")

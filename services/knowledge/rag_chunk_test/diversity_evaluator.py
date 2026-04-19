@@ -42,7 +42,7 @@ class DiversityEvaluator:
     def __init__(self):
         """Initialize diversity evaluator."""
 
-    def calculate_intra_list_diversity(self, retrieved_chunks: List[Chunk]) -> float:
+    async def calculate_intra_list_diversity(self, retrieved_chunks: List[Chunk]) -> float:
         """
         Calculate intra-list diversity: average pairwise distance between chunks.
 
@@ -66,7 +66,7 @@ class DiversityEvaluator:
 
             # Get embeddings for all chunks
             texts = [chunk.text for chunk in retrieved_chunks]
-            embeddings = embedding_client.embed_texts(texts)
+            embeddings = await embedding_client.embed_texts(texts)
 
             if len(embeddings) != len(retrieved_chunks):
                 logger.warning("[DiversityEvaluator] Embedding count mismatch")
@@ -100,7 +100,7 @@ class DiversityEvaluator:
             logger.warning("[DiversityEvaluator] Failed to calculate diversity: %s", e)
             return 0.0
 
-    def calculate_diversity_at_k(self, retrieved_chunks: List[Chunk], k: int) -> float:
+    async def calculate_diversity_at_k(self, retrieved_chunks: List[Chunk], k: int) -> float:
         """
         Calculate diversity of top K retrieved chunks.
 
@@ -112,7 +112,7 @@ class DiversityEvaluator:
             Diversity score (0-1)
         """
         top_k = retrieved_chunks[:k]
-        return self.calculate_intra_list_diversity(top_k)
+        return await self.calculate_intra_list_diversity(top_k)
 
     def calculate_storage_efficiency(self, chunks: List[Chunk]) -> Dict[str, float]:
         """

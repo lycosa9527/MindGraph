@@ -41,7 +41,7 @@ class CrossMethodComparator:
     def __init__(self):
         """Initialize cross-method comparator."""
 
-    def calculate_chunk_alignment(self, chunks_a: List[Chunk], chunks_b: List[Chunk]) -> float:
+    async def calculate_chunk_alignment(self, chunks_a: List[Chunk], chunks_b: List[Chunk]) -> float:
         """
         Calculate semantic alignment between chunks from two methods.
 
@@ -68,8 +68,8 @@ class CrossMethodComparator:
             texts_a = [chunk.text for chunk in chunks_a]
             texts_b = [chunk.text for chunk in chunks_b]
 
-            embeddings_a = embedding_client.embed_texts(texts_a)
-            embeddings_b = embedding_client.embed_texts(texts_b)
+            embeddings_a = await embedding_client.embed_texts(texts_a)
+            embeddings_b = await embedding_client.embed_texts(texts_b)
 
             if len(embeddings_a) != len(chunks_a) or len(embeddings_b) != len(chunks_b):
                 logger.warning("[CrossMethodComparator] Embedding count mismatch")

@@ -88,7 +88,7 @@ class StorageManager:
         )
         chunk_count = chunk_result.scalar_one()
 
-        qdrant_chunks = self.qdrant.get_collection_size(user_id)
+        qdrant_chunks = await self.qdrant.get_collection_size(user_id)
 
         qdrant_storage_bytes = qdrant_chunks * 1638
 
@@ -140,7 +140,7 @@ class StorageManager:
             doc_count = doc_result.scalar_one()
             total_documents += doc_count
 
-            qdrant_chunks = self.qdrant.get_collection_size(space.user_id)
+            qdrant_chunks = await self.qdrant.get_collection_size(space.user_id)
             total_qdrant_chunks += qdrant_chunks
 
         chunk_result = await db.execute(select(func.count(DocumentChunk.id)))

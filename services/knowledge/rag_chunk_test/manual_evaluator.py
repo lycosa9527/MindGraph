@@ -149,17 +149,7 @@ class ManualEvaluator:
         )
 
         try:
-            # Handle async LLM call in sync context
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            response = loop.run_until_complete(
+            response = asyncio.run(
                 self.llm_service.chat(
                     prompt=prompt,
                     model=model,
@@ -173,7 +163,6 @@ class ManualEvaluator:
                 logger.warning("[ManualEvaluator] Empty response from LLM")
                 return self._default_evaluation()
 
-            # Parse JSON response
             evaluation = self._parse_json_response(response)
             return evaluation
 
@@ -237,17 +226,7 @@ class ManualEvaluator:
         )
 
         try:
-            # Handle async LLM call in sync context
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            response = loop.run_until_complete(
+            response = asyncio.run(
                 self.llm_service.chat(
                     prompt=prompt,
                     model=model,
@@ -261,7 +240,6 @@ class ManualEvaluator:
                 logger.warning("[ManualEvaluator] Empty response from LLM")
                 return self._default_answer_evaluation()
 
-            # Parse JSON response
             evaluation = self._parse_json_response(response)
             return evaluation
 
@@ -293,17 +271,7 @@ class ManualEvaluator:
         logger.debug("[ManualEvaluator] Evaluating semantic similarity between chunks")
 
         try:
-            # Handle async LLM call in sync context
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            response = loop.run_until_complete(
+            response = asyncio.run(
                 self.llm_service.chat(
                     prompt=prompt,
                     model=model,
@@ -317,7 +285,6 @@ class ManualEvaluator:
                 logger.warning("[ManualEvaluator] Empty response from LLM")
                 return 0.0
 
-            # Parse JSON response
             result = self._parse_json_response(response)
             similarity = result.get("similarity_score", 0.0)
             return float(similarity)

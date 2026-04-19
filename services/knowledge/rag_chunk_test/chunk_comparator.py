@@ -476,7 +476,7 @@ class ChunkComparator:
 
         return min(total_chars_in_chunks / total_doc_chars, 1.0)
 
-    def calculate_chunk_coherence(self, chunks: List[Chunk]) -> float:
+    async def calculate_chunk_coherence(self, chunks: List[Chunk]) -> float:
         """
         Calculate semantic coherence of chunks using embeddings.
 
@@ -498,7 +498,7 @@ class ChunkComparator:
 
             # Get embeddings for all chunks
             texts = [chunk.text for chunk in chunks]
-            embeddings = embedding_client.embed_texts(texts)
+            embeddings = await embedding_client.embed_texts(texts)
 
             if len(embeddings) != len(chunks):
                 logger.warning("[ChunkComparator] Embedding count mismatch for coherence calculation")
@@ -571,7 +571,7 @@ class ChunkComparator:
             "unique_chars_b": float(unique_chars_b),
         }
 
-    def calculate_boundary_quality(self, chunks: List[Chunk], _document_text: str) -> float:
+    async def calculate_boundary_quality(self, chunks: List[Chunk], _document_text: str) -> float:
         """
         Calculate boundary quality: how well chunk boundaries align with semantic breaks.
 
@@ -596,7 +596,7 @@ class ChunkComparator:
 
             # Get embeddings for chunks
             texts = [chunk.text for chunk in chunks]
-            embeddings = embedding_client.embed_texts(texts)
+            embeddings = await embedding_client.embed_texts(texts)
 
             if len(embeddings) != len(chunks):
                 logger.warning("[ChunkComparator] Embedding count mismatch for boundary quality")

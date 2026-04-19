@@ -217,7 +217,7 @@ def extract_topics_from_prompt(user_prompt: str) -> Tuple[str, str]:
     return "Topic A", "Topic B"
 
 
-def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> Tuple[str, str]:
+async def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> Tuple[str, str]:
     """
     Use LangChain agent to extract two topics for comparison.
 
@@ -249,7 +249,7 @@ def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> Tuple[s
     topic_func = create_topic_extraction_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
-        result = topic_func(user_prompt)
+        result = await topic_func(user_prompt)
         logger.debug("Agent: Topic extraction result: %s", result)
         # Parse the result using utility function
         topics = parse_topic_extraction_result(result, registry_lang)

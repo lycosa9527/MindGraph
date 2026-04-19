@@ -159,7 +159,7 @@ class _ShutdownEventManager:
     def get_shutdown_event(cls):
         """Get or create shutdown event for current event loop"""
         try:
-            asyncio.get_event_loop()
+            asyncio.get_running_loop()
             if cls._shutdown_event is None:
                 cls._shutdown_event = asyncio.Event()
             return cls._shutdown_event

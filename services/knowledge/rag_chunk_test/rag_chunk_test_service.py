@@ -470,7 +470,7 @@ class RAGChunkTestService:
                             )
                             retrieval_results[mode].append({"query": query, "result": result})
                             # Cleanup immediately after successful test
-                            self.retrieval_evaluator.cleanup_test_collection(test_user_id, collection_name)
+                            await self.retrieval_evaluator.cleanup_test_collection(test_user_id, collection_name)
                             created_collections.remove((test_user_id, collection_name))
                         except Exception as e:
                             logger.error(
@@ -484,7 +484,7 @@ class RAGChunkTestService:
             # Ensure all collections are cleaned up even if test fails or is cancelled
             for user_id, collection_name in created_collections:
                 try:
-                    self.retrieval_evaluator.cleanup_test_collection(user_id, collection_name)
+                    await self.retrieval_evaluator.cleanup_test_collection(user_id, collection_name)
                     logger.debug(
                         "[RAGChunkTest] Cleaned up test collection: %s (user_id=%s)",
                         collection_name,
@@ -555,7 +555,7 @@ class RAGChunkTestService:
             logger.warning("[RAGChunkTest] Test cancelled before evaluation phase")
             raise RuntimeError("Test cancelled by user")
         avg_metrics = results.get("retrieval_comparison", {}).get("average", {})
-        results["evaluation_results"] = self.metrics_calculator.calculate_comprehensive_metrics(
+        results["evaluation_results"] = await self.metrics_calculator.calculate_comprehensive_metrics(
             all_chunks,
             retrieval_results,
             documents,

@@ -90,7 +90,7 @@ async def extract_and_clean_text(
     return cleaned_text, page_info
 
 
-def chunk_text_with_mode(
+async def chunk_text_with_mode(
     chunking_service,
     cleaned_text: str,
     document: KnowledgeDocument,
@@ -149,6 +149,12 @@ def chunk_text_with_mode(
             document_id,
         )
 
+    async def _call_chunker(service, **kwargs) -> List[Any]:
+        """Dispatch to async chunk_text_async if available, otherwise sync chunk_text."""
+        if hasattr(service, "chunk_text_async"):
+            return await service.chunk_text_async(**kwargs)
+        return service.chunk_text(**kwargs)
+
     # Use appropriate chunking service based on mode
     try:
         if mode == "hierarchical":
@@ -172,8 +178,9 @@ def chunk_text_with_mode(
                     "falling back to default automatic chunking for doc_id=%s",
                     document_id,
                 )
-                chunks = chunking_service.chunk_text(
-                    cleaned_text,
+                chunks = await _call_chunker(
+                    chunking_service,
+                    text=cleaned_text,
                     metadata={"document_id": document.id},
                     separator=separator,
                     extract_structure=True,
@@ -201,8 +208,9 @@ def chunk_text_with_mode(
                     "falling back to default automatic chunking for doc_id=%s",
                     document_id,
                 )
-                chunks = chunking_service.chunk_text(
-                    cleaned_text,
+                chunks = await _call_chunker(
+                    chunking_service,
+                    text=cleaned_text,
                     metadata={"document_id": document.id},
                     separator=separator,
                     extract_structure=True,
@@ -235,8 +243,9 @@ def chunk_text_with_mode(
                     chunking_engine,
                     type(chunking_service).__name__,
                 )
-                chunks = chunking_service.chunk_text(
-                    cleaned_text,
+                chunks = await _call_chunker(
+                    chunking_service,
+                    text=cleaned_text,
                     metadata={"document_id": document.id},
                     separator=separator,
                     extract_structure=True,
@@ -323,7 +332,7 @@ async def generate_embeddings_with_cache(
             raise ValueError(error_msg)
 
         try:
-            new_embeddings = embedding_client.embed_texts(texts_to_embed, dimensions=dimensions)
+            new_embeddings = await embedding_client.embed_texts(texts_to_embed, dimensions=dimensions)
 
             # Verify we got embeddings for all texts
             if len(new_embeddings) != len(texts_to_embed):

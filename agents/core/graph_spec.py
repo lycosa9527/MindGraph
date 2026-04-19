@@ -11,7 +11,6 @@ Proprietary License
 
 import json
 import logging
-import threading
 import yaml
 from langchain_core.prompts import PromptTemplate
 
@@ -28,7 +27,7 @@ from agents.core.utils import (
 logger = logging.getLogger(__name__)
 
 
-def generate_graph_spec(user_prompt: str, graph_type: str, language: str = "zh") -> dict:
+async def generate_graph_spec(user_prompt: str, graph_type: str, language: str = "zh") -> dict:
     """
     Use the LLM to generate a JSON spec for the given graph type.
 
@@ -64,7 +63,7 @@ def generate_graph_spec(user_prompt: str, graph_type: str, language: str = "zh")
         prompt = PromptTemplate(input_variables=["user_prompt"], template=safe_template)
         # Use generation model for graph specification generation (high quality)
         formatted_prompt = prompt.format(user_prompt=user_prompt)
-        yaml_text = llm_generation.invoke(formatted_prompt)
+        yaml_text = await llm_generation.invoke(formatted_prompt)
         # Some LLM clients return dict-like objects; ensure string
         try:
             raw_text = yaml_text if isinstance(yaml_text, str) else str(yaml_text)
@@ -148,24 +147,19 @@ def get_agent_config() -> dict:
     }
 
 
-def validate_agent_setup() -> bool:
+async def validate_agent_setup() -> bool:
     """
-    Validate that the agent is properly configured with cross-platform timeout
+    Validate that the agent is properly configured.
 
     Returns:
         bool: True if agent is ready, False otherwise
     """
-
-    def timeout_handler():
-        raise TimeoutError("LLM validation timed out")
-
-    timer = threading.Timer(config.QWEN_TIMEOUT, timeout_handler)
-    timer.start()
-
     try:
-        # Test LLM connection using classification model (fast/cheap)
-        test_prompt = "Test"
-        llm_classification.invoke(test_prompt)
+        import asyncio  # pylint: disable=import-outside-toplevel
+        await asyncio.wait_for(
+            llm_classification.invoke("Test"),
+            timeout=float(config.QWEN_TIMEOUT),
+        )
         logger.info("LLM connection validation completed successfully")
         return True
     except TimeoutError:
@@ -174,5 +168,3 @@ def validate_agent_setup() -> bool:
     except Exception as e:  # pylint: disable=broad-except
         logger.error("LLM connection failed: %s", e)
         return False
-    finally:
-        timer.cancel()

@@ -78,7 +78,7 @@ class RetrievalTestService:
         try:
             embedding_start = time.time()
             try:
-                query_embedding = self.rag_service.embedding_client.embed_query(query)
+                query_embedding = await self.rag_service.embedding_client.embed_query(query)
                 timing["embedding_ms"] = (time.time() - embedding_start) * 1000
                 logger.info(
                     "[RAG] ✓ Embedding: query='%s...', dims=%d, time=%.0fms",

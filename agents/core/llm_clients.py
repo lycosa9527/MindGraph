@@ -11,7 +11,6 @@ Proprietary License
 
 import asyncio
 import logging
-import threading
 from typing import Any
 
 from services.llm import llm_service
@@ -20,18 +19,18 @@ logger = logging.getLogger(__name__)
 
 
 class LLMTimingStats:
-    """Thread-safe LLM timing statistics tracker."""
+    """Asyncio-safe LLM timing statistics tracker."""
 
     def __init__(self):
-        self._lock = threading.Lock()  # pylint: disable=protected-access
-        self._total_calls = 0  # pylint: disable=protected-access
-        self._total_time = 0.0  # pylint: disable=protected-access
-        self._call_times = []  # pylint: disable=protected-access
-        self._last_call_time = 0.0  # pylint: disable=protected-access
+        self._lock = asyncio.Lock()
+        self._total_calls = 0
+        self._total_time = 0.0
+        self._call_times: list = []
+        self._last_call_time = 0.0
 
-    def add_call_time(self, call_time: float) -> None:
+    async def add_call_time(self, call_time: float) -> None:
         """Add a new call time to statistics."""
-        with self._lock:
+        async with self._lock:
             self._total_calls += 1
             self._total_time += call_time
             self._last_call_time = call_time
@@ -41,9 +40,9 @@ class LLMTimingStats:
             if len(self._call_times) > 100:
                 self._call_times = self._call_times[-100:]
 
-    def get_stats(self) -> dict:
+    async def get_stats(self) -> dict:
         """Get current timing statistics."""
-        with self._lock:
+        async with self._lock:
             avg_time = self._total_time / self._total_calls if self._total_calls > 0 else 0.0
             return {
                 "total_calls": self._total_calls,
@@ -54,31 +53,21 @@ class LLMTimingStats:
             }
 
 
-# Thread-safe global timing tracker
+# Asyncio-safe global timing tracker
 llm_timing_stats = LLMTimingStats()
 
 
-def get_llm_timing_stats() -> dict:
+async def get_llm_timing_stats() -> dict:
     """Get current LLM timing statistics."""
-    return llm_timing_stats.get_stats()
+    return await llm_timing_stats.get_stats()
 
 
 class _LegacyLLMStub:
     """Stub for old concept map functions - uses LLM Service"""
 
-    def invoke(self, prompt: str) -> str:
+    async def invoke(self, prompt: str) -> str:
         """Public interface for LLM invocation."""
-
-        async def _async_call():
-            return await llm_service.chat(prompt=prompt, model="qwen", timeout=30.0)
-
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(_async_call())
+        return await llm_service.chat(prompt=prompt, model="qwen", timeout=30.0)
 
 
 # Legacy stubs for old concept map code - now using LLM Service
@@ -104,9 +93,9 @@ class QwenLLM:
         """
         self.model_type = model_type
 
-    def _call(self, prompt: str, stop: Any = None) -> str:
+    async def _call(self, prompt: str, stop: Any = None) -> str:
         """
-        Synchronous wrapper for async LLM Service call.
+        Async LLM Service call.
 
         Args:
             prompt: The prompt to send to the LLM
@@ -115,16 +104,5 @@ class QwenLLM:
         Returns:
             str: The LLM response content
         """
-        # stop parameter is kept for API compatibility but not used
         del stop
-
-        async def _async_call():
-            return await llm_service.chat(prompt=prompt, model="qwen", timeout=30.0)
-
-        try:
-            loop = asyncio.get_event_loop()
-        except RuntimeError:
-            loop = asyncio.new_event_loop()
-            asyncio.set_event_loop(loop)
-
-        return loop.run_until_complete(_async_call())
+        return await llm_service.chat(prompt=prompt, model="qwen", timeout=30.0)

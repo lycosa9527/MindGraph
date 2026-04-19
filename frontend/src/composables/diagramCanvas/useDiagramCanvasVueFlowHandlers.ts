@@ -32,12 +32,13 @@ export function useDiagramCanvasVueFlowHandlers(
 
   onNodesChange((changes) => {
     let hasFitTriggeringChange = false
+    const conceptMapPositionNodeIds = new Set<string>()
 
     changes.forEach((change) => {
       if (change.type === 'position' && change.position) {
         diagramStore.updateNodePosition(change.id, change.position, false)
         if (diagramStore.type === 'concept_map') {
-          diagramStore.updateConnectionArrowheadsForNode(change.id)
+          conceptMapPositionNodeIds.add(change.id)
         }
       }
       if (
@@ -48,6 +49,10 @@ export function useDiagramCanvasVueFlowHandlers(
         hasFitTriggeringChange = true
       }
     })
+
+    for (const nodeId of conceptMapPositionNodeIds) {
+      diagramStore.updateConnectionArrowheadsForNode(nodeId)
+    }
 
     scheduleFitAfterStructuralNodeChange(hasFitTriggeringChange)
   })

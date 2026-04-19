@@ -1,14 +1,31 @@
 """Voice session lifecycle and Omni client accessors."""
 
 from datetime import datetime
-from typing import Any, Dict, Optional
+from typing import Any, Coroutine, Dict, Optional
 import asyncio
+import logging
 import uuid
 
 from clients.omni_client import OmniClient
 from services.features.voice_agent import voice_agent_manager
 
 from routers.features.voice.state import active_websockets, logger, voice_sessions
+
+_bg_tasks: set[asyncio.Task] = set()
+_session_logger = logging.getLogger(__name__)
+
+
+def _fire_and_forget(coro: Coroutine) -> None:
+    """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
+    task = asyncio.create_task(coro)
+    _bg_tasks.add(task)
+
+    def _on_done(t: asyncio.Task) -> None:
+        _bg_tasks.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            _session_logger.debug("[bg_task] background task raised: %s", t.exception())
+
+    task.add_done_callback(_on_done)
 
 
 def get_agent_session_id(voice_session_id: str) -> str:
@@ -151,11 +168,8 @@ def end_voice_session(session_id: str, reason: str = "completed") -> None:
                 close_result = omni_client.close()
                 if asyncio.iscoroutine(close_result):
                     try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            asyncio.create_task(close_result)
-                        else:
-                            loop.run_until_complete(close_result)
+                        asyncio.get_running_loop()
+                        _fire_and_forget(close_result)
                     except RuntimeError:
                         asyncio.run(close_result)
                 logger.debug("VOIC | Closed Omni client for session %s", session_id)

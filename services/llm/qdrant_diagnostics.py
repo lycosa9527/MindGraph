@@ -70,11 +70,11 @@ class QdrantDiagnosticsMixin:
     """
     Compression metrics and collection diagnostics for QdrantService.
 
-    Expects: client, use_compression, compression_type, get_user_collection,
-    _get_collection_name.
+    Expects: client (AsyncQdrantClient), use_compression, compression_type,
+    get_user_collection (async), _get_collection_name.
     """
 
-    def get_compression_metrics(self, user_id: int) -> Dict[str, Any]:
+    async def get_compression_metrics(self, user_id: int) -> Dict[str, Any]:
         """
         Get compression metrics for user's collection.
 
@@ -92,12 +92,12 @@ class QdrantDiagnosticsMixin:
             - compression_ratio: float
             - storage_savings_percent: float
         """
-        collection_name = self.get_user_collection(user_id)
+        collection_name = await self.get_user_collection(user_id)
         if not collection_name:
             return _empty_compression_metrics()
 
         try:
-            info = self.client.get_collection(collection_name)
+            info = await self.client.get_collection(collection_name)
             compression_enabled = self.use_compression
             compression_type = self.compression_type if compression_enabled else None
             return _build_compression_metrics(
@@ -106,11 +106,11 @@ class QdrantDiagnosticsMixin:
                 compression_enabled,
                 compression_type,
             )
-        except Exception as e:
-            logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, e)
-            return _empty_compression_metrics(str(e))
+        except Exception as exc:
+            logger.error("[Qdrant] Failed to get compression metrics for user %s: %s", user_id, exc)
+            return _empty_compression_metrics(str(exc))
 
-    def get_diagnostics(self, user_id: int) -> Dict[str, Any]:
+    async def get_diagnostics(self, user_id: int) -> Dict[str, Any]:
         """
         Get diagnostic information for user's Qdrant collection.
 
@@ -122,7 +122,7 @@ class QdrantDiagnosticsMixin:
         Returns:
             Dict with collection info, point count, sample payloads, etc.
         """
-        result = {
+        result: Dict[str, Any] = {
             "user_id": user_id,
             "collection_name": self._get_collection_name(user_id),
             "collection_exists": False,
@@ -134,7 +134,7 @@ class QdrantDiagnosticsMixin:
         }
 
         try:
-            collection_name = self.get_user_collection(user_id)
+            collection_name = await self.get_user_collection(user_id)
             if not collection_name:
                 result["errors"].append(f"Collection does not exist for user {user_id}")
                 return result
@@ -142,7 +142,7 @@ class QdrantDiagnosticsMixin:
             result["collection_exists"] = True
 
             try:
-                info = self.client.get_collection(collection_name)
+                info = await self.client.get_collection(collection_name)
                 result["points_count"] = info.points_count
                 if info.config and info.config.params and info.config.params.vectors:
                     vectors_config = info.config.params.vectors
@@ -150,11 +150,11 @@ class QdrantDiagnosticsMixin:
                         result["vector_dimensions"] = vectors_config.size
                     elif isinstance(vectors_config, dict) and "" in vectors_config:
                         result["vector_dimensions"] = vectors_config[""].size
-            except Exception as e:
-                result["errors"].append(f"Failed to get collection info: {e}")
+            except Exception as exc:
+                result["errors"].append(f"Failed to get collection info: {exc}")
 
             try:
-                scroll_result = self.client.scroll(
+                scroll_result = await self.client.scroll(
                     collection_name=collection_name,
                     limit=5,
                     with_payload=True,
@@ -169,25 +169,25 @@ class QdrantDiagnosticsMixin:
                     if point.payload:
                         result["payload_keys"].update(point.payload.keys())
 
-            except Exception as e:
-                result["errors"].append(f"Failed to scroll points: {e}")
+            except Exception as exc:
+                result["errors"].append(f"Failed to scroll points: {exc}")
 
             result["payload_keys"] = list(result["payload_keys"])
 
             if result["vector_dimensions"]:
                 try:
                     test_vector = [random.random() for _ in range(result["vector_dimensions"])]
-                    test_results = self.client.query_points(
+                    response = await self.client.query_points(
                         collection_name=collection_name,
                         query=test_vector,
                         limit=1,
                         with_payload=True,
-                    ).points
-                    result["test_search_returned"] = len(test_results)
-                except Exception as e:
-                    result["errors"].append(f"Test search failed: {e}")
+                    )
+                    result["test_search_returned"] = len(response.points)
+                except Exception as exc:
+                    result["errors"].append(f"Test search failed: {exc}")
 
-        except Exception as e:
-            result["errors"].append(f"Diagnostic failed: {e}")
+        except Exception as exc:
+            result["errors"].append(f"Diagnostic failed: {exc}")
 
         return result

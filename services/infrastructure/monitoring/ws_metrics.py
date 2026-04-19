@@ -11,7 +11,6 @@ Proprietary License
 from __future__ import annotations
 
 import logging
-import threading
 import time
 from typing import Any, Dict
 
@@ -19,7 +18,6 @@ from services.redis.redis_async_client import get_async_redis
 
 logger = logging.getLogger(__name__)
 
-_lock = threading.Lock()
 _local: Dict[str, int] = {
     "ws_chat_connections": 0,
     "ws_workshop_connections": 0,
@@ -33,9 +31,12 @@ _local: Dict[str, int] = {
 
 
 def _bump(key: str, delta: int = 1) -> None:
-    """Increment a named in-process counter under lock."""
-    with _lock:
-        _local[key] = _local.get(key, 0) + delta
+    """Increment a named in-process counter.
+
+    CPython's GIL makes simple dict integer updates atomic; no lock required
+    in a single-threaded asyncio process.
+    """
+    _local[key] = _local.get(key, 0) + delta
 
 
 def record_ws_chat_connection_delta(delta: int) -> None:
@@ -80,8 +81,7 @@ def record_ws_rate_limit_hit() -> None:
 
 async def get_ws_metrics_snapshot() -> Dict[str, Any]:
     """Return a copy of in-process WebSocket counters plus optional Redis gauge."""
-    with _lock:
-        snap = dict(_local)
+    snap = dict(_local)
     snap["timestamp"] = time.time()
     try:
         r = get_async_redis()

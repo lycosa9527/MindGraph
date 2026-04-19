@@ -315,12 +315,7 @@ class EmbeddingCache:
                 return cached
             logger.warning("[EmbeddingCache] Cached embedding invalid, regenerating")
 
-        # The DashScope embedding client is synchronous; offload its blocking HTTP
-        # call to a worker thread so the event loop is not stalled while we
-        # compute the vector before the VSET semantic-similarity probe.
-        import asyncio  # local import to avoid module-level cost
-
-        embedding = await asyncio.to_thread(self.embedding_client.embed_query, query)
+        embedding = await self.embedding_client.embed_query(query)
 
         if not self._validate_embedding(embedding):
             raise ValueError("Generated embedding is invalid (contains NaN/Inf or zero norm)")

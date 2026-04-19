@@ -35,6 +35,13 @@ from clients.dify_http_errors import parse_dify_error_response, raise_for_dify_h
 
 logger = logging.getLogger(__name__)
 
+
+def _read_file_bytes(path: str) -> bytes:
+    """Read a file from disk synchronously (called via asyncio.to_thread)."""
+    with open(path, "rb") as fh:
+        return fh.read()
+
+
 # Default aiohttp read_bufsize is 64 KiB; StreamReader high-water is 2× that. Large SSE
 # lines from Dify (single JSON event with long text) can exceed that and raise
 # ValueError: Chunk too big when reading the stream.
@@ -679,12 +686,10 @@ class AsyncDifyClient:
         data.add_field("user", user_id)
 
         if file_path:
-            if not os.path.exists(file_path):
+            if not await asyncio.to_thread(os.path.exists, file_path):
                 raise FileNotFoundError(f"File not found: {file_path}")
             filename = filename or os.path.basename(file_path)
-            # Read file content to avoid file handle closure issues
-            with open(file_path, "rb") as f:
-                file_content = f.read()
+            file_content = await asyncio.to_thread(_read_file_bytes, file_path)
             data.add_field(
                 "file",
                 BytesIO(file_content),
@@ -729,39 +734,37 @@ class AsyncDifyClient:
             DifyAPIError: For other API errors
         """
         url = f"{self.api_url}/files/{file_id}/preview"
-        params = {}
+        params: Dict[str, str] = {}
         if as_attachment:
             params["as_attachment"] = "true"
 
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
         headers = self._get_headers()
+        session = await _DifySharedHttpPool.session_blocking(self.api_url, self.timeout)
 
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(url, params=params, headers=headers) as response:
-                if response.status == 404:
-                    raise DifyFileNotFoundError("File not found or has been deleted")
-                if response.status == 403:
-                    raise DifyFileAccessDeniedError("File access denied or file does not belong to current application")
-                if response.status != 200:
-                    error_msg = f"HTTP {response.status}"
-                    try:
-                        error_data = await response.json()
-                        error_msg = error_data.get("message", error_msg)
-                    except (json.JSONDecodeError, ValueError):
-                        pass
-                    raise DifyAPIError(error_msg, status_code=response.status)
+        async with session.get(url, params=params, headers=headers) as response:
+            if response.status == 404:
+                raise DifyFileNotFoundError("File not found or has been deleted")
+            if response.status == 403:
+                raise DifyFileAccessDeniedError("File access denied or file does not belong to current application")
+            if response.status != 200:
+                error_msg = f"HTTP {response.status}"
+                try:
+                    error_data = await response.json()
+                    error_msg = error_data.get("message", error_msg)
+                except (json.JSONDecodeError, ValueError):
+                    pass
+                raise DifyAPIError(error_msg, status_code=response.status)
 
-                # Extract response headers
-                response_headers = {
-                    "Content-Type": response.headers.get("Content-Type", ""),
-                    "Content-Length": response.headers.get("Content-Length", ""),
-                    "Content-Disposition": response.headers.get("Content-Disposition", ""),
-                    "Cache-Control": response.headers.get("Cache-Control", ""),
-                    "Accept-Ranges": response.headers.get("Accept-Ranges", ""),
-                }
+            response_headers = {
+                "Content-Type": response.headers.get("Content-Type", ""),
+                "Content-Length": response.headers.get("Content-Length", ""),
+                "Content-Disposition": response.headers.get("Content-Disposition", ""),
+                "Cache-Control": response.headers.get("Cache-Control", ""),
+                "Accept-Ranges": response.headers.get("Accept-Ranges", ""),
+            }
 
-                content = await response.read()
-                return content, response_headers
+            content = await response.read()
+            return content, response_headers
 
     # =========================================================================
     # Audio
@@ -769,11 +772,12 @@ class AsyncDifyClient:
 
     async def audio_to_text(self, audio_file_path: str, user_id: str) -> Dict[str, Any]:
         """Convert speech to text"""
+        file_content = await asyncio.to_thread(_read_file_bytes, audio_file_path)
         data = aiohttp.FormData()
         data.add_field("user", user_id)
         data.add_field(
             "file",
-            open(audio_file_path, "rb"),
+            BytesIO(file_content),
             filename=os.path.basename(audio_file_path),
         )
         return await self._request("POST", "/audio-to-text", data=data)
@@ -781,21 +785,20 @@ class AsyncDifyClient:
     async def text_to_audio(self, user_id: str, text: Optional[str] = None, message_id: Optional[str] = None) -> bytes:
         """Convert text to speech, returns audio bytes"""
         url = f"{self.api_url}/text-to-audio"
-        payload = {"user": user_id}
+        payload: Dict[str, Any] = {"user": user_id}
         if message_id:
             payload["message_id"] = message_id
         if text:
             payload["text"] = text
 
-        timeout = aiohttp.ClientTimeout(total=self.timeout)
-        async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.post(url, json=payload, headers=self._get_headers()) as response:
-                if response.status != 200:
-                    raise DifyAPIError(
-                        f"TTS failed: HTTP {response.status}",
-                        status_code=response.status,
-                    )
-                return await response.read()
+        session = await _DifySharedHttpPool.session_blocking(self.api_url, self.timeout)
+        async with session.post(url, json=payload, headers=self._get_headers()) as response:
+            if response.status != 200:
+                raise DifyAPIError(
+                    f"TTS failed: HTTP {response.status}",
+                    status_code=response.status,
+                )
+            return await response.read()
 
     # =========================================================================
     # App Information

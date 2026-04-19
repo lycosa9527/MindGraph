@@ -15,6 +15,9 @@ from typing import Optional, AsyncGenerator
 import logging
 import os
 
+import aiofiles
+import anyio
+
 from clients.tts_realtime_client import (
     TTSRealtimeClient,
     SessionMode,
@@ -250,12 +253,10 @@ class DashscopeTtsService:
             return None
 
         try:
-            # Ensure directory exists
-            output_path.parent.mkdir(parents=True, exist_ok=True)
+            await anyio.Path(output_path.parent).mkdir(parents=True, exist_ok=True)
 
-            # Write audio file
-            with open(output_path, "wb") as f:
-                f.write(audio_bytes)
+            async with aiofiles.open(output_path, "wb") as f:
+                await f.write(audio_bytes)
 
             logger.info("[TTS] Saved audio to %s", output_path)
             return str(output_path)

@@ -48,7 +48,7 @@ async def cleanup_user_knowledge_space(db: AsyncSession, user_id: int) -> None:
 
         try:
             qdrant = get_qdrant_service()
-            qdrant.delete_user_collection(user_id)
+            await qdrant.delete_user_collection(user_id)
             logger.info("[UserCleanup] Deleted Qdrant collection for user %s", user_id)
         except Exception as exc:
             logger.error(

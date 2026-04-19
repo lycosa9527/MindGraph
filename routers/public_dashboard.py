@@ -443,9 +443,14 @@ async def get_map_data(request: Request) -> Dict[str, Any]:
                     ip_to_user[ip_address] = []
                 ip_to_user[ip_address].append(user)
 
-        # Parallelize IP geolocation lookups (database already checked above)
-        location_tasks = [ip_geolocation.get_location(ip) for ip in ip_addresses]
-        locations = await asyncio.gather(*location_tasks, return_exceptions=True)
+        # Parallelize IP geolocation lookups with bounded concurrency
+        sem = asyncio.Semaphore(10)
+
+        async def _geolocate(ip: str):
+            async with sem:
+                return await ip_geolocation.get_location(ip)
+
+        locations = await asyncio.gather(*[_geolocate(ip) for ip in ip_addresses], return_exceptions=True)
 
         # Process locations for province highlighting and flag creation
         province_data = defaultdict(int)  # {province_name: count}

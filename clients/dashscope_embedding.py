@@ -12,10 +12,10 @@ Proprietary License
 
 from pathlib import Path
 from typing import List, Optional, Dict, Any, Union
+import asyncio
 import base64
 import logging
 import os
-import time
 
 import httpx
 import numpy as np
@@ -107,7 +107,7 @@ class DashScopeEmbeddingClient:
         ]
         return model in multimodal_models
 
-    def _make_request(
+    async def _make_request(
         self,
         texts: List[str],
         input_type: str = "document",
@@ -162,7 +162,7 @@ class DashScopeEmbeddingClient:
         # Build payload based on API type
         if self.use_openai_compatible:
             # OpenAI compatible format
-            payload = {
+            payload: Dict[str, Any] = {
                 "model": self.model,
                 "input": texts if len(texts) > 1 else texts[0],  # Single text or array
             }
@@ -200,10 +200,10 @@ class DashScopeEmbeddingClient:
         max_retries = 3
         last_error = None
 
-        for attempt in range(1, max_retries + 1):
-            try:
-                with httpx.Client(timeout=60.0) as client:
-                    response = client.post(
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            for attempt in range(1, max_retries + 1):
+                try:
+                    response = await client.post(
                         self.embedding_url,
                         headers=headers,
                         json=payload,
@@ -213,7 +213,6 @@ class DashScopeEmbeddingClient:
                     success, error = handle_dashscope_response(response, raise_on_error=False)
                     if not success and error:
                         last_error = error
-                        # Check if we should retry
                         if should_retry(error, attempt, max_retries):
                             delay = get_retry_delay(attempt, error)
                             logger.warning(
@@ -223,133 +222,82 @@ class DashScopeEmbeddingClient:
                                 error.message,
                                 delay,
                             )
-                            time.sleep(delay)
+                            await asyncio.sleep(delay)
                             continue
                         else:
-                            # Don't retry, raise the error
                             raise error
 
                     result = response.json()
 
-                # Handle OpenAI-compatible response format
-                if self.use_openai_compatible:
-                    if "data" in result:
-                        raw_embeddings = [item["embedding"] for item in result["data"]]
-                    else:
-                        raise ValueError(f"Unexpected OpenAI-compatible response format: {result}")
-                elif "output" in result and "embeddings" in result["output"]:
-                    embeddings = result["output"]["embeddings"]
-                    raw_embeddings = [item["embedding"] for item in embeddings]
-                else:
-                    raise ValueError(f"Unexpected response format: {result}")
-
-                # Normalize and validate embeddings
-                normalized_embeddings = []
-                for i, embedding in enumerate(raw_embeddings):
-                    try:
-                        # Convert to numpy array for normalization
-                        embedding_array = np.array(embedding, dtype=np.float32)
-
-                        # Check for NaN or Inf values
-                        if np.isnan(embedding_array).any() or np.isinf(embedding_array).any():
-                            logger.warning(
-                                "[DashScopeEmbedding] Invalid embedding (NaN/Inf) at index %d, skipping this embedding",
-                                i,
-                            )
-                            continue
-
-                        # L2 normalization for accurate cosine similarity
-                        norm = np.linalg.norm(embedding_array)
-                        if norm > 0:
-                            normalized = (embedding_array / norm).tolist()
-                            normalized_embeddings.append(normalized)
+                    # Handle OpenAI-compatible response format
+                    if self.use_openai_compatible:
+                        if "data" in result:
+                            raw_embeddings = [item["embedding"] for item in result["data"]]
                         else:
-                            logger.warning(
-                                "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping this embedding",
-                                i,
-                            )
-                            continue
+                            raise ValueError(f"Unexpected OpenAI-compatible response format: {result}")
+                    elif "output" in result and "embeddings" in result["output"]:
+                        embeddings = result["output"]["embeddings"]
+                        raw_embeddings = [item["embedding"] for item in embeddings]
+                    else:
+                        raise ValueError(f"Unexpected response format: {result}")
 
-                    except Exception as e:  # pylint: disable=broad-except
-                        logger.error(
-                            "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
-                            i,
-                            e,
+                    return self._normalize_embeddings(raw_embeddings)
+
+                except DashScopeError as e:
+                    last_error = e
+                    if should_retry(e, attempt, max_retries):
+                        delay = get_retry_delay(attempt, e)
+                        logger.warning(
+                            "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
+                            attempt,
+                            max_retries,
+                            e.message,
+                            delay,
                         )
+                        await asyncio.sleep(delay)
                         continue
-
-                if len(normalized_embeddings) != len(raw_embeddings):
-                    logger.warning(
-                        "[DashScopeEmbedding] Normalized %d/%d embeddings (some were invalid)",
-                        len(normalized_embeddings),
-                        len(raw_embeddings),
+                    else:
+                        logger.error(
+                            "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
+                            e.message,
+                            e.error_code,
+                            e.error_type,
+                        )
+                        raise
+                except httpx.HTTPError as e:
+                    status_code = None
+                    if isinstance(e, httpx.HTTPStatusError):
+                        resp = getattr(e, "response", None)
+                        if resp is not None:
+                            status_code = resp.status_code
+                    last_error = DashScopeError(
+                        message=f"HTTP error: {str(e)}",
+                        status_code=status_code,
+                        retryable=True,
                     )
-
-                # Success - return embeddings
-                return normalized_embeddings
-
-            except DashScopeError as e:
-                # DashScope-specific errors
-                last_error = e
-                # Check if we should retry
-                if should_retry(e, attempt, max_retries):
-                    delay = get_retry_delay(attempt, e)
-                    logger.warning(
-                        "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
-                        attempt,
-                        max_retries,
-                        e.message,
-                        delay,
-                    )
-                    time.sleep(delay)
-                    continue
-                else:
-                    # Don't retry, raise immediately
-                    logger.error(
-                        "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
-                        e.message,
-                        e.error_code,
-                        e.error_type,
-                    )
+                    if should_retry(last_error, attempt, max_retries):
+                        delay = get_retry_delay(attempt)
+                        logger.warning(
+                            "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
+                            attempt,
+                            max_retries,
+                            e,
+                            delay,
+                        )
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        logger.error("[DashScopeEmbedding] HTTP error: %s", e)
+                        raise
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.error("[DashScopeEmbedding] Error embedding texts: %s", e)
                     raise
-            except httpx.HTTPError as e:
-                # Network/HTTP errors - retry if transient
-                status_code = None
-                if isinstance(e, httpx.HTTPStatusError):
-                    response = getattr(e, "response", None)
-                    if response is not None:
-                        status_code = response.status_code
-                last_error = DashScopeError(
-                    message=f"HTTP error: {str(e)}",
-                    status_code=status_code,
-                    retryable=True,
-                )
-                if should_retry(last_error, attempt, max_retries):
-                    delay = get_retry_delay(attempt)
-                    logger.warning(
-                        "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
-                        attempt,
-                        max_retries,
-                        e,
-                        delay,
-                    )
-                    time.sleep(delay)
-                    continue
-                else:
-                    logger.error("[DashScopeEmbedding] HTTP error: %s", e)
-                    raise
-            except Exception as e:  # pylint: disable=broad-except
-                # Other errors - don't retry
-                logger.error("[DashScopeEmbedding] Error embedding texts: %s", e)
-                raise
 
-        # If we exhausted retries, raise last error
         if last_error:
             raise last_error
-        # This should never be reached, but type checker needs it
         raise RuntimeError("Unexpected end of retry loop")
 
-    def embed_texts(
+    async def embed_texts(
         self,
         texts: List[str],
         text_type: str = "document",
@@ -380,7 +328,7 @@ class DashScopeEmbeddingClient:
         for i in range(0, len(texts), self.batch_size):
             batch = texts[i : i + self.batch_size]
             try:
-                batch_embeddings = self._make_request(
+                batch_embeddings = await self._make_request(
                     batch,
                     input_type=text_type,
                     dimensions=dimensions,
@@ -402,7 +350,7 @@ class DashScopeEmbeddingClient:
 
         return all_embeddings
 
-    def embed_query(
+    async def embed_query(
         self,
         query: str,
         dimensions: Optional[int] = None,
@@ -429,7 +377,7 @@ class DashScopeEmbeddingClient:
             dimensions = config.EMBEDDING_DIMENSIONS
 
         try:
-            embeddings = self._make_request(
+            embeddings = await self._make_request(
                 [query],
                 input_type="query",
                 dimensions=dimensions,
@@ -444,7 +392,7 @@ class DashScopeEmbeddingClient:
             logger.error("[DashScopeEmbedding] Failed to embed query: %s", e)
             raise
 
-    def embed_image(self, image_path: str) -> List[float]:
+    async def embed_image(self, image_path: str) -> List[float]:
         """
         Embed a single image (multimodal models only).
 
@@ -458,16 +406,13 @@ class DashScopeEmbeddingClient:
             raise ValueError(f"Model {self.model} does not support multimodal embeddings")
 
         try:
-            # Check if it's a URL or local file
             if image_path.startswith(("http://", "https://")):
-                # URL
                 content = {"image": image_path}
             else:
-                # Local file - convert to base64
                 image_data = self._image_to_base64(image_path)
                 content = {"image": image_data}
 
-            embeddings = self._make_multimodal_request([content])
+            embeddings = await self._make_multimodal_request([content])
             if embeddings and len(embeddings) > 0:
                 return embeddings[0]
             else:
@@ -476,7 +421,7 @@ class DashScopeEmbeddingClient:
             logger.error("[DashScopeEmbedding] Failed to embed image: %s", e)
             raise
 
-    def embed_multimodal(self, contents: List[Union[str, Dict[str, str]]]) -> List[List[float]]:
+    async def embed_multimodal(self, contents: List[Union[str, Dict[str, str]]]) -> List[List[float]]:
         """
         Embed multimodal content (text, images, videos).
 
@@ -504,13 +449,12 @@ class DashScopeEmbeddingClient:
                 if "image" in content:
                     image_path = content["image"]
                     if not image_path.startswith(("http://", "https://", "data:image")):
-                        # Local file - convert to base64
                         content["image"] = self._image_to_base64(image_path)
                 normalized_contents.append(content)
             else:
                 raise ValueError(f"Invalid content type: {type(content)}")
 
-        return self._make_multimodal_request(normalized_contents)
+        return await self._make_multimodal_request(normalized_contents)
 
     def _image_to_base64(self, image_path: str) -> str:
         """
@@ -526,18 +470,51 @@ class DashScopeEmbeddingClient:
         if not path.exists():
             raise FileNotFoundError(f"Image file not found: {image_path}")
 
-        # Determine image format
         ext = path.suffix.lower().lstrip(".")
         if ext not in ["jpg", "jpeg", "png", "webp", "bmp", "tiff", "ico"]:
             raise ValueError(f"Unsupported image format: {ext}")
 
-        # Read and encode
         with open(path, "rb") as f:
             image_data = base64.b64encode(f.read()).decode("utf-8")
 
         return f"data:image/{ext};base64,{image_data}"
 
-    def _make_multimodal_request(self, contents: List[Dict[str, Any]]) -> List[List[float]]:
+    @staticmethod
+    def _normalize_embeddings(raw_embeddings: List[List[float]]) -> List[List[float]]:
+        """L2-normalize a list of raw embedding vectors, dropping invalid entries."""
+        normalized = []
+        for i, embedding in enumerate(raw_embeddings):
+            try:
+                arr = np.array(embedding, dtype=np.float32)
+                if np.isnan(arr).any() or np.isinf(arr).any():
+                    logger.warning(
+                        "[DashScopeEmbedding] Invalid embedding (NaN/Inf) at index %d, skipping",
+                        i,
+                    )
+                    continue
+                norm = np.linalg.norm(arr)
+                if norm > 0:
+                    normalized.append((arr / norm).tolist())
+                else:
+                    logger.warning(
+                        "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping",
+                        i,
+                    )
+            except Exception as e:  # pylint: disable=broad-except
+                logger.error(
+                    "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
+                    i,
+                    e,
+                )
+        if len(normalized) != len(raw_embeddings):
+            logger.warning(
+                "[DashScopeEmbedding] Normalized %d/%d embeddings (some were invalid)",
+                len(normalized),
+                len(raw_embeddings),
+            )
+        return normalized
+
+    async def _make_multimodal_request(self, contents: List[Dict[str, Any]]) -> List[List[float]]:
         """
         Make multimodal embedding API request.
 
@@ -552,32 +529,29 @@ class DashScopeEmbeddingClient:
             "Content-Type": "application/json",
         }
 
-        payload = {"model": self.model, "input": {"contents": contents}}
+        payload: Dict[str, Any] = {"model": self.model, "input": {"contents": contents}}
 
-        # Add parameters for tongyi-embedding-vision-plus
         if self.model == "tongyi-embedding-vision-plus":
             payload["parameters"] = {
                 "output_type": "dense",
-                "dimension": 1024,  # Default dimension
+                "dimension": 1024,
             }
 
         max_retries = 3
         last_error = None
 
-        for attempt in range(1, max_retries + 1):
-            try:
-                with httpx.Client(timeout=120.0) as client:  # Longer timeout for multimodal
-                    response = client.post(
+        async with httpx.AsyncClient(timeout=120.0) as client:
+            for attempt in range(1, max_retries + 1):
+                try:
+                    response = await client.post(
                         self.embedding_url,
                         headers=headers,
                         json=payload,
                     )
 
-                    # Check for errors with comprehensive handling
                     success, error = handle_dashscope_response(response, raise_on_error=False)
                     if not success and error:
                         last_error = error
-                        # Check if we should retry
                         if should_retry(error, attempt, max_retries):
                             delay = get_retry_delay(attempt, error)
                             logger.warning(
@@ -587,126 +561,73 @@ class DashScopeEmbeddingClient:
                                 error.message,
                                 delay,
                             )
-                            time.sleep(delay)
+                            await asyncio.sleep(delay)
                             continue
                         else:
-                            # Don't retry, raise the error
                             raise error
 
                     result = response.json()
 
-                if "output" in result and "embeddings" in result["output"]:
-                    embeddings = result["output"]["embeddings"]
-                    # Sort by index to maintain order
-                    embeddings.sort(key=lambda x: x.get("index", 0))
-                    raw_embeddings = [item["embedding"] for item in embeddings]
+                    if "output" in result and "embeddings" in result["output"]:
+                        embeddings = result["output"]["embeddings"]
+                        embeddings.sort(key=lambda x: x.get("index", 0))
+                        raw_embeddings = [item["embedding"] for item in embeddings]
+                        return self._normalize_embeddings(raw_embeddings)
+                    else:
+                        raise ValueError(f"Unexpected response format: {result}")
 
-                    # Normalize and validate embeddings
-                    normalized_embeddings = []
-                    for i, embedding in enumerate(raw_embeddings):
-                        try:
-                            embedding_array = np.array(embedding, dtype=np.float32)
-
-                            # Check for NaN or Inf values
-                            if np.isnan(embedding_array).any() or np.isinf(embedding_array).any():
-                                logger.warning(
-                                    "[DashScopeEmbedding] Invalid embedding (NaN/Inf) "
-                                    "at index %d, skipping this embedding",
-                                    i,
-                                )
-                                continue
-
-                            # L2 normalization
-                            norm = np.linalg.norm(embedding_array)
-                            if norm > 0:
-                                normalized = (embedding_array / norm).tolist()
-                                normalized_embeddings.append(normalized)
-                            else:
-                                logger.warning(
-                                    "[DashScopeEmbedding] Zero-norm embedding at index %d, skipping this embedding",
-                                    i,
-                                )
-                                continue
-
-                        except Exception as e:  # pylint: disable=broad-except
-                            logger.error(
-                                "[DashScopeEmbedding] Failed to normalize embedding at index %d: %s",
-                                i,
-                                e,
-                            )
-                            continue
-
-                    if len(normalized_embeddings) != len(raw_embeddings):
+                except DashScopeError as e:
+                    last_error = e
+                    if should_retry(e, attempt, max_retries):
+                        delay = get_retry_delay(attempt, e)
                         logger.warning(
-                            "[DashScopeEmbedding] Normalized %d/%d embeddings (some were invalid)",
-                            len(normalized_embeddings),
-                            len(raw_embeddings),
+                            "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
+                            attempt,
+                            max_retries,
+                            e.message,
+                            delay,
                         )
-
-                    # Success - return embeddings
-                    return normalized_embeddings
-                else:
-                    raise ValueError(f"Unexpected response format: {result}")
-
-            except DashScopeError as e:
-                # DashScope-specific errors
-                last_error = e
-                # Check if we should retry
-                if should_retry(e, attempt, max_retries):
-                    delay = get_retry_delay(attempt, e)
-                    logger.warning(
-                        "[DashScopeEmbedding] DashScope error on attempt %d/%d: %s. Retrying in %ds...",
-                        attempt,
-                        max_retries,
-                        e.message,
-                        delay,
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        logger.error(
+                            "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
+                            e.message,
+                            e.error_code,
+                            e.error_type,
+                        )
+                        raise
+                except httpx.HTTPError as e:
+                    status_code = None
+                    if isinstance(e, httpx.HTTPStatusError):
+                        resp = getattr(e, "response", None)
+                        if resp is not None:
+                            status_code = resp.status_code
+                    last_error = DashScopeError(
+                        message=f"HTTP error: {str(e)}",
+                        status_code=status_code,
+                        retryable=True,
                     )
-                    time.sleep(delay)
-                    continue
-                else:
-                    # Don't retry, raise immediately
-                    logger.error(
-                        "[DashScopeEmbedding] DashScope API error: %s (code: %s, type: %s)",
-                        e.message,
-                        e.error_code,
-                        e.error_type,
-                    )
+                    if should_retry(last_error, attempt, max_retries):
+                        delay = get_retry_delay(attempt)
+                        logger.warning(
+                            "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
+                            attempt,
+                            max_retries,
+                            e,
+                            delay,
+                        )
+                        await asyncio.sleep(delay)
+                        continue
+                    else:
+                        logger.error("[DashScopeEmbedding] HTTP error: %s", e)
+                        raise
+                except Exception as e:  # pylint: disable=broad-except
+                    logger.error("[DashScopeEmbedding] Error embedding multimodal content: %s", e)
                     raise
-            except httpx.HTTPError as e:
-                # Network/HTTP errors - retry if transient
-                status_code = None
-                if isinstance(e, httpx.HTTPStatusError):
-                    response = getattr(e, "response", None)
-                    if response is not None:
-                        status_code = response.status_code
-                last_error = DashScopeError(
-                    message=f"HTTP error: {str(e)}",
-                    status_code=status_code,
-                    retryable=True,
-                )
-                if should_retry(last_error, attempt, max_retries):
-                    delay = get_retry_delay(attempt)
-                    logger.warning(
-                        "[DashScopeEmbedding] HTTP error on attempt %d/%d: %s. Retrying in %ds...",
-                        attempt,
-                        max_retries,
-                        e,
-                        delay,
-                    )
-                    time.sleep(delay)
-                    continue
-                else:
-                    logger.error("[DashScopeEmbedding] HTTP error: %s", e)
-                    raise
-            except Exception as e:  # pylint: disable=broad-except
-                # Other errors - don't retry
-                logger.error("[DashScopeEmbedding] Error embedding multimodal content: %s", e)
-                raise
 
-        # If we exhausted retries, raise last error
         if last_error:
             raise last_error
-        # This should never be reached, but type checker needs it
         raise RuntimeError("Unexpected end of retry loop")
 
 

@@ -288,7 +288,7 @@ class KnowledgeSpaceService:
             if processing_rules:
                 mode = processing_rules.get("mode", "automatic")
 
-            chunks = chunk_text_with_mode(
+            chunks = await chunk_text_with_mode(
                 self.chunking,
                 cleaned_text,
                 document,
@@ -385,7 +385,7 @@ class KnowledgeSpaceService:
             try:
                 try:
                     qdrant_metadata = prepare_qdrant_metadata(chunks, document)
-                    self.qdrant.add_documents(
+                    await self.qdrant.add_documents(
                         user_id=self.user_id,
                         chunk_ids=chunk_ids,
                         embeddings=embeddings,
@@ -539,7 +539,7 @@ class KnowledgeSpaceService:
             raise ValueError(f"Document {document_id} not found or access denied")
 
         try:
-            self.qdrant.delete_document(self.user_id, document_id)
+            await self.qdrant.delete_document(self.user_id, document_id)
 
             if document.file_path and Path(document.file_path).exists():
                 Path(document.file_path).unlink()
@@ -857,7 +857,7 @@ class KnowledgeSpaceService:
 
             if chunks_to_delete:
                 chunk_ids_to_delete = [existing_chunk_map[i].id for i in chunks_to_delete]
-                self.qdrant.delete_chunks(self.user_id, chunk_ids_to_delete)
+                await self.qdrant.delete_chunks(self.user_id, chunk_ids_to_delete)
                 await self.db.execute(delete(DocumentChunk).where(DocumentChunk.id.in_(chunk_ids_to_delete)))
                 await self.db.commit()
 
@@ -878,7 +878,7 @@ class KnowledgeSpaceService:
 
                 if updated_chunk_ids:
                     updated_metadata = prepare_qdrant_metadata(updated_chunks, document)
-                    self.qdrant.update_documents(
+                    await self.qdrant.update_documents(
                         user_id=self.user_id,
                         chunk_ids=updated_chunk_ids,
                         embeddings=updated_embeddings,
@@ -903,7 +903,7 @@ class KnowledgeSpaceService:
 
                 if new_chunk_ids:
                     new_metadata = prepare_qdrant_metadata(new_chunks_list, document)
-                    self.qdrant.add_documents(
+                    await self.qdrant.add_documents(
                         user_id=self.user_id,
                         chunk_ids=new_chunk_ids,
                         embeddings=new_embeddings,

@@ -178,10 +178,10 @@ def create_topic_extraction_chain(language="zh"):
     """
     prompt = topic_extraction_prompt_zh if language == "zh" else topic_extraction_prompt_en
 
-    def extract_topics(user_prompt: str) -> str:
+    async def extract_topics(user_prompt: str) -> str:
         """Extract topics using the classification model"""
         formatted_prompt = prompt.format(user_prompt=user_prompt)
-        result = llm_classification.invoke(formatted_prompt)
+        result = await llm_classification.invoke(formatted_prompt)
         if not isinstance(result, str):
             return str(result)
         return result
@@ -199,10 +199,10 @@ def create_characteristics_chain(language="zh"):
     """
     prompt = characteristics_prompt_zh if language == "zh" else characteristics_prompt_en
 
-    def generate_characteristics(topic1: str, topic2: str) -> str:
+    async def generate_characteristics(topic1: str, topic2: str) -> str:
         """Generate characteristics using the generation model"""
         formatted_prompt = prompt.format(topic1=topic1, topic2=topic2)
-        result = llm_generation.invoke(formatted_prompt)
+        result = await llm_generation.invoke(formatted_prompt)
         if not isinstance(result, str):
             return str(result)
         return result

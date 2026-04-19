@@ -101,11 +101,9 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('diagram:branch_moved', () => {
-        nextTick(() => {
-          setTimeout(() => {
-            eventBus.emit('view:fit_to_canvas_requested', { animate: true })
-          }, ANIMATION.FIT_DELAY)
-        })
+        setTimeout(() => {
+          eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+        }, ANIMATION.FIT_DELAY)
       })
     )
 
@@ -177,18 +175,18 @@ export function useDiagramCanvasEventBus(): {
             }
           }
         }
-        if (
-          diagramStore.type === 'concept_map' &&
-          diagramStore.data?.connections &&
-          diagramStore.data.nodes
-        ) {
-          normalizeAllConceptMapTopicRootLabels(
-            diagramStore.data.connections as Connection[],
-            diagramStore.data.nodes as DiagramNode[]
-          )
-        }
-        if (diagramStore.type === 'concept_map' && !alreadyUpdated) {
-          regenerateForNodeIfNeeded(nodeId)
+        if (diagramStore.type === 'concept_map') {
+          void nextTick(() => {
+            if (diagramStore.data?.connections && diagramStore.data.nodes) {
+              normalizeAllConceptMapTopicRootLabels(
+                diagramStore.data.connections as Connection[],
+                diagramStore.data.nodes as DiagramNode[]
+              )
+            }
+            if (!alreadyUpdated) {
+              regenerateForNodeIfNeeded(nodeId)
+            }
+          })
         }
         if (diagramStore.type === 'double_bubble_map') {
           scheduleDoubleBubbleRebuild(diagramStore)

@@ -19,6 +19,7 @@ import logging
 
 import httpx
 
+from clients.llm.http_client_manager import get_httpx_manager
 from config.settings import config
 from services.infrastructure.http.error_handler import (
     LLMRateLimitError,
@@ -189,75 +190,67 @@ class QwenClient:
                 "Content-Type": "application/json",
             }
 
-            # Use httpx with HTTP/2 support
-            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout, connect=10.0), http2=True) as client:
-                response = await client.post(self.api_url, json=payload, headers=headers)
+            client = await get_httpx_manager().get_client(
+                "qwen", self.api_url, self.timeout, self.stream_timeout
+            )
+            response = await client.post(self.api_url, json=payload, headers=headers)
 
-                if response.status_code == 200:
-                    data = response.json()
-                    choices = data.get("choices", [])
-                    usage = data.get("usage", {})
+            if response.status_code == 200:
+                data = response.json()
+                choices = data.get("choices", [])
+                usage = data.get("usage", {})
 
-                    # Handle multiple completions (n > 1)
-                    if n and n > 1 and len(choices) > 1:
-                        # Return list of completions
-                        completions = []
-                        for choice in choices:
-                            message = choice.get("message", {})
-                            content = message.get("content", "")
-                            tool_calls = message.get("tool_calls")
-                            completion_item = {
-                                "content": content,
-                                "index": choice.get("index", 0),
-                                "finish_reason": choice.get("finish_reason"),
-                                "logprobs": choice.get("logprobs"),
-                            }
-                            # Include tool_calls if present
-                            if tool_calls:
-                                completion_item["tool_calls"] = tool_calls
-                            completions.append(completion_item)
-                        return {
-                            "content": completions,  # List of completions
-                            "usage": usage,
-                        }
-                    else:
-                        # Single completion (default behavior)
-                        message = choices[0].get("message", {}) if choices else {}
+                if n and n > 1 and len(choices) > 1:
+                    completions = []
+                    for choice in choices:
+                        message = choice.get("message", {})
                         content = message.get("content", "")
                         tool_calls = message.get("tool_calls")
-                        result = {"content": content, "usage": usage}
-                        # Include tool_calls if present (function calling response)
+                        completion_item = {
+                            "content": content,
+                            "index": choice.get("index", 0),
+                            "finish_reason": choice.get("finish_reason"),
+                            "logprobs": choice.get("logprobs"),
+                        }
                         if tool_calls:
-                            result["tool_calls"] = tool_calls
-                        # Include logprobs if requested
-                        if choices and logprobs and "logprobs" in choices[0]:
-                            result["logprobs"] = choices[0].get("logprobs")
-                        return result
+                            completion_item["tool_calls"] = tool_calls
+                        completions.append(completion_item)
+                    return {
+                        "content": completions,
+                        "usage": usage,
+                    }
                 else:
-                    error_text = response.text
-                    logger.error("Qwen API error %d: %s", response.status_code, error_text)
+                    message = choices[0].get("message", {}) if choices else {}
+                    content = message.get("content", "")
+                    tool_calls = message.get("tool_calls")
+                    result = {"content": content, "usage": usage}
+                    if tool_calls:
+                        result["tool_calls"] = tool_calls
+                    if choices and logprobs and "logprobs" in choices[0]:
+                        result["logprobs"] = choices[0].get("logprobs")
+                    return result
+            else:
+                error_text = response.text
+                logger.error("Qwen API error %d: %s", response.status_code, error_text)
 
-                    # Parse error using comprehensive DashScope error parser
-                    try:
-                        error_data = json.loads(error_text)
-                        # This function always raises an exception, never returns
-                        parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                    except json.JSONDecodeError as exc:
-                        # Fallback for non-JSON errors
-                        if response.status_code == 429:
-                            raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
-                        elif response.status_code == 401:
-                            raise LLMAccessDeniedError(
-                                f"Unauthorized: {error_text}",
-                                provider="qwen",
-                                error_code="Unauthorized",
-                            ) from exc
-                        else:
-                            raise LLMProviderError(
-                                f"Qwen API error ({response.status_code}): {error_text}",
-                                provider="qwen",
-                                error_code=f"HTTP{response.status_code}",
-                            ) from exc
+                try:
+                    error_data = json.loads(error_text)
+                    parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+                except json.JSONDecodeError as exc:
+                    if response.status_code == 429:
+                        raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
+                    elif response.status_code == 401:
+                        raise LLMAccessDeniedError(
+                            f"Unauthorized: {error_text}",
+                            provider="qwen",
+                            error_code="Unauthorized",
+                        ) from exc
+                    else:
+                        raise LLMProviderError(
+                            f"Qwen API error ({response.status_code}): {error_text}",
+                            provider="qwen",
+                            error_code=f"HTTP{response.status_code}",
+                        ) from exc
 
         except httpx.TimeoutException as e:
             logger.error("Qwen API timeout")
@@ -406,90 +399,80 @@ class QwenClient:
                 "Content-Type": "application/json",
             }
 
-            # Use httpx with streaming and HTTP/2 support
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
-                http2=True,
-            ) as client:
-                async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
-                    if response.status_code != 200:
-                        error_text = await response.aread()
-                        error_text = error_text.decode("utf-8")
-                        logger.error("Qwen stream error %d: %s", response.status_code, error_text)
+            client = await get_httpx_manager().get_client(
+                "qwen", self.api_url, self.timeout, self.stream_timeout
+            )
+            async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    error_text = error_text.decode("utf-8")
+                    logger.error("Qwen stream error %d: %s", response.status_code, error_text)
 
-                        # Parse error using comprehensive DashScope error parser
-                        try:
-                            error_data = json.loads(error_text)
-                            parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                        except json.JSONDecodeError as exc:
-                            if response.status_code == 429:
-                                raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
-                            elif response.status_code == 401:
-                                raise LLMAccessDeniedError(
-                                    f"Unauthorized: {error_text}",
-                                    provider="qwen",
-                                    error_code="Unauthorized",
-                                ) from exc
-                            else:
-                                raise LLMProviderError(
-                                    f"Qwen stream error ({response.status_code}): {error_text}",
-                                    provider="qwen",
-                                    error_code=f"HTTP{response.status_code}",
-                                ) from exc
+                    try:
+                        error_data = json.loads(error_text)
+                        parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+                    except json.JSONDecodeError as exc:
+                        if response.status_code == 429:
+                            raise LLMRateLimitError(f"Qwen rate limit: {error_text}") from exc
+                        elif response.status_code == 401:
+                            raise LLMAccessDeniedError(
+                                f"Unauthorized: {error_text}",
+                                provider="qwen",
+                                error_code="Unauthorized",
+                            ) from exc
+                        else:
+                            raise LLMProviderError(
+                                f"Qwen stream error ({response.status_code}): {error_text}",
+                                provider="qwen",
+                                error_code=f"HTTP{response.status_code}",
+                            ) from exc
 
-                    # Read SSE stream line by line using httpx's aiter_lines()
-                    last_usage = None
-                    async for line in response.aiter_lines():
-                        if not line or not line.startswith("data: "):
-                            continue
+                # Read SSE stream line by line using httpx's aiter_lines()
+                last_usage = None
+                async for line in response.aiter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
 
-                        data_content = line[6:]  # Remove 'data: ' prefix
+                    data_content = line[6:]
 
-                        # Handle [DONE] signal
-                        if data_content.strip() == "[DONE]":
-                            if last_usage:
-                                yield {"type": "usage", "usage": last_usage}
-                            break
+                    if data_content.strip() == "[DONE]":
+                        if last_usage:
+                            yield {"type": "usage", "usage": last_usage}
+                        break
 
-                        try:
-                            data = json.loads(data_content)
+                    try:
+                        data = json.loads(data_content)
 
-                            # Check for usage data (in final chunk)
-                            if "usage" in data and data["usage"]:
-                                last_usage = data.get("usage", {})
+                        if "usage" in data and data["usage"]:
+                            last_usage = data.get("usage", {})
 
-                            # Extract delta from streaming response
-                            choices = data.get("choices", [])
-                            if choices:
-                                delta = choices[0].get("delta", {})
+                        choices = data.get("choices", [])
+                        if choices:
+                            delta = choices[0].get("delta", {})
 
-                                # Check for thinking/reasoning content (Qwen3 thinking mode)
-                                reasoning_content = delta.get("reasoning_content", "")
-                                if reasoning_content:
-                                    yield {
-                                        "type": "thinking",
-                                        "content": reasoning_content,
-                                    }
+                            reasoning_content = delta.get("reasoning_content", "")
+                            if reasoning_content:
+                                yield {
+                                    "type": "thinking",
+                                    "content": reasoning_content,
+                                }
 
-                                # Check for tool calls (function calling)
-                                tool_calls = delta.get("tool_calls")
-                                if tool_calls:
-                                    yield {
-                                        "type": "tool_calls",
-                                        "tool_calls": tool_calls,
-                                    }
+                            tool_calls = delta.get("tool_calls")
+                            if tool_calls:
+                                yield {
+                                    "type": "tool_calls",
+                                    "tool_calls": tool_calls,
+                                }
 
-                                # Check for regular content
-                                content = delta.get("content", "")
-                                if content:
-                                    yield {"type": "token", "content": content}
+                            content = delta.get("content", "")
+                            if content:
+                                yield {"type": "token", "content": content}
 
-                        except json.JSONDecodeError:
-                            continue
+                    except json.JSONDecodeError:
+                        continue
 
-                    # If stream ended without [DONE], yield usage if we have it
-                    if last_usage:
-                        yield {"type": "usage", "usage": last_usage}
+                if last_usage:
+                    yield {"type": "usage", "usage": last_usage}
 
         except httpx.TimeoutException as e:
             logger.error("Qwen streaming timeout")
@@ -558,40 +541,39 @@ class DeepSeekClient:
 
             logger.debug("DeepSeek async API request: %s", self.model_name)
 
-            # Use httpx with HTTP/2 support
-            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout, connect=10.0), http2=True) as client:
-                response = await client.post(self.api_url, json=payload, headers=headers)
+            client = await get_httpx_manager().get_client(
+                "deepseek", self.api_url, self.timeout, self.stream_timeout
+            )
+            response = await client.post(self.api_url, json=payload, headers=headers)
 
-                if response.status_code == 200:
-                    data = response.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    logger.debug("DeepSeek response length: %d chars", len(content))
-                    # Extract usage data
-                    usage = data.get("usage", {})
-                    return {"content": content, "usage": usage}
-                else:
-                    error_text = response.text
-                    logger.error("DeepSeek API error %d: %s", response.status_code, error_text)
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                logger.debug("DeepSeek response length: %d chars", len(content))
+                usage = data.get("usage", {})
+                return {"content": content, "usage": usage}
+            else:
+                error_text = response.text
+                logger.error("DeepSeek API error %d: %s", response.status_code, error_text)
 
-                    # Parse error using comprehensive DashScope error parser
-                    try:
-                        error_data = json.loads(error_text)
-                        parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                    except json.JSONDecodeError as exc:
-                        if response.status_code == 429:
-                            raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
-                        elif response.status_code == 401:
-                            raise LLMAccessDeniedError(
-                                f"Unauthorized: {error_text}",
-                                provider="deepseek",
-                                error_code="Unauthorized",
-                            ) from exc
-                        else:
-                            raise LLMProviderError(
-                                f"DeepSeek API error ({response.status_code}): {error_text}",
-                                provider="deepseek",
-                                error_code=f"HTTP{response.status_code}",
-                            ) from exc
+                try:
+                    error_data = json.loads(error_text)
+                    parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+                except json.JSONDecodeError as exc:
+                    if response.status_code == 429:
+                        raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
+                    elif response.status_code == 401:
+                        raise LLMAccessDeniedError(
+                            f"Unauthorized: {error_text}",
+                            provider="deepseek",
+                            error_code="Unauthorized",
+                        ) from exc
+                    else:
+                        raise LLMProviderError(
+                            f"DeepSeek API error ({response.status_code}): {error_text}",
+                            provider="deepseek",
+                            error_code=f"HTTP{response.status_code}",
+                        ) from exc
 
         except httpx.TimeoutException as e:
             logger.error("DeepSeek API timeout")
@@ -656,83 +638,76 @@ class DeepSeekClient:
                 "Content-Type": "application/json",
             }
 
-            # Use httpx with streaming and HTTP/2 support
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
-                http2=True,
-            ) as client:
-                async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
-                    if response.status_code != 200:
-                        error_text = await response.aread()
-                        error_text = error_text.decode("utf-8")
-                        logger.error(
-                            "DeepSeek stream error %d: %s",
-                            response.status_code,
-                            error_text,
-                        )
+            client = await get_httpx_manager().get_client(
+                "deepseek", self.api_url, self.timeout, self.stream_timeout
+            )
+            async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    error_text = error_text.decode("utf-8")
+                    logger.error(
+                        "DeepSeek stream error %d: %s",
+                        response.status_code,
+                        error_text,
+                    )
 
-                        try:
-                            error_data = json.loads(error_text)
-                            parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                        except json.JSONDecodeError as exc:
-                            if response.status_code == 429:
-                                raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
-                            elif response.status_code == 401:
-                                raise LLMAccessDeniedError(
-                                    f"Unauthorized: {error_text}",
-                                    provider="deepseek",
-                                    error_code="Unauthorized",
-                                ) from exc
-                            else:
-                                raise LLMProviderError(
-                                    f"DeepSeek stream error ({response.status_code}): {error_text}",
-                                    provider="deepseek",
-                                    error_code=f"HTTP{response.status_code}",
-                                ) from exc
+                    try:
+                        error_data = json.loads(error_text)
+                        parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+                    except json.JSONDecodeError as exc:
+                        if response.status_code == 429:
+                            raise LLMRateLimitError(f"DeepSeek rate limit: {error_text}") from exc
+                        elif response.status_code == 401:
+                            raise LLMAccessDeniedError(
+                                f"Unauthorized: {error_text}",
+                                provider="deepseek",
+                                error_code="Unauthorized",
+                            ) from exc
+                        else:
+                            raise LLMProviderError(
+                                f"DeepSeek stream error ({response.status_code}): {error_text}",
+                                provider="deepseek",
+                                error_code=f"HTTP{response.status_code}",
+                            ) from exc
 
-                    # Read SSE stream using httpx's aiter_lines()
-                    last_usage = None
-                    async for line in response.aiter_lines():
-                        if not line or not line.startswith("data: "):
-                            continue
+                last_usage = None
+                async for line in response.aiter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
 
-                        data_content = line[6:]
+                    data_content = line[6:]
 
-                        if data_content.strip() == "[DONE]":
-                            if last_usage:
-                                yield {"type": "usage", "usage": last_usage}
-                            break
+                    if data_content.strip() == "[DONE]":
+                        if last_usage:
+                            yield {"type": "usage", "usage": last_usage}
+                        break
 
-                        try:
-                            data = json.loads(data_content)
+                    try:
+                        data = json.loads(data_content)
 
-                            # Check for usage data (in final chunk)
-                            if "usage" in data and data["usage"]:
-                                last_usage = data.get("usage", {})
+                        if "usage" in data and data["usage"]:
+                            last_usage = data.get("usage", {})
 
-                            choices = data.get("choices", [])
-                            if choices:
-                                delta = choices[0].get("delta", {})
+                        choices = data.get("choices", [])
+                        if choices:
+                            delta = choices[0].get("delta", {})
 
-                                # Check for thinking/reasoning content (DeepSeek R1)
-                                reasoning_content = delta.get("reasoning_content", "")
-                                if reasoning_content:
-                                    yield {
-                                        "type": "thinking",
-                                        "content": reasoning_content,
-                                    }
+                            reasoning_content = delta.get("reasoning_content", "")
+                            if reasoning_content:
+                                yield {
+                                    "type": "thinking",
+                                    "content": reasoning_content,
+                                }
 
-                                # Check for regular content
-                                content = delta.get("content", "")
-                                if content:
-                                    yield {"type": "token", "content": content}
+                            content = delta.get("content", "")
+                            if content:
+                                yield {"type": "token", "content": content}
 
-                        except json.JSONDecodeError:
-                            continue
+                    except json.JSONDecodeError:
+                        continue
 
-                    # If stream ended without [DONE], yield usage if we have it
-                    if last_usage:
-                        yield {"type": "usage", "usage": last_usage}
+                if last_usage:
+                    yield {"type": "usage", "usage": last_usage}
 
         except httpx.TimeoutException as e:
             logger.error("DeepSeek streaming timeout")
@@ -788,39 +763,39 @@ class KimiClient:
 
             logger.debug("Kimi async API request: %s", self.model_name)
 
-            # Use httpx with HTTP/2 support
-            async with httpx.AsyncClient(timeout=httpx.Timeout(self.timeout, connect=10.0), http2=True) as client:
-                response = await client.post(self.api_url, json=payload, headers=headers)
+            client = await get_httpx_manager().get_client(
+                "kimi", self.api_url, self.timeout, self.stream_timeout
+            )
+            response = await client.post(self.api_url, json=payload, headers=headers)
 
-                if response.status_code == 200:
-                    data = response.json()
-                    content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
-                    logger.debug("Kimi response length: %d chars", len(content))
-                    # Extract usage data
-                    usage = data.get("usage", {})
-                    return {"content": content, "usage": usage}
-                else:
-                    error_text = response.text
-                    logger.error("Kimi API error %d: %s", response.status_code, error_text)
+            if response.status_code == 200:
+                data = response.json()
+                content = data.get("choices", [{}])[0].get("message", {}).get("content", "")
+                logger.debug("Kimi response length: %d chars", len(content))
+                usage = data.get("usage", {})
+                return {"content": content, "usage": usage}
+            else:
+                error_text = response.text
+                logger.error("Kimi API error %d: %s", response.status_code, error_text)
 
-                    try:
-                        error_data = json.loads(error_text)
-                        parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                    except json.JSONDecodeError as exc:
-                        if response.status_code == 429:
-                            raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
-                        elif response.status_code == 401:
-                            raise LLMAccessDeniedError(
-                                f"Unauthorized: {error_text}",
-                                provider="kimi",
-                                error_code="Unauthorized",
-                            ) from exc
-                        else:
-                            raise LLMProviderError(
-                                f"Kimi API error ({response.status_code}): {error_text}",
-                                provider="kimi",
-                                error_code=f"HTTP{response.status_code}",
-                            ) from exc
+                try:
+                    error_data = json.loads(error_text)
+                    parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+                except json.JSONDecodeError as exc:
+                    if response.status_code == 429:
+                        raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
+                    elif response.status_code == 401:
+                        raise LLMAccessDeniedError(
+                            f"Unauthorized: {error_text}",
+                            provider="kimi",
+                            error_code="Unauthorized",
+                        ) from exc
+                    else:
+                        raise LLMProviderError(
+                            f"Kimi API error ({response.status_code}): {error_text}",
+                            provider="kimi",
+                            error_code=f"HTTP{response.status_code}",
+                        ) from exc
 
         except httpx.TimeoutException as e:
             logger.error("Kimi API timeout")
@@ -885,79 +860,72 @@ class KimiClient:
                 "Content-Type": "application/json",
             }
 
-            # Use httpx with streaming and HTTP/2 support
-            async with httpx.AsyncClient(
-                timeout=httpx.Timeout(None, connect=10.0, read=self.stream_timeout),
-                http2=True,
-            ) as client:
-                async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
-                    if response.status_code != 200:
-                        error_text = await response.aread()
-                        error_text = error_text.decode("utf-8")
-                        logger.error("Kimi stream error %d: %s", response.status_code, error_text)
+            client = await get_httpx_manager().get_client(
+                "kimi", self.api_url, self.timeout, self.stream_timeout
+            )
+            async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
+                if response.status_code != 200:
+                    error_text = await response.aread()
+                    error_text = error_text.decode("utf-8")
+                    logger.error("Kimi stream error %d: %s", response.status_code, error_text)
 
-                        try:
-                            error_data = json.loads(error_text)
-                            parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
-                        except json.JSONDecodeError as exc:
-                            if response.status_code == 429:
-                                raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
-                            elif response.status_code == 401:
-                                raise LLMAccessDeniedError(
-                                    f"Unauthorized: {error_text}",
-                                    provider="kimi",
-                                    error_code="Unauthorized",
-                                ) from exc
-                            else:
-                                raise LLMProviderError(
-                                    f"Kimi stream error ({response.status_code}): {error_text}",
-                                    provider="kimi",
-                                    error_code=f"HTTP{response.status_code}",
-                                ) from exc
+                    try:
+                        error_data = json.loads(error_text)
+                        parse_and_raise_dashscope_error(response.status_code, error_text, error_data)
+                    except json.JSONDecodeError as exc:
+                        if response.status_code == 429:
+                            raise LLMRateLimitError(f"Kimi rate limit: {error_text}") from exc
+                        elif response.status_code == 401:
+                            raise LLMAccessDeniedError(
+                                f"Unauthorized: {error_text}",
+                                provider="kimi",
+                                error_code="Unauthorized",
+                            ) from exc
+                        else:
+                            raise LLMProviderError(
+                                f"Kimi stream error ({response.status_code}): {error_text}",
+                                provider="kimi",
+                                error_code=f"HTTP{response.status_code}",
+                            ) from exc
 
-                    # Read SSE stream using httpx's aiter_lines()
-                    last_usage = None
-                    async for line in response.aiter_lines():
-                        if not line or not line.startswith("data: "):
-                            continue
+                last_usage = None
+                async for line in response.aiter_lines():
+                    if not line or not line.startswith("data: "):
+                        continue
 
-                        data_content = line[6:]
+                    data_content = line[6:]
 
-                        if data_content.strip() == "[DONE]":
-                            if last_usage:
-                                yield {"type": "usage", "usage": last_usage}
-                            break
+                    if data_content.strip() == "[DONE]":
+                        if last_usage:
+                            yield {"type": "usage", "usage": last_usage}
+                        break
 
-                        try:
-                            data = json.loads(data_content)
+                    try:
+                        data = json.loads(data_content)
 
-                            # Check for usage data (in final chunk)
-                            if "usage" in data and data["usage"]:
-                                last_usage = data.get("usage", {})
+                        if "usage" in data and data["usage"]:
+                            last_usage = data.get("usage", {})
 
-                            choices = data.get("choices", [])
-                            if choices:
-                                delta = choices[0].get("delta", {})
+                        choices = data.get("choices", [])
+                        if choices:
+                            delta = choices[0].get("delta", {})
 
-                                # Check for thinking/reasoning content (Kimi K2)
-                                reasoning_content = delta.get("reasoning_content", "")
-                                if reasoning_content:
-                                    yield {
-                                        "type": "thinking",
-                                        "content": reasoning_content,
-                                    }
+                            reasoning_content = delta.get("reasoning_content", "")
+                            if reasoning_content:
+                                yield {
+                                    "type": "thinking",
+                                    "content": reasoning_content,
+                                }
 
-                                # Check for regular content
-                                content = delta.get("content", "")
-                                if content:
-                                    yield {"type": "token", "content": content}
+                            content = delta.get("content", "")
+                            if content:
+                                yield {"type": "token", "content": content}
 
-                        except json.JSONDecodeError:
-                            continue
+                    except json.JSONDecodeError:
+                        continue
 
-                    # If stream ended without [DONE], yield usage if we have it
-                    if last_usage:
-                        yield {"type": "usage", "usage": last_usage}
+                if last_usage:
+                    yield {"type": "usage", "usage": last_usage}
 
         except httpx.TimeoutException as e:
             logger.error("Kimi streaming timeout")

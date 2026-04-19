@@ -381,7 +381,7 @@ class ChunkTestDocumentService:
                     await self.db.commit()
                     await self.db.refresh(document)
 
-                    self.qdrant.add_documents(
+                    await self.qdrant.add_documents(
                         user_id=self.user_id,
                         chunk_ids=chunk_ids,
                         embeddings=embeddings,
@@ -515,7 +515,7 @@ class ChunkTestDocumentService:
 
             for method, chunk_ids in chunks_by_method.items():
                 try:
-                    self.qdrant.delete_chunks(
+                    await self.qdrant.delete_chunks(
                         self.user_id,
                         chunk_ids,
                         chunking_method=method if method != "unknown" else None,
@@ -586,7 +586,7 @@ class ChunkTestDocumentService:
 
             for method, chunk_ids in chunks_by_method.items():
                 try:
-                    self.qdrant.delete_chunks(
+                    await self.qdrant.delete_chunks(
                         self.user_id,
                         chunk_ids,
                         chunking_method=method if method != "unknown" else None,

@@ -186,7 +186,7 @@ class EmbeddingBoundaryDetector:
                 "[EmbeddingBoundaryDetector] Embedding service not available, boundary detection will be disabled"
             )
 
-    def find_boundaries(self, text: str, max_tokens: Optional[int] = None) -> List[Tuple[int, int]]:
+    async def find_boundaries(self, text: str, max_tokens: Optional[int] = None) -> List[Tuple[int, int]]:
         """
         Find semantic boundaries in text using embedding similarity.
 
@@ -222,7 +222,7 @@ class EmbeddingBoundaryDetector:
         combined_texts = [s["combined_sentence"] for s in combined_sentences]
 
         try:
-            embeddings = self.embedding_service.embed_texts(combined_texts)
+            embeddings = await self.embedding_service.embed_texts(combined_texts)
 
             # Assign embeddings to sentences
             for i, embedding in enumerate(embeddings):
@@ -330,7 +330,7 @@ class EmbeddingBoundaryDetector:
 
         return boundaries
 
-    def get_boundary_confidence(self, text: str, start_pos: int, end_pos: int) -> float:
+    async def get_boundary_confidence(self, text: str, start_pos: int, end_pos: int) -> float:
         """
         Get confidence score for a boundary using embedding similarity.
 
@@ -356,7 +356,7 @@ class EmbeddingBoundaryDetector:
         try:
             # Embed chunk and contexts
             texts_to_embed = [context_before, chunk_text, context_after]
-            embeddings = self.embedding_service.embed_texts(texts_to_embed)
+            embeddings = await self.embedding_service.embed_texts(texts_to_embed)
 
             if len(embeddings) < 3:
                 return 0.5

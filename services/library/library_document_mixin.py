@@ -8,8 +8,8 @@ All Rights Reserved
 Proprietary License
 """
 
+import asyncio
 import logging
-import threading
 from pathlib import Path
 from typing import Optional, Dict, Any, cast, Tuple
 from datetime import UTC, datetime
@@ -36,7 +36,7 @@ from services.library.image_path_resolver import (
 logger = logging.getLogger(__name__)
 
 _document_metadata_cache: Dict[int, Dict[str, Any]] = {}
-_cache_lock = threading.Lock()
+_cache_lock = asyncio.Lock()
 CACHE_TTL_SECONDS = 600
 CACHE_MAX_SIZE = 1000
 
@@ -146,7 +146,7 @@ class LibraryDocumentMixin:
             cached_metadata = None
 
         if not cached_metadata:
-            with _cache_lock:
+            async with _cache_lock:
                 cached = _document_metadata_cache.get(document_id)
                 if cached:
                     cache_age = time.time() - cached["cached_at"]
@@ -175,11 +175,11 @@ class LibraryDocumentMixin:
             except Exception as exc:
                 logger.debug("[Library] Redis cache write failed: %s", exc)
 
-            self._cache_document_metadata(document_id, document)
+            await self._cache_document_metadata(document_id, document)
 
         return document
 
-    def _cache_document_metadata(self, document_id: int, document: LibraryDocument) -> None:
+    async def _cache_document_metadata(self, document_id: int, document: LibraryDocument) -> None:
         """
         Cache document metadata for fast image serving.
 
@@ -187,7 +187,7 @@ class LibraryDocumentMixin:
             document_id: Document ID
             document: LibraryDocument instance
         """
-        with _cache_lock:
+        async with _cache_lock:
             if len(_document_metadata_cache) >= CACHE_MAX_SIZE:
                 sorted_items = sorted(
                     _document_metadata_cache.items(),
@@ -236,7 +236,7 @@ class LibraryDocumentMixin:
         except Exception as exc:
             logger.debug("[Library] Redis cache check failed: %s", exc)
 
-        with _cache_lock:
+        async with _cache_lock:
             cached = _document_metadata_cache.get(document_id)
             if not cached:
                 return None
@@ -263,7 +263,7 @@ class LibraryDocumentMixin:
         except Exception as exc:
             logger.debug("[Library] Redis cache invalidation failed: %s", exc)
 
-        with _cache_lock:
+        async with _cache_lock:
             _document_metadata_cache.pop(document_id, None)
         logger.debug("Invalidated cache for document %s", document_id)
 

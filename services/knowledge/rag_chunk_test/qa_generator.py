@@ -81,20 +81,7 @@ class QAGenerator:
         )
 
         try:
-            # Handle async LLM call in sync context (similar to MindChunkAdapter)
-            try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    loop = asyncio.new_event_loop()
-                    asyncio.set_event_loop(loop)
-            except RuntimeError:
-                loop = asyncio.new_event_loop()
-                asyncio.set_event_loop(loop)
-
-            # Call LLM service to generate Q&A pairs
-            # System message contains the QA generation instructions
-            # User message contains the text to process
-            response = loop.run_until_complete(
+            response = asyncio.run(
                 self.llm_service.chat(
                     prompt=text,
                     model="qwen",

@@ -7,6 +7,27 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [5.93.0] - 2026-04-20
+
+### Changed
+- **Async / Phase 7 — thread-to-asyncio sweep**: eliminated remaining `threading.Thread`, `threading.Lock`, and `run_coroutine_threadsafe` bridges across the hot path; everything now runs natively on the event loop.
+  - **`agents/core/llm_clients.py`**: `LLMTimingStats` migrated from `threading.Lock` to `asyncio.Lock`; `_LegacyLLMStub.invoke`, `add_call_time`, `get_stats`, and `get_llm_timing_stats` are now `async def`; the `asyncio.get_event_loop()` / `run_until_complete` workaround removed.
+  - **`agents/concept_maps/concept_map_generation.py`**: parallel key-part fetching converted from `ThreadPoolExecutor` + `as_completed` to `asyncio.gather` with an `asyncio.Semaphore(6)` cap; `_invoke_llm_prompt`, `generate_concept_map_two_stage`, and `fetch_parts` are all `async def`; `concurrent.futures` import removed.
+  - **`clients/dashscope_embedding.py`**: `_make_request` converted to `async def`; sync `httpx.Client` replaced with `httpx.AsyncClient` (one client reused across all retry attempts); `time.sleep` replaced with `asyncio.sleep`; `_normalize_embeddings` extracted as a private helper to reduce nesting.
+  - **`clients/llm/dashscope.py`**: `QwenClient` non-streaming and streaming paths now obtain a shared pooled `httpx.AsyncClient` from `get_httpx_manager().get_client("qwen", …)` instead of creating a new client per request; connection-setup overhead and OS socket churn eliminated on the LLM hot path.
+  - **`services/knowledge/chunking_service.py`**: `MindChunkAdapter` gains a native `chunk_text_async` method that `await`s the LLM chunker directly; the synchronous `chunk_text` entry point delegates via `asyncio.run()` for callers that cannot use async; the previous `asyncio.get_event_loop()` / `loop.run_until_complete()` bridge with its silent new-loop fallback is removed.
+  - **`services/llm/qdrant_service.py`**: `QdrantService` migrated from sync `qdrant_client.QdrantClient` to `AsyncQdrantClient`; `create_user_collection`, `get_user_collection`, and all downstream methods are now `async def`.
+  - **`services/llm/qdrant_diagnostics.py`**: `QdrantDiagnosticsMixin.get_compression_metrics` and `get_diagnostics` converted to `async def`; all `self.client.*` calls are now `await`ed against `AsyncQdrantClient`.
+  - **`services/features/ws_redis_fanout_listener.py`**: daemon thread + `run_coroutine_threadsafe` bridge replaced with a supervised `asyncio.Task` using `redis.asyncio` native pub/sub; push-based delivery eliminates the previous 500 ms polling sleep; automatic reconnection on error with a configurable `_RECONNECT_DELAY` (2 s default); `threading` import removed.
+- **Pylint / code quality sweep**: removed all remaining `# pylint: disable=protected-access` inline suppressions from `agents/core/llm_clients.py`; renamed exception variables `e` → `exc` in `services/llm/qdrant_diagnostics.py`, `services/llm/qdrant_service.py`, and related files; stripped redundant inline comments from `chunking_service.py`, `concept_map_generation.py`, and `clients/dashscope_embedding.py` per PEP 8; applied across all 55 changed files.
+
+### Added
+- **`requirements.txt`**: `anyio>=4.0.0` added to support async-compatible I/O primitives used by the updated embedding and chunking paths.
+
+### Fixed
+- **Frontend / diagram canvas event ordering** (`useDiagramCanvasEventBus.ts`): removed the redundant outer `nextTick` wrapper on the `diagram:branch_moved` handler (double-tick was causing a frame skip on fit-to-canvas); concept map `normalizeAllConceptMapTopicRootLabels` + `regenerateForNodeIfNeeded` calls now correctly deferred inside a single `void nextTick(…)` block, preventing stale-DOM reads during the same render cycle.
+- **Frontend / node palette streaming** (`streamNodePaletteBatch.ts`): `panelsStore.setNodePaletteSuggestions([])` is now called once before the reader loop begins (non-append mode), then every incoming node is added with `appendNodePaletteSuggestion`; the previous dual-path (append vs. spread-and-replace) that triggered redundant full-array allocations on every chunk is removed.
+
 ## [5.92.0] - 2026-04-18
 
 ### Added

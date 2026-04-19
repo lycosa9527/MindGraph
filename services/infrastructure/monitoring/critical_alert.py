@@ -24,7 +24,7 @@ import hashlib
 import logging
 import os
 import time
-from typing import Optional
+from typing import Coroutine, Optional
 
 try:
     from services.redis.redis_client import is_redis_available
@@ -47,6 +47,22 @@ except ImportError:
     _SMS_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
+
+_bg_tasks: set[asyncio.Task] = set()
+
+
+def _fire_and_forget(coro: Coroutine) -> None:
+    """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
+    task = asyncio.create_task(coro)
+    _bg_tasks.add(task)
+
+    def _on_done(t: asyncio.Task) -> None:
+        _bg_tasks.discard(t)
+        if not t.cancelled() and t.exception() is not None:
+            logger.debug("[bg_task] background task raised: %s", t.exception())
+
+    task.add_done_callback(_on_done)
+
 
 # ============================================================================
 # Configuration
@@ -349,18 +365,15 @@ class CriticalAlertService:
         """
         try:
             try:
-                loop = asyncio.get_event_loop()
-                if loop.is_running():
-                    asyncio.create_task(
-                        CriticalAlertService.send_startup_failure_alert(component, error_message, details)
-                    )
-                    return True
-                else:
-                    return loop.run_until_complete(
-                        CriticalAlertService.send_startup_failure_alert(component, error_message, details)
-                    )
+                asyncio.get_running_loop()
+                _fire_and_forget(
+                    CriticalAlertService.send_startup_failure_alert(component, error_message, details)
+                )
+                return True
             except RuntimeError:
-                return asyncio.run(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
+                return asyncio.run(
+                    CriticalAlertService.send_startup_failure_alert(component, error_message, details)
+                )
         except Exception as e:
             logger.error(
                 "[CriticalAlert] Failed to send startup failure alert: %s",

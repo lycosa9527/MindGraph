@@ -50,7 +50,7 @@ async def get_compression_metrics(current_user: User = Depends(get_current_user)
     """
     try:
         qdrant_service = get_qdrant_service()
-        metrics = qdrant_service.get_compression_metrics(current_user.id)
+        metrics = await qdrant_service.get_compression_metrics(current_user.id)
         return CompressionMetricsResponse(**metrics)
     except Exception as e:
         logger.error(
@@ -81,7 +81,7 @@ async def get_qdrant_diagnostics(
     """
     try:
         qdrant_service = get_qdrant_service()
-        diagnostics = qdrant_service.get_diagnostics(current_user.id)
+        diagnostics = await qdrant_service.get_diagnostics(current_user.id)
 
         result = await db.execute(select(KnowledgeSpace).where(KnowledgeSpace.user_id == current_user.id))
         space = result.scalar_one_or_none()

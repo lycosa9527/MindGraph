@@ -50,7 +50,7 @@ class EmbeddingService:
                 logger.warning("[EmbeddingService] Embedding client not available: %s", e)
                 self.embedding_client = None
 
-    def embed_texts(self, texts: List[str]) -> List[List[float]]:
+    async def embed_texts(self, texts: List[str]) -> List[List[float]]:
         """
         Embed multiple texts.
 
@@ -68,7 +68,7 @@ class EmbeddingService:
 
         try:
             # DashScopeEmbeddingClient already normalizes embeddings
-            embeddings = self.embedding_client.embed_texts(texts=texts, text_type="document")
+            embeddings = await self.embedding_client.embed_texts(texts=texts, text_type="document")
             return embeddings
         except Exception as e:
             logger.error("[EmbeddingService] Failed to embed texts: %s", e)

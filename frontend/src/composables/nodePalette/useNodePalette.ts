@@ -931,7 +931,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         isWaitingForTopicInput.value &&
         !isLoading.value
       ) {
-        startSession()
+        void startSession()
       }
     }
   )

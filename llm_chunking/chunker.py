@@ -534,7 +534,7 @@ class LLMSemanticChunker:
             return await self._chunk_general(text, structure, chunk_size, overlap, **kwargs)
 
         # Use embedding-based boundary detection
-        boundaries = self.embedding_detector.find_boundaries(text, max_tokens=chunk_size)
+        boundaries = await self.embedding_detector.find_boundaries(text, max_tokens=chunk_size)
 
         if not boundaries:
             # No boundaries found, create single chunk

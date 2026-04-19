@@ -106,7 +106,7 @@ class RetrievalEvaluator:
                 )
             else:
                 # Fallback to direct embedding for backward compatibility
-                embeddings = self.embedding_client.embed_texts(texts)
+                embeddings = await self.embedding_client.embed_texts(texts)
 
             timing["embedding_ms"] = (time.time() - embedding_start) * 1000
             if progress_callback:
@@ -145,7 +145,7 @@ class RetrievalEvaluator:
 
             # Store in Qdrant (using test user_id)
             # Note: Using test_user_id to create isolated test collection
-            self.qdrant.add_documents(
+            await self.qdrant.add_documents(
                 user_id=test_user_id,
                 chunk_ids=chunk_ids,
                 embeddings=embeddings,
@@ -160,10 +160,12 @@ class RetrievalEvaluator:
             if progress_callback:
                 progress_callback("processing", method_name, "retrieval", 0)
             retrieval_start = time.time()
-            query_embedding = self.embedding_client.embed_query(query)
+            query_embedding = await self.embedding_client.embed_query(query)
 
             # Use Qdrant to search
-            search_results = self.qdrant.search(user_id=test_user_id, query_embedding=query_embedding, top_k=top_k)
+            search_results = await self.qdrant.search(
+                user_id=test_user_id, query_embedding=query_embedding, top_k=top_k
+            )
             timing["retrieval_ms"] = (time.time() - retrieval_start) * 1000
             if progress_callback:
                 progress_callback("processing", method_name, "retrieval", 100)
@@ -319,7 +321,7 @@ class RetrievalEvaluator:
         else:
             return "tie"
 
-    def cleanup_test_collection(self, test_user_id: int = 0, collection_name: Optional[str] = None):
+    async def cleanup_test_collection(self, test_user_id: int = 0, collection_name: Optional[str] = None):
         """
         Clean up temporary test collection.
 
@@ -330,32 +332,29 @@ class RetrievalEvaluator:
         """
         try:
             if collection_name:
-                # Delete specific collection by name
                 try:
-                    self.qdrant.client.delete_collection(collection_name=collection_name)
+                    await self.qdrant.client.delete_collection(collection_name=collection_name)
                     logger.debug(
                         "[RetrievalEvaluator] Cleaned up test collection: %s (user_id=%s)",
                         collection_name,
                         test_user_id,
                     )
-                except Exception as e:
-                    # Collection might not exist, log but don't fail
+                except Exception as exc:
                     logger.debug(
                         "[RetrievalEvaluator] Collection %s not found or already deleted: %s",
                         collection_name,
-                        e,
+                        exc,
                     )
             else:
-                # Delete all collections for test user (fallback)
-                self.qdrant.delete_user_collection(test_user_id)
+                await self.qdrant.delete_user_collection(test_user_id)
                 logger.debug(
                     "[RetrievalEvaluator] Cleaned up all test collections for user %s",
                     test_user_id,
                 )
-        except Exception as e:
+        except Exception as exc:
             logger.warning(
                 "[RetrievalEvaluator] Failed to cleanup test collection (user_id=%s, collection=%s): %s",
                 test_user_id,
                 collection_name,
-                e,
+                exc,
             )

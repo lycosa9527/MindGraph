@@ -406,7 +406,13 @@ async def focus_question_validate(
     user_id = current_user.id
     org_id = getattr(current_user, "organization_id", None)
 
-    results = await asyncio.gather(*[_validate_one_model(m, question, lang, user_id, org_id) for m in FOCUS_MODELS])
+    sem = asyncio.Semaphore(len(FOCUS_MODELS))
+
+    async def _bounded(m: str):
+        async with sem:
+            return await _validate_one_model(m, question, lang, user_id, org_id)
+
+    results = await asyncio.gather(*[_bounded(m) for m in FOCUS_MODELS])
     return JSONResponse({"results": list(results)})
 
 

@@ -25,7 +25,7 @@ from utils.prompt_output_languages import is_prompt_output_language
 logger = logging.getLogger(__name__)
 
 
-def generate_characteristics_with_agent(topic1: str, topic2: str, language: str = "zh") -> Dict[str, Any]:
+async def generate_characteristics_with_agent(topic1: str, topic2: str, language: str = "zh") -> Dict[str, Any]:
     """
     Use LangChain agent to generate characteristics for double bubble map.
 
@@ -62,7 +62,7 @@ def generate_characteristics_with_agent(topic1: str, topic2: str, language: str 
     char_func = create_characteristics_chain(registry_lang)
     try:
         # Run the function directly (not a LangChain chain)
-        result = char_func(topic1, topic2)
+        result = await char_func(topic1, topic2)
         logger.debug("Agent: Characteristics generation result: %s", result)
         # Parse the result using utility function
         spec = parse_characteristics_result(result, topic1, topic2)

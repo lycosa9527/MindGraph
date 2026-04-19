@@ -244,7 +244,7 @@ async def process_updated_chunks(
 
             dimensions = config.EMBEDDING_DIMENSIONS
             try:
-                embeddings = embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
+                embeddings = await embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
                 if embeddings:
                     cached_embedding = embeddings[0]
                     await embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)
@@ -309,7 +309,7 @@ async def process_new_chunks(
 
             dimensions = config.EMBEDDING_DIMENSIONS
             try:
-                embeddings = embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
+                embeddings = await embedding_client.embed_texts([new_chunk.text], dimensions=dimensions)
                 if embeddings:
                     cached_embedding = embeddings[0]
                     await embedding_cache.cache_document_embedding(db, new_chunk.text, cached_embedding)

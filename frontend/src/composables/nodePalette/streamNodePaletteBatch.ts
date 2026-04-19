@@ -82,6 +82,10 @@ export async function streamNodePaletteBatch(
     const reader = response.body?.getReader()
     if (!reader) throw new Error('No response body')
 
+    if (!doAppend) {
+      panelsStore.setNodePaletteSuggestions([])
+    }
+
     try {
       while (true) {
         const { done, value } = await reader.read()
@@ -130,7 +134,7 @@ export async function streamNodePaletteBatch(
                 paletteStreamPhase.value = 'streaming'
               }
 
-              const suggestion = {
+              panelsStore.appendNodePaletteSuggestion({
                 id: node.id,
                 text: node.text,
                 type: (node.type ?? 'bubble') as 'bubble' | 'branch' | 'label',
@@ -141,15 +145,7 @@ export async function streamNodePaletteBatch(
                 right: node.right,
                 dimension: node.dimension,
                 relationship_label: node.relationship_label,
-              }
-              if (doAppend) {
-                panelsStore.appendNodePaletteSuggestion(suggestion)
-              } else {
-                panelsStore.setNodePaletteSuggestions([
-                  ...panelsStore.nodePalettePanel.suggestions,
-                  suggestion,
-                ])
-              }
+              })
               await new Promise<void>((r) => requestAnimationFrame(() => r()))
             } else if (data.event === 'error') {
               const msg = data.message ?? 'Unknown error'

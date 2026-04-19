@@ -181,8 +181,9 @@ class LogStreamer:
 
                 # Follow mode: continuously read new lines
                 line_count = 0
-                last_yield_time = asyncio.get_event_loop().time()
-                check_rotation_counter = 0  # Check rotation every 10 iterations (1 second)
+                loop = asyncio.get_running_loop()
+                last_yield_time = loop.time()
+                check_rotation_counter = 0
 
                 while follow:
                     line = await f.readline()
@@ -193,13 +194,11 @@ class LogStreamer:
                             yield entry
                             line_count += 1
 
-                            # Rate limiting
-                            current_time = asyncio.get_event_loop().time()
+                            current_time = loop.time()
                             if current_time - last_yield_time < 1.0 and line_count >= self.max_lines_per_second:
-                                # Exceeded rate limit, wait
                                 await asyncio.sleep(1.0 - (current_time - last_yield_time))
                                 line_count = 0
-                                last_yield_time = asyncio.get_event_loop().time()
+                                last_yield_time = loop.time()
                     else:
                         # No new lines, wait a bit
                         await asyncio.sleep(0.1)

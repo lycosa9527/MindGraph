@@ -109,7 +109,7 @@ class BoundaryAgent:
 
         # Step 2: Embedding pre-filtering (if enabled)
         if self.use_embedding_filter and self.embedding_detector:
-            filtered_segments, filtered_indices = self._filter_with_embeddings(segments, pattern_boundaries)
+            filtered_segments, filtered_indices = await self._filter_with_embeddings(segments, pattern_boundaries)
 
             # If all segments filtered out, return pattern boundaries
             if not filtered_segments:
@@ -156,7 +156,7 @@ class BoundaryAgent:
             logger.warning("LLM boundary detection failed: %s, using patterns", e)
             return pattern_boundaries
 
-    def _filter_with_embeddings(
+    async def _filter_with_embeddings(
         self, segments: List[str], pattern_boundaries: List[List[Tuple[int, int]]]
     ) -> tuple[List[str], List[int]]:
         """
@@ -189,7 +189,7 @@ class BoundaryAgent:
             confidences = []
             for start_pos, end_pos in boundaries:
                 try:
-                    confidence = self.embedding_detector.get_boundary_confidence(segment, start_pos, end_pos)
+                    confidence = await self.embedding_detector.get_boundary_confidence(segment, start_pos, end_pos)
                     confidences.append(confidence)
                 except Exception as e:
                     logger.debug("[BoundaryAgent] Failed to calculate confidence: %s", e)

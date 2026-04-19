@@ -286,14 +286,7 @@ class RedisActivityTracker:
                     asyncio.get_running_loop()
                     asyncio.create_task(_record_flag())
                 except RuntimeError:
-                    try:
-                        loop = asyncio.get_event_loop()
-                        if loop.is_running():
-                            asyncio.create_task(_record_flag())
-                        else:
-                            loop.run_until_complete(_record_flag())
-                    except RuntimeError:
-                        asyncio.run(_record_flag())
+                    asyncio.run(_record_flag())
             except Exception as e:
                 logger.debug("Failed to schedule city flag recording: %s", e)
         except Exception as e:
