@@ -19,11 +19,11 @@ from pathlib import Path
 from typing import Dict
 
 
-_CONFIG_VERSION = "v2-perf-2026-04-conn250"
+_CONFIG_VERSION = "v2-perf-2026-04-conn175"
 
 # Default max_connections for managed PostgreSQL. Must cover worst-case app demand:
 # UVICORN_WORKERS × (async pool+overflow + sync pool+overflow) + reserve; see config/database.py.
-_DEFAULT_MAX_CONNECTIONS = 250
+_DEFAULT_MAX_CONNECTIONS = 175
 
 
 def _is_running_as_root() -> bool:

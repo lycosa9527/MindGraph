@@ -15,6 +15,7 @@ Proprietary License
 import asyncio
 import logging
 from datetime import UTC, datetime
+from types import CoroutineType
 
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, status
 from sqlalchemy import select
@@ -88,7 +89,7 @@ from .sms import _verify_and_consume_sms_code
 _bg_tasks: set[asyncio.Task] = set()
 
 
-def _fire_and_forget(coro: asyncio.coroutines.CoroutineType) -> None:
+def _fire_and_forget(coro: CoroutineType) -> None:
     """Schedule a coroutine as a tracked background task to prevent silent GC and log exceptions."""
     task = asyncio.create_task(coro)
     _bg_tasks.add(task)
