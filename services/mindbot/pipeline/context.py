@@ -1,6 +1,6 @@
 """Shared context types for MindBot pipeline branch functions.
 
-``DifyReplyContext`` carries the ten parameters that are identical for both
+``DifyReplyContext`` carries the shared parameters for both
 ``run_streaming_dify_branch`` and ``run_blocking_send_branch``, shrinking
 each function's parameter list and making test fixtures reusable.
 
@@ -28,7 +28,7 @@ RedisBindDifyConvCallable = Callable[..., Awaitable[None]]
 class DifyReplyContext:
     """Parameters shared by ``run_streaming_dify_branch`` and ``run_blocking_send_branch``.
 
-    Encapsulating these ten fields in one object:
+    Encapsulating these fields in one object:
     - Reduces each branch function from 14–18 keyword params to 4–9.
     - Allows test fixtures to build the context once and reuse it across cases.
     - Makes the shared contract between streaming and blocking paths explicit.
@@ -44,3 +44,4 @@ class DifyReplyContext:
     redis_bind_dify_conversation: RedisBindDifyConvCallable
     pipeline_ctx: str = ""
     session_webhook_pinned_ip: str = ""
+    msg_id: str = ""

@@ -358,7 +358,7 @@ class AsyncDifyClient:
         async with session.request(method, url, json=json_data, params=params, data=data, headers=headers) as response:
             if response.status == 204:
                 return {"result": "success"}
-            if response.status != 200:
+            if response.status not in (200, 201):
                 error_msg, error_code = await parse_dify_error_response(response)
                 raise_for_dify_http_error(
                     response.status,

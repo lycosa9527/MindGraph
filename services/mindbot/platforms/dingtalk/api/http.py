@@ -120,7 +120,12 @@ async def _v1_json_request(
                 return resp.status, None
             return resp.status, data
     except Exception as exc:
-        logger.exception("[MindBot] DingTalk API %s error: %s", path, exc)
+        logger.exception(
+            "[MindBot] DingTalk API %s network_error: %s: %s",
+            path,
+            type(exc).__name__,
+            exc,
+        )
         return 0, None
 
 

@@ -145,10 +145,12 @@ export default {
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': 'Organization',
+  'admin.mindbot.colBotLabel': 'Bot label',
   'admin.mindbot.colRobot': 'OpenAPI robot code',
   'admin.mindbot.colEnabled': 'Enabled',
   'admin.mindbot.edit': 'Edit',
-  'admin.mindbot.create': 'Add school',
+  'admin.mindbot.create': 'Add bot',
+  'admin.mindbot.botLabel': 'Bot label',
   'admin.mindbot.difyServiceOnline': 'Dify Service Online',
   'admin.mindbot.difyServiceOffline': 'Dify Service Offline',
   'admin.mindbot.difyServiceChecking': 'Dify Service …',
@@ -178,7 +180,7 @@ export default {
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     'Empty = text replies; e.g. d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
   'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    'Published template from DingTalk card platform. Needs Client ID and card permissions.',
+    'Published template from DingTalk card platform. Needs Client ID and card permissions (Card.Instance.Write and Card.Streaming.Write).',
   'admin.mindbot.dingtalkAiCardStreamCheck': 'Test permissions',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth and streaming card permissions OK',
   'admin.mindbot.dingtalkAiCardStreamFail': 'Check failed',

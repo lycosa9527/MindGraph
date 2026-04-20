@@ -512,9 +512,10 @@ async def execute_mindbot_pipeline(
         hdr=_hdr,
         redis_bind_dify_conversation=_redis_bind_dify_conversation_async,
         pipeline_ctx=pipeline_ctx,
+        msg_id=msg_id_for_usage or "",
     )
 
-    cb_key = str(cfg.organization_id)
+    cb_key = str(cfg.id)
     _streaming = _dify_streaming_enabled()
 
     try:

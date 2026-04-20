@@ -373,7 +373,11 @@ class RedisTokenBuffer:
 
                 return records
             except Exception as exc:
-                logger.error("[TokenBuffer] Redis stream read failed: %s", exc)
+                logger.error(
+                    "[TokenBuffer] Redis stream read failed: %s: %s",
+                    type(exc).__name__,
+                    exc,
+                )
 
         with self._memory_lock:
             batch = self._memory_buffer[:count]

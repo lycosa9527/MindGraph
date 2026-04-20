@@ -8,9 +8,38 @@ from typing import Any, Optional
 from pydantic import BaseModel, ConfigDict, Field
 
 
-class MindbotConfigPayload(BaseModel):
-    """Admin create/update body."""
+class MindbotConfigCreatePayload(BaseModel):
+    """Admin create-only body (POST /admin/configs). Includes organization_id."""
 
+    organization_id: int = Field(..., gt=0)
+    bot_label: Optional[str] = Field(None, max_length=64)
+    dingtalk_robot_code: str = Field(..., min_length=1, max_length=128)
+    dingtalk_app_secret: str = Field(..., min_length=1)
+    dingtalk_client_id: Optional[str] = Field(None, max_length=128)
+    dify_api_base_url: str = Field(..., min_length=1, max_length=512)
+    dify_api_key: str = Field(..., min_length=1)
+    dify_timeout_seconds: int = Field(300, ge=5, le=600)
+    dify_inputs_json: Optional[str] = Field(
+        None,
+        description="Optional JSON object string passed as Dify chat-messages inputs",
+    )
+    dingtalk_event_token: Optional[str] = Field(None, max_length=128)
+    dingtalk_event_aes_key: Optional[str] = Field(None, max_length=128)
+    dingtalk_event_owner_key: Optional[str] = Field(None, max_length=128)
+    is_enabled: bool = True
+    show_chain_of_thought_oto: bool = False
+    show_chain_of_thought_internal_group: bool = False
+    show_chain_of_thought_cross_org_group: bool = False
+    chain_of_thought_max_chars: int = Field(4000, ge=0, le=32000)
+    dingtalk_ai_card_template_id: Optional[str] = Field(None, max_length=128)
+    dingtalk_ai_card_param_key: Optional[str] = Field(None, max_length=128)
+    dingtalk_ai_card_streaming_max_chars: int = Field(6000, ge=500, le=50000)
+
+
+class MindbotConfigPayload(BaseModel):
+    """Admin update body (PUT /admin/configs/{config_id})."""
+
+    bot_label: Optional[str] = Field(None, max_length=64)
     dingtalk_robot_code: str = Field(..., min_length=1, max_length=128)
     dingtalk_app_secret: Optional[str] = Field(
         None,
@@ -68,6 +97,7 @@ class MindbotConfigPayload(BaseModel):
 class MindbotConfigResponse(BaseModel):
     id: int
     organization_id: int
+    bot_label: Optional[str]
     public_callback_token: str
     dingtalk_robot_code: str
     dingtalk_app_secret_masked: str

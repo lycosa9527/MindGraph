@@ -3,6 +3,7 @@
 export interface MindbotConfigRow {
   id: number
   organization_id: number
+  bot_label: string | null
   public_callback_token: string
   dingtalk_robot_code: string
   dingtalk_app_secret_masked: string
@@ -31,6 +32,7 @@ export interface OrgOption {
 }
 
 export interface MindbotConfigFormState {
+  bot_label: string
   dingtalk_robot_code: string
   dingtalk_client_id: string
   dingtalk_app_secret: string

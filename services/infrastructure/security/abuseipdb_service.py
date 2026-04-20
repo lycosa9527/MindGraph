@@ -760,10 +760,18 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
             payload_err = {}
         err_detail = str(payload_err)[:300]
         result["error"] = f"unexpected body: {err_detail}"
+        logger.warning(
+            "[Blocklist] AbuseIPDB blacklist response was not a plain-text IP list: %s",
+            err_detail[:200],
+        )
         return result
 
     if not await _store_blacklist_ips_async(ips):
         result["error"] = "redis_store_failed"
+        logger.warning(
+            "[Blocklist] AbuseIPDB blacklist download OK but Redis store failed "
+            "(see earlier [AbuseIPDB] error)",
+        )
         return result
 
     meta = json.dumps(
@@ -798,6 +806,14 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
             "count": crowdsec_out.get("count"),
             "skipped": crowdsec_out.get("skipped", False),
         }
+    else:
+        cs_err = crowdsec_out.get("error")
+        if cs_err and cs_err != "disabled":
+            result["crowdsec_failed"] = cs_err
+            logger.warning(
+                "[Blocklist] CrowdSec network merge failed after AbuseIPDB IPs were stored: %s",
+                cs_err,
+            )
 
     crowdsec_baseline = await crowdsec_blocklist_service.apply_crowdsec_baseline_from_file_async()
     if crowdsec_baseline:

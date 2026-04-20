@@ -30,7 +30,10 @@ CONV_GATE_PREFIX = "mindbot:conv_gate:"
 CONV_GATE_SENTINEL = "__pending__"
 
 _DEFAULT_GATE_TTL = 120
-_DEFAULT_POLL_TOTAL_MS = 15000
+# Dify median first-token latency under load is ~12–20 s; 30 s covers the
+# common case without permanently blocking follow-up messages.  Override via
+# MINDBOT_CONV_GATE_POLL_MS.
+_DEFAULT_POLL_TOTAL_MS = 30000
 _DEFAULT_POLL_STEP_INITIAL_MS = 50
 _POLL_STEP_MAX_MS = 400
 

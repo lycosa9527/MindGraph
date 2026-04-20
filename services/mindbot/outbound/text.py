@@ -235,6 +235,52 @@ async def post_session_webhook(
     )
 
 
+async def send_full_reply(
+    cfg: OrganizationMindbotConfig,
+    body: dict[str, Any],
+    session_webhook_valid: Optional[str],
+    text: str,
+    *,
+    pipeline_ctx: str = "",
+    pinned_ip: str = "",
+) -> tuple[bool, bool]:
+    """Send one complete final reply with markdown rendering (``stream_chunk=False``).
+
+    Session webhook uses markdown (or text per ``MINDBOT_REPLY_MSGTYPE``); OpenAPI
+    uses ``sampleMarkdown`` / ``sampleText`` per env. Use for cross-org buffer,
+    AI-card error fallbacks, and other non-incremental sends.
+    """
+    logger.info(
+        "[MindBot] outbound_full_reply %s chars=%s route=%s",
+        pipeline_ctx,
+        len(text),
+        "session_webhook" if session_webhook_valid else "openapi_only",
+    )
+    if session_webhook_valid:
+        if await post_session_webhook(
+            session_webhook_valid,
+            text,
+            stream_chunk=False,
+            pipeline_ctx=pipeline_ctx,
+            pinned_ip=pinned_ip,
+        ):
+            return True, False
+        return await reply_via_openapi(
+            cfg,
+            body,
+            text,
+            stream_chunk=False,
+            pipeline_ctx=pipeline_ctx,
+        )
+    return await reply_via_openapi(
+        cfg,
+        body,
+        text,
+        stream_chunk=False,
+        pipeline_ctx=pipeline_ctx,
+    )
+
+
 async def send_one_reply_chunk(
     cfg: OrganizationMindbotConfig,
     body: dict[str, Any],

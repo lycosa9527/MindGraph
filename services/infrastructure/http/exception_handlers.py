@@ -3,6 +3,7 @@ Exception handlers for MindGraph application.
 
 Handles:
 - Request validation errors (422)
+- Client disconnect (caller closed connection early)
 - HTTP exceptions
 - General unhandled exceptions
 """
@@ -10,9 +11,10 @@ Handles:
 import logging
 import traceback
 from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from fastapi.exceptions import RequestValidationError
 from fastapi import HTTPException
+from starlette.requests import ClientDisconnect
 from config.settings import config
 from services.infrastructure.monitoring.critical_alert import CriticalAlertService
 
@@ -51,6 +53,17 @@ async def validation_exception_handler(request: Request, exc: RequestValidationE
             "message": "Request validation failed. Please check your request parameters.",
         },
     )
+
+
+async def client_disconnect_handler(request: Request, _exc: ClientDisconnect):
+    """
+    Incoming client closed the connection before the request body was fully read
+    or while the response was being sent. Common under load tests or when callers
+    time out; not an application bug.
+    """
+    path = getattr(request.url, "path", "") if request and request.url else ""
+    logger.debug("Client disconnected (request aborted): %s", path)
+    return Response(status_code=204)
 
 
 async def http_exception_handler(request: Request, exc: HTTPException):
@@ -185,5 +198,6 @@ def setup_exception_handlers(app: FastAPI):
     Register all exception handlers with the FastAPI application.
     """
     app.add_exception_handler(RequestValidationError, validation_exception_handler)
+    app.add_exception_handler(ClientDisconnect, client_disconnect_handler)
     app.add_exception_handler(HTTPException, http_exception_handler)
     app.add_exception_handler(Exception, general_exception_handler)

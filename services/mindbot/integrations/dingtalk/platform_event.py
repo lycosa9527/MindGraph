@@ -89,7 +89,7 @@ def dingtalk_platform_event_response(
 
 
 def shared_url_platform_event_error() -> Response:
-    """Event subscription needs the per-organization callback URL (with org secrets)."""
+    """Event subscription needs the per-bot token callback URL (/dingtalk/callback/t/<token>)."""
     return Response(
         status_code=400,
         headers=mindbot_error_headers(MindbotErrorCode.EVENT_USE_PER_ORG_URL),

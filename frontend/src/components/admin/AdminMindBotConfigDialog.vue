@@ -130,8 +130,8 @@ function orgLabel(org: OrgOption): string {
 }
 
 async function checkAiCardStreaming(): Promise<void> {
-  const oid = formOrgId.value
-  if (oid == null || !props.featureMindbot) {
+  const configId = props.editingOrgRow?.id
+  if (configId == null || !props.featureMindbot) {
     return
   }
   if (!canRunAiCardProbe.value) {
@@ -153,7 +153,7 @@ async function checkAiCardStreaming(): Promise<void> {
       params.set('dingtalk_client_id', cid)
     }
     const q = params.toString() ? `?${params.toString()}` : ''
-    const res = await apiRequest(`/api/mindbot/admin/configs/${oid}/ai-card-streaming-status${q}`)
+    const res = await apiRequest(`/api/mindbot/admin/configs/${configId}/ai-card-streaming-status${q}`)
     const data = (await res.json()) as {
       ok?: boolean
       error?: string
@@ -301,6 +301,7 @@ function onDialogClosed(): void {
               <el-form-item
                 v-if="mode === 'create' && isAdmin"
                 :label="t('admin.mindbot.orgSelect')"
+                required
               >
                 <el-select
                   v-model="formOrgId"
@@ -337,7 +338,9 @@ function onDialogClosed(): void {
                     managerSchoolDisplayName
                   }}</span>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.dingtalkClientId')">
+                <el-form-item
+                  :label="t('admin.mindbot.dingtalkClientId')"
+                >
                   <el-input
                     v-model="form.dingtalk_client_id"
                     clearable
@@ -349,7 +352,10 @@ function onDialogClosed(): void {
                     {{ t('admin.mindbot.dingtalkClientIdHint') }}
                   </div>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.dingtalkAppSecret')">
+                <el-form-item
+                  :label="t('admin.mindbot.dingtalkAppSecret')"
+                  :required="mode === 'create' || dingtalkSecretReplaceMode"
+                >
                   <template
                     v-if="
                       mode === 'edit' &&
@@ -399,7 +405,19 @@ function onDialogClosed(): void {
                     </div>
                   </template>
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.dingtalkRobotCode')">
+                <el-form-item :label="t('admin.mindbot.botLabel')">
+                  <el-input
+                    v-model="form.bot_label"
+                    clearable
+                    maxlength="64"
+                    class="mindbot-swiss-input w-full max-w-md"
+                    :placeholder="t('admin.mindbot.botLabel')"
+                  />
+                </el-form-item>
+                <el-form-item
+                  :label="t('admin.mindbot.dingtalkRobotCode')"
+                  required
+                >
                   <el-input
                     v-model="form.dingtalk_robot_code"
                     clearable
@@ -466,14 +484,20 @@ function onDialogClosed(): void {
               <div
                 class="mindbot-section-card mindbot-section-card--compact mindbot-swiss-inset rounded-sm border border-[var(--mindbot-swiss-border)] bg-[var(--mindbot-swiss-inset)]"
               >
-                <el-form-item :label="t('admin.mindbot.difyBaseUrl')">
+                <el-form-item
+                  :label="t('admin.mindbot.difyBaseUrl')"
+                  required
+                >
                   <el-input
                     v-model="form.dify_api_base_url"
                     clearable
                     class="mindbot-swiss-input w-full max-w-2xl"
                   />
                 </el-form-item>
-                <el-form-item :label="t('admin.mindbot.difyApiKey')">
+                <el-form-item
+                  :label="t('admin.mindbot.difyApiKey')"
+                  :required="mode === 'create' || difyApiKeyReplaceMode"
+                >
                   <template
                     v-if="
                       mode === 'edit' &&
@@ -1160,5 +1184,11 @@ html.dark .mindbot-section-label::before {
 
 .mindbot-swiss-dialog .mindbot-footer-enabled-switch.el-switch {
   --el-switch-on-color: var(--geek-swit);
+}
+
+.mindbot-swiss-dialog .el-form-item.is-required:not(.is-no-asterisk) .el-form-item__label-wrap > .el-form-item__label::before,
+.mindbot-swiss-dialog .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label::before {
+  color: #fb7185;
+  text-shadow: 0 0 8px rgba(251, 113, 133, 0.45);
 }
 </style>

@@ -90,33 +90,18 @@ async def dingtalk_callback_shared_get(request: Request) -> Response:
     )
 
 
-@router.get("/dingtalk/orgs/{organization_id}/callback")
-async def dingtalk_callback_per_org_get(request: Request, organization_id: int) -> Response:
-    """Optional GET reachability check for the per-organization callback URL."""
-    _require_mindbot_feature()
-    log_dingtalk_inbound(request, b"", f"org_{organization_id}_get")
-    return Response(
-        status_code=200,
-        headers=mindbot_error_headers(
-            MindbotErrorCode.OK,
-            organization_id=organization_id,
-        ),
-    )
-
-
 @router.post("/dingtalk/callback")
 async def dingtalk_callback_shared(
     request: Request,
 ) -> Response:
     """
-    Shared URL (legacy): connectivity probe and migration-period shim only.
+    Shared URL (legacy): connectivity probe only.
 
     Real message delivery must use ``POST /dingtalk/callback/t/{public_callback_token}``
-    or ``POST /dingtalk/orgs/{organization_id}/callback`` so the tenant is chosen from
-    the path, not from JSON ``robotCode`` (DingTalk often sends a placeholder that does
-    not match the stored robot code).
+    so the tenant is chosen from the path, not from JSON ``robotCode`` (DingTalk often
+    sends a placeholder that does not match the stored robot code).
 
-    The pipeline is scheduled in the background (same as per-org / per-token routes)
+    The pipeline is scheduled in the background (same as the per-token route)
     so a slow Dify response does not block the HTTP worker.
     """
     _require_mindbot_feature()
@@ -157,52 +142,6 @@ async def dingtalk_callback_shared(
     return Response(status_code=200, headers=ack_headers)
 
 
-@router.post("/dingtalk/orgs/{organization_id}/callback")
-async def dingtalk_callback_per_org(
-    organization_id: int,
-    request: Request,
-    db: AsyncSession = Depends(get_async_db),
-) -> Response:
-    """Per-org URL: robot HMAC (headers) or open-platform event subscription (query + encrypt)."""
-    _require_mindbot_feature()
-    raw = await request.body()
-    body = _dict_from_dingtalk_raw_body(raw)
-    log_dingtalk_inbound(request, raw, f"org_{organization_id}", parsed_body=body)
-    repo = MindbotConfigRepository(db)
-    if is_dingtalk_platform_event_request(request, body):
-        # Platform lifecycle events (token verification, OAuth callbacks) use
-        # get_by_organization_id rather than get_enabled_by_organization_id
-        # intentionally: DingTalk requires a 200 response even when the bot is
-        # disabled so the event-subscription contract remains valid.  Message
-        # delivery uses get_enabled_by_organization_id below.
-        cfg_any = await repo.get_by_organization_id(organization_id)
-        if cfg_any is None:
-            resp = Response(
-                status_code=404,
-                headers=mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND),
-            )
-            mindbot_metrics.record_from_headers(dict(resp.headers))
-            return resp
-        resp = dingtalk_platform_event_response(request, body, cfg_any)
-        mindbot_metrics.record_from_headers(dict(resp.headers))
-        return resp
-    cfg = await repo.get_enabled_by_organization_id(organization_id)
-    if cfg is None:
-        resp = Response(
-            status_code=404,
-            headers=mindbot_error_headers(MindbotErrorCode.CONFIG_NOT_FOUND),
-        )
-        mindbot_metrics.record_from_headers(dict(resp.headers))
-        return resp
-    return await _dingtalk_robot_message_response_after_config(
-        cfg=cfg,
-        body=body,
-        raw=raw,
-        debug_route_label=f"org_{organization_id}",
-        request=request,
-    )
-
-
 @router.get("/dingtalk/callback/t/{public_callback_token}")
 async def dingtalk_callback_by_token_get(
     request: Request,
@@ -233,9 +172,9 @@ async def dingtalk_callback_by_token(
     log_dingtalk_inbound(request, raw, route_label, parsed_body=body)
     repo = MindbotConfigRepository(db)
     if is_dingtalk_platform_event_request(request, body):
-        # See comment in dingtalk_callback_per_org: platform events use the
-        # non-enabled variant intentionally so lifecycle callbacks are always
-        # acknowledged regardless of the bot's enabled state.
+        # Platform lifecycle events use the non-enabled variant intentionally:
+        # DingTalk requires a 200 response even when the bot is disabled so the
+        # event-subscription contract remains valid.
         cfg_any = await repo.get_by_public_callback_token(token)
         if cfg_any is None:
             resp = Response(

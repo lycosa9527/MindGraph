@@ -2,7 +2,7 @@
 
 from datetime import UTC, datetime
 
-from sqlalchemy import Boolean, DateTime, ForeignKey, Integer, String, Text, UniqueConstraint
+from sqlalchemy import Boolean, DateTime, ForeignKey, Index, Integer, String, Text, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from models.domain.auth import Base
@@ -13,9 +13,9 @@ class OrganizationMindbotConfig(Base):
 
     __tablename__ = "organization_mindbot_configs"
     __table_args__ = (
-        UniqueConstraint("organization_id", name="uq_mindbot_config_organization_id"),
         UniqueConstraint("dingtalk_robot_code", name="uq_mindbot_config_robot_code"),
         UniqueConstraint("public_callback_token", name="uq_mindbot_config_public_callback_token"),
+        Index("ix_mindbot_config_organization_id", "organization_id"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
@@ -23,8 +23,8 @@ class OrganizationMindbotConfig(Base):
         Integer,
         ForeignKey("organizations.id", ondelete="CASCADE"),
         nullable=False,
-        index=True,
     )
+    bot_label: Mapped[str | None] = mapped_column(String(64), nullable=True)
     dingtalk_robot_code: Mapped[str] = mapped_column(String(128), nullable=False, index=True)
     public_callback_token: Mapped[str] = mapped_column(String(64), nullable=False)
     dingtalk_app_secret: Mapped[str] = mapped_column(Text, nullable=False)

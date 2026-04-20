@@ -188,9 +188,8 @@ async def validate_callback_fast(
                 "MINDBOT_LOG_CALLBACK_DEBUG=1 to enable — only in controlled environments)."
             )
         logger.warning(
-            "[MindBot] Path-based callback URL required (use /dingtalk/callback/t/<token> "
-            "or /dingtalk/orgs/<organization_id>/callback); message delivery is not routed "
-            "via the shared /dingtalk/callback URL.%s",
+            "[MindBot] Path-based callback URL required (use /dingtalk/callback/t/<token>); "
+            "message delivery is not routed via the shared /dingtalk/callback URL.%s",
             _hint,
         )
         _log_callback_debug_failure(
@@ -341,7 +340,7 @@ async def validate_callback_fast(
     if not await check_org_rate_limit(cfg.organization_id):
         return False, (429, hdr_for_cfg(cfg, MindbotErrorCode.RATE_LIMITED)), None
 
-    cb_key = str(cfg.organization_id)
+    cb_key = str(cfg.id)
     if not await check_circuit_breaker(cb_key):
         usage_started = time.monotonic()
         turn = await conversation_user_turn_index(cfg.organization_id, conversation_id_dt)

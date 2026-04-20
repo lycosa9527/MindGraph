@@ -139,10 +139,12 @@ export default {
   'admin.mindbot.sectionDingTalk': '钉钉',
   'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': '学校',
+  'admin.mindbot.colBotLabel': '机器人名称',
   'admin.mindbot.colRobot': 'OpenAPI 机器人 code',
   'admin.mindbot.colEnabled': '启用',
   'admin.mindbot.edit': '编辑',
-  'admin.mindbot.create': '新增学校',
+  'admin.mindbot.create': '新增机器人',
+  'admin.mindbot.botLabel': '机器人名称',
   'admin.mindbot.difyServiceOnline': 'Dify服务在线',
   'admin.mindbot.difyServiceOffline': 'Dify服务离线',
   'admin.mindbot.difyServiceChecking': 'Dify服务 …',
@@ -172,7 +174,7 @@ export default {
   'admin.mindbot.dingtalkAiCardTemplateIdPlaceholder':
     '留空为文本回复；示例 d8c997f0-6d82-4e55-b7ec-b92657f438e5.schema',
   'admin.mindbot.dingtalkAiCardTemplateIdHint':
-    '钉钉卡片平台已发布模板；需配置 Client ID 与卡片权限。',
+    '钉钉卡片平台已发布模板；需配置 Client ID 与卡片权限（Card.Instance.Write和Card.Streaming.Write）。',
   'admin.mindbot.dingtalkAiCardStreamCheck': '测试权限',
   'admin.mindbot.dingtalkAiCardStreamOk': 'OAuth 与流式卡片权限正常',
   'admin.mindbot.dingtalkAiCardStreamFail': '检测失败',

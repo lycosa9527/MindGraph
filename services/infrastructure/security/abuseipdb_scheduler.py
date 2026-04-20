@@ -13,7 +13,7 @@ import logging
 import os
 import uuid
 from datetime import datetime
-from typing import Optional
+from typing import Any, Dict, Optional
 
 from services.infrastructure.security import abuseipdb_service
 from services.infrastructure.security import crowdsec_blocklist_service
@@ -25,6 +25,29 @@ logger = logging.getLogger(__name__)
 
 ABUSEIPDB_LOCK_KEY = "abuseipdb:scheduler:lock"
 ABUSEIPDB_LOCK_TTL = 172800
+
+
+def _log_blocklist_scheduled_abuseipdb_summary(result: Dict[str, Any]) -> None:
+    """One INFO line after a scheduled AbuseIPDB sync (includes CrowdSec merge outcome)."""
+    parts: list[str] = []
+    if result.get("crowdsec_failed"):
+        parts.append("status=partial")
+    else:
+        parts.append("status=ok")
+    parts.append(f"abuseipdb_ips={result.get('count')}")
+    if result.get("crowdsec_failed"):
+        parts.append(f"crowdsec_error={result['crowdsec_failed']}")
+    elif result.get("crowdsec"):
+        crowd = result["crowdsec"]
+        if crowd.get("skipped"):
+            parts.append("crowdsec_network=skipped_min_interval")
+        else:
+            parts.append(f"crowdsec_network_ips={crowd.get('count')}")
+    if result.get("baseline_merged"):
+        parts.append(f"abuseipdb_baseline_lines={result['baseline_merged']}")
+    if result.get("crowdsec_baseline_merged"):
+        parts.append(f"crowdsec_baseline_lines={result['crowdsec_baseline_merged']}")
+    logger.info("[Blocklist] Scheduled sync completed: %s", " ".join(parts))
 
 
 class _AbuseipdbLockState:
@@ -185,7 +208,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 if abuseipdb_sync:
                     result = await abuseipdb_service.sync_blacklist_to_redis(force_crowdsec_merge=True)
                     if result.get("ok"):
-                        logger.info("[AbuseIPDB] Sync OK: %s IPs", result.get("count"))
+                        _log_blocklist_scheduled_abuseipdb_summary(result)
                     elif result.get("error") == "disabled":
                         return
                     elif result.get("rate_limited"):
@@ -204,13 +227,25 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                                 return
                         continue
                     else:
-                        logger.debug("[AbuseIPDB] Sync result: %s", result)
+                        logger.warning(
+                            "[Blocklist] Scheduled sync failed: error=%s",
+                            result.get("error"),
+                        )
                 else:
                     cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network(force=True)
                     if cs.get("ok") and not cs.get("skipped"):
-                        logger.info("[CrowdSec] Sync OK: %s IPs", cs.get("count"))
+                        logger.info(
+                            "[Blocklist] Scheduled CrowdSec-only sync completed: status=ok "
+                            "crowdsec_network_ips=%s",
+                            cs.get("count"),
+                        )
                         await abuseipdb_service.log_shared_blacklist_redis_size_async(
                             "after CrowdSec-only scheduler merge",
+                        )
+                    elif cs.get("ok") and cs.get("skipped"):
+                        logger.info(
+                            "[Blocklist] Scheduled CrowdSec-only sync completed: status=ok "
+                            "crowdsec_network=skipped_min_interval",
                         )
                     elif cs.get("rate_limited"):
                         retry_after = float(cs.get("retry_after_seconds") or 3600)
@@ -228,7 +263,10 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                                 return
                         continue
                     else:
-                        logger.debug("[CrowdSec] Sync result: %s", cs)
+                        logger.warning(
+                            "[Blocklist] Scheduled CrowdSec-only sync failed: error=%s",
+                            cs.get("error"),
+                        )
 
                 break
             except asyncio.CancelledError:

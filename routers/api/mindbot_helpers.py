@@ -63,6 +63,7 @@ def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
     return MindbotConfigResponse(
         id=row.id,
         organization_id=row.organization_id,
+        bot_label=(row.bot_label or "").strip() or None,
         public_callback_token=row.public_callback_token.strip(),
         dingtalk_robot_code=row.dingtalk_robot_code,
         dingtalk_app_secret_masked=_mask_secret(row.dingtalk_app_secret),
