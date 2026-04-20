@@ -51,6 +51,10 @@ from services.infrastructure.utils.launch_commands import lines_http_port_in_use
 from services.infrastructure.utils.port_manager import ShutdownErrorFilter
 from services.infrastructure.lifecycle.startup import MINDGRAPH_LAUNCHER_PID_ENV
 from services.infrastructure.process import _port_utils
+from services.infrastructure.process.uvicorn_signal_diag import (
+    log_uvicorn_supervisor_boot,
+    patch_signal_for_uvicorn_sighup_trace,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -284,6 +288,8 @@ def run_server() -> None:
                     "a crash—increase this value. For real process exits, check dmesg/OOM.",
                     worker_healthcheck,
                 )
+                patch_signal_for_uvicorn_sighup_trace()
+                log_uvicorn_supervisor_boot(worker_count)
 
             uvicorn.run(
                 "main:app",
