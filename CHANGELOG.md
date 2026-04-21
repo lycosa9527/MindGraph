@@ -5,11 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [5.97.0] - 2026-04-22
+## [5.98.0] - 2026-04-22
 
 ### Added
-- **Admin / Performance tab — live metrics** (`routers/auth/admin/performance.py`, `routers/auth/admin/__init__.py`): platform-admin-only `GET /api/auth/admin/performance/live` aggregates host CPU/memory/disk (primary volume + optional local volumes), process RSS and CPU, network send/recv bytes per second, Redis server memory and metadata (reuses cached `INFO` from health helpers), async/sync DB pool stats, WebSocket metrics, DingTalk Stream manager client counts, Redis activity-tracker stats, optional LLM performance snapshot, process-monitor subprocess status, app uptime/version, and cross-worker perf snapshots where available; independent sections use short timeouts with partial JSON when a subsection fails.
-- **Frontend / Admin Performance** (`AdminPerformanceTab.vue`, `usePerformanceLive.ts`, `AdminPage.vue`, locale `admin.ts` bundles): new **Performance** tab (platform admins only) with MindBot Swiss–style shell, Chart.js time series from polled snapshots (rolling buffers, pause when tab hidden), and grouped metric cards/tables; tab wiring and i18n keys under `admin.performance*`.
+- **Admin / Performance — live metrics** (`routers/auth/admin/performance.py`, `routers/auth/admin/__init__.py`, `services/infrastructure/monitoring/*streaming*.py`, `services/redis/keys.py`): **platform-admin only** `GET /api/auth/admin/performance/live` (`require_admin`, 403 otherwise). Returns host compute/network/disk, merged process CPU/RSS, Redis memory snapshot, WebSocket + activity stats, LLM per-model snapshot, app version/uptime, cross-worker merge from Redis worker snapshots, **`mindbot_ai_card_streaming`** (live DingTalk card / Dify SSE count + 24h concurrent high from UTC hourly keys in Redis), and **`mindmate_streaming`** (live `/api/ai_assistant/stream` count + same 24h pattern). Background worker perf heartbeat republishes per-uvicorn snapshots to Redis; each subsection uses short timeouts. MindMate stream counting hooks in `routers/api/sse_streaming.py` (`mindmate_streaming_begin` / `end` in the SSE generator `finally`).
+- **Frontend / Admin Performance** (`AdminPerformanceTab.vue`, `usePerformanceLive.ts`, `AdminPage.vue`, `admin-performance-cards.css`, locale `en`/`zh` `admin.ts` + materialized bundles): **Performance** tab (platform admins) with Swiss-style metric cards, Redis/sessions and **MindBot + MindMate streaming** side-by-side, LLM table when present, ~2s poll, pause on navigate/unmount; i18n under `admin.performance*`.
 
 ## [5.96.0] - 2026-04-22
 

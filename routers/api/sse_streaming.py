@@ -21,6 +21,10 @@ from fastapi.responses import StreamingResponse
 from clients.dify import AsyncDifyClient, DifyFile
 from models import AIAssistantRequest, Messages, get_request_language
 from models.domain.auth import User
+from services.infrastructure.monitoring.mindmate_streaming import (
+    mindmate_streaming_begin,
+    mindmate_streaming_end,
+)
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_token_buffer import get_token_tracker
 from utils.auth import get_current_user_or_api_key
@@ -105,6 +109,7 @@ async def ai_assistant_stream(
     async def generate():
         """Async generator function for SSE streaming"""
         logger.debug("[GENERATOR] Async generator function called - starting execution")
+        await mindmate_streaming_begin()
         chunk_count = 0  # Initialize outside try block for finally access
         start_time = time.time()
         captured_usage: Dict[str, Any] = {}  # Store usage from message_end
@@ -220,6 +225,7 @@ async def ai_assistant_stream(
                     "timestamp": int(time.time() * 1000),
                 }
                 yield f"data: {json.dumps(error_data)}\n\n"
+            await mindmate_streaming_end()
 
     logger.debug("[SETUP] Creating StreamingResponse with async generator")
     return StreamingResponse(

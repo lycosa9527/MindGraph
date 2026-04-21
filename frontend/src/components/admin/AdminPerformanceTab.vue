@@ -1,12 +1,11 @@
 <script setup lang="ts">
 /**
- * Admin Performance tab — MindBot Swiss shell, metric cards + progress bars (no charts).
+ * Admin Performance tab — MindBot Swiss shell, metric cards + progress bars.
  */
 import { computed } from 'vue'
 
 import { useLanguage } from '@/composables'
 import { usePerformanceLive } from '@/composables/admin/usePerformanceLive'
-
 import '@/styles/admin-mindbot-swiss-shell.css'
 import '@/styles/admin-performance-cards.css'
 
@@ -32,8 +31,39 @@ const net = computed(() => (latest.value?.network as Record<string, unknown> | u
 const redis = computed(() => (latest.value?.redis as Record<string, unknown> | undefined) ?? null)
 const ws = computed(() => (latest.value?.websockets as Record<string, unknown> | undefined) ?? null)
 const act = computed(() => (latest.value?.activity as Record<string, unknown> | undefined) ?? null)
-const dt = computed(() => (latest.value?.dingtalk_stream as Record<string, unknown> | undefined) ?? null)
-const pools = computed(() => (latest.value?.database_pools as Record<string, unknown> | undefined) ?? null)
+const aiCardStreaming = computed(() => {
+  const raw = latest.value?.mindbot_ai_card_streaming as Record<string, unknown> | undefined
+  if (!raw || typeof raw !== 'object') return null
+  const now = raw.active_now
+  if (typeof now !== 'number' || !Number.isFinite(now)) return null
+  const max24 = raw.active_max_24h
+  const cErr = raw.concurrency_error
+  const pErr = raw.peak_24h_error
+  return {
+    activeNow: Math.max(0, Math.floor(now)),
+    activeMax24h:
+      typeof max24 === 'number' && Number.isFinite(max24) ? Math.max(0, Math.floor(max24)) : null,
+    concurrencyError: typeof cErr === 'string' && cErr ? cErr : null,
+    peak24hError: typeof pErr === 'string' && pErr ? pErr : null,
+  }
+})
+
+const mindmateStreaming = computed(() => {
+  const raw = latest.value?.mindmate_streaming as Record<string, unknown> | undefined
+  if (!raw || typeof raw !== 'object') return null
+  const now = raw.active_now
+  if (typeof now !== 'number' || !Number.isFinite(now)) return null
+  const max24 = raw.active_max_24h
+  const cErr = raw.concurrency_error
+  const pErr = raw.peak_24h_error
+  return {
+    activeNow: Math.max(0, Math.floor(now)),
+    activeMax24h:
+      typeof max24 === 'number' && Number.isFinite(max24) ? Math.max(0, Math.floor(max24)) : null,
+    concurrencyError: typeof cErr === 'string' && cErr ? cErr : null,
+    peak24hError: typeof pErr === 'string' && pErr ? pErr : null,
+  }
+})
 
 const clusterMeta = computed(() => {
   const c = latest.value?.cluster as Record<string, unknown> | undefined
@@ -93,8 +123,7 @@ const processCpuCard = computed(() => {
   const p = proc.value
   if (!p || p.error) return null
   const sumRaw = typeof p.cpu_percent === 'number' ? (p.cpu_percent as number) : 0
-  const maxRaw =
-    typeof p.cpu_percent_max === 'number' ? (p.cpu_percent_max as number) : sumRaw
+  const maxRaw = typeof p.cpu_percent_max === 'number' ? (p.cpu_percent_max as number) : sumRaw
   const workerCount = typeof p.worker_count === 'number' ? p.worker_count : 1
   const ringPct = clampPct(Math.min(100, sumRaw))
   return {
@@ -174,43 +203,6 @@ const connTiles = computed(() => {
   }
 })
 
-const poolAsyncCard = computed(() => {
-  const p = pools.value
-  if (!p || p.error) return null
-  const a = p.async as Record<string, unknown> | undefined
-  if (!a) return null
-  const size = Number(a.size ?? 0)
-  const out = Number(a.checked_out ?? 0)
-  const pct = size > 0 ? clampPct((out / size) * 100) : 0
-  return {
-    pct,
-    line: t('admin.performance.poolCheckedOut', { out: String(out), size: String(size) }),
-  }
-})
-
-const poolSyncCard = computed(() => {
-  const p = pools.value
-  if (!p || p.error) return null
-  const s = p.sync as Record<string, unknown> | undefined
-  if (!s) return null
-  const size = Number(s.size ?? 0)
-  const out = Number(s.checked_out ?? 0)
-  const pct = size > 0 ? clampPct((out / size) * 100) : 0
-  return {
-    pct,
-    line: t('admin.performance.poolCheckedOut', { out: String(out), size: String(size) }),
-  }
-})
-
-const dingtalkStats = computed(() => {
-  const d = dt.value
-  if (!d || d.error) return null
-  return {
-    reg: Number(d.registered_count ?? 0),
-    run: Number(d.running_count ?? 0),
-  }
-})
-
 const appMeta = computed(() => {
   const a = latest.value?.app as Record<string, unknown> | undefined
   if (!a || a.error) return null
@@ -228,20 +220,6 @@ const diskHint = computed(() => {
   const free = typeof d.free_bytes === 'number' ? formatBytes(d.free_bytes as number) : '—'
   const total = typeof d.total_bytes === 'number' ? formatBytes(d.total_bytes as number) : '—'
   return t('admin.performance.diskHint', { mount: d.mount, used, free, total })
-})
-
-const poolDetailLine = computed(() => {
-  const p = pools.value
-  if (!p || p.error) return ''
-  const a = p.async as Record<string, unknown> | undefined
-  const s = p.sync as Record<string, unknown> | undefined
-  if (!a || !s) return ''
-  return t('admin.performance.poolDetail', {
-    asize: String(a.size ?? '—'),
-    aov: String(a.overflow ?? '—'),
-    ssize: String(s.size ?? '—'),
-    sov: String(s.overflow ?? '—'),
-  })
 })
 
 const redisDetailLine = computed(() => {
@@ -264,29 +242,6 @@ const diskExtraVolumes = computed(() => {
     free_bytes?: number
     total_bytes?: number
   }>
-})
-
-const processRows = computed(() => {
-  const ps = latest.value?.process_services as Record<string, unknown> | undefined
-  if (!ps || typeof ps !== 'object') return []
-  if ('error' in ps && Object.keys(ps).length === 1) return []
-  return Object.entries(ps).map(([name, v]) => {
-    const row = v as Record<string, unknown>
-    const up = row.uptime_seconds
-    return {
-      name,
-      status: String(row.status ?? '—'),
-      restarts: row.restart_count,
-      uptimeSec: typeof up === 'number' ? up : null,
-      circuit: Boolean(row.circuit_breaker_open),
-    }
-  })
-})
-
-const dingtalkClients = computed(() => {
-  const d = dt.value
-  if (!d || d.error || !Array.isArray(d.clients)) return []
-  return d.clients as Array<{ client_id: string; running: boolean }>
 })
 
 const llmRows = computed(() => {
@@ -392,102 +347,110 @@ const progressColors = [
               v-if="hostRamCard"
               class="perf-metric-card"
             >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardHostRam') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ hostRamCard.pct }}%</span>
-          </div>
-          <el-progress
-            :percentage="hostRamCard.pct"
-            :color="progressColors"
-            :stroke-width="8"
-            :show-text="false"
-            class="perf-progress-line"
-          />
-          <p class="perf-metric-card__sub perf-mono">{{ hostRamCard.line }}</p>
-        </div>
+              <div class="perf-metric-card__head">
+                <span class="perf-metric-card__label">{{
+                  t('admin.performance.cardHostRam')
+                }}</span>
+                <span class="perf-metric-card__value perf-mono">{{ hostRamCard.pct }}%</span>
+              </div>
+              <el-progress
+                :percentage="hostRamCard.pct"
+                :color="progressColors"
+                :stroke-width="8"
+                :show-text="false"
+                class="perf-progress-line"
+              />
+              <p class="perf-metric-card__sub perf-mono">{{ hostRamCard.line }}</p>
+            </div>
 
-        <div
-          v-if="appRamCard"
-          class="perf-metric-card"
-        >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardAppRam') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ appRamCard.pct }}%</span>
-          </div>
-          <el-progress
-            :percentage="appRamCard.pct"
-            :color="progressColors"
-            :stroke-width="8"
-            :show-text="false"
-            class="perf-progress-line"
-          />
-          <p class="perf-metric-card__sub perf-mono">{{ appRamCard.line }}</p>
-          <p
-            v-if="appRamCard.workerCount > 1"
-            class="perf-hint perf-metric-card__hint"
-          >
-            {{ t('admin.performance.workersRssHint', { n: String(appRamCard.workerCount) }) }}
-          </p>
-          <p
-            v-else-if="appRamCard.pid != null"
-            class="perf-hint perf-metric-card__hint"
-          >
-            {{ t('admin.performance.pidLabel', { pid: String(appRamCard.pid) }) }}
-          </p>
-        </div>
+            <div
+              v-if="appRamCard"
+              class="perf-metric-card"
+            >
+              <div class="perf-metric-card__head">
+                <span class="perf-metric-card__label">{{ t('admin.performance.cardAppRam') }}</span>
+                <span class="perf-metric-card__value perf-mono">{{ appRamCard.pct }}%</span>
+              </div>
+              <el-progress
+                :percentage="appRamCard.pct"
+                :color="progressColors"
+                :stroke-width="8"
+                :show-text="false"
+                class="perf-progress-line"
+              />
+              <p class="perf-metric-card__sub perf-mono">{{ appRamCard.line }}</p>
+              <p
+                v-if="appRamCard.workerCount > 1"
+                class="perf-hint perf-metric-card__hint"
+              >
+                {{ t('admin.performance.workersRssHint', { n: String(appRamCard.workerCount) }) }}
+              </p>
+              <p
+                v-else-if="appRamCard.pid != null"
+                class="perf-hint perf-metric-card__hint"
+              >
+                {{ t('admin.performance.pidLabel', { pid: String(appRamCard.pid) }) }}
+              </p>
+            </div>
 
-        <div
-          v-if="hostCpuCard"
-          class="perf-metric-card perf-metric-card--gauge"
-        >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardHostCpu') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ hostCpuCard.pct }}%</span>
-          </div>
-          <div class="perf-metric-card__gauge">
-            <el-progress
-              type="dashboard"
-              :percentage="hostCpuCard.pct"
-              :color="progressColors"
-              :width="88"
-              :stroke-width="8"
-              :show-text="false"
-            />
-          </div>
-          <p
-            v-if="hostCpuCard.sub"
-            class="perf-metric-card__sub perf-metric-card__sub--center"
-          >
-            {{ hostCpuCard.sub }}
-          </p>
-        </div>
+            <div
+              v-if="hostCpuCard"
+              class="perf-metric-card perf-metric-card--gauge"
+            >
+              <div class="perf-metric-card__head">
+                <span class="perf-metric-card__label">{{
+                  t('admin.performance.cardHostCpu')
+                }}</span>
+                <span class="perf-metric-card__value perf-mono">{{ hostCpuCard.pct }}%</span>
+              </div>
+              <div class="perf-metric-card__gauge">
+                <el-progress
+                  type="dashboard"
+                  :percentage="hostCpuCard.pct"
+                  :color="progressColors"
+                  :width="88"
+                  :stroke-width="8"
+                  :show-text="false"
+                />
+              </div>
+              <p
+                v-if="hostCpuCard.sub"
+                class="perf-metric-card__sub perf-metric-card__sub--center"
+              >
+                {{ hostCpuCard.sub }}
+              </p>
+            </div>
 
-        <div
-          v-if="processCpuCard"
-          class="perf-metric-card perf-metric-card--gauge"
-        >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardProcessCpu') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ processCpuCard.headerPct }}%</span>
-          </div>
-          <div class="perf-metric-card__gauge">
-            <el-progress
-              type="dashboard"
-              :percentage="processCpuCard.ringPct"
-              :color="progressColors"
-              :width="88"
-              :stroke-width="8"
-              :show-text="false"
-            />
-          </div>
-          <p class="perf-hint perf-metric-card__hint">
-            {{
-              processCpuCard.workerCount > 1
-                ? processCpuCard.clusterHint
-                : t('admin.performance.hintProcessCpuSingle')
-            }}
-          </p>
-        </div>
+            <div
+              v-if="processCpuCard"
+              class="perf-metric-card perf-metric-card--gauge"
+            >
+              <div class="perf-metric-card__head">
+                <span class="perf-metric-card__label">{{
+                  t('admin.performance.cardProcessCpu')
+                }}</span>
+                <span class="perf-metric-card__value perf-mono"
+                  >{{ processCpuCard.headerPct }}%</span
+                >
+              </div>
+              <div class="perf-metric-card__gauge">
+                <el-progress
+                  type="dashboard"
+                  :percentage="processCpuCard.ringPct"
+                  :color="progressColors"
+                  :width="88"
+                  :stroke-width="8"
+                  :show-text="false"
+                />
+              </div>
+              <p class="perf-hint perf-metric-card__hint">
+                {{
+                  processCpuCard.workerCount > 1
+                    ? processCpuCard.clusterHint
+                    : t('admin.performance.hintProcessCpuSingle')
+                }}
+              </p>
+            </div>
           </div>
         </section>
 
@@ -503,49 +466,55 @@ const progressColors = [
             {{ t('admin.performance.groupStorageNet') }}
           </h3>
           <div class="perf-cards-grid">
-        <div
-          v-if="diskCard"
-          class="perf-metric-card"
-        >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardPrimaryDisk') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ diskCard.pct }}%</span>
-          </div>
-          <el-progress
-            :percentage="diskCard.pct"
-            :color="progressColors"
-            :stroke-width="8"
-            :show-text="false"
-            class="perf-progress-line"
-          />
-          <p class="perf-metric-card__sub perf-mono">{{ diskCard.line }}</p>
-          <p
-            v-if="diskHint"
-            class="perf-hint perf-metric-card__hint"
-          >
-            {{ diskHint }}
-          </p>
-        </div>
+            <div
+              v-if="diskCard"
+              class="perf-metric-card"
+            >
+              <div class="perf-metric-card__head">
+                <span class="perf-metric-card__label">{{
+                  t('admin.performance.cardPrimaryDisk')
+                }}</span>
+                <span class="perf-metric-card__value perf-mono">{{ diskCard.pct }}%</span>
+              </div>
+              <el-progress
+                :percentage="diskCard.pct"
+                :color="progressColors"
+                :stroke-width="8"
+                :show-text="false"
+                class="perf-progress-line"
+              />
+              <p class="perf-metric-card__sub perf-mono">{{ diskCard.line }}</p>
+              <p
+                v-if="diskHint"
+                class="perf-hint perf-metric-card__hint"
+              >
+                {{ diskHint }}
+              </p>
+            </div>
 
-        <div
-          v-if="netCards"
-          class="perf-metric-card"
-        >
-          <div class="perf-metric-card__head perf-metric-card__head--solo">
-            <span class="perf-metric-card__label">{{ t('admin.performance.sectionNetwork') }}</span>
-          </div>
-          <div class="perf-stat-row">
-            <div class="perf-stat-pill">
-              <span class="perf-stat-pill__k">{{ t('admin.performance.netUp') }}</span>
-              <span class="perf-stat-pill__v perf-mono">{{ netCards.up }}</span>
+            <div
+              v-if="netCards"
+              class="perf-metric-card"
+            >
+              <div class="perf-metric-card__head perf-metric-card__head--solo">
+                <span class="perf-metric-card__label">{{
+                  t('admin.performance.sectionNetwork')
+                }}</span>
+              </div>
+              <div class="perf-stat-row">
+                <div class="perf-stat-pill">
+                  <span class="perf-stat-pill__k">{{ t('admin.performance.netUp') }}</span>
+                  <span class="perf-stat-pill__v perf-mono">{{ netCards.up }}</span>
+                </div>
+                <div class="perf-stat-pill">
+                  <span class="perf-stat-pill__k">{{ t('admin.performance.netDown') }}</span>
+                  <span class="perf-stat-pill__v perf-mono">{{ netCards.down }}</span>
+                </div>
+              </div>
+              <p class="perf-hint perf-metric-card__hint">
+                {{ t('admin.performance.hintNetwork') }}
+              </p>
             </div>
-            <div class="perf-stat-pill">
-              <span class="perf-stat-pill__k">{{ t('admin.performance.netDown') }}</span>
-              <span class="perf-stat-pill__v perf-mono">{{ netCards.down }}</span>
-            </div>
-          </div>
-          <p class="perf-hint perf-metric-card__hint">{{ t('admin.performance.hintNetwork') }}</p>
-        </div>
           </div>
 
           <div
@@ -588,10 +557,8 @@ const progressColors = [
           v-if="
             redisCard ||
             connTiles ||
-            dingtalkStats ||
-            poolAsyncCard ||
-            poolSyncCard ||
-            poolDetailLine
+            aiCardStreaming ||
+            mindmateStreaming
           "
           class="perf-card-group"
           aria-labelledby="perf-group-platform"
@@ -613,16 +580,22 @@ const progressColors = [
                 class="perf-metric-card"
               >
                 <div class="perf-metric-card__head perf-metric-card__head--solo">
-                  <span class="perf-metric-card__label">{{ t('admin.performance.sectionRedis') }}</span>
+                  <span class="perf-metric-card__label">{{
+                    t('admin.performance.sectionRedis')
+                  }}</span>
                 </div>
                 <p class="perf-metric-card__kpi perf-mono">
                   {{ redisCard.human }}
                   <span class="perf-metric-card__kpi-sep">·</span>
-                  <span class="perf-metric-card__kpi-muted">{{ t('admin.performance.peakLabel') }}</span>
+                  <span class="perf-metric-card__kpi-muted">{{
+                    t('admin.performance.peakLabel')
+                  }}</span>
                   {{ redisCard.peak }}
                 </p>
                 <div class="perf-metric-card__frag-head">
-                  <span class="perf-metric-card__frag-label">{{ t('admin.performance.fragLabel') }}</span>
+                  <span class="perf-metric-card__frag-label">{{
+                    t('admin.performance.fragLabel')
+                  }}</span>
                   <span class="perf-metric-card__frag-val perf-mono">{{ redisCard.fragText }}</span>
                 </div>
                 <el-progress
@@ -645,7 +618,9 @@ const progressColors = [
                 class="perf-metric-card"
               >
                 <div class="perf-metric-card__head perf-metric-card__head--solo">
-                  <span class="perf-metric-card__label">{{ t('admin.performance.sectionConnections') }}</span>
+                  <span class="perf-metric-card__label">{{
+                    t('admin.performance.sectionConnections')
+                  }}</span>
                 </div>
                 <div class="perf-stat-grid">
                   <div
@@ -659,7 +634,9 @@ const progressColors = [
                     v-if="connTiles.workshop != null"
                     class="perf-stat-pill"
                   >
-                    <span class="perf-stat-pill__k">{{ t('admin.performance.tileWsWorkshop') }}</span>
+                    <span class="perf-stat-pill__k">{{
+                      t('admin.performance.tileWsWorkshop')
+                    }}</span>
                     <span class="perf-stat-pill__v perf-mono">{{ connTiles.workshop }}</span>
                   </div>
                   <div
@@ -680,7 +657,9 @@ const progressColors = [
                     v-if="connTiles.unique != null"
                     class="perf-stat-pill"
                   >
-                    <span class="perf-stat-pill__k">{{ t('admin.performance.tileUniqueUsers') }}</span>
+                    <span class="perf-stat-pill__k">{{
+                      t('admin.performance.tileUniqueUsers')
+                    }}</span>
                     <span class="perf-stat-pill__v perf-mono">{{ connTiles.unique }}</span>
                   </div>
                 </div>
@@ -695,168 +674,102 @@ const progressColors = [
                       >{{ line }}</span
                     >
                   </div>
-                  <p class="perf-hint perf-metric-card__hint">{{ t('admin.performance.hintConnections') }}</p>
+                  <p class="perf-hint perf-metric-card__hint">
+                    {{ t('admin.performance.hintConnections') }}
+                  </p>
                 </div>
               </div>
             </div>
 
-        <div
-          v-if="dingtalkStats"
-          class="perf-metric-card"
-        >
-          <div class="perf-metric-card__head perf-metric-card__head--solo">
-            <span class="perf-metric-card__label">{{ t('admin.performance.sectionDingtalk') }}</span>
-          </div>
-          <div class="perf-stat-row">
-            <div class="perf-stat-pill">
-              <span class="perf-stat-pill__k">{{ t('admin.performance.dtRegistered') }}</span>
-              <span class="perf-stat-pill__v perf-mono">{{ dingtalkStats.reg }}</span>
-            </div>
-            <div class="perf-stat-pill">
-              <span class="perf-stat-pill__k">{{ t('admin.performance.dtRunning') }}</span>
-              <span class="perf-stat-pill__v perf-mono">{{ dingtalkStats.run }}</span>
-            </div>
-          </div>
-        </div>
-
-        <div
-          v-if="poolAsyncCard"
-          class="perf-metric-card"
-        >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardPoolAsync') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ poolAsyncCard.pct }}%</span>
-          </div>
-          <el-progress
-            :percentage="poolAsyncCard.pct"
-            :color="progressColors"
-            :stroke-width="8"
-            :show-text="false"
-            class="perf-progress-line"
-          />
-          <p class="perf-metric-card__sub perf-mono">{{ poolAsyncCard.line }}</p>
-        </div>
-
-        <div
-          v-if="poolSyncCard"
-          class="perf-metric-card"
-        >
-          <div class="perf-metric-card__head">
-            <span class="perf-metric-card__label">{{ t('admin.performance.cardPoolSync') }}</span>
-            <span class="perf-metric-card__value perf-mono">{{ poolSyncCard.pct }}%</span>
-          </div>
-          <el-progress
-            :percentage="poolSyncCard.pct"
-            :color="progressColors"
-            :stroke-width="8"
-            :show-text="false"
-            class="perf-progress-line"
-          />
-          <p class="perf-metric-card__sub perf-mono">{{ poolSyncCard.line }}</p>
-        </div>
-          </div>
-
-          <p
-            v-if="poolDetailLine"
-            class="perf-hint perf-mono perf-card-group__detail"
-          >
-            {{ poolDetailLine }}
-          </p>
-        </section>
-      </div>
-
-      <div
-        v-if="dingtalkClients.length"
-        class="mt-6"
-      >
-        <div class="perf-section-label">{{ t('admin.performance.dtClientTable') }}</div>
-        <div class="perf-inset mt-2">
-          <el-table
-            :data="dingtalkClients"
-            size="small"
-            class="perf-mono"
-            max-height="220"
-          >
-            <el-table-column
-              prop="client_id"
-              :label="t('admin.performance.colClientId')"
-              min-width="160"
-            />
-            <el-table-column
-              prop="running"
-              :label="t('admin.performance.colRunning')"
-              width="90"
+            <div
+              v-if="aiCardStreaming || mindmateStreaming"
+              class="perf-streaming-dual"
+              :class="{
+                'perf-streaming-dual--single': !aiCardStreaming || !mindmateStreaming,
+              }"
             >
-              <template #default="{ row }">
-                <el-tag
-                  :type="row.running ? 'success' : 'info'"
-                  size="small"
-                >
-                  {{ row.running ? t('admin.performance.yes') : t('admin.performance.no') }}
-                </el-tag>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
-      </div>
-
-      <div class="perf-inset mt-6">
-        <div class="perf-section-label">{{ t('admin.performance.sectionServices') }}</div>
-        <el-table
-          v-if="processRows.length"
-          :data="processRows"
-          size="small"
-          class="perf-mono mt-2"
-          stripe
-        >
-          <el-table-column
-            prop="name"
-            :label="t('admin.performance.colService')"
-            min-width="120"
-          />
-          <el-table-column
-            prop="status"
-            :label="t('admin.performance.colStatus')"
-            min-width="100"
-          />
-          <el-table-column
-            prop="restarts"
-            :label="t('admin.performance.colRestarts')"
-            width="100"
-          />
-          <el-table-column
-            :label="t('admin.performance.colServiceUptime')"
-            width="110"
-          >
-            <template #default="{ row }">
-              {{
-                row.uptimeSec != null
-                  ? `${Math.round(row.uptimeSec)}${t('admin.performance.secondsShort')}`
-                  : '—'
-              }}
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="circuit"
-            :label="t('admin.performance.colCircuit')"
-            width="100"
-          >
-            <template #default="{ row }">
-              <el-tag
-                :type="row.circuit ? 'danger' : 'success'"
-                size="small"
+              <div
+                v-if="aiCardStreaming"
+                class="perf-metric-card"
               >
-                {{ row.circuit ? t('admin.performance.open') : t('admin.performance.closed') }}
-              </el-tag>
-            </template>
-          </el-table-column>
-        </el-table>
-        <p
-          v-else
-          class="perf-hint mt-2"
-        >
-          {{ t('admin.performance.noProcessData') }}
-        </p>
+                <div class="perf-metric-card__head perf-metric-card__head--solo">
+                  <span class="perf-metric-card__label">{{
+                    t('admin.performance.sectionAiCardStreaming')
+                  }}</span>
+                </div>
+                <p class="perf-metric-card__kpi perf-mono">
+                  {{ aiCardStreaming.activeNow }}
+                </p>
+                <p
+                  v-if="aiCardStreaming.concurrencyError"
+                  class="perf-metric-card__sub"
+                  style="color: #fb7185"
+                >
+                  {{ t('admin.performance.mindbotStreamingNowError', { reason: aiCardStreaming.concurrencyError }) }}
+                </p>
+                <p class="perf-section-sublabel">
+                  {{ t('admin.performance.streamingMax24hLabel') }}
+                  <span class="perf-mono">{{
+                    aiCardStreaming.activeMax24h != null ? aiCardStreaming.activeMax24h : '—'
+                  }}</span>
+                </p>
+                <p
+                  v-if="aiCardStreaming.peak24hError"
+                  class="perf-hint perf-metric-card__hint"
+                  style="color: #fb7185"
+                >
+                  {{ t('admin.performance.streamingMax24hError', { reason: aiCardStreaming.peak24hError }) }}
+                </p>
+                <p
+                  v-else
+                  class="perf-hint perf-metric-card__hint"
+                >
+                  {{ t('admin.performance.hintAiCardStreaming') }}
+                </p>
+              </div>
+
+              <div
+                v-if="mindmateStreaming"
+                class="perf-metric-card"
+              >
+                <div class="perf-metric-card__head perf-metric-card__head--solo">
+                  <span class="perf-metric-card__label">{{
+                    t('admin.performance.sectionMindmateStreaming')
+                  }}</span>
+                </div>
+                <p class="perf-metric-card__kpi perf-mono">
+                  {{ mindmateStreaming.activeNow }}
+                </p>
+                <p
+                  v-if="mindmateStreaming.concurrencyError"
+                  class="perf-metric-card__sub"
+                  style="color: #fb7185"
+                >
+                  {{ t('admin.performance.mindmateStreamingNowError', { reason: mindmateStreaming.concurrencyError }) }}
+                </p>
+                <p class="perf-section-sublabel">
+                  {{ t('admin.performance.streamingMax24hLabel') }}
+                  <span class="perf-mono">{{
+                    mindmateStreaming.activeMax24h != null ? mindmateStreaming.activeMax24h : '—'
+                  }}</span>
+                </p>
+                <p
+                  v-if="mindmateStreaming.peak24hError"
+                  class="perf-hint perf-metric-card__hint"
+                  style="color: #fb7185"
+                >
+                  {{ t('admin.performance.streamingMax24hError', { reason: mindmateStreaming.peak24hError }) }}
+                </p>
+                <p
+                  v-else
+                  class="perf-hint perf-metric-card__hint"
+                >
+                  {{ t('admin.performance.hintMindmateStreaming') }}
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
       </div>
 
       <div

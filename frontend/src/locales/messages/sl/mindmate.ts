@@ -80,6 +80,7 @@ export default {
   'mindmate.input.attachFile': 'Attach file',
   'mindmate.input.placeholder': 'Type your question...',
   'mindmate.newChat': 'New Chat',
+  'mindmate.otherModules': 'Other modules',
   'mindmate.noHistory': 'No history',
   'mindmate.noHistoryPanel': 'No conversation history',
   'mindmate.suggestionLabel': 'Try asking me:',

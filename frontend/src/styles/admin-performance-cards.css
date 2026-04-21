@@ -66,6 +66,25 @@
   }
 }
 
+/** MindBot AI card + MindMate streaming cards — one row, equal columns. */
+.admin-performance-swiss .perf-streaming-dual {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 0.85rem;
+  align-items: stretch;
+  width: 100%;
+}
+
+.admin-performance-swiss .perf-streaming-dual--single {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 640px) {
+  .admin-performance-swiss .perf-streaming-dual {
+    grid-template-columns: 1fr;
+  }
+}
+
 .admin-performance-swiss .perf-metric-card {
   --perf-card-edge: rgba(34, 211, 238, 0.22);
   --perf-card-inner: rgba(15, 23, 42, 0.45);
@@ -262,6 +281,21 @@
   display: flex;
   flex-wrap: wrap;
   gap: 0.5rem;
+}
+
+.admin-performance-swiss .perf-stat-row--tight {
+  margin-top: 0.35rem;
+}
+
+.admin-performance-swiss .perf-section-sublabel {
+  position: relative;
+  z-index: 1;
+  margin: 0.65rem 0 0.2rem;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #64748b;
 }
 
 .admin-performance-swiss .perf-stat-grid {

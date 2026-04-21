@@ -17,16 +17,22 @@ from typing import Any, Dict, List, Optional
 import psutil
 from fastapi import APIRouter, Depends
 
-from config.database import async_engine, engine
 from config.settings import config
 from models.domain.auth import User
 from routers.auth.dependencies import require_admin
-from routers.core.health import _cached_redis_info, _collect_pool_stats, _fetch_redis_memory_stats
+from routers.core.health import _cached_redis_info, _fetch_redis_memory_stats
+from services.infrastructure.monitoring.mindbot_streaming_peak_24h import (
+    record_and_read_mindbot_streaming_peak_24h,
+)
+from services.infrastructure.monitoring.mindmate_streaming_peak_24h import (
+    record_and_read_mindmate_streaming_peak_24h,
+)
 from services.infrastructure.monitoring.worker_perf_redis import load_all_worker_perf_snapshots
 from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import is_redis_available
+
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
@@ -158,46 +164,6 @@ def _process_snapshot() -> Dict[str, Any]:
         return {"error": str(exc)}
 
 
-def _database_pools_snapshot() -> Dict[str, Any]:
-    try:
-        return {
-            "async": _collect_pool_stats(async_engine.pool),
-            "sync": _collect_pool_stats(engine.pool),
-        }
-    except (AttributeError, TypeError) as exc:
-        return {"error": str(exc)}
-
-
-def _dingtalk_snapshot() -> Dict[str, Any]:
-    try:
-        from services.mindbot.platforms.dingtalk.cards.stream_client import get_stream_manager
-
-        mgr = get_stream_manager()
-        clients = mgr.stream_clients_snapshot()
-        running_n = sum(1 for row in clients if row.get("running"))
-        return {
-            "registered_count": int(mgr.registered_client_count()),
-            "running_count": int(running_n),
-            "clients": clients,
-        }
-    except ImportError as exc:
-        return {"error": str(exc)}
-    except (TypeError, ValueError, AttributeError, KeyError) as exc:
-        return {"error": str(exc)}
-
-
-def _process_services_snapshot() -> Dict[str, Any]:
-    try:
-        from services.infrastructure.monitoring.process_monitor import get_process_monitor
-
-        return get_process_monitor().get_status()
-    except ImportError as exc:
-        return {"error": str(exc)}
-    except (TypeError, ValueError, RuntimeError, AttributeError) as exc:
-        logger.debug("process services snapshot failed: %s", exc)
-        return {"error": str(exc)}
-
-
 def _llm_snapshot() -> Dict[str, Any]:
     try:
         from services.llm import llm_service
@@ -310,13 +276,28 @@ async def build_worker_perf_payload_async() -> Dict[str, Any]:
         websockets = {"error": "websocket metrics timed out"}
     except (ConnectionError, RuntimeError, ValueError, TypeError) as exc:
         websockets = {"error": str(exc)}
+    try:
+        from services.mindbot.pipeline.callback import mindbot_concurrency_snapshot
+
+        mindbot_concurrency = await asyncio.wait_for(mindbot_concurrency_snapshot(), timeout=1.0)
+    except asyncio.TimeoutError:
+        mindbot_concurrency = {"error": "mindbot concurrency snapshot timed out"}
+    except (RuntimeError, TypeError, ValueError) as exc:
+        mindbot_concurrency = {"error": str(exc)}
+    try:
+        from services.infrastructure.monitoring.mindmate_streaming import mindmate_streaming_snapshot
+
+        mindmate_streaming = await asyncio.wait_for(mindmate_streaming_snapshot(), timeout=1.0)
+    except asyncio.TimeoutError:
+        mindmate_streaming = {"error": "mindmate streaming snapshot timed out"}
+    except (RuntimeError, TypeError, ValueError) as exc:
+        mindmate_streaming = {"error": str(exc)}
     return {
         "pid": int(os.getpid()),
         "ts": time.time(),
         "process": _process_snapshot(),
-        "database_pools": _database_pools_snapshot(),
-        "dingtalk_stream": _dingtalk_snapshot(),
-        "process_services": _process_services_snapshot(),
+        "mindbot_concurrency": mindbot_concurrency,
+        "mindmate_streaming": mindmate_streaming,
         "llm": _llm_snapshot(),
         "websockets": websockets,
         "app": _app_snapshot(),
@@ -366,103 +347,6 @@ def _merge_process_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     }
 
 
-def _merge_pool_half(rows: List[Dict[str, Any]], key: str) -> Dict[str, Any]:
-    size = checked_in = checked_out = 0
-    overflow_max = 0
-    any_ok = False
-    for row in rows:
-        pools = row.get("database_pools") or {}
-        if pools.get("error"):
-            continue
-        part = pools.get(key) or {}
-        if not part:
-            continue
-        try:
-            size += int(part.get("size") or 0)
-            checked_in += int(part.get("checked_in") or 0)
-            checked_out += int(part.get("checked_out") or 0)
-            overflow_max = max(overflow_max, int(part.get("overflow") or 0))
-        except (TypeError, ValueError):
-            continue
-        any_ok = True
-    if not any_ok:
-        return {}
-    return {
-        "size": size,
-        "checked_in": checked_in,
-        "checked_out": checked_out,
-        "overflow": overflow_max,
-        "total": size + overflow_max,
-    }
-
-
-def _merge_database_pools_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
-    async_part = _merge_pool_half(rows, "async")
-    sync_part = _merge_pool_half(rows, "sync")
-    if not async_part and not sync_part:
-        first = rows[0].get("database_pools") if rows else {}
-        if isinstance(first, dict) and first.get("error"):
-            return {"error": first["error"]}
-        return {"error": "no pool samples"}
-    out: Dict[str, Any] = {}
-    if async_part:
-        out["async"] = async_part
-    if sync_part:
-        out["sync"] = sync_part
-    return out
-
-
-def _merge_dingtalk_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
-    clients_map: Dict[str, Dict[str, Any]] = {}
-    for row in rows:
-        dt = row.get("dingtalk_stream") or {}
-        if dt.get("error"):
-            continue
-        for c in dt.get("clients") or []:
-            if not isinstance(c, dict):
-                continue
-            cid = c.get("client_id")
-            if not isinstance(cid, str) or not cid:
-                continue
-            running = bool(c.get("running"))
-            prev = clients_map.get(cid)
-            if prev is None:
-                clients_map[cid] = {"client_id": cid, "running": running}
-            else:
-                clients_map[cid] = {"client_id": cid, "running": prev["running"] or running}
-    client_list = list(clients_map.values())
-    running_n = sum(1 for x in client_list if x.get("running"))
-    return {
-        "registered_count": len(client_list),
-        "running_count": int(running_n),
-        "clients": client_list,
-    }
-
-
-def _merge_process_services_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
-    merged: Dict[str, Dict[str, Any]] = {}
-    for row in rows:
-        ps = row.get("process_services") or {}
-        if not isinstance(ps, dict):
-            continue
-        if len(ps) == 1 and "error" in ps:
-            continue
-        for name, data in ps.items():
-            if name == "error" or not isinstance(data, dict):
-                continue
-            up = data.get("uptime_seconds")
-            up_f = float(up) if isinstance(up, (int, float)) else 0.0
-            prev = merged.get(name)
-            if prev is None:
-                merged[name] = dict(data)
-                continue
-            p_up = prev.get("uptime_seconds")
-            p_up_f = float(p_up) if isinstance(p_up, (int, float)) else 0.0
-            if up_f > p_up_f:
-                merged[name] = dict(data)
-    return merged
-
-
 def _merge_llm_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     acc: Dict[str, Dict[str, Any]] = {}
     for row in rows:
@@ -505,6 +389,57 @@ def _merge_llm_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     return acc
 
 
+def _merge_mindbot_concurrency_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    stream_sum = 0
+    block_sum = 0
+    any_ok = False
+    errors: List[str] = []
+    for row in rows:
+        mc = row.get("mindbot_concurrency")
+        if not isinstance(mc, dict):
+            continue
+        if mc.get("error"):
+            err = mc.get("error")
+            if isinstance(err, str) and err.strip():
+                errors.append(err.strip())
+            continue
+        any_ok = True
+        try:
+            stream_sum += int(mc.get("active_dify_streaming") or 0)
+            block_sum += int(mc.get("active_dify_blocking") or 0)
+        except (TypeError, ValueError):
+            continue
+    if not any_ok and errors:
+        return {"error": errors[0]}
+    return {
+        "active_dify_streaming": stream_sum,
+        "active_dify_blocking": block_sum,
+    }
+
+
+def _merge_mindmate_streaming_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
+    total = 0
+    any_ok = False
+    errors: List[str] = []
+    for row in rows:
+        mm = row.get("mindmate_streaming")
+        if not isinstance(mm, dict):
+            continue
+        if mm.get("error"):
+            err = mm.get("error")
+            if isinstance(err, str) and err.strip():
+                errors.append(err.strip())
+            continue
+        any_ok = True
+        try:
+            total += int(mm.get("active_mindmate_streaming") or 0)
+        except (TypeError, ValueError):
+            continue
+    if not any_ok and errors:
+        return {"error": errors[0]}
+    return {"active_mindmate_streaming": total}
+
+
 def _merge_websockets_cluster(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     merged: Dict[str, Any] = {k: 0 for k in _WS_SUM_KEYS}
     redis_total: Optional[int] = None
@@ -529,9 +464,8 @@ def _merge_cluster_worker_fields(rows: List[Dict[str, Any]]) -> Dict[str, Any]:
     """Merge per-worker payloads into cluster-level sections."""
     return {
         "process": _merge_process_cluster(rows),
-        "database_pools": _merge_database_pools_cluster(rows),
-        "dingtalk_stream": _merge_dingtalk_cluster(rows),
-        "process_services": _merge_process_services_cluster(rows),
+        "mindbot_concurrency": _merge_mindbot_concurrency_cluster(rows),
+        "mindmate_streaming": _merge_mindmate_streaming_cluster(rows),
         "llm": _merge_llm_cluster(rows),
         "websockets": _merge_websockets_cluster(rows),
     }
@@ -563,18 +497,70 @@ async def get_admin_performance_live(
     stored = await load_all_worker_perf_snapshots()
     cluster_rows = _coalesce_worker_rows(stored, live_worker)
     cluster_fields = _merge_cluster_worker_fields(cluster_rows)
-
+    mc = cluster_fields.get("mindbot_concurrency")
+    stream_now = 0
+    conc_err: Optional[str] = None
+    if isinstance(mc, dict) and not mc.get("error"):
+        try:
+            stream_now = int(mc.get("active_dify_streaming") or 0)
+        except (TypeError, ValueError):
+            stream_now = 0
+    elif isinstance(mc, dict) and mc.get("error"):
+        e = mc.get("error")
+        conc_err = e.strip() if isinstance(e, str) and e.strip() else "mindbot metrics unavailable"
+    else:
+        conc_err = "no mindbot worker samples"
+    try:
+        peak = await asyncio.wait_for(
+            record_and_read_mindbot_streaming_peak_24h(stream_now),
+            timeout=3.0,
+        )
+    except asyncio.TimeoutError:
+        peak = {"active_max_24h": None, "error": "24h peak timed out"}
+    except (ConnectionError, RuntimeError, OSError, TypeError, ValueError) as exc:
+        peak = {"active_max_24h": None, "error": str(exc)}
+    mm = cluster_fields.get("mindmate_streaming")
+    mate_now = 0
+    mate_err: Optional[str] = None
+    if isinstance(mm, dict) and not mm.get("error"):
+        try:
+            mate_now = int(mm.get("active_mindmate_streaming") or 0)
+        except (TypeError, ValueError):
+            mate_now = 0
+    elif isinstance(mm, dict) and mm.get("error"):
+        e2 = mm.get("error")
+        mate_err = e2.strip() if isinstance(e2, str) and e2.strip() else "mindmate metrics unavailable"
+    else:
+        mate_err = "no mindmate worker samples"
+    try:
+        peak_mate = await asyncio.wait_for(
+            record_and_read_mindmate_streaming_peak_24h(mate_now),
+            timeout=3.0,
+        )
+    except asyncio.TimeoutError:
+        peak_mate = {"active_max_24h": None, "error": "24h peak timed out"}
+    except (ConnectionError, RuntimeError, OSError, TypeError, ValueError) as exc:
+        peak_mate = {"active_max_24h": None, "error": str(exc)}
     payload: Dict[str, Any] = {
         "timestamp": time.time(),
         "host": _host_snapshot(),
         "network": _compute_network_rates(),
         "process": cluster_fields["process"],
-        "database_pools": cluster_fields["database_pools"],
-        "dingtalk_stream": cluster_fields["dingtalk_stream"],
-        "process_services": cluster_fields["process_services"],
         "app": _pick_app_cluster(cluster_rows),
         "llm": cluster_fields["llm"],
         "websockets": cluster_fields["websockets"],
+        "mindbot_ai_card_streaming": {
+            "active_now": stream_now,
+            "active_max_24h": peak.get("active_max_24h"),
+            "concurrency_error": conc_err,
+            "peak_24h_error": peak.get("error"),
+        },
+        "mindmate_streaming": {
+            "active_now": mate_now,
+            "active_max_24h": peak_mate.get("active_max_24h"),
+            "concurrency_error": mate_err,
+            "peak_24h_error": peak_mate.get("error"),
+        },
         "redis": {},
         "activity": {},
         "cluster": {

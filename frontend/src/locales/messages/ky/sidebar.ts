@@ -69,6 +69,7 @@ export default {
   'sidebar.library': 'Library',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'School zone',
   'sidebar.smartResponse': 'Smart Response',
   'sidebar.teacherUsage': 'Teacher usage',

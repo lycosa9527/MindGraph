@@ -1,5 +1,5 @@
 /**
- * Poll admin live performance snapshot (latest values only; no chart buffers).
+ * Poll admin live performance snapshot (latest values only).
  * Teardown on tab unmount and on Vue Router navigation away (stops interval + aborts fetch).
  */
 import { onBeforeUnmount, onMounted, ref, shallowRef } from 'vue'

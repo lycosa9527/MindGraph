@@ -250,6 +250,29 @@ _BLOCKING_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_CONCURRENT_B
 _ACTIVE_BLOCKING_SEMAPHORE = asyncio.Semaphore(max(1, env_int("MINDBOT_MAX_ACTIVE_BLOCKING", 128)))
 
 
+async def mindbot_concurrency_snapshot() -> dict[str, Any]:
+    """
+    In-process Dify↔DingTalk pipeline counts for the active uvicorn worker.
+
+    ``active_dify_streaming`` is the number of Dify **SSE** streaming runs that
+    passed the per-org cap (roughly, card stream conversations in progress).
+    ``active_dify_blocking`` is the same for the **blocking** (one-shot Dify+send)
+    path.  Per-worker: summed across orgs.  The admin API merges by **summing** these
+    across all reporting workers.
+    """
+    try:
+        async with _org_stream_lock:
+            active_dify_streaming = int(sum(_org_active_streams.values()))
+        async with _org_blocking_lock:
+            active_dify_blocking = int(sum(_org_active_blocking.values()))
+        return {
+            "active_dify_streaming": active_dify_streaming,
+            "active_dify_blocking": active_dify_blocking,
+        }
+    except (TypeError, ValueError, RuntimeError) as exc:
+        return {"error": str(exc)}
+
+
 def mindbot_accept_ack_headers(cfg: OrganizationMindbotConfig) -> dict[str, str]:
     """Headers returned immediately when the pipeline is accepted for background processing."""
     return mindbot_error_headers(

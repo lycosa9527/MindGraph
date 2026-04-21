@@ -144,3 +144,12 @@ BAYI_IP_WHITELIST = "bayi:ip_whitelist"  # no TTL — managed explicitly
 BAYI_WHITELIST_LOCK = "bayi:whitelist:load:lock"
 TTL_BAYI_TOKEN = 300
 TTL_BAYI_WHITELIST_LOCK = 300
+
+# ---------------------------------------------------------------------------
+# Admin performance — MindBot Dify SSE streaming high-water (24h, UTC hours)
+# ---------------------------------------------------------------------------
+MINDBOT_STREAMING_HOUR_MAX = "admin:mindbot:streaming_max:{hour_utc}"
+# Keep keys a bit past 24h so rolling MGET of the last 24 hour buckets is safe.
+TTL_MINDBOT_STREAMING_HOUR_MAX = 100_800
+MINDMATE_STREAMING_HOUR_MAX = "admin:mindmate:streaming_max:{hour_utc}"
+TTL_MINDMATE_STREAMING_HOUR_MAX = 100_800
