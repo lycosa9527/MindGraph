@@ -113,8 +113,10 @@ export default {
   'settings.version.chinese': 'Kínai verzió',
   'settings.version.international': 'Nemzetközi verzió',
   'landing.international.subtitle': 'A világ legjobb MI gondolkodási diagram szoftvere',
-  'landing.international.promptPlaceholder': 'Írja le a diagramot, vagy válasszon típust alább…',
+  'landing.international.promptPlaceholder':
+    'Írjon be témát vagy rövid leírást, vagy válasszon diagramtípust alább.',
   'landing.international.sectionTitle': 'Válasszon diagramtípust',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modulok',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'Virtuális tanári és kutatási partner',

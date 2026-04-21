@@ -311,7 +311,7 @@ export default {
   'canvas.topBar.schoolCollab': '校内协同',
   'canvas.topBar.shareCommunity': '分享到社区',
   'canvas.topBar.sharedCollab': '共同协同',
-  'canvas.topBar.teachingDesign': '教学设计',
+  'canvas.topBar.teachingDesign': 'MindMate AI',
   'canvas.topBar.snapshotRecallTooltip': '恢复第 {n} 个快照',
   'canvas.topBar.snapshotRecallTitle': '恢复快照',
   'canvas.topBar.snapshotRecallConfirm': '恢复第 {n} 个快照？当前更改将被替换。',

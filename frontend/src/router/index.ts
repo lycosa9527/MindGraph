@@ -18,7 +18,7 @@ function pageTitle(segment: string): { titleKey: string } {
 /**
  * Route auth (see `beforeEach`):
  * - `requiresAuth`: guests are sent to `/auth?redirect=…`; expired sessions use the login modal.
- * - `guestOnly`: `/auth`, `/demo` — signed-in users are sent to `Main` (home).
+ * - `guestOnly`: `/auth`, `/demo` — signed-in users are sent to MindMate landing.
  * - Public main-layout: `/mindmate`, `/template`, `/course`, `/askonce`, `/debateverse`, `/library`, …
  */
 
@@ -293,7 +293,7 @@ router.beforeEach(async (to, _from, next) => {
   const uiStore = useUIStore()
   const { isMobile } = useMobileDetect()
 
-  // Landing `/`: guests → auth; signed-in → mobile home or CN MindMate / international MindGraph
+  // Landing `/`: guests → auth; signed-in → mobile hub or MindMate (desktop)
   if (to.name === 'Main') {
     const isAuthenticated = await authStore.checkAuth()
     if (!isAuthenticated) {
@@ -301,9 +301,6 @@ router.beforeEach(async (to, _from, next) => {
     }
     if (isMobile.value) {
       return next({ path: '/m', query: to.query as Record<string, string> })
-    }
-    if (uiStore.uiVersion === 'international') {
-      return next({ name: 'MindGraph' })
     }
     return next({ name: 'MindMate' })
   }
@@ -469,11 +466,11 @@ router.beforeEach(async (to, _from, next) => {
       return next({ name: 'MindMate' })
     }
   }
-  // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then send signed-in users home
+  // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then MindMate
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {
-      return next({ name: 'Main' })
+      return next({ name: 'MindMate' })
     }
   }
 

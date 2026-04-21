@@ -45,45 +45,15 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
 </script>
 
 <template>
-  <!-- Simplified UI on MindMate: conversation history only (no module list) -->
-  <template v-if="s.isSimplifiedMindmateOnlyNav">
-    <div
-      v-if="!s.isCollapsed"
-      class="sidebar-nav-scroll sidebar-nav-scroll--mindmate-only"
-    >
-      <ChatHistory
-        compact
-        :initial-visible-limit="mindmatePageChatHistoryLimit"
-      />
-    </div>
-    <div
-      v-else
-      class="sidebar-nav-scroll sidebar-nav-scroll--collapsed flex flex-col items-center pt-2"
-    >
-      <el-tooltip
-        :content="s.t('sidebar.expandSidebar')"
-        placement="right"
-      >
-        <button
-          type="button"
-          class="nav-item nav-item--collapsed"
-          :aria-label="s.t('sidebar.expandSidebar')"
-          @click="s.toggleSidebar"
-        >
-          <el-icon><ChatLineSquare /></el-icon>
-        </button>
-      </el-tooltip>
-    </div>
-  </template>
   <div
-    v-else
     class="sidebar-nav-scroll"
     :class="{
       'sidebar-nav-scroll--collapsed': s.isCollapsed,
       'sidebar-nav-scroll--workshop': s.workshopExpanded && !s.isCollapsed,
     }"
   >
-    <!-- MindMate -->
+    <div class="sidebar-nav-main">
+    <!-- MindMate + MindGraph (fixed order); history panels use top border from ChatHistory / DiagramHistory -->
     <el-tooltip
       :content="s.t('sidebar.mindMate')"
       placement="right"
@@ -102,16 +72,7 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         >
       </div>
     </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.showPanel('mindmate')"
-        class="sidebar-panel"
-      >
-        <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
-      </div>
-    </transition>
 
-    <!-- MindGraph -->
     <el-tooltip
       :content="s.t('sidebar.mindGraph')"
       placement="right"
@@ -130,15 +91,39 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         >
       </div>
     </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.showPanel('mindgraph')"
-        class="sidebar-panel"
-      >
-        <DiagramHistory @select="s.handleDiagramSelect" />
-      </div>
-    </transition>
 
+    <div
+      class="sidebar-nav-mind-panels"
+      :class="{
+        'sidebar-nav-mind-panels--expanded':
+          s.showPanel('mindmate') || s.showPanel('mindgraph'),
+      }"
+    >
+      <transition name="panel-slide">
+        <div
+          v-if="s.showPanel('mindmate')"
+          class="sidebar-panel sidebar-panel--fill"
+        >
+          <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
+        </div>
+      </transition>
+      <transition name="panel-slide">
+        <div
+          v-if="s.showPanel('mindgraph')"
+          class="sidebar-panel sidebar-panel--fill"
+        >
+          <DiagramHistory @select="s.handleDiagramSelect" />
+        </div>
+      </transition>
+    </div>
+
+    <div
+      class="sidebar-nav-rest"
+      :class="{
+        'sidebar-nav-rest--below-history':
+          s.showPanel('mindmate') || s.showPanel('mindgraph'),
+      }"
+    >
     <!-- Knowledge Space -->
     <el-tooltip
       v-if="s.isAuthenticated && s.featureKnowledgeSpace"
@@ -401,9 +386,14 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
         <WorkshopChatHistory />
       </div>
     </transition>
+    </div>
+    </div>
 
-    <!-- Admin / management items (inline, hidden when workshop expanded) -->
-    <template v-if="!s.workshopExpanded && (s.isAdminOrManager || s.isAdmin)">
+    <!-- Admin / management: pinned above account footer (hidden when workshop expanded) -->
+    <div
+      v-if="!s.workshopExpanded && (s.isAdminOrManager || s.isAdmin)"
+      class="sidebar-nav-admin"
+    >
       <div class="nav-divider" />
 
       <el-tooltip
@@ -525,50 +515,71 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
           >
         </div>
       </el-tooltip>
-    </template>
+    </div>
   </div>
 </template>
 
 <style scoped>
-.sidebar-nav-scroll--mindmate-only {
-  flex: 1;
-  min-height: 0;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;
-  padding: 8px 6px 8px 8px;
-}
-
-.sidebar-nav-scroll--mindmate-only :deep(.chat-history) {
-  flex: 1;
-  min-height: 0;
-  border-top: none;
-}
-
-button.nav-item {
-  appearance: none;
-  border: none;
-  background: transparent;
-  width: 100%;
-  font: inherit;
-  text-align: center;
-}
-
-/* Navigation container (no scroll — only panels scroll internally) */
+/* Navigation: main list scrolls; admin block stays at bottom above account footer */
 .sidebar-nav-scroll {
   flex: 1;
+  display: flex;
+  flex-direction: column;
   overflow: hidden;
   min-height: 0;
   padding: 8px 12px;
 }
 
-.sidebar-nav-scroll--workshop {
+.sidebar-nav-main {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: hidden;
   display: flex;
   flex-direction: column;
 }
 
+.sidebar-nav-scroll--workshop .sidebar-nav-main {
+  overflow: hidden;
+}
+
+.sidebar-nav-mind-panels {
+  display: flex;
+  flex-direction: column;
+  flex: 0 0 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.sidebar-nav-mind-panels--expanded {
+  flex: 1 1 0;
+  min-height: 0;
+}
+
+.sidebar-nav-rest {
+  flex: 1 1 0;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+.sidebar-nav-rest--below-history {
+  flex: 0 1 auto;
+  flex-shrink: 12;
+}
+
+.sidebar-nav-admin {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
 .sidebar-nav-scroll--collapsed {
   padding: 8px;
+}
+
+.sidebar-nav-scroll--collapsed .sidebar-nav-main {
+  overflow-y: auto;
 }
 
 /* Custom nav items (replaces el-menu for inline accordion support) */
@@ -636,6 +647,15 @@ button.nav-item {
   flex-shrink: 0;
 }
 
+.sidebar-panel.sidebar-panel--fill {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
 .sidebar-panel::-webkit-scrollbar {
   width: 4px;
 }
@@ -678,7 +698,7 @@ button.nav-item {
 }
 .panel-slide-enter-to,
 .panel-slide-leave-from {
-  max-height: 40vh;
+  max-height: 100dvh;
   opacity: 1;
 }
 

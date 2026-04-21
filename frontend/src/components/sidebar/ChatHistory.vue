@@ -32,7 +32,7 @@ import { type MindMateConversation, useAuthStore, useMindMateStore } from '@/sto
 const props = withDefaults(
   defineProps<{
     isBlurred?: boolean
-    /** Tighter horizontal padding (e.g. simplified MindMate full-height sidebar). */
+    /** Tighter horizontal padding for dense sidebar layouts. */
     compact?: boolean
     /** Items shown before "Show more" (API returns up to 50). */
     initialVisibleLimit?: number
@@ -232,7 +232,7 @@ function toggleShowAll(): void {
 
 <template>
   <div
-    class="chat-history flex flex-col border-t border-stone-200 relative overflow-hidden"
+    class="chat-history flex flex-1 min-h-0 flex-col border-t border-stone-200 relative overflow-hidden"
     :class="{ 'chat-history--compact': props.compact }"
   >
     <!-- Header -->

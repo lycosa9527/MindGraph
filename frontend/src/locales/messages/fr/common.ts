@@ -84,8 +84,9 @@ export default {
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
   'landing.international.promptPlaceholder':
-    'Décrivez votre diagramme ou choisissez un type ci-dessous…',
+    'Indiquez un sujet ou une courte description, ou choisissez un type de diagramme ci-dessous.',
   'landing.international.sectionTitle': 'Choisissez un type de diagramme',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.subtitle':
     'Le logiciel de diagrammes de réflexion IA le plus puissant de l’univers',
   'meta.pageTitle.admin': 'Administrateur',

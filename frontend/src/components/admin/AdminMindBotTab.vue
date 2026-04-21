@@ -55,6 +55,10 @@ function buildCallbackUrlByToken(token: string): string {
 const dialogVisible = ref(false)
 const dialogMode = ref<'create' | 'edit'>('create')
 const rotating = ref(false)
+const moveDialogVisible = ref(false)
+const moveSourceRow = ref<MindbotConfigRow | null>(null)
+const moveTargetOrgId = ref<number | null>(null)
+const moveSubmitting = ref(false)
 const formOrgId = ref<number | null>(null)
 /** Config PK of the row being edited; null when creating a new bot. */
 const editingConfigId = ref<number | null>(null)
@@ -75,7 +79,7 @@ const form = ref<MindbotConfigFormState>({
   chain_of_thought_max_chars: 4000,
   dingtalk_ai_card_template_id: '',
   dingtalk_ai_card_param_key: '',
-  dingtalk_ai_card_streaming_max_chars: 6000,
+  dingtalk_ai_card_streaming_max_chars: 6500,
   is_enabled: true,
 })
 
@@ -92,6 +96,69 @@ function orgNameById(organizationId: number): string {
   return o ? orgLabel(o) : String(organizationId)
 }
 
+/** Organizations that can receive this bot (under per-school cap, excluding source). */
+function getValidMoveTargets(sourceOrgId: number): OrgOption[] {
+  const counts = new Map<number, number>()
+  for (const c of configs.value) {
+    counts.set(c.organization_id, (counts.get(c.organization_id) ?? 0) + 1)
+  }
+  return schools.value.filter((o) => {
+    if (o.id === sourceOrgId) {
+      return false
+    }
+    return (counts.get(o.id) ?? 0) < BOT_CAP
+  })
+}
+
+function canMoveBot(row: MindbotConfigRow): boolean {
+  return getValidMoveTargets(row.organization_id).length > 0
+}
+
+const moveTargetOptions = computed(() => {
+  const r = moveSourceRow.value
+  if (r == null) {
+    return []
+  }
+  return getValidMoveTargets(r.organization_id)
+})
+
+function openMoveDialog(row: MindbotConfigRow): void {
+  moveSourceRow.value = row
+  const opts = getValidMoveTargets(row.organization_id)
+  moveTargetOrgId.value = opts[0]?.id ?? null
+  moveDialogVisible.value = true
+}
+
+function onMoveDialogClosed(): void {
+  moveSourceRow.value = null
+  moveTargetOrgId.value = null
+}
+
+async function confirmMoveBot(): Promise<void> {
+  const row = moveSourceRow.value
+  const oid = moveTargetOrgId.value
+  if (row == null || oid == null) {
+    notify.error(t('admin.mindbot.moveError'))
+    return
+  }
+  moveSubmitting.value = true
+  try {
+    const res = await apiRequest(`/api/mindbot/admin/configs/${row.id}/move`, {
+      method: 'POST',
+      body: JSON.stringify({ organization_id: oid }),
+    })
+    if (!res.ok) {
+      notify.error(t('admin.mindbot.moveError'))
+      return
+    }
+    notify.success(t('admin.mindbot.moveSuccess'))
+    moveDialogVisible.value = false
+    await load()
+  } finally {
+    moveSubmitting.value = false
+  }
+}
+
 function resetForm(): void {
   form.value = {
     bot_label: '',
@@ -106,7 +173,7 @@ function resetForm(): void {
     chain_of_thought_max_chars: 4000,
     dingtalk_ai_card_template_id: '',
     dingtalk_ai_card_param_key: '',
-    dingtalk_ai_card_streaming_max_chars: 6000,
+    dingtalk_ai_card_streaming_max_chars: 6500,
     is_enabled: true,
   }
   formOrgId.value = null
@@ -395,8 +462,12 @@ async function rotateCallbackUrl(): Promise<void> {
     return
   }
   try {
-    await ElMessageBox.confirm(t('admin.mindbot.rotateConfirm'), {
+    await ElMessageBox.confirm(t('admin.mindbot.rotateConfirm'), t('admin.mindbot.rotateConfirmTitle'), {
       type: 'warning',
+      customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--rotate',
+      modalClass: 'mindbot-swiss-backdrop',
+      cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
+      showClose: true,
     })
   } catch {
     return
@@ -424,8 +495,12 @@ async function rotateCallbackUrl(): Promise<void> {
 
 async function removeRow(row: MindbotConfigRow): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('admin.mindbot.deleteConfirm'), {
+    await ElMessageBox.confirm(t('admin.mindbot.deleteConfirm'), t('admin.mindbot.deleteConfirmTitle'), {
       type: 'warning',
+      customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
+      modalClass: 'mindbot-swiss-backdrop',
+      cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
+      showClose: true,
     })
   } catch {
     return
@@ -555,7 +630,7 @@ defineExpose({
           </el-table-column>
           <el-table-column
             :label="t('admin.library.colActions')"
-            width="200"
+            width="300"
             fixed="right"
           >
             <template #default="{ row }">
@@ -569,6 +644,24 @@ defineExpose({
                 >
                   {{ t('admin.mindbot.edit') }}
                 </el-button>
+                <el-tooltip
+                  :disabled="canMoveBot(row)"
+                  :content="t('admin.mindbot.moveNoTargets')"
+                  placement="top"
+                >
+                  <span class="inline-block">
+                    <el-button
+                      type="warning"
+                      size="small"
+                      plain
+                      class="mindbot-pill mindbot-pill--table-move"
+                      :disabled="!canMoveBot(row)"
+                      @click="openMoveDialog(row)"
+                    >
+                      {{ t('admin.mindbot.move') }}
+                    </el-button>
+                  </span>
+                </el-tooltip>
                 <el-button
                   type="danger"
                   size="small"
@@ -620,6 +713,80 @@ defineExpose({
         </div>
       </el-card>
     </template>
+
+    <el-dialog
+      v-model="moveDialogVisible"
+      class="mindbot-settings-dialog mindbot-swiss-dialog mindbot-move-dialog"
+      width="min(480px, 94vw)"
+      destroy-on-close
+      append-to-body
+      align-center
+      modal-class="mindbot-swiss-backdrop"
+      :show-close="true"
+      @closed="onMoveDialogClosed"
+    >
+      <template #header>
+        <div class="mindbot-swiss-header mindbot-config-header">
+          <span class="mindbot-swiss-header__glyph">◇</span>
+          <span class="mindbot-swiss-header__title">{{ t('admin.mindbot.move') }}</span>
+          <span
+            class="mindbot-swiss-header__divider"
+            aria-hidden="true"
+            >·</span
+          >
+          <span class="mindbot-swiss-header__note">{{ t('admin.mindbot.moveTitle') }}</span>
+        </div>
+      </template>
+      <div class="mindbot-config-body">
+        <div
+          class="mindbot-config-scanlines"
+          aria-hidden="true"
+        />
+        <div class="mindbot-swiss-form-wrap">
+          <p class="mindbot-swiss-hint text-xs mb-4 leading-relaxed">
+            {{ t('admin.mindbot.moveIntro') }}
+          </p>
+          <div class="flex flex-col gap-2">
+            <span
+              class="text-[11px] font-semibold uppercase tracking-[0.12em] text-[var(--mindbot-swiss-muted)]"
+              >{{ t('admin.mindbot.moveTarget') }}</span
+            >
+            <el-select
+              v-model="moveTargetOrgId"
+              class="mindbot-swiss-select w-full"
+              filterable
+              :placeholder="t('admin.mindbot.orgSelect')"
+            >
+              <el-option
+                v-for="o in moveTargetOptions"
+                :key="o.id"
+                :label="orgLabel(o)"
+                :value="o.id"
+              />
+            </el-select>
+          </div>
+        </div>
+      </div>
+      <template #footer>
+        <div class="mindbot-dialog-footer flex w-full justify-end gap-2">
+          <el-button
+            class="mindbot-pill mindbot-pill--footer-cancel"
+            @click="moveDialogVisible = false"
+          >
+            {{ t('common.cancel') }}
+          </el-button>
+          <el-button
+            type="primary"
+            class="mindbot-pill mindbot-pill--footer-save"
+            :loading="moveSubmitting"
+            :disabled="moveTargetOrgId == null || moveTargetOptions.length === 0"
+            @click="confirmMoveBot"
+          >
+            {{ t('admin.mindbot.move') }}
+          </el-button>
+        </div>
+      </template>
+    </el-dialog>
 
     <AdminMindBotConfigDialog
       v-if="isAdmin || isManager"
@@ -687,6 +854,19 @@ html.dark .mindbot-pill--table-edit.el-button--primary.is-plain {
   --el-button-bg-color: rgb(30 41 59 / 0.35);
   --el-button-border-color: rgb(51 65 85 / 0.5);
   --el-button-text-color: rgb(203 213 225);
+}
+
+.mindbot-pill--table-move.el-button--warning.is-plain {
+  --el-button-bg-color: rgb(255 251 235);
+  --el-button-border-color: rgb(254 240 199);
+  --el-button-text-color: rgb(180 83 9);
+  min-width: 3.5rem;
+}
+
+html.dark .mindbot-pill--table-move.el-button--warning.is-plain {
+  --el-button-bg-color: rgb(66 32 6 / 0.35);
+  --el-button-border-color: rgb(180 83 9 / 0.35);
+  --el-button-text-color: rgb(253 230 138);
 }
 
 .mindbot-pill--table-delete.el-button--danger.is-plain {

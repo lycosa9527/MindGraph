@@ -110,8 +110,10 @@ export default {
   'settings.version.chinese': 'Çin Versiyası',
   'settings.version.international': 'Beynəlxalq Versiya',
   'landing.international.subtitle': 'Kainatdakı ən güclü AI düşüncə diaqram proqramı',
-  'landing.international.promptPlaceholder': 'Diaqramınızı təsvir edin və ya aşağıdan tip seçin...',
+  'landing.international.promptPlaceholder':
+    'Mövzu və ya qısa təsvir daxil edin və ya aşağıdan diaqram tipi seçin.',
   'landing.international.sectionTitle': 'Diaqram Tipini Seçin',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modullar',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'Virtual tədris və tədqiqat tərəfdaşınız',

@@ -45,7 +45,7 @@ class OrganizationMindbotConfig(Base):
     dingtalk_ai_card_streaming_max_chars: Mapped[int] = mapped_column(
         Integer,
         nullable=False,
-        default=6000,
+        default=6500,
     )
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     created_at: Mapped[datetime] = mapped_column(

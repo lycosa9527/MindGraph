@@ -230,6 +230,9 @@ export type EventTypes = {
   'view:fit_for_export_requested': Record<string, never>
   'view:zoom_reset_requested': Record<string, never>
 
+  /** Canvas presentation rail: Ctrl/Cmd+6 toggles virtual keyboard */
+  'presentation:toggle_virtual_keyboard_requested': Record<string, never>
+
   // Interaction Events
   'interaction:selection_changed': { selectedNodes: string[] }
   'interaction:drag_started': { nodeId: string; position: { x: number; y: number } }

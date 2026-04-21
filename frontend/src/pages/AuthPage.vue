@@ -20,7 +20,7 @@ const dismissedBySuccess = ref(false)
 
 function onLoginSuccess() {
   dismissedBySuccess.value = true
-  const redirect = (route.query.redirect as string) || '/'
+  const redirect = (route.query.redirect as string) || '/mindmate'
   router.push(redirect).catch(() => {
     router.replace(redirect).catch(() => {
       window.location.href = redirect

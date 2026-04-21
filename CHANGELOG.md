@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.95.0] - 2026-04-21
+
+### Added
+- **MindBot admin — move config between orgs** (`routers/api/mindbot_admin.py`, `routers/api/mindbot_models.py`, `services/mindbot/errors.py`): new `POST /admin/configs/{config_id}/move` reassigns a bot configuration row to another organization (platform admins). Validates destination org exists, rejects same-org moves with `MINDBOT_ADMIN_MOVE_SAME_ORGAN`, and enforces the per-org bot cap on the target (excluding the moving row from the destination count). New payload type `MindbotMovePayload`.
+- **Presentation mode — keyboard shortcuts** (`frontend/src/composables/canvasPage/useCanvasPagePresentation.ts`, `frontend/src/composables/core/useEventBus.ts`): while the presentation rail is open, **Ctrl/Cmd+1–5** select laser, highlighter, pen, spotlight, and timer in order; **Ctrl/Cmd+6** emits `presentation:toggle_virtual_keyboard_requested` for the virtual keyboard toggle.
+
+### Changed
+- **MindBot / DingTalk AI card streaming cap — default 6500** (`models/domain/mindbot_config.py`, `routers/api/mindbot_models.py`, `services/mindbot/platforms/dingtalk/cards/ai_card_create.py`, `alembic/versions/rev_0024_mindbot_ai_card_streaming_default_6500.py`): ORM default, OpenAPI field defaults, and `DEFAULT_DINGTALK_AI_CARD_STREAMING_MAX_CHARS` aligned to **6500** characters (was 6000). Alembic `0024` updates only the **server default** on `organization_mindbot_configs.dingtalk_ai_card_streaming_max_chars`; existing rows keep their stored values.
+- **Frontend / MindBot admin** (`AdminMindBotConfigDialog.vue`, `AdminMindBotTab.vue`, `en/admin.ts`, `zh/admin.ts`): admin UI for moving a bot between schools and for the **6500** streaming max-chars default in forms and create payloads.
+- **Frontend / canvas & shell** (`PresentationSideToolbar.vue`, `CanvasTopBar.vue`, `MindGraphContainer.vue`, `InternationalLanding.vue`, `MindmatePanel.vue`, `MindmateHeader.vue`, sidebar components, `MainLayout.vue`, `LanguageSettingsModal.vue`, `CanvasPage.vue`, `router/index.ts`, and locale bundles): presentation rail and layout refinements; international landing and Mindmate panel updates; sidebar navigation/account adjustments; i18n string sync across `common` (and related) locale files.
+
 ## [5.94.0] - 2026-04-21
 
 ### Added

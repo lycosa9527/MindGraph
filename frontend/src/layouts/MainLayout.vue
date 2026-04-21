@@ -6,7 +6,7 @@
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 
-import { Lock } from 'lucide-vue-next'
+import { Lock, PanelLeftOpen } from 'lucide-vue-next'
 
 import { AppSidebar } from '@/components/sidebar'
 import { useLanguage } from '@/composables'
@@ -18,10 +18,15 @@ const authStore = useAuthStore()
 const uiStore = useUIStore()
 const { t } = useLanguage()
 
+/** Inline expand control exists on MindMate toolbar and MindGraph gallery headers. */
+const showCollapsedSidebarExpand = computed(
+  () =>
+    uiStore.sidebarCollapsed &&
+    !route.path.startsWith('/mindmate') &&
+    !route.path.startsWith('/mindgraph')
+)
+
 const isGuest = computed(() => !authStore.isAuthenticated)
-const isOnLanding = computed(() => route.path === '/mindgraph')
-/** Simplified (international) gallery: no sidebar; other routes use full sidebar like Chinese mode. */
-const showAppSidebar = computed(() => uiStore.uiVersion !== 'international' || !isOnLanding.value)
 
 /** CN `/mindgraph`: show content clearly for guests; other main routes keep blur + login hint overlay. */
 const shouldBlurGuestMain = computed(() => {
@@ -33,12 +38,27 @@ const shouldBlurGuestMain = computed(() => {
 
 <template>
   <div class="main-layout h-screen w-screen flex overflow-hidden">
-    <AppSidebar v-if="showAppSidebar" />
+    <AppSidebar />
 
     <!-- Main content (blurred for guests except CN MindGraph landing; sidebar stays clear) -->
     <main
       class="main-content relative flex-1 flex flex-col overflow-hidden transition-all duration-300 ease-in-out"
     >
+      <div
+        v-if="showCollapsedSidebarExpand"
+        class="main-sidebar-expand-bar h-14 px-4 flex items-center border-b border-stone-200 bg-white shrink-0"
+      >
+        <el-button
+          text
+          circle
+          class="main-sidebar-expand-btn"
+          :title="t('sidebar.expandSidebar')"
+          :aria-label="t('sidebar.expandSidebar')"
+          @click="uiStore.toggleSidebar()"
+        >
+          <PanelLeftOpen class="w-[18px] h-[18px]" />
+        </el-button>
+      </div>
       <div
         :class="[
           'flex flex-1 flex-col min-h-0 overflow-hidden',
@@ -97,5 +117,12 @@ const shouldBlurGuestMain = computed(() => {
   color: #999;
   user-select: none;
   pointer-events: none;
+}
+
+.main-sidebar-expand-btn {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-hover-bg-color: #f5f5f4;
+  font-weight: 500;
 }
 </style>

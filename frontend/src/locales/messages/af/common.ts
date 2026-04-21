@@ -82,8 +82,10 @@ export default {
     'Scan with a phone or tablet camera to open this page.',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
-  'landing.international.promptPlaceholder': 'Beskryf jou diagram, of kies ’n tipe hieronder…',
+  'landing.international.promptPlaceholder':
+    'Voer ’n onderwerp of kort beskrywing in, of kies ’n diagramtipe hieronder.',
   'landing.international.sectionTitle': 'Kies ’n Diagramtipe',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.subtitle': 'Die kragtigste AI-denkdiagram-software in die heelal',
   'meta.pageTitle.admin': 'Admin',
   'meta.pageTitle.askOnce': 'AskOnce',

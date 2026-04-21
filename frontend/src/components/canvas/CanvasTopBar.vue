@@ -720,7 +720,7 @@ async function handleReset() {
   border-radius: 9999px;
 }
 
-/* 教学设计 button - Swiss Design style (matches MindMate) */
+/* MindMate AI top-bar button - Swiss Design style */
 .mindmate-button {
   --el-button-bg-color: #dbeafe;
   --el-button-border-color: #93c5fd;

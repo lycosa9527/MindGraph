@@ -3,7 +3,6 @@
  * Language & prompt language settings (interface vs LLM prompt language).
  */
 import { computed, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 
 import { ElCheckbox } from 'element-plus'
 
@@ -15,20 +14,18 @@ import {
   getPromptLanguageOptionsForPicker,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
-import type { Language, PromptLanguage, UiVersion } from '@/stores/ui'
+import type { Language, PromptLanguage } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 import { MULTISCRIPT_SANS_STACK } from '@/utils/diagramNodeFontStack'
 
 const visible = defineModel<boolean>({ required: true })
 
-const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
 
 const draftUi = ref<Language>(uiStore.language)
 const draftPrompt = ref<PromptLanguage>(uiStore.promptLanguage)
-const draftVersion = ref<UiVersion>(uiStore.uiVersion)
 const matchPromptToInterface = ref(uiStore.matchPromptToUi)
 
 const allowSimplifiedChinesePicker = computed(() => uiStore.languagePolicyAllowZh)
@@ -113,7 +110,6 @@ watch(visible, (v) => {
     }
     draftUi.value = ui
     draftPrompt.value = pr
-    draftVersion.value = uiStore.uiVersion
     matchPromptToInterface.value = uiStore.matchPromptToUi
     void ensureFontsForLanguageCode(draftPrompt.value)
     void ensureFontsForLanguageCode(draftUi.value)
@@ -150,9 +146,8 @@ watch(matchPromptToInterface, (on) => {
 async function save(): Promise<void> {
   const ui = draftUi.value
   const prompt = matchPromptToInterface.value ? draftUi.value : draftPrompt.value
-  const version = draftVersion.value
   if (authStore.isAuthenticated) {
-    const ok = await authStore.saveLanguagePreferences(ui, prompt, version)
+    const ok = await authStore.saveLanguagePreferences(ui, prompt)
     if (!ok) {
       return
     }
@@ -162,15 +157,8 @@ async function save(): Promise<void> {
   if (!matchPromptToInterface.value) {
     uiStore.setPromptLanguage(prompt)
   }
-  const versionChanged = version !== uiStore.uiVersion
-  uiStore.setUiVersion(version)
   uiStore.setUiLanguageExplicit(true)
   visible.value = false
-
-  if (versionChanged) {
-    const target = version === 'international' ? '/mindgraph' : '/mindmate'
-    router.push(target)
-  }
 }
 
 function onClose(): void {
@@ -188,22 +176,6 @@ function onClose(): void {
     @close="onClose"
   >
     <div class="space-y-5">
-      <div>
-        <div class="text-sm text-stone-600 dark:text-stone-400 mb-2">
-          {{ t('settings.version.title') }}
-        </div>
-        <el-radio-group
-          v-model="draftVersion"
-          class="version-group flex w-full gap-3"
-        >
-          <el-radio value="international">
-            {{ t('settings.version.international') }}
-          </el-radio>
-          <el-radio value="chinese">
-            {{ t('settings.version.chinese') }}
-          </el-radio>
-        </el-radio-group>
-      </div>
       <div>
         <ElCheckbox v-model="matchPromptToInterface">
           {{ t('settings.language.matchPrompt') }}

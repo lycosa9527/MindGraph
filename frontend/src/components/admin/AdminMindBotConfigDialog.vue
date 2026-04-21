@@ -657,46 +657,6 @@ function onDialogClosed(): void {
   overflow: hidden;
 }
 
-.mindbot-settings-dialog.mindbot-swiss-dialog :deep(.el-dialog__footer) {
-  padding: 0;
-}
-
-.mindbot-config-body {
-  position: relative;
-  margin: 0;
-  padding: 0;
-  overflow: hidden;
-}
-
-.mindbot-config-scanlines {
-  pointer-events: none;
-  position: absolute;
-  inset: 0;
-  z-index: 2;
-  border-radius: 2px;
-  background: repeating-linear-gradient(
-    0deg,
-    transparent,
-    transparent 2px,
-    rgba(0, 0, 0, 0.14) 2px,
-    rgba(0, 0, 0, 0.14) 3px
-  );
-  opacity: 0.3;
-}
-
-.mindbot-swiss-form-wrap {
-  --mindbot-swiss-red: #e30613;
-  --mindbot-geek-cyan: #22d3ee;
-  --mindbot-geek-violet: #a78bfa;
-  --mindbot-swiss-border: rgba(34, 211, 238, 0.32);
-  --mindbot-swiss-inset: rgba(15, 23, 42, 0.72);
-  --mindbot-swiss-muted: #a8b7c9;
-  --mindbot-swiss-text: #f1f5f9;
-  position: relative;
-  z-index: 3;
-  padding: 0.75rem 1.25rem 0.5rem;
-}
-
 .mindbot-config-banner {
   border-color: rgba(34, 211, 238, 0.28);
   background: linear-gradient(
@@ -706,10 +666,6 @@ function onDialogClosed(): void {
     rgba(167, 139, 250, 0.06) 100%
   );
   box-shadow: 0 0 14px rgba(34, 211, 238, 0.08);
-}
-
-.mindbot-swiss-hint {
-  color: var(--mindbot-swiss-muted);
 }
 
 .mindbot-swiss-msg--ok {
@@ -730,58 +686,6 @@ function onDialogClosed(): void {
   color: var(--mindbot-swiss-text);
 }
 
-.mindbot-swiss-header {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: baseline;
-  gap: 0.35rem 0.5rem;
-  font-family: var(--geek-ulog-font);
-}
-
-.mindbot-config-header {
-  font-family: var(--geek-ulog-font);
-}
-
-.mindbot-swiss-header__glyph {
-  color: #22d3ee;
-  text-shadow: 0 0 12px rgba(34, 211, 238, 0.55);
-  font-weight: 700;
-  font-size: 1rem;
-  flex-shrink: 0;
-  line-height: 1;
-}
-
-.mindbot-swiss-header__title {
-  font-size: 0.8125rem;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: #e2e8f0;
-  text-shadow:
-    0 0 1px rgba(226, 232, 240, 0.85),
-    0 0 18px rgba(167, 139, 250, 0.35);
-}
-
-.mindbot-swiss-header__divider {
-  color: rgba(148, 163, 184, 0.55);
-  font-weight: 700;
-  user-select: none;
-}
-
-.mindbot-swiss-header__note {
-  flex: 1 1 10rem;
-  min-width: 0;
-  font-size: 0.68rem;
-  font-weight: 600;
-  letter-spacing: 0.05em;
-  line-height: 1.35;
-  text-transform: uppercase;
-  color: #f9a8d4;
-  text-shadow:
-    0 0 10px rgba(249, 168, 212, 0.3),
-    0 0 16px rgba(167, 139, 250, 0.18);
-}
-
 .mindbot-swiss-form.mindbot-settings-form :deep(.el-form-item__label) {
   font-family: var(--geek-ulog-font);
   font-weight: 600;
@@ -793,13 +697,6 @@ function onDialogClosed(): void {
   align-items: flex-start;
   height: auto;
   padding-top: 0.4rem;
-}
-
-.mindbot-dialog-footer {
-  padding: 0.75rem 1.25rem 1rem;
-  border-top: 1px solid rgba(34, 211, 238, 0.2);
-  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, #020617 100%);
-  box-shadow: inset 0 1px 0 rgba(227, 6, 19, 0.12);
 }
 
 .mindbot-footer-enable__label {
@@ -895,6 +792,11 @@ html.dark .mindbot-section-label::before {
 /*
  * Same monospace stack as UpdateLogModal (`.ulog-header` / `.ulog-md`) — no extra webfont load.
  */
+.mindbot-swiss-dialog.mindbot-move-dialog.el-dialog {
+  width: min(480px, 94vw) !important;
+  max-width: 100%;
+}
+
 .mindbot-swiss-dialog.el-dialog {
   --geek-ulog-font:
     ui-monospace, 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
@@ -966,6 +868,110 @@ html.dark .mindbot-section-label::before {
 .mindbot-swiss-dialog .el-dialog__body {
   padding: 0;
   color: var(--geek-text-soft);
+}
+
+.mindbot-swiss-dialog.el-dialog .el-dialog__footer {
+  padding: 0;
+}
+
+/* Shared shell (config modal + move modal; teleported dialogs need global rules). */
+.mindbot-swiss-dialog .mindbot-config-body {
+  position: relative;
+  margin: 0;
+  padding: 0;
+  overflow: hidden;
+}
+
+.mindbot-swiss-dialog .mindbot-config-scanlines {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: 2px;
+  background: repeating-linear-gradient(
+    0deg,
+    transparent,
+    transparent 2px,
+    rgba(0, 0, 0, 0.14) 2px,
+    rgba(0, 0, 0, 0.14) 3px
+  );
+  opacity: 0.3;
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-form-wrap {
+  --mindbot-swiss-red: #e30613;
+  --mindbot-geek-cyan: #22d3ee;
+  --mindbot-geek-violet: #a78bfa;
+  --mindbot-swiss-border: rgba(34, 211, 238, 0.32);
+  --mindbot-swiss-inset: rgba(15, 23, 42, 0.72);
+  --mindbot-swiss-muted: #a8b7c9;
+  --mindbot-swiss-text: #f1f5f9;
+  position: relative;
+  z-index: 3;
+  padding: 0.75rem 1.25rem 0.5rem;
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-hint {
+  color: var(--mindbot-swiss-muted);
+}
+
+.mindbot-swiss-dialog .mindbot-dialog-footer {
+  padding: 0.75rem 1.25rem 1rem;
+  border-top: 1px solid rgba(34, 211, 238, 0.2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, #020617 100%);
+  box-shadow: inset 0 1px 0 rgba(227, 6, 19, 0.12);
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.35rem 0.5rem;
+  font-family: var(--geek-ulog-font);
+}
+
+.mindbot-swiss-dialog .mindbot-config-header {
+  font-family: var(--geek-ulog-font);
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-header__glyph {
+  color: #22d3ee;
+  text-shadow: 0 0 12px rgba(34, 211, 238, 0.55);
+  font-weight: 700;
+  font-size: 1rem;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-header__title {
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  text-shadow:
+    0 0 1px rgba(226, 232, 240, 0.85),
+    0 0 18px rgba(167, 139, 250, 0.35);
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-header__divider {
+  color: rgba(148, 163, 184, 0.55);
+  font-weight: 700;
+  user-select: none;
+}
+
+.mindbot-swiss-dialog .mindbot-swiss-header__note {
+  flex: 1 1 10rem;
+  min-width: 0;
+  font-size: 0.68rem;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  line-height: 1.35;
+  text-transform: uppercase;
+  color: #f9a8d4;
+  text-shadow:
+    0 0 10px rgba(249, 168, 212, 0.3),
+    0 0 16px rgba(167, 139, 250, 0.18);
 }
 
 .el-overlay.mindbot-swiss-backdrop {
@@ -1190,5 +1196,147 @@ html.dark .mindbot-section-label::before {
 .mindbot-swiss-dialog .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label::before {
   color: #fb7185;
   text-shadow: 0 0 8px rgba(251, 113, 133, 0.45);
+}
+
+/* MindBot-themed MessageBox (rotate callback URL, delete config). */
+.el-overlay.is-message-box:has(.mindbot-swiss-message-box) {
+  backdrop-filter: blur(4px);
+}
+
+.mindbot-swiss-message-box.el-message-box {
+  --geek-ulog-font:
+    ui-monospace, 'JetBrains Mono', 'Cascadia Code', 'SFMono-Regular', Consolas, monospace;
+  --geek-surface-deep: #020617;
+  --geek-surface: #0f172a;
+  --geek-elevated: #1e293b;
+  --geek-elevated-hover: #334155;
+  --geek-text: #f8fafc;
+  --geek-text-soft: #e2e8f0;
+  --geek-dim: #cbd5e1;
+  --geek-swit: #e30613;
+  --el-messagebox-font-size: 0.8125rem;
+  font-family: var(--geek-ulog-font);
+  font-variant-numeric: tabular-nums;
+  background: linear-gradient(
+    165deg,
+    var(--geek-surface) 0%,
+    var(--geek-surface-deep) 48%,
+    #0a0f1a 100%
+  );
+  border: 1px solid rgba(34, 211, 238, 0.38);
+  border-radius: 3px;
+  box-shadow:
+    0 0 0 1px rgba(167, 139, 250, 0.12),
+    0 0 40px rgba(34, 211, 238, 0.12),
+    0 0 80px rgba(99, 102, 241, 0.08),
+    0 0 32px rgba(227, 6, 19, 0.06),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  overflow: hidden;
+  padding-bottom: 0;
+}
+
+.mindbot-swiss-message-box .el-message-box__header {
+  padding: 0.85rem 1rem 0.65rem;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.2);
+  background: linear-gradient(
+    90deg,
+    rgba(227, 6, 19, 0.12) 0%,
+    rgba(34, 211, 238, 0.08) 38%,
+    transparent 62%
+  );
+}
+
+.mindbot-swiss-message-box .el-message-box__title {
+  font-family: var(--geek-ulog-font);
+  font-size: 0.8125rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  text-shadow:
+    0 0 1px rgba(226, 232, 240, 0.85),
+    0 0 18px rgba(167, 139, 250, 0.35);
+}
+
+.mindbot-swiss-message-box .el-message-box__headerbtn {
+  top: 0.65rem;
+  right: 0.65rem;
+}
+
+.mindbot-swiss-message-box .el-message-box__headerbtn .el-message-box__close {
+  color: #64748b;
+  transition:
+    color 0.15s ease,
+    filter 0.15s ease;
+}
+
+.mindbot-swiss-message-box .el-message-box__headerbtn:hover .el-message-box__close {
+  color: #f472b6;
+  filter: drop-shadow(0 0 6px rgba(244, 114, 182, 0.55));
+}
+
+.mindbot-swiss-message-box .el-message-box__content {
+  padding: 1rem 1rem 0.75rem;
+  color: #a8b7c9;
+  line-height: 1.55;
+}
+
+.mindbot-swiss-message-box .el-message-box__container {
+  padding: 0;
+}
+
+.mindbot-swiss-message-box .el-message-box__btns {
+  padding: 0.75rem 1rem 1rem;
+  border-top: 1px solid rgba(34, 211, 238, 0.2);
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.85) 0%, #020617 100%);
+  box-shadow: inset 0 1px 0 rgba(227, 6, 19, 0.12);
+}
+
+.mindbot-swiss-message-box .el-message-box__btns .el-button {
+  border-radius: 2px;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.mindbot-swiss-message-box .mindbot-pill--footer-cancel.el-button {
+  --el-button-bg-color: var(--geek-elevated);
+  --el-button-border-color: rgba(148, 163, 184, 0.45);
+  --el-button-text-color: var(--geek-text);
+  --el-button-hover-bg-color: var(--geek-elevated-hover);
+  --el-button-hover-border-color: rgba(34, 211, 238, 0.5);
+  --el-button-hover-text-color: #ffffff;
+}
+
+.mindbot-swiss-msg--rotate .el-message-box__btns .el-button--primary {
+  border-radius: 2px;
+  --el-button-bg-color: #e30613;
+  --el-button-border-color: #c50512;
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: #ff1a1f;
+  --el-button-hover-border-color: #e30613;
+  --el-button-hover-text-color: #ffffff;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.15),
+    0 0 20px rgba(227, 6, 19, 0.25);
+}
+
+.mindbot-swiss-msg--delete .el-message-box__btns .el-button--primary {
+  border-radius: 2px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  --el-button-bg-color: #9f1239;
+  --el-button-border-color: #be123c;
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: #be123c;
+  --el-button-hover-border-color: #e11d48;
+  --el-button-hover-text-color: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.12),
+    0 0 16px rgba(225, 29, 72, 0.2);
 }
 </style>

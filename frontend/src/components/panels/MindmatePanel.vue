@@ -5,15 +5,18 @@
  * Features: Markdown rendering, code highlighting, message actions, stop generation
  */
 import { computed, nextTick, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+
+import { ElButton, ElIcon } from 'element-plus'
+import { Plus } from '@element-plus/icons-vue'
+import { PanelLeftOpen } from 'lucide-vue-next'
 
 import { useLanguage, useMindMate, useNotifications } from '@/composables'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
-import { useAuthStore, useMindMateStore, useUIStore } from '@/stores'
+import { useAuthStore, useMindMateStore } from '@/stores'
+import { useUIStore } from '@/stores/ui'
 
 import ShareExportModal from './ShareExportModal.vue'
-import ConversationHistory from './mindmate/ConversationHistory.vue'
 import MindmateHeader from './mindmate/MindmateHeader.vue'
 import MindmateInput from './mindmate/MindmateInput.vue'
 import MindmateMessages from './mindmate/MindmateMessages.vue'
@@ -35,21 +38,11 @@ const emit = defineEmits<{
 // Computed for mode checks
 const isFullpageMode = computed(() => props.mode === 'fullpage')
 
-const route = useRoute()
-const uiStore = useUIStore()
-
-/** Simplified UI: chat list is in AppSidebar; hide redundant header drawer + menu. */
-const hideHistoryToggle = computed(
-  () =>
-    uiStore.uiVersion === 'international' &&
-    isFullpageMode.value &&
-    route.path.startsWith('/mindmate')
-)
-
 const { promptLanguage, t } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 const mindMateStore = useMindMateStore()
+const uiStore = useUIStore()
 
 // Typing effect state
 const displayTitle = ref('MindMate')
@@ -71,7 +64,6 @@ const inputText = ref('')
 const editingMessageId = ref<string | null>(null)
 const editingContent = ref('')
 const hoveredMessageId = ref<string | null>(null)
-const showHistorySidebar = ref(false)
 const showShareModal = ref(false)
 
 // Computed for loading state
@@ -143,12 +135,6 @@ async function animateTitleChange(newTitle: string, oldTitle?: string) {
   isTypingTitle.value = false
 }
 
-// Toggle history sidebar
-function toggleHistorySidebar() {
-  showHistorySidebar.value = !showHistorySidebar.value
-  // No need to fetch - Vue Query handles it automatically
-}
-
 // Start a new conversation
 function startNewConversation() {
   if (!authStore.isAuthenticated) {
@@ -162,7 +148,6 @@ function startNewConversation() {
 // Load a conversation from history
 async function loadConversationFromHistory(convId: string) {
   await mindMate.loadConversation(convId)
-  showHistorySidebar.value = false
 }
 
 // Delete a conversation
@@ -311,32 +296,52 @@ function isLastAssistantMessage(messageId: string): boolean {
       'welcome-mode': showWelcome,
     }"
   >
-    <!-- Header -->
+    <!-- Full page: expand when sidebar hidden + left-aligned title + new chat -->
+    <div
+      v-if="isFullpageMode"
+      class="mindmate-fullpage-toolbar flex items-center h-14 px-4 gap-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 shrink-0"
+    >
+      <el-button
+        v-if="uiStore.sidebarCollapsed"
+        text
+        circle
+        size="small"
+        class="mindmate-sidebar-toggle shrink-0"
+        :title="t('sidebar.expandSidebar')"
+        :aria-label="t('sidebar.expandSidebar')"
+        @click="uiStore.toggleSidebar()"
+      >
+        <PanelLeftOpen class="w-[18px] h-[18px]" />
+      </el-button>
+      <h1
+        class="flex-1 min-w-0 text-sm font-semibold text-gray-800 dark:text-white truncate text-left"
+        :class="{ 'typing-cursor': isTypingTitle }"
+      >
+        {{ displayTitle }}
+      </h1>
+      <el-button
+        class="new-chat-btn shrink-0"
+        size="small"
+        :disabled="!authStore.isAuthenticated"
+        @click="startNewConversation"
+      >
+        <ElIcon class="mr-1"><Plus /></ElIcon>
+        {{ t('mindmate.newChat') }}
+      </el-button>
+    </div>
     <MindmateHeader
+      v-else
       :mode="mode"
       :title="displayTitle"
       :is-typing="isTypingTitle"
       :is-authenticated="authStore.isAuthenticated"
-      :hide-history-toggle="hideHistoryToggle"
       :conversations="mindMate.conversations.value"
       :is-loading-history="historyLoading"
       :current-conversation-id="mindMateStore.currentConversationId"
-      @toggle-history="toggleHistorySidebar"
       @new-conversation="startNewConversation"
       @close="emit('close')"
       @load-history="loadConversationFromHistory"
       @delete-history="deleteConversationFromHistory"
-    />
-
-    <!-- Conversation History Drawer - fullpage when sidebar does not list chats -->
-    <ConversationHistory
-      v-if="isFullpageMode && !hideHistoryToggle"
-      v-model:visible="showHistorySidebar"
-      :conversations="mindMate.conversations.value"
-      :is-loading="historyLoading"
-      :current-conversation-id="mindMateStore.currentConversationId"
-      @load="loadConversationFromHistory"
-      @delete="deleteConversationFromHistory"
     />
 
     <!-- Messages -->
@@ -393,4 +398,35 @@ function isLastAssistantMessage(messageId: string): boolean {
 
 <style scoped>
 @import './mindmate/mindmate.css';
+
+.mindmate-sidebar-toggle {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-hover-bg-color: #f5f5f4;
+  font-weight: 500;
+}
+
+.new-chat-btn {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  --el-button-text-color: #1c1917;
+  font-weight: 500;
+  border-radius: 9999px;
+}
+
+.dark .new-chat-btn {
+  --el-button-bg-color: #4b5563;
+  --el-button-border-color: #6b7280;
+  --el-button-hover-bg-color: #6b7280;
+  --el-button-hover-border-color: #9ca3af;
+  --el-button-hover-text-color: #f9fafb;
+  --el-button-active-bg-color: #52525b;
+  --el-button-active-border-color: #a1a1aa;
+  --el-button-text-color: #f9fafb;
+}
 </style>

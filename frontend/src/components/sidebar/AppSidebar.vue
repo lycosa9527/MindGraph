@@ -6,7 +6,8 @@
  */
 import { provide } from 'vue'
 
-import { Menu } from 'lucide-vue-next'
+import { ElButton } from 'element-plus'
+import { PanelLeftClose } from 'lucide-vue-next'
 
 import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
 import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
@@ -30,36 +31,39 @@ const {
 
 <template>
   <div
-    class="app-sidebar bg-stone-50 border-r border-stone-200 flex flex-col transition-all duration-300 ease-in-out h-full"
-    :class="isCollapsed ? 'w-16' : 'w-64'"
+    class="app-sidebar bg-stone-50 flex flex-col h-full shrink-0 overflow-hidden"
+    :class="
+      isCollapsed
+        ? 'w-0 min-w-0 max-w-0 border-transparent pointer-events-none'
+        : 'w-64 border-r border-stone-200'
+    "
+    :aria-hidden="isCollapsed"
   >
-    <!-- Header with logo and toggle -->
-    <div class="p-4 flex items-center justify-between border-b border-stone-200">
+    <!-- Header: brand + collapse (expand when hidden is on the active page) -->
+    <div class="p-4 flex items-center justify-between gap-2 border-b border-stone-200">
       <div
-        class="logo-link flex items-center space-x-2 cursor-pointer hover:opacity-80 transition-opacity"
+        class="logo-link flex items-center space-x-2 min-w-0 cursor-pointer hover:opacity-80 transition-opacity"
         @click="sidebar.handleLogoClick"
       >
         <div
-          class="w-7 h-7 bg-stone-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm"
+          class="w-7 h-7 bg-stone-900 rounded-lg flex items-center justify-center text-white font-semibold text-sm shrink-0"
         >
           M
         </div>
-        <span
-          v-if="!isCollapsed"
-          class="font-semibold text-lg text-stone-900 tracking-tight"
-          >{{ sidebar.t('sidebar.brandTitle') }}</span
-        >
+        <span class="font-semibold text-lg text-stone-900 tracking-tight truncate">{{
+          sidebar.t('sidebar.brandTitle')
+        }}</span>
       </div>
       <el-button
         text
         circle
-        class="toggle-btn"
-        :title="
-          isCollapsed ? sidebar.t('sidebar.expandSidebar') : sidebar.t('sidebar.collapseSidebar')
-        "
-        @click="sidebar.toggleSidebar"
+        size="small"
+        class="sidebar-header-collapse shrink-0"
+        :title="sidebar.t('sidebar.collapseSidebar')"
+        :aria-label="sidebar.t('sidebar.collapseSidebar')"
+        @click.stop="sidebar.toggleSidebar()"
       >
-        <Menu class="w-4 h-4" />
+        <PanelLeftClose class="w-[18px] h-[18px]" />
       </el-button>
     </div>
 
@@ -78,6 +82,14 @@ const {
 </template>
 
 <style scoped>
+.app-sidebar {
+  transition:
+    width 300ms ease-in-out,
+    min-width 300ms ease-in-out,
+    max-width 300ms ease-in-out,
+    border-color 300ms ease-in-out;
+}
+
 .logo-link {
   text-decoration: none;
 }
@@ -86,12 +98,12 @@ const {
   text-decoration: none;
 }
 
-/* Toggle buttons */
-.toggle-btn {
-  --el-button-text-color: #78716c;
+.sidebar-header-collapse {
+  --el-button-text-color: #57534e;
   --el-button-hover-text-color: #1c1917;
-  --el-button-hover-bg-color: #e7e5e4;
+  --el-button-hover-bg-color: #f5f5f4;
 }
+
 </style>
 
 <style>

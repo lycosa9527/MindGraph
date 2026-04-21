@@ -44,6 +44,7 @@ import {
   getPanelCoordinator,
   useDiagramAutoSave,
   useDiagramSpecForSave,
+  useEventBus,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
   useLanguage,
@@ -130,6 +131,11 @@ const {
 
 /** Presentation rail virtual keyboard toggle (mirrors toolbar keyboard state). */
 const virtualKeyboardOpen = ref(false)
+
+const presentationShortcutBus = useEventBus('CanvasPagePresentationShortcuts')
+presentationShortcutBus.on('presentation:toggle_virtual_keyboard_requested', () => {
+  virtualKeyboardOpen.value = !virtualKeyboardOpen.value
+})
 
 const {
   workshopCode,
@@ -667,7 +673,7 @@ onUnmounted(() => {
         />
       </div>
 
-      <!-- MindMate floating panel (教学设计) - rounded card, inset to clear floating toolbars -->
+      <!-- MindMate floating panel - rounded card, inset to clear floating toolbars -->
       <Transition name="mindmate-slide">
         <div
           v-if="panelsStore.mindmatePanel.isOpen"

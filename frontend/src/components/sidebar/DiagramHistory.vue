@@ -205,7 +205,9 @@ function toggleShowAll(): void {
 </script>
 
 <template>
-  <div class="diagram-history flex flex-col border-t border-stone-200 relative overflow-hidden">
+  <div
+    class="diagram-history flex flex-1 min-h-0 flex-col border-t border-stone-200 relative overflow-hidden"
+  >
     <!-- Header -->
     <div class="px-4 py-3 flex items-center justify-between">
       <div class="text-xs font-medium text-stone-400 uppercase tracking-wider">

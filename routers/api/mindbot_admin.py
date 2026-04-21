@@ -31,6 +31,7 @@ from routers.api.mindbot_models import (
     MindbotConfigPayload,
     MindbotConfigResponse,
     MindbotMemoryFootprintResponse,
+    MindbotMovePayload,
     MindbotUsageEventItem,
 )
 from routers.auth.dependencies import require_admin, require_mindbot_admin_access
@@ -333,6 +334,73 @@ async def admin_update_mindbot_config(
             ",".join(auth_changes),
         )
     return _to_response(existing)
+
+
+@router.post(
+    "/admin/configs/{config_id}/move",
+    response_model=MindbotConfigResponse,
+)
+async def admin_move_mindbot_config(
+    config_id: int,
+    payload: MindbotMovePayload,
+    db: AsyncSession = Depends(get_async_db),
+    user: User = Depends(require_admin),
+) -> MindbotConfigResponse:
+    """
+    Platform admins only: reassign this bot row to another organization.
+
+    Enforces the per-organization bot cap on the destination (excluding this row
+    from the destination count before the move).
+    """
+    _require_mindbot_feature()
+    result = await db.execute(
+        select(OrganizationMindbotConfig)
+        .where(OrganizationMindbotConfig.id == config_id)
+        .with_for_update()
+    )
+    row = result.scalar_one_or_none()
+    if row is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{MindbotErrorCode.ADMIN_CONFIG_NOT_FOUND.value}: MindBot config not found",
+        )
+
+    new_org_id = payload.organization_id
+    if int(row.organization_id) == int(new_org_id):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=f"{MindbotErrorCode.ADMIN_MOVE_SAME_ORGAN.value}: Already in this organization",
+        )
+
+    org_check = await db.execute(select(Organization.id).where(Organization.id == new_org_id))
+    if org_check.scalar_one_or_none() is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"{MindbotErrorCode.ADMIN_ORGANIZATION_NOT_FOUND.value}: Organization not found",
+        )
+
+    repo = MindbotConfigRepository(db)
+    dest_count = await repo.count_by_organization_id(new_org_id)
+    if dest_count >= _BOT_CAP_PER_ORG:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=(
+                f"{MindbotErrorCode.ADMIN_ROBOT_CODE_CONFLICT.value}: "
+                f"Target organization already has {dest_count} bots "
+                f"(max {_BOT_CAP_PER_ORG})"
+            ),
+        )
+
+    row.organization_id = new_org_id
+    await db.commit()
+    await db.refresh(row)
+    logger.info(
+        "[MindBot] config moved config_id=%s organization_id=%s user_id=%s",
+        row.id,
+        row.organization_id,
+        user.id,
+    )
+    return _to_response(row)
 
 
 @router.delete("/admin/configs/{config_id}", status_code=status.HTTP_204_NO_CONTENT)

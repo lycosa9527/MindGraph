@@ -117,8 +117,9 @@ export default {
   'settings.version.international': 'Internationale Version',
   'landing.international.subtitle': 'Die leistungsstärkste KI-Denkdiagrammsoftware im Universum',
   'landing.international.promptPlaceholder':
-    'Beschreiben Sie Ihr Diagramm oder wählen Sie unten einen Typ aus ...',
+    'Geben Sie ein Thema oder eine kurze Beschreibung ein – oder wählen Sie unten einen Diagrammtyp.',
   'landing.international.sectionTitle': 'Wählen Sie einen Diagrammtyp',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Module',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'Ihr virtueller Lehr- und Forschungspartner',

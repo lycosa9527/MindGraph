@@ -112,8 +112,10 @@ export default {
   'settings.version.chinese': 'เวอร์ชันภาษาจีน',
   'settings.version.international': 'เวอร์ชันสากล',
   'landing.international.subtitle': 'ซอฟต์แวร์ไดอะแกรมความคิด AI ที่ทรงพลังที่สุดในจักรวาล',
-  'landing.international.promptPlaceholder': 'อธิบายไดอะแกรมของคุณ หรือเลือกประเภทด้านล่าง...',
+  'landing.international.promptPlaceholder':
+    'พิมพ์หัวข้อหรือคำอธิบายสั้น ๆ หรือเลือกประเภทไดอะแกรมด้านล่าง',
   'landing.international.sectionTitle': 'เลือกประเภทไดอะแกรม',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'โมดูล',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'พันธมิตรเสมือนด้านการสอนและการวิจัยของคุณ',

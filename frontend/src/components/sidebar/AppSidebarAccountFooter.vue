@@ -2,10 +2,21 @@
 /**
  * Sidebar bottom: login CTA or user menu with account actions.
  */
-import { computed, inject, reactive } from 'vue'
+import { computed, inject, reactive, ref } from 'vue'
 
-import { ChevronDown, Languages, LogIn, LogOut, ScrollText, UserRound } from 'lucide-vue-next'
+import {
+  ChevronDown,
+  Languages,
+  LogIn,
+  LogOut,
+  ScrollText,
+  Share2,
+  Upload,
+  UserRound,
+} from 'lucide-vue-next'
 
+import IntlShareSiteModal from '@/components/mindgraph/IntlShareSiteModal.vue'
+import { useDiagramImport } from '@/composables'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 
 const _raw = inject(appSidebarInjectionKey)
@@ -14,6 +25,8 @@ if (!_raw) {
 }
 const s = reactive(_raw)
 const orgSubtitle = computed(() => s.userSubtitle as string)
+const showShareSiteModal = ref(false)
+const { triggerImport } = useDiagramImport()
 </script>
 
 <template>
@@ -96,7 +109,18 @@ const orgSubtitle = computed(() => s.userSubtitle as string)
         </div>
         <template #dropdown>
           <el-dropdown-menu class="user-menu">
-            <el-dropdown-item @click="s.openLanguageSettingsModal">
+            <el-dropdown-item @click="triggerImport">
+              <Upload class="w-4 h-4 mr-2" />
+              {{ s.t('mindgraphLanding.import') }}
+            </el-dropdown-item>
+            <el-dropdown-item @click="showShareSiteModal = true">
+              <Share2 class="w-4 h-4 mr-2" />
+              {{ s.t('landing.international.shareSite') }}
+            </el-dropdown-item>
+            <el-dropdown-item
+              divided
+              @click="s.openLanguageSettingsModal"
+            >
               <Languages class="w-4 h-4 mr-2" />
               {{ s.t('sidebar.languageSettings') }}
             </el-dropdown-item>
@@ -148,7 +172,18 @@ const orgSubtitle = computed(() => s.userSubtitle as string)
         </el-badge>
         <template #dropdown>
           <el-dropdown-menu class="user-menu">
-            <el-dropdown-item @click="s.openLanguageSettingsModal">
+            <el-dropdown-item @click="triggerImport">
+              <Upload class="w-4 h-4 mr-2" />
+              {{ s.t('mindgraphLanding.import') }}
+            </el-dropdown-item>
+            <el-dropdown-item @click="showShareSiteModal = true">
+              <Share2 class="w-4 h-4 mr-2" />
+              {{ s.t('landing.international.shareSite') }}
+            </el-dropdown-item>
+            <el-dropdown-item
+              divided
+              @click="s.openLanguageSettingsModal"
+            >
               <Languages class="w-4 h-4 mr-2" />
               {{ s.t('sidebar.languageSettings') }}
             </el-dropdown-item>
@@ -171,6 +206,8 @@ const orgSubtitle = computed(() => s.userSubtitle as string)
         </template>
       </el-dropdown>
     </template>
+
+    <IntlShareSiteModal v-model="showShareSiteModal" />
   </div>
 </template>
 

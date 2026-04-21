@@ -33,7 +33,13 @@ class MindbotConfigCreatePayload(BaseModel):
     chain_of_thought_max_chars: int = Field(4000, ge=0, le=32000)
     dingtalk_ai_card_template_id: Optional[str] = Field(None, max_length=128)
     dingtalk_ai_card_param_key: Optional[str] = Field(None, max_length=128)
-    dingtalk_ai_card_streaming_max_chars: int = Field(6000, ge=500, le=50000)
+    dingtalk_ai_card_streaming_max_chars: int = Field(6500, ge=500, le=50000)
+
+
+class MindbotMovePayload(BaseModel):
+    """Admin-only: move a bot config to another organization (POST .../move)."""
+
+    organization_id: int = Field(..., gt=0)
 
 
 class MindbotConfigPayload(BaseModel):
@@ -87,7 +93,7 @@ class MindbotConfigPayload(BaseModel):
         description="Template variable key for streaming markdown body; empty defaults to 'content'",
     )
     dingtalk_ai_card_streaming_max_chars: int = Field(
-        6000,
+        6500,
         ge=500,
         le=50000,
         description="Max characters sent per DingTalk AI card streaming/receiver update payload",

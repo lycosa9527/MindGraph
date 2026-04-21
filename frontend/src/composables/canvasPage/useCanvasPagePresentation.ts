@@ -16,6 +16,15 @@ import {
 } from '@/stores/presentationPointer'
 import type { PresentationHighlightStroke, PresentationToolId } from '@/types'
 
+/** Ctrl/Cmd+1–5 select these tools in order; 6 toggles virtual keyboard (see event bus). */
+const PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER: readonly PresentationToolId[] = [
+  'laser',
+  'highlighter',
+  'pen',
+  'spotlight',
+  'timer',
+]
+
 const TIMER_DEFAULT_SECONDS = 300
 const SPOTLIGHT_INNER_RADIUS_PX = 150
 const SPOTLIGHT_OUTER_RADIUS_PX = 195
@@ -154,10 +163,34 @@ export function useCanvasPagePresentation() {
     )
   }
 
-  function handlePresentationPointerSizeKeydown(event: KeyboardEvent) {
+  function digitFromPresentationShortcutEvent(event: KeyboardEvent): number {
+    if (event.code.startsWith('Digit')) {
+      const d = Number.parseInt(event.code.slice(5), 10)
+      return Number.isFinite(d) ? d : 0
+    }
+    if (event.code.startsWith('Numpad')) {
+      const d = Number.parseInt(event.code.slice(6), 10)
+      return Number.isFinite(d) ? d : 0
+    }
+    return 0
+  }
+
+  function handlePresentationKeyboardShortcuts(event: KeyboardEvent) {
     if (!presentationRailOpen.value) return
     if (!event.ctrlKey && !event.metaKey) return
     if (isTypingInInput()) return
+
+    const digit = digitFromPresentationShortcutEvent(event)
+    if (digit >= 1 && digit <= 6) {
+      event.preventDefault()
+      event.stopPropagation()
+      if (digit <= PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER.length) {
+        presentationTool.value = PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER[digit - 1]!
+        return
+      }
+      eventBus.emit('presentation:toggle_virtual_keyboard_requested', {})
+      return
+    }
 
     const code = event.code
     const key = event.key
@@ -173,7 +206,7 @@ export function useCanvasPagePresentation() {
   watch(presentationRailOpen, (active) => {
     if (active) {
       window.addEventListener('mousemove', handleLaserMouseMove)
-      window.addEventListener('keydown', handlePresentationPointerSizeKeydown, true)
+      window.addEventListener('keydown', handlePresentationKeyboardShortcuts, true)
       presentationTool.value = 'laser'
       timerRunning.value = false
       clearPresentationTimerTick()
@@ -181,7 +214,7 @@ export function useCanvasPagePresentation() {
       timerRemainingSeconds.value = TIMER_DEFAULT_SECONDS
     } else {
       window.removeEventListener('mousemove', handleLaserMouseMove)
-      window.removeEventListener('keydown', handlePresentationPointerSizeKeydown, true)
+      window.removeEventListener('keydown', handlePresentationKeyboardShortcuts, true)
       presentationHighlightStrokes.value = []
       presentationTool.value = 'laser'
       presentationHighlighterColor.value = DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR
@@ -231,7 +264,7 @@ export function useCanvasPagePresentation() {
 
   onUnmounted(() => {
     window.removeEventListener('mousemove', handleLaserMouseMove)
-    window.removeEventListener('keydown', handlePresentationPointerSizeKeydown, true)
+    window.removeEventListener('keydown', handlePresentationKeyboardShortcuts, true)
     clearPresentationTimerTick()
   })
 

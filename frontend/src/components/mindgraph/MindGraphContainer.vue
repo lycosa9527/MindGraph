@@ -16,6 +16,7 @@ import {
 } from 'element-plus'
 
 import { Upload, User } from '@element-plus/icons-vue'
+import { PanelLeftOpen } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
@@ -226,8 +227,20 @@ onMounted(() => {
   <InternationalLanding v-if="uiStore.uiVersion === 'international'" />
   <div
     v-else
-    class="mindgraph-container flex flex-col h-full"
+    class="mindgraph-container relative flex flex-col h-full"
   >
+    <ElButton
+      v-if="uiStore.sidebarCollapsed"
+      text
+      circle
+      size="small"
+      class="mindgraph-sidebar-toggle mindgraph-sidebar-toggle--floating"
+      :title="t('sidebar.expandSidebar')"
+      :aria-label="t('sidebar.expandSidebar')"
+      @click="uiStore.toggleSidebar()"
+    >
+      <PanelLeftOpen class="w-[18px] h-[18px]" />
+    </ElButton>
     <!-- Header — title centered; actions anchored right -->
     <header
       class="relative h-14 px-4 flex items-center justify-center bg-white border-b border-gray-200"
@@ -503,6 +516,19 @@ onMounted(() => {
   --el-button-text-color: #1c1917;
   font-weight: 500;
   border-radius: 9999px;
+}
+
+.mindgraph-sidebar-toggle {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-hover-bg-color: #f5f5f4;
+}
+
+.mindgraph-sidebar-toggle--floating {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
 }
 
 /* Join presentation button - Swiss Design style (matching MindMate) */

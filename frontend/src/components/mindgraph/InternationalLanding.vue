@@ -1,29 +1,18 @@
 <script setup lang="ts">
 /**
  * InternationalLanding - Google-homepage-inspired MindGraph landing page.
- * Centered prompt bar + large diagram cards. Avatar menu in top-right corner.
+ * Centered prompt bar + large diagram cards. Account actions live in the app sidebar.
  */
-import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import {
-  ElAvatar,
-  ElButton,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-  ElIcon,
-} from 'element-plus'
+import { ElAvatar, ElButton, ElIcon } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
-
-import { Languages, LogIn, LogOut, ScrollText, Share2, Upload, UserRound } from 'lucide-vue-next'
+import { PanelLeftOpen } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
-import mindmateAvatar from '@/assets/mindmate-avatar-md.png'
-import { AccountInfoModal, UpdateLogModal } from '@/components/auth'
-import LanguageSettingsModal from '@/components/settings/LanguageSettingsModal.vue'
-import { useDiagramImport, useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
@@ -31,8 +20,6 @@ import { authFetch } from '@/utils/api'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
 import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
-import IntlModuleGrid from './IntlModuleGrid.vue'
-import IntlShareSiteModal from './IntlShareSiteModal.vue'
 
 const MAX_PROMPT_LENGTH = 10000
 const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
@@ -40,16 +27,10 @@ const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
 const route = useRoute()
 const router = useRouter()
 const { t, promptLanguage } = useLanguage()
-const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const diagramStore = useDiagramStore()
 const notify = useNotifications()
-
-const userAvatar = computed(() => {
-  const raw = authStore.user?.avatar || '🐈‍⬛'
-  return raw.startsWith('avatar_') ? '🐈‍⬛' : raw
-})
 
 const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
   circle_map: '圆圈图',
@@ -66,11 +47,14 @@ const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
   diagram: '图表',
 }
 
-const allDiagramTypes: Array<{
+type LandingDiagramCard = {
   titleKey: string
   descKey: string
   type: DiagramType
-}> = [
+}
+
+/** Thinking Maps®–style eight (circle through bridge); not mind map / concept map. */
+const eightThinkingMapCards: LandingDiagramCard[] = [
   {
     titleKey: 'landing.diagramGrid.circle_map.title',
     descKey: 'landing.diagramGrid.circle_map.desc',
@@ -111,6 +95,9 @@ const allDiagramTypes: Array<{
     descKey: 'landing.diagramGrid.bridge_map.desc',
     type: 'bridge_map',
   },
+]
+
+const advancedDiagramCards: LandingDiagramCard[] = [
   {
     titleKey: 'landing.diagramGrid.mindmap.title',
     descKey: 'landing.diagramGrid.mindmap.desc',
@@ -218,10 +205,6 @@ function handleClickOutside(event: MouseEvent) {
   }
 }
 
-onMounted(() => {
-  document.addEventListener('mousedown', handleClickOutside)
-})
-
 function handleDiagramSelect(diagram: SavedDiagram) {
   showDropdown.value = false
   nextTick(() => {
@@ -240,22 +223,11 @@ onUnmounted(() => {
 
 // ── Card click ──
 
-function handleMindMateClick() {
-  router.push('/mindmate')
-}
-
 function handleCardClick(item: { type: DiagramType }) {
   const zhName = TYPE_TO_ZH_NAME[item.type]
   if (zhName) uiStore.setSelectedChartType(zhName)
   router.push({ path: '/canvas', query: { type: item.type } })
 }
-
-// ── Dialogs ──
-
-const showLanguageSettingsModal = ref(false)
-const showShareSiteModal = ref(false)
-const showAccountModal = ref(false)
-const showUpdateLogModal = ref(false)
 
 // ── Auto-join workshop from QR query ──
 
@@ -296,20 +268,8 @@ async function joinWorkshop() {
   }
 }
 
-// ── Avatar menu commands ──
-
-function handleAvatarCommand(cmd: string) {
-  if (cmd === 'import') triggerImport()
-  else if (cmd === 'share-site') showShareSiteModal.value = true
-  else if (cmd === 'language') showLanguageSettingsModal.value = true
-  else if (cmd === 'account') showAccountModal.value = true
-  else if (cmd === 'update-log') showUpdateLogModal.value = true
-  else if (cmd === 'logout') authStore.logout()
-}
-
-// ── Auto-join from QR query ──
-
 onMounted(() => {
+  document.addEventListener('mousedown', handleClickOutside)
   const joinWorkshopCode = route.query.join_workshop as string | undefined
   if (joinWorkshopCode) {
     const digits = joinWorkshopCode.replace(/\D/g, '').slice(0, 6)
@@ -328,72 +288,18 @@ onMounted(() => {
 
 <template>
   <div class="intl-landing">
-    <!-- Teleport header to <body> so no ancestor animation/transform/filter
-         can interfere with position:fixed -->
-    <Teleport to="body">
-      <div class="intl-top-right">
-        <IntlModuleGrid />
-        <template v-if="authStore.isAuthenticated">
-          <ElDropdown
-            trigger="click"
-            placement="bottom-end"
-            @command="handleAvatarCommand"
-          >
-            <ElAvatar
-              :size="40"
-              class="intl-avatar"
-            >
-              {{ userAvatar }}
-            </ElAvatar>
-            <template #dropdown>
-              <ElDropdownMenu>
-                <ElDropdownItem command="import">
-                  <Upload class="w-4 h-4 mr-2" />
-                  {{ t('mindgraphLanding.import') }}
-                </ElDropdownItem>
-                <ElDropdownItem command="share-site">
-                  <Share2 class="w-4 h-4 mr-2" />
-                  {{ t('landing.international.shareSite') }}
-                </ElDropdownItem>
-                <ElDropdownItem
-                  command="language"
-                  divided
-                >
-                  <Languages class="w-4 h-4 mr-2" />
-                  {{ t('sidebar.languageSettings') }}
-                </ElDropdownItem>
-                <ElDropdownItem command="account">
-                  <UserRound class="w-4 h-4 mr-2" />
-                  {{ t('auth.accountInfo') }}
-                </ElDropdownItem>
-                <ElDropdownItem command="update-log">
-                  <ScrollText class="w-4 h-4 mr-2" />
-                  {{ t('auth.updateLog') }}
-                </ElDropdownItem>
-                <ElDropdownItem
-                  command="logout"
-                  divided
-                >
-                  <LogOut class="w-4 h-4 mr-2" />
-                  {{ t('auth.logout') }}
-                </ElDropdownItem>
-              </ElDropdownMenu>
-            </template>
-          </ElDropdown>
-        </template>
-        <template v-else>
-          <ElButton
-            type="primary"
-            round
-            @click="authStore.handleTokenExpired(undefined, undefined)"
-          >
-            <LogIn class="w-4 h-4 mr-1" />
-            {{ t('auth.loginRegister') }}
-          </ElButton>
-        </template>
-      </div>
-    </Teleport>
-
+    <el-button
+      v-if="uiStore.sidebarCollapsed"
+      text
+      circle
+      size="small"
+      class="intl-sidebar-toggle intl-sidebar-toggle--floating"
+      :title="t('sidebar.expandSidebar')"
+      :aria-label="t('sidebar.expandSidebar')"
+      @click="uiStore.toggleSidebar()"
+    >
+      <PanelLeftOpen class="w-[18px] h-[18px]" />
+    </el-button>
     <!-- Scrollable content -->
     <div class="intl-scroll">
       <!-- Hero: logo left, title + slogan right -->
@@ -481,7 +387,7 @@ onMounted(() => {
         <h2 class="intl-section-title">{{ t('landing.international.sectionTitle') }}</h2>
         <div class="intl-grid">
           <div
-            v-for="item in allDiagramTypes"
+            v-for="item in eightThinkingMapCards"
             :key="item.type"
             class="intl-card"
             @click="handleCardClick(item)"
@@ -492,38 +398,43 @@ onMounted(() => {
             <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
             <p class="intl-card-desc">{{ t(item.descKey) }}</p>
           </div>
-
-          <!-- MindMate card -->
+        </div>
+        <h2 class="intl-section-title intl-section-title--secondary">
+          {{ t('landing.international.advancedDiagramsTitle') }}
+        </h2>
+        <div class="intl-grid">
           <div
-            class="intl-card intl-card--mindmate"
-            @click="handleMindMateClick"
+            v-for="item in advancedDiagramCards"
+            :key="item.type"
+            class="intl-card"
+            @click="handleCardClick(item)"
           >
-            <div class="intl-card-preview intl-card-preview--avatar">
-              <ElAvatar
-                :src="mindmateAvatar"
-                :size="80"
-                shape="square"
-                class="intl-mindmate-logo"
-              />
+            <div class="intl-card-preview">
+              <DiagramPreviewSvg :type="item.type" />
             </div>
-            <h3 class="intl-card-title">{{ t('landing.international.mindmateCard.title') }}</h3>
-            <p class="intl-card-desc">{{ t('landing.international.mindmateCard.desc') }}</p>
+            <h3 class="intl-card-title">{{ t(item.titleKey) }}</h3>
+            <p class="intl-card-desc">{{ t(item.descKey) }}</p>
           </div>
         </div>
       </div>
     </div>
-
-    <LanguageSettingsModal v-model="showLanguageSettingsModal" />
-    <IntlShareSiteModal v-model="showShareSiteModal" />
-    <AccountInfoModal
-      v-model:visible="showAccountModal"
-      @success="authStore.checkAuth()"
-    />
-    <UpdateLogModal v-model:visible="showUpdateLogModal" />
   </div>
 </template>
 
 <style scoped>
+.intl-sidebar-toggle {
+  --el-button-text-color: #57534e;
+  --el-button-hover-text-color: #1c1917;
+  --el-button-hover-bg-color: #f5f5f4;
+}
+
+.intl-sidebar-toggle--floating {
+  position: absolute;
+  top: 16px;
+  left: 16px;
+  z-index: 20;
+}
+
 .intl-landing {
   position: relative;
   isolation: isolate;
@@ -606,27 +517,6 @@ onMounted(() => {
   opacity: 1;
   animation: intlScrollWindSecondary 36s linear infinite;
   animation-delay: -18s;
-}
-
-.intl-top-right {
-  position: fixed;
-  top: 16px;
-  right: max(20px, env(safe-area-inset-right, 20px));
-  z-index: 100;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-
-.intl-avatar {
-  cursor: pointer;
-  background: #e7e5e4;
-  font-size: 1.5rem;
-  transition: box-shadow 0.2s;
-}
-
-.intl-avatar:hover {
-  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.25);
 }
 
 .intl-scroll {
@@ -790,7 +680,7 @@ onMounted(() => {
 
 .intl-prompt-section {
   max-width: 680px;
-  margin: 0 auto 36px;
+  margin: 0 auto;
   padding: 0 20px;
   position: relative;
 }
@@ -888,7 +778,7 @@ onMounted(() => {
 .intl-gallery {
   width: 100%;
   margin-top: 0;
-  padding: 24px 10px 16px;
+  padding: 20px 10px 16px;
   box-sizing: border-box;
 }
 
@@ -899,6 +789,10 @@ onMounted(() => {
   margin-bottom: 20px;
   padding-left: 10px;
   padding-right: 10px;
+}
+
+.intl-gallery .intl-section-title--secondary {
+  margin-top: 40px;
 }
 
 .intl-gallery .intl-grid {
@@ -969,24 +863,6 @@ onMounted(() => {
   width: 100%;
   height: 100%;
   pointer-events: none;
-}
-
-.intl-card-preview--avatar {
-  background: var(--el-fill-color-lighter, #f8f9fa);
-}
-
-.intl-mindmate-logo {
-  border-radius: 16px;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.1);
-}
-
-.intl-mindmate-logo :deep(img) {
-  object-fit: cover;
-}
-
-.intl-card--mindmate:hover .intl-mindmate-logo {
-  transform: scale(1.06);
-  transition: transform 0.3s ease;
 }
 
 .intl-card-title {

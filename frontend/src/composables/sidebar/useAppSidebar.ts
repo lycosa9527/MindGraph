@@ -64,11 +64,6 @@ export function useAppSidebar() {
     return 'mindmate'
   })
 
-  /** Simplified UI on MindMate: sidebar shows only chat history (no other module entries). */
-  const isSimplifiedMindmateOnlyNav = computed(
-    () => uiStore.uiVersion === 'international' && currentMode.value === 'mindmate'
-  )
-
   const isAuthenticated = computed(() => authStore.isAuthenticated)
 
   const hasOrganization = computed(() => {
@@ -233,11 +228,23 @@ export function useAppSidebar() {
     return !isCollapsed.value && expandedPanel.value === mode
   }
 
-  watch(currentMode, () => {
-    if (expandedPanel.value && expandedPanel.value !== currentMode.value) {
-      expandedPanel.value = null
-    }
-  })
+  /**
+   * Keep MindMate vs MindGraph history accordions in sync with the route: only one open,
+   * and the active app shows its history (ChatHistory vs DiagramHistory).
+   */
+  watch(
+    currentMode,
+    (mode) => {
+      if (mode === 'mindmate' || mode === 'mindgraph') {
+        expandedPanel.value = mode
+        return
+      }
+      if (expandedPanel.value === 'mindmate' || expandedPanel.value === 'mindgraph') {
+        expandedPanel.value = null
+      }
+    },
+    { immediate: true }
+  )
 
   return {
     t,
@@ -260,7 +267,6 @@ export function useAppSidebar() {
     featureMindbot,
     isCollapsed,
     currentMode,
-    isSimplifiedMindmateOnlyNav,
     hasOrganization,
     isAuthenticated,
     isAdminOrManager,

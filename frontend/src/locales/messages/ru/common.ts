@@ -112,8 +112,9 @@ export default {
   'settings.version.international': 'International Version',
   'landing.international.subtitle':
     'The Most Powerful AI Thinking Diagram Software in the Universe',
-  'landing.international.promptPlaceholder': 'Describe your diagram, or choose a type below...',
+  'landing.international.promptPlaceholder': 'Enter a topic or short description—or pick a diagram type below…',
   'landing.international.sectionTitle': 'Choose a Diagram Type',
+  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modules',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'Your virtual teaching and research partner',
