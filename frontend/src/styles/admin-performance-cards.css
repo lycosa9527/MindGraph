@@ -1,0 +1,331 @@
+/**
+ * Metric / diagram cards for Admin Performance tab (scoped by .admin-performance-swiss).
+ */
+.admin-performance-swiss .perf-layout {
+  display: flex;
+  flex-direction: column;
+  gap: 1.65rem;
+}
+
+.admin-performance-swiss .perf-card-group {
+  margin: 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+}
+
+.admin-performance-swiss .perf-card-group__title {
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  margin: 0 0 0.6rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid rgba(34, 211, 238, 0.28);
+  box-shadow: 0 1px 0 rgba(0, 0, 0, 0.12);
+}
+
+.admin-performance-swiss .perf-card-group__table {
+  margin-top: 1rem;
+}
+
+.admin-performance-swiss .perf-card-group__detail {
+  margin-top: 0.85rem;
+  padding: 0 0.15rem;
+}
+
+.admin-performance-swiss .perf-cards-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(232px, 1fr));
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+/**
+ * Platform band: first row keeps Redis + WebSockets side-by-side with matched height.
+ */
+.admin-performance-swiss .perf-cards-grid--platform {
+  grid-template-columns: 1fr;
+}
+
+.admin-performance-swiss .perf-platform-dual {
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, 1.4fr);
+  gap: 0.85rem;
+  align-items: stretch;
+}
+
+.admin-performance-swiss .perf-platform-dual--single {
+  grid-template-columns: 1fr;
+}
+
+@media (max-width: 640px) {
+  .admin-performance-swiss .perf-platform-dual {
+    grid-template-columns: 1fr;
+  }
+}
+
+.admin-performance-swiss .perf-metric-card {
+  --perf-card-edge: rgba(34, 211, 238, 0.22);
+  --perf-card-inner: rgba(15, 23, 42, 0.45);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  height: 100%;
+  align-self: stretch;
+  max-width: 100%;
+  padding: 0.8rem 0.95rem 0.9rem;
+  border-radius: 8px;
+  border: 1px solid var(--perf-card-edge);
+  background:
+    linear-gradient(145deg, rgba(34, 211, 238, 0.07) 0%, transparent 42%),
+    linear-gradient(210deg, rgba(167, 139, 250, 0.06) 0%, transparent 55%),
+    var(--perf-card-inner);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.06) inset,
+    0 12px 28px rgba(0, 0, 0, 0.28);
+  overflow: hidden;
+  transition:
+    border-color 0.2s ease,
+    box-shadow 0.2s ease;
+}
+
+.admin-performance-swiss .perf-metric-card::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 3px;
+  background: linear-gradient(
+    90deg,
+    rgba(227, 6, 19, 0.85) 0%,
+    rgba(34, 211, 238, 0.75) 38%,
+    rgba(167, 139, 250, 0.55) 100%
+  );
+  opacity: 0.92;
+  pointer-events: none;
+}
+
+.admin-performance-swiss .perf-metric-card::after {
+  content: '';
+  position: absolute;
+  inset: auto -35% -55% -35%;
+  height: 88px;
+  background: radial-gradient(ellipse at center, rgba(34, 211, 238, 0.1) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.admin-performance-swiss .perf-metric-card:hover {
+  border-color: rgba(34, 211, 238, 0.38);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.07) inset,
+    0 16px 36px rgba(0, 0, 0, 0.32),
+    0 0 24px rgba(34, 211, 238, 0.08);
+}
+
+.admin-performance-swiss .perf-metric-card--gauge {
+  min-height: 0;
+}
+
+.admin-performance-swiss .perf-metric-card__head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.5rem 0.65rem;
+  margin-bottom: 0.55rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid rgba(148, 163, 184, 0.12);
+}
+
+.admin-performance-swiss .perf-metric-card__head--solo {
+  justify-content: flex-start;
+}
+
+.admin-performance-swiss .perf-metric-card__label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  line-height: 1.35;
+  max-width: min(72%, 14rem);
+}
+
+.admin-performance-swiss .perf-metric-card__value {
+  flex-shrink: 0;
+  font-size: 1.4rem;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+  background: linear-gradient(180deg, #f8fafc 0%, #cbd5e1 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  filter: drop-shadow(0 0 14px rgba(34, 211, 238, 0.22));
+}
+
+.admin-performance-swiss .perf-metric-card__gauge {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  flex: 0 0 auto;
+  min-height: 0;
+  margin: 0.05rem 0 0.15rem;
+}
+
+.admin-performance-swiss .perf-metric-card__kpi {
+  position: relative;
+  z-index: 1;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.4;
+  margin: 0 0 0.65rem;
+  word-break: break-word;
+}
+
+.admin-performance-swiss .perf-metric-card__kpi-sep {
+  margin: 0 0.35rem;
+  color: rgba(148, 163, 184, 0.55);
+  font-weight: 500;
+}
+
+.admin-performance-swiss .perf-metric-card__kpi-muted {
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: #94a3b8;
+  margin-right: 0.35rem;
+}
+
+.admin-performance-swiss .perf-metric-card__frag-head {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.45rem;
+}
+
+.admin-performance-swiss .perf-metric-card__frag-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #94a3b8;
+}
+
+.admin-performance-swiss .perf-metric-card__frag-val {
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: #22d3ee;
+}
+
+.admin-performance-swiss .perf-metric-card__sub {
+  position: relative;
+  z-index: 1;
+  font-size: 0.78rem;
+  color: #cbd5e1;
+  margin-top: 0.55rem;
+  margin-bottom: 0;
+  line-height: 1.4;
+}
+
+.admin-performance-swiss .perf-metric-card__sub--center {
+  text-align: center;
+  margin-top: 0.35rem;
+}
+
+.admin-performance-swiss .perf-metric-card__hint {
+  position: relative;
+  z-index: 1;
+  margin-top: 0.5rem;
+  font-size: 0.72rem;
+  line-height: 1.35;
+}
+
+.admin-performance-swiss .perf-metric-card__footer {
+  margin-top: auto;
+  padding-top: 0.45rem;
+}
+
+.admin-performance-swiss .perf-stat-row {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.admin-performance-swiss .perf-stat-grid {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(5.25rem, 1fr));
+  gap: 0.45rem;
+  flex: 1 1 auto;
+  min-height: 0;
+  align-content: start;
+}
+
+.admin-performance-swiss .perf-stat-pill {
+  border: 1px solid rgba(34, 211, 238, 0.2);
+  background: linear-gradient(165deg, rgba(15, 23, 42, 0.72) 0%, rgba(15, 23, 42, 0.42) 100%);
+  border-radius: 6px;
+  padding: 0.45rem 0.65rem;
+  min-width: 0;
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.05) inset;
+}
+
+.admin-performance-swiss .perf-stat-pill__k {
+  display: block;
+  font-size: 0.5625rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #94a3b8;
+  margin-bottom: 0.22rem;
+}
+
+.admin-performance-swiss .perf-stat-pill__v {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: #5eead4;
+  letter-spacing: -0.01em;
+}
+
+.admin-performance-swiss .perf-progress-line {
+  line-height: 1;
+}
+
+.admin-performance-swiss .perf-progress-line .el-progress-bar__outer {
+  border-radius: 999px !important;
+  background-color: rgba(2, 6, 23, 0.55) !important;
+  overflow: hidden;
+}
+
+.admin-performance-swiss .perf-progress-line .el-progress-bar__inner {
+  border-radius: 999px !important;
+  box-shadow: 0 0 16px rgba(34, 211, 238, 0.35);
+}
+
+.admin-performance-swiss .el-progress-circle__track {
+  stroke: rgba(30, 41, 59, 0.9) !important;
+}
+
+.admin-performance-swiss .el-progress-circle__path {
+  filter: drop-shadow(0 0 6px rgba(34, 211, 238, 0.35));
+}
+
+.admin-performance-swiss .el-progress__text {
+  color: #e2e8f0 !important;
+  font-family: ui-monospace, 'JetBrains Mono', 'Cascadia Code', monospace;
+  font-size: 0.75rem !important;
+}

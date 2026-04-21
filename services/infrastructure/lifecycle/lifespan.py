@@ -576,6 +576,18 @@ async def lifespan(fastapi_app: FastAPI):
         if is_main_worker:
             logger.warning("Failed to start workshop cleanup scheduler: %s", e)
 
+    worker_perf_task: Optional[asyncio.Task[None]] = None
+    worker_perf_stop: Optional[asyncio.Event] = None
+    try:
+        from services.infrastructure.monitoring.worker_perf_heartbeat import (  # pylint: disable=import-outside-toplevel
+            start_worker_perf_heartbeat,
+        )
+
+        worker_perf_task, worker_perf_stop = start_worker_perf_heartbeat()
+    except Exception as e:  # pylint: disable=broad-except
+        if is_main_worker:
+            logger.warning("Failed to start admin worker perf heartbeat: %s", e)
+
     # Start inline recommendations cleanup scheduler (prunes stale sessions)
     try:
         asyncio.create_task(start_inline_rec_cleanup_scheduler(interval_minutes=30))
@@ -737,6 +749,15 @@ async def lifespan(fastapi_app: FastAPI):
                 pass
             if is_main_worker:
                 logger.debug("Workshop cleanup scheduler stopped")
+
+        if worker_perf_stop is not None:
+            worker_perf_stop.set()
+        if worker_perf_task:
+            worker_perf_task.cancel()
+            try:
+                await worker_perf_task
+            except asyncio.CancelledError:
+                pass
 
         # Stop backup scheduler (runs on all workers, but only lock holder executes)
         if backup_scheduler_task:

@@ -20,6 +20,7 @@ declare module 'vue' {
     AdminMindBotConfigDialog: typeof import('./components/admin/AdminMindBotConfigDialog.vue')['default']
     AdminMindBotTab: typeof import('./components/admin/AdminMindBotTab.vue')['default']
     AdminMindBotUsagePanel: typeof import('./components/admin/AdminMindBotUsagePanel.vue')['default']
+    AdminPerformanceTab: typeof import('./components/admin/AdminPerformanceTab.vue')['default']
     AdminRolesTab: typeof import('./components/admin/AdminRolesTab.vue')['default']
     AdminSchoolsTab: typeof import('./components/admin/AdminSchoolsTab.vue')['default']
     AdminTokensTab: typeof import('./components/admin/AdminTokensTab.vue')['default']

@@ -18,6 +18,7 @@ from . import (
     settings,
     stats,
     stats_trends,
+    performance,
     api_keys,
     bayi,
     teacher_usage,
@@ -35,6 +36,7 @@ admin_router.include_router(users.router)
 admin_router.include_router(settings.router)
 admin_router.include_router(stats.router)
 admin_router.include_router(stats_trends.router)
+admin_router.include_router(performance.router)
 admin_router.include_router(api_keys.router)
 admin_router.include_router(bayi.router)
 admin_router.include_router(teacher_usage.router)

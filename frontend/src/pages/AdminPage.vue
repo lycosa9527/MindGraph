@@ -16,6 +16,7 @@ import {
   ChatLineRound,
   Coin,
   DataAnalysis,
+  Odometer,
   Reading,
   School,
   Setting,
@@ -30,6 +31,7 @@ import AdminDatabaseTab from '@/components/admin/AdminDatabaseTab.vue'
 import AdminFeaturesTab from '@/components/admin/AdminFeaturesTab.vue'
 import AdminLibraryTab from '@/components/admin/AdminLibraryTab.vue'
 import AdminMarketsTab from '@/components/admin/AdminMarketsTab.vue'
+import AdminPerformanceTab from '@/components/admin/AdminPerformanceTab.vue'
 import AdminRolesTab from '@/components/admin/AdminRolesTab.vue'
 import AdminSchoolsTab from '@/components/admin/AdminSchoolsTab.vue'
 import AdminTokensTab from '@/components/admin/AdminTokensTab.vue'
@@ -66,6 +68,7 @@ const allTabsConfig: ReadonlyArray<{
   { name: 'library', labelKey: 'admin.library', icon: Reading, adminOnly: true },
   { name: 'markets', labelKey: 'admin.markets', icon: ShoppingCart, adminOnly: true },
   { name: 'database', labelKey: 'admin.database.tab', icon: Coin, adminOnly: true },
+  { name: 'performance', labelKey: 'admin.performance.tab', icon: Odometer, adminOnly: true },
   { name: 'gewe', labelKey: 'admin.geweWechat', icon: ChatLineRound, adminOnly: true },
 ]
 
@@ -199,6 +202,10 @@ onMounted(scheduleTabBarUpdate)
 
           <template v-else-if="activeTab === 'database'">
             <AdminDatabaseTab />
+          </template>
+
+          <template v-else-if="activeTab === 'performance'">
+            <AdminPerformanceTab />
           </template>
 
           <template v-else-if="activeTab === 'gewe'">

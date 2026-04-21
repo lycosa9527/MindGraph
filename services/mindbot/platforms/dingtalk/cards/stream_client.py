@@ -19,7 +19,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 
 from utils.env_helpers import env_int
 
@@ -224,6 +224,11 @@ class DingTalkStreamManager:
     def registered_client_count(self) -> int:
         """Number of DingTalk Stream SDK clients held in this process (one per ``client_id``)."""
         return len(self._clients)
+
+    def stream_clients_snapshot(self) -> List[Dict[str, Any]]:
+        """Return rows for admin metrics: each DingTalk app ``client_id`` and whether the task is running."""
+        ids = sorted(set(self._clients.keys()) | set(self._tasks.keys()))
+        return [{"client_id": cid, "running": self.is_client_running(cid)} for cid in ids]
 
     async def stop_all(self) -> None:
         """
