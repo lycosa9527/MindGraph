@@ -136,6 +136,8 @@ export default {
     'HTTP 接收模式：每校独立回调地址（编辑时可见）。Client Secret 用于验签；Dify 负责对话与回复。',
   'admin.mindbot.emptyState': '尚未配置任何学校的 MindBot。',
   'admin.mindbot.managerIntro': '为本组织配置钉钉 HTTP 机器人与 Dify。',
+  'admin.mindbot.managerReadOnlyIntro': '以下是本校的 MindBot 配置（只读）。如需修改，请联系平台管理员。',
+  'admin.mindbot.managerNoConfig': '本校尚未配置 MindBot。',
   'admin.mindbot.sectionDingTalk': '钉钉',
   'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': '学校',

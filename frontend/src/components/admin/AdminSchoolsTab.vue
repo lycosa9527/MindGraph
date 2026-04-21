@@ -343,6 +343,25 @@ onMounted(loadSchools)
             {{ row.user_count ?? 0 }}
           </template>
         </el-table-column>
+        <el-table-column
+          :label="t('admin.managers')"
+          min-width="140"
+        >
+          <template #default="{ row }">
+            <span
+              class="cursor-pointer hover:text-primary-500"
+              @click="openTrendModal(row)"
+            >
+              <template v-if="(row.managers as string[] | undefined)?.length">
+                {{ (row.managers as string[]).join(', ') }}
+              </template>
+              <span
+                v-else
+                class="text-gray-400 text-xs"
+              >—</span>
+            </span>
+          </template>
+        </el-table-column>
       </el-table>
     </el-card>
 

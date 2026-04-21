@@ -142,6 +142,9 @@ export default {
     'HTTP receive mode: one callback URL per school (shown when you edit). DingTalk app secret signs inbound requests; Dify powers replies.',
   'admin.mindbot.emptyState': 'No school has MindBot configured yet.',
   'admin.mindbot.managerIntro': 'Configure the DingTalk HTTP robot and Dify for your organization.',
+  'admin.mindbot.managerReadOnlyIntro':
+    "Your school's MindBot configuration is shown below (read-only). Contact the platform administrator to make changes.",
+  'admin.mindbot.managerNoConfig': 'No MindBot configuration has been set up for your school yet.',
   'admin.mindbot.sectionDingTalk': 'DingTalk',
   'admin.mindbot.sectionDify': 'Dify',
   'admin.mindbot.colOrg': 'Organization',

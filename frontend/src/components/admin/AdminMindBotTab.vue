@@ -684,9 +684,14 @@ defineExpose({
         class="border border-gray-200 dark:border-gray-700"
       >
         <template #header>
-          <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
-            {{ t('admin.mindbot.title') }}
-          </span>
+          <div class="min-w-0 space-y-1">
+            <span class="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {{ t('admin.mindbot.title') }}
+            </span>
+            <p class="text-xs leading-relaxed text-gray-500 dark:text-gray-400 font-normal">
+              {{ t('admin.mindbot.managerReadOnlyIntro') }}
+            </p>
+          </div>
         </template>
         <el-alert
           v-if="!Number.isFinite(managerOrgId)"
@@ -695,22 +700,79 @@ defineExpose({
           :title="t('admin.mindbot.managerNoOrg')"
           class="!items-start"
         />
-        <div
-          v-else
-          class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between"
-        >
-          <p class="text-sm text-gray-600 dark:text-gray-400 max-w-xl leading-relaxed">
-            {{ t('admin.mindbot.managerIntro') }}
-          </p>
-          <el-button
-            type="primary"
-            size="small"
-            class="mindbot-pill mindbot-pill--header shrink-0"
-            @click="openManagerMindbotDialog"
+        <template v-else>
+          <div
+            v-if="!loading && configs.length === 0"
+            class="rounded-md border border-dashed border-gray-200 dark:border-gray-600 py-14 px-4 text-center"
           >
-            {{ t('admin.mindbot.openSettings') }}
-          </el-button>
-        </div>
+            <p class="text-sm text-gray-500 dark:text-gray-400">
+              {{ t('admin.mindbot.managerNoConfig') }}
+            </p>
+          </div>
+          <el-table
+            v-else-if="configs.length > 0"
+            :data="configs"
+            stripe
+            size="small"
+            class="w-full"
+          >
+            <el-table-column
+              prop="bot_label"
+              :label="t('admin.mindbot.colBotLabel')"
+              min-width="120"
+            >
+              <template #default="{ row }">
+                <span class="text-gray-700 dark:text-gray-300">{{ row.bot_label || '—' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="dingtalk_robot_code"
+              :label="t('admin.mindbot.colRobot')"
+              min-width="130"
+            >
+              <template #default="{ row }">
+                <code class="text-xs font-mono text-gray-800 dark:text-gray-200">{{
+                  maskSensitiveDisplay(row.dingtalk_robot_code)
+                }}</code>
+              </template>
+            </el-table-column>
+            <el-table-column
+              :label="t('admin.mindbot.schoolCallbackUrl')"
+              min-width="260"
+            >
+              <template #default="{ row }">
+                <div class="flex items-center gap-2 min-w-0">
+                  <code class="text-xs font-mono text-gray-600 dark:text-gray-400 truncate">
+                    {{ buildCallbackUrlByToken(row.public_callback_token) }}
+                  </code>
+                  <el-button
+                    size="small"
+                    plain
+                    class="mindbot-pill shrink-0"
+                    @click="copyUrl(buildCallbackUrlByToken(row.public_callback_token))"
+                  >
+                    {{ t('admin.mindbot.copyUrl') }}
+                  </el-button>
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column
+              prop="is_enabled"
+              :label="t('admin.mindbot.colEnabled')"
+              width="100"
+            >
+              <template #default="{ row }">
+                <el-tag
+                  :type="row.is_enabled ? 'success' : 'info'"
+                  size="small"
+                  effect="plain"
+                >
+                  {{ row.is_enabled ? t('admin.enabled') : t('admin.disabled') }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </template>
       </el-card>
     </template>
 
@@ -789,7 +851,7 @@ defineExpose({
     </el-dialog>
 
     <AdminMindBotConfigDialog
-      v-if="isAdmin || isManager"
+      v-if="isAdmin"
       v-model="dialogVisible"
       v-model:form="form"
       v-model:form-org-id="formOrgId"

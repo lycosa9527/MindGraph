@@ -5,6 +5,17 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.96.0] - 2026-04-22
+
+### Added
+- **Admin / Schools — managers column** (`AdminSchoolsTab.vue`): schools table shows each organization’s manager display names (comma-separated); the cell remains clickable to open the existing trend/detail modal.
+
+### Changed
+- **MindBot admin API — mutating routes platform-admin only** (`routers/api/mindbot_admin.py`): create, update, delete, and rotate public callback token now use `require_admin` instead of `require_mindbot_admin_access`, so only platform administrators can change or remove configs and rotate tokens (list/read/analytics paths unchanged).
+- **Frontend / MindBot admin — manager read-only** (`AdminMindBotTab.vue`, `en/admin.ts`, `zh/admin.ts`): organization managers see a read-only summary (bot label, masked robot code, per-bot callback URL with copy, enabled flag) plus empty-state and intro copy; `AdminMindBotConfigDialog` is mounted only for platform admins.
+- **Admin organizations API** (`routers/auth/admin/organizations.py`): `GET /admin/organizations` adds a `managers` array (ordered display names) per school alongside `manager_count`; org user and manager listings use safer masking when `phone` is missing and fall back to email for display names where appropriate.
+- **Admin roles** (`routers/auth/admin/roles.py`): admin list aligns phone masking with the same missing-phone / email fallback behavior.
+
 ## [5.95.0] - 2026-04-21
 
 ### Added

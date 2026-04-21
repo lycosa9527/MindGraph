@@ -71,16 +71,18 @@ async def list_organizations_admin(
     for count_result in user_counts_query:
         user_counts_by_org[count_result.organization_id] = count_result.user_count
 
-    manager_counts_by_org = {}
-    manager_counts_stmt = (
-        select(User.organization_id, sa_count(User.id).label("manager_count"))
+    managers_by_org: dict[int, list[str]] = {}
+    managers_stmt = (
+        select(User.organization_id, User.name, User.phone, User.email)
         .where(User.organization_id.isnot(None), User.role == "manager")
-        .group_by(User.organization_id)
+        .order_by(User.organization_id, User.name)
     )
-    manager_counts_query = (await db.execute(manager_counts_stmt)).all()
+    managers_query = (await db.execute(managers_stmt)).all()
 
-    for count_result in manager_counts_query:
-        manager_counts_by_org[count_result.organization_id] = count_result.manager_count
+    for row in managers_query:
+        org_id_key = cast(int, row.organization_id)
+        display = row.name or row.phone or getattr(row, "email", None) or ""
+        managers_by_org.setdefault(org_id_key, []).append(display)
 
     token_stats_by_org = {}
 
@@ -116,7 +118,8 @@ async def list_organizations_admin(
 
     for org in orgs:
         user_count = user_counts_by_org.get(org.id, 0)
-        manager_count = manager_counts_by_org.get(org.id, 0)
+        org_managers = managers_by_org.get(cast(int, org.id), [])
+        manager_count = len(org_managers)
         org_token_stats = token_stats_by_org.get(org.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
 
         expires_at_val = cast(Optional[datetime], org.expires_at)
@@ -131,6 +134,7 @@ async def list_organizations_admin(
                 "invitation_code": mask_invitation_code(invite_raw) or "",
                 "user_count": user_count,
                 "manager_count": manager_count,
+                "managers": org_managers,
                 "expires_at": utc_to_beijing_iso(expires_at_val),
                 "is_active": org.is_active if hasattr(org, "is_active") else True,
                 "created_at": utc_to_beijing_iso(created_at_val),
@@ -618,11 +622,17 @@ async def list_organization_users(
     for user in users:
         # Get role (default to 'user' if not set)
         role = getattr(user, "role", "user") or "user"
+        phone = user.phone or getattr(user, "email", None) or ""
+        masked_phone = (
+            phone[:3] + "****" + phone[-4:]
+            if user.phone and len(user.phone) == 11
+            else phone
+        )
         result.append(
             {
                 "id": user.id,
-                "phone": user.phone[:3] + "****" + user.phone[-4:] if len(user.phone) == 11 else user.phone,
-                "name": user.name or user.phone,
+                "phone": masked_phone,
+                "name": user.name or phone,
                 "role": role,
                 "is_manager": role == "manager",
             }
@@ -655,11 +665,17 @@ async def list_organization_managers(
 
     result = []
     for user in managers:
+        phone = user.phone or getattr(user, "email", None) or ""
+        masked_phone = (
+            phone[:3] + "****" + phone[-4:]
+            if user.phone and len(user.phone) == 11
+            else phone
+        )
         result.append(
             {
                 "id": user.id,
-                "phone": user.phone[:3] + "****" + user.phone[-4:] if len(user.phone) == 11 else user.phone,
-                "name": user.name or user.phone,
+                "phone": masked_phone,
+                "name": user.name or phone,
             }
         )
 

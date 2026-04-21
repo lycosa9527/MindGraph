@@ -138,7 +138,7 @@ async def admin_list_mindbot_configs(
 async def admin_create_mindbot_config(
     payload: MindbotConfigCreatePayload,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_mindbot_admin_access),
+    user: User = Depends(require_admin),
 ) -> MindbotConfigResponse:
     """Create a new MindBot config for an organization (up to 5 per school)."""
     _require_mindbot_feature()
@@ -237,7 +237,7 @@ async def admin_update_mindbot_config(
     config_id: int,
     payload: MindbotConfigPayload,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_mindbot_admin_access),
+    user: User = Depends(require_admin),
 ) -> MindbotConfigResponse:
     _require_mindbot_feature()
     result = await db.execute(
@@ -407,7 +407,7 @@ async def admin_move_mindbot_config(
 async def admin_delete_mindbot_config(
     config_id: int,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_mindbot_admin_access),
+    user: User = Depends(require_admin),
 ) -> Response:
     _require_mindbot_feature()
     result = await db.execute(
@@ -441,7 +441,7 @@ async def admin_delete_mindbot_config(
 async def admin_rotate_mindbot_callback_token(
     config_id: int,
     db: AsyncSession = Depends(get_async_db),
-    user: User = Depends(require_mindbot_admin_access),
+    user: User = Depends(require_admin),
 ) -> MindbotConfigResponse:
     """Issue a new public callback token; DingTalk must use the new callback URL."""
     _require_mindbot_feature()
