@@ -4,11 +4,7 @@
  */
 import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
-import {
-  getConceptMapFocusQuestionDefault,
-  getConceptMapRootConceptText,
-  getConceptMapTopicRootRelationshipLabel,
-} from '@/stores/diagram/diagramDefaultLabels'
+import { getConceptMapFocusQuestionDefault } from '@/stores/diagram/diagramDefaultLabels'
 import type { DiagramType } from '@/types'
 
 function lt(key: string, lang: LocaleCode, params?: Record<string, unknown>): string {
@@ -21,8 +17,6 @@ function range(count: number, key: string, lang: LocaleCode): string[] {
 
 function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unknown>> {
   const fq = getConceptMapFocusQuestionDefault(lang)
-  const root = getConceptMapRootConceptText(lang)
-  const rootEdge = getConceptMapTopicRootRelationshipLabel(lang)
 
   return {
     circle_map: {
@@ -102,8 +96,8 @@ function templatesForLocale(lang: LocaleCode): Record<string, Record<string, unk
     },
     concept_map: {
       topic: fq,
-      concepts: [root],
-      relationships: [{ from: fq, to: root, label: rootEdge }],
+      concepts: [],
+      relationships: [],
       focus_question: fq,
     },
   }

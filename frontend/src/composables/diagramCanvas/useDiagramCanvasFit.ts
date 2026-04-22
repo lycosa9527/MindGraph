@@ -4,7 +4,7 @@ import { ref, watch } from 'vue'
 import { useVueFlow } from '@vue-flow/core'
 
 import { eventBus } from '@/composables/core/useEventBus'
-import { ANIMATION, FIT_PADDING, PANEL } from '@/config/uiConfig'
+import { ANIMATION, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { usePanelsStore } from '@/stores/panels'
 
@@ -224,7 +224,16 @@ export function useDiagramCanvasFit(options: {
   }
 
   function handleNodesInitialized(): void {
-    if (!fitViewOnInit.value || getNodes().length === 0) return
+    if (getNodes().length === 0) return
+    if (!fitViewOnInit.value) {
+      if (diagramStore.type === 'concept_map') {
+        hasInitialFitDoneForDiagram.value = true
+        setTimeout(() => {
+          setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
+        }, ANIMATION.FIT_VIEWPORT_DELAY)
+      }
+      return
+    }
     if (hasInitialFitDoneForDiagram.value) return
     hasInitialFitDoneForDiagram.value = true
     setTimeout(() => {
@@ -270,6 +279,7 @@ export function useDiagramCanvasFit(options: {
   watch(
     () => panelsStore.anyPanelOpen,
     (isOpen, wasOpen) => {
+      if (diagramStore.type === 'concept_map') return
       if (nodesLength.value > 0 && isOpen !== wasOpen) {
         setTimeout(() => fitDiagram(true), ANIMATION.PANEL_DELAY)
       }
@@ -283,6 +293,7 @@ export function useDiagramCanvasFit(options: {
       panelsStore.nodePalettePanel.isOpen,
     ],
     () => {
+      if (diagramStore.type === 'concept_map') return
       if (nodesLength.value > 0) {
         setTimeout(() => fitDiagram(true), ANIMATION.PANEL_DELAY)
       }
@@ -292,6 +303,7 @@ export function useDiagramCanvasFit(options: {
   watch(
     () => presentationRailOpen.value,
     (active, wasActive) => {
+      if (diagramStore.type === 'concept_map') return
       if (active === wasActive) return
       if (active && getNodes().length > 0) {
         setTimeout(() => fitDiagram(true), ANIMATION.FIT_VIEWPORT_DELAY)
@@ -302,6 +314,7 @@ export function useDiagramCanvasFit(options: {
   watch(
     () => Boolean(presentationRailOpen.value && presentationToolIsNotTimer.value),
     () => {
+      if (diagramStore.type === 'concept_map') return
       if (!presentationRailOpen.value || getNodes().length === 0) return
       setTimeout(() => fitDiagram(true), ANIMATION.FIT_VIEWPORT_DELAY)
     }

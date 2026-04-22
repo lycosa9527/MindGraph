@@ -44,7 +44,14 @@ export function useAppSidebar() {
   const currentMode = computed(() => {
     const path = router.currentRoute.value.path
     if (path.startsWith('/mindmate')) return 'mindmate'
-    if (path.startsWith('/mindgraph') || path.startsWith('/canvas')) return 'mindgraph'
+    if (
+      path.startsWith('/mindgraph') ||
+      path.startsWith('/canvas') ||
+      path.startsWith('/m/mindgraph') ||
+      path.startsWith('/m/canvas')
+    ) {
+      return 'mindgraph'
+    }
     if (path.startsWith('/knowledge-space')) return 'knowledge-space'
     if (path.startsWith('/chunk-test')) return 'chunk-test'
     if (path.startsWith('/askonce')) return 'askonce'

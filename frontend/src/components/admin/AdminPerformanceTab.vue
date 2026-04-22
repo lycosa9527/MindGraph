@@ -244,21 +244,6 @@ const diskExtraVolumes = computed(() => {
   }>
 })
 
-const llmRows = computed(() => {
-  const llm = latest.value?.llm as Record<string, unknown> | undefined
-  if (!llm || typeof llm !== 'object') return []
-  if ('error' in llm && Object.keys(llm).length === 1) return []
-  return Object.entries(llm).map(([model, v]) => {
-    const row = v as Record<string, unknown>
-    return {
-      model,
-      requests: row.total_requests,
-      success: row.success_rate,
-      circuit: String(row.circuit_state ?? '—'),
-    }
-  })
-})
-
 const wsExtraLines = computed(() => {
   const w = ws.value
   if (!w || w.error) return [] as string[]
@@ -770,40 +755,6 @@ const progressColors = [
             </div>
           </div>
         </section>
-      </div>
-
-      <div
-        v-if="llmRows.length"
-        class="perf-inset mt-6"
-      >
-        <div class="perf-section-label">{{ t('admin.performance.sectionLlm') }}</div>
-        <el-table
-          :data="llmRows"
-          size="small"
-          class="perf-mono mt-2"
-          stripe
-        >
-          <el-table-column
-            prop="model"
-            :label="t('admin.performance.colModel')"
-            min-width="140"
-          />
-          <el-table-column
-            prop="requests"
-            :label="t('admin.performance.colRequests')"
-            width="100"
-          />
-          <el-table-column
-            prop="success"
-            :label="t('admin.performance.colSuccessPct')"
-            width="100"
-          />
-          <el-table-column
-            prop="circuit"
-            :label="t('admin.performance.colCircuit')"
-            width="100"
-          />
-        </el-table>
       </div>
     </div>
   </div>

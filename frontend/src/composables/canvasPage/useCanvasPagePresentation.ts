@@ -10,6 +10,7 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config'
 import { DEFAULT_PRESENTATION_HIGHLIGHTER_COLOR } from '@/config/presentationHighlighter'
 import { PRESENTATION_Z } from '@/config/uiConfig'
+import { useDiagramStore } from '@/stores'
 import {
   PRESENTATION_POINTER_SCALE_STEP,
   usePresentationPointerStore,
@@ -31,6 +32,7 @@ const SPOTLIGHT_OUTER_RADIUS_PX = 195
 const LASER_CURSOR_BASE_PX = 22
 
 export function useCanvasPagePresentation() {
+  const diagramStore = useDiagramStore()
   const canvasZoom = ref<number | null>(null)
   const handToolActive = ref(false)
   /** When true, the right vertical presentation tools rail is visible. */
@@ -253,7 +255,7 @@ export function useCanvasPagePresentation() {
   function handleStartPresentation() {
     const wasOpen = presentationRailOpen.value
     presentationRailOpen.value = !presentationRailOpen.value
-    if (wasOpen) {
+    if (wasOpen && diagramStore.type !== 'concept_map') {
       nextTick().then(() => {
         setTimeout(emitFitToCanvas, ANIMATION.FIT_VIEWPORT_DELAY)
       })

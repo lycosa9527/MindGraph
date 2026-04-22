@@ -341,11 +341,34 @@ export function stripConceptMapFocusQuestionPrefix(raw: string): string {
       return trimmed.slice(prefix.length).trim()
     }
   }
+  const ZH_SC_PREFIX_ASCII = '焦点问题:'
+  if (trimmed.startsWith(ZH_SC_PREFIX_ASCII)) {
+    return trimmed.slice(ZH_SC_PREFIX_ASCII.length).trim()
+  }
   return trimmed
 }
 
+/**
+ * Splits a stored focus-question label into a fixed i18n prefix, editable body (any prior locale
+ * prefix is stripped), and the placeholder suffix for the current UI language.
+ */
+export function getConceptMapFocusQuestionEditableSplit(
+  fullLabel: string,
+  uiLang: LocaleCode
+): { prefix: string; body: string; defaultSuffix: string } {
+  return {
+    prefix: getConceptMapFocusQuestionPrefix(uiLang),
+    body: stripConceptMapFocusQuestionPrefix(fullLabel),
+    defaultSuffix: getConceptMapFocusQuestionSuffix(uiLang),
+  }
+}
+
+const LEGACY_ZH_SC_FOCUS_QUESTION_DEFAULT = '焦点问题:请输入'
+
 export function isDefaultFocusQuestionLabel(label: string): boolean {
-  return ALL_FOCUS_QUESTION_DEFAULTS.includes(label.trim())
+  const t = label.trim()
+  if (ALL_FOCUS_QUESTION_DEFAULTS.includes(t)) return true
+  return t === LEGACY_ZH_SC_FOCUS_QUESTION_DEFAULT
 }
 
 export function focusQuestionMutedParts(label: string): { prefix: string; suffix: string } | null {

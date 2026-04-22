@@ -47,6 +47,7 @@ import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
+import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 
@@ -263,14 +264,17 @@ watch(
 )
 
 function handleBack() {
-  // Use browser history to go back to where user came from
-  // (could be /mindgraph or /mindmate depending on navigation path)
-  // Fallback to /mindgraph if no history (e.g., direct URL access)
-  if (window.history.length > 1) {
+  const entry = sessionStorage.getItem(CANVAS_ENTRY_PATH_KEY)
+  if (
+    entry &&
+    isMindGraphLandingPath(entry) &&
+    typeof window !== 'undefined' &&
+    window.history.length > 1
+  ) {
     router.back()
-  } else {
-    router.push('/mindgraph')
+    return
   }
+  router.replace({ name: 'MindGraph' })
 }
 
 function handleFileNameClick() {

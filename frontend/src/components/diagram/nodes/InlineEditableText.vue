@@ -17,7 +17,10 @@ import { joinLabelAndMathSnippet } from '@/composables/core/markdownKatexDelimit
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramNodeMarkdownDisplay } from '@/composables/diagram/useDiagramNodeMarkdownDisplay'
 import { useDiagramStore } from '@/stores'
-import { shouldReplaceLabelWithMathInsert } from '@/stores/diagram/diagramDefaultLabels'
+import {
+  shouldReplaceLabelWithMathInsert,
+  stripConceptMapFocusQuestionPrefix,
+} from '@/stores/diagram/diagramDefaultLabels'
 import { shouldPreferSingleLineNoWrap } from '@/stores/specLoader/textMeasurement'
 
 const props = withDefaults(
@@ -62,6 +65,11 @@ const props = withDefaults(
     /** When text equals prefix+suffix, display suffix with muted color (e.g. concept map focus placeholder) */
     mutedTailSplit?: { prefix: string; suffix: string } | null
     /**
+     * Concept map focus-question: fixed i18n prefix, editable body (suffix is placeholder for empty).
+     * When set, only the body is edited; the saved value is prefix + body.
+     */
+    focusQuestionEditableSplit?: { prefix: string; body: string; defaultSuffix: string } | null
+    /**
      * When true, display mode renders Markdown + KaTeX (sanitized). Ignored when mutedTailSplit
      * is active or truncate is true. noWrap does not disable rendering so inline math works in
      * circle/bubble-style nodes.
@@ -91,6 +99,7 @@ const props = withDefaults(
     readonly: false,
     textDecoration: 'none',
     mutedTailSplit: null,
+    focusQuestionEditableSplit: null,
     renderMarkdown: false,
     autoWrap: false,
   }
@@ -126,6 +135,9 @@ const fieldAriaLabel = computed(() => resolvedPlaceholder.value)
 const localIsEditing = ref(false)
 const editText = ref(props.text)
 const originalText = ref(props.text)
+/** Concept map focus-question: editable segment only; full snapshot at edit start is originalComposed */
+const editBody = ref('')
+const originalComposed = ref('')
 const inputRef = ref<HTMLInputElement | HTMLTextAreaElement | null>(null)
 const displayRef = ref<HTMLElement | null>(null)
 const wrapperRef = ref<HTMLDivElement | null>(null)
@@ -171,18 +183,21 @@ function handleEditRequested(payload: { nodeId?: string }): void {
 
 // Update text when prop changes (and not editing)
 watch(
-  () => props.text,
-  (newText) => {
-    if (!localIsEditing.value) {
-      editText.value = newText
-      originalText.value = newText
+  () => [props.text, props.focusQuestionEditableSplit] as const,
+  () => {
+    if (localIsEditing.value) return
+    editText.value = props.text
+    originalText.value = props.text
+    if (props.focusQuestionEditableSplit) {
+      editBody.value = props.focusQuestionEditableSplit.body
     }
-  }
+  },
+  { deep: true, immediate: true }
 )
 
 // Dynamically adjust input width as user types
 watch(
-  () => editText.value,
+  () => [editText.value, editBody.value] as const,
   () => {
     if (localIsEditing.value) {
       updateInputWidth()
@@ -237,10 +252,19 @@ onMounted(() => {
   })
 })
 
+const isFocusQuestionSplitMode = computed(() => props.focusQuestionEditableSplit != null)
+
 const shouldPreventWrap = computed(() => {
   if (props.noWrap || props.truncate) return false
   if (props.autoWrap) return false
-  const textToCheck = localIsEditing.value ? editText.value : props.text
+  const split = props.focusQuestionEditableSplit
+  const textToCheck = localIsEditing.value
+    ? isFocusQuestionSplitMode.value
+      ? editBody.value
+      : editText.value
+    : isFocusQuestionSplitMode.value && split
+      ? split.prefix + split.body
+      : props.text
   const maxWidthPx = parseInt(props.maxWidth, 10) || 200
   return shouldPreferSingleLineNoWrap(textToCheck || ' ', maxWidthPx, displayFontSizePx.value, {
     fontWeight: String(displayFontWeight.value),
@@ -249,13 +273,18 @@ const shouldPreventWrap = computed(() => {
 })
 
 const showMutedTailSplit = computed(() => {
+  if (isFocusQuestionSplitMode.value) return false
   const s = props.mutedTailSplit
   if (!s) return false
   return props.text === s.prefix + s.suffix
 })
 
 const markdownDisplayEnabled = computed(
-  () => props.renderMarkdown === true && !showMutedTailSplit.value && !props.truncate
+  () =>
+    props.renderMarkdown === true &&
+    !isFocusQuestionSplitMode.value &&
+    !showMutedTailSplit.value &&
+    !props.truncate
 )
 
 const { richHtml: displayMarkdownHtml, needsRichMarkdown } = useDiagramNodeMarkdownDisplay(
@@ -324,8 +353,14 @@ function startEditing(): void {
     }
   }
 
+  if (props.focusQuestionEditableSplit) {
+    editBody.value = props.focusQuestionEditableSplit.body
+    originalComposed.value = props.text
+  } else {
+    originalText.value = editText.value
+  }
+
   localIsEditing.value = true
-  originalText.value = editText.value
 
   // Emit event for tracking
   eventBus.emit('node_editor:opening', { nodeId: props.nodeId })
@@ -347,6 +382,29 @@ function startEditing(): void {
  */
 function saveEdit(): void {
   if (!localIsEditing.value) return
+
+  if (props.focusQuestionEditableSplit) {
+    const { prefix, defaultSuffix } = props.focusQuestionEditableSplit
+    const trimmed = editBody.value.trim()
+    const bodyPart = trimmed === '' ? defaultSuffix : trimmed
+    let finalText = prefix + bodyPart
+    if (finalText.length < props.minLength) {
+      editBody.value = stripConceptMapFocusQuestionPrefix(originalComposed.value)
+      localIsEditing.value = false
+      eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+      emit('cancel')
+      return
+    }
+    if (finalText.length > props.maxLength) {
+      finalText = finalText.slice(0, props.maxLength)
+    }
+    localIsEditing.value = false
+    eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+    if (finalText !== originalComposed.value) {
+      emit('save', finalText)
+    }
+    return
+  }
 
   const trimmedText = editText.value.trim()
 
@@ -378,7 +436,11 @@ function saveEdit(): void {
 function cancelEdit(): void {
   if (!localIsEditing.value) return
 
-  editText.value = originalText.value
+  if (props.focusQuestionEditableSplit) {
+    editBody.value = stripConceptMapFocusQuestionPrefix(originalComposed.value)
+  } else {
+    editText.value = originalText.value
+  }
   localIsEditing.value = false
 
   // Emit event for workshop tracking (editing stopped)
@@ -402,12 +464,26 @@ function handleKeydown(event: KeyboardEvent): void {
   } else if (event.key === 'Tab') {
     event.preventDefault()
     event.stopPropagation()
-    eventBus.emit('node_editor:tab_pressed', {
-      nodeId: props.nodeId,
-      draftText: editText.value,
-    })
-    if (props.syncBaselineOnTab) {
-      originalText.value = editText.value
+    if (props.focusQuestionEditableSplit) {
+      const s = props.focusQuestionEditableSplit
+      const t = editBody.value.trim()
+      const bodyPart = t === '' ? s.defaultSuffix : t
+      const draft = s.prefix + bodyPart
+      eventBus.emit('node_editor:tab_pressed', {
+        nodeId: props.nodeId,
+        draftText: draft,
+      })
+      if (props.syncBaselineOnTab) {
+        originalComposed.value = draft
+      }
+    } else {
+      eventBus.emit('node_editor:tab_pressed', {
+        nodeId: props.nodeId,
+        draftText: editText.value,
+      })
+      if (props.syncBaselineOnTab) {
+        originalText.value = editText.value
+      }
     }
   }
 }
@@ -483,8 +559,12 @@ const unsubEditRequested = eventBus.on('node:edit_requested', handleEditRequeste
 function handleRecommendationApplied(payload: { nodeId?: string; text?: string }): void {
   if (payload?.nodeId !== props.nodeId || !payload?.text) return
   if (!localIsEditing.value) return
-  editText.value = payload.text
-  originalText.value = payload.text
+  if (props.focusQuestionEditableSplit) {
+    editBody.value = stripConceptMapFocusQuestionPrefix(payload.text)
+  } else {
+    editText.value = payload.text
+    originalText.value = payload.text
+  }
   localIsEditing.value = false
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
 }
@@ -496,14 +576,21 @@ const unsubRecommendationApplied = eventBus.on(
 function insertSnippetAtCaret(snippet: string): boolean {
   const el = inputRef.value
   if (!el || props.readonly) return false
+  const split = props.focusQuestionEditableSplit
+  const effective = split ? split.prefix + editBody.value : editText.value
   if (
     diagramStore.type &&
-    shouldReplaceLabelWithMathInsert(diagramStore.type, props.nodeId, editText.value)
+    shouldReplaceLabelWithMathInsert(diagramStore.type, props.nodeId, effective)
   ) {
-    editText.value = snippet
+    if (split) {
+      editBody.value = snippet
+    } else {
+      editText.value = snippet
+    }
+    const lenField = split ? editBody : editText
     nextTick(() => {
       el.focus()
-      const len = editText.value.length
+      const len = lenField.value.length
       el.setSelectionRange(len, len)
       updateInputWidth()
     })
@@ -511,15 +598,20 @@ function insertSnippetAtCaret(snippet: string): boolean {
   }
   const start = el.selectionStart ?? 0
   const end = el.selectionEnd ?? 0
-  const before = editText.value.slice(0, start)
-  const after = editText.value.slice(end)
+  const cur = split ? editBody.value : editText.value
+  const before = cur.slice(0, start)
+  const after = cur.slice(end)
   const middle = joinLabelAndMathSnippet(before, snippet)
   let merged = middle + after
   if (merged.length > props.maxLength) {
     merged = merged.slice(0, props.maxLength)
   }
-  editText.value = merged
-  const newPos = Math.min(start + (middle.length - before.length), editText.value.length)
+  if (split) {
+    editBody.value = merged
+  } else {
+    editText.value = merged
+  }
+  const newPos = Math.min(start + (middle.length - before.length), merged.length)
   nextTick(() => {
     el.focus()
     el.setSelectionRange(newPos, newPos)
@@ -576,7 +668,7 @@ onUnmounted(() => {
         padding: '2px 4px',
       }"
     >
-      {{ editText || 'M' }}
+      {{ (focusQuestionEditableSplit && localIsEditing ? editBody : editText) || 'M' }}
     </span>
 
     <!-- Edit mode: show input with ghost text -->
@@ -586,8 +678,38 @@ onUnmounted(() => {
       class="inline-edit-wrapper"
       :style="wrapperStyle"
     >
-      <!-- Input container with ghost text overlay -->
-      <div class="inline-edit-container">
+      <div
+        v-if="focusQuestionEditableSplit"
+        class="inline-edit-container inline-edit-container--focus-question"
+      >
+        <span
+          class="inline-edit-focus-question-prefix"
+          aria-hidden="true"
+          >{{ focusQuestionEditableSplit.prefix }}</span
+        >
+        <input
+          :id="fieldHtmlId"
+          ref="inputRef"
+          v-model="editBody"
+          dir="auto"
+          type="text"
+          class="inline-edit-input"
+          :class="{ 'whitespace-nowrap': noWrap || shouldPreventWrap }"
+          :style="inputStyle"
+          :name="fieldHtmlId"
+          :placeholder="focusQuestionEditableSplit.defaultSuffix"
+          :aria-label="fieldAriaLabel"
+          :maxlength="maxLength"
+          @keydown="handleKeydown"
+          @blur="handleBlur"
+          @mousedown.stop
+          @click.stop
+        />
+      </div>
+      <div
+        v-else
+        class="inline-edit-container"
+      >
         <textarea
           v-if="multiline"
           :id="fieldHtmlId"
@@ -660,6 +782,21 @@ onUnmounted(() => {
         <span>{{ mutedTailSplit.prefix }}</span>
         <span class="inline-edit-muted-suffix">{{ mutedTailSplit.suffix }}</span>
       </template>
+      <template v-else-if="isFocusQuestionSplitMode && focusQuestionEditableSplit">
+        <span
+          class="inline-edit-focus-question-prefix"
+          aria-hidden="true"
+          >{{ focusQuestionEditableSplit.prefix }}</span
+        >
+        <span
+          :class="
+            focusQuestionEditableSplit.body === focusQuestionEditableSplit.defaultSuffix
+              ? 'inline-edit-muted-suffix'
+              : ''
+          "
+          >{{ focusQuestionEditableSplit.body }}</span
+        >
+      </template>
       <!-- eslint-disable vue/no-v-html -- Sanitized via useMarkdown + DOMPurify (KaTeX HTML allowlist) -->
       <div
         v-else-if="markdownDisplayEnabled && needsRichMarkdown"
@@ -701,6 +838,24 @@ onUnmounted(() => {
   display: inline-block;
   width: 100%; /* Use full wrapper width */
   max-width: 100%;
+}
+
+.inline-edit-container--focus-question {
+  display: inline-flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  width: auto;
+  max-width: 100%;
+}
+
+.inline-edit-focus-question-prefix {
+  user-select: none;
+  flex-shrink: 0;
+  cursor: default;
+  pointer-events: none;
 }
 
 .inline-edit-input {

@@ -665,7 +665,7 @@ onUnmounted(() => {
           class="w-full flex-1 min-h-0"
           :show-background="true"
           :show-minimap="false"
-          :fit-view-on-init="true"
+          :fit-view-on-init="diagramStore.type !== 'concept_map'"
           :hand-tool-active="handToolActive"
           :collab-locked-node-ids="collabLockedNodeIds"
           :presentation-rail-open="presentationRailOpen"

@@ -336,7 +336,7 @@ export default {
   'diagram.alternativeDimensions.bridgeAnalogiesTitle': '本主题的其他可能类比关系：',
   'diagram.alternativeDimensions.treeMapTitle': '本主题的其他可能分类维度：',
   'diagram.bridgeMap.alternativesEmpty': '[替代关系将在此显示]',
-  'diagram.conceptMap.focusQuestionPrefix': '焦点问题:',
+  'diagram.conceptMap.focusQuestionPrefix': '焦点问题：',
   'diagram.conceptMap.focusQuestionSuffix': '请输入',
   'diagram.conceptMap.rootConcept': '根概念',
   'diagram.conceptMap.topicRootRelationship': '的根概念',

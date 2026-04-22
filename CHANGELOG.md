@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.99.0] - 2026-04-22
+
+### Added
+- **Frontend / Canvas — entry-aware back navigation** (`frontend/src/utils/canvasBackNavigation.ts`, `frontend/src/router/index.ts`, `CanvasTopBar.vue`, `MobileLayout.vue`): session storage records the route that opened `/canvas` or `/m/canvas`; **Back** uses browser history when the user came from a MindGraph landing path, otherwise **replace** navigates to the MindGraph hub (desktop `MindGraph` route, mobile `/m/mindgraph`) so the stack does not accumulate duplicate entries.
+
+### Changed
+- **Frontend / Concept map — focus question editing** (`InlineEditableText.vue`, `ConceptNode.vue`, `diagramDefaultLabels.ts`): focus-topic labels use a split-edit mode — fixed i18n **prefix**, editable **body**, and language-aware placeholder **suffix**; `stripConceptMapFocusQuestionPrefix` also strips a legacy ASCII-colon Simplified Chinese prefix; `isDefaultFocusQuestionLabel` treats the legacy default string as default; new concept map templates start with **empty** `concepts` / `relationships` arrays (`defaultTemplates.ts`).
+- **Frontend / Concept map — viewport & presentation** (`useDiagramCanvasFit.ts`, `CanvasPage.vue`, `MobileCanvasPage.vue`, `useCanvasPagePresentation.ts`): initial **fit-to-view** is off for concept maps (default zoom/center instead); panel open/close, node palette, and presentation-rail toggles **skip refit** on concept maps; closing the presentation rail no longer triggers an extra fit on concept maps.
+- **Frontend / Mobile canvas routing** (`useAppSidebar.ts`, `useDiagramAutoSave.ts`, `router/index.ts`): `/m/mindgraph` and `/m/canvas` are treated as MindGraph mode in the sidebar; first successful save **replace**s to the mobile canvas path when already on mobile; authenticated users hitting **guest-only** routes on mobile redirect to **`/m`** instead of MindMate.
+- **Frontend / i18n (zh)** (`locales/messages/zh/canvas.ts`): concept map focus question prefix uses a fullwidth colon (**：**).
+
+### Removed
+- **Frontend / Admin Performance** (`AdminPerformanceTab.vue`): removed the **LLM** metrics table block (per-model requests / success / circuit columns).
+
 ## [5.98.0] - 2026-04-22
 
 ### Added

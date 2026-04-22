@@ -24,6 +24,7 @@ import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
 import { useLLMResultsStore } from '@/stores/llmResults'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
+import { canvasEditorPathForRoute } from '@/utils/canvasBackNavigation'
 
 import { useLanguage } from '../core/useLanguage'
 import { useDiagramSpecForSave } from './useDiagramSpecForSave'
@@ -216,7 +217,8 @@ export function useDiagramAutoSave(options: UseDiagramAutoSaveOptions = {}) {
           diagramId: result.diagramId,
         })
         if (result.action === 'saved' && result.diagramId) {
-          router.replace({ path: '/canvas', query: { diagramId: result.diagramId } })
+          const canvasPath = canvasEditorPathForRoute(route.path)
+          router.replace({ path: canvasPath, query: { diagramId: result.diagramId } })
         }
         return { saved: true, reason: 'success' }
       }

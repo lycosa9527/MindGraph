@@ -16,7 +16,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
 import { useDiagramStore } from '@/stores'
-import { focusQuestionMutedParts } from '@/stores/diagram/diagramDefaultLabels'
+import { getConceptMapFocusQuestionEditableSplit } from '@/stores/diagram/diagramDefaultLabels'
+import { useUIStore } from '@/stores/ui'
 import type { MindGraphNodeProps } from '@/types'
 import { getBorderStyleProps } from '@/utils/borderStyleUtils'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -30,6 +31,7 @@ const conceptNodeRef = ref<HTMLElement | null>(null)
 useNodeDimensions(conceptNodeRef, props.id)
 
 const diagramStore = useDiagramStore()
+const uiStore = useUIStore()
 
 const { getNodeStyle } = useTheme({
   diagramType: computed(() => props.data.diagramType),
@@ -49,10 +51,10 @@ const conceptMapSyncBaselineOnTab = computed(
 )
 const defaultStyle = computed(() => getNodeStyle(isTopic.value ? 'topic' : 'branch'))
 
-const focusQuestionMutedTailSplit = computed(() => {
-  if (!isTopic.value) return null
+const focusQuestionEditableSplit = computed(() => {
+  if (!isConceptMapFocusTopic.value) return null
   const label = props.data.label ?? ''
-  return focusQuestionMutedParts(label)
+  return getConceptMapFocusQuestionEditableSplit(label, uiStore.language)
 })
 
 /** Wide caps so Markdown/KaTeX can size the pill to real content (still bounded for canvas) */
@@ -326,7 +328,7 @@ function handleLinkDrop(event: DragEvent) {
         :max-width="conceptMapInlineMaxWidth"
         :text-align="data.style?.textAlign || 'center'"
         :text-decoration="data.style?.textDecoration || 'none'"
-        :muted-tail-split="focusQuestionMutedTailSplit"
+        :focus-question-editable-split="focusQuestionEditableSplit"
         :sync-baseline-on-tab="conceptMapSyncBaselineOnTab"
         render-markdown
         @save="handleTextSave"

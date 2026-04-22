@@ -7,6 +7,7 @@ import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
 import { useUIStore } from '@/stores/ui'
+import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
 
@@ -287,11 +288,21 @@ const router = createRouter({
 })
 
 // Navigation guards
-router.beforeEach(async (to, _from, next) => {
+router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
   const uiStore = useUIStore()
   const { isMobile } = useMobileDetect()
+
+  const fromPath = from.path
+  const toPath = to.path
+  const fromCanvas = fromPath === '/canvas' || fromPath === '/m/canvas'
+  const toCanvas = toPath === '/canvas' || toPath === '/m/canvas'
+  if (fromCanvas && !toCanvas) {
+    sessionStorage.removeItem(CANVAS_ENTRY_PATH_KEY)
+  } else if (toCanvas && !fromCanvas) {
+    sessionStorage.setItem(CANVAS_ENTRY_PATH_KEY, fromPath)
+  }
 
   // Landing `/`: guests → auth; signed-in → mobile hub or MindMate (desktop)
   if (to.name === 'Main') {
@@ -466,10 +477,13 @@ router.beforeEach(async (to, _from, next) => {
       return next({ name: 'MindMate' })
     }
   }
-  // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then MindMate
+  // Guest-only routes (/auth, /demo; /login redirects to /auth): confirm session, then app home
   if (to.meta.guestOnly) {
     const isAuthenticated = await authStore.checkAuth()
     if (isAuthenticated) {
+      if (isMobile.value) {
+        return next({ path: '/m' })
+      }
       return next({ name: 'MindMate' })
     }
   }
