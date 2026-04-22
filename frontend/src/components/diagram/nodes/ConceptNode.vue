@@ -193,7 +193,7 @@ function handleLinkDrop(event: DragEvent) {
     <!-- Menu icon - for link creation only (drag to another node). nodrag prevents node drag when dragging from icon. Container has pointer-events:none so clicks pass through to node body for select/reposition; icon has pointer-events:auto for drag. -->
     <div
       v-show="selected && !isEditing"
-      class="concept-link-icon absolute left-1/2"
+      class="concept-link-icon absolute"
     >
       <ElIcon
         :size="20"
@@ -379,6 +379,7 @@ function handleLinkDrop(event: DragEvent) {
 
 .concept-link-icon {
   bottom: 100%;
+  left: 50%;
   margin-bottom: 1px;
   transform: translateX(-50%);
   z-index: 10;

@@ -41,7 +41,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
       label: label || '',
       ...extra,
     }
-    if (ctx.type.value === 'concept_map') {
+    if (ctx.type.value === 'concept_map' && !conn.arrowheadLocked) {
       const sourceNode = ctx.data.value.nodes.find((n) => n.id === sourceId)
       const targetNode = ctx.data.value.nodes.find((n) => n.id === targetId)
       if (sourceNode && targetNode) {

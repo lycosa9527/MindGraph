@@ -6,7 +6,7 @@
  */
 import { computed, inject, nextTick, ref, watch } from 'vue'
 
-import { EdgeLabelRenderer, type EdgeProps, getBezierPath } from '@vue-flow/core'
+import { EdgeLabelRenderer, type EdgeProps, getBezierPath, useVueFlow } from '@vue-flow/core'
 
 import { ElIcon } from 'element-plus'
 
@@ -16,10 +16,7 @@ import {
   CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
   type RelationshipLinkDragPayload,
 } from '@/composables/diagramCanvas/conceptMapLinkMime'
-import {
-  getConceptNodeCenter,
-  getPositionsFromAngle,
-} from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
+import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
@@ -39,6 +36,7 @@ const generatingConnectionIds = inject<{ value: Set<string> }>(
 
 const diagramStore = useDiagramStore()
 const { t } = useLanguage()
+const { edges: vueFlowEdges } = useVueFlow()
 
 const isEdgeSelected = computed(() => diagramStore.selectedConnectionId === props.id)
 
@@ -153,29 +151,24 @@ const curvature = computed(() => {
 /**
  * When this edge was created by dragging from a relationship label, route the bezier
  * visually FROM that parent label's midpoint instead of the anchor node handle.
- * The parent label position is re-computed live from the parent's node positions.
+ * Uses the parent edge's actual Vue Flow handle positions so the start point matches
+ * exactly where the parent label is rendered — no hardcoded node-dimension approximation.
  */
 const linkedSourcePos = computed(() => {
   if (!isConceptMap.value) return null
   const parentId = props.data?.linkedFromConnectionId as string | undefined
   if (!parentId) return null
-  const nodes = diagramStore.data?.nodes ?? []
-  const parent = diagramStore.data?.connections?.find((c) => c.id === parentId)
-  if (!parent) return null
-  const srcNode = nodes.find((n) => n.id === parent.source)
-  const tgtNode = nodes.find((n) => n.id === parent.target)
-  if (!srcNode?.position || !tgtNode?.position) return null
-  const srcCenter = getConceptNodeCenter(srcNode)
-  const tgtCenter = getConceptNodeCenter(tgtNode)
-  const dx = tgtCenter.x - srcCenter.x
-  const dy = tgtCenter.y - srcCenter.y
+  const parentEdge = vueFlowEdges.value.find((e) => e.id === parentId)
+  if (!parentEdge) return null
+  const dx = parentEdge.targetX - parentEdge.sourceX
+  const dy = parentEdge.targetY - parentEdge.sourceY
   const positions = getPositionsFromAngle(dx, dy)
   const [, labelX, labelY] = getBezierPath({
-    sourceX: srcCenter.x,
-    sourceY: srcCenter.y,
+    sourceX: parentEdge.sourceX,
+    sourceY: parentEdge.sourceY,
     sourcePosition: positions.source,
-    targetX: tgtCenter.x,
-    targetY: tgtCenter.y,
+    targetX: parentEdge.targetX,
+    targetY: parentEdge.targetY,
     targetPosition: positions.target,
     curvature: 0.25,
   })
@@ -453,7 +446,7 @@ const targetMarkerEnd = computed(() =>
     >
       <div
         v-show="isConceptMap && isEdgeSelected && !isEditing"
-        class="concept-rel-link-icon absolute left-1/2"
+        class="concept-rel-link-icon absolute"
       >
         <ElIcon
           :size="20"
@@ -571,6 +564,7 @@ const targetMarkerEnd = computed(() =>
 
 .concept-rel-link-icon {
   bottom: 100%;
+  left: 50%;
   margin-bottom: 1px;
   transform: translateX(-50%);
   z-index: 10;
