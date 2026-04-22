@@ -4,9 +4,11 @@ import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useSelectionSlice(ctx: DiagramContext) {
-  const { data, selectedNodes } = ctx
+  const { data, selectedNodes, selectedConnectionId } = ctx
 
-  const hasSelection = computed(() => selectedNodes.value.length > 0)
+  const hasSelection = computed(
+    () => selectedNodes.value.length > 0 || (selectedConnectionId.value ?? '') !== ''
+  )
 
   const selectedNodeData = computed(() => {
     if (!data.value?.nodes || selectedNodes.value.length === 0) return []
@@ -21,17 +23,28 @@ export function useSelectionSlice(ctx: DiagramContext) {
       return false
     }
 
+    selectedConnectionId.value = null
     selectedNodes.value = ids
     emitEvent('diagram:selection_changed', { selectedNodes: ids })
     return true
   }
 
+  function selectConnection(connectionId: string | null): void {
+    if (connectionId) {
+      selectedNodes.value = []
+    }
+    selectedConnectionId.value = connectionId
+    emitEvent('diagram:selection_changed', { selectedNodes: [] })
+  }
+
   function clearSelection(): void {
+    selectedConnectionId.value = null
     selectedNodes.value = []
     emitEvent('diagram:selection_changed', { selectedNodes: [] })
   }
 
   function addToSelection(nodeId: string): void {
+    selectedConnectionId.value = null
     if (!selectedNodes.value.includes(nodeId)) {
       selectedNodes.value.push(nodeId)
     }
@@ -48,6 +61,7 @@ export function useSelectionSlice(ctx: DiagramContext) {
     hasSelection,
     selectedNodeData,
     selectNodes,
+    selectConnection,
     clearSelection,
     addToSelection,
     removeFromSelection,

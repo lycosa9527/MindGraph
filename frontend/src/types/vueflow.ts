@@ -78,6 +78,11 @@ export interface MindGraphEdgeData {
   animated?: boolean // For flow maps
   isRelation?: boolean // For bridge maps
   isBridge?: boolean // For bridge maps
+  /**
+   * Concept map: id of the relationship edge this link was visually created from.
+   * CurvedEdge uses this to route the bezier path from the parent label position.
+   */
+  linkedFromConnectionId?: string
   // Allow additional custom properties
   [key: string]: unknown
 }
@@ -87,6 +92,8 @@ export interface MindGraphEdgeData {
 export type MindGraphEdge = Edge<MindGraphEdgeData> & {
   sourcePosition?: 'top' | 'bottom' | 'left' | 'right'
   targetPosition?: 'top' | 'bottom' | 'left' | 'right'
+  selectable?: boolean
+  selected?: boolean
 }
 
 // Props for custom node components
@@ -216,6 +223,7 @@ export function connectionToVueFlowEdge(
       edgeType,
       style: connection.style,
       arrowheadDirection: connection.arrowheadDirection,
+      linkedFromConnectionId: connection.linkedFromConnectionId,
     },
   }
 }

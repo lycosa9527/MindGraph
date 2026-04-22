@@ -132,6 +132,7 @@ const {
   onNodeClick,
   onNodeDoubleClick,
   onNodeDragStop,
+  onEdgeClick,
   fitView,
   getNodes: getVueFlowNodes,
   setViewport,
@@ -140,6 +141,12 @@ const {
   zoomOut,
   screenToFlowCoordinate,
 } = useVueFlow()
+
+onEdgeClick(({ edge }) => {
+  if (diagramStore.type === 'concept_map') {
+    diagramStore.selectConnection(edge.id)
+  }
+})
 
 function getVueFlowNodesForOverlays(): GraphNode[] {
   return unref(getVueFlowNodes) as GraphNode[]

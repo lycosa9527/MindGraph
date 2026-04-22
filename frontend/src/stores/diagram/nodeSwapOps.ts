@@ -252,6 +252,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       if (ctx.data.value?._customPositions) ctx.data.value._customPositions = {}
       if (ctx.data.value?._node_styles) ctx.data.value._node_styles = {}
       ctx.selectedNodes.value = []
+      ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
       emitEvent('diagram:operation_completed', { operation: 'move_branch' })
       eventBus.emit('diagram:branch_moved', {})
@@ -423,6 +424,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       if (ctx.data.value?._customPositions) ctx.data.value._customPositions = {}
       if (ctx.data.value?._node_styles) ctx.data.value._node_styles = {}
       ctx.selectedNodes.value = []
+      ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
       emitEvent('diagram:operation_completed', { operation: 'move_branch' })
       eventBus.emit('diagram:branch_moved', {})
@@ -515,6 +517,7 @@ export function useNodeSwapOpsSlice(ctx: DiagramContext) {
       if (ctx.data.value?._customPositions) ctx.data.value._customPositions = {}
       if (ctx.data.value?._node_styles) ctx.data.value._node_styles = {}
       ctx.selectedNodes.value = []
+      ctx.selectedConnectionId.value = null
       ctx.pushHistory('Move node')
       emitEvent('diagram:operation_completed', { operation: 'move_branch' })
       eventBus.emit('diagram:branch_moved', {})

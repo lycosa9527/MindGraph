@@ -225,6 +225,10 @@ export function useVueFlowIntegrationSlice(ctx: DiagramContext) {
       if (diagramType && edge.data) {
         edge.data = { ...edge.data, diagramType }
       }
+      if (diagramType === 'concept_map') {
+        edge.selectable = true
+        edge.selected = ctx.selectedConnectionId.value === conn.id
+      }
       return edge
     })
 

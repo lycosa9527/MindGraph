@@ -102,6 +102,12 @@ export interface Connection {
   arrowheadDirection?: 'none' | 'source' | 'target' | 'both'
   /** When true, arrowheadDirection was manually set by the user and won't auto-update on node move */
   arrowheadLocked?: boolean
+  /**
+   * Concept map: when this connection was created by dragging from a relationship label,
+   * stores the id of that parent relationship edge so `CurvedEdge` can route the bezier
+   * path visually from the parent label position instead of the anchor node handle.
+   */
+  linkedFromConnectionId?: string
 }
 
 export interface DiagramData {

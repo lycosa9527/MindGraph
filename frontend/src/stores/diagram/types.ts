@@ -43,6 +43,8 @@ export interface DiagramContext {
   type: Ref<DiagramType | null>
   data: Ref<DiagramData | null>
   selectedNodes: Ref<string[]>
+  /** Concept map: selected relationship (edge) id, mutually exclusive with node selection. */
+  selectedConnectionId: Ref<string | null>
   history: Ref<HistoryEntry[]>
   historyIndex: Ref<number>
   title: Ref<string>

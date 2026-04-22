@@ -48,6 +48,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const sessionId = ref<string | null>(null)
   const data = ref<DiagramData | null>(null)
   const selectedNodes = ref<string[]>([])
+  const selectedConnectionId = ref<string | null>(null)
   const history = ref<HistoryEntry[]>([])
   const historyIndex = ref(-1)
   const title = ref<string>('')
@@ -88,6 +89,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     type,
     data,
     selectedNodes,
+    selectedConnectionId,
     history,
     historyIndex,
     title,
@@ -122,6 +124,7 @@ export const useDiagramStore = defineStore('diagram', () => {
   const { pushHistory, canUndo, canRedo, undo, redo, clearHistory, clearRedoStack } = historySlice
   const {
     selectNodes,
+    selectConnection,
     clearSelection,
     addToSelection,
     removeFromSelection,
@@ -315,6 +318,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     sessionId.value = null
     data.value = null
     selectedNodes.value = []
+    selectedConnectionId.value = null
     history.value = []
     historyIndex.value = -1
     mindMapCurveExtentBaseline.value = null
@@ -335,6 +339,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     sessionId,
     data,
     selectedNodes,
+    selectedConnectionId,
     history,
     historyIndex,
     title,
@@ -356,6 +361,7 @@ export const useDiagramStore = defineStore('diagram', () => {
     setSessionId,
     updateDiagram,
     selectNodes,
+    selectConnection,
     clearSelection,
     addToSelection,
     removeFromSelection,

@@ -12,6 +12,12 @@ import { ElIcon } from 'element-plus'
 
 import { Menu } from '@element-plus/icons-vue'
 
+import { pickAnchorNodeIdForRelationshipToExistingNode } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
+import {
+  CONCEPT_LINK_DATA_TYPE,
+  CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
+  type RelationshipLinkDragPayload,
+} from '@/composables/diagramCanvas/conceptMapLinkMime'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -120,8 +126,6 @@ function handleEditCancel() {
   isEditing.value = false
 }
 
-const CONCEPT_LINK_DATA_TYPE = 'application/mindgraph-concept-link'
-
 function handleLinkDragStart(event: DragEvent) {
   if (!event.dataTransfer) return
   event.dataTransfer.setData(CONCEPT_LINK_DATA_TYPE, props.id)
@@ -135,7 +139,9 @@ function handleLinkDragEnd() {
 }
 
 function handleLinkDragOver(event: DragEvent) {
-  const hasLinkData = event.dataTransfer?.types.includes(CONCEPT_LINK_DATA_TYPE)
+  const types = event.dataTransfer?.types ?? []
+  const hasLinkData =
+    types.includes(CONCEPT_LINK_DATA_TYPE) || types.includes(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE)
   if (hasLinkData && event.dataTransfer) {
     event.preventDefault()
     event.dataTransfer.dropEffect = 'copy'
@@ -143,6 +149,33 @@ function handleLinkDragOver(event: DragEvent) {
 }
 
 function handleLinkDrop(event: DragEvent) {
+  const relJson = event.dataTransfer?.getData(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE)
+  if (relJson) {
+    let parsed: RelationshipLinkDragPayload
+    try {
+      parsed = JSON.parse(relJson) as RelationshipLinkDragPayload
+    } catch {
+      return
+    }
+    const getNode = (id: string) => diagramStore.data?.nodes?.find((n) => n.id === id)
+    const anchor = pickAnchorNodeIdForRelationshipToExistingNode(
+      props.id,
+      parsed.sourceNodeId,
+      parsed.targetNodeId,
+      (id) => getNode(id)
+    )
+    if (anchor === props.id) {
+      return
+    }
+    event.preventDefault()
+    event.stopPropagation()
+    eventBus.emit('concept_map:link_drop', {
+      sourceId: anchor,
+      targetId: props.id,
+      linkedFromConnectionId: parsed.connectionId,
+    })
+    return
+  }
   const sourceId = event.dataTransfer?.getData(CONCEPT_LINK_DATA_TYPE)
   if (!sourceId || sourceId === props.id) return
   event.preventDefault()

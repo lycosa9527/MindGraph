@@ -17,6 +17,7 @@ import { isPlaceholderText } from '@/composables/editor/useAutoComplete'
 import { i18n } from '@/i18n'
 import { useAuthStore } from '@/stores/auth'
 import { useDiagramStore } from '@/stores/diagram'
+import { isDefaultFocusQuestionLabel } from '@/stores/diagram/diagramDefaultLabels'
 import { useUIStore } from '@/stores/ui'
 
 const PAGE_SIZE = 3
@@ -70,11 +71,12 @@ export const useConceptMapFocusReviewStore = defineStore('conceptMapFocusReview'
       !loadingMoreSuggestions.value
   )
 
-  /** Topic long enough + not placeholder — Tab badge + allow review */
+  /** Topic long enough + not placeholder + not default "Focus question: …" template — Tab badge + review */
   const isFocusTopicReady = computed((): boolean => {
     const raw = getTopicRaw()
     if (!raw || raw.trim().length < 4) return false
     if (isPlaceholderText(raw)) return false
+    if (isDefaultFocusQuestionLabel(raw)) return false
     return true
   })
 
@@ -125,7 +127,7 @@ export const useConceptMapFocusReviewStore = defineStore('conceptMapFocusReview'
       return
     }
     const q = question.trim()
-    if (q.length < 4 || isPlaceholderText(q)) {
+    if (q.length < 4 || isPlaceholderText(q) || isDefaultFocusQuestionLabel(q)) {
       clear()
       return
     }
@@ -185,7 +187,12 @@ export const useConceptMapFocusReviewStore = defineStore('conceptMapFocusReview'
       return
     }
     const q = getTopicRaw()
-    if (!q.trim() || q.trim().length < 4 || isPlaceholderText(q)) {
+    if (
+      !q.trim() ||
+      q.trim().length < 4 ||
+      isPlaceholderText(q) ||
+      isDefaultFocusQuestionLabel(q)
+    ) {
       notify.warning(i18n.global.t('notification.focusQuestionTooShort') as string)
       return
     }
@@ -196,6 +203,7 @@ export const useConceptMapFocusReviewStore = defineStore('conceptMapFocusReview'
   async function loadMoreSuggestions(): Promise<void> {
     const q = getTopicRaw()
     if (q.length < 4 || !authStore.isAuthenticated) return
+    if (isPlaceholderText(q) || isDefaultFocusQuestionLabel(q)) return
     streamAbortController.value?.abort()
     streamAbortController.value = new AbortController()
     const signal = streamAbortController.value.signal

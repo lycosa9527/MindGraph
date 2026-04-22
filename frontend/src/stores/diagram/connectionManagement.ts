@@ -11,8 +11,17 @@ import type { DiagramContext } from './types'
  * Connection management slice.
  * Handles adding, labelling, and arrowhead toggling on connections.
  */
+type AddConnectionExtra = Partial<
+  Pick<Connection, 'linkedFromConnectionId' | 'arrowheadDirection' | 'arrowheadLocked'>
+>
+
 export function useConnectionManagementSlice(ctx: DiagramContext) {
-  function addConnection(sourceId: string, targetId: string, label?: string): string | null {
+  function addConnection(
+    sourceId: string,
+    targetId: string,
+    label?: string,
+    extra?: AddConnectionExtra
+  ): string | null {
     if (!ctx.data.value?.nodes || !ctx.data.value.connections) return null
 
     const sourceExists = ctx.data.value.nodes.some((n) => n.id === sourceId)
@@ -30,6 +39,7 @@ export function useConnectionManagementSlice(ctx: DiagramContext) {
       source: sourceId,
       target: targetId,
       label: label || '',
+      ...extra,
     }
     if (ctx.type.value === 'concept_map') {
       const sourceNode = ctx.data.value.nodes.find((n) => n.id === sourceId)

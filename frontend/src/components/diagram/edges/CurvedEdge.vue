@@ -8,6 +8,18 @@ import { computed, inject, nextTick, ref, watch } from 'vue'
 
 import { EdgeLabelRenderer, type EdgeProps, getBezierPath } from '@vue-flow/core'
 
+import { ElIcon } from 'element-plus'
+
+import { Menu } from '@element-plus/icons-vue'
+
+import {
+  CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
+  type RelationshipLinkDragPayload,
+} from '@/composables/diagramCanvas/conceptMapLinkMime'
+import {
+  getConceptNodeCenter,
+  getPositionsFromAngle,
+} from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
@@ -27,6 +39,8 @@ const generatingConnectionIds = inject<{ value: Set<string> }>(
 
 const diagramStore = useDiagramStore()
 const { t } = useLanguage()
+
+const isEdgeSelected = computed(() => diagramStore.selectedConnectionId === props.id)
 
 const relationshipPlaceholder = computed(() => t('diagram.relationshipPlaceholder', '输入关系...'))
 
@@ -97,6 +111,38 @@ function handleKeydown(event: KeyboardEvent) {
   }
 }
 
+function handleLabelClick() {
+  if (!isConceptMap.value) return
+  if (isEditing.value) return
+  diagramStore.selectConnection(props.id)
+}
+
+function handleRelLinkDragStart(event: DragEvent) {
+  if (!event.dataTransfer) return
+  const p = path.value
+  const payload: RelationshipLinkDragPayload = {
+    connectionId: props.id,
+    sourceNodeId: props.source,
+    targetNodeId: props.target,
+    labelX: p.labelX,
+    labelY: p.labelY,
+  }
+  event.dataTransfer.setData(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE, JSON.stringify(payload))
+  event.dataTransfer.effectAllowed = 'copy'
+  event.dataTransfer.setDragImage(new Image(), 0, 0)
+  eventBus.emit('concept_map:link_drag_start', {
+    connectionId: props.id,
+    labelX: p.labelX,
+    labelY: p.labelY,
+    relSource: props.source,
+    relTarget: props.target,
+  })
+}
+
+function handleRelLinkDragEnd() {
+  eventBus.emit('concept_map:link_drag_end', {})
+}
+
 // Curvature per diagram type: mindmap uses tighter curves (like double bubble map differences)
 const curvature = computed(() => {
   const dt = props.data?.diagramType as DiagramType | undefined
@@ -104,12 +150,55 @@ const curvature = computed(() => {
   return 0.25
 })
 
+/**
+ * When this edge was created by dragging from a relationship label, route the bezier
+ * visually FROM that parent label's midpoint instead of the anchor node handle.
+ * The parent label position is re-computed live from the parent's node positions.
+ */
+const linkedSourcePos = computed(() => {
+  if (!isConceptMap.value) return null
+  const parentId = props.data?.linkedFromConnectionId as string | undefined
+  if (!parentId) return null
+  const nodes = diagramStore.data?.nodes ?? []
+  const parent = diagramStore.data?.connections?.find((c) => c.id === parentId)
+  if (!parent) return null
+  const srcNode = nodes.find((n) => n.id === parent.source)
+  const tgtNode = nodes.find((n) => n.id === parent.target)
+  if (!srcNode?.position || !tgtNode?.position) return null
+  const srcCenter = getConceptNodeCenter(srcNode)
+  const tgtCenter = getConceptNodeCenter(tgtNode)
+  const dx = tgtCenter.x - srcCenter.x
+  const dy = tgtCenter.y - srcCenter.y
+  const positions = getPositionsFromAngle(dx, dy)
+  const [, labelX, labelY] = getBezierPath({
+    sourceX: srcCenter.x,
+    sourceY: srcCenter.y,
+    sourcePosition: positions.source,
+    targetX: tgtCenter.x,
+    targetY: tgtCenter.y,
+    targetPosition: positions.target,
+    curvature: 0.25,
+  })
+  return { x: labelX, y: labelY }
+})
+
 // Calculate bezier path
 const path = computed(() => {
+  const linked = linkedSourcePos.value
+  let effectiveSrcX = props.sourceX
+  let effectiveSrcY = props.sourceY
+  let effectiveSrcPos = props.sourcePosition
+  if (linked) {
+    effectiveSrcX = linked.x
+    effectiveSrcY = linked.y
+    const dx = props.targetX - linked.x
+    const dy = props.targetY - linked.y
+    effectiveSrcPos = getPositionsFromAngle(dx, dy).source
+  }
   const [edgePath, labelX, labelY] = getBezierPath({
-    sourceX: props.sourceX,
-    sourceY: props.sourceY,
-    sourcePosition: props.sourcePosition,
+    sourceX: effectiveSrcX,
+    sourceY: effectiveSrcY,
+    sourcePosition: effectiveSrcPos,
     targetX: props.targetX,
     targetY: props.targetY,
     targetPosition: props.targetPosition,
@@ -166,9 +255,15 @@ const isGenerating = computed(
   () => isConceptMap.value && generatingConnectionIds.value.has(props.id)
 )
 
+/** True when this edge was created from a relationship-label drag — no label, fixed arrow. */
+const isLinkedFromRelationship = computed(
+  () => isConceptMap.value && !!(props.data?.linkedFromConnectionId as string | undefined)
+)
+
 // Concept map: split path into two segments for clickable arrowhead toggles
+// Edges routed from a relationship label use a single fixed-arrow path instead.
 const pathSegments = computed(() => {
-  if (!isConceptMap.value) return null
+  if (!isConceptMap.value || isLinkedFromRelationship.value) return null
   const result = splitBezierPathAtMidpoint(path.value.edgePath)
   return result
 })
@@ -208,6 +303,7 @@ const conceptMapMarkerBackwardId = computed(() => `arrow-concept-backward-${prop
 
 function handleSegmentClick(segment: 'sourceSegment' | 'targetSegment') {
   if (!isConceptMap.value) return
+  diagramStore.selectConnection(props.id)
   diagramStore.toggleConnectionArrowhead(props.id, segment)
 }
 
@@ -309,6 +405,33 @@ const targetMarkerEnd = computed(() =>
     />
   </template>
 
+  <!-- Concept map edge from relationship label: single path with fixed target arrow -->
+  <template v-else-if="isLinkedFromRelationship">
+    <defs>
+      <marker
+        :id="conceptMapMarkerId"
+        markerWidth="10"
+        markerHeight="10"
+        refX="8"
+        refY="5"
+        orient="auto"
+        markerUnits="userSpaceOnUse"
+      >
+        <path
+          d="M0,0 L0,10 L10,5 z"
+          :fill="edgeStyle.stroke"
+        />
+      </marker>
+    </defs>
+    <path
+      :id="id"
+      class="vue-flow__edge-path curved-edge"
+      :d="path.edgePath"
+      :style="edgeStyle"
+      :marker-end="`url(#${conceptMapMarkerId})`"
+    />
+  </template>
+
   <!-- Non-concept map: single path -->
   <path
     v-else
@@ -319,8 +442,9 @@ const targetMarkerEnd = computed(() =>
     :marker-end="markerEnd"
   />
 
-  <!-- Edge label: concept map = editable, others = static box -->
-  <EdgeLabelRenderer v-if="data?.label !== undefined">
+  <!-- Edge label: concept map = editable, others = static box.
+       Edges linked from a relationship label carry no label of their own. -->
+  <EdgeLabelRenderer v-if="data?.label !== undefined && !isLinkedFromRelationship">
     <div
       class="edge-label-wrapper absolute"
       :style="{
@@ -328,10 +452,26 @@ const targetMarkerEnd = computed(() =>
       }"
     >
       <div
+        v-show="isConceptMap && isEdgeSelected && !isEditing"
+        class="concept-rel-link-icon absolute left-1/2"
+      >
+        <ElIcon
+          :size="20"
+          class="text-blue-500 concept-rel-link-icon-inner nodrag"
+          draggable="true"
+          :data-source-node-id="source"
+          @dragstart="handleRelLinkDragStart"
+          @dragend="handleRelLinkDragEnd"
+        >
+          <Menu />
+        </ElIcon>
+      </div>
+      <div
         class="edge-label"
         :class="{
           'edge-label-concept-map': isConceptMap,
           'edge-label-box': !isConceptMap,
+          'edge-label-selected': isConceptMap && isEdgeSelected,
           'pointer-events-none': !isConceptMap,
           nopan: isConceptMap,
           'cursor-text': isConceptMap && !isEditing && !isTopicRootLabelLocked,
@@ -341,6 +481,7 @@ const targetMarkerEnd = computed(() =>
           color: isConceptMap ? relationshipColor : undefined,
           pointerEvents: isConceptMap ? 'auto' : undefined,
         }"
+        @click.stop="handleLabelClick"
         @dblclick.stop="startEditing()"
       >
         <span>
@@ -426,6 +567,28 @@ const targetMarkerEnd = computed(() =>
 
 .dark .edge-label-concept-map {
   background: #1f2937;
+}
+
+.concept-rel-link-icon {
+  bottom: 100%;
+  margin-bottom: 1px;
+  transform: translateX(-50%);
+  z-index: 10;
+  pointer-events: none;
+}
+
+.concept-rel-link-icon-inner {
+  pointer-events: auto;
+  cursor: grab;
+}
+
+.concept-rel-link-icon-inner:active {
+  cursor: grabbing;
+}
+
+.edge-label.edge-label-concept-map.edge-label-selected {
+  outline: 1px solid #3b82f6;
+  outline-offset: 1px;
 }
 
 .edge-label-input {

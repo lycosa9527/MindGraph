@@ -72,3 +72,57 @@ export function getConceptNodeEdgePoint(
   const halfH = (isTopic ? TOPIC_NODE_HEIGHT : CONCEPT_NODE_HEIGHT) / 2
   return getEdgePoint(center, targetPos, halfW, halfH)
 }
+
+type ConceptLike = {
+  position?: { x: number; y: number }
+  data?: { nodeType?: string }
+  type?: string
+}
+
+/**
+ * New concept placed on canvas: anchor the new link at the relationship endpoint nearest
+ * the new node (so the link is “from” that side of the proposition).
+ */
+export function pickAnchorNodeIdForRelationshipToNewConcept(
+  newConceptNode: ConceptLike,
+  endA: string,
+  endB: string,
+  getNode: (id: string) => ConceptLike | undefined
+): string {
+  const newCenter = getConceptNodeCenter(newConceptNode)
+  const a = getNode(endA)
+  const b = getNode(endB)
+  if (!a?.position) return endB
+  if (!b?.position) return endA
+  const cA = getConceptNodeCenter(a)
+  const cB = getConceptNodeCenter(b)
+  const dA = (cA.x - newCenter.x) ** 2 + (cA.y - newCenter.y) ** 2
+  const dB = (cB.x - newCenter.x) ** 2 + (cB.y - newCenter.y) ** 2
+  return dA <= dB ? endA : endB
+}
+
+/**
+ * Drop on an existing node: if it is one end of the relationship, use the other end;
+ * otherwise use whichever endpoint is closer to the drop target.
+ */
+export function pickAnchorNodeIdForRelationshipToExistingNode(
+  dropTargetNodeId: string,
+  endA: string,
+  endB: string,
+  getNode: (id: string) => ConceptLike | undefined
+): string {
+  if (dropTargetNodeId === endA) return endB
+  if (dropTargetNodeId === endB) return endA
+  const t = getNode(dropTargetNodeId)
+  const a = getNode(endA)
+  const b = getNode(endB)
+  if (!t?.position) return endA
+  if (!a?.position) return endB
+  if (!b?.position) return endA
+  const cT = getConceptNodeCenter(t)
+  const cA = getConceptNodeCenter(a)
+  const cB = getConceptNodeCenter(b)
+  const dA = (cA.x - cT.x) ** 2 + (cA.y - cT.y) ** 2
+  const dB = (cB.x - cT.x) ** 2 + (cB.y - cT.y) ** 2
+  return dA <= dB ? endA : endB
+}

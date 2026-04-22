@@ -280,6 +280,7 @@ export function useMindMapOpsSlice(ctx: DiagramContext) {
       _node_styles: {},
     } as typeof data.value
     selectedNodes.value = []
+    ctx.selectedConnectionId.value = null
     ctx.pushHistory('Move branch')
     emitEvent('diagram:operation_completed', { operation: 'move_branch' })
     eventBus.emit('diagram:loaded', { diagramType: type.value || 'mindmap' })

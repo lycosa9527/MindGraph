@@ -111,8 +111,16 @@ export type EventTypes = {
   'diagram:branch_moved': Record<string, never>
   'snapshot:requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
-  'concept_map:link_drop': { sourceId: string; targetId: string }
-  'concept_map:link_drag_start': { sourceId: string }
+  'concept_map:link_drop': { sourceId: string; targetId: string; linkedFromConnectionId?: string }
+  /** Node drag: `sourceId` only. Relationship label drag: `labelX`/`labelY` + `relSource`/`relTarget`. */
+  'concept_map:link_drag_start': {
+    sourceId?: string
+    connectionId?: string
+    labelX?: number
+    labelY?: number
+    relSource?: string
+    relTarget?: string
+  }
   'concept_map:link_drag_end': Record<string, never>
   'concept_map:label_cleared': {
     connectionId: string

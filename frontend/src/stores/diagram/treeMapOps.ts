@@ -272,6 +272,7 @@ export function useTreeMapOpsSlice(ctx: DiagramContext) {
     if (data.value?._customPositions) data.value._customPositions = {}
     if (data.value?._node_styles) data.value._node_styles = {}
     selectedNodes.value = []
+    ctx.selectedConnectionId.value = null
     ctx.pushHistory('Move branch')
     emitEvent('diagram:operation_completed', { operation: 'move_branch' })
     eventBus.emit('diagram:branch_moved', {})

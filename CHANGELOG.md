@@ -5,6 +5,15 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.100.0] - 2026-04-23
+
+### Added
+- **Frontend / Concept map — drag link from relationship label** (`conceptMapLinkMime.ts`, `CurvedEdge.vue`, `ConceptNode.vue`, `useDiagramCanvasConceptMapLink.ts`, `conceptMapLinkPreviewGeometry.ts`, `connectionManagement.ts`, `types/diagram.ts`, `types/vueflow.ts`): relationship edges now expose a **drag handle icon** (shown when the edge is selected) that lets users drag from the relationship label to create a new connection; dropping on an **existing concept node** links the nearer relationship endpoint to the target; dropping on the **canvas** creates a new concept node and links it automatically. The anchor endpoint (source or target of the original relationship) is chosen by proximity. New connections created this way use `linkedFromConnectionId` to route their bezier path visually from the parent label position (`CurvedEdge` reads the parent label's live midpoint). New `conceptMapLinkMime.ts` module centralises both MIME type constants and the `RelationshipLinkDragPayload` type; `addConnection` accepts an optional `extra` argument carrying `linkedFromConnectionId`, `arrowheadDirection`, and `arrowheadLocked`. Two new geometry helpers `pickAnchorNodeIdForRelationshipToNewConcept` and `pickAnchorNodeIdForRelationshipToExistingNode` compute the optimal anchor by distance.
+- **Frontend / Concept map — relationship (edge) selection** (`diagram.ts`, `diagram/selection.ts`, `diagram/types.ts`, `DiagramCanvas.vue`, `CurvedEdge.vue`, `vueFlowIntegration.ts`): clicking a relationship edge or its label now **selects** it (tracked in new `selectedConnectionId` ref, mutually exclusive with node selection); selected edges display a blue outline on their label and surface the relationship-drag handle; `selectConnection` / `clearSelection` / `addToSelection` and all node-move ops clear the connection selection; Vue Flow edges are marked `selectable: true` for concept maps with `selected` synced from store.
+
+### Fixed
+- **Frontend / Concept map — focus review skips default focus question** (`conceptMapFocusReview.ts`): `isFocusTopicReady`, `updateFocusTopic`, `triggerFocusTopicReview`, and `loadMoreSuggestions` now guard against the default "Focus question: …" template label via `isDefaultFocusQuestionLabel`, preventing the focus-review tab badge and AI suggestions from firing on untouched template text.
+
 ## [5.99.0] - 2026-04-22
 
 ### Added
