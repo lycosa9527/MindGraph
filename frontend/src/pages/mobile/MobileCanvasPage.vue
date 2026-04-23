@@ -3,10 +3,12 @@
  * MobileCanvasPage — Simplified mobile diagram editor.
  * Vue Flow with touch support, minimal top toolbar, AI model selector at bottom.
  * Reuses DiagramCanvas + stores from desktop, but strips collaboration, presentation,
- * inline recommendations, and other desktop-only features.
+ * and other desktop-only features. Concept map: 启用 AI in top bar; bottom shows inline
+ * rec only while active (tap canvas to dismiss, same as desktop coordinator).
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import { storeToRefs } from 'pinia'
 
 import {
   Bot,
@@ -22,29 +24,41 @@ import {
   X,
 } from 'lucide-vue-next'
 
-import { AIModelSelector } from '@/components/canvas'
+import {
+  AIModelSelector,
+  ConceptMapFocusReviewPicker,
+  ConceptMapLabelPicker,
+  ConceptMapRootConceptPicker,
+} from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
-import { NodePalettePanel } from '@/components/panels'
+import { NodePalettePanel, RootConceptModal } from '@/components/panels'
 import {
   eventBus,
+  getDefaultDiagramName,
   getNodePalette,
   getPanelCoordinator,
-  useAutoComplete,
+  useCanvasToolbarApps,
   useDiagramAutoSave,
+  useDiagramSpecForSave,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
   useLanguage,
   useNodeActions,
   useNotifications,
 } from '@/composables'
+import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
-import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import { IMPORT_SPEC_KEY } from '@/config'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import {
+  type LLMResult,
   useAuthStore,
+  useConceptMapFocusReviewStore,
+  useConceptMapRelationshipStore,
+  useConceptMapRootConceptReviewStore,
   useDiagramStore,
   useInlineRecommendationsStore,
   useLLMResultsStore,
@@ -53,8 +67,10 @@ import {
 } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 const route = useRoute()
+const router = useRouter()
 const diagramStore = useDiagramStore()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
@@ -62,7 +78,11 @@ const savedDiagramsStore = useSavedDiagramsStore()
 const llmResultsStore = useLLMResultsStore()
 const panelsStore = usePanelsStore()
 const inlineRecStore = useInlineRecommendationsStore()
-const { t } = useLanguage()
+const focusReviewStore = useConceptMapFocusReviewStore()
+const rootConceptReviewStore = useConceptMapRootConceptReviewStore()
+const relationshipStore = useConceptMapRelationshipStore()
+const { activeEntry: relationshipActiveEntry } = storeToRefs(relationshipStore)
+const { t, currentLanguage, promptLanguage } = useLanguage()
 const notify = useNotifications()
 
 getPanelCoordinator()
@@ -70,13 +90,14 @@ const { startSession: startNodePaletteSession } = getNodePalette({
   onError: (err: string) => notify.error(err),
 })
 
-const { autoComplete, isGenerating } = useAutoComplete()
+const { handleAIGenerate, handleConceptGeneration, isAIGenerating } = useCanvasToolbarApps()
 
 const diagramAutoSave = useDiagramAutoSave()
 
-useInlineRecommendationsCoordinator()
+const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 useNodeActions()
-const { startRecommendations, selectOption, fetchNextBatch } = useInlineRecommendations()
+const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
+  useInlineRecommendations()
 
 const isSaving = ref(false)
 
@@ -152,31 +173,48 @@ const showModelDrawer = ref(false)
 
 const isConceptMap = computed(() => diagramStore.type === 'concept_map')
 const tabReady = computed(() => {
-  if (isConceptMap.value) return false
-  return inlineRecStore.isReady && authStore.isAuthenticated
+  if (!authStore.isAuthenticated) return false
+  if (!inlineRecStore.isReady) return false
+  if (isConceptMap.value) {
+    return llmResultsStore.selectedModel != null
+  }
+  return true
 })
 
-const MOBILE_REC_PER_PAGE = 3
+const MOBILE_REC_PER_PAGE_NON_CONCEPT = 3
+const MOBILE_REC_PER_PAGE_CONCEPT_MAP = 4
+
+/** Concept map: show four suggestions per “page”; other diagrams keep three. */
+const mobileRecPerPage = computed(() =>
+  isConceptMap.value ? MOBILE_REC_PER_PAGE_CONCEPT_MAP : MOBILE_REC_PER_PAGE_NON_CONCEPT
+)
 
 const inlineRecActive = computed(() => !!inlineRecStore.activeNodeId)
 const inlineRecGenerating = computed(() => {
   const nid = inlineRecStore.activeNodeId
   return !!nid && inlineRecStore.generatingNodeIds.has(nid)
 })
+/** Concept map: bottom bar only while inline rec is open or loading (dismiss: canvas tap via coordinator) */
+const showMobileConceptRecBottom = computed(
+  () =>
+    isConceptMap.value && (inlineRecActive.value || inlineRecGenerating.value)
+)
 
 const mobileRecPage = ref(0)
 const mobileRecOptions = computed(() => {
   const nid = inlineRecStore.activeNodeId
   if (!nid) return []
   const all = inlineRecStore.allOptions[nid] ?? []
-  const start = mobileRecPage.value * MOBILE_REC_PER_PAGE
-  return all.slice(start, start + MOBILE_REC_PER_PAGE)
+  const per = mobileRecPerPage.value
+  const start = mobileRecPage.value * per
+  return all.slice(start, start + per)
 })
 const mobileRecTotalPages = computed(() => {
   const nid = inlineRecStore.activeNodeId
   if (!nid) return 0
   const total = (inlineRecStore.allOptions[nid] ?? []).length
-  return total <= 0 ? 0 : Math.ceil(total / MOBILE_REC_PER_PAGE)
+  const per = mobileRecPerPage.value
+  return total <= 0 ? 0 : Math.ceil(total / per)
 })
 const mobileCanPrev = computed(() => mobileRecPage.value > 0)
 const mobileRecFetching = computed(() => {
@@ -191,31 +229,12 @@ watch(
   }
 )
 
-function isNodeEligibleForInlineRec(node: { id?: string; type?: string }): boolean {
-  const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
-  if (!dt || !(INLINE_RECOMMENDATIONS_SUPPORTED_TYPES as readonly string[]).includes(dt))
-    return false
-  const nid = node.id ?? ''
-  if (dt === 'mindmap') return /^branch-(l|r)-(1|2)-/.test(nid)
-  if (dt === 'flow_map') return nid.startsWith('flow-step-') || nid.startsWith('flow-substep-')
-  if (dt === 'tree_map')
-    return nid === 'dimension-label' || /^tree-cat-\d+$/.test(nid) || /^tree-leaf-/.test(nid)
-  if (dt === 'brace_map')
-    return nid === 'dimension-label' || node.type === 'brace' || nid.startsWith('brace-')
-  if (dt === 'circle_map') return nid.startsWith('context-')
-  if (dt === 'bubble_map') return nid.startsWith('bubble-')
-  if (dt === 'double_bubble_map')
-    return (
-      nid.startsWith('similarity-') || nid.startsWith('left-diff-') || nid.startsWith('right-diff-')
-    )
-  if (dt === 'multi_flow_map') return nid.startsWith('cause-') || nid.startsWith('effect-')
-  if (dt === 'bridge_map')
-    return (
-      nid === 'dimension-label' ||
-      (nid.startsWith('pair-') && (nid.endsWith('-left') || nid.endsWith('-right')))
-    )
-  return false
-}
+watch(isConceptMap, (v) => {
+  mobileRecPage.value = 0
+  if (v) {
+    showModelDrawer.value = false
+  }
+})
 
 function handleTabMode(): void {
   if (!authStore.isAuthenticated) {
@@ -229,25 +248,49 @@ function handleTabMode(): void {
     notify.warning(t('canvas.toolbar.selectNodesToDelete', '请先选择一个节点'))
     return
   }
+
+  if (isConceptMap.value && selectedId === 'topic') {
+    void focusReviewStore.runFocusReviewManual()
+    return
+  }
+  if (isConceptMap.value) {
+    const rootTid = getTopicRootConceptTargetId(diagramStore.data?.connections)
+    if (rootTid && selectedId === rootTid) {
+      void rootConceptReviewStore.runRootConceptManual()
+      return
+    }
+  }
+  if (isConceptMap.value && !llmResultsStore.selectedModel) {
+    notify.warning(
+      t(
+        'notification.conceptMapTabNeedsAi',
+        '请先在顶栏启用「启动 AI」再使用 Tab 推荐'
+      )
+    )
+    return
+  }
+
   const nodes = diagramStore.data?.nodes ?? []
   const node = nodes.find((n) => n.id === selectedId)
-  if (!node || !isNodeEligibleForInlineRec(node)) {
+  if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)) {
     notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
     return
   }
-  startRecommendations(selectedId)
+  void startRecommendations(selectedId)
 }
 
 function handleRecSelect(localIdx: number): void {
   const nid = inlineRecStore.activeNodeId
   if (!nid) return
-  const globalIdx = mobileRecPage.value * MOBILE_REC_PER_PAGE + localIdx
-  selectOption(nid, globalIdx)
+  const per = mobileRecPerPage.value
+  const globalIdx = mobileRecPage.value * per + localIdx
+  selectOptionByGlobalIndex(nid, globalIdx)
 }
 
 async function handleRecNext(): Promise<void> {
   const nid = inlineRecStore.activeNodeId
   if (!nid) return
+  const per = mobileRecPerPage.value
   const hasMoreLocal = mobileRecPage.value < mobileRecTotalPages.value - 1
   if (hasMoreLocal) {
     mobileRecPage.value++
@@ -255,7 +298,7 @@ async function handleRecNext(): Promise<void> {
   }
   await fetchNextBatch(nid)
   const newTotal = (inlineRecStore.allOptions[nid] ?? []).length
-  const newTotalPages = Math.ceil(newTotal / MOBILE_REC_PER_PAGE)
+  const newTotalPages = Math.ceil(newTotal / per)
   if (newTotalPages > mobileRecPage.value + 1) {
     mobileRecPage.value++
   }
@@ -278,13 +321,25 @@ function handleDeleteSelected() {
   eventBus.emit('diagram:delete_selected_requested', {})
 }
 
-function handleAutoComplete() {
+function handleToolbarAI() {
   if (!authStore.isAuthenticated) {
     notify.warning(t('notification.signInToUse'))
     return
   }
-  if (isGenerating.value) return
-  autoComplete()
+  if (isConceptMap.value) {
+    handleConceptGeneration()
+    return
+  }
+  if (isAIGenerating.value) return
+  void handleAIGenerate()
+}
+
+function toggleConceptMapAiToolbar(): void {
+  if (llmResultsStore.selectedModel) {
+    llmResultsStore.setSelectedModel(null)
+  } else {
+    llmResultsStore.setSelectedModel('qwen')
+  }
 }
 
 function toggleNodePalette() {
@@ -327,8 +382,66 @@ eventBus.onWithOwner(
   'MobileCanvasPage'
 )
 
+eventBus.onWithOwner(
+  'node_editor:tab_pressed',
+  (data: { nodeId?: string; draftText?: string }) => {
+    const nodeId = data?.nodeId
+    if (!nodeId) return
+
+    if (diagramStore.type === 'concept_map' && nodeId === 'topic') {
+      const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
+      if (draft) {
+        eventBus.emit('node:text_updated', { nodeId: 'topic', text: draft })
+      }
+      void focusReviewStore.runFocusReviewManual()
+      return
+    }
+
+    if (diagramStore.type === 'concept_map') {
+      const rootTid = getTopicRootConceptTargetId(diagramStore.data?.connections)
+      if (rootTid && nodeId === rootTid) {
+        const draft = typeof data.draftText === 'string' ? data.draftText.trim() : ''
+        if (draft) {
+          eventBus.emit('node:text_updated', { nodeId: rootTid, text: draft })
+        }
+        if (!authStore.isAuthenticated) {
+          notify.warning(t('notification.signInToUse'))
+          return
+        }
+        void rootConceptReviewStore.runRootConceptManual()
+        return
+      }
+    }
+
+    const nodes = diagramStore.data?.nodes ?? []
+    const node = nodes.find((n) => n.id === nodeId) as
+      | { id?: string; type?: string; data?: { nodeType?: string } }
+      | undefined
+    if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)) {
+      return
+    }
+    if (!inlineRecStore.isReady) return
+    if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
+      notify.warning(
+        t(
+          'notification.conceptMapTabNeedsAi',
+          '请先在顶栏启用「启动 AI」再使用 Tab 推荐'
+        )
+      )
+      return
+    }
+    if (!authStore.isAuthenticated) {
+      notify.warning(t('notification.signInToUse'))
+      return
+    }
+    void startRecommendations(nodeId)
+  },
+  'MobileCanvasPage'
+)
+
 onMounted(async () => {
   await ensureFontsForLanguageCode(uiStore.promptLanguage)
+  inlineRecCoordinator.setup()
   await savedDiagramsStore.fetchDiagrams()
 
   const diagramIdRaw = route.query.diagramId ?? route.query.diagram_id
@@ -336,6 +449,82 @@ onMounted(async () => {
   if (diagramId) {
     await loadDiagramFromLibrary(diagramId)
     return
+  }
+
+  const importFlag = route.query.import
+  if (importFlag === '1') {
+    const importJson = sessionStorage.getItem(IMPORT_SPEC_KEY)
+    if (importJson) {
+      try {
+        const spec = JSON.parse(importJson) as Record<string, unknown>
+        sessionStorage.removeItem(IMPORT_SPEC_KEY)
+        const diagramType = (spec.type as DiagramType) || null
+        if (!diagramType || !VALID_TYPES.includes(diagramType)) {
+          notify.error(t('notification.importUnsupportedType'))
+        } else {
+          const llmResults = spec.llm_results as
+            | { results?: Record<string, unknown>; selectedModel?: string }
+            | undefined
+          let specForLoad = spec
+          if (llmResults?.results && typeof llmResults.results === 'object') {
+            llmResultsStore.restoreFromSaved(
+              llmResults as { results?: Record<string, LLMResult>; selectedModel?: string },
+              diagramType
+            )
+            specForLoad = { ...spec }
+            delete (specForLoad as Record<string, unknown>).llm_results
+          } else {
+            llmResultsStore.clearCache()
+          }
+          if (diagramSpecLikelyNeedsMarkdownPipeline(specForLoad)) {
+            await loadDiagramMarkdownPipeline({ bumpLayout: false })
+          }
+          const loaded = diagramStore.loadFromSpec(specForLoad, diagramType)
+          if (loaded) {
+            const zhName = DIAGRAM_TYPE_TO_ZH[diagramType]
+            if (zhName) {
+              uiStore.setSelectedChartType(zhName)
+            }
+            router.replace({ path: '/m/canvas' })
+
+            const topicText = diagramStore.getTopicNodeText()
+            const importTitle =
+              topicText ||
+              diagramStore.effectiveTitle ||
+              getDefaultDiagramName(diagramType, currentLanguage.value)
+            diagramStore.initTitle(importTitle)
+            const getDiagramSpec = useDiagramSpecForSave()
+            const specToSave = getDiagramSpec()
+            if (specToSave && authStore.isAuthenticated) {
+              const saveResult = await savedDiagramsStore.manualSaveDiagram(
+                importTitle,
+                diagramType,
+                specToSave,
+                promptLanguage.value,
+                null
+              )
+              if (saveResult.success) {
+                notify.success(t('notification.importSuccess'))
+              } else if (saveResult.needsSlotClear) {
+                eventBus.emit('canvas:show_slot_full_modal', {})
+              } else if (!saveResult.success) {
+                notify.warning(saveResult.error || t('notification.importSavePartial'))
+              }
+            }
+            return
+          }
+          notify.error(t('notification.importLoadFailed'))
+        }
+      } catch (error) {
+        console.error('Import load failed:', error)
+        notify.error(t('notification.importInvalidData'))
+      }
+    } else {
+      notify.error(t('canvas.import.invalidFile'))
+      const restQuery = { ...route.query }
+      delete restQuery.import
+      await router.replace({ path: route.path, query: restQuery })
+    }
   }
 
   const typeFromUrl = route.query.type as DiagramType | undefined
@@ -384,6 +573,7 @@ async function loadDiagramFromLibrary(diagramId: string): Promise<void> {
 }
 
 onUnmounted(() => {
+  inlineRecCoordinator.teardown()
   diagramAutoSave.flush()
   diagramAutoSave.teardown()
   eventBus.removeAllListenersForOwner('MobileCanvasPage')
@@ -401,7 +591,10 @@ onUnmounted(() => {
   <div class="mobile-canvas flex flex-col flex-1 min-h-0 bg-gray-50 relative overflow-hidden">
     <!-- Top toolbar (fixed, no zoom/pan) -->
     <div
-      class="mobile-toolbar flex items-center justify-evenly px-2 py-1.5 bg-white border-b border-gray-200 shrink-0 touch-none"
+      :class="[
+        'mobile-toolbar flex items-stretch w-full px-1.5 py-1.5 bg-white border-b border-gray-200 shrink-0 touch-none gap-1',
+        isConceptMap ? 'mobile-toolbar--concept-map' : 'justify-evenly',
+      ]"
     >
       <button
         class="toolbar-btn"
@@ -429,38 +622,60 @@ onUnmounted(() => {
         <span class="toolbar-label">{{ t('canvas.toolbar.delete', '删除') }}</span>
       </button>
 
-      <button
-        class="toolbar-btn toolbar-btn--primary"
-        :class="{ 'toolbar-btn--generating': isGenerating }"
-        @click="handleAutoComplete"
-      >
-        <Sparkles
-          :size="18"
-          class="ai-icon"
-        />
-        <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
-      </button>
-
-      <button
-        class="toolbar-btn toolbar-btn--purple"
-        :class="{ 'toolbar-btn--active': showNodePalette }"
-        @click="toggleNodePalette"
-      >
-        <LayoutGrid :size="18" />
-        <span class="toolbar-label">{{ t('canvas.toolbar.nodePalette', '节点面板') }}</span>
-      </button>
+      <!-- 概念图：5 等分；生成概念 = Sparkles，启动 AI = Bot -->
+      <template v-if="isConceptMap">
+        <button
+          class="toolbar-btn toolbar-btn--primary"
+          :class="{ 'toolbar-btn--generating': isAIGenerating }"
+          @click="handleToolbarAI"
+        >
+          <Sparkles
+            :size="18"
+            class="ai-icon"
+          />
+          <span class="toolbar-label truncate max-w-full">{{
+            t('canvas.toolbar.conceptGeneration', '生成概念')
+          }}</span>
+        </button>
+        <button
+          type="button"
+          class="toolbar-btn toolbar-btn--ai"
+          :class="{ 'toolbar-btn--ai-on': llmResultsStore.selectedModel }"
+          @click="toggleConceptMapAiToolbar"
+        >
+          <Bot
+            :size="18"
+            class="ai-icon"
+          />
+          <span class="toolbar-label truncate max-w-full">{{
+            t('aiModel.enableAi', '启动 AI')
+          }}</span>
+        </button>
+      </template>
+      <template v-else>
+        <button
+          class="toolbar-btn toolbar-btn--primary"
+          :class="{
+            'toolbar-btn--generating': isAIGenerating,
+          }"
+          @click="handleToolbarAI"
+        >
+          <Sparkles
+            :size="18"
+            class="ai-icon"
+          />
+          <span class="toolbar-label">{{ t('canvas.toolbar.aiGenerate', 'AI生成') }}</span>
+        </button>
+        <button
+          class="toolbar-btn toolbar-btn--purple"
+          :class="{ 'toolbar-btn--active': showNodePalette }"
+          @click="toggleNodePalette"
+        >
+          <LayoutGrid :size="18" />
+          <span class="toolbar-label">{{ t('canvas.toolbar.nodePalette', '节点面板') }}</span>
+        </button>
+      </template>
     </div>
-
-    <!-- Node Palette slide-over -->
-    <Transition name="palette-slide">
-      <div
-        v-if="showNodePalette && panelsStore.nodePalettePanel.isOpen"
-        class="absolute inset-0 z-30 bg-white flex flex-col"
-        style="top: 44px"
-      >
-        <NodePalettePanel @close="toggleNodePalette" />
-      </div>
-    </Transition>
 
     <!-- Diagram canvas with touch support (only this area is pannable/zoomable) -->
     <div class="canvas-area flex-1 min-h-0 relative overflow-hidden">
@@ -470,6 +685,7 @@ onUnmounted(() => {
         :show-background="true"
         :show-minimap="false"
         :fit-view-on-init="!isConceptMap"
+        :concept-map-initial-topic-fit="false"
         :hand-tool-active="false"
         :collab-locked-node-ids="[]"
         :pan-on-drag-buttons="[0, 1, 2]"
@@ -482,34 +698,71 @@ onUnmounted(() => {
       </div>
     </div>
 
-    <!-- Bottom bar (fixed, no zoom/pan) -->
+    <!-- Concept map: relationship / root / focus pickers (same as desktop bar, mobile strip) -->
     <div
+      v-if="
+        isConceptMap &&
+        !inlineRecActive &&
+        (relationshipActiveEntry ||
+          rootConceptReviewStore.showPicker ||
+          focusReviewStore.showPicker)
+      "
+      class="concept-map-pickers-row shrink-0 z-20 px-2 py-1.5 bg-white/95 border-t border-gray-200 touch-none"
+    >
+      <ConceptMapLabelPicker
+        v-if="relationshipActiveEntry"
+        class="w-full min-w-0"
+      />
+      <ConceptMapRootConceptPicker
+        v-else-if="rootConceptReviewStore.showPicker"
+        class="w-full min-w-0"
+      />
+      <ConceptMapFocusReviewPicker
+        v-else-if="focusReviewStore.showPicker"
+        class="w-full min-w-0"
+      />
+    </div>
+
+    <!-- Bottom bar: non–concept map = AI sheet + Tab; concept map = inline rec only (no overlap) -->
+    <div
+      v-if="!isConceptMap || showMobileConceptRecBottom"
       class="mobile-bottom-bar shrink-0 px-3 py-2 bg-white/90 backdrop-blur-md border-t border-gray-200 touch-none"
     >
-      <!-- Inline recommendations mode -->
+      <!-- Inline recommendations (full width; concept map has no second row for AI/Tab) -->
       <div
         v-if="inlineRecActive"
-        class="flex items-center gap-1.5 min-h-[36px]"
+        :class="[
+          'flex items-center w-full min-w-0',
+          isConceptMap
+            ? 'gap-2 min-h-[48px] mobile-inline-rec--concept'
+            : 'gap-1.5 min-h-[36px]',
+        ]"
       >
         <button
-          class="shrink-0 p-1.5 rounded-md bg-red-50 active:bg-red-100 text-red-500 transition-colors"
+          :class="[
+            'shrink-0 rounded-xl bg-red-50 active:bg-red-100 text-red-500 transition-colors',
+            isConceptMap ? 'p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center' : 'p-1.5',
+          ]"
           @click="handleRecDismiss"
         >
-          <X :size="14" />
+          <X :size="isConceptMap ? 20 : 14" />
         </button>
 
         <button
-          class="shrink-0 p-1.5 rounded-md transition-colors"
-          :class="
+          :class="[
+            'shrink-0 rounded-xl transition-colors',
+            isConceptMap
+              ? 'p-3 min-w-[48px] min-h-[48px] flex items-center justify-center'
+              : 'p-2 min-w-[40px] min-h-[40px] flex items-center justify-center',
             mobileCanPrev
               ? 'bg-gray-100 active:bg-gray-200 text-gray-600'
-              : 'bg-gray-50 text-gray-300'
-          "
+              : 'bg-gray-50 text-gray-300',
+          ]"
           :disabled="!mobileCanPrev"
           @click="handleRecPrev"
         >
           <ChevronLeft
-            :size="14"
+            :size="isConceptMap ? 28 : 18"
             class="mg-icon-flip-rtl"
           />
         </button>
@@ -519,54 +772,64 @@ onUnmounted(() => {
           class="flex-1 flex items-center justify-center gap-2 text-xs text-gray-500"
         >
           <Loader2
-            :size="14"
+            :size="isConceptMap ? 18 : 14"
             class="animate-spin text-green-500"
           />
-          <span>{{ t('inlineRec.generating', '生成推荐中...') }}</span>
+          <span :class="isConceptMap ? 'text-sm' : ''">{{
+            t('inlineRec.generating', '生成推荐中...')
+          }}</span>
         </div>
         <div
           v-else
-          class="rec-scroll-area flex-1 overflow-x-auto"
+          class="rec-scroll-area flex-1 overflow-x-auto min-w-0"
         >
-          <div class="flex items-stretch gap-1.5">
+          <div :class="['flex items-stretch', isConceptMap ? 'gap-2' : 'gap-1.5']">
             <button
               v-for="(opt, idx) in mobileRecOptions"
               :key="`${inlineRecStore.activeNodeId}-${mobileRecPage}-${idx}`"
-              class="rec-chip shrink-0 px-2.5 py-1.5 rounded-lg bg-green-50 active:bg-green-100 text-xs text-green-700 font-medium transition-colors border border-green-200 whitespace-nowrap"
+              :class="[
+                'rec-chip shrink-0 rounded-xl bg-green-50 active:bg-green-100 text-green-700 font-medium transition-colors border border-green-200 whitespace-nowrap',
+                isConceptMap
+                  ? 'rec-chip--concept px-3 py-2.5 text-sm min-h-[44px] flex items-center'
+                  : 'px-2.5 py-1.5 text-xs',
+              ]"
               @click="handleRecSelect(idx)"
             >
-              <span class="text-green-500 font-bold mr-1">{{
-                mobileRecPage * MOBILE_REC_PER_PAGE + idx + 1
-              }}</span>
+              <span :class="['text-green-500 font-bold mr-1', isConceptMap ? 'text-sm' : '']">
+                {{ mobileRecPage * mobileRecPerPage + idx + 1 }}
+              </span>
               {{ opt }}
             </button>
           </div>
         </div>
 
         <button
-          class="shrink-0 p-1.5 rounded-md transition-colors"
-          :class="
+          :class="[
+            'shrink-0 rounded-xl transition-colors',
+            isConceptMap
+              ? 'p-3 min-w-[48px] min-h-[48px] flex items-center justify-center'
+              : 'p-2 min-w-[40px] min-h-[40px] flex items-center justify-center',
             mobileRecFetching
               ? 'bg-gray-50 text-gray-300'
-              : 'bg-gray-100 active:bg-gray-200 text-gray-600'
-          "
+              : 'bg-gray-100 active:bg-gray-200 text-gray-600',
+          ]"
           :disabled="mobileRecFetching"
           @click="handleRecNext"
         >
           <Loader2
             v-if="mobileRecFetching"
-            :size="14"
+            :size="isConceptMap ? 20 : 16"
             class="animate-spin"
           />
           <ChevronRight
             v-else
-            :size="14"
+            :size="isConceptMap ? 28 : 18"
             class="mg-icon-flip-rtl"
           />
         </button>
       </div>
 
-      <!-- Normal mode: AI models + Tab button -->
+      <!-- Other diagrams: open AI sheet + Tab (inline rec) -->
       <div
         v-else
         class="flex items-center justify-between"
@@ -598,6 +861,27 @@ onUnmounted(() => {
       </div>
     </div>
 
+    <!--
+      Node palette / root concept: must render after canvas so the overlay wins hit-testing
+      (Vue Flow + mobile touch use capture on the canvas; z-index must also clear .canvas-area).
+    -->
+    <Transition name="palette-slide">
+      <div
+        v-if="showNodePalette && panelsStore.nodePalettePanel.isOpen"
+        class="mobile-node-palette-overlay absolute inset-0 z-[100] flex flex-col touch-manipulation bg-white"
+        style="top: 44px"
+      >
+        <RootConceptModal
+          v-if="isConceptMap"
+          @close="panelsStore.closeNodePalette"
+        />
+        <NodePalettePanel
+          v-else
+          @close="toggleNodePalette"
+        />
+      </div>
+    </Transition>
+
     <!-- AI Model Bottom Sheet -->
     <Teleport to="body">
       <Transition name="model-sheet">
@@ -628,6 +912,41 @@ onUnmounted(() => {
   scrollbar-width: none;
   z-index: 20;
   position: relative;
+}
+
+/* Concept map: five equal columns (save, add, delete, 生成概念, 启动 AI) */
+.mobile-toolbar--concept-map .toolbar-btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 6px 4px;
+  border-radius: 10px;
+}
+
+/* 启动 AI: Bot 图标 — 琥珀关 / 翠绿开（与 生成概念 的 Sparkles 区分） */
+.toolbar-btn--ai {
+  color: #92400e;
+  background: #fffbeb;
+  border: 1.5px solid #fcd34d;
+  box-sizing: border-box;
+}
+
+.toolbar-btn--ai .ai-icon {
+  color: #d97706;
+}
+
+.toolbar-btn--ai:active {
+  background: #fef3c7;
+}
+
+.toolbar-btn--ai-on {
+  color: #ffffff !important;
+  background: #059669 !important;
+  border-color: #047857 !important;
+}
+
+.toolbar-btn--ai-on .ai-icon {
+  color: #ffffff;
+  filter: drop-shadow(0 0 2px rgba(255, 255, 255, 0.35));
 }
 
 .mobile-toolbar::-webkit-scrollbar {
@@ -762,6 +1081,7 @@ onUnmounted(() => {
   position: relative;
 }
 
+
 .bottom-btn:disabled {
   pointer-events: none;
 }
@@ -780,6 +1100,11 @@ onUnmounted(() => {
   text-align: left;
   line-height: 1.3;
   max-width: 45vw;
+}
+
+/* Concept map: four chips, larger tap targets; keep a sane max width for long text */
+.rec-chip--concept {
+  max-width: min(40vw, 12rem);
 }
 </style>
 

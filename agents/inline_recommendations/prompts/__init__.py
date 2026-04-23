@@ -75,6 +75,10 @@ _BUILDERS: Dict[str, Dict[str, Any]] = {
         "dimensions": build_bridge_dimensions_prompt,
         "pairs": build_bridge_pairs_prompt,
     },
+    # Reuse attribute-style prompt: alternative concept labels for the selected node
+    "concept_map": {
+        "concepts": build_bubble_attributes_prompt,
+    },
 }
 
 _FALLBACK_STAGES = (
@@ -83,6 +87,7 @@ _FALLBACK_STAGES = (
     "subparts",
     "observations",
     "attributes",
+    "concepts",
     "similarities",
     "differences",
     "causes",
@@ -107,9 +112,12 @@ def build_prompt(
     diagram_type: mindmap, flow_map, tree_map, brace_map, circle_map, etc.
     stage: branches, children, steps, substeps, categories, parts, subparts, etc.
     """
-    dt = (diagram_type or "").strip().lower()
+    raw_dt = (diagram_type or "").strip()
+    dt = raw_dt.lower().replace(" ", "_")
     if dt == "mind_map":
         dt = "mindmap"
+    if dt in ("concept-map", "conceptmap"):
+        dt = "concept_map"
     st = (stage or "").strip().lower()
     existing = existing or []
 
@@ -120,6 +128,11 @@ def build_prompt(
             builder = stage_builders.get(fallback)
             if builder:
                 break
+    # concept_map reuses the bubble attribute builder; support older deploys missing this key
+    if not builder and st == "concepts" and (dt == "concept_map" or "concept" in raw_dt.lower().replace(" ", "")):
+        builder = _BUILDERS.get("concept_map", {}).get("concepts") or _BUILDERS.get(
+            "bubble_map", {}
+        ).get("attributes")
     if not builder:
         return ""
     text = builder(context, language, count, batch_num, existing)

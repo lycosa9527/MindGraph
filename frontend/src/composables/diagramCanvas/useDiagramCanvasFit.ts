@@ -25,6 +25,11 @@ export function useDiagramCanvasFit(options: {
   diagramStore: DiagramStore
   panelsStore: PanelsStore
   fitViewOnInit: Ref<boolean>
+  /**
+   * When false (e.g. mobile), do not run fitView to the topic node on init for concept_map.
+   * Desktop keeps this true so the topic is centered on first paint.
+   */
+  conceptMapInitialTopicFit: Ref<boolean>
   presentationRailOpen: Ref<boolean>
   presentationToolIsNotTimer: Ref<boolean>
   nodesLength: Ref<number>
@@ -49,6 +54,7 @@ export function useDiagramCanvasFit(options: {
     diagramStore,
     panelsStore,
     fitViewOnInit,
+    conceptMapInitialTopicFit,
     presentationRailOpen,
     presentationToolIsNotTimer,
     nodesLength,
@@ -223,14 +229,47 @@ export function useDiagramCanvasFit(options: {
     } as Parameters<FitViewFn>[0])
   }
 
+  function getConceptMapFocusNodeIdForFit(): string | null {
+    const list = getNodes() as unknown
+    if (!Array.isArray(list) || list.length === 0) return null
+    const nodes = list as { id: string; data?: unknown }[]
+    const byId = nodes.find((n) => n.id === 'topic')
+    if (byId) return 'topic'
+    const byType = nodes.find(
+      (n) =>
+        n.data &&
+        typeof n.data === 'object' &&
+        (n.data as { nodeType?: string }).nodeType === 'topic'
+    )
+    return byType?.id ?? null
+  }
+
   function handleNodesInitialized(): void {
     if (getNodes().length === 0) return
     if (!fitViewOnInit.value) {
       if (diagramStore.type === 'concept_map') {
         hasInitialFitDoneForDiagram.value = true
         setTimeout(() => {
+          if (!conceptMapInitialTopicFit.value) {
+            setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
+            return
+          }
+          const focusId = getConceptMapFocusNodeIdForFit()
+          if (focusId) {
+            const fitOptions = {
+              nodes: [focusId],
+              padding: 0.42,
+              duration: ANIMATION.DURATION_NORMAL,
+              minZoom: ZOOM.MIN,
+              maxZoom: ZOOM.MAX,
+              includeHiddenNodes: false,
+            } as Parameters<FitViewFn>[0]
+            void fitView(fitOptions)
+            eventBus.emit('view:fit_completed', { mode: 'concept_map_topic', animate: true })
+            return
+          }
           setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
-        }, ANIMATION.FIT_VIEWPORT_DELAY)
+        }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
       }
       return
     }

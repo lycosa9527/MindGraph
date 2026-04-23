@@ -12,12 +12,6 @@ import { ElIcon } from 'element-plus'
 
 import { Menu } from '@element-plus/icons-vue'
 
-import { pickAnchorNodeIdForRelationshipToExistingNode } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
-import {
-  CONCEPT_LINK_DATA_TYPE,
-  CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
-  type RelationshipLinkDragPayload,
-} from '@/composables/diagramCanvas/conceptMapLinkMime'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -126,82 +120,41 @@ function handleEditCancel() {
   isEditing.value = false
 }
 
-function handleLinkDragStart(event: DragEvent) {
-  if (!event.dataTransfer) return
-  event.dataTransfer.setData(CONCEPT_LINK_DATA_TYPE, props.id)
-  event.dataTransfer.effectAllowed = 'copy'
-  event.dataTransfer.setDragImage(new Image(), 0, 0)
-  eventBus.emit('concept_map:link_drag_start', { sourceId: props.id })
-}
-
-function handleLinkDragEnd() {
-  eventBus.emit('concept_map:link_drag_end', {})
-}
-
-function handleLinkDragOver(event: DragEvent) {
-  const types = event.dataTransfer?.types ?? []
-  const hasLinkData =
-    types.includes(CONCEPT_LINK_DATA_TYPE) || types.includes(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE)
-  if (hasLinkData && event.dataTransfer) {
-    event.preventDefault()
-    event.dataTransfer.dropEffect = 'copy'
-  }
-}
-
-function handleLinkDrop(event: DragEvent) {
-  const relJson = event.dataTransfer?.getData(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE)
-  if (relJson) {
-    let parsed: RelationshipLinkDragPayload
-    try {
-      parsed = JSON.parse(relJson) as RelationshipLinkDragPayload
-    } catch {
-      return
-    }
-    const getNode = (id: string) => diagramStore.data?.nodes?.find((n) => n.id === id)
-    const anchor = pickAnchorNodeIdForRelationshipToExistingNode(
-      props.id,
-      parsed.sourceNodeId,
-      parsed.targetNodeId,
-      (id) => getNode(id)
-    )
-    if (anchor === props.id) {
-      return
-    }
-    event.preventDefault()
-    event.stopPropagation()
-    eventBus.emit('concept_map:link_drop', {
-      sourceId: anchor,
-      targetId: props.id,
-      linkedFromConnectionId: parsed.connectionId,
-    })
+/**
+ * Link handle: pointer-driven only (one path for mouse/touch/pen). Capture + stop so Vue Flow
+ * drags the node from the body, not from the hamburger. See `concept_map:link_handle_pointer_start`.
+ */
+function onConceptLinkHandlePointerDown(e: PointerEvent) {
+  if (e.button !== 0) {
     return
   }
-  const sourceId = event.dataTransfer?.getData(CONCEPT_LINK_DATA_TYPE)
-  if (!sourceId || sourceId === props.id) return
-  event.preventDefault()
-  event.stopPropagation()
-  eventBus.emit('concept_map:link_drop', { sourceId, targetId: props.id })
+  if (!e.isPrimary) {
+    return
+  }
+  e.preventDefault()
+  e.stopPropagation()
+  eventBus.emit('concept_map:link_handle_pointer_start', {
+    pointerId: e.pointerId,
+    clientX: e.clientX,
+    clientY: e.clientY,
+    sourceId: props.id,
+  })
 }
 </script>
 
 <template>
-  <div
-    class="concept-node-wrapper relative"
-    @dragover="handleLinkDragOver"
-    @drop="handleLinkDrop"
-  >
-    <!-- Menu icon - for link creation only (drag to another node). nodrag prevents node drag when dragging from icon. Container has pointer-events:none so clicks pass through to node body for select/reposition; icon has pointer-events:auto for drag. -->
+  <div class="concept-node-wrapper relative">
+    <!-- Link handle: pointer only, nodrag; node body below stays draggable. -->
     <div
       v-show="selected && !isEditing"
-      class="concept-link-icon absolute"
+      class="concept-link-icon concept-link-handle absolute nodrag"
+      data-mg-concept-link-handle
+      @pointerdown.capture="onConceptLinkHandlePointerDown"
     >
       <ElIcon
         :size="20"
-        class="text-blue-500 concept-link-icon-inner nodrag"
-        draggable="true"
+        class="text-blue-500 concept-link-icon-inner"
         :data-node-id="id"
-        @dragstart="handleLinkDragStart"
-        @dragend="handleLinkDragEnd"
       >
         <Menu />
       </ElIcon>
@@ -385,6 +338,10 @@ function handleLinkDrop(event: DragEvent) {
   z-index: 10;
   /* Let clicks pass through transparent area so overlapping nodes can be selected */
   pointer-events: none;
+}
+
+.concept-link-handle {
+  touch-action: none;
 }
 
 .concept-link-icon-inner {

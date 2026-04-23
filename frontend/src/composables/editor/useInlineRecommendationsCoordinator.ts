@@ -2,11 +2,15 @@
  * useInlineRecommendationsCoordinator - Central event handler for inline recommendations (Tab mode)
  *
  * Supported types: INLINE_RECOMMENDATIONS_SUPPORTED_TYPES (mindmap, flow_map, tree_map, brace_map,
- * circle_map, bubble_map, double_bubble_map, multi_flow_map, bridge_map).
+ * circle_map, bubble_map, double_bubble_map, multi_flow_map, bridge_map, concept_map).
  *
  * Behaviour (consistent across types):
- * - Clears all: canvas pane click; topic hash change (main topic / dimension / bridge setup / DBL
- *   left+right topics); diagram type change; full diagram load (diagram:loaded); teardown.
+ * - `canvas:pane_clicked` (mouse on pane or mobile tap): concept-map relationship store clearAll
+ *   (aborts label SSE) + inline rec invalidateAll (aborts Tab SSE) + clearSelection — same
+ *   whether triggered from useDiagramCanvasContextMenu or useDiagramCanvasMobileTouch.
+ * - Clears inline rec only: topic hash change; `onDiagramChanged` (diagram type / diagram:loaded);
+ *   teardown; selection change that no longer “covers” the active Tab session; relationship clear
+ *   is included on `onDiagramChanged` and teardown to avoid stale label pickers.
  * - Keeps options after applying a numeric pick: node:text_updated does not clear (pair updates
  *   emit twice for bridge + double bubble — still OK).
  * - Double bubble layout refresh uses loadFromSpec(..., { emitLoaded: false }) so it does not
@@ -19,6 +23,7 @@ import { onUnmounted, watch } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
 
 const TOPIC_NODE_IDS = new Set([
@@ -72,6 +77,7 @@ function selectionStillCoversInlineActive(
 export function useInlineRecommendationsCoordinator() {
   const diagramStore = useDiagramStore()
   const store = useInlineRecommendationsStore()
+  const relationshipStore = useConceptMapRelationshipStore()
   const { extractMainTopic, isPlaceholderText, extractFixedDimension, extractBridgeMapAnalogies } =
     useAutoComplete()
 
@@ -131,12 +137,20 @@ export function useInlineRecommendationsCoordinator() {
   }
 
   function onDiagramChanged(): void {
+    relationshipStore.clearAll()
     store.invalidateAll()
     revalidateReady()
   }
 
-  function onDismiss(): void {
+  /**
+   * Single handler for background tap (mouse or mobile synthetic): match desktop pane click —
+   * abort relationship label streams, abort/clear Tab inline rec SSE, then clear selection.
+   * Order: clear transient stores before selection so selection_changed does not re-fire inline.
+   */
+  function onCanvasPaneClicked(): void {
+    relationshipStore.clearAll()
     store.invalidateAll()
+    diagramStore.clearSelection()
   }
 
   function onSelectionChanged(selectedNodes: string[]): void {
@@ -165,7 +179,7 @@ export function useInlineRecommendationsCoordinator() {
   )
 
   const unsubPaneClick = eventBus.on('canvas:pane_clicked', () => {
-    onDismiss()
+    onCanvasPaneClicked()
   })
 
   const unsubSelectionChanged = eventBus.on(
@@ -203,6 +217,7 @@ export function useInlineRecommendationsCoordinator() {
       clearTimeout(topicDebounceTimer)
       topicDebounceTimer = null
     }
+    relationshipStore.clearAll()
     store.invalidateAll()
   }
 

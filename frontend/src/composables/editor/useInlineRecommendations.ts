@@ -169,6 +169,10 @@ function getStageForNode(
     return { stage: 'pairs', stageData: {} }
   }
 
+  if (dt === 'concept_map') {
+    return { stage: 'concepts', stageData: {} }
+  }
+
   return { stage: defaultStage, stageData: {} }
 }
 
@@ -257,11 +261,27 @@ export function useInlineRecommendations() {
     return store.options[nodeId] ?? []
   }
 
-  function selectOption(nodeId: string, index: number): boolean {
+  /**
+   * Apply recommendation text by index in `allOptions` (0-based, full list),
+   * without using store pagination `page` (Pinia still uses 5 per page for desktop).
+   */
+  function selectOptionByGlobalIndex(nodeId: string, globalIdx: number): boolean {
     const opts = store.allOptions[nodeId] ?? []
-    const globalIdx = store.getGlobalIndex(nodeId, index)
     if (globalIdx < 0 || globalIdx >= opts.length) return false
     const text = opts[globalIdx]
+    return applyRecommendationTextToNode(nodeId, text)
+  }
+
+  /** Local index on the store's paginated "page" (5 per page). */
+  function selectOption(nodeId: string, localPageIndex: number): boolean {
+    const opts = store.allOptions[nodeId] ?? []
+    const globalIdx = store.getGlobalIndex(nodeId, localPageIndex)
+    if (globalIdx < 0 || globalIdx >= opts.length) return false
+    const text = opts[globalIdx]
+    return applyRecommendationTextToNode(nodeId, text)
+  }
+
+  function applyRecommendationTextToNode(nodeId: string, text: string): boolean {
     const dt = diagramStore.type === 'mind_map' ? 'mindmap' : diagramStore.type
 
     if (dt === 'double_bubble_map' && text.includes('|')) {
@@ -354,6 +374,9 @@ export function useInlineRecommendations() {
         id: n.id,
         text: n.text ?? (n.data as { label?: string })?.label ?? '',
         type: n.type,
+        ...(n.data != null && typeof n.data === 'object'
+          ? { data: n.data as Record<string, unknown> }
+          : {}),
       })),
       connections: connections.map((c) => ({
         source: c.source,
@@ -369,6 +392,9 @@ export function useInlineRecommendations() {
 
     const labels: string[] = []
     const onText = (text: string) => {
+      if (!store.generatingNodeIds.has(nodeId)) {
+        return
+      }
       labels.push(text)
       store.setOptions(nodeId, [...labels], labels.length > 1)
     }
@@ -434,6 +460,9 @@ export function useInlineRecommendations() {
         id: n.id,
         text: n.text ?? (n.data as { label?: string })?.label ?? '',
         type: n.type,
+        ...(n.data != null && typeof n.data === 'object'
+          ? { data: n.data as Record<string, unknown> }
+          : {}),
       })),
       connections: connections.map((c) => ({
         source: c.source,
@@ -495,6 +524,7 @@ export function useInlineRecommendations() {
   return {
     startRecommendations,
     selectOption,
+    selectOptionByGlobalIndex,
     prevPage,
     nextPage,
     fetchNextBatch,

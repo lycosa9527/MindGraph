@@ -28,6 +28,16 @@ import {
   useLLMResultsStore,
 } from '@/stores'
 
+const props = withDefaults(
+  defineProps<{
+    /** Mobile: hide Tab 焦点 badge (e.g. bottom inline-rec strip) */
+    hideTabFocusBadge?: boolean
+    /** Mobile concept top toolbar: 启用 AI only — hide Tab 焦点 + 关系 badges */
+    conceptMapTopToolbar?: boolean
+  }>(),
+  { hideTabFocusBadge: false, conceptMapTopToolbar: false }
+)
+
 const { t } = useLanguage()
 const { switchToModel } = useAutoComplete()
 const diagramStore = useDiagramStore()
@@ -55,7 +65,12 @@ const showRelationshipReady = computed(
 
 /** Tab-style badge when focus topic is long enough to validate (Tab while editing the topic node) */
 const showFocusReviewBadge = computed(
-  () => isConceptMap.value && authStore.isAuthenticated && focusReviewStore.isFocusTopicReady
+  () =>
+    isConceptMap.value &&
+    !props.conceptMapTopToolbar &&
+    !props.hideTabFocusBadge &&
+    authStore.isAuthenticated &&
+    focusReviewStore.isFocusTopicReady
 )
 
 const focusTabBadgeGlowClass = computed(() => {
@@ -271,7 +286,7 @@ function getButtonStyle(modelKey: string) {
 
       <!-- 关系 ready indicator (concept map: AI ready for link generation) - right of buttons -->
       <ElTooltip
-        v-if="showRelationshipReady"
+        v-if="showRelationshipReady && !conceptMapTopToolbar"
         :content="t('aiModel.relationshipsTooltip')"
         placement="top"
       >

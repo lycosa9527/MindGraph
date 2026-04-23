@@ -15,3 +15,11 @@ export function isMindGraphLandingPath(path: string): boolean {
 export function canvasEditorPathForRoute(routePath: string): '/canvas' | '/m/canvas' {
   return routePath === CANVAS_EDITOR_PATH_MOBILE ? CANVAS_EDITOR_PATH_MOBILE : CANVAS_EDITOR_PATH_DESKTOP
 }
+
+/** Landing-page `.mg` import: open editor on desktop or mobile canvas. */
+export function canvasPathForImportNavigation(routePath: string): '/canvas' | '/m/canvas' {
+  if (routePath === CANVAS_EDITOR_PATH_MOBILE || routePath.startsWith('/m/')) {
+    return CANVAS_EDITOR_PATH_MOBILE
+  }
+  return CANVAS_EDITOR_PATH_DESKTOP
+}

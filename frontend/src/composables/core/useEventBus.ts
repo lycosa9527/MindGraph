@@ -112,8 +112,15 @@ export type EventTypes = {
   'snapshot:requested': Record<string, never>
   'diagram:workshop_snapshot_applied': Record<string, never>
   'concept_map:link_drop': { sourceId: string; targetId: string; linkedFromConnectionId?: string }
-  /** Node drag: `sourceId` only. Relationship label drag: `labelX`/`labelY` + `relSource`/`relTarget`. */
-  'concept_map:link_drag_start': {
+  /**
+   * Link handle (node menu or relationship menu): start drawing a link. Uses Pointer events so
+   * touch/mouse/pen share one path; `pointerdown` on the handle must be `.capture` + `stopPropagation`
+   * so the node body keeps normal node drag. Followed by window-level pointer move/up in the canvas composable.
+   */
+  'concept_map:link_handle_pointer_start': {
+    pointerId: number
+    clientX: number
+    clientY: number
     sourceId?: string
     connectionId?: string
     labelX?: number

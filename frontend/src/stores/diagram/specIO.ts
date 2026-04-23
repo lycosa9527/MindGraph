@@ -240,7 +240,7 @@ export function useSpecIOSlice(ctx: DiagramContext) {
     const spec: Record<string, unknown> = {
       type: ctx.type.value,
       nodes,
-      connections: ctx.data.value.connections,
+      connections: ctx.data.value.connections ?? [],
       _customPositions: ctx.data.value._customPositions,
       _node_styles: ctx.data.value._node_styles,
     }

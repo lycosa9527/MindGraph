@@ -122,7 +122,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('toolbar:export_requested', async ({ format }) => {
-        if (format === 'json') {
+        if (format === 'mg') {
           await exportByFormat(format)
           return
         }

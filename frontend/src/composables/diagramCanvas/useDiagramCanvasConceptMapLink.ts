@@ -13,6 +13,7 @@ import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
 import { useDiagramStore, useLLMResultsStore } from '@/stores'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
+import { conceptMapLinkChaseActive } from './conceptMapLinkChaseState'
 import {
   PILL_HALF_HEIGHT,
   PILL_HALF_WIDTH,
@@ -27,6 +28,7 @@ import {
 type DiagramStore = ReturnType<typeof useDiagramStore>
 
 type LinkRelationshipOrigin = {
+  connectionId: string
   labelX: number
   labelY: number
   relSource: string
@@ -101,6 +103,8 @@ export function useDiagramCanvasConceptMapLink(options: {
   const linkDragFromRelationship = ref<LinkRelationshipOrigin | null>(null)
   const linkDragCursor = ref<{ x: number; y: number } | null>(null)
   const linkDragTargetNodeId = ref<string | null>(null)
+  let pointerChaseCleanup: (() => void) | null = null
+  let activeLinkPointerId: number | null = null
 
   function findConnectionBetween(
     sourceId: string,
@@ -162,9 +166,11 @@ export function useDiagramCanvasConceptMapLink(options: {
       payload.labelX != null &&
       payload.labelY != null &&
       payload.relSource &&
-      payload.relTarget
+      payload.relTarget &&
+      payload.connectionId
     ) {
       linkDragFromRelationship.value = {
+        connectionId: payload.connectionId,
         labelX: payload.labelX,
         labelY: payload.labelY,
         relSource: payload.relSource,
@@ -179,11 +185,201 @@ export function useDiagramCanvasConceptMapLink(options: {
     linkDragTargetNodeId.value = null
   }
 
-  function handleConceptMapLinkDragEnd() {
+  function resetLinkDragState() {
     linkDragSourceId.value = null
     linkDragFromRelationship.value = null
     linkDragCursor.value = null
     linkDragTargetNodeId.value = null
+  }
+
+  function endLinkPointerChase() {
+    conceptMapLinkChaseActive.value = false
+    if (pointerChaseCleanup) {
+      pointerChaseCleanup()
+      pointerChaseCleanup = null
+    }
+    activeLinkPointerId = null
+  }
+
+  function handleConceptMapLinkDragEnd() {
+    endLinkPointerChase()
+    resetLinkDragState()
+  }
+
+  type LinkHandlePointerStartPayload = {
+    pointerId: number
+    clientX: number
+    clientY: number
+    sourceId?: string
+    connectionId?: string
+    labelX?: number
+    labelY?: number
+    relSource?: string
+    relTarget?: string
+  }
+
+  function handleLinkHandlePointerStart(payload: LinkHandlePointerStartPayload) {
+    if (diagramStore.type !== 'concept_map') {
+      return
+    }
+    handleConceptMapLinkDragStart({
+      sourceId: payload.sourceId,
+      connectionId: payload.connectionId,
+      labelX: payload.labelX,
+      labelY: payload.labelY,
+      relSource: payload.relSource,
+      relTarget: payload.relTarget,
+    })
+    if (!linkDragSourceId.value && !linkDragFromRelationship.value) {
+      return
+    }
+    endLinkPointerChase()
+    conceptMapLinkChaseActive.value = true
+    activeLinkPointerId = payload.pointerId
+    updateLinkPointerFromClient(payload.clientX, payload.clientY)
+
+    const onPtrMove = (e: PointerEvent) => {
+      if (e.pointerId !== activeLinkPointerId) {
+        return
+      }
+      e.preventDefault()
+      updateLinkPointerFromClient(e.clientX, e.clientY)
+    }
+    const onPtrUp = (e: PointerEvent) => {
+      if (e.pointerId !== activeLinkPointerId) {
+        return
+      }
+      commitTouchLinkDropAt(e.clientX, e.clientY)
+      handleConceptMapLinkDragEnd()
+    }
+    const onPtrCancel = (e: PointerEvent) => {
+      if (e.pointerId !== activeLinkPointerId) {
+        return
+      }
+      handleConceptMapLinkDragEnd()
+    }
+
+    const ptrOpts: AddEventListenerOptions = { capture: true, passive: false }
+    window.addEventListener('pointermove', onPtrMove, ptrOpts)
+    window.addEventListener('pointerup', onPtrUp, ptrOpts)
+    window.addEventListener('pointercancel', onPtrCancel, ptrOpts)
+
+    pointerChaseCleanup = () => {
+      window.removeEventListener('pointermove', onPtrMove, true)
+      window.removeEventListener('pointerup', onPtrUp, true)
+      window.removeEventListener('pointercancel', onPtrCancel, true)
+    }
+  }
+
+  function getNodeElTargetIdAt(clientX: number, clientY: number): string | null {
+    const el = document.elementFromPoint(clientX, clientY) as Element | null
+    const node = el?.closest?.('.vue-flow__node') as HTMLElement | null
+    return node?.getAttribute('data-id')?.trim() || null
+  }
+
+  function updateLinkPointerFromClient(clientX: number, clientY: number) {
+    if (diagramStore.type !== 'concept_map') return
+    if (!linkDragSourceId.value && !linkDragFromRelationship.value) return
+    const flowPos = screenToFlowCoordinate({ x: clientX, y: clientY })
+    linkDragCursor.value = { x: flowPos.x, y: flowPos.y }
+    const el = document.elementFromPoint(clientX, clientY) as Element | null
+    const nodeEl = el?.closest?.('.vue-flow__node') as HTMLElement | null
+    const targetId = nodeEl?.getAttribute('data-id')?.trim() ?? null
+    if (linkDragFromRelationship.value) {
+      linkDragTargetNodeId.value = targetId
+      return
+    }
+    const src = linkDragSourceId.value
+    linkDragTargetNodeId.value = targetId && targetId !== src ? targetId : null
+  }
+
+  function applyPaneDropForNodeToNewConcept(sourceId: string, clientX: number, clientY: number) {
+    const flowPos = screenToFlowCoordinate({ x: clientX, y: clientY })
+    diagramStore.addNode({
+      id: '',
+      text: t('diagram.defaultNewConcept'),
+      type: 'branch',
+      position: { x: flowPos.x - 50, y: flowPos.y - 18 },
+    })
+    const nodes = diagramStore.data?.nodes ?? []
+    const newId = nodes[nodes.length - 1]?.id
+    if (newId) {
+      diagramStore.addConnection(sourceId, newId, '')
+    }
+    diagramStore.pushHistory('Add concept and link')
+  }
+
+  function applyPaneDropForRelationshipToNewConcept(rel: LinkRelationshipOrigin, clientX: number, clientY: number) {
+    const flowPos = screenToFlowCoordinate({ x: clientX, y: clientY })
+    diagramStore.addNode({
+      id: '',
+      text: t('diagram.defaultNewConcept'),
+      type: 'branch',
+      position: { x: flowPos.x - 50, y: flowPos.y - 18 },
+    })
+    const nodes = diagramStore.data?.nodes ?? []
+    const newId = nodes[nodes.length - 1]?.id
+    const newNode = newId ? nodes.find((n) => n.id === newId) : null
+    if (newId && newNode) {
+      const getNode = (id: string) => diagramStore.data?.nodes?.find((n) => n.id === id)
+      const anchor = pickAnchorNodeIdForRelationshipToNewConcept(
+        newNode,
+        rel.relSource,
+        rel.relTarget,
+        (id) => getNode(id)
+      )
+      const connId = diagramStore.addConnection(anchor, newId, '', {
+        linkedFromConnectionId: rel.connectionId,
+        arrowheadDirection: 'target',
+        arrowheadLocked: true,
+      })
+      if (connId) {
+        diagramStore.pushHistory('Add link from relationship')
+      }
+    } else {
+      diagramStore.pushHistory('Add concept')
+    }
+  }
+
+  function commitTouchLinkDropAt(clientX: number, clientY: number) {
+    if (diagramStore.type !== 'concept_map') return
+
+    const targetId = getNodeElTargetIdAt(clientX, clientY)
+    const rel = linkDragFromRelationship.value
+    if (rel) {
+      if (targetId) {
+        const getNode = (id: string) => diagramStore.data?.nodes?.find((n) => n.id === id)
+        const anchor = pickAnchorNodeIdForRelationshipToExistingNode(
+          targetId,
+          rel.relSource,
+          rel.relTarget,
+          (id) => getNode(id)
+        )
+        if (anchor === targetId) {
+          return
+        }
+        eventBus.emit('concept_map:link_drop', {
+          sourceId: anchor,
+          targetId,
+          linkedFromConnectionId: rel.connectionId,
+        })
+        return
+      }
+      applyPaneDropForRelationshipToNewConcept(rel, clientX, clientY)
+      return
+    }
+
+    const sourceId = linkDragSourceId.value
+    if (!sourceId) return
+
+    if (targetId) {
+      if (targetId === sourceId) {
+        return
+      }
+      eventBus.emit('concept_map:link_drop', { sourceId, targetId })
+      return
+    }
+    applyPaneDropForNodeToNewConcept(sourceId, clientX, clientY)
   }
 
   const linkPreviewPath = computed(() => {
@@ -248,21 +444,8 @@ export function useDiagramCanvasConceptMapLink(options: {
       event.preventDefault()
       event.dataTransfer.dropEffect = 'copy'
     }
-    if (
-      hasLinkData &&
-      (linkDragSourceId.value || linkDragFromRelationship.value) &&
-      event.dataTransfer
-    ) {
-      const flowPos = screenToFlowCoordinate({ x: event.clientX, y: event.clientY })
-      linkDragCursor.value = { x: flowPos.x, y: flowPos.y }
-      const nodeEl = (event.target as HTMLElement).closest('.vue-flow__node')
-      const targetId = nodeEl?.getAttribute('data-id') ?? null
-      if (linkDragFromRelationship.value) {
-        linkDragTargetNodeId.value = targetId
-        return
-      }
-      linkDragTargetNodeId.value =
-        targetId && targetId !== linkDragSourceId.value ? targetId : null
+    if (hasLinkData && (linkDragSourceId.value || linkDragFromRelationship.value)) {
+      updateLinkPointerFromClient(event.clientX, event.clientY)
     }
   }
 
@@ -383,14 +566,15 @@ export function useDiagramCanvasConceptMapLink(options: {
   onMounted(() => {
     eventBus.on('concept_map:link_drop', handleConceptMapLinkDrop)
     eventBus.on('concept_map:label_cleared', handleConceptMapLabelCleared)
-    eventBus.on('concept_map:link_drag_start', handleConceptMapLinkDragStart)
+    eventBus.on('concept_map:link_handle_pointer_start', handleLinkHandlePointerStart)
     eventBus.on('concept_map:link_drag_end', handleConceptMapLinkDragEnd)
   })
 
   onUnmounted(() => {
+    endLinkPointerChase()
     eventBus.off('concept_map:link_drop', handleConceptMapLinkDrop)
     eventBus.off('concept_map:label_cleared', handleConceptMapLabelCleared)
-    eventBus.off('concept_map:link_drag_start', handleConceptMapLinkDragStart)
+    eventBus.off('concept_map:link_handle_pointer_start', handleLinkHandlePointerStart)
     eventBus.off('concept_map:link_drag_end', handleConceptMapLinkDragEnd)
   })
 

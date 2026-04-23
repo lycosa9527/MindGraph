@@ -20,7 +20,6 @@ export function useDiagramCanvasContextMenu(options: {
   presentationRailOpen: Ref<boolean>
   emitPaneClick: () => void
   diagramStore: DiagramCanvasContextMenuStore
-  dismissAllOptions: () => void
   t: (key: string) => string
 }) {
   const {
@@ -30,7 +29,6 @@ export function useDiagramCanvasContextMenu(options: {
     presentationRailOpen,
     emitPaneClick,
     diagramStore,
-    dismissAllOptions,
     t,
   } = options
 
@@ -77,8 +75,7 @@ export function useDiagramCanvasContextMenu(options: {
           y: event.clientY,
         }
       }
-      diagramStore.clearSelection()
-      dismissAllOptions()
+      /* Selection clear, relationship + inline rec dismiss: useInlineRecommendationsCoordinator */
       eventBus.emit('canvas:pane_clicked', {})
     }
     emitPaneClick()

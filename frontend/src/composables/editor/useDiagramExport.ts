@@ -1,6 +1,6 @@
 /**
  * useDiagramExport - Composable for exporting MindGraph diagrams
- * Supports PNG, SVG, PDF (via html-to-image + jspdf), and JSON
+ * Supports PNG, SVG, PDF (via html-to-image + jspdf), and MG interchange
  */
 import { ref } from 'vue'
 
@@ -13,6 +13,7 @@ import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useUIStore } from '@/stores/ui'
 import { apiRequest } from '@/utils/apiClient'
 import { getDiagramCanvasHtmlToImageOptions } from '@/utils/diagramHtmlToImage'
+import { encodeMgFileContents } from '@/utils/mgInterchange'
 
 function sanitizeFilename(name: string): string {
   return name.replace(/[/\\?%*:|"<>]/g, '-').trim() || 'diagram'
@@ -160,7 +161,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     }
   }
 
-  async function exportAsJson(): Promise<void> {
+  /** MindGraph diagram interchange: AES-GCM wrapped payload, `.mg` extension (not plain JSON). */
+  async function exportAsMgFile(): Promise<void> {
     const spec = getDiagramSpec()
     if (!spec) {
       notify.warning(t('canvas.export.noDiagramData'))
@@ -169,16 +171,17 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
 
     isExporting.value = true
     try {
-      const json = JSON.stringify(spec, null, 2)
-      const blob = new Blob([json], { type: 'application/json' })
+      const json = JSON.stringify(spec)
+      const bytes = await encodeMgFileContents(json)
+      const blob = new Blob([new Uint8Array(bytes)], { type: 'application/octet-stream' })
       const baseName = sanitizeFilename(getTitle())
       const timestamp = new Date().toISOString().slice(0, 10)
-      triggerDownloadBlob(blob, `${baseName}_${timestamp}.json`)
+      triggerDownloadBlob(blob, `${baseName}_${timestamp}.mg`)
 
-      logDiagramExport('json')
+      logDiagramExport('mg')
       notify.success(t('canvas.export.jsonSuccess'))
     } catch (error) {
-      console.error('JSON export failed:', error)
+      console.error('MG export failed:', error)
       notify.error(t('canvas.export.jsonError'))
     } finally {
       isExporting.value = false
@@ -196,8 +199,8 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
       case 'pdf':
         await exportAsPdf()
         break
-      case 'json':
-        await exportAsJson()
+      case 'mg':
+        await exportAsMgFile()
         break
       default:
         notify.warning(t('canvas.export.unknownFormat', { format }))
@@ -208,7 +211,7 @@ export function useDiagramExport(options: UseDiagramExportOptions) {
     exportAsPng,
     exportAsSvg,
     exportAsPdf,
-    exportAsJson,
+    exportAsMgFile,
     exportByFormat,
     isExporting,
   }

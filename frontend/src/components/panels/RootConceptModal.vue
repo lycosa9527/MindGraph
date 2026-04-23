@@ -7,7 +7,7 @@ import { computed, nextTick, onMounted, watch } from 'vue'
 
 import { ElButton, ElTooltip } from 'element-plus'
 
-import { Loader2, Plus, RefreshCw, X } from 'lucide-vue-next'
+import { Check, Loader2, Plus, RefreshCw, X } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
 import { PALETTE_CONCEPT_DRAG_MIME } from '@/composables/nodePalette/constants'
@@ -37,6 +37,9 @@ const {
   loadNextBatch,
   cancel,
   dismiss,
+  selectedIds,
+  toggleSelection,
+  finishSelection,
   switchConceptMapTab,
   initializeConceptMapRootModal,
   refreshConceptMapRootModal,
@@ -96,6 +99,11 @@ function handleClose() {
   emit('close')
 }
 
+async function handleFinish() {
+  const closed = await finishSelection()
+  if (closed) emit('close')
+}
+
 function handleCancel() {
   cancel()
   emit('close')
@@ -125,6 +133,14 @@ function getNodeCardStyle(suggestion: { source_llm?: string }, isSelected: boole
     : { borderColor: 'rgb(59, 130, 246)', backgroundColor: 'rgb(239, 246, 255)' }
   if (!colors) {
     return isSelected ? selectedStyle : {}
+  }
+  if (isSelected) {
+    return {
+      ...selectedStyle,
+      borderLeftWidth: '4px',
+      borderLeftStyle: 'solid',
+      borderLeftColor: colors.text,
+    }
   }
   return {
     borderColor: colors.border,
@@ -165,7 +181,6 @@ onMounted(async () => {
                   ? 'bg-white dark:bg-gray-600 text-gray-900 dark:text-white shadow-sm'
                   : 'text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200'
               "
-              :disabled="isLoading"
               :title="tabTitleAttr(tab)"
               @click="switchConceptMapTab(tab.id)"
             >
@@ -251,18 +266,33 @@ onMounted(async () => {
           <div
             v-for="suggestion in suggestions"
             :key="suggestion.id"
-            class="node-card p-3 rounded-lg border-2 transition-all cursor-grab active:cursor-grabbing border-gray-200 dark:border-gray-600 hover:border-blue-300 dark:hover:border-blue-700"
-            :style="getNodeCardStyle(suggestion, false)"
+            class="node-card p-3 rounded-lg border-2 transition-all border-gray-200 dark:border-gray-600"
+            :class="[
+              'cursor-pointer touch-manipulation',
+              !suggestion.source_llm && !selectedIds.includes(suggestion.id)
+                ? 'hover:border-blue-300 dark:hover:border-blue-700'
+                : '',
+            ]"
+            :style="getNodeCardStyle(suggestion, selectedIds.includes(suggestion.id))"
             draggable="true"
+            @click="toggleSelection(suggestion.id)"
             @dragstart="handleDragStart($event, suggestion)"
           >
-            <span
-              dir="auto"
-              class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words"
-              style="line-break: auto"
-            >
-              {{ suggestion.text }}
-            </span>
+            <div class="flex items-start gap-2">
+              <div
+                v-if="selectedIds.includes(suggestion.id)"
+                class="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center shrink-0 mt-0.5"
+              >
+                <Check class="w-3 h-3 text-white" />
+              </div>
+              <span
+                dir="auto"
+                class="text-sm text-gray-700 dark:text-gray-300 line-clamp-3 break-words min-w-0 flex-1"
+                style="line-break: auto"
+              >
+                {{ suggestion.text }}
+              </span>
+            </div>
           </div>
         </div>
       </div>
@@ -292,17 +322,28 @@ onMounted(async () => {
         <p class="text-xs text-gray-500 dark:text-gray-400">
           {{ t('rootConceptModal.helpFooter') }}
         </p>
+        <p class="text-xs text-gray-500 dark:text-gray-400 mt-2">
+          {{ t('nodePalette.helpFinish') }}
+        </p>
       </div>
     </div>
 
     <div
-      class="panel-footer p-4 border-t border-gray-200 dark:border-gray-700 flex gap-2 justify-center shrink-0"
+      class="panel-footer p-4 border-t border-gray-200 dark:border-gray-700 flex flex-wrap gap-2 justify-center shrink-0"
     >
       <ElButton
         size="default"
         @click="handleCancel"
       >
-        {{ t('common.close') }}
+        {{ t('nodePalette.cancel') }}
+      </ElButton>
+      <ElButton
+        type="primary"
+        size="default"
+        :disabled="selectedIds.length === 0"
+        @click="handleFinish"
+      >
+        {{ t('nodePalette.finish') }}
       </ElButton>
     </div>
   </div>

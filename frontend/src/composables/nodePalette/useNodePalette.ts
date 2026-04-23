@@ -241,6 +241,13 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     return `palette_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
   }
 
+  function generateDomainTabId(): string {
+    if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+      return `domain_${crypto.randomUUID()}`
+    }
+    return `domain_${Date.now()}_${Math.random().toString(36).slice(2, 11)}`
+  }
+
   async function startSessionsForAllParents(
     parents: Stage2Parent[],
     dt: DiagramType | null,
@@ -367,7 +374,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           return false
         }
         const newTabs = resolvedDomains.map((name: string) => ({
-          id: `domain_${crypto.randomUUID()}`,
+          id: generateDomainTabId(),
           name,
         }))
         panelsStore.updateNodePalette({
@@ -474,7 +481,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         errorMessage.value = t('nodePalette.error.couldNotAddBranch')
         return false
       }
-      const newTab = { id: `domain_${crypto.randomUUID()}`, name: firstDomainName }
+      const newTab = { id: generateDomainTabId(), name: firstDomainName }
       const tabs = [...(panelsStore.nodePalettePanel.conceptMapTabs ?? []), newTab]
       panelsStore.updateNodePalette({ conceptMapTabs: tabs, mode: newTab.id })
       const sharedIds = new Set(panelsStore.nodePalettePanel.suggestions.map((s) => s.id))

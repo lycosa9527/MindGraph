@@ -1,30 +1,20 @@
 /**
- * useDiagramImport - Import diagram from JSON file (landing page)
+ * useDiagramImport - Import diagram from encrypted `.mg` file (landing page)
  * Validates spec and stores in sessionStorage for CanvasPage to load
  */
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 
+import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { useLanguage, useNotifications } from '@/composables'
 import { IMPORT_SPEC_KEY } from '@/config'
-
-const VALID_DIAGRAM_TYPES: string[] = [
-  'circle_map',
-  'bubble_map',
-  'double_bubble_map',
-  'tree_map',
-  'brace_map',
-  'flow_map',
-  'multi_flow_map',
-  'bridge_map',
-  'mindmap',
-  'mind_map',
-  'concept_map',
-]
+import type { DiagramType } from '@/types'
+import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'
+import { MG_FILE_NOT_ENCRYPTED, decodeMgFileToJsonText } from '@/utils/mgInterchange'
 
 function isValidDiagramSpec(obj: unknown): obj is Record<string, unknown> {
   if (!obj || typeof obj !== 'object') return false
   const spec = obj as Record<string, unknown>
-  const type = spec.type as string | undefined
+  const type = spec.type as DiagramType | undefined
   if (!type || !VALID_DIAGRAM_TYPES.includes(type)) return false
   if (!Array.isArray(spec.nodes) || !Array.isArray(spec.connections)) return false
   // Require at least one node so we load via loadGenericSpec (saved format)
@@ -33,6 +23,7 @@ function isValidDiagramSpec(obj: unknown): obj is Record<string, unknown> {
 }
 
 export function useDiagramImport() {
+  const route = useRoute()
   const router = useRouter()
   const { t } = useLanguage()
   const notify = useNotifications()
@@ -40,21 +31,34 @@ export function useDiagramImport() {
   function triggerImport(): void {
     const input = document.createElement('input')
     input.type = 'file'
-    input.accept = '.json,application/json'
+    input.accept = '.mg'
     input.onchange = async () => {
       const file = input.files?.[0]
       if (!file) return
+      const lowerName = file.name.toLowerCase()
+      if (!lowerName.endsWith('.mg')) {
+        notify.error(t('canvas.import.invalidFile'))
+        return
+      }
       try {
-        const text = await file.text()
+        const buffer = await file.arrayBuffer()
+        const text = await decodeMgFileToJsonText(buffer)
         const parsed = JSON.parse(text) as unknown
         if (!isValidDiagramSpec(parsed)) {
           notify.error(t('canvas.import.invalidFile'))
           return
         }
         sessionStorage.setItem(IMPORT_SPEC_KEY, text)
-        router.push({ path: '/canvas', query: { import: '1' } })
+        router.push({
+          path: canvasPathForImportNavigation(route.path),
+          query: { import: '1' },
+        })
       } catch (error) {
         console.error('Import failed:', error)
+        if (error instanceof Error && error.message === MG_FILE_NOT_ENCRYPTED) {
+          notify.error(t('canvas.import.invalidFile'))
+          return
+        }
         notify.error(t('canvas.import.parseError'))
       }
     }

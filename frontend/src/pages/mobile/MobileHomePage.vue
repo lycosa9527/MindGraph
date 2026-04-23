@@ -61,7 +61,7 @@ function goToAccount() {
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">MindMate</div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.mindmateDesc', 'AI智能对话助手') }}
+            {{ t('mobile.mindmateDesc', '思维教研智能体') }}
           </div>
         </div>
         <ChevronRight
@@ -83,7 +83,7 @@ function goToAccount() {
         <div class="flex-1 min-w-0">
           <div class="text-base font-semibold text-gray-900">MindGraph</div>
           <div class="text-sm text-gray-500 mt-0.5">
-            {{ t('mobile.mindgraphDesc', '思维图示工具') }}
+            {{ t('mobile.mindgraphDesc', '思维图示智能体') }}
           </div>
         </div>
         <ChevronRight

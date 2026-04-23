@@ -1,8 +1,16 @@
 import type { Ref } from 'vue'
 import { ref } from 'vue'
 
+import {
+  conceptMapLinkChaseActive,
+  isTargetOnConceptMapLinkHandle,
+} from '@/composables/diagramCanvas/conceptMapLinkChaseState'
+import { eventBus } from '@/composables/core/useEventBus'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { ZOOM } from '@/config/uiConfig'
+
+/** Panes do not always emit click after touch; dispatch pane-dismiss when the gesture was a tap, not a pan. */
+const PANE_TAP_MAX_MOVE_PX = 12
 
 type BranchMove = ReturnType<typeof useBranchMoveDrag>
 
@@ -39,6 +47,7 @@ export function useDiagramCanvasMobileTouch(options: {
     let panStartVpX = 0
     let panStartVpY = 0
     let panStartZoom = 1
+    let singleFingerPaneSession: { hasMoved: boolean } | null = null
 
     function isOnNode(target: EventTarget | null): boolean {
       if (!(target instanceof HTMLElement)) return false
@@ -46,7 +55,14 @@ export function useDiagramCanvasMobileTouch(options: {
     }
 
     function onTouchStart(e: TouchEvent): void {
+      if (conceptMapLinkChaseActive.value) {
+        return
+      }
+      if (e.touches.length === 1 && isTargetOnConceptMapLinkHandle(e.target)) {
+        return
+      }
       if (e.touches.length >= 2) {
+        singleFingerPaneSession = null
         isPanning = false
         isPinching = true
         const t0 = e.touches[0]
@@ -68,6 +84,7 @@ export function useDiagramCanvasMobileTouch(options: {
           return
         }
         isPanning = true
+        singleFingerPaneSession = { hasMoved: false }
         const vp = getViewport()
         panStartX = e.touches[0].clientX
         panStartY = e.touches[0].clientY
@@ -79,6 +96,11 @@ export function useDiagramCanvasMobileTouch(options: {
     }
 
     function onTouchMove(e: TouchEvent): void {
+      if (conceptMapLinkChaseActive.value) {
+        e.preventDefault()
+        e.stopPropagation()
+        return
+      }
       if (isPinching && e.touches.length >= 2 && pinchStartDist > 0) {
         e.preventDefault()
         e.stopPropagation()
@@ -114,6 +136,9 @@ export function useDiagramCanvasMobileTouch(options: {
 
         const dx = e.touches[0].clientX - panStartX
         const dy = e.touches[0].clientY - panStartY
+        if (singleFingerPaneSession && Math.hypot(dx, dy) > PANE_TAP_MAX_MOVE_PX) {
+          singleFingerPaneSession.hasMoved = true
+        }
         setViewport(
           { x: panStartVpX + dx, y: panStartVpY + dy, zoom: panStartZoom },
           { duration: 0 }
@@ -127,6 +152,10 @@ export function useDiagramCanvasMobileTouch(options: {
         pinchStartDist = 0
       }
       if (e.touches.length === 0) {
+        if (singleFingerPaneSession && !singleFingerPaneSession.hasMoved) {
+          eventBus.emit('canvas:pane_clicked', {})
+        }
+        singleFingerPaneSession = null
         isPanning = false
       }
     }

@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.101.0] - 2026-04-23
+
+### Added
+- **Frontend / `.mg` interchange v1.1** (`frontend/src/utils/mgInterchange.ts`, `useDiagramExport.ts`, `useDiagramImport.ts`): encrypted diagram export uses a typed **`MG` + major/minor** header (v1.1) with AES-256-GCM; import still accepts legacy **`MG1`** payloads and rejects plain JSON masquerading as `.mg`.
+- **Frontend / Concept map — link handle hit-testing** (`conceptMapLinkChaseState.ts`, `useDiagramCanvasConceptMapLink.ts`, `CurvedEdge.vue`, `ConceptNode.vue`): shared **`data-mg-concept-link-handle`** attribute and `conceptMapLinkChaseActive` ref for reliable handle detection (including mobile); relationship link-drag logic expanded accordingly.
+
+### Changed
+- **Inline recommendations — prompts & context** (`agents/inline_recommendations/context_extractors.py`, `prompts/__init__.py`): richer per-diagram context extraction and prompt wiring aligned with Tab-triggered SSE completion.
+- **Frontend / Inline recommendations** (`useInlineRecommendations.ts`, `useInlineRecommendationsCoordinator.ts`, `inlineRecEligibility.ts`, `nodePalette/constants.ts`, `useNodePalette.ts`, `AIModelSelector.vue`, `DiagramCanvas.vue`): coordinator and eligibility rules refined; palette/constants updated; AI model strip integrates inline-rec state; canvas wiring adjusted for Tab sessions and multi-model results.
+- **Frontend / Diagram canvas** (`useDiagramCanvasContextMenu.ts`, `useDiagramCanvasEventBus.ts`, `useDiagramCanvasFit.ts`, `useDiagramCanvasMobileTouch.ts`, `useEventBus.ts`): pane/touch and fit behaviour tuned; mobile touch handling extended; event-bus typings/events adjusted.
+- **Frontend / Canvas & shell** (`CanvasPage.vue`, `CanvasTopBar.vue`, `MobileCanvasPage.vue`, `MobileHomePage.vue`, `RootConceptModal.vue`, `AppSidebarAccountFooter.vue`, `canvasBackNavigation.ts`, `saveConfig.ts`, `specIO.ts`): desktop and mobile canvas pages updated; root-concept modal and account footer tweaks; back-navigation and save/spec IO small fixes.
+- **Frontend / i18n (canvas)** (`locales/messages/*/canvas.ts`): canvas strings refreshed across locale bundles for new UI copy.
+
 ## [5.100.0] - 2026-04-23
 
 ### Added

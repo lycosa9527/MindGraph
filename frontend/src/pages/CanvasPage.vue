@@ -390,7 +390,8 @@ onMounted(async () => {
       const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
         | { id?: string; type?: string }
         | undefined
-      if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node)) return
+      if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections))
+        return
       if (!inlineRecStore.isReady) return
       startRecommendations(nodeId)
     },
@@ -427,7 +428,7 @@ onMounted(async () => {
     return // Don't load default template if loading from library
   }
 
-  // Priority 1b: Load imported diagram from JSON (landing page Import button)
+  // Priority 1b: Load imported diagram from `.mg` (landing page Import button)
   const importFlag = route.query.import
   if (importFlag === '1') {
     const importJson = sessionStorage.getItem(IMPORT_SPEC_KEY)
@@ -497,6 +498,11 @@ onMounted(async () => {
         console.error('Import load failed:', error)
         notify.error(t('notification.importInvalidData'))
       }
+    } else {
+      notify.error(t('canvas.import.invalidFile'))
+      const restQuery = { ...route.query }
+      delete restQuery.import
+      await router.replace({ path: route.path, query: restQuery })
     }
   }
 

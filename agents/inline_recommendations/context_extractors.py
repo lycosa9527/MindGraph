@@ -357,6 +357,47 @@ def extract_circle_map_context(
     return {"topic": topic, "context_texts": context_texts}
 
 
+def extract_concept_map_context(
+    nodes: List[Dict[str, Any]],
+    connections: Optional[List[Dict[str, Any]]] = None,
+    current_node_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    """
+    Extract concept map: central topic and existing concept (non-topic) node texts.
+    Reuses attribute_texts / topic shape from bubble map for shared prompt builder.
+    """
+    del connections, current_node_id
+    topic_node = next(
+        (
+            n
+            for n in nodes
+            if (n.get("id") in ("topic", "center", "root"))
+            or n.get("type") in ("topic", "center")
+            or (isinstance(n.get("data"), dict) and (n.get("data") or {}).get("nodeType") == "topic")
+        ),
+        None,
+    )
+    topic = _get_node_text(topic_node) if topic_node else ""
+    topic_id = (topic_node or {}).get("id")
+    seen = {topic_id} if topic_id else set()
+    attribute_texts: List[str] = []
+    for n in nodes:
+        nid = n.get("id")
+        if not nid or nid in seen:
+            continue
+        data = n.get("data") if isinstance(n.get("data"), dict) else {}
+        if data.get("nodeType") == "topic" or n.get("type") in ("topic", "center") or nid in (
+            "topic",
+            "center",
+            "root",
+        ):
+            continue
+        t = _get_node_text(n)
+        if t and not is_placeholder_text(t):
+            attribute_texts.append(t)
+    return {"topic": topic, "attribute_texts": attribute_texts}
+
+
 def extract_bubble_map_context(
     nodes: List[Dict[str, Any]],
     connections: Optional[List[Dict[str, Any]]] = None,
@@ -524,6 +565,7 @@ _EXTRACTORS = {
     "double_bubble_map": extract_double_bubble_context,
     "multi_flow_map": extract_multi_flow_context,
     "bridge_map": extract_bridge_map_context,
+    "concept_map": extract_concept_map_context,
 }
 
 
@@ -594,7 +636,7 @@ def extract_diagram_context(
     Dispatch to diagram-specific context extractor.
 
     diagram_type: mindmap, flow_map, tree_map, brace_map, circle_map,
-    bubble_map, double_bubble_map, multi_flow_map, bridge_map
+    bubble_map, double_bubble_map, multi_flow_map, bridge_map, concept_map
     """
     dt = (diagram_type or "").strip().lower()
     if dt == "mind_map":

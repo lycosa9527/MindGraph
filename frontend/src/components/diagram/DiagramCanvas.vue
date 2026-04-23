@@ -58,6 +58,11 @@ interface Props {
   showBackground?: boolean
   showMinimap?: boolean
   fitViewOnInit?: boolean
+  /**
+   * Concept maps: when fitViewOnInit is false, still zoom to the topic on first init unless
+   * this is false (used on mobile to keep default viewport and avoid auto zoom-to-topic).
+   */
+  conceptMapInitialTopicFit?: boolean
   handToolActive?: boolean
   collabLockedNodeIds?: string[]
   panOnDragButtons?: number[] | null
@@ -68,6 +73,7 @@ const props = withDefaults(defineProps<Props>(), {
   showBackground: true,
   showMinimap: false,
   fitViewOnInit: true,
+  conceptMapInitialTopicFit: true,
   handToolActive: false,
   collabLockedNodeIds: () => [],
   panOnDragButtons: null,
@@ -99,12 +105,8 @@ const diagramStore = useDiagramStore()
 const panelsStore = usePanelsStore()
 const uiStore = useUIStore()
 
-const {
-  generateRelationship,
-  generatingConnectionIds,
-  regenerateForNodeIfNeeded,
-  dismissAllOptions,
-} = useConceptMapRelationship()
+const { generateRelationship, generatingConnectionIds, regenerateForNodeIfNeeded } =
+  useConceptMapRelationship()
 provide(CONCEPT_MAP_GENERATING_KEY, generatingConnectionIds)
 
 const { backgroundColor } = useTheme({
@@ -215,6 +217,7 @@ const {
   diagramStore,
   panelsStore,
   fitViewOnInit: toRef(props, 'fitViewOnInit'),
+  conceptMapInitialTopicFit: toRef(props, 'conceptMapInitialTopicFit'),
   presentationRailOpen: toRef(props, 'presentationRailOpen'),
   presentationToolIsNotTimer,
   nodesLength,
@@ -243,7 +246,6 @@ const contextMenu = useDiagramCanvasContextMenu({
   presentationRailOpen: toRef(props, 'presentationRailOpen'),
   emitPaneClick: () => emit('paneClick'),
   diagramStore,
-  dismissAllOptions,
   t,
 })
 

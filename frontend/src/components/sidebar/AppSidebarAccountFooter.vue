@@ -3,6 +3,7 @@
  * Sidebar bottom: login CTA or user menu with account actions.
  */
 import { computed, inject, reactive, ref } from 'vue'
+import { useRoute } from 'vue-router'
 
 import {
   ChevronDown,
@@ -18,15 +19,18 @@ import {
 import IntlShareSiteModal from '@/components/mindgraph/IntlShareSiteModal.vue'
 import { useDiagramImport } from '@/composables'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
+import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
 const _raw = inject(appSidebarInjectionKey)
 if (!_raw) {
   throw new Error('AppSidebarAccountFooter must be used inside AppSidebar')
 }
 const s = reactive(_raw)
+const route = useRoute()
 const orgSubtitle = computed(() => s.userSubtitle as string)
 const showShareSiteModal = ref(false)
 const { triggerImport } = useDiagramImport()
+const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.path))
 </script>
 
 <template>
@@ -109,7 +113,10 @@ const { triggerImport } = useDiagramImport()
         </div>
         <template #dropdown>
           <el-dropdown-menu class="user-menu">
-            <el-dropdown-item @click="triggerImport">
+            <el-dropdown-item
+              v-if="showMindGraphGalleryImport"
+              @click="triggerImport"
+            >
               <Upload class="w-4 h-4 mr-2" />
               {{ s.t('mindgraphLanding.import') }}
             </el-dropdown-item>
@@ -172,7 +179,10 @@ const { triggerImport } = useDiagramImport()
         </el-badge>
         <template #dropdown>
           <el-dropdown-menu class="user-menu">
-            <el-dropdown-item @click="triggerImport">
+            <el-dropdown-item
+              v-if="showMindGraphGalleryImport"
+              @click="triggerImport"
+            >
               <Upload class="w-4 h-4 mr-2" />
               {{ s.t('mindgraphLanding.import') }}
             </el-dropdown-item>

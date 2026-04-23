@@ -26,6 +26,7 @@ export const INLINE_RECOMMENDATIONS_SUPPORTED_TYPES = [
   'double_bubble_map',
   'multi_flow_map',
   'bridge_map',
+  'concept_map',
 ] as const
 
 export const LEARNING_SHEET_PLACEHOLDER = '___'

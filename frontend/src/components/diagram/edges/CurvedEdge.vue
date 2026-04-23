@@ -12,10 +12,6 @@ import { ElIcon } from 'element-plus'
 
 import { Menu } from '@element-plus/icons-vue'
 
-import {
-  CONCEPT_LINK_FROM_RELATIONSHIP_TYPE,
-  type RelationshipLinkDragPayload,
-} from '@/composables/diagramCanvas/conceptMapLinkMime'
 import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
@@ -115,30 +111,29 @@ function handleLabelClick() {
   diagramStore.selectConnection(props.id)
 }
 
-function handleRelLinkDragStart(event: DragEvent) {
-  if (!event.dataTransfer) return
-  const p = path.value
-  const payload: RelationshipLinkDragPayload = {
-    connectionId: props.id,
-    sourceNodeId: props.source,
-    targetNodeId: props.target,
-    labelX: p.labelX,
-    labelY: p.labelY,
+function onRelLinkHandlePointerDown(e: PointerEvent) {
+  if (!isConceptMap.value) {
+    return
   }
-  event.dataTransfer.setData(CONCEPT_LINK_FROM_RELATIONSHIP_TYPE, JSON.stringify(payload))
-  event.dataTransfer.effectAllowed = 'copy'
-  event.dataTransfer.setDragImage(new Image(), 0, 0)
-  eventBus.emit('concept_map:link_drag_start', {
+  if (e.button !== 0) {
+    return
+  }
+  if (!e.isPrimary) {
+    return
+  }
+  e.preventDefault()
+  e.stopPropagation()
+  const p = path.value
+  eventBus.emit('concept_map:link_handle_pointer_start', {
+    pointerId: e.pointerId,
+    clientX: e.clientX,
+    clientY: e.clientY,
     connectionId: props.id,
     labelX: p.labelX,
     labelY: p.labelY,
     relSource: props.source,
     relTarget: props.target,
   })
-}
-
-function handleRelLinkDragEnd() {
-  eventBus.emit('concept_map:link_drag_end', {})
 }
 
 // Curvature per diagram type: mindmap uses tighter curves (like double bubble map differences)
@@ -446,15 +441,14 @@ const targetMarkerEnd = computed(() =>
     >
       <div
         v-show="isConceptMap && isEdgeSelected && !isEditing"
-        class="concept-rel-link-icon absolute"
+        class="concept-rel-link-icon concept-rel-link-handle absolute nodrag"
+        data-mg-concept-link-handle
+        @pointerdown.capture="onRelLinkHandlePointerDown"
       >
         <ElIcon
           :size="20"
-          class="text-blue-500 concept-rel-link-icon-inner nodrag"
-          draggable="true"
+          class="text-blue-500 concept-rel-link-icon-inner"
           :data-source-node-id="source"
-          @dragstart="handleRelLinkDragStart"
-          @dragend="handleRelLinkDragEnd"
         >
           <Menu />
         </ElIcon>
@@ -569,6 +563,10 @@ const targetMarkerEnd = computed(() =>
   transform: translateX(-50%);
   z-index: 10;
   pointer-events: none;
+}
+
+.concept-rel-link-handle {
+  touch-action: none;
 }
 
 .concept-rel-link-icon-inner {

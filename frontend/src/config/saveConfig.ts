@@ -20,5 +20,5 @@ export const SAVE = {
   MAX_SPEC_SIZE_KB: 500,
 } as const
 
-/** Session storage key for diagram import from JSON (landing page → canvas) */
+/** Session storage key for diagram import from `.mg` (landing page → canvas) */
 export const IMPORT_SPEC_KEY = 'mindgraph_import_spec'
