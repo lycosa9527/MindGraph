@@ -13,6 +13,8 @@ export interface NodePaletteStreamDeps {
   panelsStore: PanelsStoreForStream
   promptLanguage: Ref<string>
   abortController: Ref<AbortController | null>
+  /** Every in-flight fetch (including useGlobalAbort: false domain-tab streams) */
+  paletteActiveControllers: Ref<AbortController[]>
   errorMessage: Ref<string | null>
   onError?: (msg: string) => void
   paletteStreamPhase: Ref<'idle' | 'requesting' | 'streaming'>
@@ -39,6 +41,7 @@ export async function streamNodePaletteBatch(
     panelsStore,
     promptLanguage,
     abortController,
+    paletteActiveControllers,
     errorMessage,
     onError,
     paletteStreamPhase,
@@ -54,6 +57,7 @@ export async function streamNodePaletteBatch(
 
   const useGlobalAbort = options?.useGlobalAbort !== false
   const controller = new AbortController()
+  paletteActiveControllers.value.push(controller)
   if (useGlobalAbort) {
     abortController.value = controller
   }
@@ -149,8 +153,10 @@ export async function streamNodePaletteBatch(
               await new Promise<void>((r) => requestAnimationFrame(() => r()))
             } else if (data.event === 'error') {
               const msg = data.message ?? 'Unknown error'
-              errorMessage.value = msg
-              onError?.(msg)
+              if (!controller.signal.aborted) {
+                errorMessage.value = msg
+                onError?.(msg)
+              }
             } else if (data.event === 'batch_complete') {
               // Stream finished for this batch
             }
@@ -169,6 +175,7 @@ export async function streamNodePaletteBatch(
 
     return nodeCount
   } finally {
+    paletteActiveControllers.value = paletteActiveControllers.value.filter((c) => c !== controller)
     streamBatchDepth.value -= 1
     if (streamBatchDepth.value === 0) {
       paletteStreamPhase.value = 'idle'

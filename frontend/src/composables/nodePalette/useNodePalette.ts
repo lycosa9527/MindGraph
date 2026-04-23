@@ -73,16 +73,41 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const isLoadingMore = ref(false)
   const errorMessage = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
+  const paletteActiveControllers = ref<AbortController[]>([])
 
   /** Node palette tab strip: blue = request in flight, green = first SSE node received */
   const paletteStreamPhase = ref<'idle' | 'requesting' | 'streaming'>('idle')
   const streamBatchDepth = { value: 0 }
   const firstNodeReceivedInBatch = { value: false }
 
+  function abortAllPaletteStreaming(): void {
+    const seen = new Set<AbortController>()
+    for (const c of paletteActiveControllers.value) {
+      seen.add(c)
+    }
+    if (abortController.value) {
+      seen.add(abortController.value)
+    }
+    paletteActiveControllers.value = []
+    abortController.value = null
+    for (const c of seen) {
+      try {
+        c.abort()
+      } catch {
+        // ignore
+      }
+    }
+    isLoading.value = false
+    isLoadingMore.value = false
+    paletteStreamPhase.value = 'idle'
+    errorMessage.value = null
+  }
+
   const streamDeps = {
     panelsStore,
     promptLanguage,
     abortController,
+    paletteActiveControllers,
     errorMessage,
     onError,
     paletteStreamPhase,
@@ -782,9 +807,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   }
 
   function cancel(): void {
-    if (abortController.value) {
-      abortController.value.abort()
-    }
+    abortAllPaletteStreaming()
     sessionId.value = null
     centerTopic.value = ''
     const diagramKey = getNodePaletteDiagramKey(
@@ -800,9 +823,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   /** Close panel without clearing suggestions/selection - save to session store for reopen */
   function dismiss(): void {
-    if (abortController.value) {
-      abortController.value.abort()
-    }
+    abortAllPaletteStreaming()
     sessionId.value = null
     const diagramKey = getNodePaletteDiagramKey(
       diagramType.value ?? 'unknown',
@@ -822,10 +843,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (!isDoubleBubble && !isMultiFlow) return false
     if (isDoubleBubble && mode !== 'similarities' && mode !== 'differences') return false
     if (isMultiFlow && mode !== 'causes' && mode !== 'effects') return false
-    if (abortController.value) {
-      abortController.value.abort()
-      abortController.value = null
-    }
+    abortAllPaletteStreaming()
     panelsStore.updateNodePalette({ mode })
     errorMessage.value = null
     const defaultMode = isDoubleBubble ? 'similarities' : 'causes'
@@ -865,10 +883,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   async function switchConceptMapTab(tabId: string): Promise<boolean> {
     if (diagramType.value !== 'concept_map') return false
     if (panelsStore.nodePalettePanel.mode === tabId) return true
-    if (abortController.value) {
-      abortController.value.abort()
-      abortController.value = null
-    }
+    abortAllPaletteStreaming()
     panelsStore.updateNodePalette({ mode: tabId })
     errorMessage.value = null
     const suggestionsForTab = panelsStore.nodePalettePanel.suggestions.filter(
@@ -907,10 +922,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (stageDataIdKey) {
       stageData[stageDataIdKey] = parentId
     }
-    if (abortController.value) {
-      abortController.value.abort()
-      abortController.value = null
-    }
+    abortAllPaletteStreaming()
     panelsStore.updateNodePalette({
       stage: stageName,
       stage_data: stageData,
@@ -945,10 +957,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   )
 
   function resetSessionState(): void {
-    if (abortController.value) {
-      abortController.value.abort()
-      abortController.value = null
-    }
+    abortAllPaletteStreaming()
     sessionId.value = null
     centerTopic.value = ''
     errorMessage.value = null
@@ -957,6 +966,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   eventBus.onWithOwner('diagram:loaded', resetSessionState, 'useNodePalette')
   eventBus.onWithOwner('diagram:type_changed', resetSessionState, 'useNodePalette')
+  eventBus.onWithOwner('node_palette:streaming_stop_requested', abortAllPaletteStreaming, 'useNodePalette')
 
   function removeConceptMapTabsForDeletedNodes(payload: EventTypes['diagram:nodes_deleted']): void {
     const nodeIds = payload.nodeIds ?? payload.deletedIds ?? []
@@ -982,10 +992,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   onUnmounted(() => {
     eventBus.removeAllListenersForOwner('useNodePalette')
-    if (abortController.value) {
-      abortController.value.abort()
-      abortController.value = null
-    }
+    abortAllPaletteStreaming()
     if (_asSingleton) {
       _nodePaletteInstance = null
     }

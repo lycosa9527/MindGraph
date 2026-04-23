@@ -48,6 +48,8 @@ export type EventTypes = {
     /** True when panel was already open and we switched to a new node tab (concept generation) */
     wasPanelAlreadyOpen?: boolean
   }
+  /** Stop all node-palette SSE requests (e.g. panel closed or canvas exited). */
+  'node_palette:streaming_stop_requested': Record<string, never>
 
   // Diagram Events
   'diagram:render_requested': { source?: string }

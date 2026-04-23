@@ -63,6 +63,8 @@ export interface NodePalettePanelState {
   stage_data?: Record<string, unknown> | null
   /** For concept_map: tabs for main topic + per-node sub-concept generation */
   conceptMapTabs?: ConceptMapTab[]
+  /** True when palette opened from concept map 「生成概念」 — modal shows concept-list title */
+  useConceptListHeader?: boolean
 }
 
 /** Saved session state when user dismisses (X) node palette - restored on reopen */

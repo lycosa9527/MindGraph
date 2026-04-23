@@ -145,6 +145,9 @@ export function useCanvasToolbarApps() {
       return
     }
     const options: Record<string, unknown> = {}
+    if (isConceptMap.value) {
+      options.useConceptListHeader = true
+    }
     if (isConceptMap.value && diagramStore.selectedNodes.length === 1) {
       const nodeId = diagramStore.selectedNodes[0]
       const node = diagramStore.data?.nodes?.find((n) => n.id === nodeId)

@@ -44,6 +44,7 @@ export const usePanelsStore = defineStore('panels', () => {
     mode: null,
     stage: null,
     stage_data: null,
+    useConceptListHeader: false,
   })
 
   const nodePaletteSessionsByDiagram = ref<Map<string, NodePaletteSessionSnapshot>>(new Map())
@@ -167,6 +168,7 @@ export const usePanelsStore = defineStore('panels', () => {
         stage_data: snapshot.stage_data ?? null,
         conceptMapTabs,
         open: true,
+        useConceptListHeader: restOptions.useConceptListHeader === true,
       }
     } else {
       let conceptMapTabs: ConceptMapTab[] | undefined = restOptions.conceptMapTabs
@@ -185,6 +187,7 @@ export const usePanelsStore = defineStore('panels', () => {
         ...restOptions,
         conceptMapTabs,
         mode: mode ?? restOptions.mode ?? null,
+        useConceptListHeader: restOptions.useConceptListHeader === true,
       }
     }
     if (!wasOpen) {
@@ -261,6 +264,9 @@ export const usePanelsStore = defineStore('panels', () => {
 
   function closeNodePalette(): void {
     const wasOpen = nodePalette.value.open
+    if (wasOpen) {
+      eventBus.emit('node_palette:streaming_stop_requested', {})
+    }
     nodePalette.value.open = false
     if (wasOpen) {
       eventBus.emit('panel:closed', { panel: 'nodePalette', isOpen: false })
@@ -302,6 +308,7 @@ export const usePanelsStore = defineStore('panels', () => {
    */
   function clearNodePaletteState(options?: { clearSessions?: boolean }): void {
     const clearSessions = options?.clearSessions ?? true
+    eventBus.emit('node_palette:streaming_stop_requested', {})
     nodePalette.value = {
       ...nodePalette.value,
       suggestions: [],
@@ -310,6 +317,7 @@ export const usePanelsStore = defineStore('panels', () => {
       stage: null,
       stage_data: null,
       conceptMapTabs: undefined,
+      useConceptListHeader: false,
     }
     if (clearSessions) {
       nodePaletteSessionsByDiagram.value = new Map()
@@ -399,6 +407,7 @@ export const usePanelsStore = defineStore('panels', () => {
    * Reset all panel state. Called on canvas exit to avoid memory leaks.
    */
   function reset(): void {
+    eventBus.emit('node_palette:streaming_stop_requested', {})
     mindmate.value = {
       open: false,
       conversationId: null,
@@ -413,6 +422,7 @@ export const usePanelsStore = defineStore('panels', () => {
       mode: null,
       stage: null,
       stage_data: null,
+      useConceptListHeader: false,
     }
     nodePaletteSessionsByDiagram.value = new Map()
     property.value = {

@@ -154,4 +154,5 @@ export default {
   'rootConceptModal.splittingLoading': 'Splitting branches and generating concepts…',
   'rootConceptModal.tabTitleRoot': 'Root concept: {text}',
   'rootConceptModal.title': 'Root concept',
+  'rootConceptModal.titleConceptList': 'Concept list',
 } as const

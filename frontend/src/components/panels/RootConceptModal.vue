@@ -74,6 +74,12 @@ const paletteTabStripGlowClass = computed(() => {
   return 'palette-tab-strip-wrap--requesting'
 })
 
+const rootConceptModalHeading = computed(() =>
+  panelsStore.nodePalettePanel.useConceptListHeader
+    ? t('rootConceptModal.titleConceptList', 'Concept list')
+    : t('rootConceptModal.title')
+)
+
 watch(
   () => [conceptMapTabs.value, panelsStore.nodePalettePanel.mode] as const,
   ([tabs, mode]) => {
@@ -166,7 +172,7 @@ onMounted(async () => {
     >
       <div class="flex gap-3 min-w-0 flex-1 items-center">
         <h3 class="text-sm font-semibold text-gray-800 dark:text-white truncate shrink-0">
-          {{ t('rootConceptModal.title') }}
+          {{ rootConceptModalHeading }}
         </h3>
         <div
           v-if="conceptMapTabs.length > 0"

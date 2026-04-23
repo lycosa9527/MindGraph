@@ -146,4 +146,5 @@ export default {
   'rootConceptModal.splittingLoading': '正在劃分知識分支並生成概念…',
   'rootConceptModal.tabTitleRoot': '根概念：{text}',
   'rootConceptModal.title': '根概念',
+  'rootConceptModal.titleConceptList': '概念列表',
 } as const
