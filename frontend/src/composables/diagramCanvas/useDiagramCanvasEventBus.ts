@@ -4,7 +4,9 @@ import { nextTick } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION } from '@/config/uiConfig'
 import { useDiagramStore } from '@/stores'
+import { useUIStore } from '@/stores/ui'
 import type { Connection, DiagramNode, DiagramType, MindGraphNode } from '@/types'
+import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
 import { normalizeAllConceptMapTopicRootLabels } from '@/utils/conceptMapTopicRootEdge'
 import { waitForNextPaint } from '@/utils/diagramHtmlToImage'
 
@@ -62,6 +64,7 @@ export function useDiagramCanvasEventBus(): {
 
   function mountSubscriptions(ctx: DiagramCanvasEventBusContext): () => void {
     const unsubscribers: (() => void)[] = []
+    const uiStore = useUIStore()
     const {
       diagramStore,
       getNodes,
@@ -85,8 +88,16 @@ export function useDiagramCanvasEventBus(): {
       })
     )
 
+    function allowViewportFitEvent(
+      data: { userInitiated?: boolean; forExport?: boolean } | undefined
+    ): boolean {
+      if (!isDesktopConceptMapManualViewport(diagramStore, uiStore)) return true
+      return Boolean(data?.userInitiated || data?.forExport)
+    }
+
     unsubscribers.push(
       eventBus.on('view:fit_to_window_requested', (data) => {
+        if (!allowViewportFitEvent(data)) return
         const animate = data?.animate !== false
         fitApi.fitToFullCanvas(animate)
       })
@@ -94,6 +105,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('view:fit_to_canvas_requested', (data) => {
+        if (!allowViewportFitEvent(data)) return
         const animate = data?.animate !== false
         fitApi.fitWithPanel(animate)
       })
@@ -101,6 +113,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('diagram:branch_moved', () => {
+        if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) return
         setTimeout(() => {
           eventBus.emit('view:fit_to_canvas_requested', { animate: true })
         }, ANIMATION.FIT_DELAY)
@@ -109,6 +122,7 @@ export function useDiagramCanvasEventBus(): {
 
     unsubscribers.push(
       eventBus.on('view:fit_diagram_requested', () => {
+        if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) return
         fitApi.fitDiagram(true)
       })
     )

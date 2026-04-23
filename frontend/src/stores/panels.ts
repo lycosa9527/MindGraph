@@ -14,6 +14,8 @@ import { defineStore } from 'pinia'
 
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores/diagram'
+import { useUIStore } from '@/stores/ui'
+import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
 import type {
   ConceptMapTab,
   MindmateMessage,
@@ -263,8 +265,12 @@ export const usePanelsStore = defineStore('panels', () => {
     if (wasOpen) {
       eventBus.emit('panel:closed', { panel: 'nodePalette', isOpen: false })
       eventBus.emit('state:panel_closed', { panel: 'nodePalette' })
-      // Re-fit diagram after panel closes (canvas gains space; 300ms matches slide transition)
-      setTimeout(() => eventBus.emit('view:fit_diagram_requested', {}), 300)
+      // Re-fit after close when canvas regains space (300ms ≈ slide). Desktop concept maps: manual view only.
+      const diagramStore = useDiagramStore()
+      const uiStore = useUIStore()
+      if (!isDesktopConceptMapManualViewport(diagramStore, uiStore)) {
+        setTimeout(() => eventBus.emit('view:fit_diagram_requested', {}), 300)
+      }
     }
   }
 

@@ -6,7 +6,8 @@
  * Two-View Zoom System:
  * - fitToFullCanvas(): Fits diagram to full canvas (no panel space reserved)
  * - fitWithPanel(): Fits diagram with space reserved for right-side panels
- * - Automatically re-fits when panels open/close
+ * - Re-fits when panels open/close on most types; desktop concept maps never auto-fit (only user toolbar
+ *   “fit” / zoom controls, or `forExport` screenshots, may change the view — see `conceptMapDesktopViewport.ts`)
  *
  * SVG text / RTL: primary labels use InlineEditableText (HTML, dir=auto). Decorative
  * overlays (brace/tree/bridge) use SVG <text>; bidi for all-RTL strings can be weaker
@@ -59,8 +60,9 @@ interface Props {
   showMinimap?: boolean
   fitViewOnInit?: boolean
   /**
-   * Concept maps: when fitViewOnInit is false, still zoom to the topic on first init unless
-   * this is false (used on mobile to keep default viewport and avoid auto zoom-to-topic).
+   * Concept maps: when fitViewOnInit is false, zoom to the topic on first init only if true.
+   * Desktop canvas leaves this false (default viewport). Mobile passes true so small screens
+   * center the topic on first paint.
    */
   conceptMapInitialTopicFit?: boolean
   handToolActive?: boolean
@@ -73,7 +75,7 @@ const props = withDefaults(defineProps<Props>(), {
   showBackground: true,
   showMinimap: false,
   fitViewOnInit: true,
-  conceptMapInitialTopicFit: true,
+  conceptMapInitialTopicFit: false,
   handToolActive: false,
   collabLockedNodeIds: () => [],
   panOnDragButtons: null,

@@ -2,6 +2,11 @@
 /**
  * Root concept modal (concept maps only): AI-suggested concepts to drag onto the canvas.
  * Uses the same node palette store/session as other diagrams but is separate from NodePalettePanel.
+ *
+ * Viewport: this component does not call fit/view events. Close paths use
+ * `panelsStore.closeNodePalette()` (via dismiss / cancel / finishSelection in useNodePalette).
+ * Desktop concept maps: no auto refit on palette close (`stores/panels.ts`) and no programmatic fit unless
+ * the user uses zoom/fit controls (`userInitiated` on `view:fit_to_canvas_requested`).
  */
 import { computed, nextTick, onMounted, watch } from 'vue'
 

@@ -672,6 +672,7 @@ onUnmounted(() => {
           :show-background="true"
           :show-minimap="false"
           :fit-view-on-init="diagramStore.type !== 'concept_map'"
+          :concept-map-initial-topic-fit="false"
           :hand-tool-active="handToolActive"
           :collab-locked-node-ids="collabLockedNodeIds"
           :presentation-rail-open="presentationRailOpen"

@@ -643,7 +643,8 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
         const sd = conceptMapStageDataForMode(displayMode)
         if (sd) payload.stage_data = sd
       }
-      await streamBatch(NODE_PALETTE_START, payload)
+      // keepSessionId: tab/stage switch — append so other tabs' suggestions (and selections) stay in store.
+      await streamBatch(NODE_PALETTE_START, payload, { append: keepSessionId })
       return true
     } catch (err) {
       if (isAbortError(err)) return false

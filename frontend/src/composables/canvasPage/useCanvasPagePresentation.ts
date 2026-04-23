@@ -228,7 +228,7 @@ export function useCanvasPagePresentation() {
   })
 
   function emitFitToCanvas() {
-    eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+    eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
   }
 
   function handleZoomChange(level: number) {
@@ -245,7 +245,7 @@ export function useCanvasPagePresentation() {
   }
 
   function handleFitToScreen() {
-    eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+    eventBus.emit('view:fit_to_canvas_requested', { animate: true, userInitiated: true })
   }
 
   function handleHandToolToggle(active: boolean) {

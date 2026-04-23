@@ -7,6 +7,8 @@ import { eventBus } from '@/composables/core/useEventBus'
 import { ANIMATION, FIT_PADDING, PANEL, ZOOM } from '@/config/uiConfig'
 import type { useDiagramStore } from '@/stores/diagram'
 import type { usePanelsStore } from '@/stores/panels'
+import { useUIStore } from '@/stores/ui'
+import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
 type PanelsStore = ReturnType<typeof usePanelsStore>
@@ -26,8 +28,8 @@ export function useDiagramCanvasFit(options: {
   panelsStore: PanelsStore
   fitViewOnInit: Ref<boolean>
   /**
-   * When false (e.g. mobile), do not run fitView to the topic node on init for concept_map.
-   * Desktop keeps this true so the topic is centered on first paint.
+   * When true (mobile canvas), run fitView to the topic node once on init for concept_map.
+   * Desktop keeps this false so the viewport stays at default zoom/center.
    */
   conceptMapInitialTopicFit: Ref<boolean>
   presentationRailOpen: Ref<boolean>
@@ -60,6 +62,7 @@ export function useDiagramCanvasFit(options: {
     nodesLength,
   } = options
 
+  const uiStore = useUIStore()
   const isFittedForPanel = ref(false)
   const hasInitialFitDoneForDiagram = ref(false)
   let fitFromNodesChangeTimeoutId: ReturnType<typeof setTimeout> | null = null
@@ -249,6 +252,9 @@ export function useDiagramCanvasFit(options: {
     if (!fitViewOnInit.value) {
       if (diagramStore.type === 'concept_map') {
         hasInitialFitDoneForDiagram.value = true
+        if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) {
+          return
+        }
         setTimeout(() => {
           if (!conceptMapInitialTopicFit.value) {
             setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })

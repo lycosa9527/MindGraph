@@ -57,7 +57,7 @@ onMounted(async () => {
 
     await nextTick()
 
-    eventBus.emit('view:fit_to_canvas_requested', { animate: false })
+    eventBus.emit('view:fit_to_canvas_requested', { animate: false, forExport: true })
 
     await nextTick()
     await new Promise<void>((resolve) => setTimeout(resolve, 800))

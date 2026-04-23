@@ -360,7 +360,9 @@ async function handleReset() {
   diagramStore.clearHistory()
   diagramStore.loadDefaultTemplate(diagramType)
   diagramStore.initTitle(generateDefaultName())
-  eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+  if (diagramType !== 'concept_map') {
+    eventBus.emit('view:fit_to_canvas_requested', { animate: true })
+  }
   notify.success(t('notification.resetDefaultTemplate'))
 }
 </script>
