@@ -71,6 +71,7 @@ export default defineConfig({
       'katex',
       'katex/contrib/mhchem',
       'dompurify',
+      'lucide-vue-next',
       'mathlive',
     ],
   },
@@ -101,10 +102,17 @@ export default defineConfig({
     // (Tailwind generate / enhanced-resolve does not resolve tsconfigPaths for those).
     tsconfigPaths: true,
     // One KaTeX instance so `katex/contrib/mhchem` registers `\ce` on the same copy used by @vscode/markdown-it-katex.
-    dedupe: ['katex'],
+    dedupe: ['katex', 'vue'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@data': resolve(__dirname, '../data'),
+      // Rolldown production builds mishandle lucide-vue-next's per-icon ESM files
+      // (`export { createLucideIcon as default }`), breaking `npm run preview` / deploy.
+      // Single CJS bundle matches dev (esbuild prebundle) interop; see lucide#2087.
+      'lucide-vue-next': resolve(
+        __dirname,
+        'node_modules/lucide-vue-next/dist/cjs/lucide-vue-next.js'
+      ),
     },
   },
   server: {
