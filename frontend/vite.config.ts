@@ -10,53 +10,6 @@ import { fileURLToPath } from 'url'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
-// Vendor chunk patterns (order: specific → general; first match wins)
-const vendorChunkGroups = [
-  {
-    name: 'vendor-element-plus',
-    test: /node_modules[\\/](?:element-plus|@element-plus\/icons-vue)[\\/]/,
-  },
-  {
-    name: 'vendor-echarts',
-    test: /node_modules[\\/](?:echarts|zrender)[\\/]/,
-  },
-  {
-    name: 'vendor-vueflow',
-    test: /node_modules[\\/]@vue-flow[\\/]/,
-  },
-  // vue-demi + TanStack Query + hoisted @vueuse: same Rolldown chunk avoids broken
-  // inject/interop when these were split (e.g. useQueryClient). Nested @vueuse under
-  // element-plus / vue-flow stays in those chunks but resolves hoisted vue-demi.
-  {
-    name: 'vendor-query-demi-vueuse',
-    test: /node_modules[\\/](?:@tanstack\/vue-query|vue-demi|@vueuse\/core|@vueuse\/shared)[\\/]/,
-  },
-  {
-    name: 'vendor-vue',
-    test: /node_modules[\\/](?:vue-router|pinia|vue)[\\/]/,
-  },
-  {
-    name: 'vendor-highlight-js',
-    test: /node_modules[\\/]highlight\.js[\\/]/,
-  },
-  {
-    name: 'vendor-katex',
-    test: /node_modules[\\/]katex[\\/]/,
-  },
-  {
-    name: 'vendor-markdown-it',
-    test: /node_modules[\\/](?:markdown-it|@vscode[\\/]markdown-it-katex)[\\/]/,
-  },
-  {
-    name: 'vendor-mathlive',
-    test: /node_modules[\\/]mathlive[\\/]/,
-  },
-  {
-    name: 'vendor-utils',
-    test: /node_modules[\\/](?:axios|mitt|dompurify)[\\/]/,
-  },
-]
-
 // Read version from VERSION file (single source of truth)
 const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 
@@ -159,14 +112,9 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Element Plus + icons is ~1.2MB minified; splitting further needs deeper on-demand adoption.
+    // Element Plus + icons is ~1.2MB minified. Let Rolldown choose shared chunks:
+    // manual vendor grouping caused production-only interop failures where minified
+    // imports such as `dt(...)` were not callable in preview/deploy builds.
     chunkSizeWarningLimit: 1300,
-    rolldownOptions: {
-      output: {
-        codeSplitting: {
-          groups: vendorChunkGroups,
-        },
-      },
-    },
   },
 })
