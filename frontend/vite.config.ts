@@ -25,6 +25,10 @@ const vendorChunkGroups = [
     test: /node_modules[\\/]@vue-flow[\\/]/,
   },
   {
+    name: 'vendor-tanstack-vue-query',
+    test: /node_modules[\\/](?:@tanstack\/vue-query|vue-demi)[\\/]/,
+  },
+  {
     name: 'vendor-vue',
     test: /node_modules[\\/](?:vue-router|pinia|vue)[\\/]/,
   },
@@ -73,6 +77,8 @@ export default defineConfig({
       'dompurify',
       'lucide-vue-next',
       'mathlive',
+      '@tanstack/vue-query',
+      'vue-demi',
     ],
   },
   plugins: [
@@ -102,7 +108,7 @@ export default defineConfig({
     // (Tailwind generate / enhanced-resolve does not resolve tsconfigPaths for those).
     tsconfigPaths: true,
     // One KaTeX instance so `katex/contrib/mhchem` registers `\ce` on the same copy used by @vscode/markdown-it-katex.
-    dedupe: ['katex', 'vue'],
+    dedupe: ['katex', 'vue', 'vue-demi'],
     alias: {
       '@': resolve(__dirname, 'src'),
       '@data': resolve(__dirname, '../data'),
