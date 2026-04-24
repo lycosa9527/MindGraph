@@ -13,8 +13,8 @@ from datetime import UTC, datetime
 from typing import Sequence, Union
 
 import sqlalchemy as sa
-from sqlalchemy import text
 from sqlalchemy.dialects import postgresql as pg
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 
 from alembic import op
 
@@ -26,6 +26,26 @@ depends_on: Union[str, Sequence[str], None] = None
 
 def _has_table(name: str) -> bool:
     return sa.inspect(op.get_bind()).has_table(name)
+
+
+# Typed table for seed rows: Core insert lets the dialect adapt ``dict`` → jsonb (no raw ``text()``).
+_market_listings_seed = sa.table(
+    "market_listings",
+    sa.column("slug", sa.String()),
+    sa.column("listing_kind", sa.String()),
+    sa.column("title", sa.String()),
+    sa.column("description", sa.Text()),
+    sa.column("price_minor", sa.Integer()),
+    sa.column("currency", sa.String()),
+    sa.column("product_type", sa.String()),
+    sa.column("scene", sa.String()),
+    sa.column("subject", sa.String()),
+    sa.column("spec_json", pg.JSONB(astext_type=sa.Text())),
+    sa.column("extra_json", pg.JSONB(astext_type=sa.Text())),
+    sa.column("is_active", sa.Boolean()),
+    sa.column("created_at", sa.DateTime()),
+    sa.column("updated_at", sa.DateTime()),
+)
 
 
 def upgrade() -> None:
@@ -217,21 +237,12 @@ def _seed_listings() -> None:
     if not _has_table("market_listings"):
         return
     bind = op.get_bind()
-    stmt = text(
-        """
-        INSERT INTO market_listings (
-            slug, listing_kind, title, description, price_minor, currency,
-            product_type, scene, subject, spec_json, extra_json, is_active, created_at, updated_at
-        ) VALUES (
-            :slug, :listing_kind, :title, :description, :price_minor, :currency,
-            :product_type, :scene, :subject, :spec_json, :extra_json,
-            :is_active, :created_at, :updated_at
-        )
-        ON CONFLICT (slug) DO NOTHING
-        """
-    )
     for row in rows:
-        bind.execute(stmt, row)
+        bind.execute(
+            pg_insert(_market_listings_seed)
+            .values(**row)
+            .on_conflict_do_nothing(index_elements=["slug"])
+        )
 
 
 def downgrade() -> None:

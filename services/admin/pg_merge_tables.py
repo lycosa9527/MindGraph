@@ -17,8 +17,11 @@ All Rights Reserved -- Proprietary License
 import logging
 from typing import Any, Dict, FrozenSet, List, Optional, Set, Tuple
 
-from sqlalchemy import text
+from sqlalchemy import insert, text
 from sqlalchemy.engine import Engine
+from sqlalchemy.sql.schema import Table
+
+from models.domain.registry import Base
 
 logger = logging.getLogger(__name__)
 
@@ -430,6 +433,11 @@ def ordered_table_names() -> List[str]:
 # ---------------------------------------------------------------------------
 
 
+def _row_for_orm_table(table: Table, values: Dict[str, Any]) -> Dict[str, Any]:
+    """Keep only keys that exist on the model table (drops staging-only columns)."""
+    return {k: v for k, v in values.items() if k in table.c}
+
+
 def _build_dedup_lookup(
     live_engine: Engine,
     table_name: str,
@@ -662,12 +670,13 @@ def merge_table(
         pending_inserts.append((old_pk, values, old_self_ref))
 
     if pending_inserts:
-        first_values = pending_inserts[0][1]
-        col_names = list(first_values.keys())
-        placeholders = ", ".join(f":{c}" for c in col_names)
-        cols_sql = ", ".join(f'"{c}"' for c in col_names)
-        returning = f' RETURNING "{pk_col}"' if pk_type == "serial" else ""
-        insert_sql = text(f'INSERT INTO "{table_name}" ({cols_sql}) VALUES ({placeholders}){returning}')
+        try:
+            orm_table = Base.metadata.tables[table_name]
+        except KeyError as err:
+            raise KeyError(
+                f"Table {table_name!r} is not on Base.metadata — register the model in "
+                "models/domain/registry.py"
+            ) from err
 
         with live_engine.connect() as conn:
             txn = conn.begin()
@@ -675,7 +684,11 @@ def merge_table(
                 for old_pk, values, old_self_ref in pending_inserts:
                     savepoint = conn.begin_nested()
                     try:
-                        result = conn.execute(insert_sql, values)
+                        row = _row_for_orm_table(orm_table, values)
+                        stmt = insert(orm_table).values(**row)
+                        if pk_type == "serial":
+                            stmt = stmt.returning(orm_table.c[pk_col])
+                        result = conn.execute(stmt)
                         new_pk = result.scalar() if pk_type == "serial" else old_pk
                         table_id_map[old_pk] = new_pk
                         savepoint.commit()
