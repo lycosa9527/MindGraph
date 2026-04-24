@@ -7,7 +7,7 @@ import { UI_LOCALE_CODES } from '@/i18n/locales'
 import type { DiagramType } from '@/types'
 
 function defaultsT(key: string, locale: LocaleCode, params?: Record<string, unknown>): string {
-  return String(i18n.global.t(key, params ?? {}, { locale }))
+  return String(i18n.global.t(key, params ?? {}, { locale: locale as string }))
 }
 
 /**
@@ -294,7 +294,7 @@ export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean
 }
 
 function conceptT(key: string, lang: LocaleCode): string {
-  return String(i18n.global.t(key, {}, { locale: lang }))
+  return String(i18n.global.t(key, {}, { locale: lang as string }))
 }
 
 export function getConceptMapFocusQuestionPrefix(lang: LocaleCode): string {

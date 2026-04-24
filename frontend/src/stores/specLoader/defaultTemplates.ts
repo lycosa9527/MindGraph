@@ -8,7 +8,7 @@ import { getConceptMapFocusQuestionDefault } from '@/stores/diagram/diagramDefau
 import type { DiagramType } from '@/types'
 
 function lt(key: string, lang: LocaleCode, params?: Record<string, unknown>): string {
-  return String(i18n.global.t(key, params ?? {}, { locale: lang }))
+  return String(i18n.global.t(key, params ?? {}, { locale: lang as string }))
 }
 
 function range(count: number, key: string, lang: LocaleCode): string[] {

@@ -68,11 +68,11 @@ export const DIAGRAM_TEMPLATES: Record<string, DiagramTemplate> = {
 
 /** Body text for the selected diagram template in the given UI language */
 export function getDiagramTemplateBody(def: DiagramTemplate, lang: Language): string {
-  return String(i18n.global.t(def.i18nKey, {}, { locale: lang }))
+  return String(i18n.global.t(def.i18nKey, {}, { locale: lang as string }))
 }
 
 function listJoinSeparator(lang: Language): string {
-  return String(i18n.global.t('common.listJoin.separator', {}, { locale: lang }))
+  return String(i18n.global.t('common.listJoin.separator', {}, { locale: lang as string }))
 }
 
 export const useUIStore = defineStore('ui', () => {
