@@ -3,6 +3,8 @@
 Revision ID: 0013
 Revises: 0012
 Create Date: 2026-04-13
+
+Baseline ``0001`` ``create_all`` may already add ``dify_inputs_json`` (current ORM).
 """
 
 from typing import Sequence, Union
@@ -15,13 +17,22 @@ down_revision: Union[str, None] = "0012"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
+_TABLE = "organization_mindbot_configs"
+_COL = "dify_inputs_json"
+
 
 def upgrade() -> None:
-    op.add_column(
-        "organization_mindbot_configs",
-        sa.Column("dify_inputs_json", sa.Text(), nullable=True),
-    )
+    bind = op.get_bind()
+    cols = {c["name"] for c in sa.inspect(bind).get_columns(_TABLE)}
+    if _COL not in cols:
+        op.add_column(
+            _TABLE,
+            sa.Column(_COL, sa.Text(), nullable=True),
+        )
 
 
 def downgrade() -> None:
-    op.drop_column("organization_mindbot_configs", "dify_inputs_json")
+    bind = op.get_bind()
+    cols = {c["name"] for c in sa.inspect(bind).get_columns(_TABLE)}
+    if _COL in cols:
+        op.drop_column(_TABLE, _COL)
