@@ -2,13 +2,14 @@
 PostgreSQL Dump/Import Script
 
 Standalone script to dump or import PostgreSQL database to/from backup folder.
-Runs interactively: prompts for Dump/Import and dry/execute.
+Runs interactively: full words only — dump / import / quit, then dry / execute.
 
 Usage:
     python scripts/db/dump_import_postgres.py
+    (from project root, or from scripts/db/ with path setup as in _path_setup)
 
 Features:
-    - Interactive: Dump or Import? (d/i)
+    - Interactive: Dump, Import, or quit
     - Prompts for dry run or execute
     - Dump: exports to backup/, creates manifest with table row counts
     - Import: restores from backup/, verifies counts match manifest
@@ -577,6 +578,7 @@ def verify_dump(backup_path: Path) -> bool:
     result = subprocess.run(
         [pg_restore, "--list", str(backup_path)],
         capture_output=True,
+        text=True,
         timeout=60,
         check=False,
     )
@@ -890,6 +892,7 @@ def import_command(
         prog.update(1, "Schema checked")
         if not run_restore(db_url, dump_path, db_engine):
             return 1
+        db_engine.dispose()
         prog.update(2, "pg_restore done")
 
         try:
@@ -899,7 +902,12 @@ def import_command(
             )
             init_db(seed_organizations=False)
         except Exception as exc:
-            logger.error("[Import] Post-restore migration failed: %s", exc, exc_info=True)
+            logger.error(
+                "[Import] Post-restore migration failed (data was restored; "
+                "fix migrations then re-run or restore again): %s",
+                exc,
+                exc_info=True,
+            )
             return 1
         prog.update(3, "Alembic upgrade done")
 

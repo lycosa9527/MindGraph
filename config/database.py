@@ -275,7 +275,9 @@ def _seed_organizations_if_empty() -> None:
         db.close()
 
 
-_ALEMBIC_INI = str(Path(__file__).resolve().parent.parent / "alembic.ini")
+_PROJECT_ROOT = Path(__file__).resolve().parent.parent
+_ALEMBIC_INI = str(_PROJECT_ROOT / "alembic.ini")
+_ALEMBIC_SCRIPT_DIR = str(_PROJECT_ROOT / "alembic")
 _MIGRATION_LOCK_KEY = "lock:mindgraph:alembic_migration"
 # Baseline create_all can run far longer than two minutes; lock must outlive the migration.
 _MIGRATION_LOCK_TTL = 3600
@@ -324,6 +326,8 @@ def _run_alembic_upgrade() -> None:
     from alembic.script import ScriptDirectory
 
     alembic_cfg = AlembicConfig(_ALEMBIC_INI)
+    alembic_cfg.set_main_option("script_location", _ALEMBIC_SCRIPT_DIR)
+    alembic_cfg.set_main_option("prepend_sys_path", str(_PROJECT_ROOT))
     script_dir = ScriptDirectory.from_config(alembic_cfg)
     head_rev = script_dir.get_current_head()
 
