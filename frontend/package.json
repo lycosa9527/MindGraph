@@ -83,6 +83,7 @@
     "vue": "^3.5.13",
     "vue-danmaku": "^2.0.4",
     "vue-i18n": "^11.3.0",
+    "vue-demi": "^0.14.10",
     "vue-router": "^4.5.0",
     "vue3-carousel-3d": "^1.0.4"
   },
