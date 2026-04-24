@@ -532,15 +532,16 @@ def _ensure_pg_extensions() -> None:
         "CREATE EXTENSION IF NOT EXISTS pg_stat_statements",
         "CREATE EXTENSION IF NOT EXISTS pg_trgm",
     )
-    try:
-        with engine.begin() as conn:
-            for sql in statements:
-                try:
-                    conn.execute(text(sql))
-                except Exception as exc:
-                    logger.debug("[Database] Could not run %r (continuing): %s", sql, exc)
-    except Exception as exc:
-        logger.debug("[Database] Skipped extension setup: %s", exc)
+    for sql in statements:
+        try:
+            with engine.begin() as conn:
+                conn.execute(text(sql))
+        except Exception as exc:
+            logger.debug(
+                "[Database] Could not run %r (separate transaction; continuing): %s",
+                sql,
+                exc,
+            )
 
 
 def init_db(seed_organizations: bool = True):

@@ -15,6 +15,7 @@ import json
 import logging
 import sqlite3
 from datetime import datetime
+from decimal import Decimal
 from pathlib import Path
 from typing import Optional, Dict, Any, Tuple
 
@@ -225,6 +226,24 @@ def create_migration_marker(backup_path: Optional[Path], stats: Dict[str, Any]) 
         return False
 
 
+def _integer_max_for_serial_setval(max_id: object) -> Optional[int]:
+    """Return a positive int max for setval, or None if PK is not integer serial (e.g. UUID, str)."""
+    if max_id is None or isinstance(max_id, str):
+        return None
+    if isinstance(max_id, bool):
+        return None
+    try:
+        if isinstance(max_id, int):
+            val = max_id
+        elif isinstance(max_id, Decimal):
+            val = int(max_id)
+        else:
+            val = int(max_id)
+    except (TypeError, ValueError, OverflowError):
+        return None
+    return val if val > 0 else None
+
+
 def reset_postgresql_sequences(pg_engine: Any) -> None:
     """
     Reset PostgreSQL sequences to match migrated data.
@@ -257,8 +276,8 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                     # Get the maximum ID value (use proper identifier quoting)
                     result = conn.execute(text(f'SELECT MAX("{pk_col}") FROM "{table_name}"'))
                     max_id = result.scalar()
-
-                    if max_id is not None and max_id > 0:
+                    int_max = _integer_max_for_serial_setval(max_id)
+                    if int_max is not None:
                         # Use pg_get_serial_sequence() to find actual sequence name
                         # This is more reliable than assuming naming convention
                         # pg_get_serial_sequence expects string literals (single quotes), not identifiers
@@ -271,13 +290,16 @@ def reset_postgresql_sequences(pg_engine: Any) -> None:
                                 sequence_name = sequence_name.split(".")[-1]
 
                             try:
-                                conn.execute(text(f"SELECT setval('{sequence_name}', {max_id + 1}, false)"))
+                                next_val = int_max + 1
+                                conn.execute(
+                                    text(f"SELECT setval('{sequence_name}', {next_val}, false)"),
+                                )
                                 conn.commit()
                                 sequences_reset += 1
                                 logger.debug(
                                     "[Migration] Reset sequence %s to %d (table: %s)",
                                     sequence_name,
-                                    max_id + 1,
+                                    next_val,
                                     table_name,
                                 )
                             except Exception as seq_error:
