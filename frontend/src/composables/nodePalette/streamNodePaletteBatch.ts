@@ -9,12 +9,51 @@ import { authFetch } from '@/utils/api'
 
 export type PanelsStoreForStream = ReturnType<typeof usePanelsStore>
 
+/**
+ * A fetch should abort if either the session (modal / palette) ends or the per-request
+ * handle is fired (e.g. tab switch aborts in-flight only).
+ */
+function requestSignal(
+  streamSession: AbortController | null | undefined,
+  request: AbortController
+): AbortSignal {
+  if (!streamSession) {
+    return request.signal
+  }
+  const anyFn = (AbortSignal as { any?: (signals: AbortSignal[]) => AbortSignal }).any
+  if (typeof anyFn === 'function') {
+    return anyFn([streamSession.signal, request.signal])
+  }
+  if (streamSession.signal.aborted) {
+    try {
+      request.abort()
+    } catch {
+      // ignore
+    }
+    return request.signal
+  }
+  streamSession.signal.addEventListener(
+    'abort',
+    () => {
+      try {
+        request.abort()
+      } catch {
+        // ignore
+      }
+    },
+    { once: true }
+  )
+  return request.signal
+}
+
 export interface NodePaletteStreamDeps {
   panelsStore: PanelsStoreForStream
   promptLanguage: Ref<string>
   abortController: Ref<AbortController | null>
   /** Every in-flight fetch (including useGlobalAbort: false domain-tab streams) */
   paletteActiveControllers: Ref<AbortController[]>
+  /** Aborted when the palette modal is dismissed, canvas reset, or similar — not on tab/switch. */
+  paletteStreamSession: Ref<AbortController | null>
   errorMessage: Ref<string | null>
   onError?: (msg: string) => void
   paletteStreamPhase: Ref<'idle' | 'requesting' | 'streaming'>
@@ -42,6 +81,7 @@ export async function streamNodePaletteBatch(
     promptLanguage,
     abortController,
     paletteActiveControllers,
+    paletteStreamSession,
     errorMessage,
     onError,
     paletteStreamPhase,
@@ -62,6 +102,8 @@ export async function streamNodePaletteBatch(
     abortController.value = controller
   }
 
+  const fetchSignal = requestSignal(paletteStreamSession.value ?? null, controller)
+
   const decoder = new TextDecoder()
   let nodeCount = 0
   const onConceptMapDomains = options?.onConceptMapDomains
@@ -70,12 +112,15 @@ export async function streamNodePaletteBatch(
   const doAppend = options?.append ?? false
 
   try {
+    if (fetchSignal.aborted) {
+      throw new DOMException('The operation was aborted.', 'AbortError')
+    }
     await ensureFontsForLanguageCode(promptLanguage.value)
     const response = await authFetch(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(payload),
-      signal: controller.signal,
+      signal: fetchSignal,
     })
 
     if (!response.ok) {
@@ -153,7 +198,7 @@ export async function streamNodePaletteBatch(
               await new Promise<void>((r) => requestAnimationFrame(() => r()))
             } else if (data.event === 'error') {
               const msg = data.message ?? 'Unknown error'
-              if (!controller.signal.aborted) {
+              if (!fetchSignal.aborted) {
                 errorMessage.value = msg
                 onError?.(msg)
               }

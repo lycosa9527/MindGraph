@@ -1,5 +1,9 @@
 """MindBot per-organization DingTalk + Dify configuration.
 
+Baseline revision ``0001`` runs ``Base.metadata.create_all``; that may already
+create ``organization_mindbot_configs``. Skip ``CREATE TABLE`` when the
+relation exists (same pattern as ``0005`` / ``0009``).
+
 Revision ID: 0010
 Revises: 0009
 Create Date: 2026-04-13
@@ -17,6 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if sa.inspect(bind).has_table("organization_mindbot_configs"):
+        return
+
     op.create_table(
         "organization_mindbot_configs",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -55,6 +63,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    if not sa.inspect(bind).has_table("organization_mindbot_configs"):
+        return
+
     op.drop_index(
         "ix_organization_mindbot_configs_dingtalk_robot_code",
         table_name="organization_mindbot_configs",

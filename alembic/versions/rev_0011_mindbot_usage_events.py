@@ -1,5 +1,9 @@
 """MindBot usage events for DingTalk analytics.
 
+Baseline revision ``0001`` runs ``Base.metadata.create_all``; that may already
+create ``mindbot_usage_events``. Skip ``CREATE TABLE`` when the relation exists
+(same pattern as ``0005`` / ``0009``).
+
 Revision ID: 0011
 Revises: 0010
 Create Date: 2026-04-13
@@ -17,6 +21,10 @@ depends_on: Union[str, Sequence[str], None] = None
 
 
 def upgrade() -> None:
+    bind = op.get_bind()
+    if sa.inspect(bind).has_table("mindbot_usage_events"):
+        return
+
     op.create_table(
         "mindbot_usage_events",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
@@ -93,6 +101,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    bind = op.get_bind()
+    if not sa.inspect(bind).has_table("mindbot_usage_events"):
+        return
+
     op.drop_index("ix_mindbot_usage_staff_org", table_name="mindbot_usage_events")
     op.drop_index("ix_mindbot_usage_org_created", table_name="mindbot_usage_events")
     op.drop_index("ix_mindbot_usage_events_linked_user_id", table_name="mindbot_usage_events")

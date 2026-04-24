@@ -74,13 +74,35 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   const errorMessage = ref<string | null>(null)
   const abortController = ref<AbortController | null>(null)
   const paletteActiveControllers = ref<AbortController[]>([])
+  /**
+   * Long-lived (until dismissed / canvas exit). Aborted on close; a new
+   * controller is created for the next streaming scope so AbortedSignal.any() stays
+   * aborted between sequential `await streamBatch` calls after dismiss.
+   */
+  const paletteStreamSession = ref<AbortController | null>(null)
 
   /** Node palette tab strip: blue = request in flight, green = first SSE node received */
   const paletteStreamPhase = ref<'idle' | 'requesting' | 'streaming'>('idle')
   const streamBatchDepth = { value: 0 }
   const firstNodeReceivedInBatch = { value: false }
 
-  function abortAllPaletteStreaming(): void {
+  function ensurePaletteStreamSession(): void {
+    if (!paletteStreamSession.value || paletteStreamSession.value.signal.aborted) {
+      paletteStreamSession.value = new AbortController()
+    }
+  }
+
+  function endPaletteStreamSession(): void {
+    if (paletteStreamSession.value) {
+      try {
+        paletteStreamSession.value.abort()
+      } catch {
+        // ignore
+      }
+    }
+  }
+
+  function abortInFlightPaletteFetchesOnly(): void {
     const seen = new Set<AbortController>()
     for (const c of paletteActiveControllers.value) {
       seen.add(c)
@@ -103,11 +125,17 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     errorMessage.value = null
   }
 
+  function abortAllPaletteStreaming(): void {
+    endPaletteStreamSession()
+    abortInFlightPaletteFetchesOnly()
+  }
+
   const streamDeps = {
     panelsStore,
     promptLanguage,
     abortController,
     paletteActiveControllers,
+    paletteStreamSession,
     errorMessage,
     onError,
     paletteStreamPhase,
@@ -362,6 +390,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       errorMessage.value = t('nodePalette.error.enterTopicText')
       return false
     }
+    ensurePaletteStreamSession()
     const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
     const hasDomainTabs = tabs.some((t) => t.id.startsWith('domain_'))
     if (!hasDomainTabs) {
@@ -445,6 +474,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   async function refreshConceptMapRootModal(): Promise<boolean> {
     if (diagramType.value !== 'concept_map') return false
+    abortAllPaletteStreaming()
     const diagramKey = getNodePaletteDiagramKey(
       diagramType.value ?? 'unknown',
       savedDiagramsStore.activeDiagramId,
@@ -476,6 +506,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     errorMessage.value = null
     const addDomainBootstrap: { names: string[] | null } = { names: null }
     try {
+      ensurePaletteStreamSession()
       await streamBatch(
         NODE_PALETTE_START,
         {
@@ -635,6 +666,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
     isLoading.value = true
     try {
+      ensurePaletteStreamSession()
       const stage2Names = ['children', 'substeps', 'subparts']
       const isStage2 = isStaged && resolvedStage && stage2Names.includes(resolvedStage)
       const parents = isStage2 && dt ? getStage2ParentsForDiagram(dt, nodes, connections) : []
@@ -697,6 +729,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
     isLoadingMore.value = true
     try {
+      ensurePaletteStreamSession()
       const dt = diagramType.value
       const isStaged = STAGED_DIAGRAM_TYPES.includes(dt as (typeof STAGED_DIAGRAM_TYPES)[number])
       const nodes = diagramStore.data?.nodes ?? []
@@ -808,30 +841,30 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   function cancel(): void {
     abortAllPaletteStreaming()
-    sessionId.value = null
-    centerTopic.value = ''
     const diagramKey = getNodePaletteDiagramKey(
       diagramType.value ?? 'unknown',
       savedDiagramsStore.activeDiagramId,
       route.query.diagramId as string | undefined
     )
+    panelsStore.closeNodePalette()
+    sessionId.value = null
+    centerTopic.value = ''
     panelsStore.clearNodePaletteSession(diagramKey)
     panelsStore.setNodePaletteSuggestions([])
     panelsStore.updateNodePalette({ selected: [] })
-    panelsStore.closeNodePalette()
   }
 
   /** Close panel without clearing suggestions/selection - save to session store for reopen */
   function dismiss(): void {
     abortAllPaletteStreaming()
-    sessionId.value = null
     const diagramKey = getNodePaletteDiagramKey(
       diagramType.value ?? 'unknown',
       savedDiagramsStore.activeDiagramId,
       route.query.diagramId as string | undefined
     )
-    panelsStore.saveNodePaletteSession(diagramKey)
     panelsStore.closeNodePalette()
+    sessionId.value = null
+    panelsStore.saveNodePaletteSession(diagramKey)
   }
 
   async function switchTab(
@@ -843,7 +876,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (!isDoubleBubble && !isMultiFlow) return false
     if (isDoubleBubble && mode !== 'similarities' && mode !== 'differences') return false
     if (isMultiFlow && mode !== 'causes' && mode !== 'effects') return false
-    abortAllPaletteStreaming()
+    abortInFlightPaletteFetchesOnly()
     panelsStore.updateNodePalette({ mode })
     errorMessage.value = null
     const defaultMode = isDoubleBubble ? 'similarities' : 'causes'
@@ -883,7 +916,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
   async function switchConceptMapTab(tabId: string): Promise<boolean> {
     if (diagramType.value !== 'concept_map') return false
     if (panelsStore.nodePalettePanel.mode === tabId) return true
-    abortAllPaletteStreaming()
+    abortInFlightPaletteFetchesOnly()
     panelsStore.updateNodePalette({ mode: tabId })
     errorMessage.value = null
     const suggestionsForTab = panelsStore.nodePalettePanel.suggestions.filter(
@@ -922,7 +955,7 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
     if (stageDataIdKey) {
       stageData[stageDataIdKey] = parentId
     }
-    abortAllPaletteStreaming()
+    abortInFlightPaletteFetchesOnly()
     panelsStore.updateNodePalette({
       stage: stageName,
       stage_data: stageData,
