@@ -3,6 +3,7 @@
  * For RTL UI locales, also load `element-plus/theme-chalk/dark/css-vars.css` as needed
  * and mirror layout in CSS; Element Plus 2.x follows `document.documentElement.dir`.
  */
+import enLocale from 'element-plus/es/locale/lang/en'
 import type { Language } from 'element-plus/es/locale'
 
 export async function loadElementPlusLocale(code: string): Promise<Language> {
@@ -12,7 +13,7 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
     case 'zh-tw':
       return (await import('element-plus/es/locale/lang/zh-tw')).default
     case 'en':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'az':
       return (await import('element-plus/es/locale/lang/az')).default
     case 'th':
@@ -72,7 +73,7 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
     case 'sl':
       return (await import('element-plus/es/locale/lang/sl')).default
     case 'sq':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'ro':
       return (await import('element-plus/es/locale/lang/ro')).default
     case 'el':
@@ -84,7 +85,7 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
     case 'sw':
       return (await import('element-plus/es/locale/lang/sw')).default
     case 'tl':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'bn':
       return (await import('element-plus/es/locale/lang/bn')).default
     case 'ta':
@@ -100,9 +101,9 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
     case 'hy':
       return (await import('element-plus/es/locale/lang/hy-am')).default
     case 'am':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'ka':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'km':
       return (await import('element-plus/es/locale/lang/km')).default
     case 'kk':
@@ -116,19 +117,19 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
     case 'my':
       return (await import('element-plus/es/locale/lang/my')).default
     case 'ne':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'si':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'sr':
       return (await import('element-plus/es/locale/lang/sr')).default
     case 'tg':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'tk':
       return (await import('element-plus/es/locale/lang/tk')).default
     case 'ug':
       return (await import('element-plus/es/locale/lang/ug-cn')).default
     case 'ur':
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
     case 'uz':
       return (await import('element-plus/es/locale/lang/uz-uz')).default
     case 'af':
@@ -142,8 +143,7 @@ export async function loadElementPlusLocale(code: string): Promise<Language> {
     case 'xh':
     case 'yo':
     case 'zu':
-      return (await import('element-plus/es/locale/lang/en')).default
     default:
-      return (await import('element-plus/es/locale/lang/en')).default
+      return enLocale
   }
 }
