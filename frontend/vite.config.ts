@@ -114,6 +114,39 @@ export default defineConfig({
         if (warning.plugin === '@tailwindcss/vite:generate:build') return
         defaultHandler(warning)
       },
+      output: {
+        /**
+         * Split large vendor packages into named chunks so they can be cached
+         * independently of application code.  Rollup still tree-shakes within
+         * each chunk; only code that is actually imported is emitted.
+         *
+         * element-plus  ~1.2 MB  (components + icons)
+         * vue-i18n      ~200 kB  (runtime + compiler)
+         * @vueuse/core  ~150 kB
+         * @tanstack      ~80 kB
+         */
+        manualChunks(id) {
+          if (
+            id.includes('node_modules/element-plus') ||
+            id.includes('node_modules/@element-plus')
+          ) {
+            return 'vendor-element-plus'
+          }
+          if (
+            id.includes('node_modules/vue-i18n') ||
+            id.includes('node_modules/@intlify')
+          ) {
+            return 'vendor-i18n'
+          }
+          if (id.includes('node_modules/@vueuse')) {
+            return 'vendor-vueuse'
+          }
+          if (id.includes('node_modules/@tanstack')) {
+            return 'vendor-tanstack'
+          }
+          return undefined
+        },
+      },
     },
   },
 })
