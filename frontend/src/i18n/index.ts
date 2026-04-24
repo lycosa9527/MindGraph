@@ -25,8 +25,22 @@ export const i18n = createI18n({
   fallbackWarn: import.meta.env.DEV,
 })
 
-/** Locale bundles registered so far — avoids redundant network fetches on repeat switches. */
+/** Locale bundles registered so far — avoids redundant fetches on repeat switches. */
 const loadedLocales = new Set<LocaleCode>(['zh', 'en'])
+
+/**
+ * Lazy locale modules, excluding en and zh which are already statically imported.
+ * Vite analyses this glob at build time and creates one async chunk per locale file,
+ * so the 65 non-boot locales are never included in the main bundle.
+ */
+const lazyLocaleModules = import.meta.glob<{ default: Record<string, string> }>(
+  [
+    '../locales/messages/*.ts',
+    '!../locales/messages/en.ts',
+    '!../locales/messages/zh.ts',
+  ],
+  { eager: false }
+)
 
 /**
  * Lazy-loads a locale message bundle on first use and registers it with vue-i18n.
@@ -35,8 +49,11 @@ const loadedLocales = new Set<LocaleCode>(['zh', 'en'])
  */
 export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
   if (loadedLocales.has(locale)) return
-  const mod = await import(`../locales/messages/${locale}.ts`)
-  i18n.global.setLocaleMessage(locale, mod.default as Record<string, string>)
+  const loader = lazyLocaleModules[`../locales/messages/${locale}.ts`]
+  if (loader) {
+    const mod = await loader()
+    i18n.global.setLocaleMessage(locale, mod.default)
+  }
   loadedLocales.add(locale)
 }
 
