@@ -32,13 +32,13 @@ import {
 } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
+import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   eventBus,
   getDefaultDiagramName,
   getNodePalette,
   getPanelCoordinator,
   useCanvasToolbarApps,
-  useDiagramAutoSave,
   useDiagramSpecForSave,
   useInlineRecommendations,
   useInlineRecommendationsCoordinator,
@@ -53,10 +53,10 @@ import {
 } from '@/composables/core/diagramMarkdownPipeline'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
+import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import {
   type LLMResult,
   useAuthStore,
-  useConceptMapFocusReviewStore,
   useConceptMapRelationshipStore,
   useConceptMapRootConceptReviewStore,
   useDiagramStore,

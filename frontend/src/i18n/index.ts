@@ -183,14 +183,7 @@ export const i18n = createI18n({
   fallbackWarn: import.meta.env.DEV,
 })
 
-const loadedLocales = new Set<LocaleCode>(SUPPORTED_UI_LOCALES.map((e) => e.code) as LocaleCode[])
-
-export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
-  if (loadedLocales.has(locale)) return
-  const mod = await import(`../locales/messages/${locale}.ts`)
-  i18n.global.setLocaleMessage(locale, mod.default as Record<string, string>)
-  loadedLocales.add(locale)
-}
+export async function loadLocaleMessages(_locale: LocaleCode): Promise<void> {}
 
 export function setI18nLocale(locale: LocaleCode): void {
   const loc = i18n.global.locale as { value: LocaleCode }

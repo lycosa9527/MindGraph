@@ -107,5 +107,13 @@ export default defineConfig({
     sourcemap: true,
     // Element Plus + icons is ~1.2 MB minified; raise the warning threshold.
     chunkSizeWarningLimit: 1300,
+    rollupOptions: {
+      onwarn(warning, defaultHandler) {
+        // @tailwindcss/vite transforms CSS chunks without emitting sourcemaps;
+        // the resulting SOURCEMAP_BROKEN noise is cosmetic — suppress it.
+        if (warning.plugin === '@tailwindcss/vite:generate:build') return
+        defaultHandler(warning)
+      },
+    },
   },
 })

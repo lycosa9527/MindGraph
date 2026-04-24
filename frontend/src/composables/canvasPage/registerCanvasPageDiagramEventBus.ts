@@ -1,8 +1,8 @@
 import type { Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import {
-  useConceptMapFocusReviewStore,
   useConceptMapRootConceptReviewStore,
   useDiagramStore,
   usePanelsStore,

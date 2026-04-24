@@ -17,7 +17,7 @@ import {
 } from 'lucide-vue-next'
 
 import IntlShareSiteModal from '@/components/mindgraph/IntlShareSiteModal.vue'
-import { useDiagramImport } from '@/composables'
+import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 

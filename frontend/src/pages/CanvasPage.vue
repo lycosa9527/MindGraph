@@ -42,7 +42,6 @@ import {
   getDefaultDiagramName,
   getNodePalette,
   getPanelCoordinator,
-  useDiagramAutoSave,
   useDiagramSpecForSave,
   useEventBus,
   useInlineRecommendations,
@@ -51,6 +50,7 @@ import {
   useNotifications,
   useSnapshotHistory,
 } from '@/composables'
+import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
@@ -71,10 +71,10 @@ import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import {
   type LLMResult,
   useAuthStore,
-  useConceptMapFocusReviewStore,
   useConceptMapRelationshipStore,
   useConceptMapRootConceptReviewStore,
   useDiagramStore,
