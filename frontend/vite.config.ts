@@ -24,9 +24,12 @@ const vendorChunkGroups = [
     name: 'vendor-vueflow',
     test: /node_modules[\\/]@vue-flow[\\/]/,
   },
+  // vue-demi + TanStack Query + hoisted @vueuse: same Rolldown chunk avoids broken
+  // inject/interop when these were split (e.g. useQueryClient). Nested @vueuse under
+  // element-plus / vue-flow stays in those chunks but resolves hoisted vue-demi.
   {
-    name: 'vendor-tanstack-vue-query',
-    test: /node_modules[\\/](?:@tanstack\/vue-query|vue-demi)[\\/]/,
+    name: 'vendor-query-demi-vueuse',
+    test: /node_modules[\\/](?:@tanstack\/vue-query|vue-demi|@vueuse\/core|@vueuse\/shared)[\\/]/,
   },
   {
     name: 'vendor-vue',
@@ -50,7 +53,7 @@ const vendorChunkGroups = [
   },
   {
     name: 'vendor-utils',
-    test: /node_modules[\\/](?:axios|mitt|dompurify|@vueuse[\\/]core)[\\/]/,
+    test: /node_modules[\\/](?:axios|mitt|dompurify)[\\/]/,
   },
 ]
 
@@ -78,6 +81,7 @@ export default defineConfig({
       'lucide-vue-next',
       'mathlive',
       '@tanstack/vue-query',
+      '@vueuse/core',
       'vue-demi',
     ],
   },
