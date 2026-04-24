@@ -66,40 +66,10 @@ export default defineConfig({
     tsconfigPaths: true,
     // One KaTeX instance so `katex/contrib/mhchem` registers `\ce` on the same copy used by @vscode/markdown-it-katex.
     dedupe: ['katex', 'vue', 'vue-demi'],
-    alias: [
-      { find: '@', replacement: resolve(__dirname, 'src') },
-      { find: '@data', replacement: resolve(__dirname, '../data') },
-      // Rolldown production builds mishandle lucide-vue-next's per-icon ESM files
-      // (`export { createLucideIcon as default }`), breaking `npm run preview` / deploy.
-      // Single CJS bundle matches dev (esbuild prebundle) interop; see lucide#2087.
-      {
-        find: 'lucide-vue-next',
-        replacement: resolve(
-          __dirname,
-          'node_modules/lucide-vue-next/dist/cjs/lucide-vue-next.js'
-        ),
-      },
-      // Rolldown production builds mishandle Element Plus's per-component ESM tree
-      // (es/components/**/*.mjs), causing internal utilities like `definePropType`
-      // to be undefined at call-time due to circular-dependency init-order issues.
-      // Regex anchors ensure only the bare specifiers are redirected; sub-path imports
-      // (element-plus/es/locale/lang/*, element-plus/es/components/*/style/css, etc.)
-      // continue to resolve through the package.json exports map unchanged.
-      {
-        find: /^element-plus$/,
-        replacement: resolve(
-          __dirname,
-          'node_modules/element-plus/dist/index.full.mjs'
-        ),
-      },
-      {
-        find: /^element-plus\/es$/,
-        replacement: resolve(
-          __dirname,
-          'node_modules/element-plus/dist/index.full.mjs'
-        ),
-      },
-    ],
+    alias: {
+      '@': resolve(__dirname, 'src'),
+      '@data': resolve(__dirname, '../data'),
+    },
   },
   server: {
     // Use 41732+ to avoid ip_unprivileged_port_start (often 32768 on WSL); override with PORT=3000 npm run dev
@@ -135,9 +105,7 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Element Plus + icons is ~1.2MB minified. Let Rolldown choose shared chunks:
-    // manual vendor grouping caused production-only interop failures where minified
-    // imports such as `dt(...)` were not callable in preview/deploy builds.
+    // Element Plus + icons is ~1.2 MB minified; raise the warning threshold.
     chunkSizeWarningLimit: 1300,
   },
 })
