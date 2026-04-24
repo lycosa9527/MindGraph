@@ -40,16 +40,39 @@ MERGEABLE_TABLES: List[str] = [
     "update_notification_dismissed",
 ]
 
+# Booleans that must never be NULL on PostgreSQL (legacy SQLite may omit or NULL them).
+_USER_MERGE_NON_NULL_BOOL_DEFAULTS: Dict[str, bool] = {
+    "allows_simplified_chinese": True,
+    "email_login_whitelisted_from_cn": False,
+}
+
 _USER_DEFAULT_COLUMNS: Dict[str, Any] = {
     "role": "user",
     "avatar": "🐈‍⬛",
+    "email": None,
     "ui_language": None,
     "prompt_language": None,
     "workshop_last_seen_at": None,
+    "ui_version": "international",
+    **_USER_MERGE_NON_NULL_BOOL_DEFAULTS,
+}
+
+_ORG_MERGE_NON_NULL_BOOL_DEFAULTS: Dict[str, bool] = {
+    "is_active": True,
 }
 
 _ORG_DEFAULT_COLUMNS: Dict[str, Any] = {
     "display_name": None,
+    **_ORG_MERGE_NON_NULL_BOOL_DEFAULTS,
+}
+
+_API_KEY_DEFAULT_COLUMNS: Dict[str, Any] = {
+    "usage_count": 0,
+    "is_active": True,
+    "description": None,
+    "quota_limit": None,
+    "last_used_at": None,
+    "expires_at": None,
 }
 
 _USER_COLUMN_LIMITS: Dict[str, int] = {
@@ -107,6 +130,16 @@ def _pg_token_usage_keys(pg_engine: Engine) -> Set[str]:
         return {f"{r[0]}|{r[1]}|{r[2]}" for r in rows}
 
 
+def _apply_user_not_null_fallbacks(values: Dict[str, Any]) -> None:
+    """Match User ORM NOT NULL columns that have no PostgreSQL server_default."""
+    if values.get("failed_login_attempts") is None:
+        values["failed_login_attempts"] = 0
+    if not values.get("role"):
+        values["role"] = "user"
+    if values.get("created_at") is None:
+        values["created_at"] = datetime.now(tz=UTC)
+
+
 def _validate_user_column_lengths(
     values: Dict[str, Any],
     sq_id: int,
@@ -131,7 +164,8 @@ def _pg_boolean_columns(pg_engine: Engine, table: str) -> Set[str]:
     with pg_engine.connect() as conn:
         rows = conn.execute(
             text(
-                "SELECT column_name FROM information_schema.columns WHERE table_name = :tbl AND data_type = 'boolean'"
+                "SELECT column_name FROM information_schema.columns "
+                "WHERE table_schema = 'public' AND table_name = :tbl AND data_type = 'boolean'"
             ),
             {"tbl": table},
         )
@@ -445,6 +479,9 @@ def _merge_organizations(
         for col, default in _ORG_DEFAULT_COLUMNS.items():
             if col not in values:
                 values[col] = default
+        for col, default in _ORG_MERGE_NON_NULL_BOOL_DEFAULTS.items():
+            if values.get(col) is None:
+                values[col] = default
         _coerce_booleans(values, bool_cols)
         pending.append((sq_id, values))
 
@@ -503,6 +540,10 @@ def _merge_users(
         for col, default in _USER_DEFAULT_COLUMNS.items():
             if col not in values:
                 values[col] = default
+        for col, default in _USER_MERGE_NON_NULL_BOOL_DEFAULTS.items():
+            if values.get(col) is None:
+                values[col] = default
+        _apply_user_not_null_fallbacks(values)
 
         if not _validate_user_column_lengths(values, sq_id):
             rejected += 1
@@ -564,6 +605,13 @@ def _merge_api_keys(
         sq_org = values.get("organization_id")
         if sq_org is not None:
             values["organization_id"] = org_map.get(sq_org)
+        for col, default in _API_KEY_DEFAULT_COLUMNS.items():
+            if col not in values or (
+                col in ("usage_count", "is_active") and values.get(col) is None
+            ):
+                values[col] = default
+        if values.get("created_at") is None:
+            values["created_at"] = datetime.now(tz=UTC)
         _coerce_booleans(values, bool_cols)
         pending.append(values)
 
@@ -680,6 +728,12 @@ def _merge_dashboard_activities(
                 skipped += 1
                 continue
             values["user_id"] = user_map[sq_uid]
+        if not values.get("action"):
+            values["action"] = "legacy_import"
+        if not values.get("diagram_type"):
+            values["diagram_type"] = "unknown"
+        if values.get("created_at") is None:
+            values["created_at"] = datetime.now(tz=UTC)
         _coerce_booleans(values, bool_cols)
         pending.append(values)
 
@@ -776,6 +830,11 @@ def _merge_update_notification_dismissed(
                 skipped += 1
                 continue
             values["user_id"] = pg_uid
+        if values.get("user_id") is None or not values.get("version"):
+            skipped += 1
+            continue
+        if values.get("dismissed_at") is None:
+            values["dismissed_at"] = datetime.now(tz=UTC)
         _coerce_booleans(values, bool_cols)
         pending.append(values)
 

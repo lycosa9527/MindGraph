@@ -43,6 +43,7 @@ from typing import Any, Dict, List, Optional
 
 from services.redis.redis_async_client import get_async_redis
 from services.redis.redis_client import get_redis, is_redis_available
+from services.utils.pg_client_binaries import find_pg_client_binary
 
 
 def _libpq_url_identity(url: str) -> str:
@@ -484,7 +485,13 @@ BACKUP_HOUR = max(0, min(23, _backup_hour_raw))  # Clamp to valid range
 _retention_raw = int(os.getenv("BACKUP_RETENTION_COUNT", "2"))
 BACKUP_RETENTION_COUNT = max(1, _retention_raw)  # Keep at least 1 backup
 
-BACKUP_DIR = Path(os.getenv("BACKUP_DIR", "backup"))
+_BACKUP_DIR_ENV = os.getenv("BACKUP_DIR", "backup")
+_PROJECT_ROOT = Path(__file__).resolve().parents[2]
+BACKUP_DIR = (
+    Path(_BACKUP_DIR_ENV)
+    if Path(_BACKUP_DIR_ENV).is_absolute()
+    else _PROJECT_ROOT / _BACKUP_DIR_ENV
+)
 
 # COS (Tencent Cloud Object Storage) configuration
 # Note: Uses same Tencent Cloud credentials as SMS module (TENCENT_SMS_SECRET_ID/SECRET_KEY)
@@ -590,43 +597,16 @@ def backup_postgresql_database(backup_path: Path) -> bool:
 
         logger.info("[Backup] Starting PostgreSQL backup using pg_dump...")
 
-        # Find pg_dump binary
-        pg_dump_paths = [
-            "/usr/lib/postgresql/18/bin/pg_dump",
-            "/usr/lib/postgresql/16/bin/pg_dump",
-            "/usr/lib/postgresql/15/bin/pg_dump",
-            "/usr/lib/postgresql/14/bin/pg_dump",
-            "/usr/local/pgsql/bin/pg_dump",
-            "/usr/bin/pg_dump",
-        ]
-
-        pg_dump_binary = None
-        for path in pg_dump_paths:
-            if os.path.exists(path) and os.access(path, os.X_OK):
-                pg_dump_binary = path
-                break
-
-        if not pg_dump_binary:
-            # Try to find pg_dump in PATH
-            try:
-                result = subprocess.run(["which", "pg_dump"], capture_output=True, timeout=2, check=False)
-                if result.returncode == 0:
-                    pg_dump_binary = result.stdout.decode("utf-8").strip()
-            except Exception as exc:
-                logger.debug("pg_dump binary lookup via which failed: %s", exc)
-
+        pg_dump_binary = find_pg_client_binary("pg_dump")
         if not pg_dump_binary:
             logger.error("[Backup] pg_dump binary not found. Install PostgreSQL client tools.")
             return False
 
-        # Run pg_dump
-        # Use custom format (-Fc) for compressed, flexible restore options
-        # -Fc: custom format (compressed, can restore specific tables)
-        # -Fp: plain SQL format (uncompressed, human-readable)
-        # We use -Fc for better compression and restore flexibility
+        # Run pg_dump (align flags with admin export: custom format, no owner oids)
         cmd = [
             pg_dump_binary,
-            "-Fc",  # Custom format (compressed)
+            "-Fc",
+            "--no-owner",
             "-f",
             str(backup_path),
             libpq_database_url(db_url),
@@ -692,30 +672,7 @@ def verify_backup(backup_path: Path) -> bool:
 
     # PostgreSQL backup verification using pg_restore --list (dry-run)
     try:
-        pg_restore_paths = [
-            "/usr/lib/postgresql/18/bin/pg_restore",
-            "/usr/lib/postgresql/16/bin/pg_restore",
-            "/usr/lib/postgresql/15/bin/pg_restore",
-            "/usr/lib/postgresql/14/bin/pg_restore",
-            "/usr/local/pgsql/bin/pg_restore",
-            "/usr/bin/pg_restore",
-        ]
-
-        pg_restore_binary = None
-        for path in pg_restore_paths:
-            if os.path.exists(path) and os.access(path, os.X_OK):
-                pg_restore_binary = path
-                break
-
-        if not pg_restore_binary:
-            # Try PATH
-            try:
-                result = subprocess.run(["which", "pg_restore"], capture_output=True, timeout=2, check=False)
-                if result.returncode == 0:
-                    pg_restore_binary = result.stdout.decode("utf-8").strip()
-            except Exception as exc:
-                logger.debug("pg_restore binary lookup via which failed: %s", exc)
-
+        pg_restore_binary = find_pg_client_binary("pg_restore")
         if pg_restore_binary:
             # Use pg_restore --list to verify backup integrity
             result = subprocess.run(

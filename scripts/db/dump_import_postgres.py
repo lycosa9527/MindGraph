@@ -30,14 +30,14 @@ import socket
 import subprocess
 import sys
 import time
-from datetime import datetime
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 from urllib.parse import urlparse
 
 from sqlalchemy import inspect, text
 
-from config.database import DATABASE_URL, engine, libpq_database_url
+from config.database import DATABASE_URL, engine, init_db, libpq_database_url
 
 try:
     from dotenv import load_dotenv
@@ -67,6 +67,7 @@ try:
 except ImportError:
     RICH_AVAILABLE = False
 
+from services.utils.pg_client_binaries import find_pg_client_binary
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 try:
@@ -442,30 +443,7 @@ def ensure_postgresql_running(db_url: str) -> bool:
     return False
 
 
-def find_pg_binary(name: str) -> Optional[str]:
-    """Find pg_dump or pg_restore binary. Returns path or None."""
-    paths = [
-        f"/usr/lib/postgresql/18/bin/{name}",
-        f"/usr/lib/postgresql/16/bin/{name}",
-        f"/usr/lib/postgresql/15/bin/{name}",
-        f"/usr/lib/postgresql/14/bin/{name}",
-        f"/usr/local/pgsql/bin/{name}",
-        f"/usr/bin/{name}",
-    ]
-    for path in paths:
-        if os.path.exists(path) and os.access(path, os.X_OK):
-            return path
-
-    try:
-        cmd = ["where", name] if sys.platform == "win32" else ["which", name]
-        result = subprocess.run(cmd, capture_output=True, timeout=2, check=False)
-        if result.returncode == 0 and result.stdout:
-            out = result.stdout.decode("utf-8").strip()
-            first_line = out.split("\n")[0].strip() if out else ""
-            return first_line if first_line else None
-    except (subprocess.SubprocessError, FileNotFoundError):
-        pass
-    return None
+find_pg_binary = find_pg_client_binary
 
 
 def get_table_row_counts(db_engine) -> Dict[str, int]:
@@ -697,7 +675,7 @@ def dump_command(live: bool) -> int:
     log_db_summary(tables, columns, total_records)
     logger.info("Table row counts: %s", counts)
 
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    timestamp = datetime.now(tz=UTC).strftime("%Y%m%d_%H%M%S")
     backup_path = BACKUP_DIR / f"{DUMP_PREFIX}.{timestamp}{DUMP_EXT}"
 
     if not live:
@@ -727,7 +705,7 @@ def dump_command(live: bool) -> int:
 
         manifest = {
             "dump_file": backup_path.name,
-            "timestamp": datetime.now().isoformat(),
+            "timestamp": datetime.now(tz=UTC).isoformat(),
             "source": DATABASE_URL.split("@")[-1] if "@" in DATABASE_URL else "unknown",
             "tables": counts,
             "total_tables": tables,
@@ -902,16 +880,28 @@ def import_command(
         0: "Checking manifest",
         1: "Checking schema",
         2: "Running pg_restore",
-        3: "Resetting sequences",
-        4: "Verifying counts",
-        5: "Complete",
+        3: "Alembic upgrade",
+        4: "Resetting sequences",
+        5: "Verifying counts",
+        6: "Complete",
     }
-    with DumpImportProgress("Import", 5, import_stages) as prog:
+    with DumpImportProgress("Import", 6, import_stages) as prog:
         prog.update(0, "Manifest loaded")
         prog.update(1, "Schema checked")
         if not run_restore(db_url, dump_path, db_engine):
             return 1
         prog.update(2, "pg_restore done")
+
+        try:
+            logger.info(
+                "[Import] Applying Alembic migrations after restore "
+                "(older dumps may predate current ORM); seed skipped",
+            )
+            init_db(seed_organizations=False)
+        except Exception as exc:
+            logger.error("[Import] Post-restore migration failed: %s", exc, exc_info=True)
+            return 1
+        prog.update(3, "Alembic upgrade done")
 
         try:
             if reset_postgresql_sequences:
@@ -921,11 +911,11 @@ def import_command(
                 logger.warning("Could not reset sequences (optional module not available)")
         except Exception as e:
             logger.warning("Sequence reset had issues: %s", e)
-        prog.update(3, "Sequences reset")
+        prog.update(4, "Sequences reset")
 
         actual_counts = get_table_row_counts(db_engine)
-        prog.update(4, "Verifying counts")
-        prog.update(5, "Complete")
+        prog.update(5, "Verifying counts")
+        prog.update(6, "Complete")
 
     missing_tables: List[str] = []
     count_mismatches: List[Tuple[str, int, int]] = []

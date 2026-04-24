@@ -18,7 +18,6 @@ All Rights Reserved -- Proprietary License
 """
 
 import logging
-import os
 import subprocess
 import uuid as uuid_mod
 from datetime import UTC, datetime
@@ -32,8 +31,8 @@ from sqlalchemy import create_engine, inspect, text
 from sqlalchemy.engine import Engine
 from sqlalchemy.pool import NullPool
 
-from config.database import libpq_database_url
-from services.admin.database_export_service import _find_pg_binary
+from config.database import DATABASE_URL, libpq_database_url
+from services.utils.pg_client_binaries import find_pg_client_binary
 from services.admin.pg_merge_tables import (
     SKIP_TABLES,
     merge_table,
@@ -45,13 +44,8 @@ logger = logging.getLogger(__name__)
 
 _STAGING_PREFIX = "mindgraph_merge_staging_"
 
-# App credentials in libpq format, derived once at import time.
-_APP_DB_URL = libpq_database_url(
-    os.getenv(
-        "DATABASE_URL",
-        "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
-    )
-)
+# App credentials in libpq format (same source as FastAPI / Alembic).
+_APP_DB_URL = libpq_database_url(DATABASE_URL)
 
 
 # ---------------------------------------------------------------------------
@@ -104,7 +98,7 @@ def _create_staging_db() -> str:
 
 def _restore_to_staging(staging_url: str, dump_path: Path) -> bool:
     """Run pg_restore to load a dump file into the staging database."""
-    pg_restore = _find_pg_binary("pg_restore")
+    pg_restore = find_pg_client_binary("pg_restore")
     if not pg_restore:
         logger.error("[PGMerge] pg_restore not found on system PATH")
         return False

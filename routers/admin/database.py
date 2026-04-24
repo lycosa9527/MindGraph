@@ -23,10 +23,12 @@ from typing import Any, Dict
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel
 
-from config.database import engine
+from config.database import DATABASE_URL, engine, libpq_database_url
 from models.domain.auth import User
 from routers.auth.dependencies import require_admin
 from services.admin.database_export_service import (
+    DUMP_EXT,
+    DUMP_PREFIX,
     export_postgres_dump,
     get_pg_stats,
     import_postgres_dump,
@@ -58,19 +60,10 @@ _backup_dir_env = os.getenv("BACKUP_DIR", "backup")
 _project_root = Path(__file__).resolve().parents[2]
 BACKUP_DIR = Path(_backup_dir_env) if Path(_backup_dir_env).is_absolute() else _project_root / _backup_dir_env
 
-_RAW_DB_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql://mindgraph_user:mindgraph_password@localhost:5432/mindgraph",
-)
 
-
-def _raw_pg_url() -> str:
-    """Return the raw PG URL (without SQLAlchemy driver prefix) for CLI tools."""
-    url = _RAW_DB_URL
-    for prefix in ("postgresql+psycopg://", "postgresql+psycopg2://"):
-        if url.startswith(prefix):
-            return "postgresql://" + url[len(prefix) :]
-    return url
+def _pg_tools_connection_uri() -> str:
+    """Libpq URI for pg_dump/pg_restore — same DB as ``config.database`` (engine)."""
+    return libpq_database_url(DATABASE_URL)
 
 
 # ── request bodies ────────────────────────────────────────────────────
@@ -231,7 +224,7 @@ def export_dump(
 ) -> Dict[str, Any]:
     """Run pg_dump and save the file to backup/."""
     try:
-        result = export_postgres_dump(_raw_pg_url(), BACKUP_DIR, pg_engine=engine)
+        result = export_postgres_dump(_pg_tools_connection_uri(), BACKUP_DIR, pg_engine=engine)
         if not result["success"]:
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -265,7 +258,7 @@ def import_dump(
 
     try:
         result = import_postgres_dump(
-            _raw_pg_url(),
+            _pg_tools_connection_uri(),
             BACKUP_DIR,
             body.filename,
             pg_engine=engine,
@@ -375,10 +368,10 @@ def _validate_sqlite_filename(filename: str) -> None:
 
 
 def _validate_dump_filename(filename: str) -> None:
-    """Reject path-traversal attempts and non-dump file names."""
+    """Reject path-traversal attempts and non-export dump names."""
     _reject_path_traversal(filename)
-    if not filename.endswith(".dump"):
+    if not filename.startswith(f"{DUMP_PREFIX}.") or not filename.endswith(DUMP_EXT):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Only .dump files can be imported",
+            detail=f"Only {DUMP_PREFIX}.*{DUMP_EXT} exports from this app can be used",
         )

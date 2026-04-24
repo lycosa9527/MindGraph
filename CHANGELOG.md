@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.102.0] - 2026-04-25
+
+### Added
+- **PostgreSQL client binaries** (`services/utils/pg_client_binaries.py`): single `find_pg_client_binary` implementation for `pg_dump` and `pg_restore` (honors `PG_BIN_DIR`, searches common Linux versioned paths, falls back to `which` / `where` on PATH).
+
+### Changed
+- **Admin / database dump & import** (`routers/admin/database.py`, `services/admin/database_export_service.py`, `scripts/db/dump_import_postgres.py`): connection URIs for CLI tools use `libpq_database_url(DATABASE_URL)` from `config.database` (no duplicate env default); backup folder listing and import validation only treat **`mindgraph.postgresql`.*`.dump** files as app exports. CLI import runs **`init_db(seed_organizations=False)`** after `pg_restore` so Alembic brings the schema in line with the current ORM; dump timestamps and manifest `timestamp` use **UTC**; import progress includes an **Alembic upgrade** stage.
+- **Scheduled backups** (`services/utils/backup_scheduler.py`): relative `BACKUP_DIR` is resolved from the project root; `pg_dump` uses **`-Fc` with `--no-owner`** to match admin export; `pg_dump` / `pg_restore` resolution delegates to the shared binary helper (including Windows `where`).
+- **PG merge** (`services/admin/pg_merge_service.py`): app DB URL uses `DATABASE_URL` from config; `pg_restore` path from `find_pg_client_binary`.
+- **CLI dump script** (`scripts/db/dump_import_postgres.py`): `find_pg_binary` aliased to the shared `find_pg_client_binary`.
+
+### Fixed
+- **SQLite → PostgreSQL merge** (`services/admin/sqlite_merge_service.py`): safer defaults and fallbacks for NOT NULL / legacy data — user booleans, `ui_version`, `email`, org `is_active`, user API key columns, `failed_login_attempts` / `role` / `created_at`, dashboard activity `action` / `diagram_type` / `created_at`, update-notification `dismissed_at`; boolean column metadata limited to **`public`** schema; rows missing required `user_id`+`version` for update-notification dismissals are skipped.
+
 ## [5.101.0] - 2026-04-23
 
 ### Added

@@ -10,9 +10,7 @@ All Rights Reserved -- Proprietary License
 
 import json
 import logging
-import os
 import subprocess
-import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional
@@ -21,6 +19,7 @@ from sqlalchemy import inspect, text
 from sqlalchemy.engine import Engine
 
 from config.database import libpq_database_url
+from services.utils.pg_client_binaries import find_pg_client_binary
 from services.utils.pg_restore_prep import wipe_public_schema_before_restore
 
 logger = logging.getLogger(__name__)
@@ -28,34 +27,7 @@ logger = logging.getLogger(__name__)
 DUMP_PREFIX = "mindgraph.postgresql"
 DUMP_EXT = ".dump"
 
-
-# ── pg binary lookup ─────────────────────────────────────────────────
-
-
-def _find_pg_binary(name: str) -> Optional[str]:
-    """Locate pg_dump or pg_restore on the system PATH."""
-    pg_bin = os.environ.get("PG_BIN_DIR", "")
-    paths = [
-        os.path.join(pg_bin, name) if pg_bin else "",
-        os.path.join(pg_bin, f"{name}.exe") if pg_bin else "",
-    ]
-    for version in range(17, 12, -1):
-        paths.append(f"/usr/lib/postgresql/{version}/bin/{name}")
-    paths += [f"/usr/bin/{name}", f"/usr/local/bin/{name}"]
-
-    for path in paths:
-        if path and os.path.exists(path) and os.access(path, os.X_OK):
-            return path
-
-    try:
-        cmd = ["where", name] if sys.platform == "win32" else ["which", name]
-        result = subprocess.run(cmd, capture_output=True, timeout=2, check=False)
-        if result.returncode == 0 and result.stdout:
-            first_line = result.stdout.decode("utf-8").strip().split("\n")[0]
-            return first_line.strip() if first_line.strip() else None
-    except (subprocess.SubprocessError, FileNotFoundError):
-        pass
-    return None
+_find_pg_binary = find_pg_client_binary
 
 
 # ── backup folder scanning ───────────────────────────────────────────
@@ -86,7 +58,7 @@ def scan_backup_folder(backup_dir: Path) -> Dict[str, List[Dict[str, Any]]]:
 
         if ".db" in entry.name and not entry.name.endswith(DUMP_EXT):
             sqlite_files.append(info)
-        elif entry.name.endswith(DUMP_EXT):
+        elif entry.name.endswith(DUMP_EXT) and entry.name.startswith(f"{DUMP_PREFIX}."):
             manifest_path = backup_dir / f"{entry.name}.manifest.json"
             if manifest_path.exists():
                 try:
