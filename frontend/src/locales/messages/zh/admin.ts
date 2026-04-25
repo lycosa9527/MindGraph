@@ -19,6 +19,7 @@ export default {
   'admin.chartPlaceholderUserActivity': '图表占位 - 用户活跃度随时间变化',
   'admin.confirm': '确定',
   'admin.copyShareMessage': '复制',
+  'admin.schoolInviteCopyPayload': '网址：{siteUrl}\n邀请码：{code}',
   'admin.createApiKey': '创建 API 密钥',
   'admin.createSchool': '创建学校',
   'admin.created': '创建时间',

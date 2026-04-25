@@ -19,6 +19,7 @@ export default {
   'admin.chartPlaceholderUserActivity': '圖表佔位 - 用戶活躍度隨時間變化',
   'admin.confirm': '確定',
   'admin.copyShareMessage': '複製',
+  'admin.schoolInviteCopyPayload': '網址：{siteUrl}\n邀請碼：{code}',
   'admin.createApiKey': '創建 API 密鑰',
   'admin.createSchool': '創建學校',
   'admin.created': '創建時間',

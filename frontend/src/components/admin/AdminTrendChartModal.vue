@@ -69,6 +69,27 @@ const expiresAtSaving = ref(false)
 /** True when invitationCode holds the full code (after reveal or refresh); list API is masked only. */
 const revealInvitation = ref(false)
 
+function isLikelyMaskedInviteCode(code: string | undefined | null): boolean {
+  if (code == null || code === '') {
+    return false
+  }
+  return code.includes('*')
+}
+
+/**
+ * List/parent org props use masked codes; do not replace a revealed full code with a masked value.
+ */
+function applyInvitationCodeFromProps(): void {
+  const fromProp = props.orgInvitationCode ?? ''
+  if (
+    !isLikelyMaskedInviteCode(fromProp) ||
+    isLikelyMaskedInviteCode(invitationCode.value) ||
+    invitationCode.value === ''
+  ) {
+    invitationCode.value = fromProp
+  }
+}
+
 async function toggleRevealInvitation() {
   if (revealInvitation.value) {
     revealInvitation.value = false
@@ -324,7 +345,7 @@ async function switchPeriod(p: 'today' | 'week' | 'month' | 'total') {
 
 async function loadManagersAndUsers() {
   if (props.type !== 'org' || props.orgId == null) return
-  invitationCode.value = props.orgInvitationCode ?? ''
+  applyInvitationCodeFromProps()
   managersLoading.value = true
   try {
     const [managersRes, usersRes] = await Promise.all([
@@ -567,13 +588,13 @@ watch(
   (v) => {
     if (v) {
       revealInvitation.value = false
-      load()
+      void load()
       if (props.type === 'org' && props.orgId) {
         invitationCode.value = props.orgInvitationCode ?? ''
         displayNameEdit.value = props.orgDisplayName ?? ''
         orgActiveState.value = props.orgIsActive ?? true
         expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
-        loadManagersAndUsers()
+        void loadManagersAndUsers()
       }
     } else {
       chartInstance?.destroy()
@@ -594,17 +615,25 @@ watch(
       props.userId,
       props.userName,
     ] as const,
-  () => {
-    if (props.visible) {
+  (newVal, oldVal) => {
+    if (!props.visible) {
+      return
+    }
+    const orgIdChanged = oldVal != null && newVal[0] !== oldVal[0]
+    if (orgIdChanged) {
       revealInvitation.value = false
-      load()
-      if (props.type === 'org' && props.orgId) {
+    }
+    void load()
+    if (props.type === 'org' && props.orgId) {
+      if (orgIdChanged) {
         invitationCode.value = props.orgInvitationCode ?? ''
-        displayNameEdit.value = props.orgDisplayName ?? ''
-        orgActiveState.value = props.orgIsActive ?? true
-        expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
-        loadManagersAndUsers()
+      } else {
+        applyInvitationCodeFromProps()
       }
+      displayNameEdit.value = props.orgDisplayName ?? ''
+      orgActiveState.value = props.orgIsActive ?? true
+      expiresAtEdit.value = parseExpiresAtToDate(props.orgExpiresAt)
+      void loadManagersAndUsers()
     }
   }
 )

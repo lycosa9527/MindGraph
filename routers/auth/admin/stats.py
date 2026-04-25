@@ -304,7 +304,12 @@ async def get_school_stats(
         logger.debug("TokenUsage not available: %s", e)
 
     return {
-        "organization": {"id": org.id, "name": org.name, "code": org.code},
+        "organization": {
+            "id": org.id,
+            "name": org.name,
+            "code": org.code,
+            "invitation_code": org.invitation_code or "",
+        },
         "total_users": total_users,
         "recent_registrations": recent_registrations,
         "token_stats": token_stats,

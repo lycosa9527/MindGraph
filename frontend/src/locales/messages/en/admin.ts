@@ -19,6 +19,7 @@ export default {
   'admin.chartPlaceholderUserActivity': 'Chart placeholder - User activity over time',
   'admin.confirm': 'Confirm',
   'admin.copyShareMessage': 'Copy',
+  'admin.schoolInviteCopyPayload': 'URL: {siteUrl}\nInvitation code: {code}',
   'admin.createApiKey': 'Create API Key',
   'admin.createSchool': 'Create School',
   'admin.created': 'Created',

@@ -285,8 +285,8 @@ onMounted(loadSchools)
                   link
                   size="small"
                   class="p-0 min-w-0"
-                  :loading="refreshCodeOrgId === (row.id as number)"
-                  @click="refreshInvitationCode(row.id as number)"
+                  :loading="refreshCodeOrgId === Number(row.id)"
+                  @click="refreshInvitationCode(Number(row.id))"
                 >
                   <el-icon><Refresh /></el-icon>
                 </el-button>

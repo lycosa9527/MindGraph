@@ -8,9 +8,10 @@ import { computed, nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   ChatDotRound,
   Connection,
+  DocumentCopy,
+  Key,
   Loading,
   Refresh,
-  TrendCharts,
   User,
   Warning,
 } from '@element-plus/icons-vue'
@@ -18,7 +19,7 @@ import {
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
 import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
-import { useLanguage, useNotifications } from '@/composables'
+import { useLanguage, useNotifications, usePublicSiteUrl } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
 import { httpErrorDetail } from '@/utils/httpErrorDetail'
@@ -27,6 +28,7 @@ Chart.register(...registerables)
 
 const { t, isZh } = useLanguage()
 const notify = useNotifications()
+const { publicSiteUrl } = usePublicSiteUrl()
 const authStore = useAuthStore()
 
 const isAdmin = computed(() => authStore.isAdmin)
@@ -45,9 +47,8 @@ const effectiveOrgId = computed(() => {
 const isLoading = ref(true)
 const stats = ref({
   totalUsers: 0,
-  recentRegistrations: 0,
   totalTokens: 0,
-  organization: { id: 0, name: '', code: '' },
+  organization: { id: 0, name: '', code: '', invitation_code: '' },
 })
 const topUsers = ref<{ id: number; name: string; phone: string; total_tokens: number }[]>([])
 
@@ -98,6 +99,26 @@ function formatNumber(num: number): string {
   return num.toLocaleString()
 }
 
+const invitationCodeDisplay = computed(
+  () => (stats.value.organization?.invitation_code || '').trim() || '—'
+)
+
+async function copyInvitationCode(event: MouseEvent) {
+  event.stopPropagation()
+  const code = (stats.value.organization?.invitation_code || '').trim()
+  if (!code) return
+  const text = t('admin.schoolInviteCopyPayload', {
+    siteUrl: publicSiteUrl.value,
+    code,
+  })
+  try {
+    await navigator.clipboard.writeText(text)
+    notify.success(t('notification.copied'))
+  } catch {
+    notify.error(t('notification.copyFailed'))
+  }
+}
+
 function formatChartLabel(value: number): string {
   if (value >= 1000000) return (value / 1000000).toFixed(1) + 'M'
   if (value >= 1000) return (value / 1000).toFixed(1) + 'K'
@@ -134,11 +155,21 @@ async function loadStats() {
       return
     }
     const data = await res.json()
+    const org = data.organization ?? {
+      id: 0,
+      name: '',
+      code: '',
+      invitation_code: '',
+    }
     stats.value = {
       totalUsers: data.total_users ?? 0,
-      recentRegistrations: data.recent_registrations ?? 0,
       totalTokens: data.token_stats?.total_tokens ?? 0,
-      organization: data.organization ?? { id: 0, name: '', code: '' },
+      organization: {
+        id: org.id ?? 0,
+        name: org.name ?? '',
+        code: org.code ?? '',
+        invitation_code: org.invitation_code ?? '',
+      },
     }
     topUsers.value = data.top_users ?? []
   } catch {
@@ -464,33 +495,6 @@ onBeforeUnmount(() => {
             <el-card
               shadow="hover"
               class="stat-card stat-card-clickable"
-              @click="showTrendChart('today')"
-            >
-              <div class="flex items-center gap-4">
-                <div
-                  class="w-12 h-12 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center"
-                >
-                  <el-icon
-                    :size="24"
-                    class="text-green-500"
-                  >
-                    <TrendCharts />
-                  </el-icon>
-                </div>
-                <div>
-                  <p class="text-sm text-gray-500 dark:text-gray-400">
-                    {{ t('admin.todayRegistrations') }}
-                  </p>
-                  <p class="text-2xl font-bold text-gray-800 dark:text-white">
-                    {{ stats.recentRegistrations }}
-                  </p>
-                </div>
-              </div>
-            </el-card>
-
-            <el-card
-              shadow="hover"
-              class="stat-card stat-card-clickable"
               @click="showTrendChart('week')"
             >
               <div class="flex items-center gap-4">
@@ -511,6 +515,52 @@ onBeforeUnmount(() => {
                   <p class="text-2xl font-bold text-gray-800 dark:text-white">
                     {{ formatNumber(stats.totalTokens) }}
                   </p>
+                </div>
+              </div>
+            </el-card>
+
+            <el-card
+              shadow="hover"
+              class="stat-card"
+            >
+              <div>
+                <div class="flex items-center gap-4 min-w-0">
+                  <div
+                    class="w-12 h-12 bg-violet-100 dark:bg-violet-900 rounded-lg flex items-center justify-center shrink-0"
+                  >
+                    <el-icon
+                      :size="24"
+                      class="text-violet-500"
+                    >
+                      <Key />
+                    </el-icon>
+                  </div>
+                  <div class="min-w-0 flex-1">
+                    <p class="text-sm text-gray-500 dark:text-gray-400">
+                      {{ t('admin.invitationCode') }}
+                    </p>
+                    <p
+                      class="text-2xl font-mono font-bold text-gray-800 dark:text-white truncate"
+                      :title="invitationCodeDisplay"
+                    >
+                      {{ invitationCodeDisplay }}
+                    </p>
+                  </div>
+                </div>
+                <div class="mt-2 pl-16 min-w-0">
+                  <el-button
+                    type="primary"
+                    size="small"
+                    round
+                    class="!rounded-full"
+                    :disabled="!(stats.organization?.invitation_code || '').trim()"
+                    @click="copyInvitationCode"
+                  >
+                    <el-icon class="el-icon--left">
+                      <DocumentCopy />
+                    </el-icon>
+                    {{ t('admin.copyShareMessage') }}
+                  </el-button>
                 </div>
               </div>
             </el-card>
