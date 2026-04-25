@@ -16,15 +16,17 @@ from typing import Optional, cast
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Body, Query, status
-from sqlalchemy import and_, delete, select
+from sqlalchemy import and_, select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.diagrams import Diagram
 from models.domain.messages import Messages, Language
 from models.domain.token_usage import TokenUsage
+from services.auth.phone_uniqueness import other_user_id_with_phone
+from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
@@ -213,6 +215,8 @@ async def update_user_admin(
 
     old_phone = user.phone
     old_org_id = user.organization_id
+    phone_will_change = False
+    last_requested_new_phone: Optional[str] = None
 
     if "phone" in request:
         new_phone = request["phone"].strip()
@@ -224,10 +228,11 @@ async def update_user_admin(
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
         if new_phone != user.phone:
-            existing = await user_cache.get_by_phone(new_phone)
-            if existing and existing.id != user.id:
+            if await other_user_id_with_phone(db, new_phone, user.id) is not None:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
                 raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
+            phone_will_change = True
+        last_requested_new_phone = new_phone
         user.phone = new_phone
 
     if "name" in request:
@@ -263,6 +268,28 @@ async def update_user_admin(
     try:
         await db.commit()
         await db.refresh(user)
+    except IntegrityError as err:
+        await db.rollback()
+        if phone_will_change and last_requested_new_phone:
+            logger.info(
+                "[Auth] Phone unique constraint on user ID %s (concurrent or drift): %s",
+                user_id,
+                err,
+            )
+            detail = Messages.error(
+                "phone_already_registered_other",
+                lang,
+                last_requested_new_phone,
+            )
+            raise HTTPException(
+                status_code=status.HTTP_409_CONFLICT,
+                detail=detail,
+            ) from err
+        logger.error("[Auth] Failed to update user ID %s in database: %s", user_id, err)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update user",
+        ) from err
     except Exception as e:
         await db.rollback()
         logger.error("[Auth] Failed to update user ID %s in database: %s", user_id, e)
@@ -345,7 +372,7 @@ async def delete_user_admin(
     user_phone = user.phone
 
     try:
-        await db.execute(delete(Diagram).where(Diagram.user_id == user_id))
+        await delete_user_fk_dependent_rows(db, user_id)
         await db.delete(user)
         await db.commit()
     except Exception as e:

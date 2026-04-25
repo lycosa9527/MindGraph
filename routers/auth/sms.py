@@ -36,7 +36,7 @@ from services.auth.sms_service import (
 )
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from services.redis.redis_sms_storage import get_sms_storage
-from services.redis.cache.redis_user_cache import user_cache
+from services.auth.phone_uniqueness import any_user_id_with_phone
 from utils.auth import AUTH_MODE, get_client_ip
 
 from .captcha import verify_captcha_with_retry
@@ -67,7 +67,7 @@ async def _enforce_sms_send_ip_limit(http_request: Request, lang: Language) -> N
 async def send_sms_code(
     request: SendSMSCodeRequest,
     http_request: Request,
-    _db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -121,23 +121,18 @@ async def send_sms_code(
     phone = request.phone
     purpose = request.purpose
 
-    # For registration, check if phone already exists (use cache)
     if purpose == "register":
-        existing_user = await user_cache.get_by_phone(phone)
-        if existing_user:
+        if await any_user_id_with_phone(db, phone) is not None:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
-    # For login and reset_password, check if user exists (use cache)
-    if purpose in ["login", "reset_password"]:
-        existing_user = await user_cache.get_by_phone(phone)
-        if not existing_user:
+    if purpose in ("login", "reset_password"):
+        if await any_user_id_with_phone(db, phone) is None:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-            else:  # reset_password
-                error_msg = Messages.error("phone_not_registered_reset", lang)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+            error_msg = Messages.error("phone_not_registered_reset", lang)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Get Redis SMS storage and rate limiter
     sms_storage = get_sms_storage()
@@ -316,7 +311,7 @@ async def _send_sms_code_with_purpose(
     request: SendSMSCodeSimpleRequest,
     http_request: Request,
     purpose: str,
-    _db: AsyncSession,
+    db: AsyncSession,
     lang: Language,
 ):
     """
@@ -357,23 +352,18 @@ async def _send_sms_code_with_purpose(
 
     phone = request.phone
 
-    # For registration, check if phone already exists (use cache)
     if purpose == "register":
-        existing_user = await user_cache.get_by_phone(phone)
-        if existing_user:
+        if await any_user_id_with_phone(db, phone) is not None:
             error_msg = Messages.error("phone_already_registered", lang)
             raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
 
-    # For login and reset_password, check if user exists (use cache)
-    if purpose in ["login", "reset_password"]:
-        existing_user = await user_cache.get_by_phone(phone)
-        if not existing_user:
+    if purpose in ("login", "reset_password"):
+        if await any_user_id_with_phone(db, phone) is None:
             if purpose == "login":
                 error_msg = Messages.error("phone_not_registered_login", lang)
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-            else:  # reset_password
-                error_msg = Messages.error("phone_not_registered_reset", lang)
-                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+            error_msg = Messages.error("phone_not_registered_reset", lang)
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     # Get Redis SMS storage and rate limiter
     sms_storage = get_sms_storage()

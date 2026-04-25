@@ -21,13 +21,15 @@ from sqlalchemy.sql.functions import sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import User, Organization
+from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
+from services.auth.school_dashboard_logger import school_dashboard_extra
 from ..dependencies import (
     get_language_dependency,
     require_admin,
     require_admin_or_manager,
 )
-from .stats import _resolve_school_org_id
+from .school_scope import resolve_school_dashboard_org_id
 from ..helpers import get_beijing_now, BEIJING_TIMEZONE
 from .stats import _sql_count
 
@@ -288,16 +290,27 @@ async def get_school_token_trends(
     hourly: bool = False,
     current_user: User = Depends(require_admin_or_manager),
     db: AsyncSession = Depends(get_async_db),
-    lang: str = Depends(get_language_dependency),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
     Get token trends for a school (ADMIN or MANAGER).
     Same as /admin/stats/trends/organization but with org access control.
     """
-    org_id = _resolve_school_org_id(organization_id, current_user)
+    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     org = (await db.execute(select(Organization).where(Organization.id == org_id))).scalars().first()
     if not org:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+        logger.warning(
+            "[SchoolDashboard] organization missing for school token trends",
+            extra=school_dashboard_extra(
+                event="school_trends_org_not_found",
+                actor_id=current_user.id,
+                org_id=org_id,
+            ),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Messages.error("organization_not_found", lang, org_id),
+        )
     result = await get_organization_token_trends_admin(
         _request=request,
         organization_id=org_id,
@@ -306,7 +319,7 @@ async def get_school_token_trends(
         hourly=hourly,
         _current_user=current_user,
         db=db,
-        _lang=lang,
+        lang=lang,
     )
     return result
 
@@ -320,7 +333,7 @@ async def get_organization_token_trends_admin(
     hourly: bool = False,  # If True, return hourly data (only for days=1)
     _current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
-    _lang: str = Depends(get_language_dependency),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get token usage trends for a specific organization (ADMIN ONLY)"""
     if not organization_id and not organization_name:
@@ -348,7 +361,11 @@ async def get_organization_token_trends_admin(
         org = (await db.execute(select(Organization).where(Organization.name == organization_name))).scalars().first()
 
     if not org:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+        not_found_id = organization_id if organization_id is not None else organization_name
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Messages.error("organization_not_found", lang, not_found_id),
+        )
 
     # Use Beijing time for date calculations
     beijing_now = get_beijing_now()

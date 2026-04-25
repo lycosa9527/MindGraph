@@ -22,6 +22,7 @@ from models.domain.messages import Messages, Language
 from models.requests.requests_auth import SendChangePhoneSMSRequest, ChangePhoneRequest
 from services.redis.redis_sms_storage import get_sms_storage
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
+from services.auth.phone_uniqueness import other_user_id_with_phone
 from services.redis.cache.redis_user_cache import user_cache
 from services.auth.sms_middleware import get_sms_middleware, SMSServiceError
 from services.auth.sms_service import (
@@ -46,7 +47,7 @@ async def send_change_phone_code(
     request: SendChangePhoneSMSRequest,
     _http_request: Request,
     current_user: User = Depends(get_current_user),
-    _db: AsyncSession = Depends(get_async_db),
+    db: AsyncSession = Depends(get_async_db),
     lang: Language = Depends(get_language_dependency),
 ):
     """
@@ -71,9 +72,7 @@ async def send_change_phone_code(
             detail=Messages.error("phone_same_as_current", lang),
         )
 
-    # Check if new phone is already registered by another user
-    existing_user = await user_cache.get_by_phone(new_phone)
-    if existing_user and existing_user.id != current_user.id:
+    if await other_user_id_with_phone(db, new_phone, int(current_user.id)) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=Messages.error("phone_already_in_use", lang),
@@ -203,9 +202,7 @@ async def change_phone(
             detail=Messages.error("phone_same_as_current", lang),
         )
 
-    # Check if new phone is already registered by another user
-    existing_user = await user_cache.get_by_phone(new_phone)
-    if existing_user and existing_user.id != current_user.id:
+    if await other_user_id_with_phone(db, new_phone, int(current_user.id)) is not None:
         raise HTTPException(
             status_code=status.HTTP_409_CONFLICT,
             detail=Messages.error("phone_already_in_use", lang),
@@ -225,8 +222,7 @@ async def change_phone(
     # Update phone number in database
     current_user.phone = new_phone
 
-    # Commit with retry for database lock handling
-    await commit_user_with_retry(db, current_user)
+    await commit_user_with_retry(db, current_user, lang=lang)
 
     # Invalidate cache for both old and new phone (and email index if present)
     user_email = getattr(current_user, "email", None)

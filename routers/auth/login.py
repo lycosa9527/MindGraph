@@ -264,10 +264,15 @@ async def login(
         email_validated = validate_email_for_api(request.email, lang)
         raise_if_mainland_china_email_for_email_login(email_validated, lang)
         login_key = normalize_verification_email(email_validated)
-        cached_user = await user_cache.get_by_email(login_key)
+        user_row = await db.execute(select(User).where(User.email == login_key))
+        cached_user = user_row.scalar_one_or_none()
     else:
         login_key = (request.phone or "").strip()
-        cached_user = await user_cache.get_by_phone(login_key)
+        if not login_key:
+            cached_user = None
+        else:
+            user_row = await db.execute(select(User).where(User.phone == login_key))
+            cached_user = user_row.scalar_one_or_none()
 
     is_allowed, _ = await check_login_rate_limit(login_key)
     if not is_allowed:
@@ -512,8 +517,8 @@ async def login_with_sms(
     - Bypasses account lockout
     - Quick verification
     """
-    # Find user first (use cache with database fallback)
-    user = await user_cache.get_by_phone(request.phone)
+    user_row = await db.execute(select(User).where(User.phone == request.phone))
+    user = user_row.scalar_one_or_none()
 
     if not user:
         error_msg = Messages.error("phone_not_registered_login", lang)
@@ -563,7 +568,8 @@ async def login_with_email(
     email_validated = validate_email_for_api(request.email, lang)
     raise_if_mainland_china_email_for_email_login(email_validated, lang)
     email_key = normalize_verification_email(email_validated)
-    user = await user_cache.get_by_email(email_key)
+    user_row = await db.execute(select(User).where(User.email == email_key))
+    user = user_row.scalar_one_or_none()
 
     if not user:
         error_msg = Messages.error("email_not_registered_login", lang)
@@ -652,8 +658,8 @@ async def verify_demo(
         user_phone = "demo-admin@system.com" if is_admin_access else "demo@system.com"
         user_name = "Demo Admin" if is_admin_access else "Demo User"
 
-    # Get or create user (use cache with database fallback)
-    auth_user = await user_cache.get_by_phone(user_phone)
+    existing_demo = await db.execute(select(User).where(User.phone == user_phone))
+    auth_user = existing_demo.scalar_one_or_none()
 
     if not auth_user:
         # Get or create organization based on mode
@@ -719,8 +725,8 @@ async def verify_demo(
             await db.rollback()
             logger.error("Failed to create %s user: %s", AUTH_MODE, e)
 
-            # Try to get the user again in case it was created by another request (use cache)
-            auth_user = await user_cache.get_by_phone(user_phone)
+            retry_row = await db.execute(select(User).where(User.phone == user_phone))
+            auth_user = retry_row.scalar_one_or_none()
             if not auth_user:
                 error_msg = Messages.error("user_creation_failed", "en", str(e))
                 raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=error_msg) from e

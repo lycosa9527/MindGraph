@@ -22,21 +22,19 @@ import logging
 from typing import Optional, cast
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, delete, select, update
+from sqlalchemy import and_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.functions import coalesce as sa_coalesce, count as sa_count, sum as sa_sum
 
 from config.database import get_async_db
 from models.domain.auth import Organization, User
-from models.domain.diagrams import Diagram
 from models.domain.messages import Messages, Language
-from models.domain.user_activity_log import UserActivityLog
-from models.domain.user_usage_stats import UserUsageStats
 
 try:
     from models.domain.token_usage import TokenUsage
 except ImportError:
     TokenUsage = None
+from services.auth.user_fk_cleanup import delete_user_fk_dependent_rows
 from services.redis.cache.redis_org_cache import org_cache
 from services.redis.cache.redis_user_cache import user_cache
 from utils.invitations import generate_invitation_code, normalize_or_generate
@@ -501,11 +499,7 @@ async def delete_organization_admin(
     if delete_users and user_count > 0:
         for user in users_in_org:
             uid = user.id
-            await db.execute(delete(Diagram).where(Diagram.user_id == uid))
-            await db.execute(delete(UserActivityLog).where(UserActivityLog.user_id == uid))
-            await db.execute(delete(UserUsageStats).where(UserUsageStats.user_id == uid))
-            if TokenUsage is not None:
-                await db.execute(update(TokenUsage).where(TokenUsage.user_id == uid).values(user_id=None))
+            await delete_user_fk_dependent_rows(db, uid)
             await user_cache.invalidate(uid, user.phone, getattr(user, "email", None))
             await db.delete(user)
         try:

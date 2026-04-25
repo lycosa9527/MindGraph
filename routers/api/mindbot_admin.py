@@ -17,12 +17,15 @@ from repositories.mindbot_repo import MindbotConfigRepository, _BOT_CAP_PER_ORG
 from repositories.mindbot_usage_repo import MindbotUsageRepository
 from routers.api.mindbot_helpers import (
     _callback_metrics_snapshot_for_user,
+    _dify_probe_error_for_user,
     _ensure_org_scope,
     _event_subscription_fields,
     _mindbot_auth_field_changes_on_update,
     _require_mindbot_feature,
     _resolve_secrets,
     _to_response,
+    _usage_event_for_user,
+    _usage_events_for_user,
 )
 from routers.api.mindbot_models import (
     DifyServiceStatusResponse,
@@ -100,10 +103,11 @@ async def admin_dify_service_status(
     key = config.MINDBOT_DIFY_HEALTH_API_KEY
     probe_url = f"{base}/parameters" if base and is_admin(user) else None
     online, http_status, err = await check_dify_app_api_reachable(base, key)
+    err_out = _dify_probe_error_for_user(err, is_platform_admin=is_admin(user))
     return DifyServiceStatusResponse(
         online=online,
         http_status=http_status,
-        error=err,
+        error=err_out,
         probe_url=probe_url,
     )
 
@@ -131,7 +135,7 @@ async def admin_list_mindbot_configs(
     if oid is None:
         return []
     rows = await repo.list_by_organization_id(int(oid))
-    return [_to_response(r) for r in rows]
+    return [_to_response(r, school_manager_view=True) for r in rows]
 
 
 @router.post("/admin/configs", response_model=MindbotConfigResponse, status_code=status.HTTP_201_CREATED)
@@ -229,7 +233,7 @@ async def admin_get_mindbot_config(
     _require_mindbot_feature()
     row = await _get_config_or_404(config_id, db)
     _ensure_org_scope(user, row.organization_id)
-    return _to_response(row)
+    return _to_response(row, school_manager_view=not is_admin(user))
 
 
 @router.put("/admin/configs/{config_id}", response_model=MindbotConfigResponse)
@@ -485,6 +489,7 @@ async def admin_org_dify_health(
         row.dify_api_base_url.strip(),
         row.dify_api_key.strip(),
     )
+    err_out = _dify_probe_error_for_user(err, is_platform_admin=is_admin(user))
     logger.info(
         "[MindBot] org_dify_health_probe config_id=%s organization_id=%s user_id=%s online=%s http_status=%s",
         config_id,
@@ -496,7 +501,7 @@ async def admin_org_dify_health(
     return DifyServiceStatusResponse(
         online=online,
         http_status=http_status,
-        error=err,
+        error=err_out,
         probe_url=None,
     )
 
@@ -584,7 +589,7 @@ async def admin_list_mindbot_usage_events(
         before_id=before_id,
         dingtalk_staff_id=dingtalk_staff_id,
     )
-    return [MindbotUsageEventItem.model_validate(r) for r in rows]
+    return _usage_events_for_user(user, rows)
 
 
 @router.get(
@@ -611,7 +616,7 @@ async def admin_get_mindbot_usage_event(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Usage event not found",
         )
-    return MindbotUsageEventItem.model_validate(row)
+    return _usage_event_for_user(user, row)
 
 
 @router.get(
@@ -648,4 +653,4 @@ async def admin_list_mindbot_usage_thread_events(
         limit=limit,
         before_id=before_id,
     )
-    return [MindbotUsageEventItem.model_validate(r) for r in rows]
+    return _usage_events_for_user(user, rows)

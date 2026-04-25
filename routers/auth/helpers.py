@@ -21,11 +21,12 @@ from datetime import UTC, datetime, timedelta, timezone
 from typing import Optional, Callable, Awaitable
 
 from fastapi import HTTPException, Request, Response, status
-from sqlalchemy.exc import OperationalError
+from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
+from models.domain.messages import Language, Messages
 from models.domain.user_activity_log import UserActivityLog
 from services.redis.redis_activity_tracker import get_activity_tracker
 from services.teacher_usage_stats import compute_and_upsert_user_usage_stats_async
@@ -214,7 +215,22 @@ def _record_city_flag_async(ip_address: str) -> None:
 # ============================================================================
 
 
-async def commit_user_with_retry(db: AsyncSession, new_user: User, max_retries: int = 5) -> int:
+def _integrity_error_looks_like_phone(err: Exception) -> bool:
+    text = f"{getattr(err, 'orig', None) or err}".lower()
+    return "phone" in text
+
+
+def _integrity_error_looks_like_email(err: Exception) -> bool:
+    text = f"{getattr(err, 'orig', None) or err}".lower()
+    return "email" in text
+
+
+async def commit_user_with_retry(
+    db: AsyncSession,
+    new_user: User,
+    max_retries: int = 5,
+    lang: Language = "en",
+) -> int:
     """
     Commit user to database with retry logic for database deadlock errors.
 
@@ -289,6 +305,25 @@ async def commit_user_with_retry(db: AsyncSession, new_user: User, max_retries: 
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail="Failed to create user account",
                 ) from e
+        except IntegrityError as e:
+            await db.rollback()
+            if _integrity_error_looks_like_phone(e):
+                logger.info("[Auth] Unique phone conflict on user commit: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=Messages.error("phone_already_registered", lang=lang),
+                ) from e
+            if _integrity_error_looks_like_email(e):
+                logger.info("[Auth] Unique email conflict on user commit: %s", e)
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=Messages.error("email_already_registered", lang=lang),
+                ) from e
+            logger.error("[Auth] Integrity error on user commit: %s", e, exc_info=True)
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to create user account",
+            ) from e
         except Exception as e:
             # Non-OperationalError - don't retry
             await db.rollback()

@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.104.0] - 2026-04-26
+
+### Added
+- **School dashboard — org-scoped user management** (`routers/auth/admin/school_users.py`, `routers/auth/admin/school_scope.py`, `SchoolDashboardPage.vue`, `SchoolDashboardUsersTab.vue`, `locales/messages/en|zh/admin.ts`, `components.d.ts`): list/search, detail, update (name/phone with DB-session phone uniqueness), unlock, and delete for users in a single organization. Admins pass **`organization_id`**; **managers** are fixed to their org and cannot cross orgs (403 on mismatch). List responses include per-user **token usage** aggregates when `TokenUsage` is available.
+- **Structured school-dashboard logging** (`services/auth/school_dashboard_logger.py`): `LoggerAdapter` and **`school_dashboard_extra`** inject stable **`sd_*`** fields (`sd_event`, `sd_actor_id`, `sd_org_id`, `sd_target_user_id`) for JSON log pipelines.
+- **Phone uniqueness in the same DB session** (`services/auth/phone_uniqueness.py`): `any_user_id_with_phone` and `other_user_id_with_phone` for inserts/updates that must race safely with the ORM.
+- **User delete — FK cleanup** (`services/auth/user_fk_cleanup.py`, `routers/auth/admin/users.py`, school delete): shared routine to nullify or remove dependent rows (diagrams, community, library, token usage, mindbot links, etc.) before deleting a user row; reused by platform admin and school dashboard delete.
+- **HTTP API error text for toasts** (`frontend/src/utils/httpErrorDetail.ts`): normalizes FastAPI **`detail`** (string or Pydantic validation list) for **Element Plus** notifications.
+
+### Changed
+- **School statistics & token trends** (`routers/auth/admin/stats.py`, `stats_trends.py`, `organizations.py`): school endpoints use **`resolve_school_dashboard_org_id`** and structured logging; org listing tweaks where needed for the dashboard.
+- **Auth and registration** (`routers/auth/helpers.py`, `login.py`, `password.py`, `phone.py`, `quick_register.py`, `registration.py`, `registration_overseas.py`, `sms.py`): refactors and shared handling aligned with the new user-management paths.
+- **MindBot admin** (`routers/api/mindbot_admin.py`, `routers/api/mindbot_helpers.py`): helper and routing adjustments.
+- **Domain messages** (`models/domain/messages.py`): i18n keys for school dashboard scope and school user errors.
+
+### Fixed
+- **Alembic `login_password_set`** (`alembic/versions/rev_0025_user_login_password_set.py`): boolean column **`server_default`** uses PostgreSQL’s **`true`** literal; **downgrade** no longer has an empty body.
+
 ## [5.103.0] - 2026-04-26
 
 ### Added

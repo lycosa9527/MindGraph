@@ -43,6 +43,7 @@ from services.redis.session.redis_session_manager import (
 )
 from services.auth.vpn_geo_enforcement import record_vpn_login_geo
 from services.monitoring.registration_metrics import registration_metrics
+from services.auth.phone_uniqueness import any_user_id_with_phone
 
 from .dependencies import get_language_dependency
 from .helpers import commit_user_with_retry, set_auth_cookies, track_user_activity
@@ -262,9 +263,7 @@ async def register(
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
-            # Check if phone already exists (use cache with database fallback)
-            existing_user = await user_cache.get_by_phone(request.phone)
-            if existing_user:
+            if await any_user_id_with_phone(db, request.phone) is not None:
                 duration = time.time() - start_time
                 registration_metrics.record_failure("phone_exists", duration)
                 error_msg = Messages.error("phone_already_registered", lang)
@@ -281,7 +280,9 @@ async def register(
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
-            retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
+            retry_count = await commit_user_with_retry(
+                db, new_user, max_retries=5, lang=lang
+            )
     except RuntimeError as e:
         # Lock acquisition failed - fall back to current behavior
         duration = time.time() - start_time
@@ -475,9 +476,7 @@ async def register_with_sms(
     # Use distributed lock to prevent race condition on phone uniqueness check
     try:
         async with phone_registration_lock(request.phone):
-            # Check if phone already exists (use cache with database fallback)
-            existing_user = await user_cache.get_by_phone(request.phone)
-            if existing_user:
+            if await any_user_id_with_phone(db, request.phone) is not None:
                 duration = time.time() - start_time
                 registration_metrics.record_failure("phone_exists", duration)
                 error_msg = Messages.error("phone_already_registered", lang)
@@ -503,7 +502,9 @@ async def register_with_sms(
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
-            retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
+            retry_count = await commit_user_with_retry(
+                db, new_user, max_retries=5, lang=lang
+            )
     except RuntimeError as e:
         duration = time.time() - start_time
         registration_metrics.record_failure("lock_timeout", duration)

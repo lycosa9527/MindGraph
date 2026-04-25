@@ -17,13 +17,15 @@ import {
 
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
+import SchoolDashboardUsersTab from '@/components/school/SchoolDashboardUsersTab.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
 import { apiRequest } from '@/utils/apiClient'
+import { httpErrorDetail } from '@/utils/httpErrorDetail'
 
 Chart.register(...registerables)
 
-const { t } = useLanguage()
+const { t, isZh } = useLanguage()
 const notify = useNotifications()
 const authStore = useAuthStore()
 
@@ -57,7 +59,7 @@ let trendChartInstance: Chart<'line'> | null = null
 const periodCards = ref({ today: '-', week: '-', month: '-', total: '-' })
 const trendPeriod = ref<'today' | 'week' | 'month' | 'total'>('week')
 
-const activeTab = ref<'overview' | 'tokens'>('overview')
+const activeTab = ref<'overview' | 'tokens' | 'users'>('overview')
 const isLoadingTokens = ref(false)
 const tokenStats = ref<{
   today?: { input_tokens: number; output_tokens: number; total_tokens: number }
@@ -128,7 +130,7 @@ async function loadStats() {
     const res = await apiRequest(`/api/auth/admin/stats/school?organization_id=${orgId}`)
     if (!res.ok) {
       const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.dashboardLoadError'))
+      notify.error(httpErrorDetail(data) || t('admin.dashboardLoadError'))
       return
     }
     const data = await res.json()
@@ -165,7 +167,8 @@ async function showTrendChart(period: 'today' | 'week' | 'month' | 'total' = 'we
       apiRequest(`/api/auth/admin/stats/school/token-stats?organization_id=${orgId}`),
     ])
     if (!chartRes.ok) {
-      notify.error(t('admin.dashboardLoadError'))
+      const errBody = await chartRes.json().catch(() => ({}))
+      notify.error(httpErrorDetail(errBody) || t('admin.dashboardLoadError'))
       trendChartLoading.value = false
       return
     }
@@ -204,11 +207,12 @@ function renderTrendChart(data: {
   trendChartInstance?.destroy()
   trendChartInstance = null
 
+  const chartLocale = isZh.value ? 'zh-CN' : 'en-US'
   const labels = rawData.map((item) => {
     const dateStr = item.date.includes(' ') ? item.date.replace(' ', 'T') : item.date + 'T00:00:00'
     const date = new Date(dateStr)
     if (item.date.includes(':') && item.date.includes(' ')) {
-      return date.toLocaleString('en-US', {
+      return date.toLocaleString(chartLocale, {
         month: 'short',
         day: 'numeric',
         hour: 'numeric',
@@ -216,7 +220,7 @@ function renderTrendChart(data: {
         timeZone: 'Asia/Shanghai',
       })
     }
-    return date.toLocaleDateString('en-US', {
+    return date.toLocaleDateString(chartLocale, {
       month: 'short',
       day: 'numeric',
       timeZone: 'Asia/Shanghai',
@@ -324,7 +328,7 @@ async function loadTokenStats() {
       tokenStats.value = await res.json()
     } else {
       const data = await res.json().catch(() => ({}))
-      notify.error(data.detail || t('admin.tokenStatsLoadError'))
+      notify.error(httpErrorDetail(data) || t('admin.tokenStatsLoadError'))
     }
   } catch {
     notify.error(t('admin.tokenStatsNetworkError'))
@@ -409,6 +413,10 @@ onBeforeUnmount(() => {
           <el-tab-pane
             :label="t('admin.tokens')"
             name="tokens"
+          />
+          <el-tab-pane
+            :label="t('admin.schoolUsersTab')"
+            name="users"
           />
         </el-tabs>
 
@@ -869,6 +877,13 @@ onBeforeUnmount(() => {
               {{ t('admin.loadStatistics') }}
             </el-button>
           </div>
+        </template>
+
+        <template v-else-if="activeTab === 'users'">
+          <SchoolDashboardUsersTab
+            v-if="effectiveOrgId != null"
+            :org-id="effectiveOrgId"
+          />
         </template>
       </template>
     </div>

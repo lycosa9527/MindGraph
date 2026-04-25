@@ -15,6 +15,7 @@ from . import (
     organizations,
     roles,
     users,
+    school_users,
     settings,
     stats,
     stats_trends,
@@ -33,6 +34,7 @@ admin_router = APIRouter()
 admin_router.include_router(organizations.router)
 admin_router.include_router(roles.router)
 admin_router.include_router(users.router)
+admin_router.include_router(school_users.router)
 admin_router.include_router(settings.router)
 admin_router.include_router(stats.router)
 admin_router.include_router(stats_trends.router)

@@ -249,8 +249,14 @@ class Messages:
         },
         "quick_reg_room_code_invalid": {
             "zh": "房间码不正确或已过期。请对照老师屏幕上的 6 位数字，在码刷新后重试。",
-            "en": "The room code is wrong or expired. Match the 6 digits on the facilitator’s screen and try after it updates.",
-            "az": "Otaq kodu səhvdir və ya müddəti bitib. Ekrandakı 6 rəqəmi daxil edin və ya yenilənmədən sonra cəhd edin.",
+            "en": (
+                "The room code is wrong or expired. Match the 6 digits on the "
+                "facilitator’s screen and try after it updates."
+            ),
+            "az": (
+                "Otaq kodu səhvdir və ya müddəti bitib. Ekrandakı 6 rəqəmi daxil edin "
+                "və ya yenilənmədən sonra cəhd edin."
+            ),
         },
         "quick_reg_room_too_many_guesses": {
             "zh": "房间码尝试次数过多，请稍后再试。",
@@ -1016,6 +1022,36 @@ class Messages:
             "zh": "用户不属于该组织",
             "en": "User does not belong to this organization",
             "az": "İstifadəçi bu təşkilata aid deyil",
+        },
+        "school_dashboard_admin_org_required": {
+            "zh": "管理员必须提供 organization_id 以选择学校",
+            "en": "organization_id is required for admin",
+            "az": "Administrator üçün məktəb seçmək üçün organization_id tələb olunur",
+        },
+        "school_dashboard_manager_no_org": {
+            "zh": "学校管理员必须属于一个组织",
+            "en": "Manager must belong to an organization",
+            "az": "Menecer təşkilata aid olmalıdır",
+        },
+        "school_dashboard_manager_cross_org_forbidden": {
+            "zh": "仅可访问本校数据，不能查看其他学校",
+            "en": "Managers may only access their own organization",
+            "az": "Menecerlər yalnız öz təşkilatlarına daxil ola bilər",
+        },
+        "school_user_not_found": {
+            "zh": "未找到用户或无权访问",
+            "en": "User not found",
+            "az": "İstifadəçi tapılmadı",
+        },
+        "school_user_update_invalid_fields": {
+            "zh": "仅允许更新姓名和手机号",
+            "en": "Only name and phone may be updated in this request",
+            "az": "Yalnız ad və telefon dəyişdirilə bilər",
+        },
+        "school_user_update_empty": {
+            "zh": "请提供至少一项：姓名或手机号",
+            "en": "Provide at least one of: name, phone",
+            "az": "Ən azı ad və ya telefon daxil edin",
         },
         "phone_cannot_be_empty": {
             "zh": "手机号不能为空",

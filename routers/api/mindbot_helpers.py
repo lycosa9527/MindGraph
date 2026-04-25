@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 from typing import Any, Optional
 
 from fastapi import HTTPException, status
@@ -10,7 +11,11 @@ from fastapi import HTTPException, status
 from config.settings import config
 from models.domain.auth import User
 from models.domain.mindbot_config import OrganizationMindbotConfig
-from routers.api.mindbot_models import MindbotConfigPayload, MindbotConfigResponse
+from routers.api.mindbot_models import (
+    MindbotConfigPayload,
+    MindbotConfigResponse,
+    MindbotUsageEventItem,
+)
 from services.mindbot.errors import MindbotErrorCode
 from services.mindbot.telemetry.metrics import mindbot_metrics
 from utils.auth.roles import is_admin
@@ -40,6 +45,59 @@ def _ensure_org_scope(user: User, organization_id: int) -> None:
         )
 
 
+_SCHOOL_MANAGER_SECRET_PLACEHOLDER = "********"
+
+# Safe error tokens for Dify health probes; anything else is hidden from school managers
+# to avoid leaking hostnames, redirect URLs, or stack fragments.
+_SAFE_DIFY_PROBE_ERRORS = frozenset(
+    {
+        "api_key_not_configured",
+        "base_url_not_configured",
+        "timeout",
+    }
+)
+
+
+def _dify_probe_error_for_user(err: Optional[str], *, is_platform_admin: bool) -> Optional[str]:
+    """Admins get raw probe details; school managers get a short whitelist or 'unavailable'."""
+    if is_platform_admin:
+        return err
+    if not err or not str(err).strip():
+        return err
+    text = str(err).strip()
+    if text in _SAFE_DIFY_PROBE_ERRORS:
+        return text
+    m_http = re.match(r"^http_[0-9]+", text)
+    if m_http:
+        return m_http.group(0)
+    return "unavailable"
+
+
+def _usage_event_for_user(user: User, row: object) -> MindbotUsageEventItem:
+    item = MindbotUsageEventItem.model_validate(row)
+    if is_admin(user):
+        return item
+    return item.model_copy(update={"dify_user_key": "—"})
+
+
+def _usage_events_for_user(user: User, rows: list[object]) -> list[MindbotUsageEventItem]:
+    return [_usage_event_for_user(user, r) for r in rows]
+
+
+def _dify_base_url_for_school_manager(url: str) -> str:
+    """
+    Expose only the path from /v1 onward so school managers do not see the Dify origin
+    (scheme, host, port).
+    """
+    text = (url or "").strip()
+    if not text:
+        return text
+    match = re.search(r"/v1(?:/|$)", text, flags=re.IGNORECASE)
+    if match:
+        return text[match.start() :]
+    return "…"
+
+
 def _mask_secret(secret: str, head: int = 4, tail: int = 4) -> str:
     """Show start/end of a stored secret; mask the middle for admin display only."""
     text = (secret or "").strip()
@@ -56,25 +114,42 @@ def _mask_secret(secret: str, head: int = 4, tail: int = 4) -> str:
     return text[:head] + "•" * mid + text[-tail:]
 
 
-def _to_response(row: OrganizationMindbotConfig) -> MindbotConfigResponse:
+def _to_response(
+    row: OrganizationMindbotConfig,
+    *,
+    school_manager_view: bool = False,
+) -> MindbotConfigResponse:
     tok = (row.dingtalk_event_token or "").strip()
     aes = (row.dingtalk_event_aes_key or "").strip()
     own = (row.dingtalk_event_owner_key or "").strip()
+    dify_url = row.dify_api_base_url
+    if school_manager_view:
+        dify_url = _dify_base_url_for_school_manager(dify_url)
+    if school_manager_view:
+        app_sec_disp = _SCHOOL_MANAGER_SECRET_PLACEHOLDER
+        dify_key_disp = _SCHOOL_MANAGER_SECRET_PLACEHOLDER
+        owner_key_disp: Optional[str] = None
+        inputs_json = None
+    else:
+        app_sec_disp = _mask_secret(row.dingtalk_app_secret)
+        dify_key_disp = _mask_secret(row.dify_api_key)
+        owner_key_disp = _mask_secret(own) if own else None
+        inputs_json = row.dify_inputs_json
     return MindbotConfigResponse(
         id=row.id,
         organization_id=row.organization_id,
         bot_label=(row.bot_label or "").strip() or None,
         public_callback_token=row.public_callback_token.strip(),
         dingtalk_robot_code=row.dingtalk_robot_code,
-        dingtalk_app_secret_masked=_mask_secret(row.dingtalk_app_secret),
-        dify_api_key_masked=_mask_secret(row.dify_api_key),
+        dingtalk_app_secret_masked=app_sec_disp,
+        dify_api_key_masked=dify_key_disp,
         dingtalk_client_id=row.dingtalk_client_id,
         dingtalk_event_token_set=bool(tok),
         dingtalk_event_aes_key_set=bool(aes),
-        dingtalk_event_owner_key=_mask_secret(own) if own else None,
-        dify_api_base_url=row.dify_api_base_url,
+        dingtalk_event_owner_key=owner_key_disp,
+        dify_api_base_url=dify_url,
         dify_timeout_seconds=row.dify_timeout_seconds,
-        dify_inputs_json=row.dify_inputs_json,
+        dify_inputs_json=inputs_json,
         show_chain_of_thought_oto=bool(row.show_chain_of_thought_oto),
         show_chain_of_thought_internal_group=bool(row.show_chain_of_thought_internal_group),
         show_chain_of_thought_cross_org_group=bool(row.show_chain_of_thought_cross_org_group),

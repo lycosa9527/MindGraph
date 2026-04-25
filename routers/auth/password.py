@@ -34,7 +34,6 @@ from services.auth.password_security import (
     invalidate_user_cache_after_password_write,
     revoke_refresh_tokens_and_sessions,
 )
-from services.redis.cache.redis_user_cache import user_cache
 from utils.email_validation import validate_email_for_api
 from utils.auth import (
     AUTH_MODE,
@@ -123,22 +122,13 @@ async def reset_password_with_sms(
     Allows users to reset their password using SMS verification.
     Also unlocks the account if it was locked.
     """
-    # Find user (use cache with database fallback)
-    cached_user = await user_cache.get_by_phone(request.phone)
-
-    if not cached_user:
-        error_msg = Messages.error("phone_not_registered_reset", lang)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
-
-    # Verify SMS code
-    await _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
-
-    # Reload user from database for modification (cached users are detached)
-    result = await db.execute(select(User).where(User.id == cached_user.id))
+    result = await db.execute(select(User).where(User.phone == request.phone))
     user = result.scalar_one_or_none()
     if not user:
         error_msg = Messages.error("phone_not_registered_reset", lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
+
+    await _verify_and_consume_sms_code(request.phone, request.sms_code, "reset_password", db, lang)
 
     # Update password and unlock account
     # Note: We manually unlock instead of using reset_failed_attempts() because
@@ -191,8 +181,9 @@ async def reset_password_with_email(
     email_validated = validate_email_for_api(request.email, lang)
     email_norm = normalize_verification_email(email_validated)
 
-    cached_user = await user_cache.get_by_email(email_norm)
-    if not cached_user:
+    result = await db.execute(select(User).where(User.email == email_norm))
+    user = result.scalar_one_or_none()
+    if not user:
         error_msg = Messages.error("email_not_registered_reset", lang)
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
@@ -201,12 +192,6 @@ async def reset_password_with_email(
         return blocked
 
     await verify_and_consume_email_code(request.email, request.email_code, "reset_password", lang)
-
-    result = await db.execute(select(User).where(User.id == cached_user.id))
-    user = result.scalar_one_or_none()
-    if not user:
-        error_msg = Messages.error("email_not_registered_reset", lang)
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     user.password_hash = hash_password(request.new_password)
     user.login_password_set = True

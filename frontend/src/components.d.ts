@@ -201,6 +201,7 @@ declare module 'vue' {
     RootConceptModal: typeof import('./components/panels/RootConceptModal.vue')['default']
     RouterLink: typeof import('vue-router')['RouterLink']
     RouterView: typeof import('vue-router')['RouterView']
+    SchoolDashboardUsersTab: typeof import('./components/school/SchoolDashboardUsersTab.vue')['default']
     SetPasswordWithSmsModal: typeof import('./components/auth/SetPasswordWithSmsModal.vue')['default']
     ShareExportModal: typeof import('./components/panels/ShareExportModal.vue')['default']
     StepEdge: typeof import('./components/diagram/edges/StepEdge.vue')['default']

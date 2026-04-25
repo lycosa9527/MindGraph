@@ -34,11 +34,10 @@ def upgrade() -> None:
                 "login_password_set",
                 sa.Boolean(),
                 nullable=False,
-                server_default=sa.text("1"),
+                server_default=sa.text("true"),
             ),
         )
 
 
 def downgrade() -> None:
     """Additive-only; dropping boolean on users risks losing semantics."""
-    pass

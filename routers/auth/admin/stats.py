@@ -25,7 +25,12 @@ from sqlalchemy.sql.functions import (
 
 from config.database import get_async_db
 from models.domain.auth import User, Organization
+from models.domain.messages import Language, Messages
 from models.domain.token_usage import TokenUsage
+from services.auth.school_dashboard_logger import (
+    get_school_dashboard_logger,
+    school_dashboard_extra,
+)
 from utils.auth import get_current_user, is_admin
 
 from ..dependencies import (
@@ -34,6 +39,7 @@ from ..dependencies import (
     require_admin_or_manager,
 )
 from ..helpers import get_beijing_now, get_beijing_today_start_utc
+from .school_scope import resolve_school_dashboard_org_id
 
 logger = logging.getLogger(__name__)
 
@@ -175,7 +181,7 @@ async def get_school_stats(
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
     db: AsyncSession = Depends(get_async_db),
-    _lang: str = Depends(get_language_dependency),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
     Get school-scoped statistics (ADMIN or MANAGER).
@@ -183,29 +189,24 @@ async def get_school_stats(
     Managers: organization_id must be their own org (or omitted to use their org).
     Admins: organization_id required to select which school to view.
     """
-    effective_org_id = organization_id
-    if is_admin(current_user):
-        if effective_org_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="organization_id required for admin",
-            )
-    else:
-        effective_org_id = current_user.organization_id
-        if effective_org_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Manager must belong to an organization",
-            )
-        if organization_id is not None and organization_id != effective_org_id:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Manager can only view their own organization",
-            )
+    effective_org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
 
-    org = (await db.execute(select(Organization).where(Organization.id == effective_org_id))).scalars().first()
+    org = (
+        await db.execute(select(Organization).where(Organization.id == effective_org_id))
+    ).scalars().first()
     if not org:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Organization not found")
+        logger.warning(
+            "[SchoolDashboard] organization missing for school stats",
+            extra=school_dashboard_extra(
+                event="school_stats_org_not_found",
+                actor_id=current_user.id,
+                org_id=effective_org_id,
+            ),
+        )
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Messages.error("organization_not_found", lang, effective_org_id),
+        )
 
     today_start = get_beijing_today_start_utc()
     beijing_now = get_beijing_now()
@@ -313,51 +314,25 @@ async def get_school_stats(
     }
 
 
-def _resolve_school_org_id(
-    organization_id: Optional[int],
-    current_user: User,
-) -> int:
-    """Resolve effective org_id for school endpoints. Raises HTTPException on invalid access."""
-    if is_admin(current_user):
-        if organization_id is None:
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST,
-                detail="organization_id required for admin",
-            )
-        return organization_id
-    effective = current_user.organization_id
-    if effective is None:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Manager must belong to an organization",
-        )
-    if organization_id is not None and organization_id != effective:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="Manager can only view their own organization",
-        )
-    return effective
-
-
 @router.get("/admin/stats/school/token-stats", dependencies=[Depends(require_admin_or_manager)])
 async def get_school_token_stats(
     request: Request,
     organization_id: Optional[int] = None,
     current_user: User = Depends(require_admin_or_manager),
     db: AsyncSession = Depends(get_async_db),
-    lang: str = Depends(get_language_dependency),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """
     Get token stats for a school (ADMIN or MANAGER).
     Same structure as /admin/token-stats with organization_id filter.
     """
-    org_id = _resolve_school_org_id(organization_id, current_user)
+    org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
     return await get_token_stats_admin(
         _request=request,
         organization_id=org_id,
         _current_user=current_user,
         db=db,
-        _lang=lang,
+        lang=lang,
     )
 
 
@@ -367,7 +342,7 @@ async def get_token_stats_admin(
     organization_id: Optional[int] = None,
     _current_user: User = Depends(require_admin),
     db: AsyncSession = Depends(get_async_db),
-    _lang: str = Depends(get_language_dependency),
+    lang: Language = Depends(get_language_dependency),
 ) -> Dict[str, Any]:
     """Get detailed token usage statistics (ADMIN ONLY)
 
@@ -428,9 +403,18 @@ async def get_token_stats_admin(
         if organization_id:
             org = (await db.execute(select(Organization).where(Organization.id == organization_id))).scalars().first()
             if not org:
+                sd_log = get_school_dashboard_logger(
+                    logger,
+                    actor_id=_current_user.id,
+                    org_id=organization_id,
+                )
+                sd_log.warning(
+                    "[SchoolDashboard] organization not found for token stats",
+                    extra={"sd_event": "token_stats_org_not_found"},
+                )
                 raise HTTPException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Organization not found",
+                    detail=Messages.error("organization_not_found", lang, organization_id),
                 )
             org_filter.append(TokenUsage.organization_id == organization_id)
 

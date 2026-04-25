@@ -56,7 +56,7 @@ from services.auth.quick_register_room_code import (
     ROOM_CODE_PERIOD_SECONDS,
     verify_room_code_submitted,
 )
-from services.redis.cache.redis_user_cache import user_cache
+from services.auth.phone_uniqueness import any_user_id_with_phone
 from services.redis.redis_distributed_lock import phone_registration_lock
 from services.redis.rate_limiting.redis_rate_limiter import get_rate_limiter
 from utils.auth import AUTH_MODE, get_client_ip, hash_password, is_admin, is_manager
@@ -409,8 +409,7 @@ async def register_quick(
 
     try:
         async with phone_registration_lock(request.phone):
-            existing_user = await user_cache.get_by_phone(request.phone)
-            if existing_user:
+            if await any_user_id_with_phone(db, request.phone) is not None:
                 registration_metrics.record_failure("phone_exists", time.time() - start_time)
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
@@ -455,7 +454,9 @@ async def register_quick(
             )
             db.add(new_user)
             try:
-                retry_count = await commit_user_with_retry(db, new_user, max_retries=5)
+                retry_count = await commit_user_with_retry(
+                    db, new_user, max_retries=5, lang=lang
+                )
             except HTTPException:
                 if reserved_workshop:
                     await workshop_release_reservation(request.quick_reg_token)
