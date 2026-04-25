@@ -116,9 +116,9 @@ export default {
   'landing.international.modules': '功能模塊',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': '虛擬教研夥伴',
-  'landing.international.shareSite': '網址分享',
-  'landing.international.shareSiteModalTitle': '網址分享',
-  'landing.international.shareSiteModalHint': '使用手機或平板相機掃描，便於快速開啟本頁。',
-  'landing.international.shareSiteCopy': '複製連結',
+  'landing.international.shareSite': '快速註冊',
+  'landing.international.shareSiteModalTitle': '快速註冊',
+  'landing.international.shareSiteModalHint': '',
+  'landing.international.shareSiteCopy': '複製註冊連結',
   'landing.international.shareSiteCopied': '連結已複製',
 } as const

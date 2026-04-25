@@ -118,13 +118,14 @@ async def track_user_activity(
         ip_address = None
         if request:
             ip_address = get_client_ip(request)
+        user_phone = user.phone or ""
 
         # For login activities, start a new session (or reuse existing)
         # For other activities, just record (will find/create session automatically)
         if activity_type == "login":
             session_id = await tracker.start_session(
                 user_id=user.id,
-                user_phone=user.phone,
+                user_phone=user_phone,
                 user_name=user.name,
                 ip_address=ip_address,
                 reuse_existing=True,
@@ -136,7 +137,7 @@ async def track_user_activity(
 
         await tracker.record_activity(
             user_id=user.id,
-            user_phone=user.phone,
+            user_phone=user_phone,
             activity_type=activity_type,
             details=details or {},
             session_id=session_id,

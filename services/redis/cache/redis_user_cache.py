@@ -82,6 +82,7 @@ class UserCache:
             "prompt_language": getattr(user, "prompt_language", None) or "",
             "allows_simplified_chinese": "1" if getattr(user, "allows_simplified_chinese", True) else "0",
             "email_login_whitelisted_from_cn": "1" if getattr(user, "email_login_whitelisted_from_cn", False) else "0",
+            "login_password_set": "1" if getattr(user, "login_password_set", True) else "0",
         }
 
     def _deserialize_user(self, data: Dict[str, str]) -> User:
@@ -142,6 +143,9 @@ class UserCache:
 
         wl = data.get("email_login_whitelisted_from_cn", "0")
         user.email_login_whitelisted_from_cn = wl in ("1", "true", "True")
+
+        lp = data.get("login_password_set", "1")
+        user.login_password_set = lp not in ("0", "false", "False")
 
         return user
 

@@ -17,6 +17,7 @@ from . import (
     registration,
     registration_overseas,
     login,
+    quick_register,
     sms,
     email,
     captcha,
@@ -55,6 +56,7 @@ router = APIRouter()
 router.include_router(public.router)
 router.include_router(registration.router)
 router.include_router(registration_overseas.router)
+router.include_router(quick_register.router)
 router.include_router(login.router)
 router.include_router(sms.router)
 router.include_router(email.router)

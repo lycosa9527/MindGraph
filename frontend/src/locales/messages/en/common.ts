@@ -121,8 +121,7 @@ export default {
   'landing.international.mindmateCard.desc': 'Your virtual teaching and research partner',
   'landing.international.shareSite': 'Share site',
   'landing.international.shareSiteModalTitle': 'Share site',
-  'landing.international.shareSiteModalHint':
-    'Scan with a phone or tablet camera to open this page for your class.',
+  'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
 } as const

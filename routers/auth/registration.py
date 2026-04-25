@@ -54,6 +54,115 @@ logger = logging.getLogger(__name__)
 router = APIRouter()
 
 
+async def finalize_sms_registration_session(
+    *,
+    new_user: User,
+    org: Organization,
+    http_request: Request,
+    response: Response,
+    db: AsyncSession,
+    start_time: float,
+    retry_count: int,
+    register_action: str,
+) -> dict:
+    """
+    Common session, cookies, cache, and response body after a successful
+    phone registration that did not use a password on the same request
+    (SMS verification or quick registration with room code).
+    """
+    cache_write_success = False
+    session_manager = get_session_manager()
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    old_token_hash = await session_manager.get_session_token(new_user.id)
+    await session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
+
+    token = create_access_token(new_user)
+    refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
+    device_hash = compute_device_hash(http_request)
+    user_agent = http_request.headers.get("User-Agent", "")
+
+    async def cache_user_async() -> None:
+        nonlocal cache_write_success
+        try:
+            await user_cache.cache_user(new_user)
+            cache_write_success = True
+            phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
+            phone_suffix = new_user.phone[-4:] if new_user.phone and len(new_user.phone) >= 4 else ""
+            logger.info(
+                "[Auth] New user registered and cached: ID %s, phone %s***%s",
+                new_user.id,
+                phone_prefix,
+                phone_suffix,
+            )
+        except Exception as ex:
+            cache_write_success = False
+            logger.warning("[Auth] Failed to cache new user ID %s: %s", new_user.id, ex)
+
+    async def store_session_async() -> None:
+        try:
+            await session_manager.store_session(new_user.id, token, device_hash=device_hash)
+        except Exception as ex:
+            logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, ex)
+
+    async def store_refresh_token_async() -> None:
+        try:
+            refresh_manager = get_refresh_token_manager()
+            await refresh_manager.store_refresh_token(
+                user_id=new_user.id,
+                token_hash=refresh_token_hash,
+                ip_address=client_ip,
+                user_agent=user_agent,
+                device_hash=device_hash,
+            )
+        except Exception as ex:
+            logger.warning(
+                "[Auth] Failed to store refresh token for user ID %s: %s",
+                new_user.id,
+                ex,
+            )
+
+    await asyncio.gather(
+        cache_user_async(),
+        store_session_async(),
+        store_refresh_token_async(),
+        return_exceptions=True,
+    )
+
+    duration = time.time() - start_time
+    registration_metrics.record_success(duration, retry_count, cache_write_success)
+    set_auth_cookies(response, token, refresh_token_value, http_request)
+    await record_vpn_login_geo(new_user.id, http_request)
+    org_name = org.name if org else "None"
+    log_method = "room_quick" if register_action == "register_quick" else "sms"
+    logger.info(
+        "[TokenAudit] Registration success: user=%s, phone=***, org=%s, method=%s, ip=%s",
+        new_user.id,
+        org_name,
+        log_method,
+        client_ip,
+    )
+    await track_user_activity(
+        new_user,
+        "login",
+        {"method": log_method, "org": org_name, "action": register_action},
+        http_request,
+        db,
+    )
+    return {
+        "access_token": token,
+        "token_type": "bearer",
+        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
+        "user": {
+            "id": new_user.id,
+            "phone": new_user.phone,
+            "name": new_user.name,
+            "organization": org.name,
+            "ui_language": getattr(new_user, "ui_language", None),
+            "prompt_language": getattr(new_user, "prompt_language", None),
+        },
+    }
+
+
 @router.post("/register")
 async def register(
     request: RegisterRequest,
@@ -219,8 +328,8 @@ async def register(
         try:
             await user_cache.cache_user(new_user)
             cache_write_success = True
-            phone_prefix = new_user.phone[:3] if len(new_user.phone) >= 3 else "***"
-            phone_suffix = new_user.phone[-4:] if len(new_user.phone) >= 4 else ""
+            phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
+            phone_suffix = new_user.phone[-4:] if new_user.phone and len(new_user.phone) >= 4 else ""
             logger.info(
                 "[Auth] New user registered and cached: ID %s, phone %s***%s",
                 new_user.id,
@@ -330,7 +439,6 @@ async def register_with_sms(
     registration_metrics.record_attempt()
     start_time = time.time()
     retry_count = 0
-    cache_write_success = False
 
     # Find organization by invitation code
     provided_invite = (request.invitation_code or "").strip().upper()
@@ -418,111 +526,13 @@ async def register_with_sms(
             registration_metrics.record_failure("other", duration)
         raise
 
-    # Session management: Invalidate old sessions before creating new one
-    session_manager = get_session_manager()
-    client_ip = get_client_ip(http_request) if http_request else "unknown"
-    old_token_hash = await session_manager.get_session_token(new_user.id)
-    await session_manager.invalidate_user_sessions(new_user.id, old_token_hash=old_token_hash, ip_address=client_ip)
-
-    # Generate JWT access token
-    token = create_access_token(new_user)
-
-    # Generate refresh token
-    refresh_token_value, refresh_token_hash = create_refresh_token(new_user.id)
-
-    # Compute device hash for session and token binding
-    device_hash = compute_device_hash(http_request)
-    user_agent = http_request.headers.get("User-Agent", "")
-
-    # Parallel cache write, session creation, and refresh token storage
-    async def cache_user_async():
-        """Cache user in Redis (non-blocking)."""
-        nonlocal cache_write_success
-        try:
-            await user_cache.cache_user(new_user)
-            cache_write_success = True
-            phone_prefix = new_user.phone[:3] if len(new_user.phone) >= 3 else "***"
-            phone_suffix = new_user.phone[-4:] if len(new_user.phone) >= 4 else ""
-            logger.info(
-                "[Auth] New user registered and cached: ID %s, phone %s***%s",
-                new_user.id,
-                phone_prefix,
-                phone_suffix,
-            )
-        except Exception as e:
-            cache_write_success = False
-            logger.warning("[Auth] Failed to cache new user ID %s: %s", new_user.id, e)
-
-    async def store_session_async():
-        """Store session in Redis (non-blocking)."""
-        try:
-            await session_manager.store_session(new_user.id, token, device_hash=device_hash)
-        except Exception as e:
-            logger.warning("[Auth] Failed to store session for user ID %s: %s", new_user.id, e)
-
-    async def store_refresh_token_async():
-        """Store refresh token in Redis with device binding."""
-        try:
-            refresh_manager = get_refresh_token_manager()
-            await refresh_manager.store_refresh_token(
-                user_id=new_user.id,
-                token_hash=refresh_token_hash,
-                ip_address=client_ip,
-                user_agent=user_agent,
-                device_hash=device_hash,
-            )
-        except Exception as e:
-            logger.warning(
-                "[Auth] Failed to store refresh token for user ID %s: %s",
-                new_user.id,
-                e,
-            )
-
-    # Execute cache write, session creation, and refresh token storage in parallel
-    await asyncio.gather(
-        cache_user_async(),
-        store_session_async(),
-        store_refresh_token_async(),
-        return_exceptions=True,
+    return await finalize_sms_registration_session(
+        new_user=new_user,
+        org=org,
+        http_request=http_request,
+        response=response,
+        db=db,
+        start_time=start_time,
+        retry_count=retry_count,
+        register_action="register_sms",
     )
-
-    # Track successful registration
-    duration = time.time() - start_time
-    registration_metrics.record_success(duration, retry_count, cache_write_success)
-
-    # Set cookies (both access and refresh tokens)
-    set_auth_cookies(response, token, refresh_token_value, http_request)
-
-    await record_vpn_login_geo(new_user.id, http_request)
-
-    org_name = org.name if org else "None"
-    logger.info(
-        "[TokenAudit] Registration success: user=%s, phone=%s, org=%s, method=sms, ip=%s",
-        new_user.id,
-        new_user.phone,
-        org_name,
-        client_ip,
-    )
-
-    # Track user activity
-    track_user_activity(
-        new_user,
-        "login",
-        {"method": "sms", "org": org_name, "action": "register"},
-        http_request,
-        db,
-    )
-
-    return {
-        "access_token": token,
-        "token_type": "bearer",
-        "expires_in": ACCESS_TOKEN_EXPIRY_MINUTES * 60,
-        "user": {
-            "id": new_user.id,
-            "phone": new_user.phone,
-            "name": new_user.name,
-            "organization": org.name,
-            "ui_language": getattr(new_user, "ui_language", None),
-            "prompt_language": getattr(new_user, "prompt_language", None),
-        },
-    }

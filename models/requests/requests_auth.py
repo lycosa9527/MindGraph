@@ -12,10 +12,11 @@ Proprietary License
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import Literal, Optional
 
 from pydantic import BaseModel, Field, field_validator, model_validator
 
+from services.auth.quick_register_redis import WORKSHOP_MAX_USES_CAP
 from utils.prompt_output_languages import is_prompt_output_language
 from utils.ui_languages import UI_LANGUAGE_CODES
 
@@ -486,6 +487,119 @@ class RegisterWithSMSRequest(BaseModel):
                 "sms_code": "123456",
             }
         }
+
+
+class RegisterQuickRequest(BaseModel):
+    """Registration via quick register: phone, rotating 6-digit room code, and server-minted token."""
+
+    phone: str = Field(..., min_length=11, max_length=11, description="11-digit Chinese mobile number")
+    quick_reg_token: str = Field(..., min_length=20, max_length=512, description="Opaque quick-registration token")
+    room_code: str = Field(
+        ..., min_length=6, max_length=6, description="6-digit room code from the facilitator quick-reg screen"
+    )
+
+    @field_validator("phone")
+    @classmethod
+    def validate_phone(cls, v: str) -> str:
+        """Validate 11-digit Chinese mobile format"""
+        v = v.strip()
+        if not v.isdigit():
+            raise ValueError(
+                "Phone number must contain only digits. Please enter a valid 11-digit Chinese mobile number."
+            )
+        if len(v) != 11:
+            raise ValueError("Phone number must be exactly 11 digits starting with 1.")
+        if not v.startswith("1"):
+            raise ValueError(
+                "Chinese mobile numbers must start with 1. Please enter a valid 11-digit number starting with 1."
+            )
+        return v
+
+    @field_validator("quick_reg_token")
+    @classmethod
+    def validate_token_strip(cls, v: str) -> str:
+        return v.strip()
+
+    @field_validator("room_code")
+    @classmethod
+    def validate_room_code_field(cls, v: str) -> str:
+        v = v.strip()
+        if not v.isdigit():
+            raise ValueError("Room code must be 6 digits, matching the code on the quick registration screen.")
+        if len(v) != 6:
+            raise ValueError("Room code must be exactly 6 digits.")
+        return v
+
+
+class QuickRegisterOpenRequest(BaseModel):
+    """Request to mint a quick-registration token (managers: org from server; admins: pass organization_id)."""
+
+    organization_id: Optional[int] = Field(
+        default=None,
+        description="Target organization (admins only; ignored for school managers).",
+    )
+    channel_type: Literal["single_use", "workshop"] = Field(
+        default="single_use",
+        description="single_use: one signup per token. workshop: many signups until max_uses or close.",
+    )
+    max_uses: Optional[int] = Field(
+        default=None,
+        ge=1,
+        le=WORKSHOP_MAX_USES_CAP,
+        description="Max registrations for workshop mode (capped server-side; default if omitted).",
+    )
+
+    @field_validator("max_uses")
+    @classmethod
+    def _cap_max_uses(cls, v: Optional[int]) -> Optional[int]:
+        if v is None:
+            return None
+        if v > WORKSHOP_MAX_USES_CAP:
+            return WORKSHOP_MAX_USES_CAP
+        return v
+
+
+class QuickRegisterCloseRequest(BaseModel):
+    """Request to revoke a quick-registration token."""
+
+    token: str = Field(..., min_length=20, max_length=512, description="Opaque token to revoke")
+
+    @field_validator("token")
+    @classmethod
+    def validate_token(cls, v: str) -> str:
+        return v.strip()
+
+
+class UpdateProfileNameRequest(BaseModel):
+    """Self-service display name (no digits, min 2 characters)."""
+
+    name: str = Field(..., min_length=2, max_length=100, description="Display name")
+
+    @field_validator("name")
+    @classmethod
+    def validate_name_no_digits(cls, v: str) -> str:
+        t = v.strip()
+        if len(t) < 2:
+            raise ValueError("Name must be at least 2 characters.")
+        if any(char.isdigit() for char in t):
+            raise ValueError("Name cannot contain numbers.")
+        return t
+
+
+class SetPasswordWithSMSLoggedInRequest(BaseModel):
+    """Set or replace password using SMS to the current user's phone (stays logged in; no full session revoke)."""
+
+    new_password: str = Field(..., min_length=8, description="New password (min 8 characters)")
+    sms_code: str = Field(..., min_length=6, max_length=6, description="6-digit SMS verification code")
+
+    @field_validator("sms_code")
+    @classmethod
+    def validate_sms_code(cls, v: str) -> str:
+        if not v.isdigit():
+            raise ValueError("SMS verification code must be exactly 6 digits.")
+        if len(v) != 6:
+            raise ValueError("SMS verification code must be exactly 6 digits.")
+        return v
 
 
 class LoginWithSMSRequest(BaseModel):

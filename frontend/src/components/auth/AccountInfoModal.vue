@@ -4,21 +4,24 @@
  *
  * Design: Swiss Design (Modern Minimalism)
  */
-import { computed, ref } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 import { ElButton } from 'element-plus'
 
 import { Close } from '@element-plus/icons-vue'
 
-import { useLanguage } from '@/composables'
+import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore } from '@/stores'
+import { apiRequest } from '@/utils/apiClient'
 
 import ApiTokenModal from './ApiTokenModal.vue'
 import AvatarSelectModal from './AvatarSelectModal.vue'
 import ChangePasswordModal from './ChangePasswordModal.vue'
 import ChangePhoneModal from './ChangePhoneModal.vue'
+import SetPasswordWithSmsModal from './SetPasswordWithSmsModal.vue'
 
 const { t } = useLanguage()
+const notify = useNotifications()
 
 const props = defineProps<{
   visible: boolean
@@ -39,14 +42,16 @@ const isVisible = computed({
 const showAvatarModal = ref(false)
 const showChangePhoneModal = ref(false)
 const showChangePasswordModal = ref(false)
+const showSetPasswordSmsModal = ref(false)
 const showApiTokenModal = ref(false)
+const nameEdit = ref('')
+const nameSaving = ref(false)
 
 /** Same-origin API paths; cookies sent for GET (session). */
 const openclawSkillZipUrl = '/api/downloads/mindgraph-openclaw-skill'
 const chromeExtensionZipUrl = '/api/downloads/mindgraph-chrome-extension'
 
 // Get user data
-const userName = computed(() => authStore.user?.username || '')
 const userPhone = computed(() => {
   const phone = authStore.user?.phone || ''
   if (phone && phone.length === 11) {
@@ -64,6 +69,9 @@ const currentAvatar = computed(() => {
   }
   return avatar
 })
+
+/** Quick registration: server-only password until user sets one via SMS. */
+const needsSetLoginPassword = computed(() => authStore.user?.loginPasswordSet === false)
 
 function closeModal() {
   isVisible.value = false
@@ -85,9 +93,53 @@ function openChangePasswordModal() {
   showChangePasswordModal.value = true
 }
 
+function openSetPasswordSmsModal() {
+  showSetPasswordSmsModal.value = true
+}
+
 function handlePhoneChangeSuccess() {
   emit('success')
 }
+
+async function saveDisplayName() {
+  const trimmed = nameEdit.value.trim()
+  if (trimmed.length < 2 || /\d/.test(trimmed)) {
+    notify.warning(t('auth.modal.fillRequired'))
+    return
+  }
+  nameSaving.value = true
+  try {
+    const res = await apiRequest('/api/auth/profile', {
+      method: 'PATCH',
+      body: JSON.stringify({ name: trimmed }),
+    })
+    const data = (await res.json().catch(() => ({}))) as { detail?: string }
+    if (res.ok) {
+      notify.success(t('auth.accountNameSaveSuccess'))
+      await authStore.checkAuth()
+      emit('success')
+    } else {
+      notify.error(
+        (typeof data.detail === 'string' && data.detail) || t('auth.accountNameSaveError')
+      )
+    }
+  } catch {
+    notify.error(t('auth.accountNameSaveError'))
+  } finally {
+    nameSaving.value = false
+  }
+}
+
+watch(
+  () => props.visible,
+  (v) => {
+    if (v) {
+      const u = (authStore.user?.username || '').trim()
+      const looksLikeName = u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
+      nameEdit.value = looksLikeName ? u : ''
+    }
+  }
+)
 </script>
 
 <template>
@@ -114,7 +166,9 @@ function handlePhoneChangeSuccess() {
                 class="close-btn"
                 @click="closeModal"
               />
-              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">账户信息</h2>
+              <h2 class="text-lg font-semibold text-stone-900 tracking-tight">
+                {{ t('auth.accountInfo') }}
+              </h2>
             </div>
 
             <!-- Content -->
@@ -149,16 +203,27 @@ function handlePhoneChangeSuccess() {
                     class="block text-xs font-medium text-stone-400 uppercase tracking-wide mb-2"
                     for="account-info-name"
                   >
-                    姓名
+                    {{ t('auth.accountDisplayName') }}
                   </label>
-                  <input
-                    id="account-info-name"
-                    :value="userName || '未设置'"
-                    type="text"
-                    name="account-info-name"
-                    disabled
-                    class="w-full px-4 py-3 bg-stone-100 border-0 rounded-lg text-stone-500 cursor-not-allowed"
-                  />
+                  <div class="flex flex-wrap items-center gap-2">
+                    <input
+                      id="account-info-name"
+                      v-model="nameEdit"
+                      type="text"
+                      name="account-info-name"
+                      :placeholder="t('auth.accountNamePlaceholder')"
+                      class="min-w-0 flex-1 px-4 py-3 bg-stone-50 border border-stone-200 rounded-lg text-stone-900 text-sm"
+                    />
+                    <el-button
+                      round
+                      size="small"
+                      class="account-action-btn shrink-0"
+                      :loading="nameSaving"
+                      @click="saveDisplayName"
+                    >
+                      {{ t('auth.accountNameSave') }}
+                    </el-button>
+                  </div>
                 </div>
 
                 <div>
@@ -187,6 +252,16 @@ function handlePhoneChangeSuccess() {
                         {{ t('auth.changePhoneButton') }}
                       </el-button>
                       <el-button
+                        v-if="needsSetLoginPassword && authStore.user?.phone"
+                        round
+                        size="small"
+                        class="account-action-btn"
+                        @click="openSetPasswordSmsModal"
+                      >
+                        {{ t('auth.setPasswordWithSms') }}
+                      </el-button>
+                      <el-button
+                        v-else-if="!needsSetLoginPassword"
                         round
                         size="small"
                         class="account-action-btn"
@@ -275,6 +350,11 @@ function handlePhoneChangeSuccess() {
     />
 
     <ChangePasswordModal v-model:visible="showChangePasswordModal" />
+
+    <SetPasswordWithSmsModal
+      v-model:visible="showSetPasswordSmsModal"
+      @success="emit('success')"
+    />
 
     <ApiTokenModal v-model:visible="showApiTokenModal" />
   </Teleport>

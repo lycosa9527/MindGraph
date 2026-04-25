@@ -236,7 +236,11 @@ async def change_phone(
     # Re-cache user with new phone
     await user_cache.cache_user(current_user)
 
-    old_phone_masked = old_phone[:3] + "****" + old_phone[-4:]
+    old_phone_masked = (
+        old_phone[:3] + "****" + old_phone[-4:]
+        if old_phone and len(old_phone) >= 7
+        else "****"
+    )
     new_phone_masked = new_phone[:3] + "****" + new_phone[-4:]
     logger.info(
         "Phone changed for user %s: %s -> %s",

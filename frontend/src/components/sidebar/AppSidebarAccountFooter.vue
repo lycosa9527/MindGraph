@@ -16,7 +16,7 @@ import {
   UserRound,
 } from 'lucide-vue-next'
 
-import IntlShareSiteModal from '@/components/mindgraph/IntlShareSiteModal.vue'
+import QuickRegisterModal from '@/components/mindgraph/QuickRegisterModal.vue'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { appSidebarInjectionKey } from '@/composables/sidebar/useAppSidebar'
 import { isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
@@ -120,7 +120,10 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
               <Upload class="w-4 h-4 mr-2" />
               {{ s.t('mindgraphLanding.import') }}
             </el-dropdown-item>
-            <el-dropdown-item @click="showShareSiteModal = true">
+            <el-dropdown-item
+              v-if="s.isAdminOrManager"
+              @click="showShareSiteModal = true"
+            >
               <Share2 class="w-4 h-4 mr-2" />
               {{ s.t('landing.international.shareSite') }}
             </el-dropdown-item>
@@ -186,7 +189,10 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
               <Upload class="w-4 h-4 mr-2" />
               {{ s.t('mindgraphLanding.import') }}
             </el-dropdown-item>
-            <el-dropdown-item @click="showShareSiteModal = true">
+            <el-dropdown-item
+              v-if="s.isAdminOrManager"
+              @click="showShareSiteModal = true"
+            >
               <Share2 class="w-4 h-4 mr-2" />
               {{ s.t('landing.international.shareSite') }}
             </el-dropdown-item>
@@ -217,7 +223,7 @@ const showMindGraphGalleryImport = computed(() => isMindGraphLandingPath(route.p
       </el-dropdown>
     </template>
 
-    <IntlShareSiteModal v-model="showShareSiteModal" />
+    <QuickRegisterModal v-model="showShareSiteModal" />
   </div>
 </template>
 

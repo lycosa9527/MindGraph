@@ -117,9 +117,9 @@ export default {
   'landing.international.modules': '功能模块',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': '虚拟教研伙伴',
-  'landing.international.shareSite': '网址分享',
-  'landing.international.shareSiteModalTitle': '网址分享',
-  'landing.international.shareSiteModalHint': '使用手机或平板相机扫描，便于快速打开本页。',
-  'landing.international.shareSiteCopy': '复制链接',
+  'landing.international.shareSite': '快速注册',
+  'landing.international.shareSiteModalTitle': '快速注册',
+  'landing.international.shareSiteModalHint': '',
+  'landing.international.shareSiteCopy': '复制注册链接',
   'landing.international.shareSiteCopied': '链接已复制',
 } as const

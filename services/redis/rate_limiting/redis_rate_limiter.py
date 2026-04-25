@@ -29,7 +29,6 @@ from typing import Tuple, Dict, List, Optional
 from collections import defaultdict
 
 from services.redis.redis_async_client import get_async_redis
-from services.redis.redis_client import is_redis_available
 
 logger = logging.getLogger(__name__)
 
@@ -48,12 +47,8 @@ class RedisRateLimiter:
     """
 
     def __init__(self):
-        # In-memory fallback for when Redis is disabled
+        # In-memory fallback when the async Redis path fails
         self._memory_store: Dict[str, List[float]] = defaultdict(list)
-
-    def _use_redis(self) -> bool:
-        """Check if Redis should be used."""
-        return is_redis_available()
 
     async def check_and_record(
         self, category: str, identifier: str, max_attempts: int, window_seconds: int
@@ -72,9 +67,9 @@ class RedisRateLimiter:
         Returns:
             Tuple of (is_allowed, attempt_count, error_message)
         """
-        if self._use_redis():
-            return await self._redis_check_and_record(category, identifier, max_attempts, window_seconds)
-        return self._memory_check_and_record(category, identifier, max_attempts, window_seconds)
+        return await self._redis_check_and_record(
+            category, identifier, max_attempts, window_seconds
+        )
 
     async def _redis_check_and_record(
         self, category: str, identifier: str, max_attempts: int, window_seconds: int
@@ -169,18 +164,16 @@ class RedisRateLimiter:
         Returns:
             True if cleared, False on error
         """
-        if self._use_redis():
-            try:
-                redis = get_async_redis()
-                key = f"{RATE_PREFIX}{category}:{identifier}"
-                await redis.delete(key)
-                return True
-            except Exception as e:
-                logger.error("[RateLimiter] Redis clear error: %s", e)
+        key = f"{RATE_PREFIX}{category}:{identifier}"
+        try:
+            redis = get_async_redis()
+            await redis.delete(key)
+        except Exception as e:
+            logger.error("[RateLimiter] Redis clear error: %s", e)
 
-        key = f"{category}:{identifier}"
-        if key in self._memory_store:
-            del self._memory_store[key]
+        mem_key = f"{category}:{identifier}"
+        if mem_key in self._memory_store:
+            del self._memory_store[mem_key]
         return True
 
     async def get_remaining(
@@ -198,31 +191,30 @@ class RedisRateLimiter:
         Returns:
             Tuple of (remaining_attempts, seconds_until_reset)
         """
-        if self._use_redis():
-            try:
-                redis = get_async_redis()
-                key = f"{RATE_PREFIX}{category}:{identifier}"
-                now = time.time()
-                window_start = now - window_seconds
+        try:
+            redis = get_async_redis()
+            key = f"{RATE_PREFIX}{category}:{identifier}"
+            now = time.time()
+            window_start = now - window_seconds
 
-                async with redis.pipeline(transaction=False) as pipe:
-                    pipe.zremrangebyscore(key, 0, window_start)
-                    pipe.zcard(key)
-                    pipe.zrange(key, 0, 0, withscores=True)
-                    results = await pipe.execute()
+            async with redis.pipeline(transaction=False) as pipe:
+                pipe.zremrangebyscore(key, 0, window_start)
+                pipe.zcard(key)
+                pipe.zrange(key, 0, 0, withscores=True)
+                results = await pipe.execute()
 
-                count = results[1] or 0
-                remaining = max(0, max_attempts - count)
+            count = results[1] or 0
+            remaining = max(0, max_attempts - count)
 
-                reset_seconds = 0
-                if count > 0 and results[2]:
-                    oldest_time = results[2][0][1]
-                    reset_seconds = int(oldest_time + window_seconds - now)
+            reset_seconds = 0
+            if count > 0 and results[2]:
+                oldest_time = results[2][0][1]
+                reset_seconds = int(oldest_time + window_seconds - now)
 
-                return remaining, max(0, reset_seconds)
+            return remaining, max(0, reset_seconds)
 
-            except Exception as e:
-                logger.error("[RateLimiter] Redis error: %s", e)
+        except Exception as e:
+            logger.error("[RateLimiter] Redis error: %s", e)
 
         key = f"{category}:{identifier}"
         now = time.time()

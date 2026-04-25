@@ -159,6 +159,11 @@ export const useAuthStore = defineStore('auth', () => {
       }
     }
 
+    const loginPasswordSet =
+      backendUser.login_password_set === undefined
+        ? true
+        : Boolean(backendUser.login_password_set)
+
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
       username:
@@ -175,6 +180,7 @@ export const useAuthStore = defineStore('auth', () => {
       promptLanguage: promptLang,
       uiVersion: backendUser.ui_version ?? null,
       allowsSimplifiedChinese: allowsZh,
+      loginPasswordSet,
     }
   }
 

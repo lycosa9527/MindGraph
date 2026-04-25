@@ -110,6 +110,9 @@ class User(Base):
 
     # Sales whitelist: allow email/password login from mainland China (GeoIP CN) for this account
     email_login_whitelisted_from_cn: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    # False when the user was created with a server-only password (e.g. quick registration) until
+    # they set a known password (SMS flow). For all other signups, True.
+    login_password_set: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
 
     # Relationships
     # ``organization`` is M:1, but no production call path actually accesses

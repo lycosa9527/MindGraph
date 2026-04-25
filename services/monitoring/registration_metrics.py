@@ -52,6 +52,9 @@ class RegistrationMetrics:
                 "phone_exists": 0,
                 "captcha_failed": 0,
                 "sms_code_invalid": 0,
+                "room_code_invalid": 0,
+                "workshop_full": 0,
+                "duplicate_submission": 0,
                 "invitation_code_invalid": 0,
                 "geoip_blocked": 0,
                 "email_exists": 0,
@@ -66,6 +69,10 @@ class RegistrationMetrics:
             },
             "cache_write_successes": 0,
             "cache_write_failures": 0,
+            "quick_reg_token_delete_failed_after_success": 0,
+            "register_quick_429_ip": 0,
+            "register_quick_429_phone": 0,
+            "register_quick_429_room_guess": 0,
             "last_reset": datetime.now().isoformat(),
         }
 
@@ -104,6 +111,31 @@ class RegistrationMetrics:
                 self._metrics["cache_write_successes"] += 1
             else:
                 self._metrics["cache_write_failures"] += 1
+
+    def record_quick_reg_token_delete_failed(self) -> None:
+        """
+        After a successful DB commit, Redis delete of the quick_reg token failed (ops alert).
+        Does not increment total_failures (registration already succeeded).
+        """
+        with self._lock:
+            self._metrics["quick_reg_token_delete_failed_after_success"] += 1
+
+    def record_register_quick_throttled(self, bucket: str) -> None:
+        """
+        register-quick returned 429 (rate limit or room-code guess cap).
+
+        ``bucket`` is one of: ip, phone, room_guess.
+        """
+        key_map = {
+            "ip": "register_quick_429_ip",
+            "phone": "register_quick_429_phone",
+            "room_guess": "register_quick_429_room_guess",
+        }
+        mkey = key_map.get(bucket)
+        if mkey is None:
+            return
+        with self._lock:
+            self._metrics[mkey] = int(self._metrics.get(mkey, 0)) + 1
 
     def record_failure(self, reason: str, duration: Optional[float] = None):
         """
@@ -193,6 +225,12 @@ class RegistrationMetrics:
                     "failures_by_reason": metrics["failures_by_reason"],
                     "avg_database_retries": f"{metrics['avg_database_retries']:.2f}",
                     "cache_write_success_rate": f"{metrics['cache_write_success_rate']:.2%}",
+                    "quick_reg_token_delete_failed_after_success": metrics.get(
+                        "quick_reg_token_delete_failed_after_success", 0
+                    ),
+                    "register_quick_429_ip": metrics.get("register_quick_429_ip", 0),
+                    "register_quick_429_phone": metrics.get("register_quick_429_phone", 0),
+                    "register_quick_429_room_guess": metrics.get("register_quick_429_room_guess", 0),
                 }
             },
         )
@@ -210,6 +248,9 @@ class RegistrationMetrics:
                     "phone_exists": 0,
                     "captcha_failed": 0,
                     "sms_code_invalid": 0,
+                    "room_code_invalid": 0,
+                    "workshop_full": 0,
+                    "duplicate_submission": 0,
                     "invitation_code_invalid": 0,
                     "other": 0,
                 },
@@ -219,6 +260,10 @@ class RegistrationMetrics:
                 "database_commit_retries": {"total_retries": 0, "retry_counts": {}},
                 "cache_write_successes": 0,
                 "cache_write_failures": 0,
+                "quick_reg_token_delete_failed_after_success": 0,
+                "register_quick_429_ip": 0,
+                "register_quick_429_phone": 0,
+                "register_quick_429_room_guess": 0,
                 "last_reset": datetime.now().isoformat(),
             }
 

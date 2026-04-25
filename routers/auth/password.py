@@ -26,6 +26,7 @@ from models.requests.requests_auth import (
     ChangePasswordRequest,
     ResetPasswordWithEmailRequest,
     ResetPasswordWithSMSRequest,
+    SetPasswordWithSMSLoggedInRequest,
 )
 from services.auth.geo_cn_mainland_cookie import json_forbidden_cn_geo
 from services.auth.geoip_country import email_cn_geo_blocked
@@ -143,6 +144,7 @@ async def reset_password_with_sms(
     # Note: We manually unlock instead of using reset_failed_attempts() because
     # password reset is not a login event, so last_login should not be updated
     user.password_hash = hash_password(request.new_password)
+    user.login_password_set = True
     user.failed_login_attempts = 0  # Unlock account
     user.locked_until = None
 
@@ -172,7 +174,7 @@ async def reset_password_with_sms(
 
     return {
         "message": Messages.success("password_reset_success", lang),
-        "phone": user.phone[:3] + "****" + user.phone[-4:],
+        "phone": request.phone[:3] + "****" + request.phone[-4:],
     }
 
 
@@ -207,6 +209,7 @@ async def reset_password_with_email(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=error_msg)
 
     user.password_hash = hash_password(request.new_password)
+    user.login_password_set = True
     user.failed_login_attempts = 0
     user.locked_until = None
 
@@ -232,6 +235,55 @@ async def reset_password_with_email(
     )
 
     return {"message": Messages.success("password_reset_success", lang)}
+
+
+@router.post("/set-password-with-sms")
+async def set_password_with_sms(
+    request: SetPasswordWithSMSLoggedInRequest,
+    http_request: Request,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """
+    Set or replace the login password using SMS, without revoking the current session.
+    Intended for first-time password bind after SMS-only registration and while logged in.
+    """
+    if not current_user.phone:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=Messages.error("phone_cannot_be_empty", lang),
+        )
+    # Resolve phone for SMS: China mainland mobile
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user or not user.phone:
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=Messages.error("user_not_found", lang))
+
+    await _verify_and_consume_sms_code(str(user.phone), request.sms_code, "reset_password", db, lang)
+
+    user.password_hash = hash_password(request.new_password)
+    user.login_password_set = True
+    user.failed_login_attempts = 0
+    user.locked_until = None
+    try:
+        await db.commit()
+    except Exception as exc:  # pylint: disable=broad-except
+        await db.rollback()
+        logger.error("[Auth] set-password-with-sms commit failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=Messages.error("password_change_failed", lang),
+        ) from exc
+
+    await invalidate_user_cache_after_password_write(user, "Set password (SMS, logged in, no session revoke)")
+    client_ip = get_client_ip(http_request) if http_request else "unknown"
+    logger.info(
+        "[TokenAudit] set-password-with-sms: user=%s, ip=%s",
+        user.id,
+        client_ip,
+    )
+    return {"message": Messages.success("password_set_sms_success", lang)}
 
 
 @router.put("/change-password")
@@ -270,6 +322,7 @@ async def change_password(
 
     # Update password
     user.password_hash = hash_password(request.new_password)
+    user.login_password_set = True
     user.failed_login_attempts = 0  # Clear any failed attempts
     user.locked_until = None
 

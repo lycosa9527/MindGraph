@@ -20,10 +20,14 @@ from datetime import UTC, datetime
 from typing import Optional
 
 from jose import jwt, JWTError
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
 
 from fastapi import APIRouter, Depends, Request, Response, Header, HTTPException, status
 
+from config.database import get_async_db
 from models import User, Messages, get_request_language, Language
+from models.requests.requests_auth import UpdateProfileNameRequest
 from services.auth.vpn_geo_enforcement import record_vpn_refresh_last_ip
 
 _record_vpn_refresh_last_ip = record_vpn_refresh_last_ip
@@ -312,6 +316,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "name": current_user.name,
             "avatar": current_user.avatar or "🐈‍⬛",
             "role": role,
+            "login_password_set": getattr(current_user, "login_password_set", True),
             "organization": {
                 "id": org.id if org else None,
                 "code": org.code if org else None,
@@ -331,6 +336,43 @@ async def get_me(current_user: User = Depends(get_current_user)):
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to retrieve user profile",
         ) from me_error
+
+
+@router.patch("/profile")
+async def patch_profile(
+    body: UpdateProfileNameRequest,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_async_db),
+    lang: Language = Depends(get_language_dependency),
+):
+    """
+    Update the current user's display name (self-service).
+    """
+    result = await db.execute(select(User).where(User.id == current_user.id))
+    user = result.scalar_one_or_none()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=Messages.error("user_not_found", lang),
+        )
+    user.name = body.name
+    try:
+        await db.commit()
+    except Exception as exc:  # pylint: disable=broad-except
+        await db.rollback()
+        logger.error("[Auth] profile patch commit failed: %s", exc, exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=Messages.error("profile_update_failed", lang),
+        ) from exc
+
+    try:
+        await user_cache.invalidate(
+            int(user.id), phone=str(user.phone) if user.phone else None, email=str(user.email) if user.email else None
+        )
+    except Exception as inv_exc:  # pylint: disable=broad-except
+        logger.warning("[Auth] user cache invalidation after profile: %s", inv_exc)
+    return {"ok": True, "name": user.name}
 
 
 @router.get("/session-status")

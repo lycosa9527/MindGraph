@@ -32,6 +32,8 @@ export interface User {
   uiVersion?: string | null
   /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
   allowsSimplifiedChinese?: boolean
+  /** False for quick-registration users until they set a known password (SMS) */
+  loginPasswordSet?: boolean
 }
 
 /**
@@ -57,6 +59,7 @@ export interface BackendUser {
   prompt_language?: string | null
   ui_version?: string | null
   allows_simplified_chinese?: boolean
+  login_password_set?: boolean
   user?: {
     id?: string | number
     phone?: string

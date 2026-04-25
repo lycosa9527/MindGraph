@@ -20,6 +20,7 @@ import {
 
 import { ChangePasswordModal, ChangePhoneModal } from '@/components/auth'
 import AvatarSelectModal from '@/components/auth/AvatarSelectModal.vue'
+import SetPasswordWithSmsModal from '@/components/auth/SetPasswordWithSmsModal.vue'
 import { useLanguage } from '@/composables'
 import {
   PROMPT_LANGUAGE_OPTIONS,
@@ -53,7 +54,10 @@ const maskedPhone = computed(() => {
 
 const showChangePhone = ref(false)
 const showChangePassword = ref(false)
+const showSetPasswordSms = ref(false)
 const showAvatarSelect = ref(false)
+
+const needsSetLoginPassword = computed(() => user.value?.loginPasswordSet === false)
 
 const uiLangExpanded = ref(false)
 const promptLangExpanded = ref(false)
@@ -180,8 +184,28 @@ async function handleLogout() {
 
         <div class="border-t border-gray-100 mx-4" />
 
-        <!-- Change Password -->
+        <!-- Set login password (quick reg) or change password -->
         <button
+          v-if="needsSetLoginPassword && user?.phone"
+          class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
+          @click="showSetPasswordSms = true"
+        >
+          <Lock
+            :size="20"
+            class="text-gray-500 shrink-0"
+          />
+          <div class="flex-1 min-w-0">
+            <div class="text-sm font-medium text-gray-900">
+              {{ t('auth.setPasswordWithSms', 'Set login password') }}
+            </div>
+          </div>
+          <ChevronRight
+            :size="18"
+            class="text-gray-400 shrink-0"
+          />
+        </button>
+        <button
+          v-else-if="!needsSetLoginPassword"
           class="settings-row w-full flex items-center gap-3 px-4 py-3.5 text-left active:bg-gray-50 transition-colors"
           @click="showChangePassword = true"
         >
@@ -364,6 +388,9 @@ async function handleLogout() {
     <ChangePasswordModal
       :visible="showChangePassword"
       @update:visible="showChangePassword = $event"
+    />
+    <SetPasswordWithSmsModal
+      v-model:visible="showSetPasswordSms"
     />
     <AvatarSelectModal
       :visible="showAvatarSelect"

@@ -211,6 +211,72 @@ class Messages:
                 "və ya səhv olduğunu düşünürsünüzsə, dəstəklə əlaqə saxlayın."
             ),
         },
+        "quick_reg_channel_invalid": {
+            "zh": "快速注册链接无效或已过期。请向管理员重新获取。",
+            "en": (
+                "This quick registration link is invalid or has expired. "
+                "Ask your school manager for a new one."
+            ),
+            "az": (
+                "Bu sürətli qeydiyyat keçidi etibarsızdır və ya müddəti bitib. "
+                "Yenisi üçün inzibatçıya müraciət edin."
+            ),
+        },
+        "quick_reg_redis_unavailable": {
+            "zh": "服务暂时不可用，请稍后再试。",
+            "en": "Service temporarily unavailable. Please try again later.",
+            "az": "Xidmət müvəqqəti əlçatan deyil. Daha sonra cəhd edin.",
+        },
+        "quick_reg_rate_limited": {
+            "zh": "操作过于频繁，请稍后再试。",
+            "en": "Too many requests. Please try again in a few minutes.",
+            "az": "Həddindən artıq sorğu. Bir neçə dəqiqə sonra cəhd edin.",
+        },
+        "quick_reg_manager_org_required": {
+            "zh": "您的账号未绑定学校，无法创建快速注册通道。",
+            "en": "Your account is not linked to a school. Quick registration is unavailable.",
+            "az": "Hesabınız məktəblə əlaqələndirilməyib. Sürətli qeydiyyat mümkün deyil.",
+        },
+        "organization_not_active": {
+            "zh": "该学校组织未激活或已停用。",
+            "en": "This organization is inactive or has been disabled.",
+            "az": "Bu təşkilat aktiv deyil və ya söndürülüb.",
+        },
+        "quick_reg_close_forbidden": {
+            "zh": "无法关闭此快速注册通道。",
+            "en": "You are not allowed to close this quick registration link.",
+            "az": "Bu sürətli qeydiyyat keçidini bağlamağa icazə yoxdur.",
+        },
+        "quick_reg_room_code_invalid": {
+            "zh": "房间码不正确或已过期。请对照老师屏幕上的 6 位数字，在码刷新后重试。",
+            "en": "The room code is wrong or expired. Match the 6 digits on the facilitator’s screen and try after it updates.",
+            "az": "Otaq kodu səhvdir və ya müddəti bitib. Ekrandakı 6 rəqəmi daxil edin və ya yenilənmədən sonra cəhd edin.",
+        },
+        "quick_reg_room_too_many_guesses": {
+            "zh": "房间码尝试次数过多，请稍后再试。",
+            "en": "Too many room code attempts. Please wait a few minutes and try again.",
+            "az": "Otaq kodu cəhdləri həddindən artıq çoxdur. Bir neçə dəqiqə gözləyin və yenidən cəhd edin.",
+        },
+        "quick_reg_workshop_full": {
+            "zh": "本渠道报名人数已满。请联系管理员。",
+            "en": "This quick registration link has reached its signup limit. Ask your school manager for a new link.",
+            "az": "Bu qeydiyyat linki limitə çatıb. İnzibatçıdan yenisini istəyin.",
+        },
+        "quick_reg_duplicate_submission": {
+            "zh": "请勿重复提交，请稍后再试。",
+            "en": "This registration attempt was already received. Please wait and try again.",
+            "az": "Bu cəhd artıq qeydə alınıb. Bir az gözləyin və yenidən cəhd edin.",
+        },
+        "invalid_profile_name": {
+            "zh": "姓名至少2个字符，且不能包含数字。",
+            "en": "Name must be at least 2 characters and must not contain digits.",
+            "az": "Ad ən azı 2 simvoldan ibarət olmalı və rəqəm ehtiva etməməlidir.",
+        },
+        "profile_update_failed": {
+            "zh": "无法保存个人资料。",
+            "en": "Could not save your profile.",
+            "az": "Profil yadda saxlanıla bilmədi.",
+        },
         "registration_not_available": {
             "zh": "{} 模式下注册不可用。请改用密钥认证。",
             "en": "Registration is not available in {} mode. Please use passkey authentication instead.",
@@ -1089,6 +1155,11 @@ class Messages:
             "zh": "验证码有效",
             "en": "Verification code is valid",
             "az": "Təsdiq kodu etibarlıdır",
+        },
+        "password_set_sms_success": {
+            "zh": "登录密码已设置。",
+            "en": "Your login password has been set.",
+            "az": "Giriş parolunuz təyin edildi.",
         },
         "password_reset_success": {
             "zh": "密码重置成功",
