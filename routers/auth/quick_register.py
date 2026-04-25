@@ -129,10 +129,28 @@ def _room_code_secret_from_payload(data: object) -> str:
 @router.get("/quick-register/room-code")
 async def quick_register_room_code(
     http_request: Request,
-    token: str = Query(..., min_length=20, max_length=512),
+    channel_token: str | None = Query(
+        default=None,
+        min_length=20,
+        max_length=512,
+        description="Opaque quick-registration channel token (avoids clashing with generic ?token= in auth).",
+    ),
+    legacy_token: str | None = Query(
+        default=None,
+        min_length=20,
+        max_length=512,
+        alias="token",
+        description="Deprecated: use channel_token instead.",
+    ),
     lang: Language = Depends(get_language_dependency),
 ):
     """Public: current 6-digit room code and server time (for modal sync)."""
+    channel_key = (channel_token or legacy_token or "").strip()
+    if not channel_key:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail=Messages.error("missing_required_fields", lang, "channel_token"),
+        )
     rate = get_rate_limiter()
     client_ip = get_client_ip(http_request) if http_request else "unknown"
     allowed, _, _ = await rate.check_and_record(
@@ -143,7 +161,7 @@ async def quick_register_room_code(
             status_code=status.HTTP_429_TOO_MANY_REQUESTS,
             detail=Messages.error("quick_reg_rate_limited", lang),
         )
-    tsha = _token_log_id(token)
+    tsha = _token_log_id(channel_key)
     allowed_t, _, _ = await rate.check_and_record(
         "quick_reg_room_get_tok", tsha, _ROOM_CODE_GET_PER_TOKEN_MAX, _ROOM_CODE_GET_PER_TOKEN_WINDOW
     )
@@ -153,7 +171,7 @@ async def quick_register_room_code(
             detail=Messages.error("quick_reg_rate_limited", lang),
         )
 
-    token_payload = await get_token_data(token)
+    token_payload = await get_token_data(channel_key)
     if not token_payload:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -161,7 +179,7 @@ async def quick_register_room_code(
         )
 
     signups_count = (
-        await get_workshop_usage_count(token)
+        await get_workshop_usage_count(channel_key)
         if parse_channel_type(token_payload) == "workshop"
         else 0
     )
@@ -171,7 +189,7 @@ async def quick_register_room_code(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=Messages.error("quick_reg_channel_invalid", lang),
         )
-    code, step, next_start, now = current_room_code_from_room_secret(room_sec, token)
+    code, step, next_start, now = current_room_code_from_room_secret(room_sec, channel_key)
     return {
         "code": code,
         "period_seconds": ROOM_CODE_PERIOD_SECONDS,

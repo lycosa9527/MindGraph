@@ -20,6 +20,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from config.database import get_async_db
 from models.domain.auth import User
+from services.auth.http_auth_token import extract_bearer_token_from_websocket
 from . import auth_resolution
 from .tokens import decode_access_token
 
@@ -46,7 +47,8 @@ except ImportError:
 async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db)) -> User:
     """
     Get current user from WebSocket connection.
-    Extracts JWT from query params or cookies.
+    Uses the same session resolution as HTTP: Bearer, cookie, then ?token= only
+    if it looks like a JWT or mgat_ (opaque ?token= is ignored).
 
     Args:
         websocket: WebSocket connection
@@ -58,12 +60,7 @@ async def get_current_user_ws(websocket, db: AsyncSession = Depends(get_async_db
     Raises:
         WebSocketDisconnect: If authentication fails
     """
-    # Try query params first
-    token = websocket.query_params.get("token")
-
-    # Try cookies if no token in query
-    if not token:
-        token = websocket.cookies.get("access_token")
+    token = extract_bearer_token_from_websocket(websocket)
 
     if not token:
         await websocket.close(code=4001, reason="Authentication required")

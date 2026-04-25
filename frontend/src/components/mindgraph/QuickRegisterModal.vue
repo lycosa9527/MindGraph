@@ -132,7 +132,7 @@ async function fetchRoomCode() {
   }
   try {
     const r = await authFetch(
-      `/api/auth/quick-register/room-code?token=${encodeURIComponent(token.value)}`,
+      `/api/auth/quick-register/room-code?channel_token=${encodeURIComponent(token.value)}`,
       { method: 'GET' }
     )
     const j = (await r.json().catch(() => ({}))) as {

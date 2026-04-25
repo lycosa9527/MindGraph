@@ -50,7 +50,7 @@ onMounted(async () => {
   }
   try {
     const response = await apiRequest(
-      `/api/auth/quick-register/room-code?token=${encodeURIComponent(
+      `/api/auth/quick-register/room-code?channel_token=${encodeURIComponent(
         props.quickRegToken
       )}`,
       { method: 'GET' }
