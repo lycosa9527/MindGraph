@@ -1,0 +1,212 @@
+/* Swiss UI — integration API keys dialog (Tokens tab). Used with .mindbot-swiss-dialog. */
+
+.mindbot-settings-dialog.mindbot-swiss-dialog.api-keys-main-dialog {
+  width: min(92vw, 920px) !important;
+  max-width: 100%;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.mindbot-swiss-dialog.mindbot-api-key-nested.el-dialog {
+  width: min(480px, 94vw) !important;
+  max-width: 100%;
+}
+
+.mindbot-swiss-dialog.mindbot-api-key-nested--wide.el-dialog {
+  width: min(520px, 94vw) !important;
+  max-width: 100%;
+}
+
+.mindbot-swiss-dialog .api-keys-nested-form.el-form--label-top :is(.el-form-item__label) {
+  color: #e2e8f0;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  line-height: 1.35;
+}
+
+.mindbot-swiss-dialog .api-keys-nested-form :deep(.el-form-item) {
+  margin-bottom: 0.65rem;
+}
+
+.mindbot-swiss-dialog .api-keys-hint-inset {
+  --mindbot-swiss-border: rgba(34, 211, 238, 0.32);
+  --mindbot-swiss-inset: rgba(15, 23, 42, 0.72);
+  --mindbot-swiss-muted: #a8b7c9;
+  margin-bottom: 0.75rem;
+  border-radius: 2px;
+  border: 1px solid var(--mindbot-swiss-border);
+  background: var(--mindbot-swiss-inset);
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.08);
+  padding: 0.75rem 1rem;
+}
+
+.mindbot-swiss-dialog .api-keys-hint-inset--banner {
+  border-color: rgba(34, 211, 238, 0.28);
+  background: linear-gradient(
+    105deg,
+    rgba(227, 6, 19, 0.12) 0%,
+    rgba(34, 211, 238, 0.08) 55%,
+    rgba(167, 139, 250, 0.06) 100%
+  );
+  box-shadow: 0 0 14px rgba(34, 211, 238, 0.08);
+}
+
+.mindbot-swiss-dialog .api-keys-section-kicker {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 0.6875rem;
+  font-weight: 600;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #e2e8f0;
+  margin: 0 0 0.4rem;
+}
+
+.mindbot-swiss-dialog .api-keys-section-kicker::before {
+  content: '';
+  width: 3px;
+  height: 0.75rem;
+  border-radius: 0;
+  flex-shrink: 0;
+  background: linear-gradient(180deg, #e30613 0%, #22d3ee 100%);
+  box-shadow:
+    0 0 10px rgba(227, 6, 19, 0.45),
+    0 0 14px rgba(34, 211, 238, 0.25);
+}
+
+.mindbot-swiss-dialog .api-keys-data-panel {
+  margin: 0 -0.15rem 0.35rem;
+  border-radius: 2px;
+  border: 1px solid rgba(34, 211, 238, 0.22);
+  background: rgba(2, 6, 23, 0.45);
+  overflow: hidden;
+}
+
+.mindbot-swiss-dialog .api-keys-table {
+  --el-table-bg-color: transparent;
+  --el-table-tr-bg-color: rgba(15, 23, 42, 0.35);
+  --el-table-header-bg-color: rgba(30, 41, 59, 0.9);
+  --el-table-header-text-color: #e2e8f0;
+  --el-table-text-color: #f1f5f9;
+  --el-table-row-hover-bg-color: rgba(34, 211, 238, 0.1);
+  --el-table-border-color: rgba(34, 211, 238, 0.18);
+  --el-border-color-lighter: rgba(34, 211, 238, 0.12);
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+}
+
+.mindbot-swiss-dialog .api-keys-table :deep(.el-table__header th) {
+  font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.mindbot-swiss-dialog .api-keys-table :deep(.el-table__empty-block) {
+  min-height: 5rem;
+  color: #94a3b8;
+  font-size: 0.75rem;
+}
+
+.mindbot-swiss-dialog .api-keys-mono {
+  font-family: var(--geek-ulog-font);
+  font-size: 0.7rem;
+  color: #e2e8f0;
+  word-break: break-all;
+}
+
+.mindbot-swiss-dialog .api-keys-key-cell :deep(.el-button--primary.is-link) {
+  color: #67e8f9;
+  flex-shrink: 0;
+}
+
+.mindbot-swiss-dialog .api-keys-row-actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.1rem 0.25rem;
+}
+
+.mindbot-swiss-dialog .api-keys-row-actions :deep(.el-button.is-link) {
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  padding: 0.15rem 0.45rem;
+}
+
+.mindbot-swiss-dialog .api-keys-row-actions :deep(.el-button--danger.is-link) {
+  color: #fb7185;
+}
+
+.mindbot-swiss-dialog .api-keys-tag {
+  --el-tag-font-size: 0.65rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  background: rgba(15, 23, 42, 0.8);
+}
+
+.mindbot-swiss-dialog .api-keys-tool-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+}
+
+.mindbot-swiss-dialog .api-keys-pill {
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  border-radius: 2px;
+  --el-button-bg-color: #e30613;
+  --el-button-border-color: #c50512;
+  --el-button-text-color: #ffffff;
+  --el-button-hover-bg-color: #ff1a1f;
+  --el-button-hover-border-color: #e30613;
+  --el-button-hover-text-color: #ffffff;
+  box-shadow:
+    0 0 0 1px rgba(34, 211, 238, 0.15),
+    0 0 20px rgba(227, 6, 19, 0.25);
+}
+
+.mindbot-swiss-dialog .api-keys-floating-load.el-loading-parent--relative {
+  min-height: 8rem;
+}
+
+.mindbot-swiss-dialog .api-keys-floating-load :deep(.el-loading-mask) {
+  background-color: rgba(2, 6, 23, 0.55);
+}
+
+.mindbot-swiss-dialog .api-keys-floating-load :deep(.el-loading-text) {
+  color: #a8b7c9;
+  font-family: var(--geek-ulog-font);
+  font-size: 0.75rem;
+  letter-spacing: 0.05em;
+}
+
+.mindbot-swiss-dialog .api-keys-nested-footer {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.mindbot-swiss-dialog .api-keys-hint-bumper {
+  margin: 0 0 0.5rem;
+  line-height: 1.5;
+  font-size: 0.75rem;
+  color: var(--mindbot-swiss-muted, #a8b7c9);
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}

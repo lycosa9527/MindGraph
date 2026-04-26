@@ -105,8 +105,10 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    // Element Plus + icons is ~1.2 MB minified; raise the warning threshold.
-    chunkSizeWarningLimit: 1300,
+    // Vite’s default 500 kB is aggressive for feature-rich SPAs; 1000 kB is a
+    // practical bar once vendors are split (below). Revisit if a single chunk
+    // still exceeds this — prefer more `manualChunks` over raising the limit.
+    chunkSizeWarningLimit: 1000,
     rollupOptions: {
       onwarn(warning, defaultHandler) {
         // @tailwindcss/vite transforms CSS chunks without emitting sourcemaps;
@@ -116,26 +118,56 @@ export default defineConfig({
       },
       output: {
         /**
-         * Split large vendor packages into named chunks so they can be cached
-         * independently of application code.  Rollup still tree-shakes within
-         * each chunk; only code that is actually imported is emitted.
-         *
-         * element-plus  ~1.2 MB  (components + icons)
-         * vue-i18n      ~200 kB  (runtime + compiler)
-         * @vueuse/core  ~150 kB
-         * @tanstack      ~80 kB
+         * App routes already use dynamic import() (see `src/router/index.ts`).
+         * Splits here isolate large `node_modules` for caching and to avoid a
+         * single >1.3 MB vendor blob (notably: Element Plus, icons, echarts, …).
+         * Order: more specific sub-packages before broader matches.
          */
         manualChunks(id) {
-          if (
-            id.includes('node_modules/element-plus') ||
-            id.includes('node_modules/@element-plus')
-          ) {
+          if (!id.includes('node_modules')) {
+            return undefined
+          }
+          if (id.includes('node_modules/@element-plus/icons-vue')) {
+            return 'vendor-ep-icons'
+          }
+          if (id.includes('node_modules/element-plus') || id.includes('node_modules/@element-plus')) {
             return 'vendor-element-plus'
           }
+          if (id.includes('node_modules/echarts')) {
+            return 'vendor-echarts'
+          }
+          if (id.includes('node_modules/chart.js')) {
+            return 'vendor-chartjs'
+          }
+          if (id.includes('node_modules/@vue-flow')) {
+            return 'vendor-vue-flow'
+          }
+          if (id.includes('node_modules/lucide-vue-next')) {
+            return 'vendor-lucide'
+          }
+          if (id.includes('node_modules/katex')) {
+            return 'vendor-katex'
+          }
+          if (id.includes('node_modules/highlight.js')) {
+            return 'vendor-highlight'
+          }
+          if (id.includes('node_modules/mathlive')) {
+            return 'vendor-mathlive'
+          }
+          if (id.includes('node_modules/jspdf')) {
+            return 'vendor-jspdf'
+          }
           if (
-            id.includes('node_modules/vue-i18n') ||
-            id.includes('node_modules/@intlify')
+            id.includes('node_modules/markdown-it') ||
+            id.includes('node_modules/@vscode/markdown-it-katex') ||
+            id.includes('node_modules/dompurify')
           ) {
+            return 'vendor-markdown'
+          }
+          if (id.includes('node_modules/html-to-image')) {
+            return 'vendor-html-to-image'
+          }
+          if (id.includes('node_modules/vue-i18n') || id.includes('node_modules/@intlify')) {
             return 'vendor-i18n'
           }
           if (id.includes('node_modules/@vueuse')) {
@@ -143,6 +175,12 @@ export default defineConfig({
           }
           if (id.includes('node_modules/@tanstack')) {
             return 'vendor-tanstack'
+          }
+          if (id.includes('node_modules/simple-keyboard') || id.includes('node_modules/simple-keyboard-layouts')) {
+            return 'vendor-keyboard'
+          }
+          if (id.includes('node_modules/axios')) {
+            return 'vendor-axios'
           }
           return undefined
         },

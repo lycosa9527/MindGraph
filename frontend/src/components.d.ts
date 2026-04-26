@@ -14,6 +14,7 @@ declare module 'vue' {
     AccountInfoModal: typeof import('./components/auth/AccountInfoModal.vue')['default']
     AdminDashboardTab: typeof import('./components/admin/AdminDashboardTab.vue')['default']
     AdminDatabaseTab: typeof import('./components/admin/AdminDatabaseTab.vue')['default']
+    AdminDingtalkGenerationApiKeysDialog: typeof import('./components/admin/AdminDingtalkGenerationApiKeysDialog.vue')['default']
     AdminFeaturesTab: typeof import('./components/admin/AdminFeaturesTab.vue')['default']
     AdminLibraryTab: typeof import('./components/admin/AdminLibraryTab.vue')['default']
     AdminMarketsTab: typeof import('./components/admin/AdminMarketsTab.vue')['default']

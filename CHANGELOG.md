@@ -5,6 +5,16 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.105.0] - 2026-04-27
+
+### Added
+- **Admin — DingTalk image generation API keys** (`AdminDingtalkGenerationApiKeysDialog.vue`, `AdminTokensTab.vue`, `components.d.ts`, `admin-mindbot-swiss-api-keys.css`, `admin-mindbot-swiss-dialog-chrome.css`, `admin-mindbot-swiss-messagebox.css`, `locales/messages/en|zh/admin.ts`): dialog to list, create, and delete **X-API-Key** rows (via `GET/POST/DELETE` admin API key routes) for public generation endpoints such as `/api/generate_dingtalk`; shared Swiss-styled styles for the dialog and message boxes. **Tokens** tab adds a **DingTalk image generation** card next to the overall token summary (sums **`usage_count`** from keys; click/focus opens the dialog; refreshes when the dialog closes or token stats reload).
+
+### Changed
+- **Admin token stats — DingTalk generation counts** (`routers/auth/admin/stats.py`): `GET /api/auth/admin/token-stats` includes **`dingtalk_generations`** with **today** / **week** / **month** / **total** counts of successful `TokenUsage` rows for **`POST /api/generate_dingtalk`** (PNG + markdown image flow).
+- **Admin MindBot config dialog** (`AdminMindBotConfigDialog.vue`): refactored and shortened while keeping the terminal-style MindBot create/edit experience (DingTalk, Dify, usage).
+- **Frontend build** (`frontend/vite.config.ts`): broader **`manualChunks`** splits (e.g. **@element-plus/icons-vue**, echarts, Chart.js, **@vue-flow**, katex, highlight.js, mathlive, jspdf, markdown stack, **html-to-image**, simple-keyboard, axios) to improve caching and avoid oversized single vendor chunks; **`chunkSizeWarningLimit`** set to **1000** with updated rationale.
+
 ## [5.104.0] - 2026-04-26
 
 ### Added

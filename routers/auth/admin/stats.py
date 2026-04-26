@@ -357,6 +357,7 @@ async def get_token_stats_admin(
     Returns separate stats for:
     - mindgraph: Diagram generation and related features
     - mindmate: AI assistant (Dify) conversations
+    - dingtalk_generations: Counts of successful /api/generate_dingtalk (PNG + markdown) calls
     """
     # Use Beijing time for "today" calculations
     # Convert to UTC for database queries since timestamps are stored in UTC
@@ -400,6 +401,13 @@ async def get_token_stats_admin(
             "month": empty_breakdown.copy(),
             "total": empty_breakdown.copy(),
         },
+    }
+    # Successful POST /api/generate_dingtalk rows (DingTalk PNG + markdown image flow)
+    dingtalk_generations = {
+        "today": 0,
+        "week": 0,
+        "month": 0,
+        "total": 0,
     }
 
     # Build base filter for organization if specified
@@ -563,6 +571,24 @@ async def get_token_stats_admin(
                 by_service[service][period]["total_tokens"] += int(result.total_tokens or 0)
                 by_service[service][period]["request_count"] += int(result.request_count or 0)
 
+        _dingtalk_path = and_(
+            TokenUsage.endpoint_path == "/api/generate_dingtalk",
+            TokenUsage.success,
+        )
+        for d_key, d_since in (
+            ("today", today_start),
+            ("week", week_ago),
+            ("month", month_ago),
+            ("total", None),
+        ):
+            d_stmt = select(_sql_count(TokenUsage.id)).where(_dingtalk_path)
+            if d_since is not None:
+                d_stmt = d_stmt.where(TokenUsage.created_at >= d_since)
+            if org_filter:
+                d_stmt = d_stmt.where(*org_filter)
+            d_row = (await db.execute(d_stmt)).scalar()
+            dingtalk_generations[d_key] = int(d_row or 0)
+
         # Top 10 users by total tokens (all time), including organization name
         # Group by Organization.id (not name) to avoid issues with duplicate organization names
         top_users_stmt = (
@@ -689,4 +715,5 @@ async def get_token_stats_admin(
         "top_users": top_users,
         "top_users_today": top_users_today if "top_users_today" in locals() else [],
         "by_service": by_service,  # MindGraph vs MindMate breakdown
+        "dingtalk_generations": dingtalk_generations,
     }

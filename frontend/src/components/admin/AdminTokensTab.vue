@@ -1,8 +1,11 @@
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from 'vue'
+
+import { Key } from '@element-plus/icons-vue'
 
 import { Chart, type ChartConfiguration, type TooltipItem, registerables } from 'chart.js'
 
+import AdminDingtalkGenerationApiKeysDialog from '@/components/admin/AdminDingtalkGenerationApiKeysDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { apiRequest } from '@/utils/apiClient'
 
@@ -51,6 +54,44 @@ const trendContext = ref<{
   period: 'today' | 'week' | 'month' | 'total'
 }>({ service: null, period: 'week' })
 
+const dingtalkApiKeysDialogVisible = ref(false)
+/** Cumulative X-API-Key usage (sum of per-key `usage_count`). */
+const dingtalkKeyUsesTotal = ref<number | null>(null)
+
+function openDingtalkApiKeysDialog(): void {
+  dingtalkApiKeysDialogVisible.value = true
+}
+
+async function loadDingtalkKeyUsesTotal(): Promise<void> {
+  try {
+    const res = await apiRequest('/api/auth/admin/api_keys')
+    if (!res.ok) {
+      dingtalkKeyUsesTotal.value = null
+      return
+    }
+    const raw: unknown = await res.json()
+    const list: Array<{ usage_count?: number }> = Array.isArray(raw) ? raw : []
+    const sum = list.reduce((acc, row) => acc + (row.usage_count ?? 0), 0)
+    dingtalkKeyUsesTotal.value = sum
+  } catch {
+    dingtalkKeyUsesTotal.value = null
+  }
+}
+
+function onDingtalkCardKeydown(e: KeyboardEvent): void {
+  if (e.key !== 'Enter' && e.key !== ' ') {
+    return
+  }
+  e.preventDefault()
+  openDingtalkApiKeysDialog()
+}
+
+watch(dingtalkApiKeysDialogVisible, (open) => {
+  if (!open) {
+    void loadDingtalkKeyUsesTotal()
+  }
+})
+
 function formatNumber(num: number): string {
   if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M'
   if (num >= 1000) return (num / 1000).toFixed(1) + 'K'
@@ -70,6 +111,7 @@ async function loadTokenStats() {
     const response = await apiRequest('/api/auth/admin/token-stats')
     if (response.ok) {
       tokenStats.value = await response.json()
+      void loadDingtalkKeyUsesTotal()
     } else {
       const data = await response.json().catch(() => ({}))
       notify.error(data.detail || t('admin.tokenStatsLoadError'))
@@ -465,95 +507,140 @@ onBeforeUnmount(() => {
         </el-card>
       </div>
 
-      <!-- Overall Summary -->
-      <el-card
-        shadow="hover"
-        class="service-card-clickable"
-        @click="showTokenTrendChart(null)"
-      >
-        <template #header>
-          <div
-            class="flex items-center justify-between"
-            @click.stop
-          >
-            <span class="font-medium">{{ t('admin.overallTokenSummary') }}</span>
-            <el-button
-              text
-              size="small"
-              @click="loadTokenStats"
+      <!-- Overall summary + DingTalk image API keys -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-2 items-stretch">
+        <el-card
+          shadow="hover"
+          class="overall-token-row-card service-card-clickable h-full min-h-0 lg:col-span-2"
+          @click="showTokenTrendChart(null)"
+        >
+          <template #header>
+            <div
+              class="flex items-center justify-between"
+              @click.stop
             >
-              <el-icon class="mr-1"><Refresh /></el-icon>
-              {{ t('common.refresh') }}
-            </el-button>
-          </div>
-        </template>
-        <div class="grid grid-cols-2 md:grid-cols-4 gap-6">
-          <div class="text-center">
-            <p class="text-sm text-gray-500 mb-2">{{ t('admin.today') }}</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ formatNumber(tokenStats.today?.total_tokens || 0) }}
-            </p>
-            <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span
-                >{{ t('admin.inShort') }}:
-                {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span
+              <span class="font-medium">{{ t('admin.overallTokenSummary') }}</span>
+              <el-button
+                text
+                size="small"
+                @click="loadTokenStats"
               >
-              <span
-                >{{ t('admin.outShort') }}:
-                {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span
-              >
+                <el-icon class="mr-1"><Refresh /></el-icon>
+                {{ t('common.refresh') }}
+              </el-button>
+            </div>
+          </template>
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="text-center">
+              <p class="text-sm text-gray-500 mb-1">{{ t('admin.today') }}</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                {{ formatNumber(tokenStats.today?.total_tokens || 0) }}
+              </p>
+              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
+                <span
+                  >{{ t('admin.inShort') }}:
+                  {{ formatNumber(tokenStats.today?.input_tokens || 0) }}</span
+                >
+                <span
+                  >{{ t('admin.outShort') }}:
+                  {{ formatNumber(tokenStats.today?.output_tokens || 0) }}</span
+                >
+              </div>
+            </div>
+            <div class="text-center">
+              <p class="text-sm text-gray-500 mb-1">{{ t('admin.pastWeek') }}</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                {{ formatNumber(tokenStats.past_week?.total_tokens || 0) }}
+              </p>
+              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
+                <span
+                  >{{ t('admin.inShort') }}:
+                  {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span
+                >
+                <span
+                  >{{ t('admin.outShort') }}:
+                  {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span
+                >
+              </div>
+            </div>
+            <div class="text-center">
+              <p class="text-sm text-gray-500 mb-1">{{ t('admin.pastMonth') }}</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                {{ formatNumber(tokenStats.past_month?.total_tokens || 0) }}
+              </p>
+              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
+                <span
+                  >{{ t('admin.inShort') }}:
+                  {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span
+                >
+                <span
+                  >{{ t('admin.outShort') }}:
+                  {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span
+                >
+              </div>
+            </div>
+            <div class="text-center">
+              <p class="text-sm text-gray-500 mb-1">{{ t('admin.allTime') }}</p>
+              <p class="text-2xl font-bold text-gray-800 dark:text-white">
+                {{ formatNumber(tokenStats.total?.total_tokens || 0) }}
+              </p>
+              <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
+                <span
+                  >{{ t('admin.inShort') }}:
+                  {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span
+                >
+                <span
+                  >{{ t('admin.outShort') }}:
+                  {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span
+                >
+              </div>
             </div>
           </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-500 mb-2">{{ t('admin.pastWeek') }}</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ formatNumber(tokenStats.past_week?.total_tokens || 0) }}
-            </p>
-            <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span
-                >{{ t('admin.inShort') }}:
-                {{ formatNumber(tokenStats.past_week?.input_tokens || 0) }}</span
+        </el-card>
+
+        <el-card
+          shadow="hover"
+          class="dingtalk-generation-card service-card-focusable service-card-clickable h-full min-h-0 border-t-[3px] border-t-sky-500"
+          role="button"
+          :tabindex="0"
+          :aria-label="`${t('admin.dingtalkGenerationCard')}. ${t('admin.dingtalkCardClickToEditApiKeys')}`"
+          @click="openDingtalkApiKeysDialog"
+          @keydown="onDingtalkCardKeydown"
+        >
+          <template #header>
+            <div class="flex min-h-0 items-center gap-2">
+              <div
+                class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-sky-100 dark:bg-sky-900/40"
               >
-              <span
-                >{{ t('admin.outShort') }}:
-                {{ formatNumber(tokenStats.past_week?.output_tokens || 0) }}</span
-              >
+                <el-icon
+                  :size="16"
+                  class="text-sky-600 dark:text-sky-400"
+                >
+                  <Key />
+                </el-icon>
+              </div>
+              <div class="min-w-0">
+                <p class="text-sm font-medium text-gray-800 dark:text-white">
+                  {{ t('admin.dingtalkGenerationCard') }}
+                </p>
+              </div>
             </div>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-500 mb-2">{{ t('admin.pastMonth') }}</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ formatNumber(tokenStats.past_month?.total_tokens || 0) }}
+          </template>
+          <div class="dingtalk-generation-body">
+            <p
+              class="text-xl font-semibold tabular-nums text-sky-600 dark:text-sky-300 sm:text-2xl"
+            >
+              <template v-if="dingtalkKeyUsesTotal !== null">
+                {{ t('admin.dingtalkCardTotalUses', { count: dingtalkKeyUsesTotal }) }}
+              </template>
+              <template v-else>—</template>
             </p>
-            <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span
-                >{{ t('admin.inShort') }}:
-                {{ formatNumber(tokenStats.past_month?.input_tokens || 0) }}</span
-              >
-              <span
-                >{{ t('admin.outShort') }}:
-                {{ formatNumber(tokenStats.past_month?.output_tokens || 0) }}</span
-              >
-            </div>
-          </div>
-          <div class="text-center">
-            <p class="text-sm text-gray-500 mb-2">{{ t('admin.allTime') }}</p>
-            <p class="text-2xl font-bold text-gray-800 dark:text-white">
-              {{ formatNumber(tokenStats.total?.total_tokens || 0) }}
+            <p class="text-center text-xs leading-snug text-gray-500 dark:text-gray-400">
+              {{ t('admin.dingtalkCardClickToEditApiKeys') }}
             </p>
-            <div class="flex justify-center gap-2 mt-1 text-xs text-gray-400">
-              <span
-                >{{ t('admin.inShort') }}:
-                {{ formatNumber(tokenStats.total?.input_tokens || 0) }}</span
-              >
-              <span
-                >{{ t('admin.outShort') }}:
-                {{ formatNumber(tokenStats.total?.output_tokens || 0) }}</span
-              >
-            </div>
           </div>
-        </div>
-      </el-card>
+        </el-card>
+      </div>
     </div>
 
     <div
@@ -570,6 +657,8 @@ onBeforeUnmount(() => {
         {{ t('admin.loadStatistics') }}
       </el-button>
     </div>
+
+    <AdminDingtalkGenerationApiKeysDialog v-model="dingtalkApiKeysDialogVisible" />
 
     <!-- Trend chart modal -->
     <el-dialog
@@ -655,6 +744,14 @@ onBeforeUnmount(() => {
   border-top: 3px solid #8b5cf6;
 }
 
+.service-card-focusable:focus {
+  outline: none;
+}
+
+.service-card-focusable:focus-visible {
+  box-shadow: 0 0 0 2px var(--el-color-primary);
+}
+
 .service-card-clickable {
   cursor: pointer;
 }
@@ -665,6 +762,56 @@ onBeforeUnmount(() => {
 
 .token-period-card :deep(.el-card__body) {
   padding: 12px 16px;
+}
+
+/* Token row: flex layout so body tracks row height; align with DingTalk card */
+.overall-token-row-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.overall-token-row-card :deep(.el-card__header) {
+  padding: 12px 16px;
+}
+
+.overall-token-row-card :deep(.el-card__body) {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: 12px 16px 16px;
+}
+
+.dingtalk-generation-card {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.dingtalk-generation-card :deep(.el-card__header) {
+  padding: 12px 16px;
+}
+
+.dingtalk-generation-card :deep(.el-card__body) {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 16px 12px;
+}
+
+.dingtalk-generation-body {
+  display: flex;
+  width: 100%;
+  max-width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  row-gap: 0.25rem;
+  text-align: center;
 }
 
 .stat-item {
