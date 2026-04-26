@@ -14,7 +14,7 @@ from pydantic import BaseModel, Field
 from config.settings import config
 from models.domain.auth import User
 from models.domain.feature_org_access import FeatureOrgAccessEntry
-from routers.api.helpers import collapse_double_scheme_base_url
+from routers.api.helpers import normalize_external_base_url
 from routers.auth.dependencies import get_current_user_optional
 from services.feature_access.repository import load_feature_org_access_map
 from utils.auth.roles import is_admin
@@ -82,7 +82,8 @@ async def get_feature_flags(
     user id (when present in the stored rules) so other schools' grants are not
     exposed. Admins receive the full map (e.g. Admin Features tab).
     """
-    external_base = collapse_double_scheme_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
+    env_base = os.getenv("EXTERNAL_BASE_URL", "")
+    external_base = normalize_external_base_url(env_base)
     raw_access = await load_feature_org_access_map() if current_user is not None else {}
     access_map = _sanitize_feature_org_access_map(current_user, raw_access) if current_user is not None else {}
     return FeatureFlagsResponse(

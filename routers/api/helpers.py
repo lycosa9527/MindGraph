@@ -55,26 +55,114 @@ def collapse_double_scheme_base_url(value: str) -> str:
     return result.rstrip("/")
 
 
+def _strip_redundant_trailing_api_path(base: str) -> str:
+    """
+    If EXTERNAL_BASE_URL is set to .../api (mount path duplicated in env), drop the final
+    /api so we do not build .../api/api/temp_images/...
+    """
+    s = (base or "").strip().rstrip("/")
+    if len(s) >= 4 and s[-4:].lower() == "/api":
+        return s[:-4].rstrip("/")
+    return s
+
+
+def normalize_external_base_url(value: str) -> str:
+    """
+    Canonical public site base from EXTERNAL_BASE_URL: fix double-scheme typos, trim slashes,
+    drop a mistaken trailing /api, require http(s) scheme (otherwise return empty).
+    """
+    collapsed = collapse_double_scheme_base_url(value)
+    if not collapsed:
+        return ""
+    no_dup_api = _strip_redundant_trailing_api_path(collapsed)
+    low = no_dup_api.lower()
+    if not (low.startswith("http://") or low.startswith("https://")):
+        return ""
+    return no_dup_api
+
+
+def _signed_path_for_public_url(signed_path: str) -> str:
+    """Avoid double slashes in the final URL; signed segment must not be absolute."""
+    p = (signed_path or "").strip()
+    return p.lstrip("/")
+
+
+def _host_has_traditional_port(authority: str) -> bool:
+    """
+    True if authority looks like hostname:port (one colon, port 1-65535).
+
+    Avoids appending :PORT from env when EXTERNAL_HOST is already
+    e.g. main.example.com:9527.
+    """
+    if not authority or authority.count(":") != 1 or authority.startswith("["):
+        return False
+    _host, port_s = authority.rsplit(":", 1)
+    if not _host or not port_s.isdigit():
+        return False
+    p = int(port_s)
+    return 1 <= p <= 65535
+
+
+def _is_local_loopback_host(host: str) -> bool:
+    """True for typical local dev hostnames; those links need the Uvicorn bind port."""
+    b = (host or "").lower().strip()
+    if b in ("localhost", "127.0.0.1", "::1"):
+        return True
+    if b.count(".") == 3 and b.startswith("127."):
+        return all(p.isdigit() and 0 <= int(p) <= 255 for p in b.split("."))
+    return False
+
+
+def _authority_for_public_temp_url(authority: str) -> str:
+    """
+    Build host[:port] for public temp-image URLs when not using X-Forwarded-* or EXTERNAL_BASE_URL.
+
+    ``os.environ["PORT"]`` is the process bind port (e.g. 9527), not the public URL port. Behind a
+    reverse proxy, browsers use 443/80; public links must not add :9527. Localhost links still
+    need the bind port to reach the API.
+
+    Set ``EXTERNAL_PUBLIC_PORT`` to force a non-default port on a public hostname (rare; prefer
+    ``EXTERNAL_BASE_URL`` for full control).
+    """
+    auth = (authority or "").strip()
+    if not auth:
+        return f"localhost:{os.getenv('PORT', '9527')}"
+    if _host_has_traditional_port(auth):
+        return auth
+    if _is_local_loopback_host(auth):
+        return f"{auth}:{os.getenv('PORT', '9527')}"
+    public_port = (os.getenv("EXTERNAL_PUBLIC_PORT") or "").strip()
+    if public_port.isdigit() and 1 <= int(public_port) <= 65535:
+        return f"{auth}:{int(public_port)}"
+    return auth
+
+
 def build_public_temp_image_url(request: Request, signed_path: str) -> str:
     """
     Public URL for /api/temp_images (signed path).
 
-    Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST/PORT.
+    Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST (see
+    _authority_for_public_temp_url: public hostnames omit bind PORT unless EXTERNAL_PUBLIC_PORT).
     """
-    external_base = collapse_double_scheme_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
-    if external_base:
-        return f"{external_base}/api/temp_images/{signed_path}"
+    path_seg = _signed_path_for_public_url(signed_path)
 
-    forwarded_proto = request.headers.get("X-Forwarded-Proto")
-    forwarded_host_raw = request.headers.get("X-Forwarded-Host")
+    external_base = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
+    if external_base:
+        return f"{external_base}/api/temp_images/{path_seg}"
+
+    forwarded_proto = (request.headers.get("X-Forwarded-Proto") or "").strip()
+    forwarded_host_raw = (request.headers.get("X-Forwarded-Host") or "").strip()
     if forwarded_proto and forwarded_host_raw:
-        host_only = strip_leading_http_schemes(forwarded_host_raw)
-        return f"{forwarded_proto}://{host_only}/api/temp_images/{signed_path}"
+        host_only = strip_leading_http_schemes(forwarded_host_raw).strip().rstrip("/")
+        if host_only:
+            return f"{forwarded_proto}://{host_only}/api/temp_images/{path_seg}"
 
     protocol = request.url.scheme
-    external_host = os.getenv("EXTERNAL_HOST", "localhost")
-    port = os.getenv("PORT", "9527")
-    return f"{protocol}://{external_host}:{port}/api/temp_images/{signed_path}"
+    raw_host = strip_leading_http_schemes(os.getenv("EXTERNAL_HOST", "localhost") or "localhost")
+    if not raw_host:
+        raw_host = "localhost"
+    public_authority = _authority_for_public_temp_url(raw_host)
+    return f"{protocol}://{public_authority}/api/temp_images/{path_seg}"
 
 
 async def log_diagram_edit(user: User, db: AsyncSession, count: int = 1) -> None:

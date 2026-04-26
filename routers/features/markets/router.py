@@ -15,6 +15,7 @@ from config.settings import config
 from models.domain.auth import User
 from models.domain.markets import MarketListing, MarketOrder, MarketSubscription
 from repositories.markets_repo import MarketListingRepository, MarketOrderRepository
+from routers.api.helpers import normalize_external_base_url
 from routers.auth.dependencies import get_current_user
 from routers.features.markets.helpers import require_markets_enabled
 from services.markets.alipay_page_pay import build_page_pay_form_html
@@ -181,7 +182,7 @@ async def pay_order(
 
     notify_url = f"{cfg.notify_base_url.rstrip('/')}/api/markets/payments/alipay/notify"
     return_url = ""
-    external = os.getenv("EXTERNAL_BASE_URL", "").strip().rstrip("/")
+    external = normalize_external_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
     if external:
         return_url = f"{external}/template"
 
