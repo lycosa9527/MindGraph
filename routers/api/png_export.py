@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Optional
 import hashlib
 import logging
-import os
 import time
 import uuid
 
@@ -49,6 +48,7 @@ from services.monitoring.activity_stream import get_activity_stream_service
 from services.redis.redis_token_buffer import get_token_tracker
 
 from .helpers import (
+    build_public_temp_image_url,
     check_endpoint_rate_limit,
     get_rate_limit_identifier,
     generate_signed_url,
@@ -581,28 +581,7 @@ async def generate_dingtalk_png(
         signed_path = generate_signed_url(filename, expiration_seconds=86400)
 
         # Build plain text response in ![](url) format (empty alt text)
-        # Priority order: EXTERNAL_BASE_URL → X-Forwarded-* headers → EXTERNAL_HOST:PORT
-        # This ensures HTTPS URLs are used when EXTERNAL_BASE_URL is set, preventing mixed content issues
-        external_base_url = os.getenv("EXTERNAL_BASE_URL", "").rstrip("/")
-
-        if external_base_url:
-            # Explicit override - use EXTERNAL_BASE_URL directly (highest priority)
-            image_url = f"{external_base_url}/api/temp_images/{signed_path}"
-        else:
-            # Try reverse proxy headers
-            forwarded_proto = request.headers.get("X-Forwarded-Proto")
-            forwarded_host = request.headers.get("X-Forwarded-Host")
-
-            if forwarded_proto and forwarded_host:
-                # Behind reverse proxy - use forwarded values (no port needed)
-                protocol = forwarded_proto
-                image_url = f"{protocol}://{forwarded_host}/api/temp_images/{signed_path}"
-            else:
-                # Direct access - use backend protocol and EXTERNAL_HOST with port
-                protocol = request.url.scheme
-                external_host = os.getenv("EXTERNAL_HOST", "localhost")
-                port = os.getenv("PORT", "9527")
-                image_url = f"{protocol}://{external_host}:{port}/api/temp_images/{signed_path}"
+        image_url = build_public_temp_image_url(request, signed_path)
 
         plain_text = f"![]({image_url})"
 

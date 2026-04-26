@@ -20,6 +20,7 @@ import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
 
@@ -111,7 +112,8 @@ function handleSessionExpiredLoginSuccess() {
 }
 
 onMounted(async () => {
-  const isExportRender = route.path === '/export-render'
+  const isExportRender =
+    route.path === '/export-render' || isMindgraphHeadlessExportSession()
 
   if (!isExportRender) {
     await authStore.checkAuth().catch(() => false)

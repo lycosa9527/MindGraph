@@ -30,6 +30,7 @@ import type {
   LoginResponse,
   User,
 } from '@/types'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 import { clearWorkshopChatCachesForUser } from '@/utils/workshopChatLocalCache'
 import {
   disconnectWorkshopChatWsIfAny,
@@ -380,6 +381,10 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkAuth(forceRefresh: boolean = false): Promise<boolean> {
+    if (isMindgraphHeadlessExportSession()) {
+      return false
+    }
+
     // If user is already loaded AND we've verified auth this session, return cached state
     // This prevents redundant API calls while ensuring we verify token validity at least once
     if (!forceRefresh && user.value && hasVerifiedAuthThisSession.value) {
@@ -464,6 +469,9 @@ export const useAuthStore = defineStore('auth', () => {
    * Returns: { success: boolean, errorMessage?: string }
    */
   async function refreshAccessToken(): Promise<{ success: boolean; errorMessage?: string }> {
+    if (isMindgraphHeadlessExportSession()) {
+      return { success: false, errorMessage: 'Headless export session' }
+    }
     try {
       const response = await fetch(`${API_BASE}/refresh`, {
         method: 'POST',
@@ -576,6 +584,9 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   async function checkSessionStatus(): Promise<void> {
+    if (isMindgraphHeadlessExportSession()) {
+      return
+    }
     // Skip session check if no user in state
     if (!user.value) {
       return

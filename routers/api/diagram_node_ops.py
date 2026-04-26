@@ -2,7 +2,6 @@
 
 import copy
 import logging
-import os
 import uuid
 from typing import Any, Dict, List, Optional
 
@@ -11,7 +10,12 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from models.domain.auth import User
-from routers.api.helpers import check_endpoint_rate_limit, generate_signed_url, get_rate_limit_identifier
+from routers.api.helpers import (
+    build_public_temp_image_url,
+    check_endpoint_rate_limit,
+    generate_signed_url,
+    get_rate_limit_identifier,
+)
 from routers.api.png_export import TEMP_IMAGES_DIR
 from routers.api.vueflow_screenshot import capture_diagram_screenshot
 from services.redis.cache.redis_diagram_cache import get_diagram_cache
@@ -102,20 +106,6 @@ def _apply_spec_patch(spec: Dict[str, Any], body: DiagramNodesPatchBody) -> Dict
     return out
 
 
-def _build_public_image_url(request: Request, signed_path: str) -> str:
-    external_base_url = os.getenv("EXTERNAL_BASE_URL", "").rstrip("/")
-    if external_base_url:
-        return f"{external_base_url}/api/temp_images/{signed_path}"
-    forwarded_proto = request.headers.get("X-Forwarded-Proto")
-    forwarded_host = request.headers.get("X-Forwarded-Host")
-    if forwarded_proto and forwarded_host:
-        return f"{forwarded_proto}://{forwarded_host}/api/temp_images/{signed_path}"
-    protocol = request.url.scheme
-    external_host = os.getenv("EXTERNAL_HOST", "localhost")
-    port = os.getenv("PORT", "9527")
-    return f"{protocol}://{external_host}:{port}/api/temp_images/{signed_path}"
-
-
 @router.patch("/diagrams/{diagram_id}/nodes")
 async def patch_diagram_nodes(
     diagram_id: str,
@@ -187,5 +177,5 @@ async def get_diagram_png_url(
         await f.write(png_bytes)
 
     signed_path = generate_signed_url(filename, expiration_seconds=86400)
-    url = _build_public_image_url(request, signed_path)
+    url = build_public_temp_image_url(request, signed_path)
     return {"url": url, "filename": filename}

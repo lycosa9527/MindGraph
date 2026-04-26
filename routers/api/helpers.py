@@ -8,6 +8,7 @@ import base64
 import hashlib
 import hmac
 import logging
+import os
 import time
 
 from fastapi import HTTPException, Request
@@ -19,6 +20,61 @@ from services.redis.rate_limiting.redis_rate_limiter import RedisRateLimiter
 from utils.auth import get_jwt_secret
 
 _logger = logging.getLogger(__name__)
+
+
+def strip_leading_http_schemes(value: str) -> str:
+    """
+    Remove leading http:// and https:// prefixes, repeatedly.
+
+    Some reverse proxies send a full URL in X-Forwarded-Host; the Host part must
+    not include a scheme, since we build scheme separately from X-Forwarded-Proto.
+    """
+    result = (value or "").strip()
+    while True:
+        lower = result.lower()
+        if lower.startswith("https://"):
+            result = result[8:]
+        elif lower.startswith("http://"):
+            result = result[7:]
+        else:
+            break
+    return result
+
+
+def collapse_double_scheme_base_url(value: str) -> str:
+    """Fix EXTERNAL_BASE_URL values like http://https://host when mis-set."""
+    result = (value or "").strip()
+    for _ in range(3):
+        lower = result.lower()
+        if lower.startswith("http://https://"):
+            result = result[7:]
+        elif lower.startswith("https://http://"):
+            result = result[8:]
+        else:
+            break
+    return result.rstrip("/")
+
+
+def build_public_temp_image_url(request: Request, signed_path: str) -> str:
+    """
+    Public URL for /api/temp_images (signed path).
+
+    Order: EXTERNAL_BASE_URL, then X-Forwarded-Proto/Host, then EXTERNAL_HOST/PORT.
+    """
+    external_base = collapse_double_scheme_base_url(os.getenv("EXTERNAL_BASE_URL", ""))
+    if external_base:
+        return f"{external_base}/api/temp_images/{signed_path}"
+
+    forwarded_proto = request.headers.get("X-Forwarded-Proto")
+    forwarded_host_raw = request.headers.get("X-Forwarded-Host")
+    if forwarded_proto and forwarded_host_raw:
+        host_only = strip_leading_http_schemes(forwarded_host_raw)
+        return f"{forwarded_proto}://{host_only}/api/temp_images/{signed_path}"
+
+    protocol = request.url.scheme
+    external_host = os.getenv("EXTERNAL_HOST", "localhost")
+    port = os.getenv("PORT", "9527")
+    return f"{protocol}://{external_host}:{port}/api/temp_images/{signed_path}"
 
 
 async def log_diagram_edit(user: User, db: AsyncSession, count: int = 1) -> None:

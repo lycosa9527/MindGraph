@@ -15,6 +15,7 @@
 import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
 import { useAuthStore } from '@/stores/auth'
+import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const API_BASE = '/api'
 
@@ -48,6 +49,9 @@ let refreshPromise: Promise<boolean> | null = null
  * Returns true if refresh successful, false otherwise
  */
 async function refreshAccessToken(): Promise<boolean> {
+  if (isMindgraphHeadlessExportSession()) {
+    return false
+  }
   // If already refreshing, wait for the existing refresh to complete
   if (isRefreshing && refreshPromise) {
     return refreshPromise
@@ -109,6 +113,9 @@ export async function apiRequest(endpoint: string, options: RequestInit = {}): P
 
   // If unauthorized, attempt token refresh and retry
   if (response.status === 401) {
+    if (isMindgraphHeadlessExportSession()) {
+      return response
+    }
     // Don't retry refresh endpoint to avoid infinite loop
     if (endpoint.includes('/auth/refresh')) {
       return response
@@ -225,6 +232,9 @@ export async function apiUpload(
 
   // If unauthorized, attempt token refresh and retry
   if (response.status === 401) {
+    if (isMindgraphHeadlessExportSession()) {
+      return response
+    }
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
@@ -267,6 +277,9 @@ export async function apiPutFormData(
   })
 
   if (response.status === 401) {
+    if (isMindgraphHeadlessExportSession()) {
+      return response
+    }
     const refreshed = await refreshAccessToken()
 
     if (refreshed) {
