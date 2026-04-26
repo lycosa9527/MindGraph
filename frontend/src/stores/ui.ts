@@ -6,7 +6,8 @@ import { computed, ref } from 'vue'
 
 import { defineStore } from 'pinia'
 
-import { htmlLangForLocale, i18n, loadLocaleMessages, setI18nLocale } from '@/i18n'
+import { htmlLangForLocale, loadLocaleMessages, setI18nLocale } from '@/i18n'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import type { LocaleCode, PromptOutputLanguageCode } from '@/i18n/locales'
 import {
   UI_LOCALE_CODES,
@@ -68,11 +69,11 @@ export const DIAGRAM_TEMPLATES: Record<string, DiagramTemplate> = {
 
 /** Body text for the selected diagram template in the given UI language */
 export function getDiagramTemplateBody(def: DiagramTemplate, lang: Language): string {
-  return String(i18n.global.t(def.i18nKey, {}, { locale: String(lang) }))
+  return translateForUiLocale(def.i18nKey, lang)
 }
 
 function listJoinSeparator(lang: Language): string {
-  return String(i18n.global.t('common.listJoin.separator', {}, { locale: String(lang) }))
+  return translateForUiLocale('common.listJoin.separator', lang)
 }
 
 export const useUIStore = defineStore('ui', () => {

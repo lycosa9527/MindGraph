@@ -1,13 +1,13 @@
 /**
  * Locale-aware placeholder strings for new diagrams and concept map edge/topic logic.
  */
-import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
 import type { DiagramType } from '@/types'
 
 function defaultsT(key: string, locale: LocaleCode, params?: Record<string, unknown>): string {
-  return String(i18n.global.t(key, params ?? {}, { locale: String(locale) }))
+  return translateForUiLocale(key, locale, params)
 }
 
 /**
@@ -294,7 +294,7 @@ export function isMindmapDefaultNodeLabel(nodeId: string, text: string): boolean
 }
 
 function conceptT(key: string, lang: LocaleCode): string {
-  return String(i18n.global.t(key, {}, { locale: String(lang) }))
+  return translateForUiLocale(key, lang)
 }
 
 export function getConceptMapFocusQuestionPrefix(lang: LocaleCode): string {

@@ -2,13 +2,13 @@
  * Default diagram specs for new / blank canvas — fully i18n-driven.
  * All node labels resolve through vue-i18n so every UI locale gets native text.
  */
-import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { getConceptMapFocusQuestionDefault } from '@/stores/diagram/diagramDefaultLabels'
 import type { DiagramType } from '@/types'
 
 function lt(key: string, lang: LocaleCode, params?: Record<string, unknown>): string {
-  return String(i18n.global.t(key, params ?? {}, { locale: String(lang) }))
+  return translateForUiLocale(key, lang, params)
 }
 
 function range(count: number, key: string, lang: LocaleCode): string[] {

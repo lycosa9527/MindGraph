@@ -1,5 +1,5 @@
-import { i18n } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
 import {
   getConceptMapFocusQuestionDefault,
@@ -29,7 +29,7 @@ function placeholderStringsForLocales(fn: (lang: LocaleCode) => string): string[
 }
 
 function i18nPlaceholdersForAllLocales(key: string): string[] {
-  return UI_LOCALE_CODES.map((lang) => String(i18n.global.t(key, {}, { locale: String(lang) })))
+  return UI_LOCALE_CODES.map((lang) => translateForUiLocale(key, lang))
 }
 
 export const PLACEHOLDER_TEXTS = [
