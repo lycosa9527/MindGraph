@@ -35,6 +35,15 @@
           <p id="progress-stage" class="progress-stage"></p>
         </div>
         <p id="status" class="status" aria-live="polite"></p>
+        <a
+          id="link-view-diagram"
+          class="link-view-diagram"
+          href="#"
+          rel="noopener noreferrer"
+          data-i18n="linkViewInLibrary"
+          hidden
+        ></a>
+        <p id="library-full-note" class="library-full-note" aria-live="polite" hidden></p>
       </div>
     </div>
     <div id="settings-view" class="panel" hidden>
@@ -65,8 +74,39 @@
         <label class="field">
           <span class="field-label" data-i18n="labelToken"></span>
           <input type="password" id="field-token" data-i18n-placeholder="placeholderToken" autocomplete="off" />
+          <p id="field-token-expires" class="field-hint" aria-live="polite"></p>
+        </label>
+        <label class="field">
+          <span class="field-label" data-i18n="labelUiLanguage"></span>
+          <select id="field-ui-language" class="field-select"></select>
         </label>
         <p class="eyebrow field-section-label" data-i18n="settingsAdvanced"></p>
+        <div class="field-dimensions">
+          <label class="field field-dim-part">
+            <span class="field-label" data-i18n="labelPngWidth"></span>
+            <input
+              type="number"
+              id="field-png-width"
+              min="400"
+              max="4000"
+              step="1"
+              data-i18n-placeholder="placeholderPngSize"
+              autocomplete="off"
+            />
+          </label>
+          <label class="field field-dim-part">
+            <span class="field-label" data-i18n="labelPngHeight"></span>
+            <input
+              type="number"
+              id="field-png-height"
+              min="300"
+              max="3000"
+              step="1"
+              data-i18n-placeholder="placeholderPngSize"
+              autocomplete="off"
+            />
+          </label>
+        </div>
         <label class="field-row-checkbox" for="field-save-as">
           <input type="checkbox" id="field-save-as" />
           <span class="field-row-label" data-i18n="labelSaveAs"></span>
@@ -80,6 +120,7 @@
         <p id="settings-status" class="status" aria-live="polite"></p>
       </div>
     </div>
+    <script src="shared-mindgraph.js"></script>
     <script src="popup.js"></script>
   </body>
 </html>

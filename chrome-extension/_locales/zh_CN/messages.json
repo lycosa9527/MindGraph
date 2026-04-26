@@ -44,7 +44,7 @@
     "description": "标签"
   },
   "placeholderBaseUrl": {
-    "message": "https://你的服务.example.com",
+    "message": "https://mg.mindspringedu.com",
     "description": "占位符"
   },
   "labelAccount": {
@@ -102,6 +102,10 @@
   "errFailed": {
     "message": "发生错误。",
     "description": "通用错误"
+  },
+  "errDownloadPrepare": {
+    "message": "无法开始下载。请重新加载扩展，或使用较新的 Google Chrome（109+）或 Microsoft Edge（120+）以获得完整支持。",
+    "description": "下载准备失败"
   },
   "errSettingsIncomplete": {
     "message": "请打开「设置」，填写基础地址、账号（手机号）和 API 令牌。",
@@ -186,5 +190,69 @@
   "errPortDisconnected": {
     "message": "与扩展的连接已断开。请重试；若仍失败，请在 chrome://extensions 中重新加载 MindGraph。",
     "description": "后台连接关闭"
+  },
+  "commandGenerateDescription": {
+    "message": "根据当前页面生成思维导图",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG 宽度（像素）",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG 高度（像素）",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "留空则使用默认",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "语言（界面与导图）",
+    "description": "扩展界面与生成导图所用语言"
+  },
+  "optionLangAuto": {
+    "message": "跟随浏览器",
+    "description": "界面与导图语言随浏览器"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "英文界面与导图"
+  },
+  "optionLangZhCN": {
+    "message": "简体",
+    "description": "简体界面与导图"
+  },
+  "optionLangZhTW": {
+    "message": "正體",
+    "description": "正体界面与导图"
+  },
+  "labelTokenStatus": {
+    "message": "令牌",
+    "description": "Token meta"
+  },
+  "tokenStatusValid": {
+    "message": "有效期至 $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "此 API 令牌已过期，请在网页端（账户 / API）重新创建。",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "服务器上无有效 API 令牌，或已过期。请核对令牌或到应用中创建。",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "无法获取过期时间。请检查网络或重新保存设置。",
+    "description": "Token meta"
+  },
+  "linkViewInLibrary": {
+    "message": "在图库中查看 →",
+    "description": "生成成功后显示的链接，点击可在网页编辑器中打开已保存的导图"
+  },
+  "errLibraryFull": {
+    "message": "图库已满（20 张）。请删除已保存的导图以保存新生成的内容。",
+    "description": "用户图库配额已满，导图未能保存时显示"
   }
 }

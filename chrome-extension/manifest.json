@@ -1,10 +1,11 @@
 {
   "manifest_version": 3,
+  "minimum_chrome_version": "109",
   "name": "__MSG_extName__",
-  "version": "0.2.10",
+  "version": "0.3.10",
   "description": "__MSG_extDescription__",
   "default_locale": "en",
-  "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications"],
+  "permissions": ["activeTab", "scripting", "storage", "downloads", "tabs", "contextMenus", "notifications", "offscreen"],
   "host_permissions": ["http://*/*", "https://*/*"],
   "action": {
     "default_title": "__MSG_browserActionTitle__",
@@ -17,6 +18,15 @@
   },
   "background": {
     "service_worker": "background.js"
+  },
+  "commands": {
+    "generate-mindmap": {
+      "suggested_key": {
+        "default": "Ctrl+Shift+Y",
+        "mac": "Command+Shift+Y"
+      },
+      "description": "__MSG_commandGenerateDescription__"
+    }
   },
   "icons": {
     "16": "icons/icon16.png",

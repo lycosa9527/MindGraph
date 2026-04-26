@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.107.0] - 2026-04-27
+
+### Added
+- **Chrome extension (MV3)** ([`chrome-extension/`](chrome-extension/)): shared helpers [`shared-mindgraph.js`](chrome-extension/shared-mindgraph.js) (`importScripts` + popup); default **Base URL** `https://mg.mindspringedu.com`; single **Language** control for **UI** and **mind map** `language` on `POST /api/web_content_mindmap_png` ([`routers/api/web_content_generation.py`](routers/api/web_content_generation.py)); **API token** validity hint via `GET /api/auth/api-token` ([`routers/auth/personal_token.py`](routers/auth/personal_token.py)); optional **PNG width/height**; keyboard command **generate-mindmap**; [`background.js`](chrome-extension/background.js) **service worker** runs page capture, PNG `fetch`, and `chrome.downloads` (toolbar uses **`runtime.connect`** with name **`mindmap-generate-<tabId>`** for live progress; context menu and keyboard use the same worker path); richer page capture (`itemprop=articleBody`, `role=article`, …). Node smoke test [`chrome-extension/test/shared-mindgraph.test.cjs`](chrome-extension/test/shared-mindgraph.test.cjs).
+
+### Fixed
+- **Chrome extension popup** ([`chrome-extension/popup.js`](chrome-extension/popup.js)): `setProgressStage` is defined at **module** scope (was only inside `startPopup`); the old **popup-only** generate path called it from a scope where it was not defined, causing **ReferenceError** and a misleading “connection closed” / `errPortDisconnected` string.
+
+- **Chrome extension — Generate vs page focus** ([`chrome-extension/background.js`](chrome-extension/background.js), `popup.js` **manifest 0.3.7**): Focusing the page closes the **popup** (normal browser behavior) and was tearing down the in‑flight **`fetch`** when generation ran in the popup. The **long request and `downloads.download` now run only in the service worker**; the popup **connects** a port for progress/result, and a **notification** is shown on success or failure if the result could not be posted to a closed port. **0.3.7**: encode **active `tabId`** in the connect **`name`** (`mindmap-generate-<id>`) so generation **starts inside `onConnect`**; avoids a race where the worker could sit idle and miss the first **`postMessage`**, which looked like a progress **flash** and no download.
+
+- **Chrome extension — PNG download href (MV3 service worker)** ([`chrome-extension/background.js`](chrome-extension/background.js), [`offscreen.html`](chrome-extension/offscreen.html) / [`offscreen.js`](chrome-extension/offscreen.js), **manifest 0.3.8+**, **`offscreen`** permission): **Root cause** of **TypeError: `URL.createObjectURL` is not a function** is platform policy: **blob `URL`s from `URL.createObjectURL` are not part of the service worker surface** for Blobs in standard Chromium and many docs list **offscreen** reason **`BLOBS`** as the right place. **Root cause** of **`offscreen_unavailable`** was gating on **`chrome.offscreen` only**; some Chromium builds expose **`globalThis.browser.offscreen`** or no offscreen at all. **Fix**: **`prepareDownloadUrlFromPngBlob`** tries **(1)** rare native SW path with **try/catch**, **(2)** `getOffscreenApi()` then offscreen, **(3)** **`FileReader` → data URL** in the worker. Locale key **`errDownloadPrepare`**; manifest **0.3.10** for the sweep (comments + i18n rename + try/catch on step 1).
+
+### Changed
+- **Web content mind map — user message locale** ([`utils/prompt_locale.py`](utils/prompt_locale.py) `build_web_page_content_user_block`, [`agents/mind_maps/web_content_mind_map_agent.py`](agents/mind_maps/web_content_mind_map_agent.py)): simplified vs traditional Chinese shells for the LLM user block; non-English, non-Chinese API languages use English placeholders (fixes legacy “Chinese placeholders for all non-`en`” behavior). **Traditional Chinese output** meta-instruction now includes **`zh-hk`** and **`zh-mo`** with **`zh-hant` / `zh-tw`** in [`output_language_instruction`](utils/prompt_locale.py).
+
+- **Extension README** ([`chrome-extension/README.md`](chrome-extension/README.md)): documents language model, default URL, `api-token`, `shared-mindgraph`, and generate flow (service worker for PNG + `mindmap-generate-<tabId>` connect for toolbar progress; notifications when the port is gone).
+
 ## [5.106.0] - 2026-04-27
 
 ### Changed
@@ -346,7 +363,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Account UI**: Download links for those bundles in **`AccountInfoModal.vue`** with i18n strings in **`en`** / **`zh`** auth message modules.
 
 ### Changed
-- **Chrome extension**: MV3 flow — long `fetch` and download run in the popup; the service worker handles **`PING`** and short **`CAPTURE_PAGE_FOR_MINDMAP`** page capture; **180s** fetch timeout; manifest version **0.2.10**.
+- **Chrome extension**: MV3 service worker for **`PING`**; **180s** PNG `fetch` timeout; manifest **0.2.10** at release. *(That release described long `fetch` in the **popup** and a **`CAPTURE_PAGE_FOR_MINDMAP`** path; current behavior is in **[5.107.0]**: PNG + download in the service worker, toolbar progress via a **`mindmap-generate` connect** port, manifest **0.3.6+**.)*
 - **OpenClaw skill**: **`SKILL.md`** and **`README.md`** updated (PNG auth and signed URLs, `diagram_type` alias note, `filename` field, long-timeout guidance for PNG routes, **ClawHub** publish version **1.1.0**, bundle file table).
 - **API router**: MindBot lazy import variable renamed to **`MINDBOT_MODULE`** for constant-style naming.
 - **Diagram PNG URL**: `GET .../diagrams/{id}/png` JSON includes **`filename`** alongside **`url`** (`routers/api/diagram_node_ops.py`).

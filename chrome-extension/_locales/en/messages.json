@@ -44,7 +44,7 @@
     "description": "Label"
   },
   "placeholderBaseUrl": {
-    "message": "https://your-host.example.com",
+    "message": "https://mg.mindspringedu.com",
     "description": "Placeholder"
   },
   "labelAccount": {
@@ -102,6 +102,10 @@
   "errFailed": {
     "message": "Something went wrong.",
     "description": "Generic error"
+  },
+  "errDownloadPrepare": {
+    "message": "Could not prepare the download. Reload the extension, or use an up-to-date Google Chrome (109+) or Microsoft Edge (120+) for full support.",
+    "description": "Blob URL, offscreen, or data-URL download prep failed"
   },
   "errSettingsIncomplete": {
     "message": "Open Settings and enter base URL, account (phone), and API token.",
@@ -186,5 +190,69 @@
   "errPortDisconnected": {
     "message": "The extension closed the connection. Try again; if it keeps happening, reload MindGraph on chrome://extensions.",
     "description": "Service worker port closed"
+  },
+  "commandGenerateDescription": {
+    "message": "Generate mind map from the current page",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG width (px)",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG height (px)",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "default if empty",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "Language (interface & mind map)",
+    "description": "UI and API language for generated diagram"
+  },
+  "optionLangAuto": {
+    "message": "Match browser",
+    "description": "UI and diagram language follow browser"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "UI and diagram in English"
+  },
+  "optionLangZhCN": {
+    "message": "简体",
+    "description": "UI and diagram in Simplified Chinese"
+  },
+  "optionLangZhTW": {
+    "message": "正體",
+    "description": "UI and diagram in Traditional Chinese"
+  },
+  "labelTokenStatus": {
+    "message": "Token",
+    "description": "Short label for token line meta"
+  },
+  "tokenStatusValid": {
+    "message": "Valid until $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "This API token is expired. Create a new one in the web app (Account / API).",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "No active API token on the server, or the token is expired. Verify your token or create one in the app.",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "Could not load token expiry. Check network or save settings again.",
+    "description": "Token meta"
+  },
+  "linkViewInLibrary": {
+    "message": "View in library →",
+    "description": "Link shown after successful generation to open the saved diagram in the web editor"
+  },
+  "errLibraryFull": {
+    "message": "Library full (20 diagrams). Delete a saved diagram to enable saving future mind maps.",
+    "description": "Shown when the user's diagram library quota is reached and the generated diagram could not be saved"
   }
 }

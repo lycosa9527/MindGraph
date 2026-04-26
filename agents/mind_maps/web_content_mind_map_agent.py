@@ -17,6 +17,7 @@ from agents.mind_maps.mind_map_agent import MindMapAgent
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import build_web_page_content_user_block
 
 
 class WebContentMindMapAgent(MindMapAgent):
@@ -100,24 +101,13 @@ class WebContentMindMapAgent(MindMapAgent):
         if not system_prompt:
             return None, None
 
-        title_line = (page_title or "").strip() or ("(no title)" if language == "en" else "（无标题）")
-        url_line = (page_url or "").strip() or ("(no url)" if language == "en" else "（无 URL）")
-        fmt = "markdown" if content_format == "text/markdown" else "plain text"
-
-        if language == "zh":
-            user_block = (
-                f"页面 URL：{url_line}\n"
-                f"页面标题：{title_line}\n"
-                f"内容格式：{fmt}\n\n"
-                f"--- 正文开始 ---\n{page_content}\n--- 正文结束 ---"
-            )
-        else:
-            user_block = (
-                f"Page URL: {url_line}\n"
-                f"Page title: {title_line}\n"
-                f"Content format: {fmt}\n\n"
-                f"--- Content start ---\n{page_content}\n--- Content end ---"
-            )
+        user_block = build_web_page_content_user_block(
+            page_content=page_content,
+            language=language,
+            content_format=content_format,
+            page_title=page_title,
+            page_url=page_url,
+        )
 
         response = await llm_service.chat(
             prompt=user_block,

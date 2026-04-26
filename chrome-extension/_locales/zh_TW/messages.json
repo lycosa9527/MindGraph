@@ -44,7 +44,7 @@
     "description": "標籤"
   },
   "placeholderBaseUrl": {
-    "message": "https://你的服務.example.com",
+    "message": "https://mg.mindspringedu.com",
     "description": "預留提示文字"
   },
   "labelAccount": {
@@ -102,6 +102,10 @@
   "errFailed": {
     "message": "發生錯誤。",
     "description": "通用錯誤"
+  },
+  "errDownloadPrepare": {
+    "message": "無法開始下載。請重新載入擴充功能，或使用較新的 Google Chrome（109+）或 Microsoft Edge（120+）以取得完整支援。",
+    "description": "下載準備失敗"
   },
   "errSettingsIncomplete": {
     "message": "請開啟「設定」，填寫基礎網址、帳號（手機號碼）和 API 權杖。",
@@ -186,5 +190,69 @@
   "errPortDisconnected": {
     "message": "與擴充功能的連線已中斷。請再試一次；若仍失敗，請在 chrome://extensions 重新載入 MindGraph。",
     "description": "背景連線關閉"
+  },
+  "commandGenerateDescription": {
+    "message": "依目前頁面產生心智圖",
+    "description": "Keyboard command"
+  },
+  "labelPngWidth": {
+    "message": "PNG 寬度（px）",
+    "description": "Advanced"
+  },
+  "labelPngHeight": {
+    "message": "PNG 高度（px）",
+    "description": "Advanced"
+  },
+  "placeholderPngSize": {
+    "message": "留空則使用預設",
+    "description": "PNG dimension placeholder"
+  },
+  "labelUiLanguage": {
+    "message": "語言（介面與導圖）",
+    "description": "擴充功能介面與產生導圖所用語言"
+  },
+  "optionLangAuto": {
+    "message": "跟隨瀏覽器",
+    "description": "介面與導圖語言隨瀏覽器"
+  },
+  "optionLangEn": {
+    "message": "English",
+    "description": "英文介面與導圖"
+  },
+  "optionLangZhCN": {
+    "message": "简体",
+    "description": "簡體介面與導圖"
+  },
+  "optionLangZhTW": {
+    "message": "正體",
+    "description": "正體介面與導圖"
+  },
+  "labelTokenStatus": {
+    "message": "權杖",
+    "description": "Token meta"
+  },
+  "tokenStatusValid": {
+    "message": "有效至 $1",
+    "description": "Token expiry; $1 = datetime"
+  },
+  "tokenStatusExpired": {
+    "message": "此 API 權杖已過期，請在網頁端（帳戶 / API）重新建立。",
+    "description": "Token meta"
+  },
+  "tokenStatusNoToken": {
+    "message": "伺服器上沒有有效 API 權杖，或已過期。請核對權杖或到應用中建立。",
+    "description": "Token meta"
+  },
+  "tokenStatusUnknown": {
+    "message": "無法取得過期時間。請檢查網路或重新儲存設定。",
+    "description": "Token meta"
+  },
+  "linkViewInLibrary": {
+    "message": "在圖庫中查看 →",
+    "description": "產生成功後顯示的連結，點擊可在網頁編輯器中開啟已儲存的導圖"
+  },
+  "errLibraryFull": {
+    "message": "圖庫已滿（20 張）。請刪除已儲存的導圖以儲存新產生的內容。",
+    "description": "使用者圖庫配額已滿，導圖未能儲存時顯示"
   }
 }

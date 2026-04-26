@@ -6,6 +6,10 @@ All Rights Reserved
 Proprietary License
 """
 
+from __future__ import annotations
+
+from typing import Optional
+
 from utils.prompt_output_languages import (
     OUTPUT_LANGUAGE_ENGLISH_NAMES,
     is_prompt_output_language,
@@ -38,7 +42,7 @@ def output_language_instruction(lang: str) -> str:
             "（含 JSON 字符串值、标签、说明、枚举等）。\n"
             "Output language: **Simplified Chinese** for all user-visible text."
         )
-    if normalized in ("zh-hant", "zh-tw"):
+    if normalized in ("zh-hant", "zh-tw", "zh-hk", "zh-mo"):
         return (
             f"{separator}"
             "【輸出語言】請使用**繁體中文**撰寫全部面向使用者的文字"
@@ -63,4 +67,54 @@ def output_language_instruction(lang: str) -> str:
         f"{separator}"
         f"Output language: **{label}** for all user-visible text "
         "(including JSON string values, labels, and explanations)."
+    )
+
+
+def build_web_page_content_user_block(
+    page_content: str,
+    language: str,
+    content_format: str,
+    page_title: Optional[str] = None,
+    page_url: Optional[str] = None,
+) -> str:
+    """
+    User message wrapper for web-content mind map generation.
+
+    Simplified vs Traditional Chinese get matching labels; other languages use the English shell
+    and rely on the system prompt + :func:`output_language_instruction` for target output.
+    """
+    title_raw = (page_title or "").strip()
+    url_raw = (page_url or "").strip()
+    lang = (language or "en").lower().strip().replace("_", "-")
+    is_markdown = content_format == "text/markdown"
+    fmt_latin = "markdown" if is_markdown else "plain text"
+    fmt_zh_s = "Markdown" if is_markdown else "纯文本"
+    fmt_zh_t = "Markdown" if is_markdown else "純文字"
+
+    if lang in ("zh", "zh-cn", "zh-hans", "zh-sg"):
+        title_line = title_raw or "（无标题）"
+        url_line = url_raw or "（无 URL）"
+        return (
+            f"页面 URL：{url_line}\n"
+            f"页面标题：{title_line}\n"
+            f"内容格式：{fmt_zh_s}\n\n"
+            f"--- 正文开始 ---\n{page_content}\n--- 正文结束 ---"
+        )
+    if lang in ("zh-hant", "zh-tw", "zh-hk", "zh-mo"):
+        title_line = title_raw or "（無標題）"
+        url_line = url_raw or "（無 URL）"
+        return (
+            f"頁面 URL：{url_line}\n"
+            f"頁面標題：{title_line}\n"
+            f"內容格式：{fmt_zh_t}\n\n"
+            f"--- 正文開始 ---\n{page_content}\n--- 正文結束 ---"
+        )
+
+    title_line = title_raw or "(no title)"
+    url_line = url_raw or "(no url)"
+    return (
+        f"Page URL: {url_line}\n"
+        f"Page title: {title_line}\n"
+        f"Content format: {fmt_latin}\n\n"
+        f"--- Content start ---\n{page_content}\n--- Content end ---"
     )
