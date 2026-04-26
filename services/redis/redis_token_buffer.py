@@ -48,9 +48,7 @@ MAX_STREAM_DELIVERY_COUNT = int(os.getenv("TOKEN_TRACKER_MAX_DELIVERY_COUNT", "5
 STREAM_HARD_CAP = MAX_BUFFER_SIZE * 5
 # Redis 8.6+ XADD IDMPAUTO requires a producer id (see redis-py ``idmpauto=``), not
 # ``id="IDMPAUTO"``. Override if multiple deployments must not share idempotency scope.
-_TOKEN_BUFFER_IDMP_PRODUCER_ID = os.getenv(
-    "TOKEN_BUFFER_IDMP_PRODUCER_ID", "mindgraph-token-buffer"
-)
+_TOKEN_BUFFER_IDMP_PRODUCER_ID = os.getenv("TOKEN_BUFFER_IDMP_PRODUCER_ID", "mindgraph-token-buffer")
 
 
 class RedisTokenBuffer:

@@ -769,8 +769,7 @@ async def sync_blacklist_to_redis(force_crowdsec_merge: bool = False) -> Dict[st
     if not await _store_blacklist_ips_async(ips):
         result["error"] = "redis_store_failed"
         logger.warning(
-            "[Blocklist] AbuseIPDB blacklist download OK but Redis store failed "
-            "(see earlier [AbuseIPDB] error)",
+            "[Blocklist] AbuseIPDB blacklist download OK but Redis store failed (see earlier [AbuseIPDB] error)",
         )
         return result
 

@@ -386,10 +386,15 @@ def extract_concept_map_context(
         if not nid or nid in seen:
             continue
         data = n.get("data") if isinstance(n.get("data"), dict) else {}
-        if data.get("nodeType") == "topic" or n.get("type") in ("topic", "center") or nid in (
-            "topic",
-            "center",
-            "root",
+        if (
+            data.get("nodeType") == "topic"
+            or n.get("type") in ("topic", "center")
+            or nid
+            in (
+                "topic",
+                "center",
+                "root",
+            )
         ):
             continue
         t = _get_node_text(n)

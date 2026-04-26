@@ -191,9 +191,7 @@ async def get_school_stats(
     """
     effective_org_id = resolve_school_dashboard_org_id(organization_id, current_user, lang)
 
-    org = (
-        await db.execute(select(Organization).where(Organization.id == effective_org_id))
-    ).scalars().first()
+    org = (await db.execute(select(Organization).where(Organization.id == effective_org_id))).scalars().first()
     if not org:
         logger.warning(
             "[SchoolDashboard] organization missing for school stats",

@@ -7,11 +7,13 @@
 import { computed, nextTick, ref, watch } from 'vue'
 
 import { ElButton, ElIcon } from 'element-plus'
+
 import { Plus } from '@element-plus/icons-vue'
+
 import { PanelLeftOpen } from 'lucide-vue-next'
 
-import { useMindMate } from '@/composables/mindmate/useMindMate'
 import { useLanguage, useNotifications } from '@/composables'
+import { useMindMate } from '@/composables/mindmate/useMindMate'
 import type { FeedbackRating } from '@/composables/mindmate/useMindMate'
 import { useConversations, usePinnedConversations } from '@/composables/queries'
 import { useAuthStore, useMindMateStore } from '@/stores'

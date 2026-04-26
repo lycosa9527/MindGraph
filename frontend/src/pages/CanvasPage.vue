@@ -50,7 +50,6 @@ import {
   useNotifications,
   useSnapshotHistory,
 } from '@/composables'
-import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   VALID_DIAGRAM_TYPES,
   diagramTypeMap,
@@ -66,12 +65,12 @@ import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
+import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { IMPORT_SPEC_KEY, SAVE } from '@/config'
 import { FIT_PADDING, PANEL, PANEL_INSET } from '@/config/uiConfig'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { intlLocaleForUiCode } from '@/i18n'
 import type { LocaleCode } from '@/i18n/locales'
-import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import {
   type LLMResult,
   useAuthStore,
@@ -83,6 +82,7 @@ import {
   usePanelsStore,
   useUIStore,
 } from '@/stores'
+import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -390,7 +390,10 @@ onMounted(async () => {
       const node = nodes.find((n: { id?: string }) => n.id === nodeId) as
         | { id?: string; type?: string }
         | undefined
-      if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections))
+      if (
+        !node ||
+        !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
+      )
         return
       if (!inlineRecStore.isReady) return
       startRecommendations(nodeId)

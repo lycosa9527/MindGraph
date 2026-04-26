@@ -68,11 +68,7 @@ async def list_admins(
     result = []
     for user in admin_users:
         phone = user.phone or getattr(user, "email", None) or ""
-        masked_phone = (
-            phone[:3] + "****" + phone[-4:]
-            if user.phone and len(user.phone) == 11
-            else phone
-        )
+        masked_phone = phone[:3] + "****" + phone[-4:] if user.phone and len(user.phone) == 11 else phone
 
         result.append(
             {

@@ -674,8 +674,7 @@ def merge_table(
             orm_table = Base.metadata.tables[table_name]
         except KeyError as err:
             raise KeyError(
-                f"Table {table_name!r} is not on Base.metadata — register the model in "
-                "models/domain/registry.py"
+                f"Table {table_name!r} is not on Base.metadata — register the model in models/domain/registry.py"
             ) from err
 
         with live_engine.connect() as conn:

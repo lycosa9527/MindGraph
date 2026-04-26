@@ -112,8 +112,7 @@ function handleSessionExpiredLoginSuccess() {
 }
 
 onMounted(async () => {
-  const isExportRender =
-    route.path === '/export-render' || isMindgraphHeadlessExportSession()
+  const isExportRender = route.path === '/export-render' || isMindgraphHeadlessExportSession()
 
   if (!isExportRender) {
     await authStore.checkAuth().catch(() => false)

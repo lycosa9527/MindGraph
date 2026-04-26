@@ -23,8 +23,8 @@ import { onUnmounted, watch } from 'vue'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
-import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
+import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'
 
 const TOPIC_NODE_IDS = new Set([
   'topic',

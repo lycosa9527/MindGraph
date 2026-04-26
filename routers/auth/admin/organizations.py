@@ -617,11 +617,7 @@ async def list_organization_users(
         # Get role (default to 'user' if not set)
         role = getattr(user, "role", "user") or "user"
         phone = user.phone or getattr(user, "email", None) or ""
-        masked_phone = (
-            phone[:3] + "****" + phone[-4:]
-            if user.phone and len(user.phone) == 11
-            else phone
-        )
+        masked_phone = phone[:3] + "****" + phone[-4:] if user.phone and len(user.phone) == 11 else phone
         result.append(
             {
                 "id": user.id,
@@ -660,11 +656,7 @@ async def list_organization_managers(
     result = []
     for user in managers:
         phone = user.phone or getattr(user, "email", None) or ""
-        masked_phone = (
-            phone[:3] + "****" + phone[-4:]
-            if user.phone and len(user.phone) == 11
-            else phone
-        )
+        masked_phone = phone[:3] + "****" + phone[-4:] if user.phone and len(user.phone) == 11 else phone
         result.append(
             {
                 "id": user.id,

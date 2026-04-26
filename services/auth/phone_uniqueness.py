@@ -26,9 +26,7 @@ async def any_user_id_with_phone(
     """
     If any user has this phone, return that user's id; otherwise None.
     """
-    row = (
-        await db.execute(select(User.id).where(User.phone == phone).limit(1))
-    ).scalar_one_or_none()
+    row = (await db.execute(select(User.id).where(User.phone == phone).limit(1))).scalar_one_or_none()
     if row is None:
         return None
     return int(row)
@@ -43,11 +41,7 @@ async def other_user_id_with_phone(
     If another user already has this phone, return that user's id; otherwise None.
     """
     row = (
-        await db.execute(
-            select(User.id)
-            .where(User.phone == phone, User.id != exclude_user_id)
-            .limit(1)
-        )
+        await db.execute(select(User.id).where(User.phone == phone, User.id != exclude_user_id).limit(1))
     ).scalar_one_or_none()
     if row is None:
         return None

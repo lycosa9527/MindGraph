@@ -111,15 +111,11 @@ watch(
 function onLoginSuccess() {
   dismissedBySuccess.value = true
   const redir = getSafePostAuthPath(route.query.redirect)
-  router
-    .push(redir)
-    .catch(() => {
-      void router
-        .replace(redir)
-        .catch(() => {
-          window.location.href = redir
-        })
+  router.push(redir).catch(() => {
+    void router.replace(redir).catch(() => {
+      window.location.href = redir
     })
+  })
 }
 
 function onQuickRegSuccess() {

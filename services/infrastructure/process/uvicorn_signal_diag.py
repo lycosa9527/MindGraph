@@ -64,8 +64,7 @@ def log_uvicorn_supervisor_boot(worker_count: int) -> None:
         return
     ppid = os.getppid()
     logger.info(
-        "[SRVR] mindgraph_supervisor_boot pid=%s ppid=%s sessionid=%s workers=%s "
-        "parent_cmd=%s cgroup=%s",
+        "[SRVR] mindgraph_supervisor_boot pid=%s ppid=%s sessionid=%s workers=%s parent_cmd=%s cgroup=%s",
         os.getpid(),
         ppid,
         _read_session_id(),

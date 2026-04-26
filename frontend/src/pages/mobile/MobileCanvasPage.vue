@@ -8,6 +8,7 @@
  */
 import { computed, onMounted, onUnmounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+
 import { storeToRefs } from 'pinia'
 
 import {
@@ -32,7 +33,6 @@ import {
 } from '@/components/canvas'
 import DiagramCanvas from '@/components/diagram/DiagramCanvas.vue'
 import { NodePalettePanel, RootConceptModal } from '@/components/panels'
-import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import {
   eventBus,
   getDefaultDiagramName,
@@ -51,9 +51,9 @@ import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
+import { useDiagramAutoSave } from '@/composables/editor/useDiagramAutoSave'
 import { IMPORT_SPEC_KEY } from '@/config'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
-import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import {
   type LLMResult,
   useAuthStore,
@@ -65,6 +65,7 @@ import {
   usePanelsStore,
   useUIStore,
 } from '@/stores'
+import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
@@ -196,8 +197,7 @@ const inlineRecGenerating = computed(() => {
 })
 /** Concept map: bottom bar only while inline rec is open or loading (dismiss: canvas tap via coordinator) */
 const showMobileConceptRecBottom = computed(
-  () =>
-    isConceptMap.value && (inlineRecActive.value || inlineRecGenerating.value)
+  () => isConceptMap.value && (inlineRecActive.value || inlineRecGenerating.value)
 )
 
 const mobileRecPage = ref(0)
@@ -262,17 +262,17 @@ function handleTabMode(): void {
   }
   if (isConceptMap.value && !llmResultsStore.selectedModel) {
     notify.warning(
-      t(
-        'notification.conceptMapTabNeedsAi',
-        '请先在顶栏启用「启动 AI」再使用 Tab 推荐'
-      )
+      t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
     )
     return
   }
 
   const nodes = diagramStore.data?.nodes ?? []
   const node = nodes.find((n) => n.id === selectedId)
-  if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)) {
+  if (
+    !node ||
+    !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
+  ) {
     notify.warning(t('notification.nodeNotEligible', '该节点不支持推荐'))
     return
   }
@@ -417,16 +417,16 @@ eventBus.onWithOwner(
     const node = nodes.find((n) => n.id === nodeId) as
       | { id?: string; type?: string; data?: { nodeType?: string } }
       | undefined
-    if (!node || !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)) {
+    if (
+      !node ||
+      !isNodeEligibleForInlineRec(diagramStore.type, node, diagramStore.data?.connections)
+    ) {
       return
     }
     if (!inlineRecStore.isReady) return
     if (diagramStore.type === 'concept_map' && !llmResultsStore.selectedModel) {
       notify.warning(
-        t(
-          'notification.conceptMapTabNeedsAi',
-          '请先在顶栏启用「启动 AI」再使用 Tab 推荐'
-        )
+        t('notification.conceptMapTabNeedsAi', '请先在顶栏启用「启动 AI」再使用 Tab 推荐')
       )
       return
     }
@@ -733,15 +733,15 @@ onUnmounted(() => {
         v-if="inlineRecActive"
         :class="[
           'flex items-center w-full min-w-0',
-          isConceptMap
-            ? 'gap-2 min-h-[48px] mobile-inline-rec--concept'
-            : 'gap-1.5 min-h-[36px]',
+          isConceptMap ? 'gap-2 min-h-[48px] mobile-inline-rec--concept' : 'gap-1.5 min-h-[36px]',
         ]"
       >
         <button
           :class="[
             'shrink-0 rounded-xl bg-red-50 active:bg-red-100 text-red-500 transition-colors',
-            isConceptMap ? 'p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center' : 'p-1.5',
+            isConceptMap
+              ? 'p-2.5 min-w-[44px] min-h-[44px] flex items-center justify-center'
+              : 'p-1.5',
           ]"
           @click="handleRecDismiss"
         >
@@ -1080,7 +1080,6 @@ onUnmounted(() => {
   z-index: 20;
   position: relative;
 }
-
 
 .bottom-btn:disabled {
   pointer-events: none;

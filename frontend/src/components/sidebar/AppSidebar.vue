@@ -7,6 +7,7 @@
 import { provide } from 'vue'
 
 import { ElButton } from 'element-plus'
+
 import { PanelLeftClose } from 'lucide-vue-next'
 
 import { AccountInfoModal, LoginModal, UpdateLogModal } from '@/components/auth'
@@ -103,7 +104,6 @@ const {
   --el-button-hover-text-color: #1c1917;
   --el-button-hover-bg-color: #f5f5f4;
 }
-
 </style>
 
 <style>

@@ -366,14 +366,10 @@ class CriticalAlertService:
         try:
             try:
                 asyncio.get_running_loop()
-                _fire_and_forget(
-                    CriticalAlertService.send_startup_failure_alert(component, error_message, details)
-                )
+                _fire_and_forget(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
                 return True
             except RuntimeError:
-                return asyncio.run(
-                    CriticalAlertService.send_startup_failure_alert(component, error_message, details)
-                )
+                return asyncio.run(CriticalAlertService.send_startup_failure_alert(component, error_message, details))
         except Exception as e:
             logger.error(
                 "[CriticalAlert] Failed to send startup failure alert: %s",

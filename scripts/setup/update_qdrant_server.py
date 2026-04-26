@@ -35,9 +35,7 @@ DEFAULT_QDRANT_VERSION = "1.17.1"
 
 QDRANT_LOCAL_BIN = "/usr/local/bin/qdrant"
 QDRANT_SYSTEMD_PATH = "/etc/systemd/system/qdrant.service"
-GITHUB_TARBALL_URL = (
-    "https://github.com/qdrant/qdrant/releases/download/v{version}/qdrant-{arch}.tar.gz"
-)
+GITHUB_TARBALL_URL = "https://github.com/qdrant/qdrant/releases/download/v{version}/qdrant-{arch}.tar.gz"
 
 # Official release tags are numeric semver (optional pre-release suffix).
 _VERSION_PATTERN = re.compile(r"^[0-9]+(?:\.[0-9]+)*(?:-[0-9A-Za-z.-]+)?$")
@@ -146,8 +144,7 @@ def run_upgrade(version: str, no_backup: bool, dry_run: bool) -> int:
     arch = _linux_arch_suffix()
     if arch is None:
         print(
-            "[ERROR] Unsupported CPU; use an official Qdrant build from "
-            "https://github.com/qdrant/qdrant/releases",
+            "[ERROR] Unsupported CPU; use an official Qdrant build from https://github.com/qdrant/qdrant/releases",
         )
         return 1
 
@@ -237,8 +234,7 @@ def run_upgrade(version: str, no_backup: bool, dry_run: bool) -> int:
             time.sleep(1)
 
         print(
-            "[ERROR] API did not respond in time; check: "
-            "sudo journalctl -u qdrant -n 80",
+            "[ERROR] API did not respond in time; check: sudo journalctl -u qdrant -n 80",
         )
         return 1
     finally:

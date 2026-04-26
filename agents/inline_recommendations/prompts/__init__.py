@@ -130,9 +130,7 @@ def build_prompt(
                 break
     # concept_map reuses the bubble attribute builder; support older deploys missing this key
     if not builder and st == "concepts" and (dt == "concept_map" or "concept" in raw_dt.lower().replace(" ", "")):
-        builder = _BUILDERS.get("concept_map", {}).get("concepts") or _BUILDERS.get(
-            "bubble_map", {}
-        ).get("attributes")
+        builder = _BUILDERS.get("concept_map", {}).get("concepts") or _BUILDERS.get("bubble_map", {}).get("attributes")
     if not builder:
         return ""
     text = builder(context, language, count, batch_num, existing)

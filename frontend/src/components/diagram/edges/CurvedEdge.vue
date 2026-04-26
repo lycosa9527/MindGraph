@@ -12,10 +12,10 @@ import { ElIcon } from 'element-plus'
 
 import { Menu } from '@element-plus/icons-vue'
 
-import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useTheme } from '@/composables/core/useTheme'
+import { getPositionsFromAngle } from '@/composables/diagramCanvas/conceptMapLinkPreviewGeometry'
 import { CONCEPT_MAP_GENERATING_KEY } from '@/composables/editor/useConceptMapRelationship'
 import { useDiagramStore } from '@/stores'
 import { useConceptMapRelationshipStore } from '@/stores/conceptMapRelationship'

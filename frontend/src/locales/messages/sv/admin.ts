@@ -405,7 +405,8 @@ export default {
   'admin.performance.hintMindbotConv':
     'Cluster sum. Streaming = Dify SSE card streams in progress; blocking send = one-shot Dify + reply; receiving = DingTalk Stream SDK WebSocket tasks running (per app key).',
   'admin.performance.mindbotConcurrencyUnavailable': 'Dify pipeline counts unavailable ({reason}).',
-  'admin.performance.dingtalkStreamUnavailable': 'DingTalk Stream client metrics unavailable ({reason}).',
+  'admin.performance.dingtalkStreamUnavailable':
+    'DingTalk Stream client metrics unavailable ({reason}).',
   'admin.performance.mindbotModuleCumulative': 'Cumulative (database)',
   'admin.performance.mindbotSchools': 'Schools w/ bot',
   'admin.performance.mindbotRepliesOk': 'Replies delivered (OK, total)',

@@ -50,11 +50,7 @@ async function importAesGcmKey(): Promise<CryptoKey> {
 function isHeaderV1_1(view: Uint8Array): boolean {
   if (view.length < HEADER_V1_1_BYTE_LENGTH) return false
   const sig = (view[0] << 8) | view[1]
-  return (
-    sig === MG_SIG &&
-    view[2] === VERSION_MAJOR_V1_1 &&
-    view[3] === VERSION_MINOR_V1_1
-  )
+  return sig === MG_SIG && view[2] === VERSION_MAJOR_V1_1 && view[3] === VERSION_MINOR_V1_1
 }
 
 function isLegacyMg1EncryptedHeader(view: Uint8Array): boolean {

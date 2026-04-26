@@ -155,7 +155,9 @@ def upgrade() -> None:
         op.create_index("ix_market_subscriptions_user_id", "market_subscriptions", ["user_id"], unique=False)
         op.create_index("ix_market_subscriptions_listing_id", "market_subscriptions", ["listing_id"], unique=False)
         op.create_index(
-            "ix_market_subscriptions_alipay_agreement_id", "market_subscriptions", ["alipay_agreement_id"],
+            "ix_market_subscriptions_alipay_agreement_id",
+            "market_subscriptions",
+            ["alipay_agreement_id"],
             unique=False,
         )
         op.create_index("ix_market_subscriptions_status", "market_subscriptions", ["status"], unique=False)
@@ -238,11 +240,7 @@ def _seed_listings() -> None:
         return
     bind = op.get_bind()
     for row in rows:
-        bind.execute(
-            pg_insert(_market_listings_seed)
-            .values(**row)
-            .on_conflict_do_nothing(index_elements=["slug"])
-        )
+        bind.execute(pg_insert(_market_listings_seed).values(**row).on_conflict_do_nothing(index_elements=["slug"]))
 
 
 def downgrade() -> None:

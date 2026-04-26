@@ -17,8 +17,8 @@ import { ElTooltip } from 'element-plus'
 
 import { Sparkles, X } from 'lucide-vue-next'
 
-import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useLanguage } from '@/composables'
+import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { LLM_MODEL_COLORS } from '@/config/llmModelColors'
 import {
   useAuthStore,

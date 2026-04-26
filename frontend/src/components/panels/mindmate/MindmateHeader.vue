@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 
-import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar, ElTooltip } from 'element-plus'
+import { ElButton, ElDropdown, ElDropdownMenu, ElIcon, ElScrollbar } from 'element-plus'
 
 import { Close, Delete, DocumentCopy, Menu } from '@element-plus/icons-vue'
 

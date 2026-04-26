@@ -94,8 +94,13 @@ class BaseRepository(Generic[ModelT]):
         return objects
 
     async def update_by_id(self, record_id: int, *, commit: bool = False, **values: Any) -> Optional[ModelT]:
-        stmt = update(self.model).where(self.model.id == record_id).values(**values).returning(
-            self.model  # type: ignore[attr-defined]
+        stmt = (
+            update(self.model)
+            .where(self.model.id == record_id)
+            .values(**values)
+            .returning(
+                self.model  # type: ignore[attr-defined]
+            )
         )
         result = await self.session.execute(stmt)
         obj = result.scalars().one_or_none()

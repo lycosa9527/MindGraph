@@ -280,9 +280,7 @@ async def register(
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
-            retry_count = await commit_user_with_retry(
-                db, new_user, max_retries=5, lang=lang
-            )
+            retry_count = await commit_user_with_retry(db, new_user, max_retries=5, lang=lang)
     except RuntimeError as e:
         # Lock acquisition failed - fall back to current behavior
         duration = time.time() - start_time
@@ -502,9 +500,7 @@ async def register_with_sms(
 
             # Write to database FIRST (source of truth) with retry logic for lock errors
             db.add(new_user)
-            retry_count = await commit_user_with_retry(
-                db, new_user, max_retries=5, lang=lang
-            )
+            retry_count = await commit_user_with_retry(db, new_user, max_retries=5, lang=lang)
     except RuntimeError as e:
         duration = time.time() - start_time
         registration_metrics.record_failure("lock_timeout", duration)

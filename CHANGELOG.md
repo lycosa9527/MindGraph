@@ -5,6 +5,11 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.106.0] - 2026-04-27
+
+### Changed
+- **Lint and formatting (repo-wide)**: Frontend **ESLint** + **Prettier** clean (`npm run lint`, `npm run format:check`); Python **Ruff** (`ruff check`, `ruff format`) and **Pylint** (10.00/10). TypeScript: vue-i18n third-argument `locale` uses `String(...)` instead of `as any`; `AdminMindBotTab` exposes `openManagerMindbot` for school-manager flows; presentation mode keyboard shortcut avoids a non-null assertion; router guard drops unused `useUIStore()`; `MindmateHeader` drops an unused `ElTooltip` import.
+
 ## [5.105.0] - 2026-04-27
 
 ### Added

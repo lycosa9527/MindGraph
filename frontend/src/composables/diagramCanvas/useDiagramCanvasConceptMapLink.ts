@@ -20,9 +20,9 @@ import {
   getConceptNodeCenter,
   getConceptNodeEdgePoint,
   getEdgePoint,
+  getPositionsFromAngle,
   pickAnchorNodeIdForRelationshipToExistingNode,
   pickAnchorNodeIdForRelationshipToNewConcept,
-  getPositionsFromAngle,
 } from './conceptMapLinkPreviewGeometry'
 
 type DiagramStore = ReturnType<typeof useDiagramStore>
@@ -309,7 +309,11 @@ export function useDiagramCanvasConceptMapLink(options: {
     diagramStore.pushHistory('Add concept and link')
   }
 
-  function applyPaneDropForRelationshipToNewConcept(rel: LinkRelationshipOrigin, clientX: number, clientY: number) {
+  function applyPaneDropForRelationshipToNewConcept(
+    rel: LinkRelationshipOrigin,
+    clientX: number,
+    clientY: number
+  ) {
     const flowPos = screenToFlowCoordinate({ x: clientX, y: clientY })
     diagramStore.addNode({
       id: '',

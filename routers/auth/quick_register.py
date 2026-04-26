@@ -179,9 +179,7 @@ async def quick_register_room_code(
         )
 
     signups_count = (
-        await get_workshop_usage_count(channel_key)
-        if parse_channel_type(token_payload) == "workshop"
-        else 0
+        await get_workshop_usage_count(channel_key) if parse_channel_type(token_payload) == "workshop" else 0
     )
     room_sec = _room_code_secret_from_payload(token_payload)
     if not room_sec:
@@ -255,9 +253,7 @@ async def quick_register_open(
     token = secrets.token_urlsafe(32)
     if ch == "workshop":
         max_stored = request_body.max_uses if request_body.max_uses is not None else WORKSHOP_DEFAULT_MAX_USES
-        ok = await store_token(
-            token, org_id, uid, channel_type="workshop", max_uses=int(max_stored)
-        )
+        ok = await store_token(token, org_id, uid, channel_type="workshop", max_uses=int(max_stored))
     else:
         ok = await store_token(token, org_id, uid, channel_type="single_use", max_uses=None)
     if not ok:
@@ -472,9 +468,7 @@ async def register_quick(
             )
             db.add(new_user)
             try:
-                retry_count = await commit_user_with_retry(
-                    db, new_user, max_retries=5, lang=lang
-                )
+                retry_count = await commit_user_with_retry(db, new_user, max_retries=5, lang=lang)
             except HTTPException:
                 if reserved_workshop:
                     await workshop_release_reservation(request.quick_reg_token)
@@ -482,16 +476,11 @@ async def register_quick(
             if ch == "single_use":
                 deleted = await delete_token_with_retries(request.quick_reg_token)
                 if minter_id_for_token and request.quick_reg_token:
-                    await clear_minter_index_if_token_matches(
-                        minter_id_for_token, request.quick_reg_token
-                    )
+                    await clear_minter_index_if_token_matches(minter_id_for_token, request.quick_reg_token)
                 if not deleted:
                     registration_metrics.record_quick_reg_token_delete_failed()
                     logger.error(
-                        (
-                            "[QuickReg] CRITICAL: token delete failed after commit user_id=%s org_id=%s"
-                            " token_sha=%s"
-                        ),
+                        ("[QuickReg] CRITICAL: token delete failed after commit user_id=%s org_id=%s token_sha=%s"),
                         new_user.id,
                         org_id,
                         _token_log_id(request.quick_reg_token),
@@ -501,9 +490,7 @@ async def register_quick(
                 if at_cap:
                     deleted = await delete_token_with_retries(request.quick_reg_token)
                     if minter_id_for_token and request.quick_reg_token:
-                        await clear_minter_index_if_token_matches(
-                            minter_id_for_token, request.quick_reg_token
-                        )
+                        await clear_minter_index_if_token_matches(minter_id_for_token, request.quick_reg_token)
                     if not deleted:
                         registration_metrics.record_quick_reg_token_delete_failed()
                         logger.error(
@@ -543,9 +530,7 @@ async def register_quick(
     await clear_room_code_guess_failures(client_ip, request.quick_reg_token)
     _phone_tail = request.phone[-3:] if len(request.phone) >= 3 else ""
     logger.info(
-        (
-            "[TokenAudit] quick register user_id=%s org_id=%s phone_tail=***%s method=register_quick ip=%s"
-        ),
+        ("[TokenAudit] quick register user_id=%s org_id=%s phone_tail=***%s method=register_quick ip=%s"),
         new_user.id,
         org_id,
         _phone_tail,

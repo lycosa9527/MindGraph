@@ -61,7 +61,38 @@ async function bootstrap(): Promise<void> {
     console.error('Info:', info)
   }
 
+  // Avoid flashing DefaultLayout on `/` before the guard redirects (e.g. to `/mindmate`).
+  await router.isReady()
   app.mount('#app')
 }
 
-void bootstrap()
+function showBootstrapFailureFallback(error: unknown): void {
+  console.error('[bootstrap] Failed to start application:', error)
+  const root = document.getElementById('app')
+  if (!root) {
+    return
+  }
+  root.innerHTML = ''
+  const wrap = document.createElement('div')
+  wrap.setAttribute(
+    'style',
+    'font-family:system-ui,sans-serif;max-width:28rem;margin:3rem auto;padding:0 1rem;line-height:1.5;color:#1c1917'
+  )
+  const title = document.createElement('p')
+  title.textContent = 'The app could not start. Check your connection and try again.'
+  const btn = document.createElement('button')
+  btn.type = 'button'
+  btn.textContent = 'Reload'
+  btn.setAttribute(
+    'style',
+    'margin-top:1rem;padding:0.5rem 1rem;cursor:pointer;font:inherit;border:1px solid #78716c;border-radius:6px;background:#fafaf9'
+  )
+  btn.addEventListener('click', () => {
+    window.location.reload()
+  })
+  wrap.appendChild(title)
+  wrap.appendChild(btn)
+  root.appendChild(wrap)
+}
+
+void bootstrap().catch(showBootstrapFailureFallback)

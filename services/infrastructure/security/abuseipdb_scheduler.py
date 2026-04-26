@@ -178,8 +178,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                 return
 
     logger.info(
-        "[Blocklist] Scheduler started (daily at %02d:00 local time, same as BACKUP_HOUR; "
-        "abuseipdb=%s crowdsec=%s)",
+        "[Blocklist] Scheduler started (daily at %02d:00 local time, same as BACKUP_HOUR; abuseipdb=%s crowdsec=%s)",
         BACKUP_HOUR,
         abuseipdb_sync,
         crowdsec_sync,
@@ -235,8 +234,7 @@ async def start_abuseipdb_blacklist_scheduler() -> None:
                     cs = await crowdsec_blocklist_service.merge_crowdsec_blocklist_from_network(force=True)
                     if cs.get("ok") and not cs.get("skipped"):
                         logger.info(
-                            "[Blocklist] Scheduled CrowdSec-only sync completed: status=ok "
-                            "crowdsec_network_ips=%s",
+                            "[Blocklist] Scheduled CrowdSec-only sync completed: status=ok crowdsec_network_ips=%s",
                             cs.get("count"),
                         )
                         await abuseipdb_service.log_shared_blacklist_redis_size_async(

@@ -6,7 +6,6 @@ import { type RouteRecordRaw, createRouter, createWebHistory } from 'vue-router'
 import { useMobileDetect } from '@/composables/core/useMobileDetect'
 import { useAuthStore } from '@/stores/auth'
 import { useFeatureFlagsStore } from '@/stores/featureFlags'
-import { useUIStore } from '@/stores/ui'
 import { CANVAS_ENTRY_PATH_KEY } from '@/utils/canvasBackNavigation'
 import { userCanAccessMindbotAdmin } from '@/utils/mindbotAccess'
 import { userCanAccessWorkshopChat } from '@/utils/workshopAccess'
@@ -291,7 +290,6 @@ const router = createRouter({
 router.beforeEach(async (to, from, next) => {
   const authStore = useAuthStore()
   const featureFlagsStore = useFeatureFlagsStore()
-  const uiStore = useUIStore()
   const { isMobile } = useMobileDetect()
 
   const fromPath = from.path
@@ -348,23 +346,8 @@ router.beforeEach(async (to, from, next) => {
   }
 
   // Fetch feature flags if needed (for router guard - doesn't use vue-query)
-  // Fetch for: routes with feature flag checks, OR any main layout route (sidebar needs flags)
-  const needsFeatureFlags =
-    to.meta.requiresFeatureFlag ||
-    to.meta.layout === 'main' ||
-    to.name === 'Course' ||
-    to.name === 'Template' ||
-    to.name === 'Community' ||
-    to.name === 'AskOnce' ||
-    to.name === 'DebateVerse' ||
-    to.name === 'SchoolZone' ||
-    to.name === 'KnowledgeSpace' ||
-    to.name === 'Library' ||
-    to.name === 'Gewe' ||
-    to.name === 'SmartResponse' ||
-    to.name === 'TeacherUsage' ||
-    to.name === 'WorkshopChat' ||
-    to.name === 'MindbotAdmin'
+  // Any `main` layout route needs flags for the sidebar; chunk-test and similar set `requiresFeatureFlag`.
+  const needsFeatureFlags = Boolean(to.meta.requiresFeatureFlag) || to.meta.layout === 'main'
   if (needsFeatureFlags) {
     await featureFlagsStore.fetchFlags()
   }

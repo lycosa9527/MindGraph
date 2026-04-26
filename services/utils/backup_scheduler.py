@@ -487,11 +487,7 @@ BACKUP_RETENTION_COUNT = max(1, _retention_raw)  # Keep at least 1 backup
 
 _BACKUP_DIR_ENV = os.getenv("BACKUP_DIR", "backup")
 _PROJECT_ROOT = Path(__file__).resolve().parents[2]
-BACKUP_DIR = (
-    Path(_BACKUP_DIR_ENV)
-    if Path(_BACKUP_DIR_ENV).is_absolute()
-    else _PROJECT_ROOT / _BACKUP_DIR_ENV
-)
+BACKUP_DIR = Path(_BACKUP_DIR_ENV) if Path(_BACKUP_DIR_ENV).is_absolute() else _PROJECT_ROOT / _BACKUP_DIR_ENV
 
 # COS (Tencent Cloud Object Storage) configuration
 # Note: Uses same Tencent Cloud credentials as SMS module (TENCENT_SMS_SECRET_ID/SECRET_KEY)

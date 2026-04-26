@@ -13,7 +13,9 @@ export function isMindGraphLandingPath(path: string): boolean {
 
 /** Use when replacing/pushing the editor URL so mobile stays on /m/canvas. */
 export function canvasEditorPathForRoute(routePath: string): '/canvas' | '/m/canvas' {
-  return routePath === CANVAS_EDITOR_PATH_MOBILE ? CANVAS_EDITOR_PATH_MOBILE : CANVAS_EDITOR_PATH_DESKTOP
+  return routePath === CANVAS_EDITOR_PATH_MOBILE
+    ? CANVAS_EDITOR_PATH_MOBILE
+    : CANVAS_EDITOR_PATH_DESKTOP
 }
 
 /** Landing-page `.mg` import: open editor on desktop or mobile canvas. */

@@ -43,9 +43,7 @@ def upgrade() -> None:
             sa.Column(_COL, sa.String(length=64), nullable=True),
         )
 
-    rows = list(
-        bind.execute(text(f"SELECT id, {_COL} FROM {_TABLE}")).mappings().all()
-    )
+    rows = list(bind.execute(text(f"SELECT id, {_COL} FROM {_TABLE}")).mappings().all())
     used: set[str] = set()
     for row in rows:
         tok = row.get(_COL)

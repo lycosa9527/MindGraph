@@ -113,7 +113,8 @@ export default {
   'settings.version.international': 'Simplified mode',
   'landing.international.subtitle':
     'The Most Powerful AI Thinking Diagram Software in the Universe',
-  'landing.international.promptPlaceholder': 'Enter a topic or short description—or pick a diagram type below…',
+  'landing.international.promptPlaceholder':
+    'Enter a topic or short description—or pick a diagram type below…',
   'landing.international.sectionTitle': 'Eight Thinking Maps',
   'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
   'landing.international.modules': 'Modules',

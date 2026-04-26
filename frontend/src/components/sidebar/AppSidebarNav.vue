@@ -53,340 +53,338 @@ const mindmatePageChatHistoryLimit = computed(() => (route.path.startsWith('/min
     }"
   >
     <div class="sidebar-nav-main">
-    <!-- MindMate + MindGraph (fixed order); history panels use top border from ChatHistory / DiagramHistory -->
-    <el-tooltip
-      :content="s.t('sidebar.mindMate')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('mindmate')"
-        @click="s.setMode('mindmate')"
+      <!-- MindMate + MindGraph (fixed order); history panels use top border from ChatHistory / DiagramHistory -->
+      <el-tooltip
+        :content="s.t('sidebar.mindMate')"
+        placement="right"
+        :disabled="!s.isCollapsed"
       >
-        <el-icon><ChatLineSquare /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.mindMate') }}</span
-        >
-      </div>
-    </el-tooltip>
-
-    <el-tooltip
-      :content="s.t('sidebar.mindGraph')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('mindgraph')"
-        @click="s.setMode('mindgraph')"
-      >
-        <el-icon><Connection /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.mindGraph') }}</span
-        >
-      </div>
-    </el-tooltip>
-
-    <div
-      class="sidebar-nav-mind-panels"
-      :class="{
-        'sidebar-nav-mind-panels--expanded':
-          s.showPanel('mindmate') || s.showPanel('mindgraph'),
-      }"
-    >
-      <transition name="panel-slide">
         <div
-          v-if="s.showPanel('mindmate')"
-          class="sidebar-panel sidebar-panel--fill"
+          class="nav-item"
+          :class="s.navItemClass('mindmate')"
+          @click="s.setMode('mindmate')"
         >
-          <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
+          <el-icon><ChatLineSquare /></el-icon>
+          <span
+            v-if="!s.isCollapsed"
+            class="nav-label"
+            >{{ s.t('sidebar.mindMate') }}</span
+          >
         </div>
-      </transition>
-      <transition name="panel-slide">
+      </el-tooltip>
+
+      <el-tooltip
+        :content="s.t('sidebar.mindGraph')"
+        placement="right"
+        :disabled="!s.isCollapsed"
+      >
         <div
-          v-if="s.showPanel('mindgraph')"
-          class="sidebar-panel sidebar-panel--fill"
+          class="nav-item"
+          :class="s.navItemClass('mindgraph')"
+          @click="s.setMode('mindgraph')"
         >
-          <DiagramHistory @select="s.handleDiagramSelect" />
+          <el-icon><Connection /></el-icon>
+          <span
+            v-if="!s.isCollapsed"
+            class="nav-label"
+            >{{ s.t('sidebar.mindGraph') }}</span
+          >
         </div>
-      </transition>
-    </div>
+      </el-tooltip>
 
-    <div
-      class="sidebar-nav-rest"
-      :class="{
-        'sidebar-nav-rest--below-history':
-          s.showPanel('mindmate') || s.showPanel('mindgraph'),
-      }"
-    >
-    <!-- Knowledge Space -->
-    <el-tooltip
-      v-if="s.isAuthenticated && s.featureKnowledgeSpace"
-      :content="s.t('sidebar.knowledgeSpace')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
       <div
-        class="nav-item"
-        :class="s.navItemClass('knowledge-space')"
-        @click="s.setMode('knowledge-space')"
+        class="sidebar-nav-mind-panels"
+        :class="{
+          'sidebar-nav-mind-panels--expanded': s.showPanel('mindmate') || s.showPanel('mindgraph'),
+        }"
       >
-        <el-icon><Document /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.knowledgeSpace') }}</span
-        >
+        <transition name="panel-slide">
+          <div
+            v-if="s.showPanel('mindmate')"
+            class="sidebar-panel sidebar-panel--fill"
+          >
+            <ChatHistory :initial-visible-limit="mindmatePageChatHistoryLimit" />
+          </div>
+        </transition>
+        <transition name="panel-slide">
+          <div
+            v-if="s.showPanel('mindgraph')"
+            class="sidebar-panel sidebar-panel--fill"
+          >
+            <DiagramHistory @select="s.handleDiagramSelect" />
+          </div>
+        </transition>
       </div>
-    </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.isAuthenticated && s.featureKnowledgeSpace && s.showPanel('knowledge-space')"
-        class="sidebar-panel"
-      >
-        <KnowledgeSpaceHistory />
-      </div>
-    </transition>
 
-    <!-- Chunk Test -->
-    <el-tooltip
-      v-if="s.isAuthenticated && s.featureRagChunkTest"
-      :content="s.t('sidebar.chunkTest')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
       <div
-        class="nav-item"
-        :class="s.navItemClass('chunk-test')"
-        @click="s.setMode('chunk-test')"
+        class="sidebar-nav-rest"
+        :class="{
+          'sidebar-nav-rest--below-history': s.showPanel('mindmate') || s.showPanel('mindgraph'),
+        }"
       >
-        <el-icon><Tools /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.chunkTest') }}</span
+        <!-- Knowledge Space -->
+        <el-tooltip
+          v-if="s.isAuthenticated && s.featureKnowledgeSpace"
+          :content="s.t('sidebar.knowledgeSpace')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.isAuthenticated && s.featureRagChunkTest && s.showPanel('chunk-test')"
-        class="sidebar-panel"
-      >
-        <ChunkTestHistory />
-      </div>
-    </transition>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('knowledge-space')"
+            @click="s.setMode('knowledge-space')"
+          >
+            <el-icon><Document /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.knowledgeSpace') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.isAuthenticated && s.featureKnowledgeSpace && s.showPanel('knowledge-space')"
+            class="sidebar-panel"
+          >
+            <KnowledgeSpaceHistory />
+          </div>
+        </transition>
 
-    <!-- AskOnce -->
-    <el-tooltip
-      v-if="s.featureAskOnce"
-      :content="s.t('askonce.title')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('askonce')"
-        @click="s.setMode('askonce')"
-      >
-        <el-icon><MagicStick /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('askonce.title') }}</span
+        <!-- Chunk Test -->
+        <el-tooltip
+          v-if="s.isAuthenticated && s.featureRagChunkTest"
+          :content="s.t('sidebar.chunkTest')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.featureAskOnce && s.showPanel('askonce')"
-        class="sidebar-panel"
-      >
-        <AskOnceHistory />
-      </div>
-    </transition>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('chunk-test')"
+            @click="s.setMode('chunk-test')"
+          >
+            <el-icon><Tools /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.chunkTest') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.isAuthenticated && s.featureRagChunkTest && s.showPanel('chunk-test')"
+            class="sidebar-panel"
+          >
+            <ChunkTestHistory />
+          </div>
+        </transition>
 
-    <!-- Debateverse -->
-    <el-tooltip
-      v-if="s.featureDebateverse"
-      :content="s.t('sidebar.debateverse')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('debateverse')"
-        @click="s.setMode('debateverse')"
-      >
-        <el-icon><ChatDotRound /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.debateverse') }}</span
+        <!-- AskOnce -->
+        <el-tooltip
+          v-if="s.featureAskOnce"
+          :content="s.t('askonce.title')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.featureDebateverse && s.showPanel('debateverse')"
-        class="sidebar-panel"
-      >
-        <DebateHistory />
-      </div>
-    </transition>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('askonce')"
+            @click="s.setMode('askonce')"
+          >
+            <el-icon><MagicStick /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('askonce.title') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.featureAskOnce && s.showPanel('askonce')"
+            class="sidebar-panel"
+          >
+            <AskOnceHistory />
+          </div>
+        </transition>
 
-    <!-- School Zone -->
-    <el-tooltip
-      v-if="s.hasOrganization && s.featureSchoolZone"
-      :content="s.t('sidebar.schoolZone')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('school-zone')"
-        @click="s.setMode('school-zone')"
-      >
-        <el-icon><OfficeBuilding /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.schoolZone') }}</span
+        <!-- Debateverse -->
+        <el-tooltip
+          v-if="s.featureDebateverse"
+          :content="s.t('sidebar.debateverse')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('debateverse')"
+            @click="s.setMode('debateverse')"
+          >
+            <el-icon><ChatDotRound /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.debateverse') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.featureDebateverse && s.showPanel('debateverse')"
+            class="sidebar-panel"
+          >
+            <DebateHistory />
+          </div>
+        </transition>
 
-    <!-- Templates -->
-    <el-tooltip
-      v-if="s.featureTemplate"
-      :content="s.t('sidebar.templateResources')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('template')"
-        @click="s.setMode('template')"
-      >
-        <el-icon><Files /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.templateResources') }}</span
+        <!-- School Zone -->
+        <el-tooltip
+          v-if="s.hasOrganization && s.featureSchoolZone"
+          :content="s.t('sidebar.schoolZone')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('school-zone')"
+            @click="s.setMode('school-zone')"
+          >
+            <el-icon><OfficeBuilding /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.schoolZone') }}</span
+            >
+          </div>
+        </el-tooltip>
 
-    <!-- Courses -->
-    <el-tooltip
-      v-if="s.featureCourse"
-      :content="s.t('sidebar.courses')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('course')"
-        @click="s.setMode('course')"
-      >
-        <el-icon><VideoPlay /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.courses') }}</span
+        <!-- Templates -->
+        <el-tooltip
+          v-if="s.featureTemplate"
+          :content="s.t('sidebar.templateResources')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('template')"
+            @click="s.setMode('template')"
+          >
+            <el-icon><Files /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.templateResources') }}</span
+            >
+          </div>
+        </el-tooltip>
 
-    <!-- Community -->
-    <el-tooltip
-      v-if="s.featureCommunity"
-      :content="s.t('sidebar.community')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('community')"
-        @click="s.setMode('community')"
-      >
-        <el-icon><Share /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.community') }}</span
+        <!-- Courses -->
+        <el-tooltip
+          v-if="s.featureCourse"
+          :content="s.t('sidebar.courses')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('course')"
+            @click="s.setMode('course')"
+          >
+            <el-icon><VideoPlay /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.courses') }}</span
+            >
+          </div>
+        </el-tooltip>
 
-    <!-- Library -->
-    <el-tooltip
-      v-if="s.featureLibrary"
-      :content="s.t('sidebar.library')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('library')"
-        @click="s.setMode('library')"
-      >
-        <el-icon><Reading /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label"
-          >{{ s.t('sidebar.library') }}</span
+        <!-- Community -->
+        <el-tooltip
+          v-if="s.featureCommunity"
+          :content="s.t('sidebar.community')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-      </div>
-    </el-tooltip>
-    <transition name="panel-slide">
-      <div
-        v-if="s.featureLibrary && s.showPanel('library')"
-        class="sidebar-panel"
-      >
-        <LibraryCommentsHistory />
-      </div>
-    </transition>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('community')"
+            @click="s.setMode('community')"
+          >
+            <el-icon><Share /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.community') }}</span
+            >
+          </div>
+        </el-tooltip>
 
-    <!-- Workshop Chat (admin & school managers) -->
-    <el-tooltip
-      v-if="s.canAccessWorkshopChat"
-      :content="s.t('workshop.title')"
-      placement="right"
-      :disabled="!s.isCollapsed"
-    >
-      <div
-        class="nav-item"
-        :class="s.navItemClass('workshop-chat')"
-        @click="s.setMode('workshop-chat')"
-      >
-        <el-icon><MessageSquare /></el-icon>
-        <span
-          v-if="!s.isCollapsed"
-          class="nav-label ws-menu-title"
+        <!-- Library -->
+        <el-tooltip
+          v-if="s.featureLibrary"
+          :content="s.t('sidebar.library')"
+          placement="right"
+          :disabled="!s.isCollapsed"
         >
-          {{ s.t('workshop.title') }}
-          <ChevronDown
-            class="ws-expand-chevron"
-            :class="{ 'ws-expand-chevron--open': s.workshopExpanded }"
-          />
-        </span>
+          <div
+            class="nav-item"
+            :class="s.navItemClass('library')"
+            @click="s.setMode('library')"
+          >
+            <el-icon><Reading /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label"
+              >{{ s.t('sidebar.library') }}</span
+            >
+          </div>
+        </el-tooltip>
+        <transition name="panel-slide">
+          <div
+            v-if="s.featureLibrary && s.showPanel('library')"
+            class="sidebar-panel"
+          >
+            <LibraryCommentsHistory />
+          </div>
+        </transition>
+
+        <!-- Workshop Chat (admin & school managers) -->
+        <el-tooltip
+          v-if="s.canAccessWorkshopChat"
+          :content="s.t('workshop.title')"
+          placement="right"
+          :disabled="!s.isCollapsed"
+        >
+          <div
+            class="nav-item"
+            :class="s.navItemClass('workshop-chat')"
+            @click="s.setMode('workshop-chat')"
+          >
+            <el-icon><MessageSquare /></el-icon>
+            <span
+              v-if="!s.isCollapsed"
+              class="nav-label ws-menu-title"
+            >
+              {{ s.t('workshop.title') }}
+              <ChevronDown
+                class="ws-expand-chevron"
+                :class="{ 'ws-expand-chevron--open': s.workshopExpanded }"
+              />
+            </span>
+          </div>
+        </el-tooltip>
+        <transition name="ws-slide">
+          <div
+            v-if="s.workshopExpanded && !s.isCollapsed && s.canAccessWorkshopChat"
+            class="workshop-panel-host"
+          >
+            <WorkshopChatHistory />
+          </div>
+        </transition>
       </div>
-    </el-tooltip>
-    <transition name="ws-slide">
-      <div
-        v-if="s.workshopExpanded && !s.isCollapsed && s.canAccessWorkshopChat"
-        class="workshop-panel-host"
-      >
-        <WorkshopChatHistory />
-      </div>
-    </transition>
-    </div>
     </div>
 
     <!-- Admin / management: pinned above account footer (hidden when workshop expanded) -->

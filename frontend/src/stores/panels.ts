@@ -15,7 +15,6 @@ import { defineStore } from 'pinia'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useDiagramStore } from '@/stores/diagram'
 import { useUIStore } from '@/stores/ui'
-import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
 import type {
   ConceptMapTab,
   MindmateMessage,
@@ -26,6 +25,7 @@ import type {
   PropertyPanelState,
   UploadedFile,
 } from '@/types'
+import { isDesktopConceptMapManualViewport } from '@/utils/conceptMapDesktopViewport'
 
 export const usePanelsStore = defineStore('panels', () => {
   // State

@@ -114,7 +114,8 @@ export default {
   'auth.quickRegSessionSignups': '本場次已報名：{n} 人',
   'auth.quickRegRoomCodeLabel': '房間碼',
   'auth.quickRegRoomCodePlaceholder': '6 位數字',
-  'auth.quickRegRoomCodeHint': '請對照老師／主持人螢幕上「快速註冊」彈窗顯示的大號數字，並在下一輪換碼前完成輸入。',
+  'auth.quickRegRoomCodeHint':
+    '請對照老師／主持人螢幕上「快速註冊」彈窗顯示的大號數字，並在下一輪換碼前完成輸入。',
   'auth.quickRegRoomCodeEnter6': '請輸入 6 位房間碼',
   'auth.quickRegMaxUses': '本連結最多註冊人數',
   'auth.quickRegHeadcount': '人數',
@@ -124,7 +125,8 @@ export default {
   'auth.quickRegSubmit': '完成註冊',
   'auth.quickRegSubmitting': '註冊中…',
   'auth.quickRegRegisterSuccess': '註冊成功',
-  'auth.quickRegSessionUnsure': '註冊可能已成功。若未自動登入，請返回使用簡訊登入，或重新開啟本頁。',
+  'auth.quickRegSessionUnsure':
+    '註冊可能已成功。若未自動登入，請返回使用簡訊登入，或重新開啟本頁。',
   'auth.quickRegBackToSignIn': '使用一般登入／註冊',
   'auth.quickRegSelectOrg': '選擇學校',
   'auth.quickRegOrgLoadError': '無法載入學校列表，請稍後再試。',

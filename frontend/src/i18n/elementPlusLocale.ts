@@ -3,8 +3,8 @@
  * For RTL UI locales, also load `element-plus/theme-chalk/dark/css-vars.css` as needed
  * and mirror layout in CSS; Element Plus 2.x follows `document.documentElement.dir`.
  */
-import enLocale from 'element-plus/es/locale/lang/en'
 import type { Language } from 'element-plus/es/locale'
+import enLocale from 'element-plus/es/locale/lang/en'
 
 export async function loadElementPlusLocale(code: string): Promise<Language> {
   switch (code) {

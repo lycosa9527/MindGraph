@@ -54,6 +54,7 @@ router = APIRouter()
 # Internal helpers
 # ---------------------------------------------------------------------------
 
+
 async def _get_config_or_404(
     config_id: int,
     db: AsyncSession,
@@ -72,6 +73,7 @@ async def _get_config_or_404(
 # ---------------------------------------------------------------------------
 # Process-wide diagnostics
 # ---------------------------------------------------------------------------
+
 
 @router.get("/admin/internal/memory-footprint", response_model=MindbotMemoryFootprintResponse)
 async def admin_mindbot_memory_footprint(
@@ -115,6 +117,7 @@ async def admin_dify_service_status(
 # ---------------------------------------------------------------------------
 # Config list and create
 # ---------------------------------------------------------------------------
+
 
 @router.get("/admin/configs", response_model=list[MindbotConfigResponse])
 async def admin_list_mindbot_configs(
@@ -208,8 +211,7 @@ async def admin_create_mindbot_config(
     await db.commit()
     await db.refresh(row)
     logger.info(
-        "[MindBot] config created organization_id=%s config_id=%s robot_code=%s "
-        "enabled=%s client_id_set=%s user_id=%s",
+        "[MindBot] config created organization_id=%s config_id=%s robot_code=%s enabled=%s client_id_set=%s user_id=%s",
         payload.organization_id,
         row.id,
         row.dingtalk_robot_code.strip(),
@@ -223,6 +225,7 @@ async def admin_create_mindbot_config(
 # ---------------------------------------------------------------------------
 # Single-config operations (keyed by config_id)
 # ---------------------------------------------------------------------------
+
 
 @router.get("/admin/configs/{config_id}", response_model=MindbotConfigResponse)
 async def admin_get_mindbot_config(
@@ -245,9 +248,7 @@ async def admin_update_mindbot_config(
 ) -> MindbotConfigResponse:
     _require_mindbot_feature()
     result = await db.execute(
-        select(OrganizationMindbotConfig)
-        .where(OrganizationMindbotConfig.id == config_id)
-        .with_for_update()
+        select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id).with_for_update()
     )
     existing = result.scalar_one_or_none()
     if existing is None:
@@ -308,8 +309,7 @@ async def admin_update_mindbot_config(
     await db.commit()
     await db.refresh(existing)
     logger.info(
-        "[MindBot] config updated organization_id=%s config_id=%s robot_code=%s "
-        "enabled=%s client_id_set=%s user_id=%s",
+        "[MindBot] config updated organization_id=%s config_id=%s robot_code=%s enabled=%s client_id_set=%s user_id=%s",
         existing.organization_id,
         existing.id,
         existing.dingtalk_robot_code.strip(),
@@ -358,9 +358,7 @@ async def admin_move_mindbot_config(
     """
     _require_mindbot_feature()
     result = await db.execute(
-        select(OrganizationMindbotConfig)
-        .where(OrganizationMindbotConfig.id == config_id)
-        .with_for_update()
+        select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id).with_for_update()
     )
     row = result.scalar_one_or_none()
     if row is None:
@@ -414,9 +412,7 @@ async def admin_delete_mindbot_config(
     user: User = Depends(require_admin),
 ) -> Response:
     _require_mindbot_feature()
-    result = await db.execute(
-        select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id)
-    )
+    result = await db.execute(select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id))
     row = result.scalar_one_or_none()
     if row is None:
         raise HTTPException(
@@ -449,9 +445,7 @@ async def admin_rotate_mindbot_callback_token(
 ) -> MindbotConfigResponse:
     """Issue a new public callback token; DingTalk must use the new callback URL."""
     _require_mindbot_feature()
-    result = await db.execute(
-        select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id)
-    )
+    result = await db.execute(select(OrganizationMindbotConfig).where(OrganizationMindbotConfig.id == config_id))
     row = result.scalar_one_or_none()
     if row is None:
         raise HTTPException(
@@ -474,6 +468,7 @@ async def admin_rotate_mindbot_callback_token(
 # ---------------------------------------------------------------------------
 # Per-config health probes
 # ---------------------------------------------------------------------------
+
 
 @router.get("/admin/configs/{config_id}/dify-health", response_model=DifyServiceStatusResponse)
 async def admin_org_dify_health(
@@ -565,6 +560,7 @@ async def admin_ai_card_streaming_status(
 # ---------------------------------------------------------------------------
 # Usage events (org-scoped — usage data has no config_id granularity yet)
 # ---------------------------------------------------------------------------
+
 
 @router.get(
     "/admin/configs/{organization_id}/usage-events",

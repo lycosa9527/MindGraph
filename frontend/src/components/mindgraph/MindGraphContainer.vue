@@ -16,11 +16,12 @@ import {
 } from 'element-plus'
 
 import { Upload, User } from '@element-plus/icons-vue'
+
 import { PanelLeftOpen } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
-import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useLanguage, useNotifications } from '@/composables'
+import { useDiagramImport } from '@/composables/editor/useDiagramImport'
 import { useAuthStore } from '@/stores/auth'
 import { useUIStore } from '@/stores/ui'
 import { authFetch } from '@/utils/api'

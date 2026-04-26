@@ -9,6 +9,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElAvatar, ElButton, ElIcon } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
+
 import { PanelLeftOpen } from 'lucide-vue-next'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'

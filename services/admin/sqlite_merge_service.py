@@ -606,9 +606,7 @@ def _merge_api_keys(
         if sq_org is not None:
             values["organization_id"] = org_map.get(sq_org)
         for col, default in _API_KEY_DEFAULT_COLUMNS.items():
-            if col not in values or (
-                col in ("usage_count", "is_active") and values.get(col) is None
-            ):
+            if col not in values or (col in ("usage_count", "is_active") and values.get(col) is None):
                 values[col] = default
         if values.get("created_at") is None:
             values["created_at"] = datetime.now(tz=UTC)

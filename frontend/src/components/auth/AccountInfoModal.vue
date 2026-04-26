@@ -135,7 +135,8 @@ watch(
   (v) => {
     if (v) {
       const u = (authStore.user?.username || '').trim()
-      const looksLikeName = u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
+      const looksLikeName =
+        u.length >= 2 && u.length <= 32 && !/^\d{11}$/.test(u) && !/^\d+$/.test(u)
       nameEdit.value = looksLikeName ? u : ''
     }
   }

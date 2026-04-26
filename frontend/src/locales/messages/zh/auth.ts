@@ -124,7 +124,8 @@ export default {
   'auth.quickRegSessionSignups': '本场次已报名：{n} 人',
   'auth.quickRegRoomCodeLabel': '房间码',
   'auth.quickRegRoomCodePlaceholder': '6 位数字',
-  'auth.quickRegRoomCodeHint': '请对照老师/主持人屏幕上「快速注册」弹窗中显示的大号数字，确保在下一轮换码前完成输入。',
+  'auth.quickRegRoomCodeHint':
+    '请对照老师/主持人屏幕上「快速注册」弹窗中显示的大号数字，确保在下一轮换码前完成输入。',
   'auth.quickRegRoomCodeEnter6': '请输入 6 位房间码',
   'auth.quickRegMaxUses': '本链接最多注册人数',
   'auth.quickRegHeadcount': '人数',
@@ -134,7 +135,8 @@ export default {
   'auth.quickRegSubmit': '完成注册',
   'auth.quickRegSubmitting': '注册中…',
   'auth.quickRegRegisterSuccess': '注册成功',
-  'auth.quickRegSessionUnsure': '注册可能已成功。若未自动进入，请返回使用短信登录，或重新打开本页。',
+  'auth.quickRegSessionUnsure':
+    '注册可能已成功。若未自动进入，请返回使用短信登录，或重新打开本页。',
   'auth.quickRegBackToSignIn': '使用常规登录 / 注册',
   'auth.quickRegSelectOrg': '选择学校',
   'auth.quickRegOrgLoadError': '无法加载学校列表，请稍后重试。',

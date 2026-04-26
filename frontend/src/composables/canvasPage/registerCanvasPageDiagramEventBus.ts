@@ -1,12 +1,8 @@
 import type { Ref } from 'vue'
 
 import { eventBus } from '@/composables/core/useEventBus'
+import { useConceptMapRootConceptReviewStore, useDiagramStore, usePanelsStore } from '@/stores'
 import { useConceptMapFocusReviewStore } from '@/stores/conceptMapFocusReview'
-import {
-  useConceptMapRootConceptReviewStore,
-  useDiagramStore,
-  usePanelsStore,
-} from '@/stores'
 import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 /**

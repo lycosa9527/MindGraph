@@ -156,6 +156,7 @@ async def validate_agent_setup() -> bool:
     """
     try:
         import asyncio  # pylint: disable=import-outside-toplevel
+
         await asyncio.wait_for(
             llm_classification.invoke("Test"),
             timeout=float(config.QWEN_TIMEOUT),

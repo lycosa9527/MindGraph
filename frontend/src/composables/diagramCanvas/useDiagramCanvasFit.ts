@@ -255,27 +255,30 @@ export function useDiagramCanvasFit(options: {
         if (isDesktopConceptMapManualViewport(diagramStore, uiStore)) {
           return
         }
-        setTimeout(() => {
-          if (!conceptMapInitialTopicFit.value) {
+        setTimeout(
+          () => {
+            if (!conceptMapInitialTopicFit.value) {
+              setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
+              return
+            }
+            const focusId = getConceptMapFocusNodeIdForFit()
+            if (focusId) {
+              const fitOptions = {
+                nodes: [focusId],
+                padding: 0.42,
+                duration: ANIMATION.DURATION_NORMAL,
+                minZoom: ZOOM.MIN,
+                maxZoom: ZOOM.MAX,
+                includeHiddenNodes: false,
+              } as Parameters<FitViewFn>[0]
+              void fitView(fitOptions)
+              eventBus.emit('view:fit_completed', { mode: 'concept_map_topic', animate: true })
+              return
+            }
             setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
-            return
-          }
-          const focusId = getConceptMapFocusNodeIdForFit()
-          if (focusId) {
-            const fitOptions = {
-              nodes: [focusId],
-              padding: 0.42,
-              duration: ANIMATION.DURATION_NORMAL,
-              minZoom: ZOOM.MIN,
-              maxZoom: ZOOM.MAX,
-              includeHiddenNodes: false,
-            } as Parameters<FitViewFn>[0]
-            void fitView(fitOptions)
-            eventBus.emit('view:fit_completed', { mode: 'concept_map_topic', animate: true })
-            return
-          }
-          setViewport({ x: 0, y: 0, zoom: ZOOM.DEFAULT }, { duration: 0 })
-        }, Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450))
+          },
+          Math.max(ANIMATION.FIT_VIEWPORT_DELAY, 450)
+        )
       }
       return
     }

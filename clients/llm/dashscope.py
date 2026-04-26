@@ -190,9 +190,7 @@ class QwenClient:
                 "Content-Type": "application/json",
             }
 
-            client = await get_httpx_manager().get_client(
-                "qwen", self.api_url, self.timeout, self.stream_timeout
-            )
+            client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
 
             if response.status_code == 200:
@@ -399,9 +397,7 @@ class QwenClient:
                 "Content-Type": "application/json",
             }
 
-            client = await get_httpx_manager().get_client(
-                "qwen", self.api_url, self.timeout, self.stream_timeout
-            )
+            client = await get_httpx_manager().get_client("qwen", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
@@ -541,9 +537,7 @@ class DeepSeekClient:
 
             logger.debug("DeepSeek async API request: %s", self.model_name)
 
-            client = await get_httpx_manager().get_client(
-                "deepseek", self.api_url, self.timeout, self.stream_timeout
-            )
+            client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
 
             if response.status_code == 200:
@@ -638,9 +632,7 @@ class DeepSeekClient:
                 "Content-Type": "application/json",
             }
 
-            client = await get_httpx_manager().get_client(
-                "deepseek", self.api_url, self.timeout, self.stream_timeout
-            )
+            client = await get_httpx_manager().get_client("deepseek", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()
@@ -763,9 +755,7 @@ class KimiClient:
 
             logger.debug("Kimi async API request: %s", self.model_name)
 
-            client = await get_httpx_manager().get_client(
-                "kimi", self.api_url, self.timeout, self.stream_timeout
-            )
+            client = await get_httpx_manager().get_client("kimi", self.api_url, self.timeout, self.stream_timeout)
             response = await client.post(self.api_url, json=payload, headers=headers)
 
             if response.status_code == 200:
@@ -860,9 +850,7 @@ class KimiClient:
                 "Content-Type": "application/json",
             }
 
-            client = await get_httpx_manager().get_client(
-                "kimi", self.api_url, self.timeout, self.stream_timeout
-            )
+            client = await get_httpx_manager().get_client("kimi", self.api_url, self.timeout, self.stream_timeout)
             async with client.stream("POST", self.api_url, json=payload, headers=headers) as response:
                 if response.status_code != 200:
                     error_text = await response.aread()

@@ -189,8 +189,7 @@ class FeatureFlagSettings(BaseModel):
     FEATURE_MINDBOT: bool = Field(
         default=True,
         description=(
-            "Enable MindBot (DingTalk HTTP callback ↔ per-organization Dify); "
-            "disable with FEATURE_MINDBOT=false"
+            "Enable MindBot (DingTalk HTTP callback ↔ per-organization Dify); disable with FEATURE_MINDBOT=false"
         ),
     )
 

@@ -6,6 +6,7 @@
 import { onMounted, ref } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
+
 import { ArrowLeft, Loader2 } from 'lucide-vue-next'
 
 import { useLanguage, useNotifications } from '@/composables'
@@ -50,9 +51,7 @@ onMounted(async () => {
   }
   try {
     const response = await apiRequest(
-      `/api/auth/quick-register/room-code?channel_token=${encodeURIComponent(
-        props.quickRegToken
-      )}`,
+      `/api/auth/quick-register/room-code?channel_token=${encodeURIComponent(props.quickRegToken)}`,
       { method: 'GET' }
     )
     if (response.ok) {
@@ -259,11 +258,7 @@ async function submitQuickRegister() {
                     v-if="submitting"
                     class="w-4 h-4 animate-spin shrink-0"
                   />
-                  {{
-                    submitting
-                      ? t('auth.quickRegSubmitting')
-                      : t('auth.quickRegSubmit')
-                  }}
+                  {{ submitting ? t('auth.quickRegSubmitting') : t('auth.quickRegSubmit') }}
                 </button>
               </form>
             </div>

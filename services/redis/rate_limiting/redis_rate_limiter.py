@@ -67,9 +67,7 @@ class RedisRateLimiter:
         Returns:
             Tuple of (is_allowed, attempt_count, error_message)
         """
-        return await self._redis_check_and_record(
-            category, identifier, max_attempts, window_seconds
-        )
+        return await self._redis_check_and_record(category, identifier, max_attempts, window_seconds)
 
     async def _redis_check_and_record(
         self, category: str, identifier: str, max_attempts: int, window_seconds: int

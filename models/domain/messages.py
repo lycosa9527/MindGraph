@@ -213,13 +213,9 @@ class Messages:
         },
         "quick_reg_channel_invalid": {
             "zh": "快速注册链接无效或已过期。请向管理员重新获取。",
-            "en": (
-                "This quick registration link is invalid or has expired. "
-                "Ask your school manager for a new one."
-            ),
+            "en": ("This quick registration link is invalid or has expired. Ask your school manager for a new one."),
             "az": (
-                "Bu sürətli qeydiyyat keçidi etibarsızdır və ya müddəti bitib. "
-                "Yenisi üçün inzibatçıya müraciət edin."
+                "Bu sürətli qeydiyyat keçidi etibarsızdır və ya müddəti bitib. Yenisi üçün inzibatçıya müraciət edin."
             ),
         },
         "quick_reg_redis_unavailable": {

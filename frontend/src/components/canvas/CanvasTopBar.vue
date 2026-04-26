@@ -47,9 +47,9 @@ import type { SnapshotMetadata } from '@/composables'
 import { useLanguage } from '@/composables'
 import { CANVAS_TOP_BAR } from '@/config/uiConfig'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, usePanelsStore } from '@/stores'
-import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
+import { CANVAS_ENTRY_PATH_KEY, isMindGraphLandingPath } from '@/utils/canvasBackNavigation'
 
 const notify = useNotifications()
 

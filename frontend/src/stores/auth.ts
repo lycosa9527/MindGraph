@@ -75,6 +75,13 @@ export const useAuthStore = defineStore('auth', () => {
   const isCheckingAuth = ref(false) // Prevent duplicate concurrent checkAuth calls
   const lastSessionCheckTime = ref<number>(0) // Track last session status check to prevent rapid-fire calls
   const hasVerifiedAuthThisSession = ref(false) // Track if we've verified auth with server in this session
+  /**
+   * True when the last /me (or refresh) attempt failed before an HTTP status was obtained
+   * (network offline, DNS, aborted request, etc.) while a cached user still exists.
+   * Guards treat checkAuth as success so users are not sent to /auth while offline; the next
+   * checkAuth retry clears this once the server responds.
+   */
+  const authVerificationBlockedByNetwork = ref(false)
   /** Avoid duplicate PATCH when seeding DB from client for users with no saved server prefs. */
   const languagePrefsSeededForUserId = ref<string | null>(null)
   let languagePrefsSeedInFlight = false
@@ -161,9 +168,7 @@ export const useAuthStore = defineStore('auth', () => {
     }
 
     const loginPasswordSet =
-      backendUser.login_password_set === undefined
-        ? true
-        : Boolean(backendUser.login_password_set)
+      backendUser.login_password_set === undefined ? true : Boolean(backendUser.login_password_set)
 
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
@@ -219,6 +224,7 @@ export const useAuthStore = defineStore('auth', () => {
   }
 
   function setUser(newUser: User | BackendUser): void {
+    authVerificationBlockedByNetwork.value = false
     // Normalize backend user format to frontend format
     const normalizedUser = normalizeUser(newUser)
     user.value = normalizedUser
@@ -301,6 +307,7 @@ export const useAuthStore = defineStore('auth', () => {
     hasVerifiedAuthThisSession.value = false // Reset verification flag
     languagePrefsSeededForUserId.value = null
     languagePrefsSeedInFlight = false
+    authVerificationBlockedByNetwork.value = false
     // Clear sessionStorage
     sessionStorage.removeItem(USER_KEY)
     sessionStorage.removeItem(MODE_KEY)
@@ -388,6 +395,7 @@ export const useAuthStore = defineStore('auth', () => {
     // If user is already loaded AND we've verified auth this session, return cached state
     // This prevents redundant API calls while ensuring we verify token validity at least once
     if (!forceRefresh && user.value && hasVerifiedAuthThisSession.value) {
+      authVerificationBlockedByNetwork.value = false
       // User is already loaded and verified, just ensure monitoring is started
       if (!sessionMonitorInterval.value) {
         startSessionMonitoring()
@@ -458,6 +466,10 @@ export const useAuthStore = defineStore('auth', () => {
       }
       return false
     } catch {
+      if (user.value) {
+        authVerificationBlockedByNetwork.value = true
+        return true
+      }
       return false
     } finally {
       isCheckingAuth.value = false
@@ -652,6 +664,7 @@ export const useAuthStore = defineStore('auth', () => {
     token.value = null
     languagePrefsSeededForUserId.value = null
     languagePrefsSeedInFlight = false
+    authVerificationBlockedByNetwork.value = false
     sessionStorage.removeItem(USER_KEY)
     // Clear any legacy localStorage
     localStorage.removeItem('access_token')
@@ -731,6 +744,7 @@ export const useAuthStore = defineStore('auth', () => {
     showSessionExpiredModal,
     sessionExpiredMessage,
     pendingRedirect,
+    authVerificationBlockedByNetwork,
 
     // Getters
     isAuthenticated,

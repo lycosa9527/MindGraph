@@ -1,11 +1,11 @@
 import type { Ref } from 'vue'
 import { ref } from 'vue'
 
+import { eventBus } from '@/composables/core/useEventBus'
 import {
   conceptMapLinkChaseActive,
   isTargetOnConceptMapLinkHandle,
 } from '@/composables/diagramCanvas/conceptMapLinkChaseState'
-import { eventBus } from '@/composables/core/useEventBus'
 import type { useBranchMoveDrag } from '@/composables/editor/useBranchMoveDrag'
 import { ZOOM } from '@/config/uiConfig'
 

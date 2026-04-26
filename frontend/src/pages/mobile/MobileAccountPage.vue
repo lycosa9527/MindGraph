@@ -389,9 +389,7 @@ async function handleLogout() {
       :visible="showChangePassword"
       @update:visible="showChangePassword = $event"
     />
-    <SetPasswordWithSmsModal
-      v-model:visible="showSetPasswordSms"
-    />
+    <SetPasswordWithSmsModal v-model:visible="showSetPasswordSms" />
     <AvatarSelectModal
       :visible="showAvatarSelect"
       @update:visible="showAvatarSelect = $event"

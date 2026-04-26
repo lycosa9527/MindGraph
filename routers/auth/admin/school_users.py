@@ -86,9 +86,7 @@ async def list_school_users(
     list_stmt = list_stmt.offset(skip).limit(page_size)
     users = (await db.execute(list_stmt)).scalars().all()
 
-    org_row = (
-        await db.execute(select(Organization).where(Organization.id == org_id))
-    ).scalar_one_or_none()
+    org_row = (await db.execute(select(Organization).where(Organization.id == org_id))).scalar_one_or_none()
 
     token_stats_by_user: dict[int, dict[str, int]] = {}
     if users:
@@ -136,9 +134,7 @@ async def list_school_users(
         if user.phone and len(user.phone) == 11:
             masked_phone = user.phone[:3] + "****" + user.phone[-4:]
 
-        tstat = token_stats_by_user.get(
-            user.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
-        )
+        tstat = token_stats_by_user.get(user.id, {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0})
         result.append(
             {
                 "id": user.id,
@@ -151,9 +147,7 @@ async def list_school_users(
                 "locked_until": utc_to_beijing_iso(user.locked_until),
                 "created_at": utc_to_beijing_iso(user.created_at),
                 "token_stats": tstat,
-                "email_login_whitelisted_from_cn": getattr(
-                    user, "email_login_whitelisted_from_cn", False
-                ),
+                "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
             }
         )
 
@@ -187,9 +181,7 @@ async def get_school_user(
             await db.execute(select(Organization).where(Organization.id == user.organization_id))
         ).scalar_one_or_none()
 
-    sd_log = get_school_dashboard_logger(
-        logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id
-    )
+    sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id)
     sd_log.info("[SchoolDashboard] user read", extra={"sd_event": "school_user_read"})
 
     return {
@@ -202,9 +194,7 @@ async def get_school_user(
         "organization_name": org.name if org else None,
         "locked_until": utc_to_beijing_iso(user.locked_until),
         "created_at": utc_to_beijing_iso(user.created_at),
-        "email_login_whitelisted_from_cn": getattr(
-            user, "email_login_whitelisted_from_cn", False
-        ),
+        "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
     }
 
 
@@ -243,9 +233,7 @@ async def update_school_user(
     if not user:
         raise _not_found_school_user(lang)
 
-    sd_log = get_school_dashboard_logger(
-        logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id
-    )
+    sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id)
 
     old_phone = user.phone
     phone_will_change = False
@@ -254,20 +242,14 @@ async def update_school_user(
         new_phone = str(request["phone"]).strip()
         if not new_phone:
             error_msg = Messages.error("phone_cannot_be_empty", lang=lang)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if len(new_phone) != 11 or not new_phone.isdigit() or not new_phone.startswith("1"):
             error_msg = Messages.error("phone_format_invalid", lang=lang)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if new_phone != user.phone:
             if await other_user_id_with_phone(db, new_phone, user.id) is not None:
                 error_msg = Messages.error("phone_already_registered_other", lang, new_phone)
-                raise HTTPException(
-                    status_code=status.HTTP_409_CONFLICT, detail=error_msg
-                )
+                raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=error_msg)
             phone_will_change = True
         last_requested_new_phone = new_phone
         user.phone = new_phone
@@ -276,14 +258,10 @@ async def update_school_user(
         new_name = str(request["name"]).strip()
         if not new_name or len(new_name) < 2:
             error_msg = Messages.error("name_too_short", lang=lang)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         if any(char.isdigit() for char in new_name):
             error_msg = Messages.error("name_cannot_contain_numbers", lang=lang)
-            raise HTTPException(
-                status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg
-            )
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
         user.name = new_name
 
     try:
@@ -302,9 +280,7 @@ async def update_school_user(
             )
             raise HTTPException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail=Messages.error(
-                    "phone_already_registered_other", lang, last_requested_new_phone
-                ),
+                detail=Messages.error("phone_already_registered_other", lang, last_requested_new_phone),
             ) from err
         sd_log.error(
             "school user update failed: %s",
@@ -355,9 +331,7 @@ async def update_school_user(
             "name": user.name,
             "organization_code": org.code if org else None,
             "organization_name": org.name if org else None,
-            "email_login_whitelisted_from_cn": getattr(
-                user, "email_login_whitelisted_from_cn", False
-            ),
+            "email_login_whitelisted_from_cn": getattr(user, "email_login_whitelisted_from_cn", False),
         },
     }
 
@@ -380,9 +354,7 @@ async def delete_school_user(
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
     user_phone = user.phone
-    sd_log = get_school_dashboard_logger(
-        logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id
-    )
+    sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id)
     try:
         await delete_user_fk_dependent_rows(db, user_id)
         await db.delete(user)
@@ -435,9 +407,7 @@ async def unlock_school_user(
     if not user:
         raise _not_found_school_user(lang)
 
-    sd_log = get_school_dashboard_logger(
-        logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id
-    )
+    sd_log = get_school_dashboard_logger(logger, actor_id=current_user.id, org_id=org_id, target_user_id=user_id)
 
     user.failed_login_attempts = 0
     user.locked_until = None

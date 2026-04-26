@@ -1,6 +1,6 @@
 import { INLINE_RECOMMENDATIONS_SUPPORTED_TYPES } from '@/composables/nodePalette/constants'
-import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 import type { Connection } from '@/types'
+import { getTopicRootConceptTargetId } from '@/utils/conceptMapTopicRootEdge'
 
 /**
  * Whether a node can show inline recommendations (Tab while editing).

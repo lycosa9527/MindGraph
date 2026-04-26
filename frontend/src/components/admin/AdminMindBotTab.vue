@@ -462,13 +462,17 @@ async function rotateCallbackUrl(): Promise<void> {
     return
   }
   try {
-    await ElMessageBox.confirm(t('admin.mindbot.rotateConfirm'), t('admin.mindbot.rotateConfirmTitle'), {
-      type: 'warning',
-      customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--rotate',
-      modalClass: 'mindbot-swiss-backdrop',
-      cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
-      showClose: true,
-    })
+    await ElMessageBox.confirm(
+      t('admin.mindbot.rotateConfirm'),
+      t('admin.mindbot.rotateConfirmTitle'),
+      {
+        type: 'warning',
+        customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--rotate',
+        modalClass: 'mindbot-swiss-backdrop',
+        cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
+        showClose: true,
+      }
+    )
   } catch {
     return
   }
@@ -495,13 +499,17 @@ async function rotateCallbackUrl(): Promise<void> {
 
 async function removeRow(row: MindbotConfigRow): Promise<void> {
   try {
-    await ElMessageBox.confirm(t('admin.mindbot.deleteConfirm'), t('admin.mindbot.deleteConfirmTitle'), {
-      type: 'warning',
-      customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
-      modalClass: 'mindbot-swiss-backdrop',
-      cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
-      showClose: true,
-    })
+    await ElMessageBox.confirm(
+      t('admin.mindbot.deleteConfirm'),
+      t('admin.mindbot.deleteConfirmTitle'),
+      {
+        type: 'warning',
+        customClass: 'mindbot-swiss-message-box mindbot-swiss-msg--delete',
+        modalClass: 'mindbot-swiss-backdrop',
+        cancelButtonClass: 'mindbot-pill mindbot-pill--footer-cancel',
+        showClose: true,
+      }
+    )
   } catch {
     return
   }
@@ -533,6 +541,7 @@ const isAddBotDisabled = computed(() => loading.value || orgsUnderLimit.value.le
 
 defineExpose({
   openCreate,
+  openManagerMindbot: openManagerMindbotDialog,
   isAddSchoolDisabled: isAddBotDisabled,
 })
 </script>
@@ -597,9 +606,7 @@ defineExpose({
             min-width="120"
           >
             <template #default="{ row }">
-              <span class="text-gray-700 dark:text-gray-300">{{
-                row.bot_label || '—'
-              }}</span>
+              <span class="text-gray-700 dark:text-gray-300">{{ row.bot_label || '—' }}</span>
             </template>
           </el-table-column>
           <el-table-column

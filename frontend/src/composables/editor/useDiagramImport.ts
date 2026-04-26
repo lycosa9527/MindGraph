@@ -4,8 +4,8 @@
  */
 import { useRoute, useRouter } from 'vue-router'
 
-import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { useLanguage, useNotifications } from '@/composables'
+import { VALID_DIAGRAM_TYPES } from '@/composables/canvasPage/diagramTypeMaps'
 import { IMPORT_SPEC_KEY } from '@/config'
 import type { DiagramType } from '@/types'
 import { canvasPathForImportNavigation } from '@/utils/canvasBackNavigation'

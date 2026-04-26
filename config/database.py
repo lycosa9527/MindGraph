@@ -342,9 +342,7 @@ def _run_alembic_upgrade() -> None:
             "[Database] Database has revision %s but no Alembic head revision found on disk.",
             current_rev,
         )
-        raise RuntimeError(
-            "Alembic script directory has no head revision; cannot apply migrations or wait for a peer."
-        )
+        raise RuntimeError("Alembic script directory has no head revision; cannot apply migrations or wait for a peer.")
 
     if current_rev is None:
         logger.info("[Database] No alembic_version found — running initial migration")

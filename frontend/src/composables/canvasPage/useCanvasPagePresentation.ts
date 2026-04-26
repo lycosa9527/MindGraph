@@ -187,7 +187,10 @@ export function useCanvasPagePresentation() {
       event.preventDefault()
       event.stopPropagation()
       if (digit <= PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER.length) {
-        presentationTool.value = PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER[digit - 1]!
+        const nextTool = PRESENTATION_RAIL_TOOL_SHORTCUT_ORDER[digit - 1]
+        if (nextTool) {
+          presentationTool.value = nextTool
+        }
         return
       }
       eventBus.emit('presentation:toggle_virtual_keyboard_requested', {})

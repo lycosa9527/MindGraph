@@ -3,13 +3,8 @@
  * Quick registration channel: server-minted token, QR (URL not shown), revoke on close.
  */
 import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
-import {
-  ElButton,
-  ElDialog,
-  ElDropdown,
-  ElDropdownItem,
-  ElDropdownMenu,
-} from 'element-plus'
+
+import { ElButton, ElDialog, ElDropdown, ElDropdownItem, ElDropdownMenu } from 'element-plus'
 
 import { ChevronDown, Loader2, X } from 'lucide-vue-next'
 
@@ -91,9 +86,7 @@ const countdownRingStrokeDash = computed(
 
 /** Last N seconds of the period: ring + emphasis turn red. */
 const roomKeyRingUrgent = computed(
-  () =>
-    roomNextIn.value > 0 &&
-    roomNextIn.value <= ROOM_KEY_URGENT_THRESHOLD_SEC
+  () => roomNextIn.value > 0 && roomNextIn.value <= ROOM_KEY_URGENT_THRESHOLD_SEC
 )
 
 /** Label for the compact school button when an admin has more than one org. */
@@ -193,9 +186,7 @@ async function loadAdminOrgs() {
     adminOrgs.value = list as { id: number; name: string; display_name?: string }[]
     if (adminOrgs.value.length > 0) {
       const sid = authStore.user?.schoolId
-      const match = sid
-        ? adminOrgs.value.find((o) => String(o.id) === String(sid))
-        : null
+      const match = sid ? adminOrgs.value.find((o) => String(o.id) === String(sid)) : null
       selectedOrgId.value = match ? match.id : adminOrgs.value[0].id
     } else {
       selectedOrgId.value = null
@@ -266,9 +257,7 @@ async function mintToken() {
     })
     const data = (await r.json().catch(() => ({}))) as { detail?: string; token?: string }
     if (!r.ok) {
-      notify.error(
-        (typeof data.detail === 'string' && data.detail) || t('auth.quickRegMintError')
-      )
+      notify.error((typeof data.detail === 'string' && data.detail) || t('auth.quickRegMintError'))
       return
     }
     if (data.token) {
@@ -362,9 +351,7 @@ onBeforeUnmount(() => {
     append-to-body
   >
     <template #header>
-      <div
-        class="flex w-full min-w-0 items-center justify-between gap-3 pr-0.5"
-      >
+      <div class="flex w-full min-w-0 items-center justify-between gap-3 pr-0.5">
         <div class="quick-reg-numeric-typography flex min-w-0 flex-1 items-center gap-2.5">
           <div
             class="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-900 text-sm font-semibold leading-none text-white shadow-sm"
@@ -374,7 +361,8 @@ onBeforeUnmount(() => {
           </div>
           <span
             class="truncate text-base font-semibold leading-snug tracking-tight text-stone-900 sm:text-[1.0625rem]"
-          >{{ t('sidebar.brandTitle') }}</span>
+            >{{ t('sidebar.brandTitle') }}</span
+          >
         </div>
         <ElButton
           class="intl-share-site-close -mr-1 shrink-0"
@@ -393,9 +381,7 @@ onBeforeUnmount(() => {
 
     <div class="intl-share-site-body">
       <div class="quick-reg-toolbar quick-reg-numeric-typography w-full">
-        <div
-          class="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2.5"
-        >
+        <div class="flex w-full flex-wrap items-center justify-center gap-x-4 gap-y-2.5">
           <ElDropdown
             v-if="isAdmin && adminOrgs.length > 1"
             trigger="click"
@@ -427,12 +413,10 @@ onBeforeUnmount(() => {
             </template>
           </ElDropdown>
 
-          <div
-            class="flex min-w-0 items-center gap-2"
-          >
-            <span
-              class="shrink-0 text-sm font-medium text-slate-600"
-            >{{ t('auth.quickRegHeadcount') }}</span>
+          <div class="flex min-w-0 items-center gap-2">
+            <span class="shrink-0 text-sm font-medium text-slate-600">{{
+              t('auth.quickRegHeadcount')
+            }}</span>
             <ElDropdown
               trigger="click"
               :disabled="tokenLoading"
@@ -443,9 +427,7 @@ onBeforeUnmount(() => {
                 size="default"
                 class="quick-reg-field-btn !h-9 min-w-[4.5rem] shrink-0 !px-3"
               >
-                <span
-                  class="text-sm font-medium tabular-nums text-slate-800"
-                >{{ maxUses }}</span>
+                <span class="text-sm font-medium tabular-nums text-slate-800">{{ maxUses }}</span>
                 <ChevronDown
                   class="ml-1 h-3.5 w-3.5 shrink-0 text-slate-400"
                   aria-hidden="true"
@@ -477,9 +459,7 @@ onBeforeUnmount(() => {
             class="animate-spin"
             aria-hidden="true"
           />
-          <span class="text-sm font-medium text-slate-500">{{
-            t('auth.quickRegSubmitting')
-          }}</span>
+          <span class="text-sm font-medium text-slate-500">{{ t('auth.quickRegSubmitting') }}</span>
         </div>
         <div
           v-else
@@ -551,7 +531,8 @@ onBeforeUnmount(() => {
                   <span
                     class="room-key-count-ring__num"
                     :class="roomKeyRingUrgent ? 'text-red-600' : 'text-slate-600'"
-                  >{{ roomNextIn }}</span>
+                    >{{ roomNextIn }}</span
+                  >
                 </div>
               </div>
             </div>
@@ -591,7 +572,9 @@ onBeforeUnmount(() => {
 /* Inter + Noto (see eagerFonts) — matches app body, cleaner than generic system UI */
 .quick-reg-numeric-typography {
   font-family: v-bind(quickRegFontFamily);
-  font-feature-settings: "tnum" 1, "kern" 1;
+  font-feature-settings:
+    'tnum' 1,
+    'kern' 1;
   font-variant-numeric: tabular-nums;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -608,11 +591,7 @@ onBeforeUnmount(() => {
   padding: 0.625rem 0.75rem;
   border-radius: 0.75rem;
   border: 1px solid rgb(241 245 249);
-  background: linear-gradient(
-    180deg,
-    rgb(255 255 255) 0%,
-    rgb(248 250 252) 100%
-  );
+  background: linear-gradient(180deg, rgb(255 255 255) 0%, rgb(248 250 252) 100%);
   box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.85);
 }
 
@@ -822,7 +801,6 @@ onBeforeUnmount(() => {
   transition: color 0.3s ease;
   /* Inherits .quick-reg-numeric-typography */
 }
-
 </style>
 
 <style>

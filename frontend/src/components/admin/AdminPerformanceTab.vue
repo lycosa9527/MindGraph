@@ -539,12 +539,7 @@ const progressColors = [
         </section>
 
         <section
-          v-if="
-            redisCard ||
-            connTiles ||
-            aiCardStreaming ||
-            mindmateStreaming
-          "
+          v-if="redisCard || connTiles || aiCardStreaming || mindmateStreaming"
           class="perf-card-group"
           aria-labelledby="perf-group-platform"
         >
@@ -690,7 +685,11 @@ const progressColors = [
                   class="perf-metric-card__sub"
                   style="color: #fb7185"
                 >
-                  {{ t('admin.performance.mindbotStreamingNowError', { reason: aiCardStreaming.concurrencyError }) }}
+                  {{
+                    t('admin.performance.mindbotStreamingNowError', {
+                      reason: aiCardStreaming.concurrencyError,
+                    })
+                  }}
                 </p>
                 <p class="perf-section-sublabel">
                   {{ t('admin.performance.streamingMax24hLabel') }}
@@ -703,7 +702,11 @@ const progressColors = [
                   class="perf-hint perf-metric-card__hint"
                   style="color: #fb7185"
                 >
-                  {{ t('admin.performance.streamingMax24hError', { reason: aiCardStreaming.peak24hError }) }}
+                  {{
+                    t('admin.performance.streamingMax24hError', {
+                      reason: aiCardStreaming.peak24hError,
+                    })
+                  }}
                 </p>
                 <p
                   v-else
@@ -730,7 +733,11 @@ const progressColors = [
                   class="perf-metric-card__sub"
                   style="color: #fb7185"
                 >
-                  {{ t('admin.performance.mindmateStreamingNowError', { reason: mindmateStreaming.concurrencyError }) }}
+                  {{
+                    t('admin.performance.mindmateStreamingNowError', {
+                      reason: mindmateStreaming.concurrencyError,
+                    })
+                  }}
                 </p>
                 <p class="perf-section-sublabel">
                   {{ t('admin.performance.streamingMax24hLabel') }}
@@ -743,7 +750,11 @@ const progressColors = [
                   class="perf-hint perf-metric-card__hint"
                   style="color: #fb7185"
                 >
-                  {{ t('admin.performance.streamingMax24hError', { reason: mindmateStreaming.peak24hError }) }}
+                  {{
+                    t('admin.performance.streamingMax24hError', {
+                      reason: mindmateStreaming.peak24hError,
+                    })
+                  }}
                 </p>
                 <p
                   v-else

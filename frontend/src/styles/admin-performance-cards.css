@@ -100,8 +100,7 @@
   border: 1px solid var(--perf-card-edge);
   background:
     linear-gradient(145deg, rgba(34, 211, 238, 0.07) 0%, transparent 42%),
-    linear-gradient(210deg, rgba(167, 139, 250, 0.06) 0%, transparent 55%),
-    var(--perf-card-inner);
+    linear-gradient(210deg, rgba(167, 139, 250, 0.06) 0%, transparent 55%), var(--perf-card-inner);
   box-shadow:
     0 1px 0 rgba(255, 255, 255, 0.06) inset,
     0 12px 28px rgba(0, 0, 0, 0.28);

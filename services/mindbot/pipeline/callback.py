@@ -92,6 +92,7 @@ _org_blocking_lock = asyncio.Lock()
 # Config readers — all @functools.cache so env parsing runs once per process.
 # ---------------------------------------------------------------------------
 
+
 @functools.cache
 def _org_stream_warn_threshold() -> int:
     return max(1, env_int("MINDBOT_ORG_STREAM_WARN_THRESHOLD", 10))
@@ -150,6 +151,7 @@ def _org_absolute_max_blocking() -> int:
 # ---------------------------------------------------------------------------
 # Atomic per-org counters with dynamic cap computation.
 # ---------------------------------------------------------------------------
+
 
 async def _try_inc_org_stream(org_id: int) -> Optional[tuple[int, int]]:
     """Atomically compute dynamic cap and increment if under it.
@@ -564,8 +566,7 @@ async def execute_mindbot_pipeline(
             try:
                 if effective_stream_cap > _org_max_concurrent_streaming():
                     logger.info(
-                        "[MindBot] org_stream_burst_active org_id=%s active=%s "
-                        "effective_cap=%s base_cap=%s",
+                        "[MindBot] org_stream_burst_active org_id=%s active=%s effective_cap=%s base_cap=%s",
                         cfg.organization_id,
                         org_stream_count,
                         effective_stream_cap,
@@ -627,8 +628,7 @@ async def execute_mindbot_pipeline(
         org_blocking_count, effective_blocking_cap = blocking_result
         if effective_blocking_cap > _org_max_concurrent_blocking():
             logger.info(
-                "[MindBot] org_blocking_burst_active org_id=%s active=%s "
-                "effective_cap=%s base_cap=%s",
+                "[MindBot] org_blocking_burst_active org_id=%s active=%s effective_cap=%s base_cap=%s",
                 cfg.organization_id,
                 org_blocking_count,
                 effective_blocking_cap,

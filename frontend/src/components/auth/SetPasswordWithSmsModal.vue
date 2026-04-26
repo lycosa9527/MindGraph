@@ -307,7 +307,11 @@ watch(
                 :loading="submitting"
                 @click="submit"
               >
-                {{ submitting ? t('auth.setPasswordWithSmsSubmitting') : t('auth.setPasswordWithSmsSubmit') }}
+                {{
+                  submitting
+                    ? t('auth.setPasswordWithSmsSubmitting')
+                    : t('auth.setPasswordWithSmsSubmit')
+                }}
               </ElButton>
             </div>
           </div>

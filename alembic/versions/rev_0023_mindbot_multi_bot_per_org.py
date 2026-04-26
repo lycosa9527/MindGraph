@@ -32,35 +32,23 @@ depends_on = None
 
 def upgrade() -> None:
     # 1. Drop unique constraint (also drops its implicit index)
-    op.execute(
-        "ALTER TABLE organization_mindbot_configs "
-        "DROP CONSTRAINT IF EXISTS uq_mindbot_config_organization_id"
-    )
+    op.execute("ALTER TABLE organization_mindbot_configs DROP CONSTRAINT IF EXISTS uq_mindbot_config_organization_id")
 
     # 2. Add plain index to maintain fast org-scoped lookups
     op.execute(
-        "CREATE INDEX IF NOT EXISTS ix_mindbot_config_organization_id "
-        "ON organization_mindbot_configs (organization_id)"
+        "CREATE INDEX IF NOT EXISTS ix_mindbot_config_organization_id ON organization_mindbot_configs (organization_id)"
     )
 
     # 3. Add optional bot label column
-    op.execute(
-        "ALTER TABLE organization_mindbot_configs "
-        "ADD COLUMN IF NOT EXISTS bot_label VARCHAR(64) NULL"
-    )
+    op.execute("ALTER TABLE organization_mindbot_configs ADD COLUMN IF NOT EXISTS bot_label VARCHAR(64) NULL")
 
 
 def downgrade() -> None:
     # Remove bot_label column
-    op.execute(
-        "ALTER TABLE organization_mindbot_configs "
-        "DROP COLUMN IF EXISTS bot_label"
-    )
+    op.execute("ALTER TABLE organization_mindbot_configs DROP COLUMN IF EXISTS bot_label")
 
     # Drop plain index
-    op.execute(
-        "DROP INDEX IF EXISTS ix_mindbot_config_organization_id"
-    )
+    op.execute("DROP INDEX IF EXISTS ix_mindbot_config_organization_id")
 
     # Restore unique constraint (will fail if duplicate org rows exist)
     op.execute(

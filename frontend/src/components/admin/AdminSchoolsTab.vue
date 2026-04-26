@@ -358,7 +358,8 @@ onMounted(loadSchools)
               <span
                 v-else
                 class="text-gray-400 text-xs"
-              >—</span>
+                >—</span
+              >
             </span>
           </template>
         </el-table-column>

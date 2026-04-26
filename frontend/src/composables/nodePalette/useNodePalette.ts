@@ -999,7 +999,11 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
 
   eventBus.onWithOwner('diagram:loaded', resetSessionState, 'useNodePalette')
   eventBus.onWithOwner('diagram:type_changed', resetSessionState, 'useNodePalette')
-  eventBus.onWithOwner('node_palette:streaming_stop_requested', abortAllPaletteStreaming, 'useNodePalette')
+  eventBus.onWithOwner(
+    'node_palette:streaming_stop_requested',
+    abortAllPaletteStreaming,
+    'useNodePalette'
+  )
 
   function removeConceptMapTabsForDeletedNodes(payload: EventTypes['diagram:nodes_deleted']): void {
     const nodeIds = payload.nodeIds ?? payload.deletedIds ?? []

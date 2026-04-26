@@ -136,9 +136,7 @@ async def register_overseas(
     )
 
     db.add(new_user)
-    retry_count = await commit_user_with_retry(
-        db, new_user, max_retries=5, lang=lang
-    )
+    retry_count = await commit_user_with_retry(db, new_user, max_retries=5, lang=lang)
 
     session_manager = get_session_manager()
     token = create_access_token(new_user)

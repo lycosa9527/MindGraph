@@ -64,7 +64,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
         <span
           class="presentation-tool-index"
           aria-hidden="true"
-        >1</span>
+          >1</span
+        >
         <ElTooltip
           :content="`${t('canvas.presentationSideToolbar.laser')} (Ctrl+1)`"
           placement="left"
@@ -87,7 +88,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
         <span
           class="presentation-tool-index"
           aria-hidden="true"
-        >2</span>
+          >2</span
+        >
         <ElTooltip
           :content="`${t('canvas.presentationSideToolbar.highlighter')} (Ctrl+2)`"
           placement="left"
@@ -110,7 +112,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
         <span
           class="presentation-tool-index"
           aria-hidden="true"
-        >3</span>
+          >3</span
+        >
         <ElTooltip
           :content="`${t('canvas.presentationSideToolbar.pen')} (Ctrl+3)`"
           placement="left"
@@ -133,7 +136,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
         <span
           class="presentation-tool-index"
           aria-hidden="true"
-        >4</span>
+          >4</span
+        >
         <ElTooltip
           :content="`${t('canvas.presentationSideToolbar.spotlight')} (Ctrl+4)`"
           placement="left"
@@ -156,7 +160,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
         <span
           class="presentation-tool-index"
           aria-hidden="true"
-        >5</span>
+          >5</span
+        >
         <ElTooltip
           :content="`${t('canvas.presentationSideToolbar.timer')} (Ctrl+5)`"
           placement="left"
@@ -179,7 +184,8 @@ function slotCurrentClass(tool: PresentationToolId): Record<string, boolean> {
         <span
           class="presentation-tool-index"
           aria-hidden="true"
-        >6</span>
+          >6</span
+        >
         <ElTooltip
           :content="`${t('canvas.toolbar.moreAppVirtualKeyboard')} (Ctrl+6)`"
           placement="left"

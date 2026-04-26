@@ -34,11 +34,7 @@ const loadedLocales = new Set<LocaleCode>(['zh', 'en'])
  * so the 65 non-boot locales are never included in the main bundle.
  */
 const lazyLocaleModules = import.meta.glob<{ default: Record<string, string> }>(
-  [
-    '../locales/messages/*.ts',
-    '!../locales/messages/en.ts',
-    '!../locales/messages/zh.ts',
-  ],
+  ['../locales/messages/*.ts', '!../locales/messages/en.ts', '!../locales/messages/zh.ts'],
   { eager: false }
 )
 
