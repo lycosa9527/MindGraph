@@ -248,6 +248,14 @@ export const useInlineRecommendationsStore = defineStore('inlineRecommendations'
     return p * OPTIONS_PER_PAGE + localIndex
   }
 
+  /** Full reset for canvas exit: invalidate + clear readiness + topic hash. */
+  function reset(): void {
+    invalidateAll()
+    isReady.value = false
+    lastTopicHash.value = ''
+    streamPhase.value = 'idle'
+  }
+
   return {
     options,
     allOptions,
@@ -281,5 +289,6 @@ export const useInlineRecommendationsStore = defineStore('inlineRecommendations'
     prevPage,
     nextPage,
     getGlobalIndex,
+    reset,
   }
 })

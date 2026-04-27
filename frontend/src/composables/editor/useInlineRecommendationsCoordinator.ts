@@ -218,7 +218,7 @@ export function useInlineRecommendationsCoordinator() {
       topicDebounceTimer = null
     }
     relationshipStore.clearAll()
-    store.invalidateAll()
+    store.reset()
   }
 
   onUnmounted(() => {

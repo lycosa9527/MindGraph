@@ -585,6 +585,11 @@ onUnmounted(() => {
   diagramAutoSave.teardown()
   eventBus.removeAllListenersForOwner('MobileCanvasPage')
 
+  // Cancel any in-flight concept-map 3-LLM review streams and clear their state.
+  // Mirrors desktop CanvasPage cleanup so re-entry is a clean slate.
+  focusReviewStore.clear()
+  rootConceptReviewStore.clear()
+
   diagramStore.reset()
   savedDiagramsStore.clearActiveDiagram()
   useLLMResultsStore().reset()

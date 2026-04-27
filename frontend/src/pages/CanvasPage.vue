@@ -3,7 +3,9 @@
  * CanvasPage - Full canvas editor page with Vue Flow integration
  *
  * Store cleanup on exit (onUnmounted): diagram, savedDiagrams, llmResults, panels,
- * and partial ui reset - avoids memory leaks from canvas-specific state.
+ * inline recommendations + relationship (via coordinator teardown), concept-map
+ * focus/root review streams, snapshot history, presentation state, and partial
+ * ui reset — avoids stale state and lingering SSE on re-entry.
  *
  * Users access this page via:
  * 1. DiagramTemplateInput - Generates on landing, then navigates here with pre-loaded diagram
@@ -549,6 +551,12 @@ onUnmounted(() => {
   diagramAutoSave.teardown()
   inlineRecCoordinator.teardown()
   eventBus.removeAllListenersForOwner('CanvasPage')
+
+  // Cancel any in-flight concept-map 3-LLM review streams and clear their state.
+  // Event-bus listeners that previously dismissed them (pane click / selection change)
+  // are already removed above, so we must clear here to avoid stale state on re-entry.
+  focusReviewStore.clear()
+  rootConceptReviewStore.clear()
 
   // Clean up state when leaving canvas - matches old JS behavior
   diagramStore.reset()

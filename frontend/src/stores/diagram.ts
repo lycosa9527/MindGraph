@@ -321,6 +321,10 @@ export const useDiagramStore = defineStore('diagram', () => {
     selectedConnectionId.value = null
     history.value = []
     historyIndex.value = -1
+    copiedNodes.value = []
+    topicNodeWidth.value = null
+    nodeWidths.value = {}
+    multiFlowMapRecalcTrigger.value = 0
     mindMapCurveExtentBaseline.value = null
     mindMapTopicActualWidth.value = null
     mindMapNodeWidths.value = {}
@@ -329,6 +333,9 @@ export const useDiagramStore = defineStore('diagram', () => {
     mindMapTopicBranchGaps.value = null
     clearNodeDimensions()
     layoutRecalcTrigger.value = 0
+    sessionEditCount.value = 0
+    collabSessionActive.value = false
+    collabForeignLockedNodeIds.value = new Set()
     useConceptMapRelationshipStore().clearAll()
     title.value = ''
     isUserEditedTitle.value = false
