@@ -371,8 +371,14 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           domain_label: tab.name,
         },
       }
+      // append:true for every tab. The caller (initializeConceptMapRootModal /
+      // refreshConceptMapRootModal) is responsible for clearing stale suggestions
+      // ONCE up front. Using append:false here caused `setNodePaletteSuggestions([])`
+      // to fire mid-flight for tab 0, wiping any restored snapshot or bootstrap-
+      // phase state the user was already seeing — the "streaming then cleared up"
+      // symptom. Subsequent tabs always used append:true, so this unifies behavior.
       await streamBatch(NODE_PALETTE_START, payload, {
-        append: i > 0,
+        append: true,
         sharedExistingIds: sharedIds,
         useGlobalAbort: false,
       })
@@ -390,6 +396,12 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       errorMessage.value = t('nodePalette.error.enterTopicText')
       return false
     }
+    // Re-entrance guard: RootConceptModal's onMounted may fire while a previous
+    // initialize is still streaming (e.g. rapid panel open/close, or after
+    // openNodePalette replaces state without unmounting the modal). Starting a
+    // second initialize would race with the first, yielding the "streaming then
+    // cleared up" symptom. If already in-flight, defer to the running flow.
+    if (isLoading.value) return false
     ensurePaletteStreamSession()
     const tabs = panelsStore.nodePalettePanel.conceptMapTabs ?? []
     const hasDomainTabs = tabs.some((t) => t.id.startsWith('domain_'))
@@ -399,6 +411,16 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
       }
       centerTopic.value = topic
       errorMessage.value = null
+      // Wipe any stale suggestions/tabs/mode leftover from a restored snapshot
+      // that no longer matches the new session (e.g. old domain_* parent_ids
+      // from a previous Concept Generation run, which the per-tab filter hides
+      // once mode flips to the new domain ids). Doing this ONCE up front
+      // replaces the mid-flight `setNodePaletteSuggestions([])` that used to
+      // fire inside tab 0's stream handler — which made the user see streaming
+      // concepts briefly disappear. Bootstrap and all per-tab streams now use
+      // append:true, so the store stays consistent from this point onward.
+      panelsStore.setNodePaletteSuggestions([])
+      panelsStore.updateNodePalette({ conceptMapTabs: undefined, mode: null })
       isLoading.value = true
       const domainBootstrap: { names: string[] | null } = { names: null }
       try {
@@ -418,9 +440,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           },
           {
             // Bootstrap only yields `concept_map_domains`; it does NOT produce
-            // node suggestions. Use append:true so the stream handler does not
-            // call `setNodePaletteSuggestions([])` before the real per-tab
-            // streams start — this removes one redundant reactivity flush.
+            // node suggestions. append:true keeps the stream handler from
+            // firing a redundant `setNodePaletteSuggestions([])` on a store
+            // that the caller already cleared above.
             append: true,
             onConceptMapDomains: (d: string[]) => {
               domainBootstrap.names = d
