@@ -5,7 +5,7 @@
 Development and production are both on **Redis 8.6** (8.4+ is still a reasonable upgrade from older distros, but 8.6 is what we run and test against). The token-usage stream uses **XADD** with **IDMPAUTO** on 8.6, which requires a current **Python** client:
 
 - **Package:** the PyPI `redis` distribution (commonly called redis-py; imported as `import redis`).
-- **Version:** at least the release in [requirements.txt](../requirements.txt) (currently `redis>=7.1.0`); if startup reports that `idmpauto=` is missing, run `pip install -U "redis>=7.1.0"` in the app environment.
+- **Version:** at least the release in [requirements.txt](../requirements.txt) (currently `redis>=7.4.0`); if startup reports that `idmpauto=` is missing, run `pip install -U "redis"` in the app environment.
 
 Server 8.6 plus an up-to-date `redis` package avoids the old `xadd` / `idmpauto` client mismatch.
 

@@ -258,7 +258,7 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
                 "that exposes the idmpauto= parameter on the asyncio client xadd().",
                 "",
                 "To fix, upgrade the Python package, then restart the app:",
-                "  pip install -U 'redis>=7.1.0'",
+                "  pip install -U redis",
                 "",
                 *error_footer_launch_reference(),
             ],
