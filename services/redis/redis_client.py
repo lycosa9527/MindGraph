@@ -21,6 +21,7 @@ All Rights Reserved
 Proprietary License
 """
 
+import inspect
 import os
 import time
 import logging
@@ -206,6 +207,24 @@ def _parse_redis_version(version_str: str) -> tuple:
         return (0, 0, 0)
 
 
+def _redis_py_supports_xadd_idmpauto() -> bool:
+    """True if the asyncio client accepts ``idmpauto=`` on ``xadd`` (XADD / IDMPAUTO).
+
+    Only the asyncio ``Redis`` signature matters: the token buffer uses
+    :func:`services.redis.redis_async_client.get_async_redis`, and upstream
+    redis-py binds the same ``StreamCommands.xadd`` to sync and async clients,
+    so checking three classes is redundant and can confuse readers.
+    """
+    if redis is None:
+        return False
+    try:
+        from redis import asyncio as redis_async
+        sig = inspect.signature(redis_async.Redis.xadd)
+    except (ImportError, TypeError, ValueError, AttributeError):
+        return False
+    return "idmpauto" in sig.parameters
+
+
 class _RedisCapabilities:
     """Cache of feature detection results computed once per process at startup.
 
@@ -229,7 +248,25 @@ def _apply_redis_startup_config(redis_client: Any, redis_version: str) -> None:
     version_tuple = _parse_redis_version(redis_version)
     _RedisCapabilities.version = version_tuple
     _RedisCapabilities.delex = version_tuple >= (8, 4, 0)
-    _RedisCapabilities.idmpauto = version_tuple >= (8, 6, 0)
+    client_idmp = _redis_py_supports_xadd_idmpauto()
+    if version_tuple >= (8, 6, 0) and not client_idmp:
+        _log_redis_error(
+            title="REDIS 8.6+ REQUIRES A CURRENT REDIS-PY (redis) PACKAGE",
+            details=[
+                "The Redis server is 8.6 or newer; MindGraph uses XADD with IDMPAUTO",
+                "for the token-usage stream, which requires a redis (redis-py) build",
+                "that exposes the idmpauto= parameter on the asyncio client xadd().",
+                "",
+                "To fix, upgrade the Python package, then restart the app:",
+                "  pip install -U 'redis>=7.1.0'",
+                "",
+                *error_footer_launch_reference(),
+            ],
+        )
+        raise RedisStartupError(
+            "redis-py does not support XADD idmpauto=; required for Redis 8.6+"
+        ) from None
+    _RedisCapabilities.idmpauto = version_tuple >= (8, 6, 0) and client_idmp
 
     if version_tuple >= (8, 6, 0):
         policy = os.getenv("REDIS_EVICTION_POLICY", "volatile-lru")
@@ -344,6 +381,8 @@ def init_redis_sync() -> bool:
         _apply_redis_startup_config(redis_client, redis_version)
         return True
 
+    except RedisStartupError:
+        raise
     except Exception as exc:
         _log_redis_error(
             title="REDIS CONNECTION FAILED",

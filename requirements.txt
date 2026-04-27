@@ -131,8 +131,8 @@ celery>=5.6.2  # Background task processing for document uploads (REQUIRED - app
 # ============================================================================
 # CACHING (Redis - REQUIRED)
 # ============================================================================
-redis>=7.1.0  # Redis client for caching (captcha, rate limiting, sessions)
-# Note: Updated to latest version for Redis 8.4 compatibility.
+redis>=7.1.0  # Async XADD idmpauto= (Redis 8.6+ token stream); 8.4+ client features; caching, sessions, etc.
+# MindGraph refuses to start on Redis 8.6+ with an older redis (redis-py) that lacks idmpauto= on xadd.
 # Requires Python 3.10+ (compatible with Python 3.13+ recommended version).
 # For optimized performance: pip install "redis[hiredis]"
 
