@@ -56,7 +56,7 @@ async def get_stats_trends_admin(
     all_time = False
     if days == 0:
         all_time = True
-        days = None  # Will fetch all data
+        days = None  # Response metadata; SQL uses chart window start (see trends_filter_start_utc)
     elif days is not None:
         if days > 90:
             days = 90  # Cap at 90 days for regular queries
@@ -69,11 +69,9 @@ async def get_stats_trends_admin(
 
     # Handle all-time query (days=None or days=0)
     if all_time:
-        start_date_utc = None  # No start date limit - fetch all data
         beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
-        # For date list generation, start from a reasonable date (e.g., 1 year ago or system start)
-        # For tokens metric, we'll generate dates based on actual data range
-        beijing_start = beijing_today_start - timedelta(days=365)  # Default to 1 year for all-time display
+        # Chart window: last year in Beijing (same as previous all-time display range)
+        beijing_start = beijing_today_start - timedelta(days=365)
     else:
         # Calculate start date: N days ago from today start (00:00:00)
         # This ensures consistent date boundaries with token-stats endpoint
@@ -83,9 +81,11 @@ async def get_stats_trends_admin(
         # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
         days_value = days if days is not None else 30
         beijing_start = beijing_today_start - timedelta(days=days_value)
-        # Convert to UTC for database queries
-        start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
         beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+
+    # UTC lower bound for SQL; matches first day on the chart (avoids None comparisons and
+    # keeps cumulative series correct for the displayed window).
+    trends_filter_start_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
 
     # Generate all dates in range using Beijing dates (for display)
     # Includes start date through today (inclusive)
@@ -101,7 +101,9 @@ async def get_stats_trends_admin(
         # Daily cumulative user count
         try:
             initial_count = (
-                await db.execute(select(_sql_count(User.id)).where(User.created_at < start_date_utc))
+                await db.execute(
+                    select(_sql_count(User.id)).where(User.created_at < trends_filter_start_utc)
+                )
             ).scalar_one_or_none() or 0
 
             user_counts = (
@@ -110,7 +112,7 @@ async def get_stats_trends_admin(
                         func.date(User.created_at).label("date"),
                         _sql_count(User.id).label("count"),
                     )
-                    .where(User.created_at >= start_date_utc)
+                    .where(User.created_at >= trends_filter_start_utc)
                     .group_by(func.date(User.created_at))
                 )
             ).all()
@@ -144,7 +146,9 @@ async def get_stats_trends_admin(
         # Daily cumulative organization count
         try:
             initial_count = (
-                await db.execute(select(_sql_count(Organization.id)).where(Organization.created_at < start_date_utc))
+                await db.execute(
+                    select(_sql_count(Organization.id)).where(Organization.created_at < trends_filter_start_utc)
+                )
             ).scalar_one_or_none() or 0
 
             org_counts = (
@@ -153,7 +157,7 @@ async def get_stats_trends_admin(
                         func.date(Organization.created_at).label("date"),
                         _sql_count(Organization.id).label("count"),
                     )
-                    .where(Organization.created_at >= start_date_utc)
+                    .where(Organization.created_at >= trends_filter_start_utc)
                     .group_by(func.date(Organization.created_at))
                 )
             ).all()
@@ -188,7 +192,7 @@ async def get_stats_trends_admin(
                         func.date(User.created_at).label("date"),
                         _sql_count(User.id).label("count"),
                     )
-                    .where(User.created_at >= start_date_utc)
+                    .where(User.created_at >= trends_filter_start_utc)
                     .group_by(func.date(User.created_at))
                 )
             ).all()
@@ -232,9 +236,7 @@ async def get_stats_trends_admin(
                         TokenUsage.request_type.is_(None),
                     )
                 )
-            # Apply date filter only if not all-time query
-            if start_date_utc is not None:
-                token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= start_date_utc)
+            token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
             token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
 
             # Map UTC dates to Beijing dates
@@ -346,7 +348,7 @@ async def get_organization_token_trends_admin(
     all_time = False
     if days == 0:
         all_time = True
-        days = None  # Will fetch all data
+        days = None  # Response metadata; SQL uses chart window start (see trends_filter_start_utc)
     elif days is not None:
         if days > 90:
             days = 90  # Cap at 90 days for regular queries
@@ -373,7 +375,6 @@ async def get_organization_token_trends_admin(
 
     # Handle all-time query (days=None or days=0)
     if all_time:
-        start_date_utc = None  # No start date limit - fetch all data
         beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
         # For date list generation, start from organization creation
         beijing_start = org.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
@@ -387,17 +388,17 @@ async def get_organization_token_trends_admin(
         # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
         days_value = days if days is not None else 30
         beijing_start = beijing_today_start - timedelta(days=days_value)
-        # Convert to UTC for database queries
-        start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
         beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+
+    trends_filter_start_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
 
     trends_data = []
 
     # Hourly data (only for days=1, not for all-time)
-    if hourly and days == 1 and start_date_utc is not None:
+    if hourly and days == 1:
         # Generate hourly intervals for today
         hour_list = []
-        beijing_start = start_date_utc.astimezone(BEIJING_TIMEZONE)
+        beijing_start = trends_filter_start_utc.astimezone(BEIJING_TIMEZONE)
         current = beijing_start
         while current <= beijing_now:
             hour_list.append(current.replace(minute=0, second=0, microsecond=0))
@@ -414,7 +415,7 @@ async def get_organization_token_trends_admin(
                         sa_sum(TokenUsage.output_tokens).label("output_tokens"),
                     )
                     .where(TokenUsage.organization_id == org.id, TokenUsage.success)
-                    .where(TokenUsage.created_at >= start_date_utc)
+                    .where(TokenUsage.created_at >= trends_filter_start_utc)
                     .group_by(func.strftime("%Y-%m-%d %H:00:00", TokenUsage.created_at))
                 )
             ).all()
@@ -475,8 +476,7 @@ async def get_organization_token_trends_admin(
                 sa_sum(TokenUsage.input_tokens).label("input_tokens"),
                 sa_sum(TokenUsage.output_tokens).label("output_tokens"),
             ).where(TokenUsage.organization_id == org.id, TokenUsage.success)
-            if start_date_utc is not None:
-                token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= start_date_utc)
+            token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
             token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
 
             # Map UTC dates to Beijing dates
@@ -539,7 +539,7 @@ async def get_user_token_trends_admin(
     all_time = False
     if days == 0:
         all_time = True
-        days = None  # Will fetch all data
+        days = None  # Response metadata; SQL uses chart window start (see trends_filter_start_utc)
     elif days is not None:
         if days > 90:
             days = 90  # Cap at 90 days for regular queries
@@ -556,7 +556,6 @@ async def get_user_token_trends_admin(
 
     # Handle all-time query (days=None or days=0)
     if all_time:
-        start_date_utc = None  # No start date limit - fetch all data
         beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
         # For date list generation, start from user creation
         beijing_start = user.created_at.replace(tzinfo=timezone.utc).astimezone(BEIJING_TIMEZONE)
@@ -570,9 +569,9 @@ async def get_user_token_trends_admin(
         # This matches token-stats endpoint behavior: "Past Week" = last 7 days from today 00:00:00
         days_value = days if days is not None else 10
         beijing_start = beijing_today_start - timedelta(days=days_value)
-        # Convert to UTC for database queries
-        start_date_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
         beijing_now.astimezone(timezone.utc).replace(tzinfo=None)
+
+    trends_filter_start_utc = beijing_start.astimezone(timezone.utc).replace(tzinfo=None)
 
     # Generate all dates in range using Beijing dates (for display)
     date_list = []
@@ -591,8 +590,7 @@ async def get_user_token_trends_admin(
             sa_sum(TokenUsage.input_tokens).label("input_tokens"),
             sa_sum(TokenUsage.output_tokens).label("output_tokens"),
         ).where(TokenUsage.user_id == user.id, TokenUsage.success)
-        if start_date_utc is not None:
-            token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= start_date_utc)
+        token_counts_stmt = token_counts_stmt.where(TokenUsage.created_at >= trends_filter_start_utc)
         token_counts = (await db.execute(token_counts_stmt.group_by(func.date(TokenUsage.created_at)))).all()
 
         # Map UTC dates to Beijing dates

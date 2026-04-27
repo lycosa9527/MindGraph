@@ -594,6 +594,8 @@ export default {
     'Compare token usage between MindGraph (diagrams) and MindMate (AI assistant)',
   'admin.tokens': 'Token Usage',
   'admin.tokensUsed': 'Tokens Used',
+  'admin.rankingBeijingTodayHint':
+    'Rankings are for the current day (00:00–24:00, Beijing time, UTC+8).',
   'admin.topSchoolsByTokens': 'Top Schools by Token Usage',
   'admin.topUsersByTokens': 'Top Users by Token Usage',
   'admin.totalDiagrams': 'Total Diagrams',

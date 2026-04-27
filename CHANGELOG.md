@@ -5,6 +5,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.109.0] - 2026-04-28
+
+### Added
+- **Public `robots.txt`** ([`frontend/public/robots.txt`](frontend/public/robots.txt)): `User-agent: *` / `Disallow: /` with a short comment that this is a crawler hint, not a security control.
+
+### Changed
+- **Admin dashboard — token rankings and user trends** ([`frontend/src/components/admin/AdminDashboardTab.vue`](frontend/src/components/admin/AdminDashboardTab.vue), [`routers/auth/admin/stats.py`](routers/auth/admin/stats.py), [`routers/auth/admin/stats_trends.py`](routers/auth/admin/stats_trends.py), [`frontend/src/locales/messages/en|zh|zh-tw/admin.ts`](frontend/src/locales/messages/en/admin.ts)): `GET /api/auth/admin/stats` now returns **`top_users_by_tokens_today`** (top 10 users by `TokenUsage` for the **current Beijing calendar day**, with 11-digit phones masked) and scopes **`token_stats_by_org`** to that same **today** window (replacing all-time org totals). Removed **`users_by_org`** from the stats payload. The dashboard shows a Beijing-time hint, a two-column layout (**top schools** / **top users**), and opens **per-user** token series from **`GET /api/auth/admin/stats/trends/user`** when a user row is clicked (modal title uses **`admin.trendUserTokens`**).
+
+- **Admin trends — consistent UTC window for charts** ([`routers/auth/admin/stats_trends.py`](routers/auth/admin/stats_trends.py)): main, organization, and user token trend handlers use a single **`trends_filter_start_utc`** lower bound (including **`days=0` / all-time** where the chart window is bounded, e.g. one year for the global tokens metric) so SQL date filters and cumulative series are not left unbounded when **`start_date_utc`** was previously `None`.
+
+- **School dashboard — organization picker** ([`frontend/src/pages/SchoolDashboardPage.vue`](frontend/src/pages/SchoolDashboardPage.vue)): school selector is **filterable**; option labels show **`name (code)`** for easier search and recognition.
+
+- **Frontend package version** ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.109.0).
+
 ## [5.108.0] - 2026-04-27
 
 ### Fixed

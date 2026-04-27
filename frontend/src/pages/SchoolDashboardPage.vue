@@ -125,6 +125,12 @@ function formatChartLabel(value: number): string {
   return String(value)
 }
 
+/** Shown in the closed select and used by filterable matching (name + code). */
+function organizationSelectLabel(org: { name: string; code: string }): string {
+  const code = (org.code || '').trim()
+  return code ? `${org.name} (${code})` : org.name
+}
+
 async function loadOrganizations() {
   if (!isAdmin.value) return
   const res = await apiRequest('/api/auth/admin/organizations')
@@ -410,14 +416,15 @@ onBeforeUnmount(() => {
         <span class="text-gray-500 text-sm">{{ t('admin.viewSchool') }}:</span>
         <el-select
           v-model="selectedOrgId"
+          filterable
           :placeholder="t('admin.selectSchool')"
           size="small"
-          style="width: 220px"
+          style="width: 260px"
         >
           <el-option
             v-for="org in organizations"
             :key="org.id"
-            :label="org.name"
+            :label="organizationSelectLabel(org)"
             :value="org.id"
           />
         </el-select>

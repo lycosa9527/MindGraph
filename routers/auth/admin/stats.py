@@ -14,7 +14,7 @@ from typing import Optional, Dict, Any
 import logging
 
 from fastapi import APIRouter, Depends, HTTPException, Request, status
-from sqlalchemy import and_, select
+from sqlalchemy import and_, desc, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.sql.elements import ColumnElement
 from sqlalchemy.sql.functions import (
@@ -76,24 +76,6 @@ async def get_stats_admin(
     total_users = (await db.execute(select(_sql_count(User.id)))).scalar_one()
     total_orgs = (await db.execute(select(_sql_count(Organization.id)))).scalar_one()
 
-    # Performance optimization: Get user counts for all organizations in one GROUP BY query
-    # instead of N+1 queries (one per organization)
-    users_by_org = {}
-    user_counts_query = (
-        await db.execute(
-            select(Organization.id, Organization.name, _sql_count(User.id).label("user_count"))
-            .outerjoin(User, Organization.id == User.organization_id)
-            .group_by(Organization.id, Organization.name)
-        )
-    ).all()
-
-    # Build dictionary with organization name as key
-    for count_result in user_counts_query:
-        users_by_org[count_result.name] = count_result.user_count
-
-    # Sort by count (highest first)
-    users_by_org = dict(sorted(users_by_org.items(), key=lambda x: x[1], reverse=True))
-
     # Use Beijing time for "today" calculations
     # Convert to UTC for database queries since timestamps are stored in UTC
     beijing_now = get_beijing_now()
@@ -108,8 +90,9 @@ async def get_stats_admin(
     # Token usage stats (this week) - PER USER and PER ORGANIZATION tracking!
     token_stats = {"input_tokens": 0, "output_tokens": 0, "total_tokens": 0}
 
-    # Per-organization token usage (for school-level reporting)
+    # Per-organization token usage (Beijing today) for dashboard ranking
     token_stats_by_org = {}
+    top_users_by_tokens_today: list[Dict[str, Any]] = []
 
     try:
         # Global token stats for past week
@@ -130,8 +113,8 @@ async def get_stats_admin(
                 "total_tokens": int(week_token_stats.total_tokens or 0),
             }
 
-        # Per-organization TOTAL token usage (all time, for active school ranking)
-        # Use LEFT JOIN to include organizations with no token usage
+        # Per-organization token usage for the current Beijing calendar day
+        # (for school ranking on the admin dashboard)
         org_token_stats = (
             await db.execute(
                 select(
@@ -144,14 +127,17 @@ async def get_stats_admin(
                 )
                 .outerjoin(
                     TokenUsage,
-                    and_(Organization.id == TokenUsage.organization_id, TokenUsage.success),
+                    and_(
+                        Organization.id == TokenUsage.organization_id,
+                        TokenUsage.success,
+                        TokenUsage.created_at >= today_start,
+                    ),
                 )
                 .group_by(Organization.id, Organization.name)
             )
         ).all()
 
-        # Build per-organization stats dictionary
-        # Only include organizations that actually have token usage
+        # Only include organizations with token usage today
         for org_stat in org_token_stats:
             if org_stat.request_count and org_stat.request_count > 0:
                 token_stats_by_org[org_stat.name] = {
@@ -162,17 +148,52 @@ async def get_stats_admin(
                     "request_count": int(org_stat.request_count or 0),
                 }
 
+        top_user_rows = (
+            await db.execute(
+                select(
+                    User.id,
+                    User.phone,
+                    User.name,
+                    Organization.name.label("organization_name"),
+                    sa_coalesce(sa_sum(TokenUsage.total_tokens), 0).label("total_tokens"),
+                )
+                .select_from(TokenUsage)
+                .join(User, User.id == TokenUsage.user_id)
+                .outerjoin(Organization, User.organization_id == Organization.id)
+                .where(
+                    TokenUsage.success,
+                    TokenUsage.user_id.isnot(None),
+                    TokenUsage.created_at >= today_start,
+                )
+                .group_by(User.id, User.phone, User.name, Organization.id, Organization.name)
+                .order_by(desc(sa_coalesce(sa_sum(TokenUsage.total_tokens), 0)))
+                .limit(10)
+            )
+        ).all()
+        for row in top_user_rows:
+            phone = row.phone
+            if phone and len(phone) == 11:
+                phone = phone[:3] + "****" + phone[-4:]
+            top_users_by_tokens_today.append(
+                {
+                    "id": int(row.id),
+                    "phone": phone or "",
+                    "name": row.name or phone or str(row.id),
+                    "total_tokens": int(row.total_tokens or 0),
+                    "organization_name": row.organization_name or "",
+                }
+            )
+
     except (ImportError, Exception) as e:
-        # TokenUsage model doesn't exist yet or table not created - return zeros
-        logger.debug("TokenUsage not available yet: %s", e)
+        logger.debug("TokenUsage dashboard stats not available: %s", e)
 
     return {
         "total_users": total_users,
         "total_organizations": total_orgs,
-        "users_by_org": users_by_org,
         "recent_registrations": recent_registrations,
         "token_stats": token_stats,  # Global token stats
-        "token_stats_by_org": token_stats_by_org,  # Per-organization TOTAL token stats (all time)
+        "token_stats_by_org": token_stats_by_org,
+        "top_users_by_tokens_today": top_users_by_tokens_today,
     }
 
 

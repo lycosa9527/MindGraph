@@ -1,0 +1,5 @@
+# MindGraph — request that crawlers do not fetch site content
+# (Not a security control; polite crawlers may still ignore this.)
+
+User-agent: *
+Disallow: /

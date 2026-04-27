@@ -570,6 +570,7 @@ export default {
   'admin.tokenUsageCompare': '对比 MindGraph（图表）与 MindMate（AI 助手）的 Token 使用',
   'admin.tokens': 'Token使用量',
   'admin.tokensUsed': 'Token 使用量',
+  'admin.rankingBeijingTodayHint': '排行为当日数据（北京时间 0:00–24:00，UTC+8）。',
   'admin.topSchoolsByTokens': '学校 Token 使用排行',
   'admin.topUsersByTokens': '用户 Token 使用排行',
   'admin.totalDiagrams': '总图表数',

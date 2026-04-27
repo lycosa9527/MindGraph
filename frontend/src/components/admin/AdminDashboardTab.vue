@@ -1,7 +1,7 @@
 <script setup lang="ts">
 /**
- * Admin Dashboard Tab - Real stats from /api/auth/admin/stats
- * Clickable stat cards open Chart.js trend charts (like archive admin)
+ * Admin Dashboard Tab — stats from GET /api/auth/admin/stats.
+ * School and user token rankings use today (Beijing time); stat cards open Chart.js trends.
  */
 import { computed, nextTick, onBeforeUnmount, onMounted, ref } from 'vue'
 
@@ -29,7 +29,6 @@ interface OrgStats {
   org_id?: number
 }
 const tokenStatsByOrg = ref<Record<string, OrgStats>>({})
-const usersByOrg = ref<Record<string, number>>({})
 
 const topOrgsByTokens = computed(() =>
   Object.entries(tokenStatsByOrg.value)
@@ -41,6 +40,10 @@ const topOrgsByTokens = computed(() =>
     .sort((a, b) => b.tokens - a.tokens)
     .slice(0, 10)
 )
+
+const topUsersByTokens = ref<
+  { id: number; name: string; phone: string; total_tokens: number; organization_name: string }[]
+>([])
 
 const trendModalVisible = ref(false)
 const trendChartTitle = ref('')
@@ -55,10 +58,12 @@ const periodCards = ref({
   total: '-',
 })
 const trendContext = ref<{
-  type: 'metric' | 'org'
+  type: 'metric' | 'org' | 'user'
   metric?: MetricKey
   orgName?: string
   orgId?: number
+  userName?: string
+  userId?: number
   period: 'today' | 'week' | 'month' | 'total'
 }>({ type: 'metric', period: 'week' })
 
@@ -100,7 +105,22 @@ async function loadStats() {
         },
       ])
     )
-    usersByOrg.value = data.users_by_org ?? {}
+    const rawTop = data.top_users_by_tokens_today as
+      | {
+          id?: number
+          name?: string
+          phone?: string
+          total_tokens?: number
+          organization_name?: string
+        }[]
+      | undefined
+    topUsersByTokens.value = (rawTop ?? []).map((u) => ({
+      id: Number(u.id) || 0,
+      name: String(u.name ?? ''),
+      phone: String(u.phone ?? ''),
+      total_tokens: Number(u.total_tokens ?? 0),
+      organization_name: String(u.organization_name ?? ''),
+    }))
   } catch {
     notify.error(t('admin.dashboardLoadError'))
   } finally {
@@ -252,8 +272,44 @@ function switchTrendPeriod(period: 'today' | 'week' | 'month' | 'total') {
   const ctx = trendContext.value
   if (ctx.type === 'org' && ctx.orgName) {
     showOrganizationTrendChart(ctx.orgName, ctx.orgId, period)
+  } else if (ctx.type === 'user' && ctx.userId != null) {
+    showUserTokenTrend(ctx.userName ?? '', ctx.userId, period)
   } else if (ctx.type === 'metric' && ctx.metric) {
     showTrendChart(ctx.metric, period)
+  }
+}
+
+async function showUserTokenTrend(
+  userName: string,
+  userId: number,
+  period: 'today' | 'week' | 'month' | 'total' = 'week'
+) {
+  trendContext.value = { type: 'user', userName, userId, period }
+  trendChartTitle.value = `${t('admin.trendUserTokens')}: ${userName}`
+  trendModalVisible.value = true
+  trendChartLoading.value = true
+
+  const daysMap = { today: 1, week: 7, month: 30, total: 0 }
+  const days = daysMap[period]
+  const daysParam = days === 0 ? 0 : days
+  try {
+    const chartRes = await apiRequest(
+      `/api/auth/admin/stats/trends/user?user_id=${userId}&days=${daysParam}`
+    )
+    if (!chartRes.ok) {
+      notify.error(t('admin.dashboardLoadError'))
+      trendChartLoading.value = false
+      return
+    }
+    const data = await chartRes.json()
+    trendChartLoading.value = false
+    await nextTick()
+    await new Promise((r) => setTimeout(r, 50))
+    renderTrendChart(data, 'tokens')
+    periodCards.value = { today: '-', week: '-', month: '-', total: '-' }
+  } catch {
+    notify.error(t('admin.dashboardLoadError'))
+    trendChartLoading.value = false
   }
 }
 
@@ -518,63 +574,118 @@ onBeforeUnmount(() => {
         </el-card>
       </div>
 
-      <el-card
-        v-if="topOrgsByTokens.length > 0"
-        shadow="hover"
-        class="mt-6"
-      >
-        <template #header>
-          <span class="font-medium">{{ t('admin.topSchoolsByTokens') }}</span>
+      <div class="mt-6">
+        <div class="flex flex-wrap items-start justify-between gap-3 mb-3">
+          <p class="text-sm text-gray-500 dark:text-gray-400 flex-1 min-w-[200px]">
+            {{ t('admin.rankingBeijingTodayHint') }}
+          </p>
           <el-button
             text
             size="small"
+            type="primary"
             @click="loadStats"
           >
             {{ t('common.refresh') }}
           </el-button>
-        </template>
-        <el-table
-          :data="topOrgsByTokens"
-          stripe
-          size="small"
-        >
-          <el-table-column
-            prop="name"
-            :label="t('admin.schoolName')"
-          >
-            <template #default="{ row }">
-              <span
-                class="cursor-pointer hover:text-primary-500 hover:underline"
-                @click="showOrganizationTrendChart(row.name, row.orgId)"
+        </div>
+        <div class="grid grid-cols-1 xl:grid-cols-2 gap-6">
+          <el-card shadow="hover">
+            <template #header>
+              <span class="font-medium">{{ t('admin.topSchoolsByTokens') }}</span>
+            </template>
+            <el-table
+              :data="topOrgsByTokens"
+              stripe
+              size="small"
+              :empty-text="t('admin.listRangeEmpty')"
+            >
+              <el-table-column
+                prop="name"
+                :label="t('admin.schoolName')"
               >
-                {{ row.name }}
-              </span>
-            </template>
-          </el-table-column>
-          <el-table-column
-            prop="tokens"
-            :label="t('admin.tokens')"
-            width="140"
-          >
-            <template #default="{ row }">
-              <span
-                class="cursor-pointer hover:text-primary-500"
-                @click="showOrganizationTrendChart(row.name, row.orgId)"
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500 hover:underline"
+                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                  >
+                    {{ row.name }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="tokens"
+                :label="t('admin.tokens')"
+                width="140"
               >
-                {{ formatNumber(row.tokens) }}
-              </span>
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500"
+                    @click="showOrganizationTrendChart(row.name, row.orgId)"
+                  >
+                    {{ formatNumber(row.tokens) }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+
+          <el-card shadow="hover">
+            <template #header>
+              <span class="font-medium">{{ t('admin.topUsersByTokens') }}</span>
             </template>
-          </el-table-column>
-          <el-table-column
-            :label="t('admin.usersCount')"
-            width="100"
-          >
-            <template #default="{ row }">
-              {{ usersByOrg[row.name] ?? 0 }}
-            </template>
-          </el-table-column>
-        </el-table>
-      </el-card>
+            <el-table
+              :data="topUsersByTokens"
+              stripe
+              size="small"
+              :empty-text="t('admin.listRangeEmpty')"
+            >
+              <el-table-column
+                prop="name"
+                :label="t('admin.users')"
+                min-width="120"
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500 hover:underline"
+                    @click="showUserTokenTrend(row.name, row.id)"
+                  >
+                    {{ row.name }}
+                  </span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="organization_name"
+                :label="t('admin.schoolName')"
+                min-width="100"
+                show-overflow-tooltip
+              >
+                <template #default="{ row }">
+                  {{ row.organization_name || '—' }}
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="phone"
+                :label="t('admin.phone')"
+                width="120"
+              />
+              <el-table-column
+                prop="total_tokens"
+                :label="t('admin.tokens')"
+                width="120"
+              >
+                <template #default="{ row }">
+                  <span
+                    class="cursor-pointer hover:text-primary-500"
+                    @click="showUserTokenTrend(row.name, row.id)"
+                  >
+                    {{ formatNumber(row.total_tokens) }}
+                  </span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </div>
+      </div>
     </template>
 
     <el-dialog
