@@ -5,6 +5,7 @@ Extracted streaming logic for node palette SSE endpoints to reduce complexity
 and fix type checker issues (reportGeneralTypeIssues, ContentStream).
 """
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator
@@ -233,6 +234,18 @@ async def stream_node_palette(
     Reduces complexity for type checker and provides proper AsyncIterator type.
     """
     logger.debug("%s SSE stream starting | Session: %s", log_prefix, session_id[:8])
+
+    # Yield an SSE comment IMMEDIATELY to establish the HTTP response before
+    # any awaitable operation. This prevents Starlette's BaseHTTPMiddleware
+    # from raising "RuntimeError: No response returned" when the client
+    # aborts the request (asyncio.CancelledError / GeneratorExit) before the
+    # LLM yields its first chunk. SSE comment lines start with ':' and are
+    # ignored by browser EventSource parsers, so the frontend is unaffected.
+    # Without this, a cancellation during the first __anext__() of the inner
+    # generator escapes as BaseException (not caught by `except Exception`),
+    # leaving the ASGI response start message unsent.
+    yield ": stream_open\n\n"
+
     node_count = 0
     chunk_count = 0
     # Tracks whether a fallback event was already sent when no chunks arrived.
@@ -241,6 +254,7 @@ async def stream_node_palette(
     # RuntimeError: async generator ignored GeneratorExit when aclose() is
     # called due to client disconnect or CancelledError).
     no_chunk_response_sent = False
+    cancelled = False
 
     raw_lang = (getattr(req, "language", None) or "en").strip().lower()
     text_blobs = collect_node_palette_text_blobs(req, center_topic)
@@ -285,6 +299,24 @@ async def stream_node_palette(
             node_count,
         )
 
+    except asyncio.CancelledError:
+        # Client aborted the request (e.g. frontend streaming abort / disconnect).
+        # This is a BaseException in Python 3.8+, so `except Exception` below
+        # does not catch it. Handle it explicitly to log a clean info message
+        # and re-raise so asyncio preserves cancellation semantics. Do NOT
+        # yield here: the caller is gone. The initial SSE heartbeat yielded
+        # at the top of this function already established the HTTP response,
+        # so Starlette will not raise "No response returned".
+        cancelled = True
+        no_chunk_response_sent = True
+        logger.info(
+            "%s Stream cancelled by client | Session: %s | Chunks yielded: %d",
+            log_prefix,
+            session_id[:8],
+            chunk_count,
+        )
+        raise
+
     except (
         LLMContentFilterError,
         LLMRateLimitError,
@@ -325,8 +357,10 @@ async def stream_node_palette(
         # CancelledError, etc.), a yield here raises:
         #   RuntimeError: async generator ignored GeneratorExit
         # which Starlette re-wraps as "No response returned."
-        # All response paths are already covered by the try/except blocks above.
-        if chunk_count == 0 and not no_chunk_response_sent:
+        # All response paths are already covered by the try/except blocks above,
+        # and the initial SSE heartbeat at function entry guarantees the HTTP
+        # response is always established even if no data chunks are produced.
+        if chunk_count == 0 and not no_chunk_response_sent and not cancelled:
             logger.warning(
                 "%s Generator completed without yielding, no response sent | Session: %s",
                 log_prefix,

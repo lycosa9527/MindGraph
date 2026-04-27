@@ -417,6 +417,11 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
             },
           },
           {
+            // Bootstrap only yields `concept_map_domains`; it does NOT produce
+            // node suggestions. Use append:true so the stream handler does not
+            // call `setNodePaletteSuggestions([])` before the real per-tab
+            // streams start — this removes one redundant reactivity flush.
+            append: true,
             onConceptMapDomains: (d: string[]) => {
               domainBootstrap.names = d
             },
@@ -522,6 +527,9 @@ export function useNodePalette(options: UseNodePaletteOptions = {}) {
           },
         },
         {
+          // Bootstrap only yields domain names; keep existing tab suggestions
+          // in the store so switching back to earlier tabs still shows concepts.
+          append: true,
           onConceptMapDomains: (d: string[]) => {
             addDomainBootstrap.names = d
           },

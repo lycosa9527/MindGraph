@@ -341,6 +341,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
             diagram_type=diagram_type,
             endpoint_path=endpoint_path or "/thinking_mode/node_palette/start",
             session_id=session_id,
+            use_knowledge_base=False,
         )
         return self._finalize_domain_label_list(raw, count, existing_labels, language)
 

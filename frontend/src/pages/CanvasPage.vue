@@ -401,10 +401,17 @@ onMounted(async () => {
     'CanvasPage'
   )
 
-  // Node palette: listen for open events (singleton created at setup top)
+  // Node palette: listen for open events (singleton created at setup top).
+  // Concept maps are handled by RootConceptModal.onMounted → initializeConceptMapRootModal(),
+  // which runs bootstrap_domains + sequential per-tab streams. Firing startSession() here in
+  // parallel would launch a second concurrent NODE_PALETTE_START request on the same session
+  // and topic, causing duplicate RAG initialization, flickering suggestions (each stream calls
+  // setNodePaletteSuggestions([]) when append=false), and intermittent "No response returned"
+  // cancellations when one of the racing streams aborts.
   eventBus.onWithOwner(
     'nodePalette:opened',
     (data: { hasRestoredSession?: boolean; wasPanelAlreadyOpen?: boolean }) => {
+      if (diagramStore.type === 'concept_map') return
       if (!data.hasRestoredSession && diagramStore.data?.nodes?.length) {
         nextTick().then(() =>
           startNodePaletteSession({ keepSessionId: data.wasPanelAlreadyOpen ?? false })

@@ -43,6 +43,15 @@ class BasePaletteGenerator(ABC):
     - Subclasses override _build_prompt() for diagram-specific generation
     """
 
+    # Evict session entries after this much idle time. Prevents unbounded
+    # growth when users close their browser tab, lose connection, or otherwise
+    # skip the explicit /cleanup endpoint. Default: 60 minutes.
+    SESSION_IDLE_TTL_SECONDS = 3600
+
+    # Skip the sweep if it ran recently; the sweep itself is cheap but this
+    # avoids repeated dict scans under high request rates.
+    SESSION_SWEEP_INTERVAL_SECONDS = 300
+
     def __init__(self):
         """Initialize base palette generator"""
         self.llm_service = llm_service
@@ -54,7 +63,9 @@ class BasePaletteGenerator(ABC):
         self.generated_nodes = {}  # session_id -> List[Dict]
         self.seen_texts = {}  # session_id -> Set[str] (normalized)
         self.session_start_times = {}  # session_id -> timestamp
+        self.session_last_seen = {}  # session_id -> timestamp (updated on each batch)
         self.batch_counts = {}  # session_id -> int (total batches)
+        self._last_sweep_time = 0.0
 
         logger.debug(
             "[NodePalette-%s] Initialized with concurrent multi-LLM architecture",
@@ -101,14 +112,19 @@ class BasePaletteGenerator(ABC):
             - {'event': 'batch_complete', 'total_unique': 45, ...}
         """
         # Track session
+        now = time.time()
         if session_id not in self.session_start_times:
-            self.session_start_times[session_id] = time.time()
+            self.session_start_times[session_id] = now
             self.batch_counts[session_id] = 0
             logger.debug(
                 "[NodePalette] New session: %s | Topic: '%s'",
                 session_id[:8],
                 center_topic,
             )
+        self.session_last_seen[session_id] = now
+
+        # Evict idle sessions abandoned without /cleanup (e.g. browser closed).
+        self._sweep_stale_sessions(now=now)
 
         batch_num = self.batch_counts[session_id] + 1
         self.batch_counts[session_id] = batch_num
@@ -173,6 +189,11 @@ class BasePaletteGenerator(ABC):
             diagram_type=diagram_type,
             endpoint_path=endpoint_path or "/thinking_mode/node_palette/start",
             session_id=session_id,
+            # Node palette generates concept labels from a topic, not answers against
+            # the user's knowledge base. Skip RAG enhancement to avoid initializing
+            # Qdrant / DashScope / KeywordSearch / RAGService on every palette click
+            # and to avoid a per-LLM `has_knowledge_base` DB query on every batch.
+            use_knowledge_base=False,
         ):
             event = chunk["event"]
             llm_name = chunk["llm"]
@@ -545,6 +566,39 @@ class BasePaletteGenerator(ABC):
 
         # Cleanup
         self.session_start_times.pop(session_id, None)
+        self.session_last_seen.pop(session_id, None)
         self.generated_nodes.pop(session_id, None)
         self.seen_texts.pop(session_id, None)
         self.batch_counts.pop(session_id, None)
+
+    def _sweep_stale_sessions(self, now: Optional[float] = None) -> None:
+        """
+        Evict sessions whose last batch is older than SESSION_IDLE_TTL_SECONDS.
+
+        Called opportunistically from generate_batch; rate-limited by
+        SESSION_SWEEP_INTERVAL_SECONDS so we don't scan the dicts on every
+        single call under load.
+        """
+        if now is None:
+            now = time.time()
+        if now - self._last_sweep_time < self.SESSION_SWEEP_INTERVAL_SECONDS:
+            return
+        self._last_sweep_time = now
+
+        ttl = self.SESSION_IDLE_TTL_SECONDS
+        stale = [
+            sid
+            for sid, last_seen in self.session_last_seen.items()
+            if now - last_seen > ttl
+        ]
+        if not stale:
+            return
+
+        logger.debug(
+            "[NodePalette-%s] Sweeping %d idle session(s) (>%ds)",
+            self.__class__.__name__,
+            len(stale),
+            ttl,
+        )
+        for sid in stale:
+            self.end_session(sid, reason="idle_ttl")

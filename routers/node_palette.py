@@ -182,23 +182,6 @@ async def start_node_palette(
         except Exception as e:
             logger.debug("Failed to track user activity: %s", e)
 
-    # Log concept_generation for concept map (teacher usage tracking)
-    if current_user and getattr(current_user, "role", None) == "user" and req.diagram_type == "concept_map":
-        try:
-            log_entry = UserActivityLog(
-                user_id=current_user.id,
-                activity_type="concept_generation",
-                created_at=datetime.now(UTC),
-            )
-            db.add(log_entry)
-            await db.commit()
-        except Exception as e:
-            logger.debug("Failed to log concept_generation: %s", e)
-            try:
-                await db.rollback()
-            except Exception as exc:
-                logger.debug("Rollback after concept_generation log failure: %s", exc)
-
     # Log at INFO level for user activity tracking
     logger.info(
         "[NodePalette] Started: Session %s (User: %s, Diagram: %s)",
@@ -217,6 +200,37 @@ async def start_node_palette(
         if req.diagram_type != "bridge_map" and (not center_topic or not center_topic.strip()):
             logger.error("[NodePalette-API] No center topic for session %s", session_id[:8])
             raise HTTPException(status_code=400, detail=f"{req.diagram_type} has no center topic")
+
+        # Log concept_generation for concept map (teacher usage tracking).
+        # Log ONLY on the one-shot domain-bootstrap call (user action "Generate
+        # Concepts" or "Add Domain"). The per-tab streams that follow share the
+        # same user intent and must not each produce a separate row. Logging
+        # after topic validation also prevents orphan rows from HTTP 400 paths.
+        stage_data = getattr(req, "stage_data", None) or {}
+        is_concept_map_bootstrap = (
+            req.diagram_type == "concept_map"
+            and isinstance(stage_data, dict)
+            and bool(stage_data.get("bootstrap_domains"))
+        )
+        if (
+            current_user
+            and getattr(current_user, "role", None) == "user"
+            and is_concept_map_bootstrap
+        ):
+            try:
+                log_entry = UserActivityLog(
+                    user_id=current_user.id,
+                    activity_type="concept_generation",
+                    created_at=datetime.now(UTC),
+                )
+                db.add(log_entry)
+                await db.commit()
+            except Exception as e:
+                logger.debug("Failed to log concept_generation: %s", e)
+                try:
+                    await db.rollback()
+                except Exception as exc:
+                    logger.debug("Rollback after concept_generation log failure: %s", exc)
 
         _log_topic_and_firing(req, center_topic, session_id)
         generator = _get_palette_generator(req.diagram_type)

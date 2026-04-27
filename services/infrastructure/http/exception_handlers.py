@@ -117,6 +117,19 @@ async def general_exception_handler(request: Request, exc: Exception):
     exception_message = str(exc)
     request_path = getattr(request.url, "path", "") if request and request.url else ""
 
+    # Starlette's BaseHTTPMiddleware raises RuntimeError("No response returned.") when
+    # a streaming response is cancelled (asyncio.CancelledError / GeneratorExit) before
+    # the ASGI `http.response.start` message is sent. This is a client-disconnect
+    # artifact — the SSE generator was aborted by the frontend (AbortController) — not
+    # an application fault. Treat it like ClientDisconnect: log at debug, return 204,
+    # and never trigger a critical SMS alert.
+    if exception_type == "RuntimeError" and "No response returned" in exception_message:
+        logger.debug(
+            "Client disconnected during streaming response (no response returned): %s",
+            request_path,
+        )
+        return Response(status_code=204)
+
     stack_trace = "".join(traceback.format_exception(type(exc), exc, exc.__traceback__))
 
     logger.error("Unhandled exception: %s: %s", exception_type, exception_message, exc_info=True)
