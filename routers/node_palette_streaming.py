@@ -235,6 +235,12 @@ async def stream_node_palette(
     logger.debug("%s SSE stream starting | Session: %s", log_prefix, session_id[:8])
     node_count = 0
     chunk_count = 0
+    # Tracks whether a fallback event was already sent when no chunks arrived.
+    # Used to prevent double-sending from both the try/except block and the
+    # finally block, and to avoid yielding in finally (which raises
+    # RuntimeError: async generator ignored GeneratorExit when aclose() is
+    # called due to client disconnect or CancelledError).
+    no_chunk_response_sent = False
 
     raw_lang = (getattr(req, "language", None) or "en").strip().lower()
     text_blobs = collect_node_palette_text_blobs(req, center_topic)
@@ -269,6 +275,7 @@ async def stream_node_palette(
                 log_prefix,
                 session_id[:8],
             )
+            no_chunk_response_sent = True
             yield f"data: {json.dumps({'event': 'batch_complete', 'nodes': node_count})}\n\n"
 
         logger.debug(
@@ -298,6 +305,7 @@ async def stream_node_palette(
             session_id[:8],
             str(exc),
         )
+        no_chunk_response_sent = True
         yield _yield_error_event(req, error_type, getattr(exc, "user_message", None), language_for_ui=effective_lang)
 
     except Exception as exc:
@@ -308,13 +316,19 @@ async def stream_node_palette(
             str(exc),
             exc_info=True,
         )
+        no_chunk_response_sent = True
         yield _yield_error_event(req, "unknown", language_for_ui=effective_lang)
 
     finally:
-        if chunk_count == 0:
+        # NEVER yield inside a finally block of an async generator.
+        # If the generator is being closed via aclose() (client disconnect,
+        # CancelledError, etc.), a yield here raises:
+        #   RuntimeError: async generator ignored GeneratorExit
+        # which Starlette re-wraps as "No response returned."
+        # All response paths are already covered by the try/except blocks above.
+        if chunk_count == 0 and not no_chunk_response_sent:
             logger.warning(
-                "%s Generator completed without yielding, sending error event | Session: %s",
+                "%s Generator completed without yielding, no response sent | Session: %s",
                 log_prefix,
                 session_id[:8],
             )
-            yield _yield_error_event(req, "no_response", language_for_ui=effective_lang)

@@ -9,7 +9,7 @@ tokens:stats -> hash of total_written, total_dropped, batches.
 """
 
 from datetime import UTC, datetime
-from typing import Optional, Dict, Any, List, Tuple
+from typing import Awaitable, Optional, Dict, Any, List, Tuple, cast
 import asyncio
 import logging
 import os
@@ -309,6 +309,9 @@ class RedisTokenBuffer:
                         start_id="0-0",
                         count=count,
                     )
+                    # RESP2: [next_id, [(id, fields), ...], [deleted_ids]]
+                    # With RESP3, parse_xautoclaim raises KeyError inside redis-py
+                    # before returning, so that case is caught by the except below.
                     raw_entries = pending[1] if pending and len(pending) > 1 else []
                 except Exception:
                     raw_entries = []
@@ -348,7 +351,15 @@ class RedisTokenBuffer:
                         block=None,
                     )
                     if new_entries:
-                        raw_entries.extend(new_entries[0][1])
+                        if isinstance(new_entries, dict):
+                            # RESP3: parse_xread_resp3 → {stream_name: [[(id, fields), ...]]}
+                            # The entries list is wrapped in an extra outer list.
+                            for entries_wrapper in new_entries.values():
+                                for entries in entries_wrapper:
+                                    raw_entries.extend(entries)
+                        else:
+                            # RESP2: [[stream_name, [(id, fields), ...]]]
+                            raw_entries.extend(new_entries[0][1])
 
                 records = []
                 poison_ids = []
@@ -504,7 +515,7 @@ class RedisTokenBuffer:
                     logger.warning("[TokenBuffer] Buffer overflow! Dropping record.")
                     return False
 
-                payload = {"data": orjson.dumps(record)}
+                payload = cast(Any, {"data": orjson.dumps(record)})
                 if _RedisCapabilities.idmpauto:
                     try:
                         await redis.xadd(
@@ -590,7 +601,7 @@ class RedisTokenBuffer:
         if self._use_redis():
             try:
                 redis = get_async_redis()
-                redis_stats = await redis.hgetall(STATS_KEY)
+                redis_stats = await cast(Awaitable[Dict[str, str]], redis.hgetall(STATS_KEY))
                 if redis_stats:
                     stats["redis_total_written"] = int(redis_stats.get("total_written", 0))
                     stats["redis_total_batches"] = int(redis_stats.get("total_batches", 0))
