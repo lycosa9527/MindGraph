@@ -1,14 +1,17 @@
-/** fr UI — common (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — common
+ */
+
 export default {
   'app.aiDisclaimer': "Le contenu est généré par l'IA ; veuillez le vérifier soigneusement.",
-  'app.brandName': 'Mind Platform',
+  'app.brandName': 'Plateforme mentale',
+  'app.guestMainLoginPrompt': 'Connectez-vous pour utiliser cette zone',
   'app.browserLocale.body':
     'Votre navigateur préfère {name}. Souhaitez-vous changer l’interface de l’application pour qu’elle corresponde ?',
   'app.browserLocale.dontAsk': 'Ne plus demander',
   'app.browserLocale.keepChinese': 'Conserver le chinois',
   'app.browserLocale.switch': 'Changer',
   'app.browserLocale.title': 'Changer la langue de l’interface ?',
-  'app.guestMainLoginPrompt': 'Connectez-vous pour utiliser cette zone',
   'askOnce.apply': 'Appliquer',
   'askOnce.clearDraft': 'Effacer',
   'askOnce.newChat': 'Nouvelle discussion',
@@ -31,7 +34,7 @@ export default {
   'askOnce.templateActive': 'Modèle actif',
   'askOnce.templates': 'Modèles',
   'askOnce.untitledConversation': 'Conversation sans titre',
-  'askonce.title': 'AskOnce',
+  'askonce.title': 'Demander une fois',
   'common.all': 'Tous',
   'common.cancel': 'Annuler',
   'common.clear': 'Effacer',
@@ -47,7 +50,7 @@ export default {
   'common.error': 'Erreur',
   'common.listJoin.separator': ' et ',
   'common.loading': 'Chargement en cours...',
-  'common.ok': 'OK',
+  'common.ok': "D'ACCORD",
   'common.refresh': 'Actualiser',
   'common.save': 'Enregistrer',
   'common.success': 'Succès',
@@ -73,24 +76,8 @@ export default {
   'diagramTemplates.mindmap': 'Créez une carte mentale centrée sur le thème 【theme】.',
   'diagramTemplates.multi_flow_map': 'Analysez les causes et les effets de l’événement 【event】.',
   'diagramTemplates.tree_map': 'Classez selon le critère 【criterion】 pour le sujet 【subject】.',
-  'landing.international.modules': 'Modules',
-  'landing.international.mindmateCard.title': 'MindMate',
-  'landing.international.mindmateCard.desc':
-    'Votre partenaire virtuel d’enseignement et de recherche',
-  'landing.international.shareSite': 'Share site',
-  'landing.international.shareSiteModalTitle': 'Share site',
-  'landing.international.shareSiteModalHint':
-    'Scan with a phone or tablet camera to open this page.',
-  'landing.international.shareSiteCopy': 'Copy link',
-  'landing.international.shareSiteCopied': 'Link copied',
-  'landing.international.promptPlaceholder':
-    'Indiquez un sujet ou une courte description, ou choisissez un type de diagramme ci-dessous.',
-  'landing.international.sectionTitle': 'Choisissez un type de diagramme',
-  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
-  'landing.international.subtitle':
-    'Le logiciel de diagrammes de réflexion IA le plus puissant de l’univers',
   'meta.pageTitle.admin': 'Administrateur',
-  'meta.pageTitle.askOnce': 'AskOnce',
+  'meta.pageTitle.askOnce': 'Demander une fois',
   'meta.pageTitle.auth': 'Connexion',
   'meta.pageTitle.canvas': 'Toile',
   'meta.pageTitle.chunkTest': 'Test de découpage',
@@ -98,8 +85,8 @@ export default {
   'meta.pageTitle.community': 'Communauté',
   'meta.pageTitle.course': 'Cours',
   'meta.pageTitle.dashboardLogin': 'Connexion au tableau de bord',
-  'meta.pageTitle.debateverse': 'DebateVerse',
-  'meta.pageTitle.default': 'Mind Platform',
+  'meta.pageTitle.debateverse': 'Verset de débat',
+  'meta.pageTitle.default': 'Plateforme mentale',
   'meta.pageTitle.demoLogin': 'Connexion de démonstration',
   'meta.pageTitle.gewe': 'Gewe',
   'meta.pageTitle.knowledgeSpace': 'Espace de connaissances',
@@ -107,16 +94,17 @@ export default {
   'meta.pageTitle.libraryBookmark': 'Favori',
   'meta.pageTitle.libraryViewer': 'Visionneuse de bibliothèque',
   'meta.pageTitle.login': 'S’identifier',
-  'meta.pageTitle.main': 'Mind Platform',
+  'meta.pageTitle.main': 'Plateforme mentale',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'Page non trouvée',
   'meta.pageTitle.publicDashboard': 'Statistiques',
   'meta.pageTitle.schoolDashboard': 'Tableau de bord de l’école',
   'meta.pageTitle.schoolZone': 'Zone scolaire',
   'meta.pageTitle.smartResponse': 'Réponse intelligente',
-  'meta.pageTitle.teacherUsage': 'Utilisation par les enseignants',
   'meta.pageTitle.template': 'Modèles',
+  'meta.pageTitle.teacherUsage': 'Utilisation par les enseignants',
   'meta.pageTitle.workshopChat': 'Chat d’atelier',
   'publicDashboard.networkError': 'Erreur réseau, impossible de charger le tableau de bord',
   'settings.language.interface': 'Langue de l’interface',
@@ -125,7 +113,23 @@ export default {
   'settings.language.promptSelectPlaceholder': 'Rechercher des langues…',
   'settings.language.supportsCount': 'Prend en charge {n} langues',
   'settings.language.title': 'Langue et invites',
+  'settings.version.title': 'Version de l’interface utilisateur',
   'settings.version.chinese': 'Version chinoise',
   'settings.version.international': 'Version internationale',
-  'settings.version.title': 'Version de l’interface utilisateur',
-} as const
+  'landing.international.subtitle':
+    'Le logiciel de diagrammes de réflexion IA le plus puissant de l’univers',
+  'landing.international.promptPlaceholder':
+    'Indiquez un sujet ou une courte description, ou choisissez un type de diagramme ci-dessous.',
+  'landing.international.sectionTitle': 'Choisissez un type de diagramme',
+  'landing.international.advancedDiagramsTitle': 'Diagrammes avancés',
+  'landing.international.modules': 'Modules',
+  'landing.international.mindmateCard.title': 'MindMate',
+  'landing.international.mindmateCard.desc':
+    'Votre partenaire virtuel d’enseignement et de recherche',
+  'landing.international.shareSite': 'Partager le site',
+  'landing.international.shareSiteModalTitle': 'Partager le site',
+  'landing.international.shareSiteModalHint':
+    'Scan with a phone or tablet camera to open this page.',
+  'landing.international.shareSiteCopy': 'Copier le lien',
+  'landing.international.shareSiteCopied': 'Lien copié',
+}

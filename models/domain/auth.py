@@ -104,6 +104,8 @@ class User(Base):
     # Client preferences (interface + LLM prompt language); persisted for signed-in users
     ui_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
     prompt_language: Mapped[str | None] = mapped_column(String(32), nullable=True)
+    # When True, prompt_language tracks interface locale (resolved to API codes, e.g. zh-tw → zh-hant)
+    match_prompt_to_ui: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
     ui_version: Mapped[str | None] = mapped_column(String(32), nullable=True, default="international")
     # False for overseas (email) accounts: Simplified Chinese UI locale (`zh`) is not allowed
     allows_simplified_chinese: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)

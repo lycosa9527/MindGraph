@@ -827,6 +827,7 @@ class LanguagePreferencesUpdate(BaseModel):
     ui_language: Optional[str] = Field(None, max_length=32)
     prompt_language: Optional[str] = Field(None, max_length=32)
     ui_version: Optional[str] = Field(None, max_length=32)
+    match_prompt_to_ui: Optional[bool] = None
 
     @field_validator("ui_language")
     @classmethod

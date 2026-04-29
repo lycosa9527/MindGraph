@@ -1,4 +1,7 @@
-/** Chinese UI — auth */
+/**
+ * zh UI — auth
+ */
+
 export default {
   'auth.accountInfo': '账户信息',
   'auth.updateLog': '更新日志',
@@ -13,7 +16,7 @@ export default {
   'auth.captchaNetworkError': '网络错误，验证码加载失败',
   'auth.changePassword': '修改密码',
   'auth.accountPlugin': '插件',
-  'auth.apiTokenButton': 'API Token',
+  'auth.apiTokenButton': 'API令牌',
   'auth.downloadChromeExtension': 'Chrome 扩展',
   'auth.downloadOpenclawSkill': 'OpenClaw 技能包',
   'auth.changePhoneButton': '更换手机',
@@ -151,4 +154,4 @@ export default {
   'auth.accountNameSave': '保存姓名',
   'auth.accountNameSaveSuccess': '姓名已更新',
   'auth.accountNameSaveError': '保存失败，请重试',
-} as const
+}

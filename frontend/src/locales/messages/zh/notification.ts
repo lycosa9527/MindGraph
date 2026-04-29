@@ -1,4 +1,7 @@
-/** Chinese UI — notification */
+/**
+ * zh UI — notification
+ */
+
 export default {
   'notification.cannotClearTopicOrCenter': '无法清空主题或中心节点',
   'notification.cannotResetSelectDiagramType': '无法重置：请先选择图示类型',
@@ -44,4 +47,4 @@ export default {
   'notification.sessionInvalidated': '您已被登出，因为登录设备数量超过上限',
   'notification.signInToUse': '请登录后使用',
   'notification.signInToValidateFocus': '请登录后检验焦点问题',
-} as const
+}

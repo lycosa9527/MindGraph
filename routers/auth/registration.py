@@ -160,6 +160,7 @@ async def finalize_sms_registration_session(
             "organization": org.name,
             "ui_language": getattr(new_user, "ui_language", None),
             "prompt_language": getattr(new_user, "prompt_language", None),
+            "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
         },
     }
 
@@ -401,6 +402,7 @@ async def register(
             "organization": org.name,
             "ui_language": getattr(new_user, "ui_language", None),
             "prompt_language": getattr(new_user, "prompt_language", None),
+            "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
         },
     }
 

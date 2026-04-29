@@ -1,4 +1,7 @@
-/** Chinese UI — sidebar */
+/**
+ * zh UI — sidebar
+ */
+
 export default {
   'sidebar.actions.delete': '删除',
   'sidebar.actions.pinToTop': '置顶',
@@ -66,11 +69,11 @@ export default {
   'sidebar.library': '图书馆',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'MindBot',
+  'sidebar.mindbot': '思维机器人',
   'sidebar.schoolZone': '学校专区',
   'sidebar.smartResponse': 'Smart Response 智回',
   'sidebar.teacherUsage': '教师使用度',
   'sidebar.templateResources': '模板资源',
   'sidebar.userSubtitleDefault': 'MindGraph专业版',
   'sidebar.account': '账号设置',
-} as const
+}

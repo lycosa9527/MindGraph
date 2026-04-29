@@ -7,14 +7,15 @@ import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
 
 import { htmlLangForLocale, loadLocaleMessages, setI18nLocale } from '@/i18n'
-import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import type { LocaleCode, PromptOutputLanguageCode } from '@/i18n/locales'
 import {
   UI_LOCALE_CODES,
   detectBrowserLocale,
   isPromptOutputLanguageCode,
   isUiLocale,
+  matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 
 export type Theme = 'light' | 'dark' | 'system'
 export type Language = LocaleCode
@@ -135,14 +136,19 @@ export const useUIStore = defineStore('ui', () => {
    */
   function applyLanguageFromServerProfile(
     ui: string | null | undefined,
-    prompt: string | null | undefined
+    prompt: string | null | undefined,
+    options?: { matchPromptToUi?: boolean | null }
   ): void {
+    if (options?.matchPromptToUi !== undefined && options.matchPromptToUi !== null) {
+      setMatchPromptToUi(options.matchPromptToUi)
+    }
     const nextUi: Language = isValidLanguage(ui ?? null) ? (ui as Language) : language.value
     let nextPrompt: PromptLanguage
     if (isValidPromptLanguage(prompt ?? null)) {
       nextPrompt = prompt as PromptLanguage
-    } else if (matchPromptToUi.value && isValidPromptLanguage(nextUi)) {
-      nextPrompt = nextUi
+    } else if (matchPromptToUi.value) {
+      const matched = matchedPromptLanguageForUiLocale(nextUi)
+      nextPrompt = matched !== null ? matched : promptLanguage.value
     } else {
       nextPrompt = promptLanguage.value
     }
@@ -167,7 +173,11 @@ export const useUIStore = defineStore('ui', () => {
     }
     const loc = detectBrowserLocale()
     setLanguage(loc)
-    setPromptLanguage(isValidPromptLanguage(loc) ? loc : 'en')
+    if (!matchPromptToUi.value) {
+      const matched = matchedPromptLanguageForUiLocale(loc)
+      const pr: PromptLanguage = matched !== null ? matched : 'en'
+      setPromptLanguage(pr)
+    }
   }
 
   /**
@@ -178,7 +188,8 @@ export const useUIStore = defineStore('ui', () => {
     const loc = detectBrowserLocale()
     setLanguage(loc)
     if (!matchPromptToUi.value) {
-      const pr: PromptLanguage = isValidPromptLanguage(loc) ? loc : 'en'
+      const matched = matchedPromptLanguageForUiLocale(loc)
+      const pr: PromptLanguage = matched !== null ? matched : 'en'
       setPromptLanguage(pr)
     }
   }
@@ -213,12 +224,16 @@ export const useUIStore = defineStore('ui', () => {
       promptLanguage.value = storedPrompt
     } else if (!uiLanguageExplicit.value) {
       const loc = language.value
-      const pr: PromptLanguage = isValidPromptLanguage(loc) ? loc : 'en'
+      const matched = matchedPromptLanguageForUiLocale(loc)
+      const pr: PromptLanguage = matched !== null ? matched : 'en'
       promptLanguage.value = pr
       localStorage.setItem(PROMPT_LANGUAGE_KEY, pr)
-    } else if (matchPromptToUi.value && isValidPromptLanguage(language.value)) {
-      promptLanguage.value = language.value as PromptLanguage
-      localStorage.setItem(PROMPT_LANGUAGE_KEY, language.value)
+    } else if (matchPromptToUi.value) {
+      const matched = matchedPromptLanguageForUiLocale(language.value)
+      if (matched !== null) {
+        promptLanguage.value = matched
+        localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
+      }
     }
 
     if (typeof document !== 'undefined') {
@@ -266,9 +281,12 @@ export const useUIStore = defineStore('ui', () => {
     language.value = newLanguage
     localStorage.setItem(LANGUAGE_KEY, newLanguage)
     document.documentElement.lang = htmlLangForLocale(newLanguage)
-    if (matchPromptToUi.value && isValidPromptLanguage(newLanguage)) {
-      promptLanguage.value = newLanguage
-      localStorage.setItem(PROMPT_LANGUAGE_KEY, newLanguage)
+    if (matchPromptToUi.value) {
+      const matched = matchedPromptLanguageForUiLocale(newLanguage)
+      if (matched !== null) {
+        promptLanguage.value = matched
+        localStorage.setItem(PROMPT_LANGUAGE_KEY, matched)
+      }
     }
     void loadLocaleMessages(newLanguage).then(() => {
       setI18nLocale(newLanguage)

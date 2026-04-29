@@ -1,0 +1,62 @@
+Tier-27 frontend translations — editor workflow (no translation scripts)
+
+Plan: `.cursor/plans/tier27_i18n_bundles_native_sweep.plan.md` — Phase A = canvas, notification, sidebar, common; Phase B = remaining modules; picker-only scope.
+
+Plan compliance (INTERFACE_LANGUAGE_PICKER_CODES only — 27 codes incl. en; canonical list: frontend/src/i18n/locales.ts INTERFACE_LANGUAGE_PICKER_CODES).
+Non-picker UI locales in the registry are out of scope unless the picker list is extended.
+
+Editor workflow: translate values in frontend/src/locales/messages/<locale>/*.ts with en/*.ts as reference; preserve keys and placeholders. No batch authoring via i18n:materialize-from-en or translation scripts.
+
+Structural QA (maintainer): from frontend/, npm run i18n:check-keys and npm run i18n:check-picker-stubs after batches.
+
+Backend Messages.* / bundled_messages / expand_locales: separate from picker message files; track only if product scope includes API copy.
+
+Captured baselines:
+- frontend/scripts/_tier27_baseline_parity_all_modules.txt
+- frontend/scripts/_tier27_baseline_parity_admin_canvas.txt
+
+Completed in-repo (manual / Cursor edits):
+- ja: frontend/src/locales/messages/ja/admin.ts — strings previously in English rewritten to Japanese (MindBot, Library, Performance, Dashboard copy, Teacher analytics, Database, etc.).
+- es: frontend/src/locales/messages/es/admin.ts — tier-27 pass: MindBot tail through EOF (library, stats/API keys copy, performance, dashboards/trends, teacher analytics, database) localized to Spanish; keys aligned with en.
+- ko: frontend/src/locales/messages/ko/admin.ts — tier-27 pass: MindBot section through EOF localized to Korean (same span as es).
+- vi: frontend/src/locales/messages/vi/admin.ts — full Vietnamese pass (all keys; was English stub / machine header).
+- vi: frontend/src/locales/messages/vi/canvas.ts — full Vietnamese pass (toolbar tail through landing / mindgraphLanding; placeholders preserved).
+- vi: frontend/src/locales/messages/vi/workshop.ts — full Vietnamese pass (collab + workshop + workshopCanvas; was EN machine stub).
+- uz: frontend/src/locales/messages/uz/workshop.ts — full Uzbek Latin pass (collab + workshop + workshopCanvas; picker tier-27; was EN stub while admin.ts already localized).
+- uz: frontend/src/locales/messages/uz/canvas.ts — Phase A Uzbek Latin sweep (presentation/zoom/toolbar tail, diagram/editor/landing/mindgraphLanding, math keyboard labels); common.ts + sidebar.ts aligned earlier same sweep; uz/notification.ts already native-aligned.
+  Structural QA: npm run i18n:check-keys; npm run i18n:check-picker-stubs (frontend/).
+- tl: frontend/src/locales/messages/tl/canvas.ts — Phase A Filipino pass (full file vs `en/`; placeholders preserved). tl notification/sidebar/common were already Filipino; tier-27 Phase A blocker was predominantly `canvas.ts` (highest picker EN-parity ahead of this batch).
+  Structural QA (frontend/): npm run i18n:check-keys; npm run i18n:check-picker-stubs — OK after batch.
+- nl: frontend/src/locales/messages/nl/canvas.ts — Phase A Dutch (`nl-NL`) pass vs `en/` (full bundle; placeholders preserved); `nl/notification.ts`, `nl/sidebar.ts`, `nl/common.ts` already localized — canvas was EN stub with wrong header.
+  Structural QA (frontend/): npm run i18n:check-keys; npm run i18n:check-picker-stubs — OK after batch.
+
+Plan implementation (Cursor-in-editor tier-27): scope, workflow, and API separation recorded in header of this file; structural QA via npm run i18n:check-keys and i18n:check-picker-stubs (frontend/) after this batch OK.
+
+After ja full pass, admin-only parity sample (approx.):
+- ja admin module: English-match rate dropped substantially vs prior baseline for admin.ts (see _tier27_after_ja_es_admin_snippet.txt).
+
+Verification (not translation):
+- npm run i18n:check-keys (from frontend/)
+- npm run i18n:check-picker-stubs
+
+2026-04-29 — Tier-27 picker sweep batch (editor + subagents):
+- Full native `admin.ts` for picker locales that were 100% EN stubs: **it, ar, fa, hi**; heavy passes **sq, tl, fr, th, id**.
+- **fr** + **th** `auth.ts`; **fr** / **th** / **tl** `canvas.ts`; **nl** / **de** / **it** / **pt** `canvas.ts` parity pass; **tl** `admin` + `auth` + `workshop`; **fr** `admin` + `workshop` remainder; **pt** + **id** knowledge/workshop/admin/canvas/auth; **nl** + **de** admin/knowledge/workshop/common; **tl** + **it** knowledge/mindmate/common/sidebar/workshop; **ja** `knowledge.ts` typo fix (prior turn).
+- **nl/workshop.ts**: entire `workshop.*` + `workshopCanvas.*` block rewritten from erroneous German to Dutch (collab block kept).
+- **af** + **ms**: `canvas.ts`, `admin.ts`, `workshop.ts`, `auth.ts` polish vs EN-identical strings.
+- QA: `i18n:check-keys` OK; `i18n:check-picker-stubs` OK. Remaining EN-match % on parity script is mostly notation, brands, and shared technical labels (see `analyze_i18n_en_parity.py --picker-only`).
+
+2026-04-29 (follow-up sweep): EN-identical cleanup across picker locales (knowledge/community/workshop/mindmate/auth/admin/canvas word keys where appropriate); **nl/de**, **it/pt/tl**, **vi/az/uz/id/sq/fr/pl**, **af/ms/uk/es/ja/ru/ko**, **hi/tr/fa/th/ar**. **`pl/admin.ts`** rewritten end-to-end in Polish (file had been largely German). Re-verify with `i18n:check-keys` + `--picker-only` parity.
+
+Brand / product names often kept as in English: MindGraph, MindBot, MindMate, Dify, DingTalk, DebatVerse, AskOnce, Elasticsearch product strings where applicable.
+
+Remaining work (same method — edit message modules under frontend/src/locales/messages/<code>/):
+- Complete es/admin.ts, ko/admin.ts, then other tier-27 locales for admin.ts and canvas.ts, then remaining eight modules per docs/i18n-belt-and-road-master-plan.md module order.
+- zh / zh-tw: prefer human review over bulk EN→ZH machine pass; spot-fix keys still identical to en where inappropriate.
+
+Tier-27 picker Phase A — canvas batch (pl, it, ms, sq, ar, hi; nl-aligned structure):
+- pl: `frontend/src/locales/messages/pl/canvas.ts` — Polish canvas vs `en/` (506 keys; placeholders preserved; multiline layout matched to `nl/canvas.ts`).
+- it: `frontend/src/locales/messages/it/canvas.ts` — Italian canvas (es-base emitter + hand fixes for leftover Spanish).
+- ms: `frontend/src/locales/messages/ms/canvas.ts` — Malay canvas (`id` base + conservative phrase map + nl layout).
+- sq / ar / hi: `frontend/src/locales/messages/{sq,ar,hi}/canvas.ts` — regenerated from `frontend/scripts/_emit_tier27_canvas_sq_ar_hi.py` (phrase lists + `nl` breaks). Post-pass EN-byte parity sample (506 values): sq 60, ar 208, hi 242 still identical to `en` (`_diff_canvas_en_locale.py` → `_canvas_*_still_en.txt`; many rows are shared formulas/symbols). Arabic/Hindi lists extended 2026-04-29 (toolbar, math/chem labels, presentation timer copy).
+  Structural QA (`frontend/`): `npm run i18n:check-keys`; `npm run i18n:check-picker-stubs` — OK after this batch.

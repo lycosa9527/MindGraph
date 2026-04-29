@@ -1,4 +1,7 @@
-/** Thai UI — workshop */
+/**
+ * th UI — workshop
+ */
+
 export default {
   'collab.codeCopied': 'คัดลอกรหัสแล้ว',
   'collab.codeGenerated': 'สร้างรหัสความร่วมมือแล้ว — แชร์เพื่อแก้ไขร่วมกัน',
@@ -273,7 +276,7 @@ export default {
   'workshop.teachingGroupNoLessons': 'ยังไม่มีการศึกษาบทเรียนในกลุ่มนี้',
   'workshop.thisChannel': 'ช่องนี้',
   'workshop.thisConversation': 'บทสนทนานี้',
-  'workshop.title': 'Workshop',
+  'workshop.title': 'เวิร์กช็อป',
   'workshop.toggleContacts': 'สลับรายชื่อติดต่อ',
   'workshop.topicCount': 'บทสนทนา',
   'workshop.topicDescription': 'คำอธิบาย',
@@ -346,4 +349,4 @@ export default {
   'workshopCanvas.userJoined': 'ผู้ใช้ {userId} เข้าร่วม',
   'workshopCanvas.userLeft': 'ผู้ใช้ {userId} ออก',
   'workshopCanvas.wsError': 'ข้อผิดพลาดการเชื่อมต่อความร่วมมือ กรุณาตรวจสอบเครือข่าย',
-} as const
+}

@@ -24,6 +24,7 @@ from agents.inline_recommendations.context_extractors import (
 from agents.inline_recommendations.prompts import build_prompt
 from agents.inline_recommendations.prompts._common import get_context_desc
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -216,7 +217,9 @@ class InlineRecommendationsGenerator:
             max_tokens=500,
             timeout=20.0,
             system_message=(
-                "你是一个有帮助的K12教育助手。" if language == "zh" else "You are a helpful K12 education assistant."
+                "你是一个有帮助的K12教育助手。"
+                if is_chinese_prompt_shell_language(language)
+                else "You are a helpful K12 education assistant."
             ),
             user_id=opts.get("user_id"),
             organization_id=opts.get("organization_id"),

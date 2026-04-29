@@ -1,12 +1,24 @@
-/** Thai UI — auth */
+/**
+ * th UI — auth
+ */
+
 export default {
   'auth.accountInfo': 'บัญชี',
+  'auth.updateLog': 'บันทึกประจำเวอร์ชัน',
+  'auth.updateLogModalTitle': 'บันทึกประจำเวอร์ชัน',
+  'auth.updateLogMaintainerNote': 'ใช่เลย — แพลตฟอร์มนี้ได้รับการดูแลอย่างต่อเนื่องโดย Roy ✨',
+  'auth.updateLogLoadError': 'โหลดบันทึกประจำเวอร์ชันไม่ได้ โปรดลองอีกครั้งภายหลัง',
+  'auth.updateLogEmpty': 'ไม่มีบันทึกประจำเวอร์ชัน',
   'auth.backToLogin': 'กลับไปเข้าสู่ระบบ',
   'auth.captcha': 'แคปต์ชา',
   'auth.captchaLength4': 'กรุณาใส่แคปต์ชา 4 ตัวอักษร',
   'auth.captchaLoadFailed': 'ไม่สามารถโหลดแคปต์ชาได้',
   'auth.captchaNetworkError': 'ข้อผิดพลาดของเครือข่าย ไม่สามารถโหลดแคปต์ชา',
   'auth.changePassword': 'เปลี่ยนรหัสผ่าน',
+  'auth.accountPlugin': 'ปลั๊กอิน',
+  'auth.apiTokenButton': 'โทเค็น API',
+  'auth.downloadChromeExtension': 'ส่วนขยาย Chrome',
+  'auth.downloadOpenclawSkill': 'สกิล OpenClaw',
   'auth.changePhoneButton': 'เปลี่ยนเบอร์โทรศัพท์',
   'auth.passwordChangeSuccess': 'เปลี่ยนรหัสผ่านสำเร็จ',
   'auth.passwordChangeFailed': 'เปลี่ยนรหัสผ่านไม่สำเร็จ',
@@ -29,6 +41,7 @@ export default {
   'auth.modal.confirmPasswordPlaceholder': 'ใส่รหัสผ่านใหม่อีกครั้ง',
   'auth.modal.enter4DigitCaptcha': 'ใส่แคปต์ชา 4 หลัก',
   'auth.modal.enter6DigitSms': 'ใส่รหัส SMS 6 หลัก',
+  'auth.modal.enter6DigitEmailCode': 'กรอกรหัส 6 หลักจากอีเมลของคุณ',
   'auth.modal.enterCaptchaFirst': 'ใส่แคปต์ชาก่อน',
   'auth.modal.fillAllFields': 'กรอกข้อมูลทุกช่อง',
   'auth.modal.fillRequired': 'กรอกข้อมูลที่จำเป็นทั้งหมด',
@@ -73,6 +86,7 @@ export default {
   'auth.modal.smsSendFailed': 'ไม่สามารถส่ง SMS ได้',
   'auth.modal.smsSentSuccess': 'ส่งรหัส SMS แล้ว',
   'auth.modal.tagline': 'แพลตฟอร์มดิจิทัลสำหรับการสอนการคิด',
+  'auth.modal.waitCaptchaLoad': 'รอให้แคปต์ชาโหลด',
   'auth.modal.detectingRegion': 'กำลังตรวจจับภูมิภาคของคุณ…',
   'auth.modal.waitRegionDetection': 'โปรดรอขณะตรวจจับภูมิภาคของคุณ',
   'auth.modal.hybridRegisterGroupLabel': 'วิธีลงทะเบียน',
@@ -89,11 +103,9 @@ export default {
   'auth.modal.sendEmailCode': 'ส่งรหัสทางอีเมล',
   'auth.modal.sendingEmailCode': 'กำลังส่ง…',
   'auth.modal.emailCodePlaceholder': 'รหัส 6 หลักจากอีเมล',
-  'auth.modal.enter6DigitEmailCode': 'กรอกรหัส 6 หลักจากอีเมลของคุณ',
   'auth.modal.acknowledgeOverseas': 'ข้าพเจ้าเข้าใจและจะใช้ซอฟต์แวร์เพื่อการศึกษาเท่านั้น',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'โปรดยืนยันข้อความด้านบน',
-  'auth.modal.waitCaptchaLoad': 'รอให้แคปต์ชาโหลด',
   'auth.loginPhoneOrEmail': 'โทรศัพท์หรืออีเมล',
   'auth.name': 'ชื่อ',
   'auth.networkLoginFailed': 'ข้อผิดพลาดของเครือข่าย เข้าสู่ระบบล้มเหลว',
@@ -106,4 +118,42 @@ export default {
   'auth.sesLogin': 'เข้าสู่ระบบด้วยอีเมล',
   'auth.username': 'ชื่อผู้ใช้',
   'auth.waitCaptchaLoad': 'กรุณารอให้แคปต์ชาโหลด',
-} as const
+  'auth.quickRegPageTitle': 'ลงทะเบียนด่วน',
+  'auth.quickRegPageHint':
+    'เปิดหน้านี้จากลิงก์ที่โรงเรียนแชร์ กรอกเบอร์โทรและรหัสห้อง 6 หลักที่แสดงในหน้าต่างลงทะเบียนด่วนของผู้ดำเนินการ (รหัสเปลี่ยนประมาณทุก 30 วินาที) รหัสใช้แสดงว่าคุณอยู่ในเซสชัน ไม่ได้ยืนยันการเป็นเจ้าของเบอร์แบบรหัส SMS',
+  'auth.quickRegLinkInvalid':
+    'ลิงก์ลงทะเบียนนี้ไม่ใช้งานได้แล้ว (หมดอายุหรือปิด) เปิดลิงก์ล่าสุดจากผู้ดำเนินการอีกครั้ง',
+  'auth.quickRegProbeRateLimited':
+    'ตรวจสอบจากหน้านี้บ่อยเกินไป รอสักครู่แล้วรีเฟรช หรือลองใหม่ภายหลัง',
+  'auth.quickRegSessionSignups': 'ลงทะเบียนในเซสชันนี้: {n}',
+  'auth.quickRegRoomCodeLabel': 'รหัสห้อง',
+  'auth.quickRegRoomCodePlaceholder': '6 หลัก',
+  'auth.quickRegRoomCodeHint':
+    'ให้ตรงกับตัวเลขใหญ่ในหน้าต่างลงทะเบียนด่วนของผู้ดำเนินการ กรอกก่อนรหัสเปลี่ยน',
+  'auth.quickRegRoomCodeEnter6': 'กรอกรหัสห้อง 6 หลัก',
+  'auth.quickRegMaxUses': 'จำนวนลงทะเบียนสูงสุดสำหรับลิงก์นี้',
+  'auth.quickRegHeadcount': 'สูงสุด',
+  'auth.quickRegFacilitatorCode': 'รหัสห้องปัจจุบัน (สำหรับผู้เข้าร่วม)',
+  'auth.quickRegCodeRefreshIn': 'รหัสเปลี่ยนใน {s} วินาที',
+  'auth.quickRegCountdownUnit': 'วินาที',
+  'auth.quickRegSubmit': 'ลงทะเบียนให้เสร็จ',
+  'auth.quickRegSubmitting': 'กำลังลงทะเบียน…',
+  'auth.quickRegRegisterSuccess': 'ลงทะเบียนสำเร็จ',
+  'auth.quickRegSessionUnsure':
+    'ลงทะเบียนอาจสำเร็จแล้ว หากยังไม่ได้เข้าสู่ระบบ ให้กลับไปใช้เข้าสู่ระบบด้วย SMS หรือรีเฟรชหน้านี้',
+  'auth.quickRegBackToSignIn': 'ใช้เข้าสู่ระบบ / ลงทะเบียนแบบปกติ',
+  'auth.quickRegSelectOrg': 'เลือกโรงเรียน',
+  'auth.quickRegOrgLoadError': 'โหลดรายชื่อโรงเรียนไม่ได้ โปรดลองอีกครั้ง',
+  'auth.quickRegMintError': 'เปิดช่องทางลงทะเบียนไม่ได้ โปรดลองอีกครั้ง',
+  'auth.setPasswordWithSms': 'ตั้งรหัสผ่านเข้าสู่ระบบ',
+  'auth.setPasswordWithSmsTitle': 'ตั้งรหัสผ่านผ่าน SMS',
+  'auth.setPasswordWithSmsHint':
+    'เราส่งรหัสไปที่เบอร์ที่ผูกไว้ หลังตั้งรหัสผ่านแล้วคุณเข้าสู่ระบบด้วยรหัสผ่านหรือ SMS ได้',
+  'auth.setPasswordWithSmsSubmit': 'บันทึกรหัสผ่าน',
+  'auth.setPasswordWithSmsSubmitting': 'กำลังบันทึก…',
+  'auth.accountDisplayName': 'ชื่อที่แสดง',
+  'auth.accountNamePlaceholder': 'อย่างน้อย 2 ตัวอักษร ไม่มีตัวเลข',
+  'auth.accountNameSave': 'บันทึกชื่อ',
+  'auth.accountNameSaveSuccess': 'อัปเดตชื่อแล้ว',
+  'auth.accountNameSaveError': 'บันทึกไม่ได้ โปรดลองอีกครั้ง',
+}

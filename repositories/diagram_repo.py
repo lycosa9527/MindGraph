@@ -78,7 +78,7 @@ class DiagramRepository(BaseRepository[Diagram]):
 class DiagramSnapshotRepository(BaseRepository[DiagramSnapshot]):
     model = DiagramSnapshot
 
-    async def list_for_diagram(self, diagram_id: int, *, limit: int = 20) -> Sequence[DiagramSnapshot]:
+    async def list_for_diagram(self, diagram_id: str, *, limit: int = 20) -> Sequence[DiagramSnapshot]:
         result = await self.session.execute(
             select(DiagramSnapshot)
             .where(DiagramSnapshot.diagram_id == diagram_id)

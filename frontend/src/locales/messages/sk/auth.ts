@@ -1,4 +1,7 @@
-/** sk UI — auth (English copy; translate values as needed) */
+/**
+ * sk UI — auth
+ */
+
 export default {
   'auth.accountInfo': 'Account',
   'auth.updateLog': 'Release notes',
@@ -116,4 +119,42 @@ export default {
   'auth.sesLogin': 'Email login',
   'auth.username': 'Username',
   'auth.waitCaptchaLoad': 'Please wait for captcha to load',
-} as const
+  'auth.quickRegPageTitle': 'Quick registration',
+  'auth.quickRegPageHint':
+    'Open this page from the link your school shared. Enter your phone and the 6-digit room code shown in the facilitator’s quick registration window (it refreshes about every 30 seconds). The code shows you are in the session; it does not verify phone ownership the way an SMS code would.',
+  'auth.quickRegLinkInvalid':
+    'This registration link is not active (expired or closed). Open the current link from the facilitator again.',
+  'auth.quickRegProbeRateLimited':
+    'Too many checks from this page. Wait a moment and refresh, or try again later.',
+  'auth.quickRegSessionSignups': 'Signed up this session: {n}',
+  'auth.quickRegRoomCodeLabel': 'Room code',
+  'auth.quickRegRoomCodePlaceholder': '6 digits',
+  'auth.quickRegRoomCodeHint':
+    'Match the large digits on the facilitator’s quick registration dialog; enter the code before it changes.',
+  'auth.quickRegRoomCodeEnter6': 'Enter the 6-digit room code',
+  'auth.quickRegMaxUses': 'Max signups for this link',
+  'auth.quickRegHeadcount': 'Max',
+  'auth.quickRegFacilitatorCode': 'Current room code (for participants)',
+  'auth.quickRegCodeRefreshIn': 'Code changes in {s} s',
+  'auth.quickRegCountdownUnit': 's',
+  'auth.quickRegSubmit': 'Complete registration',
+  'auth.quickRegSubmitting': 'Registering…',
+  'auth.quickRegRegisterSuccess': 'Registration successful',
+  'auth.quickRegSessionUnsure':
+    'Registration may have succeeded. If you are not signed in, go back and use SMS login, or refresh this page.',
+  'auth.quickRegBackToSignIn': 'Use standard login / register',
+  'auth.quickRegSelectOrg': 'Select school',
+  'auth.quickRegOrgLoadError': 'Could not load schools. Please try again.',
+  'auth.quickRegMintError': 'Could not open the registration channel. Please try again.',
+  'auth.setPasswordWithSms': 'Set login password',
+  'auth.setPasswordWithSmsTitle': 'Set password via SMS',
+  'auth.setPasswordWithSmsHint':
+    'We send a code to your bound phone. After setting a password you can sign in with password or SMS.',
+  'auth.setPasswordWithSmsSubmit': 'Save password',
+  'auth.setPasswordWithSmsSubmitting': 'Saving…',
+  'auth.accountDisplayName': 'Display name',
+  'auth.accountNamePlaceholder': 'At least 2 characters, no digits',
+  'auth.accountNameSave': 'Save name',
+  'auth.accountNameSaveSuccess': 'Name updated',
+  'auth.accountNameSaveError': 'Could not save. Please try again.',
+}

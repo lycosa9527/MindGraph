@@ -664,7 +664,7 @@ async def take_snapshot(
 
     existing_result = await db.execute(
         select(DiagramSnapshot)
-        .where(DiagramSnapshot.diagram_id == diagram_id)
+        .where(DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.user_id == current_user.id)
         .order_by(DiagramSnapshot.version_number.asc())
     )
     existing = existing_result.scalars().all()
@@ -776,24 +776,21 @@ async def delete_snapshot(
 
     snap_result = await db.execute(
         select(DiagramSnapshot).where(
-            DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.version_number == version_number
+            DiagramSnapshot.diagram_id == diagram_id,
+            DiagramSnapshot.version_number == version_number,
+            DiagramSnapshot.user_id == current_user.id,
         )
     )
     snapshot = snap_result.scalar_one_or_none()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
-    if snapshot.user_id != current_user.id:
-        raise HTTPException(
-            status_code=403,
-            detail="Not authorized to delete this snapshot",
-        )
 
     await db.delete(snapshot)
     await db.flush()
 
     remaining_result = await db.execute(
         select(DiagramSnapshot)
-        .where(DiagramSnapshot.diagram_id == diagram_id)
+        .where(DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.user_id == current_user.id)
         .order_by(DiagramSnapshot.version_number.asc())
     )
     remaining = remaining_result.scalars().all()
@@ -846,14 +843,14 @@ async def recall_snapshot(
 
     snap_result = await db.execute(
         select(DiagramSnapshot).where(
-            DiagramSnapshot.diagram_id == diagram_id, DiagramSnapshot.version_number == version_number
+            DiagramSnapshot.diagram_id == diagram_id,
+            DiagramSnapshot.version_number == version_number,
+            DiagramSnapshot.user_id == current_user.id,
         )
     )
     snapshot = snap_result.scalar_one_or_none()
     if not snapshot:
         raise HTTPException(status_code=404, detail="Snapshot not found")
-    if snapshot.user_id != current_user.id:
-        raise HTTPException(status_code=403, detail="Not authorized to access this snapshot")
 
     logger.info(
         "[Snapshots] User %s recalled snapshot v%d for diagram %s",

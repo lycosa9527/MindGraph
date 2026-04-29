@@ -1,4 +1,7 @@
-/** Thai UI — sidebar */
+/**
+ * th UI — sidebar
+ */
+
 export default {
   'sidebar.actions.delete': 'ลบ',
   'sidebar.actions.pinToTop': 'ปักหมุดด้านบน',
@@ -40,7 +43,7 @@ export default {
   'sidebar.debateHistory.renamePrompt': 'ใส่หัวข้อใหม่สำหรับการดีเบตนี้',
   'sidebar.debateHistory.renameTitle': 'เปลี่ยนชื่อการดีเบต',
   'sidebar.debateHistory.title': 'การดีเบตล่าสุด',
-  'sidebar.debateverse': 'Debateverse',
+  'sidebar.debateverse': 'โต้วาที',
   'sidebar.diagramHistory.capacity': 'บันทึกได้สูงสุด {n} ไดอะแกรม',
   'sidebar.diagramHistory.deleteFailed': 'ลบไดอะแกรมล้มเหลว',
   'sidebar.diagramHistory.deleted': 'ลบไดอะแกรมแล้ว',
@@ -69,10 +72,11 @@ export default {
   'sidebar.library': 'ห้องสมุด',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindbot': 'มายด์บอท',
   'sidebar.schoolZone': 'โซนโรงเรียน',
   'sidebar.smartResponse': 'การตอบสนองอัจฉริยะ',
   'sidebar.teacherUsage': 'การใช้งานของครู',
   'sidebar.templateResources': 'เทมเพลต',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'บัญชี',
-} as const
+}

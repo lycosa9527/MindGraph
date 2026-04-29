@@ -1,4 +1,7 @@
-/** fr UI — workshop (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — workshop
+ */
+
 export default {
   'collab.codeCopied': 'Code copié',
   'collab.codeGenerated': 'Code de collaboration généré — partagez-le pour éditer ensemble.',
@@ -27,7 +30,7 @@ export default {
   'collab.networkErrorStart': 'Erreur réseau, impossible de démarrer',
   'collab.noDiagramToSave': 'Aucun diagramme à enregistrer',
   'collab.nodeLocked': 'Une autre personne modifie ce nœud',
-  'collab.participants': '{n} participants',
+  'collab.participants': '{n} présent(s)',
   'collab.saveFailed': 'Échec de l’enregistrement du diagramme',
   'collab.scanToJoin': 'Scanner pour rejoindre',
   'collab.schoolDescActive':
@@ -58,7 +61,7 @@ export default {
   'workshop.archiveTeachingGroup': 'Archiver le groupe pédagogique',
   'workshop.archiveTeachingGroupConfirm':
     'Archiver ce groupe pédagogique ? Il disparaîtra de la liste des groupes pédagogiques.',
-  'workshop.backToConversations': '← Conversations',
+  'workshop.backToConversations': '← Retour aux échanges',
   'workshop.bold': 'Gras',
   'workshop.browseChannels': 'Parcourir les groupes pédagogiques',
   'workshop.by': 'par',
@@ -80,18 +83,18 @@ export default {
   'workshop.channelType': 'Type de canal',
   'workshop.channelTypeAnnounce': 'Annonce',
   'workshop.channelTypePrivate': 'Privé',
-  'workshop.channelTypePublic': 'Public',
+  'workshop.channelTypePublic': 'Public (ouvert à tous)',
   'workshop.channels': 'Groupes pédagogiques',
   'workshop.clearDeadline': 'Supprimer la date limite',
-  'workshop.code': 'Code',
+  'workshop.code': 'Code d’invitation',
   'workshop.codeBlock': 'Bloc de code',
   'workshop.composeMessage': 'Rédiger un message',
-  'workshop.composeMessageTo': 'Message',
+  'workshop.composeMessageTo': 'Message à',
   'workshop.contactLastOnlineDays': 'En ligne il y a {n} jours',
   'workshop.contactLastOnlineHours': 'En ligne il y a {n} heures',
   'workshop.contactLastOnlineJustNow': 'En ligne tout juste maintenant',
   'workshop.contactLastOnlineMinutes': 'En ligne il y a {n} minutes',
-  'workshop.contacts': 'Contacts',
+  'workshop.contacts': 'Annuaire',
   'workshop.contactsLoadedCount': '{0} / {1} affichés',
   'workshop.contactsNotOnline': 'Absent(e) / hors ligne',
   'workshop.contactsOffline': 'Hors ligne',
@@ -100,7 +103,7 @@ export default {
   'workshop.conversationTitle': 'Titre de la conversation',
   'workshop.conversationTitlePlaceholder':
     'par ex. Discussion sur un plan de leçon, Réflexion pédagogique',
-  'workshop.conversations': 'Conversations',
+  'workshop.conversations': 'Échanges',
   'workshop.copyLink': 'Copier le lien',
   'workshop.copyMentionSyntax': 'Copier la syntaxe de mention',
   'workshop.create': 'Créer',
@@ -138,7 +141,7 @@ export default {
   'workshop.filterSidebar': 'Filtrer les groupes pédagogiques et les messages directs',
   'workshop.filterUsers': 'Filtrer les utilisateurs',
   'workshop.followTopic': 'Suivre la conversation',
-  'workshop.gearMenu': 'Options',
+  'workshop.gearMenu': 'Plus d’options',
   'workshop.generalChat': 'Discussion générale',
   'workshop.inbox': 'Boîte de réception',
   'workshop.inboxHintPickChannel':
@@ -180,7 +183,7 @@ export default {
     'Mentions inconnues (utilisateurs de la même organisation et personnel uniquement) : {0}',
   'workshop.mentionedInChannel': 'Vous avez été mentionné(e) dans #{0}',
   'workshop.mentionedInTopic': 'Vous avez été mentionné(e) dans {0}',
-  'workshop.mentions': 'Mentions',
+  'workshop.mentions': 'Mentions (@)',
   'workshop.messageDeleted': 'Ce message a été supprimé',
   'workshop.messageSendFailed': "Impossible d'envoyer le message",
   'workshop.more': 'plus',
@@ -191,9 +194,9 @@ export default {
   'workshop.muteChannel': 'Rendre muet le canal',
   'workshop.muteTopic': 'Rendre muette la conversation',
   'workshop.mySchool': 'Mon établissement',
-  'workshop.navbarContacts': 'Contacts',
+  'workshop.navbarContacts': 'Annuaire',
   'workshop.navbarMe': 'Moi',
-  'workshop.navbarOptions': 'Options',
+  'workshop.navbarOptions': 'Réglages',
   'workshop.newConversation': 'Nouvelle conversation',
   'workshop.newDM': 'Nouveau message direct',
   'workshop.newDirectMessage': 'Nouveau message direct',
@@ -207,7 +210,7 @@ export default {
   'workshop.noMessagesYet': 'Aucun message pour le moment',
   'workshop.noTeachingGroupsListed': 'Aucun groupe pédagogique pour le moment.',
   'workshop.noTopicsYet': 'Aucune conversation pour le moment',
-  'workshop.notifications': 'Notifications',
+  'workshop.notifications': 'Alertes et notifications',
   'workshop.notificationsSettingsBlurb':
     'Les notifications du navigateur pour les mentions et les nouveaux messages utilisent vos paramètres système. Vous pouvez également personnaliser les alertes sur ordinateur et par e-mail par canal dans les paramètres du canal.',
   'workshop.offline': 'hors ligne',
@@ -284,13 +287,13 @@ export default {
   'workshop.thisConversation': 'Cette conversation',
   'workshop.title': 'Atelier',
   'workshop.toggleContacts': 'Afficher/masquer les contacts',
-  'workshop.topicCount': 'conversations',
-  'workshop.topicDescription': 'Description',
+  'workshop.topicCount': 'échanges',
+  'workshop.topicDescription': 'Descriptif',
   'workshop.topicDescriptionPlaceholder': 'Décrivez le sujet de la conversation…',
   'workshop.topicSettings': 'Paramètres de la conversation',
   'workshop.topicTitle': 'Titre',
   'workshop.topicTitlePlaceholder': 'ex. Carte de la pensée design pour le chapitre 3',
-  'workshop.topics': 'Conversations',
+  'workshop.topics': 'Échanges',
   'workshop.typeMessagePlaceholder':
     'Saisissez un message… (Entrée pour envoyer, Maj+Entrée pour une nouvelle ligne)',
   'workshop.unfollowTopic': 'Ne plus suivre la conversation',
@@ -313,10 +316,10 @@ export default {
   'workshop.welcomeChannelsTitle': 'PLC / groupes disciplinaires',
   'workshop.welcomeConversationsBody':
     'Dans une étude de leçon, vous ouvrez des conversations thématiques — par exemple sur la conception pédagogique, la réflexion ou les tâches de suivi — afin que les fils de discussion restent faciles à suivre.',
-  'workshop.welcomeConversationsTitle': 'Conversations',
+  'workshop.welcomeConversationsTitle': 'Discussions à thème',
   'workshop.welcomeExampleCaption':
     'Exemple illustratif (école fictive) — PLC de mathématiques et PLC d’anglais, chacun comportant des études de leçon et des conversations types.',
-  'workshop.welcomeExampleConvLabel': 'Conversations',
+  'workshop.welcomeExampleConvLabel': 'Fils',
   'workshop.welcomeExampleGroupEnglish': 'PLC d’anglais',
   'workshop.welcomeExampleGroupMath': 'PLC de mathématiques',
   'workshop.welcomeExampleLSEng1': 'Étude de leçon : stratégies de lecture en 7ᵉ année',
@@ -342,7 +345,7 @@ export default {
   'workshop.welcomeLessonStudyTitle': 'Études de leçon',
   'workshop.welcomeMessagesBody':
     "Les messages sont les publications individuelles dans le flux principal du canal ou au sein d'une conversation. Les réponses, les mentions et les fichiers sont tous associés à des messages.",
-  'workshop.welcomeMessagesTitle': 'Messages',
+  'workshop.welcomeMessagesTitle': 'Publication des messages',
   'workshop.welcomeSubtitle': 'Collaborez avec votre établissement sur MindGraph',
   'workshop.welcomeTitle': "Bienvenue dans l'atelier",
   'workshop.you': '(vous)',
@@ -360,4 +363,4 @@ export default {
   'workshopCanvas.userLeft': "L'utilisateur {userId} a quitté",
   'workshopCanvas.wsError':
     'Erreur de connexion à la collaboration ; veuillez vérifier votre réseau',
-} as const
+}

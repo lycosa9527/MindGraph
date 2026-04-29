@@ -12,6 +12,7 @@ import logging
 
 from agents.core.llm_clients import llm_classification
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -22,7 +23,7 @@ async def extract_central_topic_llm(user_prompt: str, language: str = "zh") -> s
     This provides better semantic understanding and context preservation.
     """
     try:
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             prompt = f"从以下用户输入中提取核心主题，只返回主题内容，不要其他文字：\n{user_prompt}"
         else:
             prompt = f"Extract the central topic from this user input, return only the topic:\n{user_prompt}"
@@ -50,7 +51,7 @@ async def extract_double_bubble_topics_llm(user_prompt: str, language: str = "zh
     Fully async - no event loop wrappers.
     """
     try:
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             prompt = f"""从以下用户输入中提取两个要比较的主题，只返回两个主题，用"和"连接，不要其他文字：
 {user_prompt}
 

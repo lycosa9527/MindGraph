@@ -1,4 +1,7 @@
-/** fr UI — knowledge (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — knowledge
+ */
+
 export default {
   'chunkTest.history.confirmDeleteBody':
     'Êtes-vous sûr de vouloir supprimer ce test ? Cette action est irréversible.',
@@ -86,22 +89,22 @@ export default {
   'knowledge.chunkHeader.waitForProcessing':
     "Veuillez patienter jusqu'à la fin du traitement des documents avant de lancer le test",
   'knowledge.chunkPreview.empty': 'Aucun fragment trouvé',
-  'knowledge.chunkPreview.pageLabel': 'Page {n}',
+  'knowledge.chunkPreview.pageLabel': 'Page n° {n}',
   'knowledge.chunkPreview.title': 'Fragments de document — {fileName}',
   'knowledge.chunkPreview.totalChunks': 'Total de {n} fragments',
-  'knowledge.dataset.colDescription': 'Description',
+  'knowledge.dataset.colDescription': 'Descriptif',
   'knowledge.dataset.colName': 'Nom du jeu de données',
-  'knowledge.dataset.colSource': 'Source',
-  'knowledge.dataset.colVersion': 'Version/Date',
+  'knowledge.dataset.colSource': 'Provenance',
+  'knowledge.dataset.colVersion': 'Révision / date',
   'knowledge.dataset.empty': 'Aucun jeu de données disponible',
   'knowledge.dataset.noData': 'Aucune donnée',
-  'knowledge.doc.colActions': 'Actions',
+  'knowledge.doc.colActions': 'Actions possibles',
   'knowledge.doc.colChunks': 'Fragments',
   'knowledge.doc.colDataset': 'Jeu de données',
   'knowledge.doc.colName': 'Nom du document',
   'knowledge.doc.colSize': 'Taille',
   'knowledge.doc.colStatus': 'Statut',
-  'knowledge.doc.colType': 'Type',
+  'knowledge.doc.colType': 'Nature',
   'knowledge.doc.colUploaded': 'Date de téléchargement',
   'knowledge.doc.emptyDescription':
     'Aucun document pour le moment. Téléversez des documents pour constituer votre base de connaissances.',
@@ -163,8 +166,8 @@ export default {
   'knowledge.processing.queued': 'En file d’attente',
   'knowledge.processing.starting': 'Démarrage',
   'knowledge.retrieval.colContent': 'Contenu',
-  'knowledge.retrieval.colDocument': 'Document',
-  'knowledge.retrieval.colScore': 'Score',
+  'knowledge.retrieval.colDocument': 'Référence document',
+  'knowledge.retrieval.colScore': 'Score de pertinence',
   'knowledge.retrieval.enterQuery': 'Veuillez saisir une requête de test',
   'knowledge.retrieval.hybrid': 'Recherche hybride',
   'knowledge.retrieval.keyword': 'Recherche par mots-clés',
@@ -184,7 +187,7 @@ export default {
   'knowledge.retrieval.timingSearch': 'Rechercher',
   'knowledge.retrieval.timingTotal': 'Temps',
   'knowledge.retrieval.title': 'Test de récupération',
-  'knowledge.retrieval.topK': 'Top K',
+  'knowledge.retrieval.topK': 'Top‑K résultats',
   'knowledge.settings.characters': 'caractères',
   'knowledge.settings.chunkOverlap': 'Chevauchement des fragments',
   'knowledge.settings.chunkSection': 'Paramètres de fragmentation',
@@ -215,4 +218,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Document téléchargé avec succès, traitement en cours…',
   'rag.retrievalTest.failed': 'Échec du test de récupération',
   'rag.retrievalTest.success': 'Test de récupération terminé',
-} as const
+}

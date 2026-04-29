@@ -13,6 +13,7 @@ from functools import lru_cache
 from typing import Optional, Dict, Any
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 
 class BubbleMapPaletteGenerator(BasePaletteGenerator):
@@ -52,7 +53,7 @@ class BubbleMapPaletteGenerator(BasePaletteGenerator):
         )
 
         # Build prompt based on language
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             prompt = f"""为以下主题生成{count}个气泡图属性词：{center_topic}
 
 教学背景：{context_desc}
@@ -89,7 +90,7 @@ Generate {count} attributes:"""
 
         # Add diversity note for later batches (node palette specific)
         if batch_num > 1:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 prompt += (
                     f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度描述，避免与之前批次重复。"
                 )

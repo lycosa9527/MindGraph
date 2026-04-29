@@ -1,4 +1,7 @@
-/** af UI — workshop (Qwen-translated from en; review recommended) */
+/**
+ * af UI — workshop
+ */
+
 export default {
   'collab.codeCopied': 'Kode gekopieer',
   'collab.codeGenerated': 'Samewerkingskode gegenereer — deel om saam te redigeer.',
@@ -6,7 +9,7 @@ export default {
   'collab.copyFailed': 'Kon nie kopieer nie',
   'collab.copyLink': 'Kopieer skakel',
   'collab.countdown.hoursMinutes': '{h}u {m}m',
-  'collab.countdown.minutesSeconds': '{m}m {s}s',
+  'collab.countdown.minutesSeconds': '{m} min {s} s',
   'collab.diagramSavedStarting': 'Diagram gestoor, begin nou met samewerking…',
   'collab.duration1h': '1 uur',
   'collab.duration2d': '2 dae',
@@ -118,7 +121,7 @@ export default {
   'workshop.deleteTopic': 'Verwyder gesprek',
   'workshop.deleteTopicConfirm': 'Is u seker dat u hierdie gesprek wil verwyder?',
   'workshop.desktopNotifications': 'Bureaublad-meldings',
-  'workshop.diagram': 'Diagram',
+  'workshop.diagram': 'Beelddiagram',
   'workshop.directMessage': 'Direkte boodskap',
   'workshop.directMessages': 'Direkte boodskappe',
   'workshop.dismiss': 'Ignoreer',
@@ -129,7 +132,7 @@ export default {
   'workshop.duplicateTeachingGroup': 'Dupliseer',
   'workshop.edited': '(bewerk)',
   'workshop.emailNotifications': 'E-posmeldings',
-  'workshop.emoji': 'Emoji',
+  'workshop.emoji': 'Emotiekoon',
   'workshop.expandCollapseGroup': 'Vou leslys in sybalk uit of inkrimp',
   'workshop.filterSidebar': "Filtreer onderrigsgroepe, DM's",
   'workshop.filterUsers': 'Filtreer gebruikers',
@@ -354,4 +357,4 @@ export default {
   'workshopCanvas.userJoined': 'Gebruiker {userId} het aangesluit',
   'workshopCanvas.userLeft': 'Gebruiker {userId} het gelaat',
   'workshopCanvas.wsError': 'Samewerkingsverbindingsfout, kyk asseblief na u netwerk',
-} as const
+}

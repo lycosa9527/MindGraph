@@ -1,4 +1,7 @@
-/** af UI — mindmate (Qwen-translated from en; review recommended) */
+/**
+ * af UI — mindmate
+ */
+
 export default {
   'aiModel.conceptAiOff': 'Klik om die AI-verwantskapsetikette (veelvoudige modelle) te aktiveer',
   'aiModel.conceptAiOn': 'Aan: sleep skakels om verwantskapsetikette te genereer',
@@ -51,7 +54,7 @@ export default {
   'focusQuestion.networkError': 'Netwerkfout',
   'focusQuestion.noResult': 'Geen resultaat nie',
   'focusQuestion.pagingAria': 'Bladsy-aanduiding',
-  'focusQuestion.passLabel': 'OK',
+  'focusQuestion.passLabel': 'Goed',
   'focusQuestion.placeholder': 'Tik u fokusvraag…',
   'focusQuestion.skip': 'Slaan oor',
   'focusQuestion.suggestionsEmpty': "Nog geen voorstelle nie. Druk op = om 'n ander groep te haal.",
@@ -84,6 +87,7 @@ export default {
   'mindmate.input.attachFile': 'Voeg lêer by',
   'mindmate.input.placeholder': 'Tik jou vraag...',
   'mindmate.newChat': 'Nuwe gesprek',
+  'mindmate.otherModules': 'Ander modules',
   'mindmate.noHistory': 'Geen geskiedenis nie',
   'mindmate.noHistoryPanel': 'Geen gespreksgeskiedenis nie',
   'mindmate.suggestionLabel': 'Probeer my vra:',
@@ -123,7 +127,7 @@ export default {
   'nodePalette.refresh': 'Verfris',
   'nodePalette.selected': 'gekies',
   'nodePalette.similarities': 'Ooreenkomste',
-  'panel.mindmate': 'MindMate AI',
+  'panel.mindmate': 'MindMate KI',
   'panel.nodePalette': 'Noduspalet',
   'panel.properties': 'Eienskappe',
   'panels.property.background': 'Agtergrond',
@@ -158,4 +162,5 @@ export default {
   'rootConceptModal.splittingLoading': 'Vertakkinge word verdeel en konsepte word gegenereer…',
   'rootConceptModal.tabTitleRoot': 'Wortelkonsep: {text}',
   'rootConceptModal.title': 'Wortelkonsep',
-} as const
+  'rootConceptModal.titleConceptList': 'Konsep lys',
+}

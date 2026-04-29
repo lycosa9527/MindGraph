@@ -237,8 +237,8 @@ async def extract_topics_with_agent(user_prompt: str, language: str = "zh") -> T
         raise ValueError("user_prompt cannot be empty")
 
     if not isinstance(language, str) or not is_prompt_output_language(language):
-        logger.warning("Invalid language '%s', defaulting to 'zh'", language)
-        language = "zh"
+        logger.warning("Invalid language '%s', defaulting to 'en'", language)
+        language = "en"
 
     registry_lang = template_lang_for_registry(language)
 

@@ -1,4 +1,7 @@
-/** Thai UI — notification */
+/**
+ * th UI — notification
+ */
+
 export default {
   'notification.cannotClearTopicOrCenter': 'ไม่สามารถล้างโหนดหัวข้อหรือโหนดศูนย์กลาง',
   'notification.cannotResetSelectDiagramType': 'ไม่สามารถรีเซ็ต: กรุณาเลือกประเภทไดอะแกรมก่อน',
@@ -17,6 +20,11 @@ export default {
   'notification.feedbackThanks': 'ขอบคุณสำหรับข้อเสนอแนะ',
   'notification.feedbackThanksDislike': 'ขอบคุณสำหรับข้อเสนอแนะ — เราจะปรับปรุง',
   'notification.focusQuestionTooShort': 'กรุณาใส่คำถามโฟกัสที่ยาวขึ้น',
+  'notification.geoLiteMissingIntro':
+    'ดาวน์โหลด GeoLite2 Country จาก MaxMind แยก GeoLite2-Country.mmdb และคัดลอกลงในโฟลเดอร์ข้อมูลเซิร์ฟเวอร์:',
+  'notification.geoLiteMissingLink': 'เปิดหน้าดาวน์โหลด MaxMind GeoLite',
+  'notification.geoLiteMissingPathLabel': 'เส้นทางที่คาดหวัง:',
+  'notification.geoLiteMissingTitle': 'ฐานข้อมูลประเทศ GeoLite2 หายไป',
   'notification.fullscreenFailed': 'ไม่สามารถเข้าสู่โหมดเต็มจอ',
   'notification.generationCancelled': 'ยกเลิกการสร้างแล้ว',
   'notification.historyClearNodes': 'ล้างข้อความโหนด',
@@ -39,4 +47,4 @@ export default {
   'notification.sessionInvalidated': 'คุณถูกออกจากระบบเนื่องจากเกินจำนวนอุปกรณ์สูงสุด',
   'notification.signInToUse': 'เข้าสู่ระบบเพื่อใช้งาน',
   'notification.signInToValidateFocus': 'เข้าสู่ระบบเพื่อตรวจสอบคำถามโฟกัส',
-} as const
+}

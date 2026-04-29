@@ -21,6 +21,7 @@ from agents.concept_maps.concept_map_agent import ConceptMapAgent
 from agents.core.llm_clients import llm_generation
 from agents.core.topic_extraction import extract_central_topic_llm
 from agents.core.utils import _parse_strict_json
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -324,7 +325,7 @@ async def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> d
         else:
             # Fallback if prompt not found
             logger.warning("Concept 30 generation prompt not found in centralized system, using fallback")
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 concept_prompt = f"为主题{central_topic}生成30个相关概念，输出JSON格式"
             else:
                 concept_prompt = f"Generate 30 related concepts for topic {central_topic}, output JSON format"
@@ -372,7 +373,7 @@ async def generate_concept_map_enhanced_30(user_prompt: str, language: str) -> d
             raise ValueError("No concepts generated")
 
         # Generate relationships using systematic approach
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             rel_prompt = f"""
 我们正在生成此概念图中概念之间的关系。主题是：{central_topic}
 

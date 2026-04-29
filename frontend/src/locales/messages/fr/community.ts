@@ -1,4 +1,7 @@
-/** fr UI — community (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — community
+ */
+
 export default {
   'community.category.all': 'Tous',
   'community.category.creative': 'Idées créatives',
@@ -15,7 +18,7 @@ export default {
   'community.filter.mine': 'Les miens',
   'community.filterCategory': 'Catégorie',
   'community.filterSort': 'Trier',
-  'community.filterType': 'Type',
+  'community.filterType': 'Catégorie',
   'community.loadingMore': 'Chargement de plus de résultats…',
   'community.myPosts': 'Mes messages',
   'community.post.commentDeleted': 'Commentaire supprimé',
@@ -43,7 +46,7 @@ export default {
   'community.shareModal.cannotPreview': 'Impossible de générer l’aperçu',
   'community.shareModal.categoryLabel': 'Catégorie',
   'community.shareModal.categoryPlaceholder': 'Sélectionner une catégorie',
-  'community.shareModal.descriptionLabel': 'Description',
+  'community.shareModal.descriptionLabel': 'Texte descriptif',
   'community.shareModal.descriptionPlaceholder': 'Décrivez votre travail…',
   'community.shareModal.enterTitle': 'Veuillez entrer un titre',
   'community.shareModal.noDiagramData': 'Aucune donnée de diagramme à partager',
@@ -155,4 +158,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Marque-page ajouté',
   'libraryViewer.bookmarkRemoved': 'Marque-page supprimé',
   'libraryViewer.operationFailed': 'Une erreur s’est produite',
-} as const
+}

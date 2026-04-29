@@ -1,4 +1,7 @@
-/** Chinese UI — workshop */
+/**
+ * zh UI — workshop
+ */
+
 export default {
   'collab.codeCopied': '代码已复制',
   'collab.codeGenerated': '协作代码已生成，分享给其他人即可一起编辑',
@@ -337,4 +340,4 @@ export default {
   'workshopCanvas.userJoined': '用户 {userId} 已加入',
   'workshopCanvas.userLeft': '用户 {userId} 已离开',
   'workshopCanvas.wsError': '在线协作连接错误，请检查网络连接',
-} as const
+}

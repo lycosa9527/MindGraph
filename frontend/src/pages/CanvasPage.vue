@@ -64,6 +64,11 @@ import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanva
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
 import {
+  canvasVirtualKeyboardOpen,
+  ensureCanvasVirtualKeyboardUiVersionSync,
+  toggleCanvasVirtualKeyboard,
+} from '@/composables/canvasToolbar'
+import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
 } from '@/composables/core/diagramMarkdownPipeline'
@@ -131,12 +136,11 @@ const {
   resetPresentationStateOnLeave,
 } = useCanvasPagePresentation()
 
-/** Presentation rail virtual keyboard toggle (mirrors toolbar keyboard state). */
-const virtualKeyboardOpen = ref(false)
+ensureCanvasVirtualKeyboardUiVersionSync()
 
 const presentationShortcutBus = useEventBus('CanvasPagePresentationShortcuts')
 presentationShortcutBus.on('presentation:toggle_virtual_keyboard_requested', () => {
-  virtualKeyboardOpen.value = !virtualKeyboardOpen.value
+  toggleCanvasVirtualKeyboard()
 })
 
 const {
@@ -264,6 +268,36 @@ const diagramType = computed<DiagramType | null>(() => {
 const { loadDiagramFromLibrary, handleSnapshotRecall, handleSnapshotDelete } =
   useCanvasPageLibrarySnapshots({ diagramAutoSave, snapshotHistory })
 
+function normalizedRouteDiagramId(): string | undefined {
+  const raw = route.query.diagramId ?? route.query.diagram_id
+  if (typeof raw === 'string') {
+    return raw
+  }
+  if (Array.isArray(raw) && raw[0]) {
+    return raw[0]
+  }
+  return undefined
+}
+
+/** Keep snapshot badges aligned with saved diagram id and URL (import/collab paths). */
+watch(
+  () => [savedDiagramsStore.activeDiagramId, normalizedRouteDiagramId()] as const,
+  async ([activeId, routeId]) => {
+    if (!activeId) {
+      if (!routeId) {
+        snapshotHistory.clearSnapshots()
+      }
+      return
+    }
+    if (routeId && routeId !== activeId) {
+      snapshotHistory.clearSnapshots()
+      return
+    }
+    await snapshotHistory.loadSnapshots(activeId)
+  },
+  { flush: 'post' }
+)
+
 registerCanvasPageDiagramEventBus({ canvasZoom })
 
 /** MindMate panel and presentation rail cannot both be active: opening one closes the other. */
@@ -347,11 +381,40 @@ onMounted(async () => {
       const spec = diagramStore.getSpecForSave()
       if (!spec) return
       const result = await snapshotHistory.takeSnapshot(diagramId, spec)
-      if (result) {
-        notify.success(t('canvas.toolbar.snapshotTaken', { n: result.version_number }))
-      } else {
-        notify.error(t('canvas.toolbar.snapshotFailed'))
+      if (!result) {
+        return
       }
+      if (result.ok) {
+        notify.success(t('canvas.toolbar.snapshotTaken', { n: result.snapshot.version_number }))
+        return
+      }
+      const { status, message } = result
+      if (status === 413) {
+        notify.error(t('canvas.toolbar.snapshotTooLarge', { max: SAVE.MAX_SPEC_SIZE_KB }))
+        return
+      }
+      if (status === 429) {
+        notify.error(t('canvas.toolbar.snapshotRateLimited'))
+        return
+      }
+      if (status === 404) {
+        notify.error(t('canvas.toolbar.snapshotDiagramNotFound'))
+        return
+      }
+      if (status === 409) {
+        const hint = message.toLowerCase()
+        if (hint.includes('save the diagram') || hint.includes('saved to the database')) {
+          notify.error(t('canvas.toolbar.snapshotSaveFirst'))
+        } else {
+          notify.error(message || t('canvas.toolbar.snapshotConflict'))
+        }
+        return
+      }
+      if (message) {
+        notify.error(message)
+        return
+      }
+      notify.error(t('canvas.toolbar.snapshotFailed'))
     },
     'CanvasPage'
   )
@@ -619,12 +682,12 @@ onUnmounted(() => {
     <PresentationSideToolbar
       v-if="presentationRailOpen && presentationTool !== 'timer'"
       :active-tool="presentationTool"
-      :virtual-keyboard-open="virtualKeyboardOpen"
+      :virtual-keyboard-open="canvasVirtualKeyboardOpen"
       @selectTool="presentationTool = $event"
       @clearHighlighter="presentationHighlightStrokes = []"
       @fit="handleFitToScreen"
       @exit="handleStartPresentation"
-      @toggleVirtualKeyboard="virtualKeyboardOpen = !virtualKeyboardOpen"
+      @toggleVirtualKeyboard="toggleCanvasVirtualKeyboard"
     />
 
     <CanvasChrome>

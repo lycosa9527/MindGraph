@@ -1,4 +1,7 @@
-/** af UI — knowledge (Qwen-translated from en; review recommended) */
+/**
+ * af UI — knowledge
+ */
+
 export default {
   'chunkTest.history.confirmDeleteBody':
     'Is u seker dat u hierdie toets wil skrap? Hierdie kan nie ongedaan gemaak word nie.',
@@ -99,7 +102,7 @@ export default {
   'knowledge.doc.colDataset': 'Steldata',
   'knowledge.doc.colName': 'Dokumentnaam',
   'knowledge.doc.colSize': 'Grootte',
-  'knowledge.doc.colStatus': 'Status',
+  'knowledge.doc.colStatus': 'Toestand',
   'knowledge.doc.colType': 'Tipe',
   'knowledge.doc.colUploaded': 'Laai datum op',
   'knowledge.doc.emptyDescription':
@@ -133,7 +136,7 @@ export default {
   'knowledge.manualEval.metric.overall_score': 'Algehele telling',
   'knowledge.manualEval.metric.reasoning': 'Redenasie',
   'knowledge.manualEval.metric.relevance': 'Relevansie',
-  'knowledge.manualEval.modelLabel': 'Model',
+  'knowledge.manualEval.modelLabel': 'KI-model',
   'knowledge.manualEval.noChunks': 'Geen stukke gevind nie',
   'knowledge.manualEval.notify.completed': 'Evaluering voltooi',
   'knowledge.manualEval.notify.enterQuery': "Voer asseblief 'n navraag in",
@@ -214,4 +217,4 @@ export default {
     'Dokument is suksesvol opgelaai, besig met verwerking...',
   'rag.retrievalTest.failed': 'Oproep-toets het misluk',
   'rag.retrievalTest.success': 'Oproep-toets is voltooi',
-} as const
+}

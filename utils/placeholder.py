@@ -12,6 +12,8 @@ Proprietary License
 import re
 from typing import Optional
 
+from utils.prompt_locale import is_chinese_prompt_shell_language
+
 
 # Chinese placeholder patterns (aligned with frontend useAutoComplete.ts)
 _CHINESE_PLACEHOLDERS = [
@@ -127,7 +129,7 @@ def filter_for_prompt(
 
     Used to avoid sending placeholder text like "部分1" to LLM prompts.
     """
-    fallback = fallback_zh if language == "zh" else fallback_en
+    fallback = fallback_zh if is_chinese_prompt_shell_language(language) else fallback_en
     if not text or not isinstance(text, str):
         return fallback
     stripped = text.strip()

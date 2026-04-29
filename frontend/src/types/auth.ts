@@ -28,6 +28,8 @@ export interface User {
   uiLanguage?: string | null
   /** Persisted prompt output language code; absent until loaded from server */
   promptLanguage?: string | null
+  /** Persisted prompt/UI sync: when true, assistant language follows interface */
+  matchPromptToUi?: boolean
   /** Persisted UI version (chinese | international); absent until loaded from server */
   uiVersion?: string | null
   /** False for overseas email accounts: Simplified Chinese (`zh`) UI is not available */
@@ -58,6 +60,7 @@ export interface BackendUser {
   ui_language?: string | null
   prompt_language?: string | null
   ui_version?: string | null
+  match_prompt_to_ui?: boolean
   allows_simplified_chinese?: boolean
   login_password_set?: boolean
   user?: {

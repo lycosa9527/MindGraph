@@ -1,6 +1,8 @@
-/** af UI — sidebar (Qwen-translated from en; review recommended) */
+/**
+ * af UI — sidebar
+ */
+
 export default {
-  'sidebar.account': 'Rekening',
   'sidebar.actions.delete': 'Verwyder',
   'sidebar.actions.pinToTop': 'Vas aan bo',
   'sidebar.actions.rename': 'Hernoem',
@@ -70,9 +72,11 @@ export default {
   'sidebar.library': 'Biblioteek',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Skoolgebied',
   'sidebar.smartResponse': 'Slim reaksie',
   'sidebar.teacherUsage': 'Onderwysergebruik',
   'sidebar.templateResources': 'Sjablone',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
-} as const
+  'sidebar.account': 'Rekening',
+}

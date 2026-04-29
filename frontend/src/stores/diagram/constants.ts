@@ -1,6 +1,6 @@
 import type { LocaleCode } from '@/i18n/locales'
-import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import {
   getConceptMapFocusQuestionDefault,
   getConceptMapRootConceptText,

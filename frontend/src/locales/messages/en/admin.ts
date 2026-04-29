@@ -1,4 +1,7 @@
-/** English UI — admin */
+/**
+ * en UI — admin
+ */
+
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',
@@ -555,7 +558,6 @@ export default {
   'admin.schoolDashboard': 'School Dashboard',
   'admin.schoolDashboardNoOrg': 'You must belong to a school to view the dashboard.',
   'admin.schoolDeleteUserConfirm': 'Delete user {name}? This cannot be undone.',
-  'admin.schoolManagersTab': 'School Managers',
   'admin.schoolUserColumnRole': 'Role',
   'admin.schoolUsersDeleteError': 'Failed to delete user',
   'admin.schoolUsersLoadError': 'Failed to load school users',
@@ -568,6 +570,7 @@ export default {
     'Unlock this account? Failed-login lock and attempt counter will be cleared.',
   'admin.listRange': '{start}–{end} of {total}',
   'admin.listRangeEmpty': 'No results',
+  'admin.schoolManagersTab': 'School Managers',
   'admin.schoolName': 'School Name',
   'admin.schoolNameRequired': 'School name is required',
   'admin.schools': 'Schools',
@@ -759,7 +762,6 @@ export default {
   'admin.database.orphanCleanSuccess': 'Orphaned records cleaned',
   'admin.database.orphanCleanError': 'Orphan cleanup failed',
   'admin.database.cleanSqliteOrphans': 'Clean SQLite Orphans',
-
   'admin.database.pgAnalyze': 'Analyze',
   'admin.database.pgAnalyzeError': 'Failed to analyze PG dump',
   'admin.database.pgAnalysisResult': 'PG Dump Analysis',
@@ -773,4 +775,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG dump merged successfully',
   'admin.database.pgMergeError': 'PG dump merge failed',
   'admin.database.pgMergeComplete': 'PG Merge Complete',
-} as const
+}

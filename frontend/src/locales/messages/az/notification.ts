@@ -1,4 +1,7 @@
-/** Azerbaijani UI — notification */
+/**
+ * az UI — notification
+ */
+
 export default {
   'notification.cannotClearTopicOrCenter': 'Mövzu və ya mərkəz düyünlərini təmizləmək olmaz',
   'notification.cannotResetSelectDiagramType': 'Sıfırlamaq olmaz: əvvəlcə diaqram növü seçin',
@@ -10,14 +13,19 @@ export default {
   'notification.collabRedoBlocked': 'Başqa istifadəçi redaktə edərkən təkrarlamaq olmaz',
   'notification.collabUndoBlocked': 'Başqa istifadəçi redaktə edərkən geri almaq olmaz',
   'notification.conversationDeleted': 'Söhbət silindi',
-  'notification.copied': 'Copied to clipboard',
-  'notification.copyFailed': 'Failed to copy',
+  'notification.copied': 'Buferə kopyalandı',
+  'notification.copyFailed': 'Kopyalamaq alınmadı',
   'notification.deleteFailed': 'Silmək mümkün olmadı',
-  'notification.deleted': 'Item deleted successfully',
+  'notification.deleted': 'Element uğurla silindi',
   'notification.feedbackCancelled': 'Rəy ləğv edildi',
   'notification.feedbackThanks': 'Rəyiniz üçün təşəkkür',
   'notification.feedbackThanksDislike': 'Rəyiniz üçün təşəkkür — təkmilləşdirəcəyik',
   'notification.focusQuestionTooShort': 'Əvvəlcə daha uzun fokus sualı daxil edin',
+  'notification.geoLiteMissingIntro':
+    'MaxMind-dən GeoLite2 Country-ni endirin, GeoLite2-Country.mmdb-ni çıxarın və onu server məlumat qovluğuna köçürün:',
+  'notification.geoLiteMissingLink': 'MaxMind GeoLite yükləmə səhifəsini açın',
+  'notification.geoLiteMissingPathLabel': 'Gözlənilən yol:',
+  'notification.geoLiteMissingTitle': 'GeoLite2 Ölkə məlumat bazası yoxdur',
   'notification.fullscreenFailed': 'Tam ekrana keçmək mümkün olmadı',
   'notification.generationCancelled': 'Generasiya ləğv edildi',
   'notification.historyClearNodes': 'Düyün mətnini təmizlə',
@@ -30,15 +38,15 @@ export default {
   'notification.importUnsupportedType': 'İdxal uğursuz: dəstəklənməyən diaqram növü',
   'notification.loadMoreFailed': 'Daha çox yükləmək mümkün olmadı',
   'notification.networkError': 'Şəbəkə xətası',
-  'notification.newVersionAvailable': 'New version available. Click to refresh.',
+  'notification.newVersionAvailable': 'Yeni versiya mövcuddur. Yeniləmək üçün klikləyin.',
   'notification.recommendationFailed': 'Tövsiyə alınmadı: {msg}',
   'notification.relationshipGenerationFailed': 'Əlaqə generasiyası uğursuz oldu',
   'notification.resetDefaultTemplate': 'Defolt şablona sıfırlandı',
   'notification.rootConceptLinkNotFound': 'Kök konsepsiya əlaqəsi tapılmadı',
-  'notification.saved': 'Changes saved successfully',
+  'notification.saved': 'Dəyişikliklər uğurla yadda saxlanıldı',
   'notification.selectNodeToClear': 'Təmizləmək üçün düyün seçin',
   'notification.sessionInvalidated':
-    'You have been logged out because you exceeded the maximum number of devices',
+    'Cihazların maksimum sayını keçdiyiniz üçün sistemdən çıxdınız',
   'notification.signInToUse': 'İstifadə üçün daxil olun',
   'notification.signInToValidateFocus': 'Fokus sualını yoxlamaq üçün daxil olun',
-} as const
+}

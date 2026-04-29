@@ -24,6 +24,7 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 from utils.text_width_estimate import estimate_text_width_px
 
 
@@ -119,7 +120,7 @@ class FlowMapAgent(BaseAgent):
 
             user_prompt = (
                 f"请为以下描述创建一个流程图：{prompt}"
-                if language == "zh"
+                if is_chinese_prompt_shell_language(language)
                 else f"Please create a flow map for the following description: {prompt}"
             )
 
@@ -164,7 +165,7 @@ class FlowMapAgent(BaseAgent):
                         f"{user_prompt}\n\n"
                         f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
                         f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-                        if language == "zh"
+                        if is_chinese_prompt_shell_language(language)
                         else (
                             f"{user_prompt}\n\n"
                             f"IMPORTANT: You MUST respond with valid JSON only. "

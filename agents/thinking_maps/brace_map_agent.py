@@ -9,6 +9,7 @@ import logging
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 from ..core.base_agent import BaseAgent
 from ..core.agent_utils import extract_json_from_response
@@ -164,7 +165,7 @@ class BraceMapAgent(BaseAgent):
 
                 if not system_prompt:
                     logger.warning("BraceMapAgent: No fixed_dimension prompt found, using fallback")
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         json_example = (
                             '{"whole": "' + prompt + '", "dimension": "' + fixed_dimension + '", '
                             '"parts": [...], "alternative_dimensions": [...]}'
@@ -192,7 +193,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 else:
                     system_prompt = system_prompt.format(topic=prompt)
 
-                if language == "zh":
+                if is_chinese_prompt_shell_language(language):
                     user_prompt = f"主题：{prompt}\n\n请使用指定的拆解维度「{fixed_dimension}」生成括号图。"
                 else:
                     user_prompt = (
@@ -210,7 +211,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
 
                 # Build user prompt with dimension preference if specified
                 if dimension_preference:
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         user_prompt = (
                             f"请为以下描述创建一个括号图，使用指定的拆解维度'{dimension_preference}'：{prompt}"
                         )
@@ -225,7 +226,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                         dimension_preference,
                     )
                 else:
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         user_prompt = f"请为以下描述创建一个括号图：{prompt}"
                     else:
                         user_prompt = f"Please create a brace map for the following description: {prompt}"
@@ -273,7 +274,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     )
 
                     # Retry with more explicit prompt emphasizing JSON-only output
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         retry_user_prompt = (
                             f"{user_prompt}\n\n"
                             f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
@@ -386,7 +387,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                 system_prompt = get_prompt("brace_map_agent", language, "fixed_dimension")
 
             # Build user prompt with the dimension
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 user_prompt = f"用户指定的拆解维度：{dimension}\n\n请根据这个拆解维度生成一个合适的主题和部分。"
             else:
                 user_prompt = (
@@ -428,7 +429,7 @@ CRITICAL: The dimension field MUST remain exactly "{fixed_dimension}" """
                     )
 
                     # Retry with more explicit prompt
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         retry_user_prompt = (
                             f"{user_prompt}\n\n"
                             f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"

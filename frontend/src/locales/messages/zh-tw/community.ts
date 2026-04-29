@@ -1,4 +1,7 @@
-/** Traditional Chinese (zh-TW) UI — community */
+/**
+ * zh-tw UI — community
+ */
+
 export default {
   'community.category.all': '全部',
   'community.category.creative': '創意靈感',
@@ -146,4 +149,4 @@ export default {
   'libraryViewer.bookmarkAdded': '書籤已添加',
   'libraryViewer.bookmarkRemoved': '書籤已刪除',
   'libraryViewer.operationFailed': '操作失敗',
-} as const
+}

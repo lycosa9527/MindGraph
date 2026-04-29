@@ -2,8 +2,8 @@
  * Locale-aware placeholder strings for new diagrams and concept map edge/topic logic.
  */
 import type { LocaleCode } from '@/i18n/locales'
-import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import { UI_LOCALE_CODES } from '@/i18n/locales'
+import { translateForUiLocale } from '@/i18n/translateForUiLocale'
 import type { DiagramType } from '@/types'
 
 function defaultsT(key: string, locale: LocaleCode, params?: Record<string, unknown>): string {

@@ -1,12 +1,24 @@
-/** af UI — auth (Qwen-translated from en; review recommended) */
+/**
+ * af UI — auth
+ */
+
 export default {
   'auth.accountInfo': 'Rekening',
+  'auth.updateLog': 'Vrystellingsnotas',
+  'auth.updateLogModalTitle': 'Vrystellingsnotas',
+  'auth.updateLogMaintainerNote': 'Jip — hierdie platform word aktief onderhou deur Roy ✨',
+  'auth.updateLogLoadError': 'Kon nie vrystellingnotas laai nie. Probeer asseblief later weer.',
+  'auth.updateLogEmpty': 'Geen vrystellingsnotas is beskikbaar nie.',
   'auth.backToLogin': 'Terug na aanmelding',
-  'auth.captcha': 'Captcha',
+  'auth.captcha': 'Bevestigingsbeeld',
   'auth.captchaLength4': 'Voer asseblief die 4-karakter captcha in',
   'auth.captchaLoadFailed': 'Kon nie captcha laai nie',
   'auth.captchaNetworkError': 'Netwerkfout, kon nie captcha laai nie',
   'auth.changePassword': 'Verander wagwoord',
+  'auth.accountPlugin': 'Inprop',
+  'auth.apiTokenButton': 'API-token',
+  'auth.downloadChromeExtension': 'Chrome-uitbreiding',
+  'auth.downloadOpenclawSkill': 'OpenClaw vaardigheid',
   'auth.changePhoneButton': 'Verander foon',
   'auth.passwordChangeSuccess': 'Wagwoord suksesvol verander',
   'auth.passwordChangeFailed': 'Wagwoordverandering het misluk',
@@ -29,6 +41,7 @@ export default {
   'auth.modal.confirmPasswordPlaceholder': 'Voer nuwe wagwoord weer in',
   'auth.modal.enter4DigitCaptcha': 'Voer die 4-syfer captcha in',
   'auth.modal.enter6DigitSms': 'Voer die 6-syfer SMS-kode in',
+  'auth.modal.enter6DigitEmailCode': 'Voer die 6-syfer kode uit jou e-pos in',
   'auth.modal.enterCaptchaFirst': 'Voer eers die captcha in',
   'auth.modal.fillAllFields': 'Vul al die velde in',
   'auth.modal.fillRequired': 'Vul al die vereiste velde in',
@@ -73,6 +86,7 @@ export default {
   'auth.modal.smsSendFailed': 'Kon nie SMS stuur nie',
   'auth.modal.smsSentSuccess': 'SMS-kode gestuur',
   'auth.modal.tagline': 'Digitale platform vir die onderrig van denke',
+  'auth.modal.waitCaptchaLoad': 'Wag vir die captcha om te laai',
   'auth.modal.detectingRegion': 'Besig om jou streek te bepaal…',
   'auth.modal.waitRegionDetection': 'Wag asseblief terwyl ons jou streek bepaal.',
   'auth.modal.hybridRegisterGroupLabel': 'Registrasiemetode',
@@ -89,12 +103,10 @@ export default {
   'auth.modal.sendEmailCode': 'Stuur e-poskode',
   'auth.modal.sendingEmailCode': 'Stuur tans…',
   'auth.modal.emailCodePlaceholder': '6-syfer kode uit e-pos',
-  'auth.modal.enter6DigitEmailCode': 'Voer die 6-syfer kode uit jou e-pos in',
   'auth.modal.acknowledgeOverseas':
     'Ek verstaan en sal die sagteware slegs vir opvoedkundige doeleindes gebruik.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Bevestig asseblief die kennisgewing hierbo.',
-  'auth.modal.waitCaptchaLoad': 'Wag vir die captcha om te laai',
   'auth.loginPhoneOrEmail': 'Foon of e-pos',
   'auth.name': 'Naam',
   'auth.networkLoginFailed': 'Netwerkfout, aanmelding het misluk',
@@ -107,4 +119,42 @@ export default {
   'auth.sesLogin': 'E-pos aanmelding',
   'auth.username': 'Gebruikersnaam',
   'auth.waitCaptchaLoad': 'Wag asseblief vir die captcha om te laai',
-} as const
+  'auth.quickRegPageTitle': 'Vinnige registrasie',
+  'auth.quickRegPageHint':
+    "Maak hierdie bladsy oop vanaf die skakel wat jou skool gedeel het. Voer jou foon en die 6-syfer-kamerkode in wat in die fasiliteerder se vinnige registrasievenster gewys word (dit herlaai omtrent elke 30 sekondes). Die kode wys jy is in die sessie; dit verifieer nie fooneienaarskap soos 'n SMS-kode sou nie.",
+  'auth.quickRegLinkInvalid':
+    'Hierdie registrasieskakel is nie aktief nie (verval of gesluit). Maak die huidige skakel van die fasiliteerder weer oop.',
+  'auth.quickRegProbeRateLimited':
+    "Te veel tjeks vanaf hierdie bladsy. Wag 'n oomblik en verfris, of probeer later weer.",
+  'auth.quickRegSessionSignups': 'Het hierdie sessie aangemeld: {n}',
+  'auth.quickRegRoomCodeLabel': 'Kamerkode',
+  'auth.quickRegRoomCodePlaceholder': '6 syfers',
+  'auth.quickRegRoomCodeHint':
+    'Pas die groot syfers op die fasiliteerder se vinnige registrasiedialoog by; voer die kode in voordat dit verander.',
+  'auth.quickRegRoomCodeEnter6': 'Voer die 6-syfer kamerkode in',
+  'auth.quickRegMaxUses': 'Maksimum inskrywings vir hierdie skakel',
+  'auth.quickRegHeadcount': 'Maks',
+  'auth.quickRegFacilitatorCode': 'Huidige kamerkode (vir deelnemers)',
+  'auth.quickRegCodeRefreshIn': 'Kodeveranderinge in {s} s',
+  'auth.quickRegCountdownUnit': 's',
+  'auth.quickRegSubmit': 'Voltooi registrasie',
+  'auth.quickRegSubmitting': 'Registreer tans …',
+  'auth.quickRegRegisterSuccess': 'Registrasie suksesvol',
+  'auth.quickRegSessionUnsure':
+    'Registrasie het dalk geslaag. As jy nie aangemeld is nie, gaan terug en gebruik SMS-aanmelding, of verfris hierdie bladsy.',
+  'auth.quickRegBackToSignIn': 'Gebruik standaard login / register',
+  'auth.quickRegSelectOrg': 'Kies skool',
+  'auth.quickRegOrgLoadError': 'Kon nie skole laai nie. Probeer asseblief weer.',
+  'auth.quickRegMintError': 'Kon nie die registrasiekanaal oopmaak nie. Probeer asseblief weer.',
+  'auth.setPasswordWithSms': 'Stel aanmeldwagwoord',
+  'auth.setPasswordWithSmsTitle': 'Stel wagwoord per SMS',
+  'auth.setPasswordWithSmsHint':
+    "Ons stuur 'n kode na jou gebonde foon. Nadat u 'n wagwoord gestel het, kan u met 'n wagwoord of SMS aanmeld.",
+  'auth.setPasswordWithSmsSubmit': 'Stoor wagwoord',
+  'auth.setPasswordWithSmsSubmitting': 'Stoor tans …',
+  'auth.accountDisplayName': 'Vertoon naam',
+  'auth.accountNamePlaceholder': 'Ten minste 2 karakters, geen syfers nie',
+  'auth.accountNameSave': 'Stoor naam',
+  'auth.accountNameSaveSuccess': 'Naam opgedateer',
+  'auth.accountNameSaveError': 'Kon nie stoor nie. Probeer asseblief weer.',
+}

@@ -1,4 +1,7 @@
-/** sl UI — common (English copy; translate values as needed) */
+/**
+ * sl UI — common
+ */
+
 export default {
   'app.aiDisclaimer': 'Content is AI-generated; please verify carefully.',
   'app.brandName': 'Mind Platform',
@@ -126,4 +129,4 @@ export default {
     'Scan with a phone or tablet camera to open this page for your class.',
   'landing.international.shareSiteCopy': 'Copy link',
   'landing.international.shareSiteCopied': 'Link copied',
-} as const
+}

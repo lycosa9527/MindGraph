@@ -1,4 +1,7 @@
-/** Thai UI — knowledge */
+/**
+ * th UI — knowledge
+ */
+
 export default {
   'chunkTest.history.confirmDeleteBody':
     'คุณแน่ใจหรือไม่ที่จะลบการทดสอบนี้? การดำเนินการนี้ไม่สามารถย้อนกลับได้',
@@ -45,7 +48,7 @@ export default {
   'chunkTestResults.cancelFailed': 'ไม่สามารถยกเลิกการทดสอบ',
   'chunkTestResults.cancelRequested': 'ร้องขอยกเลิกการทดสอบแล้ว',
   'chunkTestResults.cancelTest': 'ยกเลิกการทดสอบ',
-  'chunkTestResults.chunkLabel': 'Chunk #{n}',
+  'chunkTestResults.chunkLabel': 'ชิ้นส่วนที่ #{n}',
   'chunkTestResults.chunkQuality': 'คุณภาพ Chunk',
   'chunkTestResults.close': 'ปิด',
   'chunkTestResults.coherence': 'ความสอดคล้อง',
@@ -147,7 +150,7 @@ export default {
   'knowledge.manualEval.startEvaluation': 'เริ่มการประเมิน',
   'knowledge.processing.chunking': 'การแบ่ง Chunk',
   'knowledge.processing.cleaning': 'การทำความสะอาด',
-  'knowledge.processing.colChunk': 'Chunk',
+  'knowledge.processing.colChunk': 'ชิ้นข้อมูล',
   'knowledge.processing.colEmbed': 'ฝังตัว',
   'knowledge.processing.colIndex': 'ดัชนี',
   'knowledge.processing.colMethod': 'วิธี',
@@ -180,7 +183,7 @@ export default {
   'knowledge.retrieval.timingSearch': 'ค้นหา',
   'knowledge.retrieval.timingTotal': 'เวลา',
   'knowledge.retrieval.title': 'ทดสอบการค้นคืน',
-  'knowledge.retrieval.topK': 'Top K',
+  'knowledge.retrieval.topK': 'ค่า K สูงสุด',
   'knowledge.settings.characters': 'ตัวอักษร',
   'knowledge.settings.chunkOverlap': 'การซ้อนทับ Chunk',
   'knowledge.settings.chunkSection': 'การตั้งค่าการแบ่ง Chunk',
@@ -210,4 +213,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'อัปโหลดเอกสารสำเร็จ กำลังประมวลผล...',
   'rag.retrievalTest.failed': 'การทดสอบการค้นคืนล้มเหลว',
   'rag.retrievalTest.success': 'การทดสอบการค้นคืนเสร็จสมบูรณ์',
-} as const
+}

@@ -1,4 +1,7 @@
-/** Chinese UI — community */
+/**
+ * zh UI — community
+ */
+
 export default {
   'community.category.all': '全部',
   'community.category.creative': '创意灵感',
@@ -146,4 +149,4 @@ export default {
   'libraryViewer.bookmarkAdded': '书签已添加',
   'libraryViewer.bookmarkRemoved': '书签已删除',
   'libraryViewer.operationFailed': '操作失败',
-} as const
+}

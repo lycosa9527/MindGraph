@@ -1,4 +1,7 @@
-/** Traditional Chinese (zh-TW) UI — workshop */
+/**
+ * zh-tw UI — workshop
+ */
+
 export default {
   'collab.codeCopied': '代碼已複製',
   'collab.codeGenerated': '協作代碼已生成，分享給其他人即可一起編輯',
@@ -337,4 +340,4 @@ export default {
   'workshopCanvas.userJoined': '用戶 {userId} 已加入',
   'workshopCanvas.userLeft': '用戶 {userId} 已離開',
   'workshopCanvas.wsError': '在線協作連接錯誤，請檢查網絡連接',
-} as const
+}

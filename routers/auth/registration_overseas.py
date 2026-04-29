@@ -218,5 +218,6 @@ async def register_overseas(
             "allows_simplified_chinese": False,
             "ui_language": new_user.ui_language,
             "prompt_language": getattr(new_user, "prompt_language", None),
+            "match_prompt_to_ui": getattr(new_user, "match_prompt_to_ui", True),
         },
     }

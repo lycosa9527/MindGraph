@@ -103,14 +103,18 @@ const currentPromptLabel = computed(() => {
 function selectUiLanguage(code: string) {
   uiStore.setLanguage(code as Language)
   uiStore.setUiLanguageExplicit(true)
-  void authStore.saveLanguagePreferences(code as Language, uiStore.promptLanguage)
+  void authStore.saveLanguagePreferences(code as Language, uiStore.promptLanguage, {
+    matchPromptToUi: uiStore.matchPromptToUi,
+  })
   uiLangExpanded.value = false
 }
 
 function selectPromptLanguage(code: string) {
   uiStore.setPromptLanguage(code as PromptLanguage)
   uiStore.setMatchPromptToUi(false)
-  void authStore.saveLanguagePreferences(uiStore.language, code as PromptLanguage)
+  void authStore.saveLanguagePreferences(uiStore.language, code as PromptLanguage, {
+    matchPromptToUi: uiStore.matchPromptToUi,
+  })
   promptLangExpanded.value = false
   promptSearchQuery.value = ''
 }

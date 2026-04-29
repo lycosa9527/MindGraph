@@ -1,4 +1,7 @@
-/** si UI — mindmate (English copy; translate values as needed) */
+/**
+ * si UI — mindmate
+ */
+
 export default {
   'aiModel.conceptAiOff': 'Click to enable AI relationship labels (multi-model)',
   'aiModel.conceptAiOn': 'On: drag links to generate relationship labels',
@@ -154,4 +157,5 @@ export default {
   'rootConceptModal.splittingLoading': 'Splitting branches and generating concepts…',
   'rootConceptModal.tabTitleRoot': 'Root concept: {text}',
   'rootConceptModal.title': 'Root concept',
-} as const
+  'rootConceptModal.titleConceptList': 'Concept list',
+}

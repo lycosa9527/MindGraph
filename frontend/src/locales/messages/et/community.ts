@@ -1,4 +1,7 @@
-/** et UI — community (English copy; translate values as needed) */
+/**
+ * et UI — community
+ */
+
 export default {
   'community.category.all': 'All',
   'community.category.creative': 'Creative ideas',
@@ -148,4 +151,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Bookmark added',
   'libraryViewer.bookmarkRemoved': 'Bookmark removed',
   'libraryViewer.operationFailed': 'Something went wrong',
-} as const
+}

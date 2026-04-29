@@ -1,4 +1,7 @@
-/** Traditional Chinese (zh-TW) UI — sidebar */
+/**
+ * zh-tw UI — sidebar
+ */
+
 export default {
   'sidebar.actions.delete': '刪除',
   'sidebar.actions.pinToTop': '置頂',
@@ -66,10 +69,11 @@ export default {
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindbot': '思維機器人',
   'sidebar.schoolZone': '學校專區',
   'sidebar.smartResponse': 'Smart Response 智回',
   'sidebar.teacherUsage': '教師使用度',
   'sidebar.templateResources': '模板資源',
   'sidebar.userSubtitleDefault': 'MindGraph專業版',
   'sidebar.account': '賬號設置',
-} as const
+}

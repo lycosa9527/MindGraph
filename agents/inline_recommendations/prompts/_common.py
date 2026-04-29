@@ -14,11 +14,12 @@ Proprietary License
 
 from typing import Any, Dict, List, Optional
 
+from utils.prompt_locale import is_chinese_prompt_shell_language
+
 
 def is_chinese_inline_prompt_language(language: str) -> bool:
     """Chinese prompt body branch (Simplified copy); output script set via output_language_instruction."""
-    lo = (language or "").strip().lower()
-    return lo in ("zh", "zh-tw", "zh-hant")
+    return is_chinese_prompt_shell_language(language)
 
 
 def thinking_locale_key(language: str) -> str:

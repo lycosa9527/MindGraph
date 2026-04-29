@@ -1,4 +1,7 @@
-/** bg UI — canvas (English copy; translate values as needed) */
+/**
+ * bg UI — canvas
+ */
+
 export default {
   'braceMap.defaultSubpartFirst': 'New Subpart 1',
   'braceMap.defaultSubpartSecond': 'New Subpart 2',
@@ -107,7 +110,6 @@ export default {
   'canvas.toolbar.mathKeyboardK12ChemFormPage1': 'Common compounds & salts',
   'canvas.toolbar.mathKeyboardK12ChemFormPage2': 'Classic reactions',
   'canvas.toolbar.mathKeyboardK12ChemFormPage3': 'Acids · organics · labs',
-
   'canvas.toolbar.mathKeyboardEqPythagorean': 'a²+b²=c²',
   'canvas.toolbar.mathKeyboardEqSquareSum': '(a+b)²',
   'canvas.toolbar.mathKeyboardEqSquareDiff': '(a−b)²',
@@ -120,7 +122,6 @@ export default {
   'canvas.toolbar.mathKeyboardEqYmxb': 'y=mx+b',
   'canvas.toolbar.mathKeyboardEqYQuad': 'y=ax²+bx+c',
   'canvas.toolbar.mathKeyboardEqAbsX': "{'|'}x{'|'}",
-
   'canvas.toolbar.mathKeyboardEqCircleArea': 'A=πr²',
   'canvas.toolbar.mathKeyboardEqCircleCircum': 'C=2πr',
   'canvas.toolbar.mathKeyboardEqTriHalfBh': 'A=½bh',
@@ -135,7 +136,6 @@ export default {
   'canvas.toolbar.mathKeyboardEqSphereSA': 'Sphere SA',
   'canvas.toolbar.mathKeyboardEqSpaceDiag3d': '3D distance',
   'canvas.toolbar.mathKeyboardEqRectPrismSA': 'Rect. prism SA',
-
   'canvas.toolbar.mathKeyboardEqSin2Cos2': 'sin²+cos²',
   'canvas.toolbar.mathKeyboardEqTanDef': 'tan θ',
   'canvas.toolbar.mathKeyboardEqLawCos': 'Law of cosines',
@@ -144,7 +144,6 @@ export default {
   'canvas.toolbar.mathKeyboardEqSinSumDiff': 'sin(α±β)',
   'canvas.toolbar.mathKeyboardEqEuler': "e^{'{'}iθ{'}'}",
   'canvas.toolbar.mathKeyboardEqDoubleAngle': 'Double angle',
-
   'canvas.toolbar.mathKeyboardEqSum1toN': '1+2+…+n',
   'canvas.toolbar.mathKeyboardEqArithAn': 'Arithmetic aₙ',
   'canvas.toolbar.mathKeyboardEqGeomAn': 'Geometric aₙ',
@@ -154,7 +153,6 @@ export default {
   'canvas.toolbar.mathKeyboardEqVariance': 'σ² (population)',
   'canvas.toolbar.mathKeyboardEqChooseNK': 'C(n,k)',
   'canvas.toolbar.mathKeyboardEqPermNK': 'P(n,k)',
-
   'canvas.toolbar.mathKeyboardChemFGlucose': 'C₆H₁₂O₆',
   'canvas.toolbar.mathKeyboardChemFEthanol': 'C₂H₅OH',
   'canvas.toolbar.mathKeyboardChemFAcetic': 'CH₃COOH',
@@ -174,7 +172,6 @@ export default {
   'canvas.toolbar.mathKeyboardChemFNa2co3': 'Na₂CO₃',
   'canvas.toolbar.mathKeyboardChemFKno3': 'KNO₃',
   'canvas.toolbar.mathKeyboardChemFMgso4': 'MgSO₄',
-
   'canvas.toolbar.mathKeyboardChemFPhotosynth': 'Photosynthesis',
   'canvas.toolbar.mathKeyboardChemFRespiration': 'Respiration',
   'canvas.toolbar.mathKeyboardChemFRusting': 'Rusting',
@@ -183,7 +180,6 @@ export default {
   'canvas.toolbar.mathKeyboardChemFMgO2': 'Mg + O₂',
   'canvas.toolbar.mathKeyboardChemFNh3Synth': 'NH₃ synthesis',
   'canvas.toolbar.mathKeyboardChemFWaterElectrolysis': 'H₂O → H₂ + O₂',
-
   'canvas.toolbar.mathKeyboardChemFHno3': 'HNO₃',
   'canvas.toolbar.mathKeyboardChemFH3po4': 'H₃PO₄',
   'canvas.toolbar.mathKeyboardChemFCh3oh': 'CH₃OH',
@@ -196,7 +192,26 @@ export default {
   'canvas.toolbar.mathKeyboardChemFVinegar': 'Vinegar',
   'canvas.toolbar.mathKeyboardChemFChalk': 'Chalk',
   'canvas.toolbar.mathKeyboardChemFGypsum': 'Gypsum',
-
+  'canvas.presentationSideToolbar.ariaLabel': 'Presentation tools',
+  'canvas.presentationSideToolbar.laser': 'Laser pointer',
+  'canvas.presentationSideToolbar.highlighter': 'Highlighter',
+  'canvas.presentationSideToolbar.pen': 'Pen',
+  'canvas.presentationSideToolbar.spotlight': 'Spotlight',
+  'canvas.presentationSideToolbar.timer': 'Timer',
+  'canvas.presentationTimer.title': 'Presentation timer',
+  'canvas.presentationTimer.minSuffix': 'm',
+  'canvas.presentationTimer.customMinutes': 'Minutes',
+  'canvas.presentationTimer.set': 'Set',
+  'canvas.presentationTimer.start': 'Start',
+  'canvas.presentationTimer.pause': 'Pause',
+  'canvas.presentationTimer.reset': 'Reset',
+  'canvas.presentationTimer.exitTimer': 'Exit',
+  'canvas.presentationContextMenu.laserPointer': 'Laser pointer',
+  'canvas.presentationContextMenu.spotlight': 'Spotlight',
+  'canvas.presentationContextMenu.highlighterTool': 'Highlighter',
+  'canvas.presentationContextMenu.clearHighlighter': 'Clear highlighter',
+  'canvas.presentationContextMenu.exitPresentation': 'Exit presentation',
+  'canvas.presentationContextMenu.highlighterColor': 'Highlighter color',
   'canvas.toolbar.featureInDevelopment': '{name} is in development',
   'canvas.toolbar.fontGroupChinese': 'Chinese',
   'canvas.toolbar.fontGroupEnglish': 'English',
@@ -230,6 +245,12 @@ export default {
   'canvas.toolbar.snapshotSaveFirst': 'Please save the diagram first before taking a snapshot',
   'canvas.toolbar.snapshotTaken': 'Snapshot {n} saved',
   'canvas.toolbar.snapshotFailed': 'Failed to save snapshot, please try again',
+  'canvas.toolbar.snapshotTooLarge':
+    'Snapshot is too large (max {max} KB). Reduce diagram content and try again.',
+  'canvas.toolbar.snapshotRateLimited': 'Too many snapshot actions. Wait a moment and try again.',
+  'canvas.toolbar.snapshotDiagramNotFound':
+    'Diagram not found. Reload the page or open it from your library.',
+  'canvas.toolbar.snapshotConflict': 'Could not save snapshot (conflict). Please try again.',
   'canvas.toolbar.newAssociation': 'New association',
   'canvas.toolbar.newAttribute': 'New Attribute',
   'canvas.toolbar.newBranch': 'New Branch',
@@ -319,26 +340,6 @@ export default {
   'canvas.zoomControls.showPresentationTools': 'Show presentation tools',
   'canvas.zoomControls.hidePresentationTools': 'Hide presentation tools',
   'canvas.zoomControls.hand': 'Hand tool',
-  'canvas.presentationSideToolbar.ariaLabel': 'Presentation tools',
-  'canvas.presentationSideToolbar.laser': 'Laser pointer',
-  'canvas.presentationSideToolbar.highlighter': 'Highlighter',
-  'canvas.presentationSideToolbar.pen': 'Pen',
-  'canvas.presentationSideToolbar.spotlight': 'Spotlight',
-  'canvas.presentationSideToolbar.timer': 'Timer',
-  'canvas.presentationTimer.title': 'Presentation timer',
-  'canvas.presentationTimer.minSuffix': 'm',
-  'canvas.presentationTimer.customMinutes': 'Minutes',
-  'canvas.presentationTimer.set': 'Set',
-  'canvas.presentationTimer.start': 'Start',
-  'canvas.presentationTimer.pause': 'Pause',
-  'canvas.presentationTimer.reset': 'Reset',
-  'canvas.presentationTimer.exitTimer': 'Exit',
-  'canvas.presentationContextMenu.laserPointer': 'Laser pointer',
-  'canvas.presentationContextMenu.spotlight': 'Spotlight',
-  'canvas.presentationContextMenu.highlighterTool': 'Highlighter',
-  'canvas.presentationContextMenu.clearHighlighter': 'Clear highlighter',
-  'canvas.presentationContextMenu.exitPresentation': 'Exit presentation',
-  'canvas.presentationContextMenu.highlighterColor': 'Highlighter color',
   'canvasPage.collaborationFooter': 'Collaboration',
   'conceptMap.focus.noResult': 'No result',
   'conceptMap.focus.validationRequestFailed': 'Validation request failed',
@@ -533,4 +534,4 @@ export default {
   'mindgraphLanding.sharedCodeHint': 'Enter the invitation code (xxx-xxx) to join their session.',
   'mindgraphLanding.sharedCollab': 'Shared collaboration',
   'mindgraphLanding.welcome': "Hello {username}, I'm your AI visual thinking assistant",
-} as const
+}

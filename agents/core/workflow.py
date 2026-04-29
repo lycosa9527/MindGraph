@@ -32,6 +32,7 @@ from agents.core.learning_sheet import (
 )
 from agents.core.utils import create_error_response, validate_inputs
 from config.database import AsyncSessionLocal
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 if TYPE_CHECKING:
     pass
@@ -487,7 +488,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
                                 "\n\n".join(
                                     [f"[知识库参考 {i + 1}]: {chunk}" for i, chunk in enumerate(rag_context_chunks)]
                                 )
-                                if language == "zh"
+                                if is_chinese_prompt_shell_language(language)
                                 else "\n\n".join(
                                     [
                                         f"[Knowledge Base Reference {i + 1}]: {chunk}"
@@ -512,7 +513,7 @@ auto-complete - user has dimension but no topic (generate topic and children)
 
         # Enhance prompt with RAG context if available
         if rag_context:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 enhanced_prompt = f"""用户请求：{generation_prompt}
 
 相关背景知识（来自用户的知识库）：

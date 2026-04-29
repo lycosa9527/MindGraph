@@ -1,7 +1,10 @@
-/** Thai UI — common */
+/**
+ * th UI — common
+ */
+
 export default {
   'app.aiDisclaimer': 'เนื้อหาสร้างโดย AI กรุณาตรวจสอบอย่างละเอียด',
-  'app.brandName': 'Mind Platform',
+  'app.brandName': 'แพลตฟอร์มจิตใจ',
   'app.guestMainLoginPrompt': 'เข้าสู่ระบบเพื่อใช้งานพื้นที่นี้',
   'app.browserLocale.body':
     'เบราว์เซอร์ของคุณใช้ภาษา {name} ต้องการเปลี่ยนภาษาของแอปให้ตรงกันหรือไม่?',
@@ -31,7 +34,7 @@ export default {
   'askOnce.templateActive': 'เทมเพลตถูกเปิดใช้งาน',
   'askOnce.templates': 'เทมเพลต',
   'askOnce.untitledConversation': 'บทสนทนาไม่มีชื่อ',
-  'askonce.title': 'AskOnce',
+  'askonce.title': 'ถามครั้งเดียว',
   'common.all': 'ทั้งหมด',
   'common.cancel': 'ยกเลิก',
   'common.clear': 'ล้าง',
@@ -72,7 +75,7 @@ export default {
   'diagramTemplates.multi_flow_map': 'วิเคราะห์สาเหตุและผลของ 【event】',
   'diagramTemplates.tree_map': 'จัดหมวดหมู่ตาม 【criterion】 สำหรับ 【subject】',
   'meta.pageTitle.admin': 'ผู้ดูแลระบบ',
-  'meta.pageTitle.askOnce': 'AskOnce',
+  'meta.pageTitle.askOnce': 'ถามครั้งเดียว',
   'meta.pageTitle.auth': 'เข้าสู่ระบบ',
   'meta.pageTitle.canvas': 'แคนวาส',
   'meta.pageTitle.chunkTest': 'ทดสอบ Chunk',
@@ -80,17 +83,18 @@ export default {
   'meta.pageTitle.community': 'ชุมชน',
   'meta.pageTitle.course': 'หลักสูตร',
   'meta.pageTitle.dashboardLogin': 'เข้าสู่ระบบแดชบอร์ด',
-  'meta.pageTitle.debateverse': 'DebateVerse',
-  'meta.pageTitle.default': 'Mind Platform',
+  'meta.pageTitle.debateverse': 'อภิปรายVerse',
+  'meta.pageTitle.default': 'แพลตฟอร์มจิตใจ',
   'meta.pageTitle.demoLogin': 'เข้าสู่ระบบทดลองใช้',
-  'meta.pageTitle.gewe': 'Gewe',
+  'meta.pageTitle.gewe': 'เกว',
   'meta.pageTitle.knowledgeSpace': 'คลังความรู้',
   'meta.pageTitle.library': 'ห้องสมุด',
   'meta.pageTitle.libraryBookmark': 'ที่คั่นหนังสือ',
   'meta.pageTitle.libraryViewer': 'ตัวอ่านห้องสมุด',
   'meta.pageTitle.login': 'เข้าสู่ระบบ',
-  'meta.pageTitle.main': 'Mind Platform',
+  'meta.pageTitle.main': 'แพลตฟอร์มจิตใจ',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.mindbotAdmin': 'มายด์บอท',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'ไม่พบหน้า',
   'meta.pageTitle.publicDashboard': 'สถิติ',
@@ -102,11 +106,10 @@ export default {
   'meta.pageTitle.workshopChat': 'แชทเวิร์กช็อป',
   'publicDashboard.networkError': 'ข้อผิดพลาดของเครือข่าย ไม่สามารถโหลดแดชบอร์ด',
   'settings.language.interface': 'ภาษาอินเทอร์เฟซ',
-  'settings.language.matchPrompt':
-    'Keep AI assistant, interface and virtual keyboard language in sync',
+  'settings.language.matchPrompt': 'ซิงค์ผู้ช่วย AI, อินเทอร์เฟซ และแป้นพิมพ์เสมือนเข้าด้วยกัน',
   'settings.language.prompt': 'ภาษา AI / คำสั่ง',
   'settings.language.promptSelectPlaceholder': 'ค้นหาภาษา…',
-  'settings.language.supportsCount': 'Supports {n} languages',
+  'settings.language.supportsCount': 'รองรับภาษา {n}',
   'settings.language.title': 'ภาษาและคำสั่ง',
   'settings.version.title': 'เวอร์ชัน UI',
   'settings.version.chinese': 'เวอร์ชันภาษาจีน',
@@ -115,14 +118,14 @@ export default {
   'landing.international.promptPlaceholder':
     'พิมพ์หัวข้อหรือคำอธิบายสั้น ๆ หรือเลือกประเภทไดอะแกรมด้านล่าง',
   'landing.international.sectionTitle': 'เลือกประเภทไดอะแกรม',
-  'landing.international.advancedDiagramsTitle': 'Advanced diagrams',
+  'landing.international.advancedDiagramsTitle': 'ไดอะแกรมขั้นสูง',
   'landing.international.modules': 'โมดูล',
   'landing.international.mindmateCard.title': 'MindMate',
   'landing.international.mindmateCard.desc': 'พันธมิตรเสมือนด้านการสอนและการวิจัยของคุณ',
-  'landing.international.shareSite': 'Share site',
-  'landing.international.shareSiteModalTitle': 'Share site',
+  'landing.international.shareSite': 'แบ่งปันเว็บไซต์',
+  'landing.international.shareSiteModalTitle': 'แบ่งปันเว็บไซต์',
   'landing.international.shareSiteModalHint':
     'Scan with a phone or tablet camera to open this page.',
-  'landing.international.shareSiteCopy': 'Copy link',
-  'landing.international.shareSiteCopied': 'Link copied',
-} as const
+  'landing.international.shareSiteCopy': 'คัดลอกลิงก์',
+  'landing.international.shareSiteCopied': 'คัดลอกลิงก์แล้ว',
+}

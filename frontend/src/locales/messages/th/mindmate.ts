@@ -1,4 +1,7 @@
-/** Thai UI — mindmate */
+/**
+ * th UI — mindmate
+ */
+
 export default {
   'aiModel.conceptAiOff': 'คลิกเพื่อเปิดใช้งานป้ายความสัมพันธ์ AI (หลายโมเดล)',
   'aiModel.conceptAiOn': 'เปิด: ลากลิงก์เพื่อสร้างป้ายความสัมพันธ์',
@@ -78,6 +81,7 @@ export default {
   'mindmate.input.attachFile': 'แนบไฟล์',
   'mindmate.input.placeholder': 'พิมพ์คำถามของคุณ...',
   'mindmate.newChat': 'แชทใหม่',
+  'mindmate.otherModules': 'โมดูลอื่น',
   'mindmate.noHistory': 'ไม่มีประวัติ',
   'mindmate.noHistoryPanel': 'ไม่มีประวัติบทสนทนา',
   'mindmate.suggestionLabel': 'ลองถามฉัน:',
@@ -115,7 +119,7 @@ export default {
   'nodePalette.refresh': 'รีเฟรช',
   'nodePalette.selected': 'เลือกแล้ว',
   'nodePalette.similarities': 'ความคล้าย',
-  'panel.mindmate': 'MindMate AI',
+  'panel.mindmate': 'ผู้ช่วย AI MindMate',
   'panel.nodePalette': 'พาเลตโหนด',
   'panel.properties': 'คุณสมบัติ',
   'panels.property.background': 'พื้นหลัง',
@@ -150,4 +154,5 @@ export default {
   'rootConceptModal.splittingLoading': 'กำลังแยกกิ่งและสร้างแนวคิด…',
   'rootConceptModal.tabTitleRoot': 'แนวคิดหลัก: {text}',
   'rootConceptModal.title': 'แนวคิดหลัก',
-} as const
+  'rootConceptModal.titleConceptList': 'รายการแนวคิด',
+}

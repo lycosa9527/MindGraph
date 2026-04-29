@@ -1,0 +1,60 @@
+canvas.toolbar.bgMenu	BG
+canvas.toolbar.mathKeyboardEqPythagorean	a²+b²=c²
+canvas.toolbar.mathKeyboardEqSquareSum	(a+b)²
+canvas.toolbar.mathKeyboardEqSquareDiff	(a−b)²
+canvas.toolbar.mathKeyboardEqYmxb	y=mx+b
+canvas.toolbar.mathKeyboardEqYQuad	y=ax²+bx+c
+canvas.toolbar.mathKeyboardEqAbsX	{'|'}x{'|'}
+canvas.toolbar.mathKeyboardEqCircleArea	A=πr²
+canvas.toolbar.mathKeyboardEqCircleCircum	C=2πr
+canvas.toolbar.mathKeyboardEqTriHalfBh	A=½bh
+canvas.toolbar.mathKeyboardEqRectArea	A=ℓw
+canvas.toolbar.mathKeyboardEqPrismVol	V=ℓwh
+canvas.toolbar.mathKeyboardEqPyramidVol	V=⅓Bh
+canvas.toolbar.mathKeyboardEqConeVol	V=⅓πr²h
+canvas.toolbar.mathKeyboardEqSphereVol	V=⁴⁄₃πr³
+canvas.toolbar.mathKeyboardEqCylVol	V=πr²h
+canvas.toolbar.mathKeyboardEqSin2Cos2	sin²+cos²
+canvas.toolbar.mathKeyboardEqTanDef	tan θ
+canvas.toolbar.mathKeyboardEqLawCos	Law of cosines
+canvas.toolbar.mathKeyboardEqLawSin	Law of sines
+canvas.toolbar.mathKeyboardEqCosSumDiff	cos(α±β)
+canvas.toolbar.mathKeyboardEqSinSumDiff	sin(α±β)
+canvas.toolbar.mathKeyboardEqEuler	e^{'{'}iθ{'}'}
+canvas.toolbar.mathKeyboardEqSum1toN	1+2+…+n
+canvas.toolbar.mathKeyboardEqChooseNK	C(n,k)
+canvas.toolbar.mathKeyboardEqPermNK	P(n,k)
+canvas.toolbar.mathKeyboardChemFGlucose	C₆H₁₂O₆
+canvas.toolbar.mathKeyboardChemFEthanol	C₂H₅OH
+canvas.toolbar.mathKeyboardChemFAcetic	CH₃COOH
+canvas.toolbar.mathKeyboardChemFCarbonic	H₂CO₃
+canvas.toolbar.mathKeyboardChemFCalciumHydroxide	Ca(OH)₂
+canvas.toolbar.mathKeyboardChemFKmno4	KMnO₄
+canvas.toolbar.mathKeyboardChemFK2cr2o7	K₂Cr₂O₇
+canvas.toolbar.mathKeyboardChemFAgno3	AgNO₃
+canvas.toolbar.mathKeyboardChemFBacl2	BaCl₂
+canvas.toolbar.mathKeyboardChemFPbNitrate	Pb(NO₃)₂
+canvas.toolbar.mathKeyboardChemFAl2o3	Al₂O₃
+canvas.toolbar.mathKeyboardChemFFe2o3	Fe₂O₃
+canvas.toolbar.mathKeyboardChemFSio2	SiO₂
+canvas.toolbar.mathKeyboardChemFP4	P₄
+canvas.toolbar.mathKeyboardChemFS8	S₈
+canvas.toolbar.mathKeyboardChemFNh4no3	NH₄NO₃
+canvas.toolbar.mathKeyboardChemFNa2co3	Na₂CO₃
+canvas.toolbar.mathKeyboardChemFKno3	KNO₃
+canvas.toolbar.mathKeyboardChemFMgso4	MgSO₄
+canvas.toolbar.mathKeyboardChemFNaWater	Na + H₂O
+canvas.toolbar.mathKeyboardChemFMgO2	Mg + O₂
+canvas.toolbar.mathKeyboardChemFWaterElectrolysis	H₂O → H₂ + O₂
+canvas.toolbar.mathKeyboardChemFHno3	HNO₃
+canvas.toolbar.mathKeyboardChemFH3po4	H₃PO₄
+canvas.toolbar.mathKeyboardChemFCh3oh	CH₃OH
+canvas.toolbar.mathKeyboardChemFC2h4	C₂H₄
+canvas.toolbar.mathKeyboardChemFC2h2	C₂H₂
+canvas.presentationSideToolbar.spotlight	Spotlight
+canvas.presentationTimer.minSuffix	m
+canvas.presentationContextMenu.spotlight	Spotlight
+canvas.toolbar.formatLabel	Format
+diagram.dimension.classificationZh	分类维度
+diagram.dimension.decompositionZh	拆解维度
+diagram.labelNode.placeholderBracket	[{prefix}: {hint}]

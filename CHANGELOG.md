@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.110.0] - 2026-04-29
+
+### Added
+- **User preference `match_prompt_to_ui`** ([`alembic/versions/rev_0026_user_match_prompt_to_ui.py`](alembic/versions/rev_0026_user_match_prompt_to_ui.py), [`models/domain/auth.py`](models/domain/auth.py), [`services/redis/cache/redis_user_cache.py`](services/redis/cache/redis_user_cache.py), [`routers/auth/preferences.py`](routers/auth/preferences.py), [`routers/auth/login.py`](routers/auth/login.py), [`routers/auth/session.py`](routers/auth/session.py), [`frontend/src/stores/auth.ts`](frontend/src/stores/auth.ts), [`frontend/src/stores/ui.ts`](frontend/src/stores/ui.ts), [`frontend/src/types/auth.ts`](frontend/src/types/auth.ts), [`frontend/src/components/settings/LanguageSettingsModal.vue`](frontend/src/components/settings/LanguageSettingsModal.vue)): persisted column **`users.match_prompt_to_ui`** (default **true**) so returning users keep whether UI language and AI prompt language stay tied together; preferences API accepts **`match_prompt_to_ui`** alongside **`ui_language`** / **`prompt_language`** / **`ui_version`**; login/session/register payloads expose the flag.
+
+- **`diagram_snapshots` migration** ([`alembic/versions/rev_0027_diagram_snapshots_table.py`](alembic/versions/rev_0027_diagram_snapshots_table.py)): idempotent **`CREATE TABLE`** when **`diagram_snapshots`** is missing (indexes **`diagram_id`** / **`user_id`**, unique **`(diagram_id, version_number)`**), aligning deployments where baseline **`create_all`** may already have created the table.
+
+- **Canvas virtual keyboard — shared open state** ([`frontend/src/composables/canvasToolbar/useCanvasVirtualKeyboardOpen.ts`](frontend/src/composables/canvasToolbar/useCanvasVirtualKeyboardOpen.ts), [`frontend/src/composables/canvasToolbar/index.ts`](frontend/src/composables/canvasToolbar/index.ts), [`frontend/src/composables/canvasToolbar/useCanvasToolbarApps.ts`](frontend/src/composables/canvasToolbar/useCanvasToolbarApps.ts)): single **`canvasVirtualKeyboardOpen`** ref for toolbar vs presentation shortcuts; **`ensureCanvasVirtualKeyboardUiVersionSync`** closes the panel when **`uiVersion`** is not **international**.
+
+### Changed
+- **Chinese regional prompt shells** ([`utils/prompt_locale.py`](utils/prompt_locale.py), [`agents/core/workflow.py`](agents/core/workflow.py), topic extraction, concept map generation, mind map agent, inline recommendations, node palette generators, relationship labels, thinking-map agents): **`is_chinese_prompt_shell_language()`** replaces naive **`language == "zh"`** for knowledge-base shells and similar blocks; **`output_language_instruction`** resolves **Traditional Chinese** (`zh-tw`, **`zh-hant`**, **`zh-hk`**, **`zh-mo`**) **before** the prompt-output-registry guard so footers stay correct instead of falling through to English.
+
+- **Prompt language registry** ([`data/prompt_language_registry.json`](data/prompt_language_registry.json)): regenerated via **`scripts/build_prompt_language_registry.py`** (frontend **`prebuild`**).
+
+- **Canvas / UI i18n (tier 27)** — broad **`frontend/src/locales/messages/**`** updates (canvas keys and related modules across locales); tooling refreshed ([`frontend/scripts/analyze_i18n_en_parity.py`](frontend/scripts/analyze_i18n_en_parity.py), new parity/check/GAP-fill helpers under **`frontend/scripts/`**); legacy tier‑2 canvas **`*.mjs`** / flat JSON artifacts removed in favor of current pipelines.
+
+- **Canvas UX** ([`frontend/src/components/canvas/CanvasVirtualKeyboardPanel.vue`](frontend/src/components/canvas/CanvasVirtualKeyboardPanel.vue), [`frontend/src/pages/CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), [`frontend/src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts`](frontend/src/composables/canvasPage/useCanvasPageLibrarySnapshots.ts), [`frontend/src/composables/editor/useSnapshotHistory.ts`](frontend/src/composables/editor/useSnapshotHistory.ts)): keyboard panel wiring, library snapshots, snapshot history behavior.
+
+- **Keyboard layout ↔ UI locale** ([`frontend/src/i18n/keyboardLayoutForUiLocale.ts`](frontend/src/i18n/keyboardLayoutForUiLocale.ts), [`frontend/scripts/verify-keyboard-layout-map.ts`](frontend/scripts/verify-keyboard-layout-map.ts), [`frontend/src/i18n/index.ts`](frontend/src/i18n/index.ts), [`frontend/src/i18n/locales.ts`](frontend/src/i18n/locales.ts)): mapping and verification updates aligned with locale bundles.
+
+- **Diagram snapshots API** ([`routers/api/diagrams.py`](routers/api/diagrams.py), [`repositories/diagram_repo.py`](repositories/diagram_repo.py)): listing/rest consistency with persisted snapshots.
+
+- **Dependencies** ([`requirements.txt`](requirements.txt)): pins adjusted.
+
+### Frontend package version
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.110.0).
+
 ## [5.109.0] - 2026-04-28
 
 ### Added

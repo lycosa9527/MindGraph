@@ -1,4 +1,7 @@
-/** el UI — workshop (English copy; translate values as needed) */
+/**
+ * el UI — workshop
+ */
+
 export default {
   'collab.codeCopied': 'Code copied',
   'collab.codeGenerated': 'Collaboration code generated — share to edit together.',
@@ -346,4 +349,4 @@ export default {
   'workshopCanvas.userJoined': 'User {userId} joined',
   'workshopCanvas.userLeft': 'User {userId} left',
   'workshopCanvas.wsError': 'Collaboration connection error, please check your network',
-} as const
+}

@@ -21,18 +21,13 @@ from langchain_core.prompts import PromptTemplate
 
 from prompts.concept_maps import CONCEPT_MAP_PROMPTS
 from services.llm import llm_service
-from utils.prompt_locale import output_language_instruction
+from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 
 logger = logging.getLogger(__name__)
 
 
-def _is_zh_family_relationship(language: str) -> bool:
-    lo = (language or "").strip().lower()
-    return lo in ("zh", "zh-tw", "zh-hant")
-
-
 def _template_lang_key(language: str) -> str:
-    return "zh" if _is_zh_family_relationship(language) else "en"
+    return "zh" if is_chinese_prompt_shell_language(language) else "en"
 
 
 class _GeneratorHolder:
@@ -125,7 +120,7 @@ class RelationshipLabelsGenerator:
         existing_labels: Optional[List[str]] = None,
     ) -> str:
         """Build prompt from concept map relationship template."""
-        if _is_zh_family_relationship(language):
+        if is_chinese_prompt_shell_language(language):
             topic_context = f"主题是：{topic}" if topic else "此图尚未设置主主题。"
         else:
             topic_context = f"The topic is about: {topic}" if topic else "No main topic has been set for this map."
@@ -145,7 +140,7 @@ class RelationshipLabelsGenerator:
         ).to_string()
         prev = existing_labels or []
         if batch_num > 1 and prev:
-            if _is_zh_family_relationship(language):
+            if is_chinese_prompt_shell_language(language):
                 prompt += (
                     f"\n\n已生成的关系标签：{', '.join(prev[:20])}\n"
                     "请生成全新的、与上述不同的关系标签。不要重复或改写已有标签。"
@@ -157,7 +152,7 @@ class RelationshipLabelsGenerator:
                     "Do not repeat or paraphrase existing labels."
                 )
         elif batch_num > 1:
-            if _is_zh_family_relationship(language):
+            if is_chinese_prompt_shell_language(language):
                 prompt += (
                     f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，"
                     "从新的关系类型和角度思考，避免与之前批次重复。"
@@ -331,7 +326,7 @@ class RelationshipLabelsGenerator:
             timeout=15.0,
             system_message=(
                 "你是一个有帮助的K12教育助手。"
-                if _is_zh_family_relationship(language)
+                if is_chinese_prompt_shell_language(language)
                 else "You are a helpful K12 education assistant."
             ),
             user_id=user_id,

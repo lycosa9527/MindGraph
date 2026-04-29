@@ -12,6 +12,7 @@ from typing import Optional, Dict, Any, AsyncGenerator
 import logging
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -214,7 +215,7 @@ class MultiFlowPaletteGenerator(BasePaletteGenerator):
 
     def _build_causes_prompt(self, event: str, context_desc: str, count: int, batch_num: int, language: str) -> str:
         """Build prompt for causes (factors leading to the event)"""
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             prompt = f"""为以下事件生成{count}个原因（导致事件发生的因素）：{event}
 
 教学背景：{context_desc}
@@ -249,7 +250,7 @@ Generate {count} causes:"""
 
         # Add diversity note for later batches
         if batch_num > 1:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 prompt += (
                     f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
                 )
@@ -263,7 +264,7 @@ Generate {count} causes:"""
 
     def _build_effects_prompt(self, event: str, context_desc: str, count: int, batch_num: int, language: str) -> str:
         """Build prompt for effects (results and consequences of the event)"""
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             prompt = f"""为以下事件生成{count}个结果（事件导致的影响和后果）：{event}
 
 教学背景：{context_desc}
@@ -298,7 +299,7 @@ Generate {count} effects:"""
 
         # Add diversity note for later batches
         if batch_num > 1:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 prompt += (
                     f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，从新的维度和角度思考，避免与之前批次重复。"
                 )

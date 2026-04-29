@@ -1,10 +1,14 @@
 <script setup lang="ts">
 /**
  * On-screen keyboard (simple-keyboard) for canvas / focused inputs.
+ * Layout follows Pinia `language` (same as interface language). Some presets still look QWERTY
+ * (e.g. Chinese pinyin row, locales mapped to the English preset in keyboardLayoutForUiLocale).
  * Does not open node edit; user double-taps/clicks labels first per InlineEditableText.
  * Scope: plain input/textarea focus (e.g. node labels, top bar title). MathLive / contenteditable not integrated.
  */
 import { nextTick, onUnmounted, ref, watch } from 'vue'
+
+import { storeToRefs } from 'pinia'
 
 import { X } from 'lucide-vue-next'
 
@@ -12,7 +16,6 @@ import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { CANVAS_OVERLAY_Z } from '@/config/uiConfig'
 import {
-  type LayoutPresetName,
   getLayoutPresetKeyForUiLocale,
   loadLayoutForPreset,
 } from '@/i18n/keyboardLayoutForUiLocale'
@@ -30,7 +33,7 @@ const emit = defineEmits<{
 
 const { t } = useLanguage()
 const notify = useNotifications()
-const uiStore = useUIStore()
+const { language: uiLanguage } = storeToRefs(useUIStore())
 
 const keyboardMountRef = ref<HTMLDivElement | null>(null)
 
@@ -46,8 +49,9 @@ let keyboardInstance: SimpleKeyboardApi | null = null
 let focusInHandler: ((ev: FocusEvent) => void) | null = null
 let escapeHandler: ((ev: KeyboardEvent) => void) | null = null
 
-const lastPreset = ref<LayoutPresetName | null>(null)
 let hintShownThisOpen = false
+/** Coalesces overlapping async rebuilds when UI locale changes quickly while the panel is open. */
+let keyboardLayoutGeneration = 0
 
 function isTextField(el: EventTarget | null): el is HTMLInputElement | HTMLTextAreaElement {
   return el instanceof HTMLInputElement || el instanceof HTMLTextAreaElement
@@ -95,7 +99,6 @@ function onKeyboardKeyPress(): void {
 
 async function buildKeyboardOptions(locale: LocaleCode): Promise<Record<string, unknown>> {
   const preset = getLayoutPresetKeyForUiLocale(locale)
-  lastPreset.value = preset
   const layoutBundle = await loadLayoutForPreset(preset)
   const opts: Record<string, unknown> = {
     layout: layoutBundle.layout,
@@ -112,14 +115,15 @@ async function buildKeyboardOptions(locale: LocaleCode): Promise<Record<string, 
   return opts
 }
 
-async function initKeyboard(): Promise<void> {
+async function initKeyboard(locale: LocaleCode): Promise<void> {
   await import('simple-keyboard/build/css/index.css')
   const [{ SimpleKeyboard: KeyboardCtor }, opts] = await Promise.all([
     import('simple-keyboard'),
-    buildKeyboardOptions(uiStore.language as LocaleCode),
+    buildKeyboardOptions(locale),
   ])
   const mount = keyboardMountRef.value
   if (!mount) return
+  mount.replaceChildren()
   keyboardInstance = new KeyboardCtor(mount, opts) as SimpleKeyboardApi
   focusInHandler = () => {
     syncKeyboardFromFocusTarget()
@@ -146,26 +150,6 @@ function destroyKeyboard(): void {
     keyboardInstance.destroy()
     keyboardInstance = null
   }
-  lastPreset.value = null
-}
-
-async function applyLocaleLayout(locale: LocaleCode): Promise<void> {
-  if (!keyboardInstance) return
-  const preset = getLayoutPresetKeyForUiLocale(locale)
-  if (lastPreset.value === preset) {
-    keyboardInstance.setOptions({ rtl: isRtlUiLocale(locale) })
-    return
-  }
-  const layoutBundle = await loadLayoutForPreset(preset)
-  lastPreset.value = preset
-  keyboardInstance.clearInput()
-  keyboardInstance.setOptions({
-    layout: layoutBundle.layout,
-    rtl: isRtlUiLocale(locale),
-    layoutCandidates: layoutBundle.layoutCandidates ?? null,
-    enableLayoutCandidates: Boolean(layoutBundle.layoutCandidates),
-  })
-  syncKeyboardFromFocusTarget()
 }
 
 watch(
@@ -174,7 +158,7 @@ watch(
     if (open) {
       hintShownThisOpen = false
       await nextTick()
-      await initKeyboard()
+      await initKeyboard(uiLanguage.value as LocaleCode)
       syncKeyboardFromFocusTarget()
     } else {
       destroyKeyboard()
@@ -182,14 +166,16 @@ watch(
   }
 )
 
-watch(
-  () => uiStore.language,
-  async () => {
-    if (props.modelValue && keyboardInstance) {
-      await applyLocaleLayout(uiStore.language as LocaleCode)
-    }
-  }
-)
+watch(uiLanguage, async () => {
+  if (!props.modelValue) return
+  const gen = ++keyboardLayoutGeneration
+  destroyKeyboard()
+  await nextTick()
+  if (gen !== keyboardLayoutGeneration || !props.modelValue) return
+  await initKeyboard(uiLanguage.value as LocaleCode)
+  if (gen !== keyboardLayoutGeneration) return
+  syncKeyboardFromFocusTarget()
+})
 
 onUnmounted(() => {
   destroyKeyboard()

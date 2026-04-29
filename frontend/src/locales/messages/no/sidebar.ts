@@ -1,4 +1,7 @@
-/** no UI — sidebar (English copy; translate values as needed) */
+/**
+ * no UI — sidebar
+ */
+
 export default {
   'sidebar.actions.delete': 'Delete',
   'sidebar.actions.pinToTop': 'Pin to Top',
@@ -76,4 +79,4 @@ export default {
   'sidebar.templateResources': 'Templates',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
   'sidebar.account': 'Account',
-} as const
+}

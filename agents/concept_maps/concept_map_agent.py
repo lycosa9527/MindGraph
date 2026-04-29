@@ -26,7 +26,11 @@ from langchain_core.prompts import PromptTemplate
 
 from prompts.concept_maps import CONCEPT_MAP_PROMPTS
 from services.llm import llm_service
-from utils.prompt_locale import output_language_instruction, template_lang_for_registry
+from utils.prompt_locale import (
+    is_chinese_prompt_shell_language,
+    output_language_instruction,
+    template_lang_for_registry,
+)
 from utils.text_width_estimate import estimate_text_width_px
 
 from ..core.base_agent import BaseAgent
@@ -261,7 +265,7 @@ class ConceptMapAgent(BaseAgent):
                 ),
             },
         }
-        lang = "zh" if language == "zh" else "en"
+        lang = template_lang_for_registry(language)
         key = direction if direction in instructions[lang] else "none"
         return instructions[lang][key]
 
@@ -276,7 +280,7 @@ class ConceptMapAgent(BaseAgent):
     ) -> Dict[str, Any]:
         """Generate only the relationship label between two concepts."""
         topic = (concept_map_topic or "").strip()
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             topic_context = f"主题是：{topic}" if topic else "此图尚未设置主主题。"
         else:
             topic_context = f"The topic is about: {topic}" if topic else "No main topic has been set for this map."
@@ -400,7 +404,7 @@ class ConceptMapAgent(BaseAgent):
             # Try to get the language-specific prompt first
             language = kwargs.get("language", "en")
             formatted: Optional[str] = None
-            if language == "zh":
+            if template_lang_for_registry(language) == "zh":
                 # Try Chinese version first
                 zh_key = prompt_key.replace("_en", "_zh")
                 prompt_template = CONCEPT_MAP_PROMPTS.get(zh_key)

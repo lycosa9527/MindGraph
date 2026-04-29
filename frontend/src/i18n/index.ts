@@ -45,12 +45,13 @@ const lazyLocaleModules = import.meta.glob<{ default: Record<string, string> }>(
  */
 export async function loadLocaleMessages(locale: LocaleCode): Promise<void> {
   if (loadedLocales.has(locale)) return
-  const loader = lazyLocaleModules[`../locales/messages/${locale}.ts`]
+  const globKey = `../locales/messages/${locale}.ts`
+  const loader = lazyLocaleModules[globKey]
   if (loader) {
     const mod = await loader()
     i18n.global.setLocaleMessage(locale, mod.default)
+    loadedLocales.add(locale)
   }
-  loadedLocales.add(locale)
 }
 
 export function setI18nLocale(locale: LocaleCode): void {

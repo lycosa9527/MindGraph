@@ -1,4 +1,7 @@
-/** sk UI — knowledge (English copy; translate values as needed) */
+/**
+ * sk UI — knowledge
+ */
+
 export default {
   'chunkTest.history.confirmDeleteBody':
     'Are you sure you want to delete this test? This cannot be undone.',
@@ -212,4 +215,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': 'Document uploaded successfully, processing...',
   'rag.retrievalTest.failed': 'Retrieval test failed',
   'rag.retrievalTest.success': 'Retrieval test completed',
-} as const
+}

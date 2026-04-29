@@ -233,6 +233,7 @@ async def _complete_login_after_otp_verified(
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
             "prompt_language": getattr(user, "prompt_language", None),
+            "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
         },
     }
@@ -493,6 +494,7 @@ async def login(
             "role": get_user_role(user),
             "ui_language": getattr(user, "ui_language", None),
             "prompt_language": getattr(user, "prompt_language", None),
+            "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(user, "allows_simplified_chinese", True),
         },
     }
@@ -800,6 +802,7 @@ async def verify_demo(
             "role": "admin" if is_admin_access else "user",
             "ui_language": getattr(auth_user, "ui_language", None),
             "prompt_language": getattr(auth_user, "prompt_language", None),
+            "match_prompt_to_ui": getattr(auth_user, "match_prompt_to_ui", True),
         },
     }
 

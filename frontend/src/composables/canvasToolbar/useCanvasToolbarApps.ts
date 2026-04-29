@@ -1,4 +1,4 @@
-import { type ComputedRef, computed, inject, ref, watch } from 'vue'
+import { type ComputedRef, computed, inject } from 'vue'
 
 import { Camera, Keyboard, Layers, LayoutGrid, type LucideIcon, Package } from 'lucide-vue-next'
 
@@ -9,6 +9,12 @@ import { useAutoComplete } from '@/composables/editor/useAutoComplete'
 import { useDiagramStore } from '@/stores'
 import { useSavedDiagramsStore } from '@/stores/savedDiagrams'
 import { useUIStore } from '@/stores/ui'
+
+import {
+  canvasVirtualKeyboardOpen,
+  ensureCanvasVirtualKeyboardUiVersionSync,
+  toggleCanvasVirtualKeyboard,
+} from './useCanvasVirtualKeyboardOpen'
 
 export type MoreAppHandlerKey = 'concept_map_modes'
 
@@ -24,6 +30,7 @@ export type MoreAppItem = {
 }
 
 export function useCanvasToolbarApps() {
+  ensureCanvasVirtualKeyboardUiVersionSync()
   const diagramStore = useDiagramStore()
   const savedDiagramsStore = useSavedDiagramsStore()
   const uiStore = useUIStore()
@@ -50,17 +57,6 @@ export function useCanvasToolbarApps() {
   })
 
   const isConceptMap = computed(() => diagramStore.type === 'concept_map')
-
-  const virtualKeyboardOpen = ref(false)
-
-  watch(
-    () => uiStore.uiVersion,
-    (v) => {
-      if (v !== 'international') {
-        virtualKeyboardOpen.value = false
-      }
-    }
-  )
 
   const moreApps = computed((): MoreAppItem[] => {
     const conceptMapModesRow: MoreAppItem = {
@@ -218,7 +214,7 @@ export function useCanvasToolbarApps() {
       return
     }
     if (app.appKey === 'virtual_keyboard') {
-      virtualKeyboardOpen.value = !virtualKeyboardOpen.value
+      toggleCanvasVirtualKeyboard()
       return
     }
     notify.info(t('canvas.toolbar.featureInDevelopment', { name: app.name }))
@@ -229,7 +225,7 @@ export function useCanvasToolbarApps() {
     isAIGenerating,
     isConceptMap,
     moreApps,
-    virtualKeyboardOpen,
+    virtualKeyboardOpen: canvasVirtualKeyboardOpen,
     handleAIGenerate,
     handleConceptGeneration,
     handleMoreAppItem,

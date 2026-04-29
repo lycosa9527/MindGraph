@@ -5,8 +5,7 @@
 import { computed, ref, watch } from 'vue'
 
 import { useLanguage } from '@/composables/core/useLanguage'
-import { loadLocaleMessages, setI18nLocale } from '@/i18n'
-import { SUPPORTED_UI_LOCALES } from '@/i18n/locales'
+import { SUPPORTED_UI_LOCALES, matchedPromptLanguageForUiLocale } from '@/i18n/locales'
 import type { Language } from '@/stores/ui'
 import { useUIStore } from '@/stores/ui'
 
@@ -36,13 +35,16 @@ watch(visible, (v) => {
   }
 })
 
-async function handleSwitch(): Promise<void> {
+function handleSwitch(): void {
   const loc = targetLocale.value
-  await loadLocaleMessages(loc)
-  setI18nLocale(loc)
-  uiStore.setLanguage(loc)
-  uiStore.setPromptLanguage(loc)
   uiStore.setUiLanguageExplicit(true)
+  uiStore.setLanguage(loc)
+  if (!uiStore.matchPromptToUi) {
+    const matched = matchedPromptLanguageForUiLocale(loc)
+    if (matched !== null) {
+      uiStore.setPromptLanguage(matched)
+    }
+  }
   visible.value = false
 }
 

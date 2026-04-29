@@ -1,4 +1,7 @@
-/** Thai UI — community */
+/**
+ * th UI — community
+ */
+
 export default {
   'community.category.all': 'ทั้งหมด',
   'community.category.creative': 'ไอเดียสร้างสรรค์',
@@ -148,4 +151,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'เพิ่มที่คั่นหนังสือแล้ว',
   'libraryViewer.bookmarkRemoved': 'ลบที่คั่นหนังสือแล้ว',
   'libraryViewer.operationFailed': 'เกิดข้อผิดพลาด',
-} as const
+}

@@ -11,7 +11,7 @@ import re
 from typing import Any, AsyncGenerator, Dict, List, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
-from utils.prompt_locale import output_language_instruction
+from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 
 logger = logging.getLogger(__name__)
 
@@ -52,7 +52,7 @@ class ConceptMapPaletteGenerator(BasePaletteGenerator):
             focus_q = str(educational_context.get("focus_question") or "").strip()
             root_concept = str(educational_context.get("root_concept") or "").strip()
 
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             fq_line = focus_q if focus_q else "（未填写：请结合当前锚点与教学背景推断，并保持概念聚焦）"
             rc_line = root_concept if root_concept else "（未填写：请根据焦点问题与锚点推断上位概念）"
             prompt = f"""为概念图生成{count}个**可放入画布**的相关概念（名词或名词短语）。
@@ -103,7 +103,7 @@ Generate {count} concepts:"""
             )
 
         if batch_num > 1:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，避免与之前批次重复。"
             else:
                 prompt += (
@@ -147,7 +147,7 @@ Generate {count} concepts:"""
             focus_q = str(educational_context.get("focus_question") or "").strip()
             root_concept = str(educational_context.get("root_concept") or "").strip()
 
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             fq_line = focus_q if focus_q else "（未结合：请据主题与教学背景推断）"
             rc_line = root_concept if root_concept else "（未填写：请据焦点问题推断上位概念）"
             prompt = f"""请根据诺瓦克概念图理论，在**单一知识分支**内为概念图生成{count}个可放入画布的概念（名词或名词短语）。
@@ -192,7 +192,7 @@ Generate {count} lines:"""
             )
 
         if batch_num > 1:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 prompt += f"\n\n注意：这是第{batch_num}批。避免与之前批次重复。"
             else:
                 prompt += f"\n\nNote: Batch {batch_num}. Avoid repetition from earlier batches."
@@ -209,7 +209,7 @@ Generate {count} lines:"""
             domain = str(educational_context.get("palette_domain_label") or "").strip()
         language = self._detect_language(center_topic, educational_context)
         if domain:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 return (
                     "你是K12教育助手，熟悉诺瓦克概念图：先区分知识分支，再在分支内列出可构成命题的概念；"
                     "每行用制表符（Tab）分为两列：概念、以及将该概念与根概念连成命题的连接词或短语；"
@@ -245,12 +245,12 @@ Generate {count} lines:"""
         existing_text = ""
         if existing_labels:
             joined = "、".join(existing_labels[:40])
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 existing_text = f"\n【已有分支名称，禁止重复或同义改写】{joined}"
             else:
                 existing_text = f"\n【Existing branch names — do not repeat】{joined}"
 
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             fq_line = focus_q or "（可据主题推断）"
             rc_line = root_concept or "（可据焦点问题推断）"
             return f"""请根据诺瓦克概念图理论，为以下概念图主题确定知识分支名称。
@@ -303,7 +303,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
 
         if len(cleaned) < count:
             for i in range(len(cleaned), count):
-                label = f"分支{i + 1}" if language == "zh" else f"Branch {i + 1}"
+                label = f"分支{i + 1}" if is_chinese_prompt_shell_language(language) else f"Branch {i + 1}"
                 cleaned.append(label)
 
         return cleaned[:count]
@@ -331,7 +331,7 @@ Output one branch name per line, no numbering, no extra text. Exactly {count} li
             max_tokens=400,
             system_message=(
                 "你是K12教育助手，只输出分支名称，每行一个。"
-                if language == "zh"
+                if is_chinese_prompt_shell_language(language)
                 else "You are a K12 assistant. Output branch names only, one per line."
             ),
             timeout=45.0,

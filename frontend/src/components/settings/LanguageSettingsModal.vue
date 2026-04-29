@@ -12,6 +12,7 @@ import {
   getInterfaceLanguagePickerLocaleCount,
   getLocalesForInterfaceLanguagePicker,
   getPromptLanguageOptionsForPicker,
+  matchedPromptLanguageForUiLocale,
 } from '@/i18n/locales'
 import { useAuthStore } from '@/stores'
 import type { Language, PromptLanguage } from '@/stores/ui'
@@ -132,22 +133,30 @@ watch(
   () => draftUi.value,
   (ui) => {
     if (matchPromptToInterface.value) {
-      draftPrompt.value = ui
+      const matched = matchedPromptLanguageForUiLocale(ui)
+      if (matched !== null) {
+        draftPrompt.value = matched
+      }
     }
   }
 )
 
 watch(matchPromptToInterface, (on) => {
   if (on) {
-    draftPrompt.value = draftUi.value
+    const m = matchedPromptLanguageForUiLocale(draftUi.value)
+    draftPrompt.value = m !== null ? m : draftPrompt.value
   }
 })
 
 async function save(): Promise<void> {
   const ui = draftUi.value
-  const prompt = matchPromptToInterface.value ? draftUi.value : draftPrompt.value
+  const promptForPersist: PromptLanguage = matchPromptToInterface.value
+    ? (matchedPromptLanguageForUiLocale(ui) ?? draftPrompt.value)
+    : draftPrompt.value
   if (authStore.isAuthenticated) {
-    const ok = await authStore.saveLanguagePreferences(ui, prompt)
+    const ok = await authStore.saveLanguagePreferences(ui, promptForPersist, {
+      matchPromptToUi: matchPromptToInterface.value,
+    })
     if (!ok) {
       return
     }
@@ -155,7 +164,7 @@ async function save(): Promise<void> {
   uiStore.setMatchPromptToUi(matchPromptToInterface.value)
   uiStore.setLanguage(ui)
   if (!matchPromptToInterface.value) {
-    uiStore.setPromptLanguage(prompt)
+    uiStore.setPromptLanguage(promptForPersist)
   }
   uiStore.setUiLanguageExplicit(true)
   visible.value = false

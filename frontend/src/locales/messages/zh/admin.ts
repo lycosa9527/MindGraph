@@ -1,4 +1,7 @@
-/** Chinese UI — admin */
+/**
+ * zh UI — admin
+ */
+
 export default {
   'admin.actions': '操作',
   'admin.activeToday': '今日活跃',
@@ -19,7 +22,7 @@ export default {
   'admin.chartPlaceholderUserActivity': '图表占位 - 用户活跃度随时间变化',
   'admin.confirm': '确定',
   'admin.copyShareMessage': '复制',
-  'admin.schoolInviteCopyPayload': '网址：{siteUrl}\n邀请码：{code}',
+  'admin.schoolInviteCopyPayload': '网址：{siteUrl}\\n邀请码：{code}',
   'admin.createApiKey': '创建 API 密钥',
   'admin.createSchool': '创建学校',
   'admin.created': '创建时间',
@@ -125,12 +128,12 @@ export default {
   'admin.markets.colTradeNo': '支付宝流水号',
   'admin.markets.colCreated': '创建时间',
   'admin.markets.colPaid': '支付时间',
-  'admin.markets.colSlug': 'SKU',
+  'admin.markets.colSlug': '存货单位',
   'admin.markets.colKind': '类型',
   'admin.markets.colTitle': '标题',
   'admin.markets.colActive': '上架',
   'admin.markets.loadError': '加载失败',
-  'admin.mindbot': 'MindBot',
+  'admin.mindbot': '思维机器人',
   'admin.mindbot.title': '钉钉机器人与 Dify（按校）',
   'admin.mindbot.dialogHeaderNote': '钉钉机器人【{name}】',
   'admin.mindbot.introHttpOnly':
@@ -141,7 +144,7 @@ export default {
     '以下是本校的 MindBot 配置（只读）。如需修改，请联系平台管理员。',
   'admin.mindbot.managerNoConfig': '本校尚未配置 MindBot。',
   'admin.mindbot.sectionDingTalk': '钉钉',
-  'admin.mindbot.sectionDify': 'Dify',
+  'admin.mindbot.sectionDify': '迪菲',
   'admin.mindbot.colOrg': '学校',
   'admin.mindbot.colBotLabel': '机器人名称',
   'admin.mindbot.colRobot': 'OpenAPI 机器人 code',
@@ -171,13 +174,13 @@ export default {
   'admin.mindbot.dingtalkRobotCode': 'RobotCode',
   'admin.mindbot.dingtalkRobotCodeHint':
     '在钉钉开放平台查看，用于调用钉钉 OpenAPI 发消息等。用户消息回调由本校回调 URL 路径识别，不依赖与 webhook JSON 中的 robotCode 一致。',
-  'admin.mindbot.dingtalkAppSecret': 'Client Secret',
+  'admin.mindbot.dingtalkAppSecret': '客户秘密',
   'admin.mindbot.dingtalkAppSecretHint': '新增学校时必填。',
   'admin.mindbot.dingtalkAppSecretMaskedHint':
     '已保存的密钥，中间已隐藏。点「更换」可输入新的 Client Secret。',
   'admin.mindbot.dingtalkAppSecretReplaceHint':
     '输入新的 Client Secret；若留空并保存则保留当前已保存的值。',
-  'admin.mindbot.dingtalkClientId': 'Client ID',
+  'admin.mindbot.dingtalkClientId': '客户ID',
   'admin.mindbot.dingtalkClientIdPlaceholder': '开放平台应用的 AppKey（与 Client Secret 配套）',
   'admin.mindbot.dingtalkClientIdHint':
     '用于获取 access_token，调用 AI 卡片流式更新等 OpenAPI。需与「Client Secret」一起保存。未填写则无法使用「测试权限」与 AI 卡片。',
@@ -236,7 +239,7 @@ export default {
   'admin.mindbot.colDuration': '耗时(秒)',
   'admin.mindbot.colTokens': 'Token',
   'admin.mindbot.colChars': '入/出字符',
-  'admin.mindbot.colMsgId': 'msgId',
+  'admin.mindbot.colMsgId': '消息ID',
   'admin.mindbot.colDifyConv': 'Dify 会话',
   'admin.mindbot.colDtConv': '钉钉会话',
   'admin.mindbot.colScope': '范围',
@@ -463,7 +466,7 @@ export default {
   'admin.performance.wsFanChat': '聊天扇出 pub/recv: {pub} / {recv}',
   'admin.performance.wsFanWorkshop': '工作坊扇出 pub/recv: {pub} / {recv}',
   'admin.performance.wsAuthRate': 'WS 鉴权失败: {auth} · 限流: {rate}',
-  'admin.performance.colClientId': 'Client ID',
+  'admin.performance.colClientId': '客户ID',
   'admin.performance.colRunning': '运行中',
   'admin.performance.colService': '服务',
   'admin.performance.colStatus': '状态',
@@ -553,7 +556,7 @@ export default {
   'admin.selectSchool': '选择学校',
   'admin.setManager': '设为管理员',
   'admin.shareInviteMessage':
-    '尊敬的校领导，您好！\n\n诚挚邀请您与学校团队体验 MindGraph —— 我们倾力打造的AI思维图示生成软件，致力于开发思维教学信息化平台。贵校的专属邀请码是：{code}\n\n请您访问 {siteUrl} 完成注册，开启高效、直观的思维可视化协作。期待能为贵校的教育创新增添一份力量。',
+    '尊敬的校领导，您好！\\n\\n诚挚邀请您与学校团队体验 MindGraph —— 我们倾力打造的AI思维图示生成软件，致力于开发思维教学信息化平台。贵校的专属邀请码是：{code}\\n\\n请您访问 {siteUrl} 完成注册，开启高效、直观的思维可视化协作。期待能为贵校的教育创新增添一份力量。',
   'admin.shareInviteTitle': '分享邀请',
   'admin.source': '来源',
   'admin.sourceDatabase': '数据库',
@@ -733,7 +736,6 @@ export default {
   'admin.database.orphanCleanSuccess': '孤立记录已清理',
   'admin.database.orphanCleanError': '孤立记录清理失败',
   'admin.database.cleanSqliteOrphans': '清理 SQLite 孤立记录',
-
   'admin.database.pgAnalyze': '分析',
   'admin.database.pgAnalyzeError': '分析 PG 转储失败',
   'admin.database.pgAnalysisResult': 'PG 转储分析',
@@ -747,4 +749,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG 转储合并成功',
   'admin.database.pgMergeError': 'PG 转储合并失败',
   'admin.database.pgMergeComplete': 'PG 合并完成',
-} as const
+}

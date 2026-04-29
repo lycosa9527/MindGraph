@@ -1,4 +1,7 @@
-/** Chinese UI — knowledge */
+/**
+ * zh UI — knowledge
+ */
+
 export default {
   'chunkTest.history.confirmDeleteBody': '确定要删除这个测试记录吗？此操作不可撤销。',
   'chunkTest.history.confirmDeleteTitle': '删除测试',
@@ -205,4 +208,4 @@ export default {
   'knowledgeSpace.uploadSuccessProcessing': '文档上传成功，正在处理中...',
   'rag.retrievalTest.failed': '检索测试失败',
   'rag.retrievalTest.success': '检索测试完成',
-} as const
+}

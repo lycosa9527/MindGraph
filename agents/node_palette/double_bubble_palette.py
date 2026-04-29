@@ -17,6 +17,7 @@ from typing import Optional, Dict, Any, AsyncGenerator
 import logging
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -306,7 +307,7 @@ class DoubleBubblePaletteGenerator(BasePaletteGenerator):
 
     def _build_similarities_prompt(self, params: _PromptParams) -> str:
         """Build prompt for similarities (shared attributes)"""
-        if params.language == "zh":
+        if is_chinese_prompt_shell_language(params.language):
             prompt = f"""为以下两个主题生成{params.count}个共同属性（相似点）：{params.left_topic} 和 {params.right_topic}
 
 教学背景：{params.context_desc}
@@ -343,7 +344,7 @@ Generate {params.count} similarities:"""
 
         # Add diversity note for later batches
         if params.batch_num > 1:
-            if params.language == "zh":
+            if is_chinese_prompt_shell_language(params.language):
                 prompt += (
                     f"\n\n注意：这是第{params.batch_num}批。确保最大程度的多样性，从新的维度思考，避免与之前批次重复。"
                 )
@@ -358,7 +359,7 @@ Generate {params.count} similarities:"""
 
     def _build_differences_prompt(self, params: _PromptParams) -> str:
         """Build prompt for differences (paired contrasting attributes)"""
-        if params.language == "zh":
+        if is_chinese_prompt_shell_language(params.language):
             dim_example_zh = (
                 f'例如对比苹果和香蕉，如果{params.left_topic}的属性是"红色"，那么'
                 f'{params.right_topic}的对比属性必须是"黄色"，都属于颜色维度'
@@ -424,7 +425,7 @@ Generate {params.count} difference pairs:"""
 
         # Add diversity note for later batches
         if params.batch_num > 1:
-            if params.language == "zh":
+            if is_chinese_prompt_shell_language(params.language):
                 prompt += (
                     f"\n\n注意：这是第{params.batch_num}批。"
                     "确保最大程度的多样性，从新的维度和角度对比，避免与之前批次重复。"

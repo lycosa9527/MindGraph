@@ -44,6 +44,7 @@ MERGEABLE_TABLES: List[str] = [
 _USER_MERGE_NON_NULL_BOOL_DEFAULTS: Dict[str, bool] = {
     "allows_simplified_chinese": True,
     "email_login_whitelisted_from_cn": False,
+    "match_prompt_to_ui": True,
 }
 
 _USER_DEFAULT_COLUMNS: Dict[str, Any] = {

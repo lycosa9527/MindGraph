@@ -1,4 +1,7 @@
-/** ps UI — common (English copy; translate values as needed) */
+/**
+ * ps UI — common
+ */
+
 export default {
   'app.aiDisclaimer': 'Content is AI-generated; please verify carefully.',
   'app.brandName': 'Mind Platform',
@@ -125,4 +128,4 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': 'Copy registration link',
   'landing.international.shareSiteCopied': 'Link copied',
-} as const
+}

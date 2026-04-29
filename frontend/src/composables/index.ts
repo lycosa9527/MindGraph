@@ -59,7 +59,12 @@ export { useInlineRecommendationsCoordinator } from './editor/useInlineRecommend
 export { useWorkshop } from './workshop/useWorkshop'
 export type { WorkshopUpdate } from './workshop/useWorkshop'
 export { useSnapshotHistory } from './editor/useSnapshotHistory'
-export type { SnapshotMetadata } from './editor/useSnapshotHistory'
+export type {
+  SnapshotMetadata,
+  SnapshotTakeResult,
+  SnapshotRecallResult,
+  SnapshotDeleteResult,
+} from './editor/useSnapshotHistory'
 
 // VueFlow + VueUse integration
 export { useCanvasState } from './editor/useCanvasState'

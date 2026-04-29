@@ -1,12 +1,25 @@
-/** fr UI — auth (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — auth
+ */
+
 export default {
   'auth.accountInfo': 'Compte',
+  'auth.updateLog': 'Notes de version',
+  'auth.updateLogModalTitle': 'Notes de version',
+  'auth.updateLogMaintainerNote': 'Oui — cette plateforme est activement maintenue par Roy ✨',
+  'auth.updateLogLoadError':
+    'Impossible de charger les notes de version. Veuillez réessayer plus tard.',
+  'auth.updateLogEmpty': 'Aucune note de version disponible.',
   'auth.backToLogin': 'Retour à la connexion',
-  'auth.captcha': 'Captcha',
+  'auth.captcha': 'Captcha visuel',
   'auth.captchaLength4': 'Veuillez saisir le captcha de 4 caractères',
   'auth.captchaLoadFailed': 'Échec du chargement du captcha',
   'auth.captchaNetworkError': 'Erreur réseau, impossible de charger le captcha',
   'auth.changePassword': 'Modifier le mot de passe',
+  'auth.accountPlugin': 'Extension',
+  'auth.apiTokenButton': 'Jeton API',
+  'auth.downloadChromeExtension': 'Extension Chrome',
+  'auth.downloadOpenclawSkill': 'Compétence OpenClaw',
   'auth.changePhoneButton': 'Changer de téléphone',
   'auth.passwordChangeSuccess': 'Mot de passe modifié avec succès',
   'auth.passwordChangeFailed': 'Échec du changement de mot de passe',
@@ -29,6 +42,7 @@ export default {
   'auth.modal.confirmPasswordPlaceholder': 'Saisissez à nouveau le nouveau mot de passe',
   'auth.modal.enter4DigitCaptcha': 'Saisir le captcha à 4 chiffres',
   'auth.modal.enter6DigitSms': 'Saisir le code SMS à 6 chiffres',
+  'auth.modal.enter6DigitEmailCode': 'Saisissez le code à 6 chiffres reçu par e-mail',
   'auth.modal.enterCaptchaFirst': "Saisir d'abord le captcha",
   'auth.modal.fillAllFields': 'Remplir tous les champs',
   'auth.modal.fillRequired': 'Remplissez tous les champs obligatoires',
@@ -73,6 +87,7 @@ export default {
   'auth.modal.smsSendFailed': 'Impossible d’envoyer le SMS',
   'auth.modal.smsSentSuccess': 'Code SMS envoyé',
   'auth.modal.tagline': 'Plateforme numérique pour l’enseignement de la pensée',
+  'auth.modal.waitCaptchaLoad': 'Veuillez patienter pendant le chargement du captcha',
   'auth.modal.detectingRegion': 'Détection de votre région…',
   'auth.modal.waitRegionDetection': 'Veuillez patienter pendant la détection de votre région.',
   'auth.modal.hybridRegisterGroupLabel': 'Méthode d’inscription',
@@ -89,12 +104,10 @@ export default {
   'auth.modal.sendEmailCode': 'Envoyer le code par e-mail',
   'auth.modal.sendingEmailCode': 'Envoi…',
   'auth.modal.emailCodePlaceholder': 'Code à 6 chiffres (e-mail)',
-  'auth.modal.enter6DigitEmailCode': 'Saisissez le code à 6 chiffres reçu par e-mail',
   'auth.modal.acknowledgeOverseas':
     'Je comprends et n’utiliserai le logiciel qu’à des fins éducatives.',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': 'Veuillez confirmer l’avis ci-dessus.',
-  'auth.modal.waitCaptchaLoad': 'Veuillez patienter pendant le chargement du captcha',
   'auth.loginPhoneOrEmail': 'Téléphone ou e-mail',
   'auth.name': 'Nom',
   'auth.networkLoginFailed': 'Erreur réseau, la connexion a échoué',
@@ -107,4 +120,42 @@ export default {
   'auth.sesLogin': 'Connexion par e-mail',
   'auth.username': 'Nom d’utilisateur',
   'auth.waitCaptchaLoad': 'Veuillez patienter pendant le chargement du captcha',
-} as const
+  'auth.quickRegPageTitle': 'Inscription rapide',
+  'auth.quickRegPageHint':
+    'Ouvrez cette page depuis le lien partagé par votre établissement. Saisissez votre téléphone et le code salle à 6 chiffres affiché dans la fenêtre d’inscription rapide de l’animateur (il se renouvelle environ toutes les 30 secondes). Ce code atteste votre présence à la session ; il ne vérifie pas la possession du téléphone comme un code SMS.',
+  'auth.quickRegLinkInvalid':
+    'Ce lien d’inscription n’est pas actif (expiré ou fermé). Rouvrez le lien à jour fourni par l’animateur.',
+  'auth.quickRegProbeRateLimited':
+    'Trop de vérifications depuis cette page. Patientez, actualisez, ou réessayez plus tard.',
+  'auth.quickRegSessionSignups': 'Inscriptions cette session : {n}',
+  'auth.quickRegRoomCodeLabel': 'Code salle',
+  'auth.quickRegRoomCodePlaceholder': '6 chiffres',
+  'auth.quickRegRoomCodeHint':
+    'Reproduisez les grands chiffres du dialogue d’inscription rapide de l’animateur ; saisissez le code avant qu’il change.',
+  'auth.quickRegRoomCodeEnter6': 'Saisissez le code salle à 6 chiffres',
+  'auth.quickRegMaxUses': 'Inscriptions max pour ce lien',
+  'auth.quickRegHeadcount': 'Max.',
+  'auth.quickRegFacilitatorCode': 'Code salle actuel (participants)',
+  'auth.quickRegCodeRefreshIn': 'Nouveau code dans {s} s',
+  'auth.quickRegCountdownUnit': 'sec.',
+  'auth.quickRegSubmit': 'Terminer l’inscription',
+  'auth.quickRegSubmitting': 'Inscription…',
+  'auth.quickRegRegisterSuccess': 'Inscription réussie',
+  'auth.quickRegSessionUnsure':
+    'L’inscription a peut-être réussi. Si vous n’êtes pas connecté, revenez et utilisez la connexion par SMS, ou actualisez la page.',
+  'auth.quickRegBackToSignIn': 'Connexion / inscription standard',
+  'auth.quickRegSelectOrg': 'Choisir l’établissement',
+  'auth.quickRegOrgLoadError': 'Impossible de charger les établissements. Veuillez réessayer.',
+  'auth.quickRegMintError': 'Impossible d’ouvrir le canal d’inscription. Veuillez réessayer.',
+  'auth.setPasswordWithSms': 'Définir le mot de passe de connexion',
+  'auth.setPasswordWithSmsTitle': 'Définir le mot de passe par SMS',
+  'auth.setPasswordWithSmsHint':
+    'Nous envoyons un code sur votre téléphone associé. Après définition du mot de passe, vous pourrez vous connecter par mot de passe ou par SMS.',
+  'auth.setPasswordWithSmsSubmit': 'Enregistrer le mot de passe',
+  'auth.setPasswordWithSmsSubmitting': 'Enregistrement…',
+  'auth.accountDisplayName': 'Nom affiché',
+  'auth.accountNamePlaceholder': 'Au moins 2 caractères, sans chiffres',
+  'auth.accountNameSave': 'Enregistrer le nom',
+  'auth.accountNameSaveSuccess': 'Nom mis à jour',
+  'auth.accountNameSaveError': 'Enregistrement impossible. Veuillez réessayer.',
+}

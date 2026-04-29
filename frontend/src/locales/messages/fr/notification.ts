@@ -1,4 +1,7 @@
-/** fr UI — notification (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — notification
+ */
+
 export default {
   'notification.cannotClearTopicOrCenter': "Impossible d'effacer les nœuds de sujet ou de centre",
   'notification.cannotResetSelectDiagramType':
@@ -21,6 +24,11 @@ export default {
   'notification.feedbackThanks': 'Merci pour votre retour',
   'notification.feedbackThanksDislike': 'Merci pour votre retour — nous allons l’améliorer',
   'notification.focusQuestionTooShort': 'Veuillez d’abord saisir une question centrale plus longue',
+  'notification.geoLiteMissingIntro':
+    'Téléchargez GeoLite2 Country depuis MaxMind, extrayez GeoLite2-Country.mmdb et copiez-le dans le dossier de données du serveur :',
+  'notification.geoLiteMissingLink': 'Ouvrir la page de téléchargement de MaxMind GeoLite',
+  'notification.geoLiteMissingPathLabel': 'Chemin attendu :',
+  'notification.geoLiteMissingTitle': 'Base de données GeoLite2 Country manquante',
   'notification.fullscreenFailed': 'Impossible d’entrer en mode plein écran',
   'notification.generationCancelled': 'Génération annulée',
   'notification.historyClearNodes': 'Effacer le texte du nœud',
@@ -47,4 +55,4 @@ export default {
     'Vous avez été déconnecté car vous avez dépassé le nombre maximal d’appareils autorisés',
   'notification.signInToUse': 'Connectez-vous pour utiliser cette fonctionnalité',
   'notification.signInToValidateFocus': 'Connectez-vous pour valider la question cible',
-} as const
+}

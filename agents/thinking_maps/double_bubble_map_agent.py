@@ -17,6 +17,7 @@ from agents.core.topic_extraction import extract_double_bubble_topics_llm
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -105,7 +106,7 @@ class DoubleBubbleMapAgent(BaseAgent):
 
     def _build_retry_prompt(self, user_prompt: str, validation_msg: str, language: str) -> str:
         """Build retry prompt with validation feedback."""
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             return (
                 f"{user_prompt}\n\n"
                 f"重要：之前的生成未通过验证：{validation_msg}。"
@@ -152,7 +153,7 @@ class DoubleBubbleMapAgent(BaseAgent):
     @staticmethod
     def _split_topics(topics: str, language: str) -> Tuple[str, str]:
         """Split extracted topics string into left and right topics."""
-        separator = "和" if language == "zh" else " and "
+        separator = "和" if is_chinese_prompt_shell_language(language) else " and "
         parts = topics.split(separator, 1)
         if len(parts) == 2:
             return parts[0].strip(), parts[1].strip()
@@ -160,7 +161,7 @@ class DoubleBubbleMapAgent(BaseAgent):
 
     def _build_user_prompt(self, topics: str, language: str) -> str:
         """Build user prompt from extracted topics."""
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             return f"请为以下描述创建一个双气泡图：{topics}"
         return f"Please create a double bubble map for the following description: {topics}"
 
@@ -190,7 +191,7 @@ class DoubleBubbleMapAgent(BaseAgent):
             f"{user_prompt}\n\n"
             f"重要：你必须只返回有效的JSON格式，不要询问更多信息。"
             f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-            if language == "zh"
+            if is_chinese_prompt_shell_language(language)
             else f"{user_prompt}\n\n"
             f"IMPORTANT: You MUST respond with valid JSON only. "
             f"Do not ask for more information. If the prompt is unclear, "

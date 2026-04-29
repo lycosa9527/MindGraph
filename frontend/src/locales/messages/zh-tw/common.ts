@@ -1,4 +1,7 @@
-/** Traditional Chinese (zh-TW) UI — common */
+/**
+ * zh-tw UI — common
+ */
+
 export default {
   'app.aiDisclaimer': '內容由AI生成，請仔細甄別',
   'app.brandName': '邁特教研',
@@ -82,7 +85,7 @@ export default {
   'meta.pageTitle.debateverse': '思辨場',
   'meta.pageTitle.default': '邁特教研',
   'meta.pageTitle.demoLogin': '演示登錄',
-  'meta.pageTitle.gewe': 'Gewe',
+  'meta.pageTitle.gewe': '格威',
   'meta.pageTitle.knowledgeSpace': '知識空間',
   'meta.pageTitle.library': '圖書館',
   'meta.pageTitle.libraryBookmark': '書籤',
@@ -90,6 +93,7 @@ export default {
   'meta.pageTitle.login': '登錄',
   'meta.pageTitle.main': '邁特教研',
   'meta.pageTitle.mindgraph': 'MindGraph',
+  'meta.pageTitle.mindbotAdmin': '思維機器人',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': '頁面未找到',
   'meta.pageTitle.publicDashboard': '統計',
@@ -121,4 +125,4 @@ export default {
   'landing.international.shareSiteModalHint': '',
   'landing.international.shareSiteCopy': '複製註冊連結',
   'landing.international.shareSiteCopied': '連結已複製',
-} as const
+}

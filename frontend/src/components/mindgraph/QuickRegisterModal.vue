@@ -385,6 +385,8 @@ onBeforeUnmount(() => {
           <ElDropdown
             v-if="isAdmin && adminOrgs.length > 1"
             trigger="click"
+            teleported
+            popper-class="quick-reg-org-dropdown-popper"
             :disabled="orgsLoading || tokenLoading"
             @command="onAdminOrgDropdownCommand"
           >
@@ -830,5 +832,13 @@ onBeforeUnmount(() => {
     rgb(248 250 252) 55%,
     rgb(252 252 254) 100%
   );
+}
+
+/* Org list is teleported to body — keep long lists scrollable (dialog uses overflow:hidden). */
+.quick-reg-org-dropdown-popper .el-dropdown-menu {
+  max-height: min(50vh, 280px);
+  overflow-x: hidden;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
 }
 </style>

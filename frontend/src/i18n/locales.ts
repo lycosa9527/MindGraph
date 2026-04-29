@@ -24,7 +24,7 @@ export const UI_LOCALE_CODES: LocaleCode[] = SUPPORTED_UI_LOCALES.filter((e) => 
  * See repo docs: `docs/i18n-belt-and-road-master-plan.md` (strategy + locale completion criteria).
  * Guard: `npm run i18n:check-picker-stubs` (from `frontend/`).
  */
-export const INTERFACE_LANGUAGE_PICKER_CODES: readonly LocaleCode[] = [
+export const INTERFACE_LANGUAGE_PICKER_CODES = [
   'zh-tw',
   'zh',
   'en',
@@ -53,6 +53,9 @@ export const INTERFACE_LANGUAGE_PICKER_CODES: readonly LocaleCode[] = [
   'ms',
   'af',
 ] as const
+
+/** Union of Settings → Interface language codes (length {@link INTERFACE_LANGUAGE_PICKER_LOCALE_COUNT}). */
+export type InterfaceLanguagePickerCode = (typeof INTERFACE_LANGUAGE_PICKER_CODES)[number]
 
 /**
  * Product “27 languages” tier: same list as {@link INTERFACE_LANGUAGE_PICKER_CODES}.
@@ -185,6 +188,25 @@ const _PROMPT_LANG_SET = new Set(PROMPT_OUTPUT_LANGUAGE_CODES)
 
 export function isPromptOutputLanguageCode(value: string | null | undefined): value is string {
   return typeof value === 'string' && _PROMPT_LANG_SET.has(value)
+}
+
+/**
+ * Prompt-registry / API code to use for generation when syncing to a UI locale.
+ * UI locale codes can differ from `prompt_language_registry.json` (e.g. `zh-tw` → `zh-hant`).
+ */
+const UI_LOCALE_TO_PROMPT_OUTPUT_CODE: Partial<Record<LocaleCode, string>> = {
+  'zh-tw': 'zh-hant',
+}
+
+/**
+ * Resolves the registered prompt output code for a UI locale, or null if none.
+ */
+export function matchedPromptLanguageForUiLocale(ui: LocaleCode): PromptOutputLanguageCode | null {
+  const mapped = UI_LOCALE_TO_PROMPT_OUTPUT_CODE[ui]
+  if (mapped !== undefined && isPromptOutputLanguageCode(mapped)) {
+    return mapped
+  }
+  return isPromptOutputLanguageCode(ui) ? ui : null
 }
 
 /** Any registered generation language code (prefer isPromptOutputLanguageCode for validation). */

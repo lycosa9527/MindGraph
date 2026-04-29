@@ -37,10 +37,15 @@ async def update_language_preferences(
     Persist interface language, prompt output language, and/or UI version
     for the signed-in user.
     """
-    if body.ui_language is None and body.prompt_language is None and body.ui_version is None:
+    if (
+        body.ui_language is None
+        and body.prompt_language is None
+        and body.ui_version is None
+        and body.match_prompt_to_ui is None
+    ):
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Provide at least one of ui_language, prompt_language, or ui_version",
+            detail="Provide at least one of ui_language, prompt_language, ui_version, match_prompt_to_ui",
         )
 
     result = await db.execute(select(User).where(User.id == current_user.id))
@@ -67,6 +72,8 @@ async def update_language_preferences(
         user.prompt_language = body.prompt_language
     if body.ui_version is not None:
         user.ui_version = body.ui_version
+    if body.match_prompt_to_ui is not None:
+        user.match_prompt_to_ui = body.match_prompt_to_ui
 
     try:
         await db.commit()
@@ -91,4 +98,5 @@ async def update_language_preferences(
         "ui_language": user.ui_language,
         "prompt_language": user.prompt_language,
         "ui_version": user.ui_version,
+        "match_prompt_to_ui": getattr(user, "match_prompt_to_ui", True),
     }

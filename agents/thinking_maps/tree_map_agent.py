@@ -32,6 +32,7 @@ from agents.thinking_maps.tree_map_helpers import (
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 
 logger = logging.getLogger(__name__)
@@ -146,14 +147,14 @@ class TreeMapAgent(BaseAgent):
             system_prompt = system_prompt.format(topic=prompt)
         user_prompt = (
             f"主题：{prompt}\n\n请使用指定的分类维度「{fixed_dimension}」生成树形图。"
-            if language == "zh"
+            if is_chinese_prompt_shell_language(language)
             else f'Topic: {prompt}\n\nGenerate a tree map using the EXACT classification dimension "{fixed_dimension}".'
         )
         return system_prompt, user_prompt
 
     def _fallback_fixed_dim_prompt(self, prompt: str, language: str, fixed_dimension: str) -> str:
         """Fallback system prompt when fixed_dimension template is missing."""
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             return (
                 f'用户已经指定了分类维度："{fixed_dimension}"\n'
                 "你必须使用这个指定的分类维度来生成树形图。不要改变或重新解释这个分类维度。\n\n"
@@ -191,7 +192,7 @@ class TreeMapAgent(BaseAgent):
                 "TreeMapAgent: User specified dimension preference: %s",
                 dimension_preference,
             )
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 user_prompt = f"请为以下描述创建一个树形图，使用指定的分类维度'{dimension_preference}'：{prompt}"
             else:
                 user_prompt = (
@@ -202,7 +203,7 @@ class TreeMapAgent(BaseAgent):
         else:
             user_prompt = (
                 f"请为以下描述创建一个树形图：{prompt}"
-                if language == "zh"
+                if is_chinese_prompt_shell_language(language)
                 else f"Please create a tree map for the following description: {prompt}"
             )
         return system_prompt, user_prompt
@@ -228,7 +229,7 @@ class TreeMapAgent(BaseAgent):
         retry_prompt = (
             f"{user_prompt}\n\n重要：你必须只返回有效的JSON格式，不要询问更多信息。"
             f"如果提示不清楚，请根据提示内容做出合理假设并直接生成JSON规范。"
-            if language == "zh"
+            if is_chinese_prompt_shell_language(language)
             else f"{user_prompt}\n\nIMPORTANT: You MUST respond with valid JSON only. "
             "Do not ask for more information. If the prompt is unclear, "
             "make reasonable assumptions and generate the JSON specification directly."
@@ -329,7 +330,7 @@ class TreeMapAgent(BaseAgent):
                 system_prompt = get_prompt("tree_map_agent", language, "fixed_dimension")
 
             # Build user prompt with the dimension
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 user_prompt = f"用户指定的分类维度：{dimension}\n\n请根据这个分类维度生成一个合适的主题和类别。"
             else:
                 user_prompt = (

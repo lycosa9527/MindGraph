@@ -15,6 +15,16 @@ export interface SnapshotMetadata {
   created_at: string
 }
 
+export type SnapshotTakeResult =
+  | { ok: true; snapshot: SnapshotMetadata }
+  | { ok: false; status: number; message: string }
+
+export type SnapshotRecallResult =
+  | { ok: true; spec: Record<string, unknown> }
+  | { ok: false; status: number; message: string }
+
+export type SnapshotDeleteResult = { ok: true } | { ok: false; status: number; message: string }
+
 interface SnapshotRecallResponse {
   version_number: number
   spec: Record<string, unknown>
@@ -22,6 +32,32 @@ interface SnapshotRecallResponse {
 
 interface SnapshotListResponse {
   snapshots: SnapshotMetadata[]
+}
+
+function detailToString(detail: unknown): string {
+  if (typeof detail === 'string') {
+    return detail
+  }
+  if (Array.isArray(detail) && detail.length > 0) {
+    const first = detail[0]
+    if (first && typeof first === 'object' && 'msg' in first) {
+      return String((first as { msg: unknown }).msg)
+    }
+  }
+  return ''
+}
+
+async function readErrorDetail(res: Response): Promise<string> {
+  try {
+    const text = await res.text()
+    if (!text) {
+      return ''
+    }
+    const data = JSON.parse(text) as { detail?: unknown }
+    return detailToString(data.detail)
+  } catch {
+    return ''
+  }
 }
 
 // Singleton state — persists across component mounts within the same page session.
@@ -50,8 +86,10 @@ async function loadSnapshots(diagramId: string): Promise<void> {
 async function takeSnapshot(
   diagramId: string,
   spec: Record<string, unknown>
-): Promise<SnapshotMetadata | null> {
-  if (isTaking.value) return null
+): Promise<SnapshotTakeResult | null> {
+  if (isTaking.value) {
+    return null
+  }
   isTaking.value = true
   try {
     const res = await authFetch(`/api/diagrams/${diagramId}/snapshots`, {
@@ -60,16 +98,16 @@ async function takeSnapshot(
       body: JSON.stringify({ spec }),
     })
     if (!res.ok) {
-      console.warn('[SnapshotHistory] takeSnapshot failed:', res.status)
-      return null
+      const message = await readErrorDetail(res)
+      console.warn('[SnapshotHistory] takeSnapshot failed:', res.status, message)
+      return { ok: false, status: res.status, message }
     }
     const snapshot: SnapshotMetadata = await res.json()
-    // Refresh the list so the badge count is accurate (handles eviction of oldest)
     await loadSnapshots(diagramId)
-    return snapshot
+    return { ok: true, snapshot }
   } catch (err) {
     console.warn('[SnapshotHistory] takeSnapshot error:', err)
-    return null
+    return { ok: false, status: 0, message: '' }
   } finally {
     isTaking.value = false
   }
@@ -78,41 +116,46 @@ async function takeSnapshot(
 async function recallSnapshot(
   diagramId: string,
   versionNumber: number
-): Promise<Record<string, unknown> | null> {
+): Promise<SnapshotRecallResult> {
   try {
     const res = await authFetch(`/api/diagrams/${diagramId}/snapshots/${versionNumber}/recall`, {
       method: 'POST',
     })
     if (!res.ok) {
-      console.warn('[SnapshotHistory] recallSnapshot failed:', res.status)
-      return null
+      const message = await readErrorDetail(res)
+      console.warn('[SnapshotHistory] recallSnapshot failed:', res.status, message)
+      return { ok: false, status: res.status, message }
     }
     const data: SnapshotRecallResponse = await res.json()
-    return data.spec
+    return { ok: true, spec: data.spec }
   } catch (err) {
     console.warn('[SnapshotHistory] recallSnapshot error:', err)
-    return null
+    return { ok: false, status: 0, message: '' }
   }
 }
 
-async function deleteSnapshot(diagramId: string, versionNumber: number): Promise<boolean> {
+async function deleteSnapshot(
+  diagramId: string,
+  versionNumber: number
+): Promise<SnapshotDeleteResult> {
   try {
     const res = await authFetch(`/api/diagrams/${diagramId}/snapshots/${versionNumber}`, {
       method: 'DELETE',
     })
     if (!res.ok) {
-      console.warn('[SnapshotHistory] deleteSnapshot failed:', res.status)
-      return false
+      const message = await readErrorDetail(res)
+      console.warn('[SnapshotHistory] deleteSnapshot failed:', res.status, message)
+      return { ok: false, status: res.status, message }
     }
     const data: SnapshotListResponse = await res.json()
     snapshots.value = data.snapshots
     if (activeSnapshotVersion.value === versionNumber) {
       activeSnapshotVersion.value = null
     }
-    return true
+    return { ok: true }
   } catch (err) {
     console.warn('[SnapshotHistory] deleteSnapshot error:', err)
-    return false
+    return { ok: false, status: 0, message: '' }
   }
 }
 

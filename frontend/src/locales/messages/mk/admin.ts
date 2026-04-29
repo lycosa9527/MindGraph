@@ -1,4 +1,7 @@
-/** mk UI — admin (English copy; translate values as needed) */
+/**
+ * mk UI — admin
+ */
+
 export default {
   'admin.actions': 'Actions',
   'admin.activeToday': 'Active Today',
@@ -19,6 +22,7 @@ export default {
   'admin.chartPlaceholderUserActivity': 'Chart placeholder - User activity over time',
   'admin.confirm': 'Confirm',
   'admin.copyShareMessage': 'Copy',
+  'admin.schoolInviteCopyPayload': 'URL: {siteUrl}\nInvitation code: {code}',
   'admin.createApiKey': 'Create API Key',
   'admin.createSchool': 'Create School',
   'admin.created': 'Created',
@@ -373,6 +377,32 @@ export default {
   'admin.outShort': 'Out',
   'admin.outputTokens': 'Output Tokens (All Time)',
   'admin.overallTokenSummary': 'Overall Token Usage Summary',
+  'admin.dingtalkGenerationCard': 'DingTalk generation',
+  'admin.dingtalkCardTotalUses': 'Total: {count} times',
+  'admin.dingtalkCardClickToEditApiKeys': 'Click to edit API keys',
+  'admin.dingtalkApiKeysDialogTitle': 'DingTalk image — integration API keys',
+  'admin.dingtalkApiKeysDialogNote': 'X-API-Key · generate_dingtalk & temp image URLs',
+  'admin.dingtalkApiKeysDialogIntro':
+    'Use the X-API-Key header. These keys authenticate public API calls such as diagram PNG generation for DingTalk. Responses are markdown with time-limited image URLs; fetching an image only needs the signed link, not this key.',
+  'admin.apiKeysTableStats': 'Tokens (all time)',
+  'admin.apiKeysRequestCount': 'Requests',
+  'admin.apiKeysTableQuota': 'Quota',
+  'admin.apiKeysUnlimited': 'Unlimited',
+  'admin.apiKeyCopy': 'Copy key',
+  'admin.apiKeysStatus': 'Status',
+  'admin.apiKeysDeleteConfirm': 'Delete API key “{name}”? Integrations using it will stop working.',
+  'admin.apiKeysDeleteSuccess': 'API key deleted',
+  'admin.apiKeysCreateSuccess': 'API key created',
+  'admin.apiKeysLoadError': 'Failed to load API keys',
+  'admin.apiKeysQuotaPlaceholder': 'Empty = unlimited',
+  'admin.apiKeysExpiresDays': 'Expires in (days)',
+  'admin.apiKeysExpiresDaysHint': 'Optional; leave empty for no expiry from creation time',
+  'admin.apiKeysCreatedSecretTitle': 'Save your new key',
+  'admin.apiKeysCreatedSecretBody':
+    'Copy the key into your integration (Dify, callbacks, or scripts) as the X-API-Key header. You can also copy it from the list at any time.',
+  'admin.apiKeysDisable': 'Disable',
+  'admin.apiKeysEnable': 'Enable',
+  'admin.apiKeysNameRequired': 'Name is required',
   'admin.pastMonth': 'Past Month',
   'admin.pastWeek': 'Past Week',
   'admin.phone': 'Phone',
@@ -527,6 +557,19 @@ export default {
   'admin.schoolCodeRequired': 'School code could not be generated from name. Please enter a code.',
   'admin.schoolDashboard': 'School Dashboard',
   'admin.schoolDashboardNoOrg': 'You must belong to a school to view the dashboard.',
+  'admin.schoolDeleteUserConfirm': 'Delete user {name}? This cannot be undone.',
+  'admin.schoolUserColumnRole': 'Role',
+  'admin.schoolUsersDeleteError': 'Failed to delete user',
+  'admin.schoolUsersLoadError': 'Failed to load school users',
+  'admin.schoolUsersTitle': 'User management',
+  'admin.schoolUsersTab': 'Users',
+  'admin.schoolUsersUnlockError': 'Failed to unlock account',
+  'admin.schoolUsersUpdateError': 'Failed to update user',
+  'admin.schoolUserUnlock': 'Unlock',
+  'admin.schoolUserUnlockConfirm':
+    'Unlock this account? Failed-login lock and attempt counter will be cleared.',
+  'admin.listRange': '{start}–{end} of {total}',
+  'admin.listRangeEmpty': 'No results',
   'admin.schoolManagersTab': 'School Managers',
   'admin.schoolName': 'School Name',
   'admin.schoolNameRequired': 'School name is required',
@@ -554,6 +597,8 @@ export default {
     'Compare token usage between MindGraph (diagrams) and MindMate (AI assistant)',
   'admin.tokens': 'Token Usage',
   'admin.tokensUsed': 'Tokens Used',
+  'admin.rankingBeijingTodayHint':
+    'Rankings are for the current day (00:00–24:00, Beijing time, UTC+8).',
   'admin.topSchoolsByTokens': 'Top Schools by Token Usage',
   'admin.topUsersByTokens': 'Top Users by Token Usage',
   'admin.totalDiagrams': 'Total Diagrams',
@@ -717,7 +762,6 @@ export default {
   'admin.database.orphanCleanSuccess': 'Orphaned records cleaned',
   'admin.database.orphanCleanError': 'Orphan cleanup failed',
   'admin.database.cleanSqliteOrphans': 'Clean SQLite Orphans',
-
   'admin.database.pgAnalyze': 'Analyze',
   'admin.database.pgAnalyzeError': 'Failed to analyze PG dump',
   'admin.database.pgAnalysisResult': 'PG Dump Analysis',
@@ -731,4 +775,4 @@ export default {
   'admin.database.pgMergeSuccess': 'PG dump merged successfully',
   'admin.database.pgMergeError': 'PG dump merge failed',
   'admin.database.pgMergeComplete': 'PG Merge Complete',
-} as const
+}

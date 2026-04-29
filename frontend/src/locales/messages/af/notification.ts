@@ -1,4 +1,7 @@
-/** af UI — notification (Qwen-translated from en; review recommended) */
+/**
+ * af UI — notification
+ */
+
 export default {
   'notification.cannotClearTopicOrCenter': 'Kan nie onderwerp- of sentrumknoppe skoonmaak nie',
   'notification.cannotResetSelectDiagramType': 'Kan nie terugstel nie: kies eers ’n diagramtipe',
@@ -18,6 +21,11 @@ export default {
   'notification.feedbackThanks': 'Dankie vir u terugvoering',
   'notification.feedbackThanksDislike': 'Dankie vir u terugvoering — ons sal verbeter',
   'notification.focusQuestionTooShort': 'Voer eers ’n langder fokusvraag in',
+  'notification.geoLiteMissingIntro':
+    'Laai GeoLite2 Country van MaxMind af, onttrek GeoLite2-Country.mmdb, en kopieer dit na die bedienerdata-lêergids:',
+  'notification.geoLiteMissingLink': 'Maak MaxMind GeoLite-aflaaibladsy oop',
+  'notification.geoLiteMissingPathLabel': 'Verwagte pad:',
+  'notification.geoLiteMissingTitle': 'GeoLite2 Land databasis ontbreek',
   'notification.fullscreenFailed': 'Kon nie volledige skerm open nie',
   'notification.generationCancelled': 'Generering geanker',
   'notification.historyClearNodes': 'Skoon knopteks',
@@ -42,4 +50,4 @@ export default {
     'U is uitgeteken omdat u die maksimum aantal toestelle oorskry het',
   'notification.signInToUse': 'Teken in om hierdie te gebruik',
   'notification.signInToValidateFocus': 'Teken in om die fokusvraag te valideer',
-} as const
+}

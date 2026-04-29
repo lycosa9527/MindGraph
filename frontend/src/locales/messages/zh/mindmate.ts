@@ -1,4 +1,7 @@
-/** Chinese UI — mindmate */
+/**
+ * zh UI — mindmate
+ */
+
 export default {
   'aiModel.conceptAiOff': '点击开启：用 AI 生成关系标签（后台多模型）',
   'aiModel.conceptAiOn': '已开启：拖拽连线将用 AI 生成关系标签',
@@ -84,7 +87,7 @@ export default {
   'mindmate.tooltip.regenerate': '重新生成',
   'mindmate.tooltip.share': '分享',
   'mindmate.untitled': '未命名会话',
-  'mindmate.welcome': '{username}你好，我是你的虚拟教研伙伴',
+  'mindmate.welcome': '{username}你好，我是 MindMate，你的虚拟教研伙伴',
   'nodePalette.bridgeAnalogy': '类比词',
   'nodePalette.bridgeSource': '原词',
   'nodePalette.cancel': '取消',
@@ -147,4 +150,4 @@ export default {
   'rootConceptModal.tabTitleRoot': '根概念：{text}',
   'rootConceptModal.title': '根概念',
   'rootConceptModal.titleConceptList': '概念列表',
-} as const
+}

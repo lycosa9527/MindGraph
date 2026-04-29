@@ -1,4 +1,7 @@
-/** af UI — community (Qwen-translated from en; review recommended) */
+/**
+ * af UI — community
+ */
+
 export default {
   'community.category.all': 'Alles',
   'community.category.creative': 'Skeppende idees',
@@ -127,7 +130,7 @@ export default {
   'debateverse.stage.coin_toss': 'Muntgooi',
   'debateverse.stage.cross_exam': 'Kruisverhoor',
   'debateverse.stage.judgment': 'Vonnis',
-  'debateverse.stage.opening': 'Opening',
+  'debateverse.stage.opening': 'Openingsronde',
   'debateverse.stage.rebuttal': 'Weerlegging',
   'debateverse.startDebate': 'Begin Debattering',
   'library.emptySubtitle': "Daar is nog geen PDF'e in die biblioteek nie",
@@ -151,4 +154,4 @@ export default {
   'libraryViewer.bookmarkAdded': 'Bladsymerker toegevoeg',
   'libraryViewer.bookmarkRemoved': 'Bladsymerker verwyder',
   'libraryViewer.operationFailed': 'Iets het verkeerd geloop',
-} as const
+}

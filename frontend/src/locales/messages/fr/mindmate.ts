@@ -1,4 +1,7 @@
-/** fr UI — mindmate (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — mindmate
+ */
+
 export default {
   'aiModel.conceptAiOff': 'Cliquez pour activer les étiquettes de relation IA (multi-modèle)',
   'aiModel.conceptAiOn':
@@ -95,6 +98,7 @@ export default {
   'mindmate.input.attachFile': 'Joindre un fichier',
   'mindmate.input.placeholder': 'Saisissez votre question…',
   'mindmate.newChat': 'Nouvelle conversation',
+  'mindmate.otherModules': 'Autres fonctionnalités',
   'mindmate.noHistory': 'Aucun historique',
   'mindmate.noHistoryPanel': 'Aucun historique de conversation',
   'mindmate.suggestionLabel': 'Essayez de me demander :',
@@ -171,4 +175,5 @@ export default {
   'rootConceptModal.splittingLoading': 'Fractionnement des branches et génération des concepts…',
   'rootConceptModal.tabTitleRoot': 'Concept racine : {text}',
   'rootConceptModal.title': 'Concept racine',
-} as const
+  'rootConceptModal.titleConceptList': 'Concept list',
+}

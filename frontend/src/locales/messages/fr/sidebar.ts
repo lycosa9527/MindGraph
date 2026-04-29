@@ -1,6 +1,8 @@
-/** fr UI — sidebar (Qwen-translated from en; review recommended) */
+/**
+ * fr UI — sidebar
+ */
+
 export default {
-  'sidebar.account': 'Compte',
   'sidebar.actions.delete': 'Supprimer',
   'sidebar.actions.pinToTop': 'Épingler en haut',
   'sidebar.actions.rename': 'Renommer',
@@ -18,10 +20,10 @@ export default {
   'sidebar.bookmarks.deleted': 'Signet supprimé',
   'sidebar.bookmarks.empty': 'Aucun signet pour le moment',
   'sidebar.bookmarks.loginPrompt': 'Connectez-vous pour afficher les signets récents',
-  'sidebar.bookmarks.pageN': 'Page {n}',
+  'sidebar.bookmarks.pageN': 'Page n° {n}',
   'sidebar.bookmarks.title': 'Signets récents',
   'sidebar.bookmarks.unknownDoc': 'Document inconnu',
-  'sidebar.brandTitle': '迈特教研',
+  'sidebar.brandTitle': 'Maite — recherche pédagogique',
   'sidebar.chatHistory.deleteConfirm':
     'Êtes-vous sûr(e) de vouloir supprimer cette conversation ? Cette action est irréversible.',
   'sidebar.chatHistory.deleteTitle': 'Supprimer la conversation',
@@ -70,9 +72,11 @@ export default {
   'sidebar.library': 'Bibliothèque',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
+  'sidebar.mindbot': 'Assistant MindBot',
   'sidebar.schoolZone': 'Zone scolaire',
   'sidebar.smartResponse': 'Réponse intelligente',
   'sidebar.teacherUsage': 'Utilisation par les enseignants',
   'sidebar.templateResources': 'Modèles',
   'sidebar.userSubtitleDefault': 'MindGraph Pro',
-} as const
+  'sidebar.account': 'Compte',
+}

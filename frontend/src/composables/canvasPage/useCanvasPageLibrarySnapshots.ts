@@ -70,7 +70,6 @@ export function useCanvasPageLibrarySnapshots(options: {
         )
       }
       snapshotHistory.setActiveVersion(null)
-      await snapshotHistory.loadSnapshots(diagramId)
     }
   }
 
@@ -81,11 +80,12 @@ export function useCanvasPageLibrarySnapshots(options: {
 
     await diagramAutoSave.flush()
 
-    const spec = await snapshotHistory.recallSnapshot(diagramId, versionNumber)
-    if (!spec) {
-      notify.error(t('canvas.topBar.snapshotRecallFailed'))
+    const recallResult = await snapshotHistory.recallSnapshot(diagramId, versionNumber)
+    if (!recallResult.ok) {
+      notify.error(recallResult.message || t('canvas.topBar.snapshotRecallFailed'))
       return
     }
+    const spec = recallResult.spec
 
     diagramStore.pushHistory(t('canvas.topBar.snapshotRecallHistory', { n: versionNumber }))
     llmResultsStore.clearCache()
@@ -101,11 +101,11 @@ export function useCanvasPageLibrarySnapshots(options: {
     const diagramId = savedDiagramsStore.activeDiagramId
     if (!diagramId) return
 
-    const deleted = await snapshotHistory.deleteSnapshot(diagramId, versionNumber)
-    if (deleted) {
+    const deleteResult = await snapshotHistory.deleteSnapshot(diagramId, versionNumber)
+    if (deleteResult.ok) {
       notify.success(t('canvas.topBar.snapshotDeleted', { n: versionNumber }))
     } else {
-      notify.error(t('canvas.topBar.snapshotDeleteFailed'))
+      notify.error(deleteResult.message || t('canvas.topBar.snapshotDeleteFailed'))
     }
   }
 

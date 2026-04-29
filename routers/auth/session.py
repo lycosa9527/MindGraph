@@ -328,6 +328,7 @@ async def get_me(current_user: User = Depends(get_current_user)):
             "ui_language": getattr(current_user, "ui_language", None),
             "prompt_language": getattr(current_user, "prompt_language", None),
             "ui_version": getattr(current_user, "ui_version", None),
+            "match_prompt_to_ui": getattr(current_user, "match_prompt_to_ui", True),
             "allows_simplified_chinese": getattr(current_user, "allows_simplified_chinese", True),
         }
     except Exception as me_error:

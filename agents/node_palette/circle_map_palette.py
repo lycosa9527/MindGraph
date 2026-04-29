@@ -8,6 +8,7 @@ Generates context nodes for Circle Maps.
 from typing import Any, Dict, List, Optional
 
 from agents.node_palette.base_palette_generator import BasePaletteGenerator
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 
 class CircleMapPaletteGenerator(BasePaletteGenerator):
@@ -43,7 +44,7 @@ class CircleMapPaletteGenerator(BasePaletteGenerator):
         )
 
         # Build prompt based on language
-        if language == "zh":
+        if is_chinese_prompt_shell_language(language):
             prompt = f"""为以下主题生成{count}个圆圈图观察点：{center_topic}
 
 教学背景：{context_desc}
@@ -79,7 +80,7 @@ Generate {count} observations:"""
 
         # Add diversity note for later batches (node palette specific)
         if batch_num > 1:
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 prompt += f"\n\n注意：这是第{batch_num}批。确保最大程度的多样性，避免与之前批次重复。"
             else:
                 prompt += (

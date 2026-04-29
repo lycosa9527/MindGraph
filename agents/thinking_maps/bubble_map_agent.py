@@ -16,6 +16,7 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 logger = logging.getLogger(__name__)
 
@@ -95,10 +96,11 @@ class BubbleMapAgent(BaseAgent):
                 return None
             system_prompt = system_prompt.format(topic=prompt)
 
-            if language == "zh":
-                user_prompt = f"请为以下描述创建一个气泡图：{prompt}"
-            else:
-                user_prompt = f"Please create a bubble map for the following description: {prompt}"
+            user_prompt = (
+                f"请为以下描述创建一个气泡图：{prompt}"
+                if is_chinese_prompt_shell_language(language)
+                else f"Please create a bubble map for the following description: {prompt}"
+            )
 
             token_params = {
                 "user_id": kwargs.get("user_id"),

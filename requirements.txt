@@ -159,6 +159,11 @@ cos-python-sdk-v5>=1.9.41  # Tencent Cloud Object Storage (COS) SDK for online b
 # prometheus-fastapi-instrumentator>=7.0.0  # Prometheus metrics
 
 # ============================================================================
+# FRONTEND I18N HELPERS (optional local scripts under frontend/scripts/)
+# ============================================================================
+deep-translator>=1.11.4  # batch_translate_canvas_google.py (Google web API via deep_translator)
+
+# ============================================================================
 # TESTING (Development/CI)
 # ============================================================================
 pytest>=9.0.2

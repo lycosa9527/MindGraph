@@ -170,6 +170,11 @@ export const useAuthStore = defineStore('auth', () => {
     const loginPasswordSet =
       backendUser.login_password_set === undefined ? true : Boolean(backendUser.login_password_set)
 
+    const matchPrompt =
+      typeof backendUser.match_prompt_to_ui === 'boolean'
+        ? backendUser.match_prompt_to_ui
+        : undefined
+
     return {
       id: String(backendUser.id || backendUser.user?.id || ''),
       username:
@@ -184,6 +189,7 @@ export const useAuthStore = defineStore('auth', () => {
       lastLogin: backendUser.last_login || backendUser.lastLogin,
       uiLanguage: uiLang,
       promptLanguage: promptLang,
+      matchPromptToUi: matchPrompt,
       uiVersion: backendUser.ui_version ?? null,
       allowsSimplifiedChinese: allowsZh,
       loginPasswordSet,
@@ -195,11 +201,13 @@ export const useAuthStore = defineStore('auth', () => {
     uiStore.applyUiVersionFromServerProfile(target.uiVersion ?? null)
     const hasServerUi = isUiLocale(target.uiLanguage ?? null)
     const hasServerPrompt = isPromptOutputLanguageCode(target.promptLanguage ?? null)
-    if (hasServerUi || hasServerPrompt) {
+    const hasServerMatch = typeof target.matchPromptToUi === 'boolean'
+    if (hasServerUi || hasServerPrompt || hasServerMatch) {
       languagePrefsSeededForUserId.value = null
       uiStore.applyLanguageFromServerProfile(
         hasServerUi ? (target.uiLanguage ?? null) : null,
-        hasServerPrompt ? (target.promptLanguage ?? null) : null
+        hasServerPrompt ? (target.promptLanguage ?? null) : null,
+        hasServerMatch ? { matchPromptToUi: target.matchPromptToUi } : undefined
       )
       return
     }
@@ -213,7 +221,9 @@ export const useAuthStore = defineStore('auth', () => {
     void (async () => {
       try {
         uiStore.syncGuestLocaleFromBrowser()
-        const ok = await saveLanguagePreferences(uiStore.language, uiStore.promptLanguage)
+        const ok = await saveLanguagePreferences(uiStore.language, uiStore.promptLanguage, {
+          matchPromptToUi: uiStore.matchPromptToUi,
+        })
         if (ok) {
           languagePrefsSeededForUserId.value = target.id
         }
@@ -246,27 +256,31 @@ export const useAuthStore = defineStore('auth', () => {
   async function saveLanguagePreferences(
     ui: Language,
     prompt: PromptLanguage,
-    uiVersion?: string
+    options?: { uiVersion?: string; matchPromptToUi?: boolean }
   ): Promise<boolean> {
     try {
-      const payload: Record<string, string> = {
+      const body: Record<string, string | boolean> = {
         ui_language: ui,
         prompt_language: prompt,
       }
-      if (uiVersion) {
-        payload.ui_version = uiVersion
+      if (options?.uiVersion) {
+        body.ui_version = options.uiVersion
+      }
+      if (options?.matchPromptToUi !== undefined) {
+        body.match_prompt_to_ui = options.matchPromptToUi
       }
       const response = await fetch(`${API_BASE}/language-preferences`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'same-origin',
-        body: JSON.stringify(payload),
+        body: JSON.stringify(body),
       })
       const data = (await response.json().catch(() => ({}))) as {
         detail?: string
         ui_language?: string | null
         prompt_language?: string | null
         ui_version?: string | null
+        match_prompt_to_ui?: boolean
       }
       if (!response.ok) {
         notify.error(typeof data.detail === 'string' ? data.detail : 'Failed to save preferences')
@@ -277,7 +291,11 @@ export const useAuthStore = defineStore('auth', () => {
           ...user.value,
           uiLanguage: data.ui_language ?? ui,
           promptLanguage: data.prompt_language ?? prompt,
-          uiVersion: data.ui_version ?? uiVersion ?? user.value.uiVersion,
+          uiVersion: data.ui_version ?? options?.uiVersion ?? user.value.uiVersion,
+          matchPromptToUi:
+            typeof data.match_prompt_to_ui === 'boolean'
+              ? data.match_prompt_to_ui
+              : (options?.matchPromptToUi ?? user.value.matchPromptToUi),
         }
         user.value = next
         sessionStorage.setItem(USER_KEY, JSON.stringify(next))

@@ -25,7 +25,7 @@ import re
 import time
 
 from services.llm import llm_service
-from utils.prompt_locale import output_language_instruction
+from utils.prompt_locale import is_chinese_prompt_shell_language, output_language_instruction
 from utils.prompt_output_languages import is_prompt_output_language
 
 logger = logging.getLogger(__name__)
@@ -456,7 +456,11 @@ class BasePaletteGenerator(ABC):
             System message string
         """
         language = self._detect_language(center_topic, educational_context)
-        return "你是一个有帮助的K12教育助手。" if language == "zh" else "You are a helpful K12 education assistant."
+        return (
+            "你是一个有帮助的K12教育助手。"
+            if is_chinese_prompt_shell_language(language)
+            else "You are a helpful K12 education assistant."
+        )
 
     def _get_temperature_for_batch(self, batch_num: int) -> float:
         """

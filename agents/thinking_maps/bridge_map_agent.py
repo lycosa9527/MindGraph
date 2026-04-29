@@ -18,6 +18,7 @@ from agents.core.agent_utils import extract_json_from_response
 from config.settings import config
 from prompts import get_prompt
 from services.llm import llm_service
+from utils.prompt_locale import is_chinese_prompt_shell_language
 
 
 # Use standard logging like other modules
@@ -245,7 +246,7 @@ class BridgeMapAgent(BaseAgent):
 
             # Build user prompt with dimension preference if specified
             if dimension_preference:
-                if language == "zh":
+                if is_chinese_prompt_shell_language(language):
                     user_prompt = (
                         f"请为以下描述创建一个桥形图，使用指定的类比关系模式'{dimension_preference}'：{prompt}"
                     )
@@ -260,7 +261,7 @@ class BridgeMapAgent(BaseAgent):
                     dimension_preference,
                 )
             else:
-                if language == "zh":
+                if is_chinese_prompt_shell_language(language):
                     user_prompt = f"请为以下描述创建一个桥形图：{prompt}"
                 else:
                     user_prompt = f"Please create a bridge map for the following description: {prompt}"
@@ -388,7 +389,7 @@ class BridgeMapAgent(BaseAgent):
                 if not system_prompt:
                     logger.warning("BridgeMapAgent: No fixed_dimension prompt found, using fallback")
                     # Fallback prompt for fixed dimension mode
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         system_prompt = (
                             f'用户已经指定了类比关系模式："{fixed_dimension}"\n'
                             f"你必须使用这个指定的关系模式生成新的类比对。"
@@ -417,7 +418,7 @@ class BridgeMapAgent(BaseAgent):
                             f'"{fixed_dimension}" - do NOT change it!'
                         )
 
-                if language == "zh":
+                if is_chinese_prompt_shell_language(language):
                     user_prompt = (
                         f"用户指定的关系模式：{fixed_dimension}\n\n"
                         f"用户已创建的类比对：\n{pairs_text}\n\n"
@@ -438,7 +439,7 @@ class BridgeMapAgent(BaseAgent):
                 if not system_prompt:
                     logger.warning("BridgeMapAgent: No identify_relationship prompt found, using fallback")
                     # Fallback prompt
-                    if language == "zh":
+                    if is_chinese_prompt_shell_language(language):
                         system_prompt = """分析以下类比对，识别关系模式，并生成更多遵循相同模式的新对。
 返回JSON：{"dimension": "模式名", "analogies": [{"left": "X", "right": "Y"}...], "alternative_dimensions": [...]}"""
                     else:
@@ -450,7 +451,7 @@ class BridgeMapAgent(BaseAgent):
                             '"alternative_dimensions": [...]}'
                         )
 
-                if language == "zh":
+                if is_chinese_prompt_shell_language(language):
                     user_prompt = (
                         f"用户已创建的类比对：\n{pairs_text}\n\n"
                         f"请识别关系模式，并生成5-6个新的类比对（不要重复上面的对）。"
@@ -625,7 +626,7 @@ class BridgeMapAgent(BaseAgent):
                 system_prompt = get_prompt("bridge_map_agent", language, "generation")
 
             # Build user prompt with the relationship
-            if language == "zh":
+            if is_chinese_prompt_shell_language(language):
                 user_prompt = f"用户指定的关系模式：{relationship}\n\n请根据这个关系模式生成6个类比对。"
             else:
                 user_prompt = (

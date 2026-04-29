@@ -16,6 +16,24 @@ from utils.prompt_output_languages import (
 )
 
 
+def is_chinese_prompt_shell_language(language: str) -> bool:
+    """
+    True when prompts should use Chinese-script instruction shells (简体中文-dominant
+    copy in this repo). Matches :func:`output_language_instruction` Simplified and
+    Traditional API groupings; exact output script remains defined by that footer.
+
+    Includes common region tags (zh-cn, zh-hans, zh-sg, zh-tw, zh-hk, zh-mo, zh-hant).
+    """
+    lo = (language or "").strip().lower().replace("_", "-")
+    if lo == "zh":
+        return True
+    if lo in ("zh-cn", "zh-hans", "zh-sg"):
+        return True
+    if lo in ("zh-hant", "zh-tw", "zh-hk", "zh-mo"):
+        return True
+    return False
+
+
 def template_lang_for_registry(lang: str) -> str:
     """Registry keys exist for zh and en only; map Chinese variants to zh, else en."""
     normalized = (lang or "en").lower().strip()
@@ -30,10 +48,12 @@ def output_language_instruction(lang: str) -> str:
 
     Registry templates may be Chinese or English; for other codes, templates still
     load English keys — this block tells the model the target output language.
+
+    Chinese script variants are resolved before the registry guard so that codes
+    like zh-tw / zh-hk / zh-mo always produce the correct Traditional Chinese footer
+    even if they are not individually listed in the prompt output registry.
     """
     normalized = (lang or "en").lower().strip()
-    if not is_prompt_output_language(normalized):
-        normalized = "en"
     separator = "\n\n---\n"
     if normalized == "zh":
         return (
@@ -49,6 +69,8 @@ def output_language_instruction(lang: str) -> str:
             "（含 JSON 字串值、標籤、說明、枚舉等）。\n"
             "Output language: **Traditional Chinese** for all user-visible text."
         )
+    if not is_prompt_output_language(normalized):
+        normalized = "en"
     if normalized == "az":
         return (
             f"{separator}"

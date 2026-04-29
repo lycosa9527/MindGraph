@@ -18,7 +18,7 @@ const root = join(__dirname, '..')
 
 function parsePickerCodes(localesTs: string): string[] {
   const m = localesTs.match(
-    /export const INTERFACE_LANGUAGE_PICKER_CODES:\s*readonly LocaleCode\[\]\s*=\s*(\[[\s\S]*?\])\s*as const/
+    /export const INTERFACE_LANGUAGE_PICKER_CODES\s*=\s*(\[[\s\S]*?\])\s*as const/
   )
   if (m === undefined) {
     throw new Error('Could not find INTERFACE_LANGUAGE_PICKER_CODES in locales.ts')

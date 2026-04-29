@@ -1,12 +1,24 @@
-/** Traditional Chinese (zh-TW) UI — auth */
+/**
+ * zh-tw UI — auth
+ */
+
 export default {
   'auth.accountInfo': '賬戶信息',
+  'auth.updateLog': '發行說明',
+  'auth.updateLogModalTitle': '發行說明',
+  'auth.updateLogMaintainerNote': '是的 — 這個平台由 Roy 積極維護 ✨',
+  'auth.updateLogLoadError': '無法載入發行說明。請稍後重試。',
+  'auth.updateLogEmpty': '沒有可用的發行說明。',
   'auth.backToLogin': '返回登錄',
   'auth.captcha': '驗證碼',
   'auth.captchaLength4': '請輸入4位驗證碼',
   'auth.captchaLoadFailed': '驗證碼加載失敗',
   'auth.captchaNetworkError': '網絡錯誤，驗證碼加載失敗',
   'auth.changePassword': '修改密碼',
+  'auth.accountPlugin': '外掛',
+  'auth.apiTokenButton': 'API令牌',
+  'auth.downloadChromeExtension': 'Chrome 擴充功能',
+  'auth.downloadOpenclawSkill': '開爪技能',
   'auth.changePhoneButton': '更換手機',
   'auth.passwordChangeSuccess': '密碼修改成功',
   'auth.passwordChangeFailed': '密碼修改失敗',
@@ -29,6 +41,7 @@ export default {
   'auth.modal.confirmPasswordPlaceholder': '再次輸入新密碼',
   'auth.modal.enter4DigitCaptcha': '請輸入4位驗證碼',
   'auth.modal.enter6DigitSms': '請輸入6位短信驗證碼',
+  'auth.modal.enter6DigitEmailCode': '請輸入郵件中的 6 位驗證碼',
   'auth.modal.enterCaptchaFirst': '請先輸入驗證碼',
   'auth.modal.fillAllFields': '請填寫所有字段',
   'auth.modal.fillRequired': '請填寫所有必填項',
@@ -73,6 +86,7 @@ export default {
   'auth.modal.smsSendFailed': '短信發送失敗',
   'auth.modal.smsSentSuccess': '短信驗證碼發送成功',
   'auth.modal.tagline': '思維教學數智化平臺',
+  'auth.modal.waitCaptchaLoad': '請等待驗證碼加載',
   'auth.modal.detectingRegion': '正在識別您的訪問地區…',
   'auth.modal.waitRegionDetection': '請稍候，正在識別您的訪問地區。',
   'auth.modal.hybridRegisterGroupLabel': '註冊方式',
@@ -89,11 +103,9 @@ export default {
   'auth.modal.sendEmailCode': '發送郵箱驗證碼',
   'auth.modal.sendingEmailCode': '發送中…',
   'auth.modal.emailCodePlaceholder': '6 位郵箱驗證碼',
-  'auth.modal.enter6DigitEmailCode': '請輸入郵件中的 6 位驗證碼',
   'auth.modal.acknowledgeOverseas': '我理解並僅將軟體用於教育用途。',
   'auth.modal.acknowledgeOverseasScBrowser': '',
   'auth.modal.acknowledgeOverseasRequired': '請勾選確認上述說明。',
-  'auth.modal.waitCaptchaLoad': '請等待驗證碼加載',
   'auth.loginPhoneOrEmail': '手機號或郵箱',
   'auth.name': '姓名',
   'auth.networkLoginFailed': '網絡錯誤，登錄失敗',
@@ -141,4 +153,4 @@ export default {
   'auth.accountNameSave': '儲存姓名',
   'auth.accountNameSaveSuccess': '姓名已更新',
   'auth.accountNameSaveError': '儲存失敗，請重試',
-} as const
+}
