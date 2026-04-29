@@ -22,6 +22,7 @@ from .brace_map import (
 from .bridge_map import build_bridge_dimensions_prompt, build_bridge_pairs_prompt
 from .bubble_map import build_bubble_attributes_prompt
 from .circle_map import build_circle_observations_prompt
+from .concept_map import build_concept_map_relationship_labels_prompt
 from .double_bubble_map import (
     build_double_bubble_differences_prompt,
     build_double_bubble_similarities_prompt,
@@ -75,9 +76,10 @@ _BUILDERS: Dict[str, Dict[str, Any]] = {
         "dimensions": build_bridge_dimensions_prompt,
         "pairs": build_bridge_pairs_prompt,
     },
-    # Reuse attribute-style prompt: alternative concept labels for the selected node
+    # Concepts: reuse bubble-attribute builder. Linked concepts: focal edge labels (Tab).
     "concept_map": {
         "concepts": build_bubble_attributes_prompt,
+        "relationship_labels": build_concept_map_relationship_labels_prompt,
     },
 }
 
@@ -87,6 +89,7 @@ _FALLBACK_STAGES = (
     "subparts",
     "observations",
     "attributes",
+    "relationship_labels",
     "concepts",
     "similarities",
     "differences",

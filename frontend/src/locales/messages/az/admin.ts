@@ -140,7 +140,7 @@ export default {
   'admin.markets.colTitle': 'Başlıq',
   'admin.markets.colActive': 'Aktiv',
   'admin.markets.loadError': 'Yükləmək alınmadı',
-  'admin.mindbot': 'MindBot robotu',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot & Dify (məktəbə görə)',
   'admin.mindbot.dialogHeaderNote': 'DingTalk robotu [{name}]',
   'admin.mindbot.introHttpOnly':

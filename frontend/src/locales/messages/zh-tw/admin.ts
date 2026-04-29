@@ -133,7 +133,7 @@ export default {
   'admin.markets.colTitle': '標題',
   'admin.markets.colActive': '積極的',
   'admin.markets.loadError': '載入失敗',
-  'admin.mindbot': '思維機器人',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': '釘釘機器人和 Dify（每所學校）',
   'admin.mindbot.dialogHeaderNote': '釘釘機器人[{name}]',
   'admin.mindbot.introHttpOnly':

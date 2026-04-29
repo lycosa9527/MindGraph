@@ -139,7 +139,7 @@ export default {
   'admin.markets.colTitle': 'Título',
   'admin.markets.colActive': 'Activo',
   'admin.markets.loadError': 'Error al cargar',
-  'admin.mindbot': 'mentebot',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'Robot DingTalk y Dify (por escuela)',
   'admin.mindbot.dialogHeaderNote': 'Robot DingTalk [{name}]',
   'admin.mindbot.introHttpOnly':

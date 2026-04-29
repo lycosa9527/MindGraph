@@ -244,7 +244,9 @@ class InlineRecommendationsGenerator:
         educational_context: Optional[Dict[str, Any]] = None,
     ) -> Optional[Dict[str, Any]]:
         """Prepare batch: init session, build prompt. Returns prep dict or None."""
-        context = extract_diagram_context(diagram_type, nodes, connections, current_node_id)
+        context = extract_diagram_context(
+            diagram_type, nodes, connections, current_node_id, stage=stage
+        )
         context["context_desc"] = get_context_desc(educational_context)
 
         if session_id not in self.session_start_times:

@@ -93,7 +93,7 @@ export default {
   'meta.pageTitle.login': 'साइन इन',
   'meta.pageTitle.main': 'मन मंच',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': 'माइंडबॉट',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'पृष्ठ नहीं मिला',
   'meta.pageTitle.publicDashboard': 'आँकड़े',

@@ -143,7 +143,7 @@ export default {
   'admin.markets.colTitle': 'Sarlavha',
   'admin.markets.colActive': 'Faol',
   'admin.markets.loadError': 'Yuklash muvaffaqiyatsiz',
-  'admin.mindbot': 'MindBot robot',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'DingTalk robot va Dify (har maktab)',
   'admin.mindbot.dialogHeaderNote': 'DingTalk roboti [{name}]',
   'admin.mindbot.introHttpOnly':

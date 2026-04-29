@@ -133,7 +133,7 @@ export default {
   'admin.markets.colTitle': '标题',
   'admin.markets.colActive': '上架',
   'admin.markets.loadError': '加载失败',
-  'admin.mindbot': '思维机器人',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': '钉钉机器人与 Dify（按校）',
   'admin.mindbot.dialogHeaderNote': '钉钉机器人【{name}】',
   'admin.mindbot.introHttpOnly':

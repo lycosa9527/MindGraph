@@ -60,6 +60,7 @@ import {
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
 import { registerCanvasPageDiagramEventBus } from '@/composables/canvasPage/registerCanvasPageDiagramEventBus'
 import { useCanvasPageEditorShortcuts } from '@/composables/canvasPage/useCanvasPageEditorShortcuts'
+import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import { useCanvasPageLibrarySnapshots } from '@/composables/canvasPage/useCanvasPageLibrarySnapshots'
 import { useCanvasPagePresentation } from '@/composables/canvasPage/useCanvasPagePresentation'
 import { useCanvasPageWorkshopCollab } from '@/composables/canvasPage/useCanvasPageWorkshopCollab'
@@ -188,6 +189,8 @@ const mindMatePanelRight = computed(() => {
 
 const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 const { startRecommendations } = useInlineRecommendations()
+
+useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
 function handleNodeDoubleClick(_node: { id?: string; type?: string }): void {
   // Double-click only enters edit mode. Inline recommendations are triggered by Tab
@@ -419,7 +422,7 @@ onMounted(async () => {
     'CanvasPage'
   )
 
-  // Tab while editing: concept map topic → focus validation; other diagrams → inline recommendations
+  // Tab inline: topic → focus review; topic→root target → root review; eligible → Tab rec SSE.
   eventBus.onWithOwner(
     'node_editor:tab_pressed',
     (data: { nodeId?: string; draftText?: string }) => {
@@ -461,7 +464,22 @@ onMounted(async () => {
       )
         return
       if (!inlineRecStore.isReady) return
-      startRecommendations(nodeId)
+      if (diagramStore.type === 'concept_map') {
+        if (!llmResultsStore.selectedModel) {
+          notify.warning(
+            t(
+              'notification.conceptMapTabNeedsAi',
+              'Please enable AI in the bar before Tab recommendations.'
+            )
+          )
+          return
+        }
+        if (!authStore.isAuthenticated) {
+          notify.warning(t('notification.signInToUse'))
+          return
+        }
+      }
+      void startRecommendations(nodeId)
     },
     'CanvasPage'
   )

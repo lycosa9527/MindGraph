@@ -13,7 +13,16 @@ export default {
   'aiModel.relationshipsTooltip': '拖拽概念连线即可生成关系',
   'aiModel.tabFocusBadge': 'Tab焦点',
   'aiModel.tabFocusTooltip': '编辑焦点问题时按 Tab 检验；之后在底部用数字键与 − / = 备选',
+  'aiModel.tabFocusQuestionBadge': 'Tab焦点问题',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    '选中或编辑焦点问题时：按 Tab 进行 AI 检验（须先写有实质内容的焦点问题，并需登录）。',
   'aiModel.tabRecBadge': 'Tab推荐',
+  'aiModel.tabContentRecBadge': 'Tab内容推荐',
+  'aiModel.tabRelationshipRecBadge': 'Tab关系推荐',
+  'aiModel.conceptMapConceptTabTooltip':
+    '编辑模式（独立概念）：按 Tab 获取备选措辞（须已写好主题）。',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    '编辑模式或选中已连线概念（选择模式）：按 Tab 获取关系标签备选。',
   'aiModel.tooltip.clickDeselect': '点击取消选择 {name}',
   'aiModel.tooltip.clickSelect': '点击选择 {name}',
   'aiModel.tooltip.clickSwitch': '点击切换到 {name} 结果',

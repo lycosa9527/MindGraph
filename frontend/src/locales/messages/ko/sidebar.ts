@@ -71,7 +71,7 @@ export default {
   'sidebar.library': '도서관',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': '마인드봇',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': '스쿨존',
   'sidebar.smartResponse': '스마트 대응',
   'sidebar.teacherUsage': '교사 사용법',

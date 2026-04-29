@@ -69,7 +69,7 @@ export default {
   'sidebar.library': 'Thư viện',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'Robot MindBot',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Khu trường học',
   'sidebar.smartResponse': 'Phản hồi thông minh',
   'sidebar.teacherUsage': 'Sử dụng của giáo viên',

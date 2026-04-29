@@ -94,7 +94,7 @@ export default {
   'meta.pageTitle.login': 'เข้าสู่ระบบ',
   'meta.pageTitle.main': 'แพลตฟอร์มจิตใจ',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': 'มายด์บอท',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'ไม่พบหน้า',
   'meta.pageTitle.publicDashboard': 'สถิติ',

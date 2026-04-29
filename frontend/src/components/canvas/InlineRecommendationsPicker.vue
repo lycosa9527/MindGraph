@@ -11,6 +11,11 @@ import { storeToRefs } from 'pinia'
 
 import { useInlineRecommendations } from '@/composables/editor/useInlineRecommendations'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
+import type { DiagramNode } from '@/types'
+import {
+  conceptMapUsesRelationshipInlineRec,
+  getConceptMapPrimaryIncidentConnection,
+} from '@/utils/conceptMapInlineRec'
 
 const diagramStore = useDiagramStore()
 const store = useInlineRecommendationsStore()
@@ -60,11 +65,22 @@ const pickerRows = computed(() => {
   }))
 })
 
-/** Current text for the active node (to highlight selected option) */
-const currentNodeText = computed(() => {
+/**
+ * Compared to option rows: concept map Tab can target relationship labels (linked node) or concept
+ * text (isolated); relationship mode highlights against the deterministic primary incident edge label.
+ */
+const currentHighlightText = computed(() => {
   const entry = activeEntry.value
   if (!entry) return ''
-  const node = diagramStore.data?.nodes?.find((n) => n.id === entry[0])
+  const nid = entry[0]
+  if (
+    diagramStore.type === 'concept_map' &&
+    conceptMapUsesRelationshipInlineRec(nid, diagramStore.data?.connections)
+  ) {
+    const conn = getConceptMapPrimaryIncidentConnection(nid, diagramStore.data?.connections)
+    return ((conn?.label ?? '') as string).trim()
+  }
+  const node = diagramStore.data?.nodes?.find((n) => n.id === nid) as DiagramNode | undefined
   return (node?.text ?? '').trim()
 })
 
@@ -165,7 +181,7 @@ onUnmounted(() => {
         :key="row.idx"
         class="picker-option px-1.5 py-0.5 rounded cursor-pointer transition-colors flex gap-1.5 items-center"
         :class="[
-          activeEntry && isRowHighlighted(row, activeEntry[0], currentNodeText)
+          activeEntry && isRowHighlighted(row, activeEntry[0], currentHighlightText)
             ? 'bg-green-100 dark:bg-green-900/50 font-medium'
             : 'hover:bg-green-50 dark:hover:bg-green-900/30',
           isFractionPairTabRec && row.pair ? 'picker-option--fraction' : '',

@@ -72,7 +72,7 @@ export default {
   'sidebar.library': '図書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'マインドボット',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'スクールゾーン',
   'sidebar.smartResponse': 'スマートな対応',
   'sidebar.teacherUsage': '教師の使用法',

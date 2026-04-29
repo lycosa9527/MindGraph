@@ -93,7 +93,7 @@ export default {
   'meta.pageTitle.login': '登錄',
   'meta.pageTitle.main': '邁特教研',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': '思維機器人',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': '頁面未找到',
   'meta.pageTitle.publicDashboard': '統計',

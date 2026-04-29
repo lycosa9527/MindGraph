@@ -138,7 +138,7 @@ export default {
   'admin.markets.colTitle': 'Titulli',
   'admin.markets.colActive': 'Aktive',
   'admin.markets.loadError': 'Ngarkimi dështoi',
-  'admin.mindbot': 'Roboti MindBot',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'Roboti DingTalk dhe Dify (për shkollë)',
   'admin.mindbot.dialogHeaderNote': 'Roboti DingTalk [{name}]',
   'admin.mindbot.introHttpOnly':

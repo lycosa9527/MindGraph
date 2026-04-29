@@ -556,7 +556,18 @@ const unsubEditRequested = eventBus.on('node:edit_requested', handleEditRequeste
 
 // When user selects an inline recommendation (number key), apply text and exit edit mode
 // so we don't overwrite with stale editText on blur
-function handleRecommendationApplied(payload: { nodeId?: string; text?: string }): void {
+function handleRecommendationApplied(payload: {
+    nodeId?: string
+    text?: string
+    appliedToConnectionId?: string
+  }): void {
+  if (payload?.appliedToConnectionId) {
+    if (payload.nodeId !== props.nodeId || !localIsEditing.value) return
+    localIsEditing.value = false
+    eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+    emit('cancel')
+    return
+  }
   if (payload?.nodeId !== props.nodeId || !payload?.text) return
   if (!localIsEditing.value) return
   if (props.focusQuestionEditableSplit) {
@@ -567,6 +578,7 @@ function handleRecommendationApplied(payload: { nodeId?: string; text?: string }
   }
   localIsEditing.value = false
   eventBus.emit('node_editor:closed', { nodeId: props.nodeId })
+  emit('cancel')
 }
 const unsubRecommendationApplied = eventBus.on(
   'inline_recommendation:applied',

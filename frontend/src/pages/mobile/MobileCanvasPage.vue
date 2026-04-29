@@ -47,6 +47,7 @@ import {
   useNotifications,
 } from '@/composables'
 import { isNodeEligibleForInlineRec } from '@/composables/canvasPage/inlineRecEligibility'
+import { useConceptMapRelationshipTabFromSelection } from '@/composables/canvasPage/useConceptMapRelationshipTabFromSelection'
 import {
   diagramSpecLikelyNeedsMarkdownPipeline,
   loadDiagramMarkdownPipeline,
@@ -99,6 +100,8 @@ const inlineRecCoordinator = useInlineRecommendationsCoordinator()
 useNodeActions()
 const { startRecommendations, selectOptionByGlobalIndex, fetchNextBatch } =
   useInlineRecommendations()
+
+useConceptMapRelationshipTabFromSelection({ startRecommendations })
 
 const isSaving = ref(false)
 

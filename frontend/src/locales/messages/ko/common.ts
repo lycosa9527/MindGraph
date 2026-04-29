@@ -93,7 +93,7 @@ export default {
   'meta.pageTitle.login': '로그인',
   'meta.pageTitle.main': '마인드 플랫폼',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': '마인드봇',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': '페이지 없음',
   'meta.pageTitle.publicDashboard': '통계',

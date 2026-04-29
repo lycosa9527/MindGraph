@@ -357,16 +357,31 @@ def extract_circle_map_context(
     return {"topic": topic, "context_texts": context_texts}
 
 
+def _primary_concept_incident_connection(
+    current_node_id: str, connections: List[Dict[str, Any]]
+) -> Optional[Dict[str, Any]]:
+    """Same ordering as frontend Tab rec: all incident edges, then sort by connection id."""
+    incident = [
+        c
+        for c in connections
+        if current_node_id in ((c.get("source") or ""), (c.get("target") or ""))
+    ]
+    if not incident:
+        return None
+    return sorted(incident, key=lambda c: c.get("id") or "")[0]
+
+
 def extract_concept_map_context(
     nodes: List[Dict[str, Any]],
     connections: Optional[List[Dict[str, Any]]] = None,
     current_node_id: Optional[str] = None,
+    stage: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
-    Extract concept map: central topic and existing concept (non-topic) node texts.
-    Reuses attribute_texts / topic shape from bubble map for shared prompt builder.
+    Extract concept map: topic, existing concept labels, and optionally a focal edge for
+    relationship_label Tab mode (primary incident connection, sorted by id).
     """
-    del connections, current_node_id
+    conns = connections or []
     topic_node = next(
         (
             n
@@ -400,7 +415,34 @@ def extract_concept_map_context(
         t = _get_node_text(n)
         if t and not is_placeholder_text(t):
             attribute_texts.append(t)
-    return {"topic": topic, "attribute_texts": attribute_texts}
+
+    labels_on_map: List[str] = []
+    for c in conns:
+        lab_raw = (c.get("label") or "").strip()
+        if lab_raw:
+            labels_on_map.append(lab_raw)
+    base: Dict[str, Any] = {
+        "topic": topic,
+        "attribute_texts": attribute_texts,
+        "relationship_labels_on_map": labels_on_map,
+    }
+
+    if (stage or "").strip().lower() != "relationship_labels" or not current_node_id:
+        return base
+
+    primary = _primary_concept_incident_connection(current_node_id, conns)
+    if not primary:
+        return base
+
+    by_id = {n.get("id"): n for n in nodes if n.get("id")}
+    sid = primary.get("source")
+    tid = primary.get("target")
+    s_node = by_id.get(sid) or {}
+    t_node = by_id.get(tid) or {}
+    base["relationship_concept_a"] = _get_node_text(s_node)
+    base["relationship_concept_b"] = _get_node_text(t_node)
+    base["relationship_current_label"] = (primary.get("label") or "").strip()
+    return base
 
 
 def extract_bubble_map_context(
@@ -591,6 +633,7 @@ _DIAGRAM_TEXT_KEYS = (
     "cause_texts",
     "effect_texts",
     "pair_texts",
+    "relationship_labels_on_map",
 )
 
 
@@ -636,16 +679,21 @@ def extract_diagram_context(
     nodes: List[Dict[str, Any]],
     connections: Optional[List[Dict[str, Any]]] = None,
     current_node_id: Optional[str] = None,
+    stage: Optional[str] = None,
 ) -> Dict[str, Any]:
     """
     Dispatch to diagram-specific context extractor.
 
     diagram_type: mindmap, flow_map, tree_map, brace_map, circle_map,
     bubble_map, double_bubble_map, multi_flow_map, bridge_map, concept_map
+
+    stage is used by concept_map (concepts vs relationship_labels); ignored elsewhere.
     """
     dt = (diagram_type or "").strip().lower()
     if dt == "mind_map":
         dt = "mindmap"
+    if dt == "concept_map":
+        return extract_concept_map_context(nodes, connections, current_node_id, stage)
     extractor = _EXTRACTORS.get(dt)
     if not extractor:
         return {}

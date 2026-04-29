@@ -14,7 +14,16 @@ export default {
   'aiModel.tabFocusBadge': 'Tab focus',
   'aiModel.tabFocusTooltip':
     'Press Tab while editing the focus question to validate; then pick alternatives in the bar (− / =)',
+  'aiModel.tabFocusQuestionBadge': 'Tab — focus question',
+  'aiModel.conceptMapFocusQuestionTabTooltip':
+    'While the focus question is selected or being edited: press Tab to run AI check (enter a substantive question first; sign-in required).',
   'aiModel.tabRecBadge': 'Tab rec',
+  'aiModel.tabContentRecBadge': 'Tab — content',
+  'aiModel.tabRelationshipRecBadge': 'Tab — relationship',
+  'aiModel.conceptMapConceptTabTooltip':
+    'Edit mode (isolated concept): press Tab for alternative wordings (topic must be set).',
+  'aiModel.conceptMapRelationshipTabTooltip':
+    'Edit mode or selection mode (linked concept): press Tab for focal-link relationship suggestions.',
   'aiModel.tooltip.clickDeselect': 'Click to deselect {name}',
   'aiModel.tooltip.clickSelect': 'Click to select {name}',
   'aiModel.tooltip.clickSwitch': 'Click to switch to {name} result',

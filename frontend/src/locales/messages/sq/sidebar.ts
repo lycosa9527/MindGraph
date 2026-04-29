@@ -69,7 +69,7 @@ export default {
   'sidebar.library': 'Biblioteka',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'Roboti MindBot',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Zona e shkollës',
   'sidebar.smartResponse': 'Përgjigje inteligjente',
   'sidebar.teacherUsage': 'Përdorimi i mësuesit',

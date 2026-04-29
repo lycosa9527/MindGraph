@@ -72,7 +72,7 @@ export default {
   'sidebar.library': 'Bibliothèque',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'Assistant MindBot',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Zone scolaire',
   'sidebar.smartResponse': 'Réponse intelligente',
   'sidebar.teacherUsage': 'Utilisation par les enseignants',

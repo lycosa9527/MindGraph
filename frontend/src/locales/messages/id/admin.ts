@@ -140,7 +140,7 @@ export default {
   'admin.markets.colTitle': 'Judul',
   'admin.markets.colActive': 'Aktif',
   'admin.markets.loadError': 'Gagal memuat',
-  'admin.mindbot': 'MindBot bot',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'Robot DingTalk & Dify (per sekolah)',
   'admin.mindbot.dialogHeaderNote': 'Robot DingTalk [{name}]',
   'admin.mindbot.introHttpOnly':

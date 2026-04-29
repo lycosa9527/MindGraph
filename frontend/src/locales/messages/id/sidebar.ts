@@ -70,7 +70,7 @@ export default {
   'sidebar.library': 'Perpustakaan',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'PikiranBot',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Zona sekolah',
   'sidebar.smartResponse': 'Respons cerdas',
   'sidebar.teacherUsage': 'Penggunaan guru',

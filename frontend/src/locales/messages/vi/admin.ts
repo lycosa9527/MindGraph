@@ -133,7 +133,7 @@ export default {
   'admin.markets.colTitle': 'Tiêu đề',
   'admin.markets.colActive': 'Hoạt động',
   'admin.markets.loadError': 'Tải thất bại',
-  'admin.mindbot': 'Robot MindBot',
+  'admin.mindbot': 'MindBot',
   'admin.mindbot.title': 'Robot DingTalk & Dify (theo trường)',
   'admin.mindbot.dialogHeaderNote': 'Robot DingTalk [{name}]',
   'admin.mindbot.introHttpOnly':

@@ -72,7 +72,7 @@ export default {
   'sidebar.library': 'Kutubxona',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': 'MindBot robot',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': 'Maktab zonasi',
   'sidebar.smartResponse': 'Aqlli javob',
   'sidebar.teacherUsage': 'Oʻqituvchi foydalanishi',

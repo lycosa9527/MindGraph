@@ -404,7 +404,7 @@ export type EventTypes = {
   'node:text_updated': { nodeId: string; text: string }
   'node:resized': { nodeId?: string }
   'node:edit_requested': { nodeId: string }
-  'inline_recommendation:applied': { nodeId: string; text: string }
+  'inline_recommendation:applied': { nodeId: string; text: string; appliedToConnectionId?: string }
 
   // Canvas Events
   'canvas:pane_clicked': Record<string, never>

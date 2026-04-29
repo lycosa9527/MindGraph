@@ -1,16 +1,17 @@
 /**
- * useInlineRecommendations - AI-generated node recommendations for diagram auto-completion
+ * useInlineRecommendations - AI-generated node recommendations (Tab / bottom bar picker).
  *
- * Trigger: User fixes topic, double-clicks node to edit, then presses Tab.
- * Streams recommendations via SSE. Similar to useConceptMapRelationship.
+ * Trigger: topic valid, then Tab while editing a label (or concept map linked node: selection+
+ * Tab delegates here from useConceptMapRelationshipTabFromSelection). Streams via SSE.
  */
 import { eventBus } from '@/composables/core/useEventBus'
 import { useLanguage } from '@/composables/core/useLanguage'
 import { useNotifications } from '@/composables/core/useNotifications'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { useDiagramStore, useInlineRecommendationsStore } from '@/stores'
-import type { DiagramType } from '@/types'
+import type { Connection, DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
+import { getConceptMapPrimaryIncidentConnection } from '@/utils/conceptMapInlineRec'
 
 import {
   INLINE_RECOMMENDATIONS_NEXT,
@@ -29,7 +30,7 @@ function getStageForNode(
   nodeId: string,
   diagramType: string,
   nodes: Array<{ id?: string; text?: string; type?: string }>,
-  connections?: Array<{ source: string; target: string }>
+  connections?: Connection[]
 ): { stage: string; stageData: Record<string, unknown> } {
   const dt = diagramType === 'mind_map' ? 'mindmap' : diagramType
   const node = nodes.find((n) => n.id === nodeId)
@@ -170,7 +171,10 @@ function getStageForNode(
   }
 
   if (dt === 'concept_map') {
-    return { stage: 'concepts', stageData: {} }
+    const linked = !!getConceptMapPrimaryIncidentConnection(nid, connections ?? [])
+    return linked
+      ? { stage: 'relationship_labels', stageData: {} }
+      : { stage: 'concepts', stageData: {} }
   }
 
   return { stage: defaultStage, stageData: {} }
@@ -307,6 +311,28 @@ export function useInlineRecommendations() {
       }
     }
 
+    if (dt === 'concept_map') {
+      const nodes = diagramStore.data?.nodes ?? []
+      const conns = diagramStore.data?.connections ?? []
+      const { stage } = getStageForNode(nodeId, dt, nodes, conns)
+      if (stage === 'relationship_labels') {
+        const primary = getConceptMapPrimaryIncidentConnection(nodeId, conns)
+        if (!primary) {
+          return false
+        }
+        if (diagramStore.updateConnectionLabel(primary.id, text.trim())) {
+          diagramStore.pushHistory('AI recommendation')
+          eventBus.emit('inline_recommendation:applied', {
+            nodeId,
+            text,
+            appliedToConnectionId: primary.id,
+          })
+          return true
+        }
+        return false
+      }
+    }
+
     if (dt === 'bridge_map' && text.includes('|')) {
       const [leftPart, rightPart] = text.split('|').map((s) => s.trim())
       const leftMatch = nodeId.match(/^pair-(\d+)-left$/)
@@ -379,8 +405,10 @@ export function useInlineRecommendations() {
           : {}),
       })),
       connections: connections.map((c) => ({
+        id: c.id,
         source: c.source,
         target: c.target,
+        ...(c.label != null && c.label !== '' ? { label: c.label } : {}),
       })),
       language: promptLanguage.value,
       count: 10,
@@ -465,8 +493,10 @@ export function useInlineRecommendations() {
           : {}),
       })),
       connections: connections.map((c) => ({
+        id: c.id,
         source: c.source,
         target: c.target,
+        ...(c.label != null && c.label !== '' ? { label: c.label } : {}),
       })),
       language: promptLanguage.value,
       count: 10,

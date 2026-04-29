@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.111.0] - 2026-04-29
+
+### Added
+- **Concept map — inline Tab recommendations** ([`frontend/src/utils/conceptMapInlineRec.ts`](frontend/src/utils/conceptMapInlineRec.ts), [`frontend/src/composables/canvasPage/useConceptMapRelationshipTabFromSelection.ts`](frontend/src/composables/canvasPage/useConceptMapRelationshipTabFromSelection.ts), [`frontend/src/composables/editor/useInlineRecommendations.ts`](frontend/src/composables/editor/useInlineRecommendations.ts), [`agents/inline_recommendations/prompts/concept_map.py`](agents/inline_recommendations/prompts/concept_map.py), [`agents/inline_recommendations/`](agents/inline_recommendations/)): relationship-label vs concept-wording stages for linked vs isolated nodes; Tab-from-selection path mirrors select→Tab without opening inline edit; backend prompts and generator wiring for concept-map inline streams.
+
+### Changed
+- **Inline recommendations — canvas and nodes** ([`frontend/src/components/canvas/InlineRecommendationsPicker.vue`](frontend/src/components/canvas/InlineRecommendationsPicker.vue), [`frontend/src/components/canvas/AIModelSelector.vue`](frontend/src/components/canvas/AIModelSelector.vue), [`frontend/src/pages/CanvasPage.vue`](frontend/src/pages/CanvasPage.vue), [`frontend/src/pages/mobile/MobileCanvasPage.vue`](frontend/src/pages/mobile/MobileCanvasPage.vue), [`frontend/src/components/diagram/nodes/ConceptNode.vue`](frontend/src/components/diagram/nodes/ConceptNode.vue), [`frontend/src/components/diagram/nodes/InlineEditableText.vue`](frontend/src/components/diagram/nodes/InlineEditableText.vue)): picker, model selector, and diagram wiring for concept-map Tab flows.
+
+- **Locales** ([`frontend/src/locales/messages/**`](frontend/src/locales/messages/)): assorted sidebar, admin, common, and mindmate strings across locales.
+
+- **`useEventBus`** ([`frontend/src/composables/core/useEventBus.ts`](frontend/src/composables/core/useEventBus.ts)): typings aligned with inline recommendation events.
+
+### Fixed
+- **`Connection[]` typing in inline recommendations** ([`frontend/src/composables/editor/useInlineRecommendations.ts`](frontend/src/composables/editor/useInlineRecommendations.ts)): `getStageForNode` accepts **`Connection[]`** so **`getConceptMapPrimaryIncidentConnection`** receives edges with required **`id`**, fixing **TS2345** on concept-map stage detection.
+
+### Frontend package version
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.111.0).
+
 ## [5.110.0] - 2026-04-29
 
 ### Added

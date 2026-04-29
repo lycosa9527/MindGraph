@@ -95,7 +95,7 @@ export default {
   'meta.pageTitle.login': 'Masuk',
   'meta.pageTitle.main': 'Platform Pikiran',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': 'PikiranBot',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'Halaman tidak ditemukan',
   'meta.pageTitle.publicDashboard': 'Statistik',

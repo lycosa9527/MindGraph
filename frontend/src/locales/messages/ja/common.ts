@@ -94,7 +94,7 @@ export default {
   'meta.pageTitle.login': 'サインイン',
   'meta.pageTitle.main': 'マインドプラットフォーム',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': 'マインドボット',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'ページが見つかりません',
   'meta.pageTitle.publicDashboard': '統計',

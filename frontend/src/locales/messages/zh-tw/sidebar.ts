@@ -69,7 +69,7 @@ export default {
   'sidebar.library': '圖書館',
   'sidebar.mindGraph': 'MindGraph',
   'sidebar.mindMate': 'MindMate',
-  'sidebar.mindbot': '思維機器人',
+  'sidebar.mindbot': 'MindBot',
   'sidebar.schoolZone': '學校專區',
   'sidebar.smartResponse': 'Smart Response 智回',
   'sidebar.teacherUsage': '教師使用度',

@@ -4,7 +4,7 @@
  * Used for both topic and concept nodes in concept_map diagrams
  * Supports inline text editing on double-click
  */
-import { computed, ref } from 'vue'
+import { computed, onUnmounted, ref } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
@@ -140,13 +140,34 @@ function onConceptLinkHandlePointerDown(e: PointerEvent) {
     sourceId: props.id,
   })
 }
+
+/** Menu/link handle only for ordinary concepts — topic/root use Tab for other flows. */
+const showConceptLinkMenuIcon = computed(
+  () =>
+    Boolean(props.selected) &&
+    !isEditing.value &&
+    !isConceptMapFocusTopic.value &&
+    !isConceptMapRootConceptNode.value
+)
+
+const unsubInlineRecommendationApplied = eventBus.on(
+  'inline_recommendation:applied',
+  (payload: { nodeId?: string }) => {
+    if (payload.nodeId !== props.id) return
+    isEditing.value = false
+  }
+)
+
+onUnmounted(() => {
+  unsubInlineRecommendationApplied()
+})
 </script>
 
 <template>
   <div class="concept-node-wrapper relative">
     <!-- Link handle: pointer only, nodrag; node body below stays draggable. -->
     <div
-      v-show="selected && !isEditing"
+      v-show="showConceptLinkMenuIcon"
       class="concept-link-icon concept-link-handle absolute nodrag"
       data-mg-concept-link-handle
       @pointerdown.capture="onConceptLinkHandlePointerDown"

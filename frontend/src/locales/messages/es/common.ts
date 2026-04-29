@@ -95,7 +95,7 @@ export default {
   'meta.pageTitle.login': 'Iniciar sesión',
   'meta.pageTitle.main': 'Plataforma mental',
   'meta.pageTitle.mindgraph': 'MindGraph',
-  'meta.pageTitle.mindbotAdmin': 'mentebot',
+  'meta.pageTitle.mindbotAdmin': 'MindBot',
   'meta.pageTitle.mindmate': 'MindMate',
   'meta.pageTitle.notFound': 'Página no encontrada',
   'meta.pageTitle.publicDashboard': 'Estadísticas',
