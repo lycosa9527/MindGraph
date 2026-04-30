@@ -18,6 +18,8 @@ const version = readFileSync(resolve(__dirname, '../VERSION'), 'utf-8').trim()
 // For WSL: Use Windows host IP (e.g., VITE_BACKEND_HOST=http://172.x.x.x:9527)
 const backendHost = process.env.VITE_BACKEND_HOST || 'http://localhost:9527'
 const backendHostWs = backendHost.replace('http://', 'ws://').replace('https://', 'wss://')
+/** Origin header sent to the API on proxied WebSocket upgrades (Host must align; see node-http-proxy + changeOrigin). */
+const backendOrigin = backendHost.replace(/\/$/, '')
 
 const elementPlusResolver = ElementPlusResolver({
   importStyle: 'css',
@@ -74,14 +76,38 @@ export default defineConfig({
   server: {
     // Use 41732+ to avoid ip_unprivileged_port_start (often 32768 on WSL); override with PORT=3000 npm run dev
     port: Number(process.env.PORT) || 41732,
+    // 0.0.0.0: Vite prints Local + several Network URLs on WSL (LAN IP + 172.x Docker/Hyper-V bridges).
+    // - Browser on same Windows host: prefer http://localhost:41732 (auto-forward to WSL2 on recent Windows).
+    // - Phone / another PC on Wi‑Fi: use the real LAN line (e.g. http://192.168.x.x:41732), not the 172.* bridges.
     host: process.env.VITE_HOST || '0.0.0.0',
     strictPort: false,
     proxy: {
       '/api': {
         target: backendHost,
         changeOrigin: true,
-        // Workshop chat: browser opens ws(s)://dev-host/api/ws/chat — must upgrade through this proxy
+        // Workshop chat + canvas-asr: browser opens ws(s)://dev-host/api/ws/...
         ws: true,
+        // Long-lived WS/SSE: avoid proxy closing idle connections too eagerly
+        timeout: 0,
+        proxyTimeout: 0,
+        configure: (proxy) => {
+          proxy.on('error', (err: NodeJS.ErrnoException) => {
+            const code = err?.code
+            if (code === 'ECONNABORTED' || code === 'ECONNRESET' || code === 'EPIPE') {
+              return
+            }
+            console.error('[vite proxy /api]', err)
+          })
+          // changeOrigin does not rewrite Origin on WS upgrades (http-proxy). LAN pages send
+          // Origin: http://192.168.x.x:41732 while the upstream target is localhost:9527 — some
+          // stacks treat that as a mismatch. Align Origin with the API base URL.
+          proxy.on('proxyReqWs', (proxyReq, _req, socket) => {
+            proxyReq.setHeader('origin', backendOrigin)
+            socket.on('error', () => {
+              /* peer closed during WebSocket upgrade or teardown */
+            })
+          })
+        },
       },
       '/thinking_mode': {
         target: backendHost,
@@ -90,7 +116,16 @@ export default defineConfig({
       },
       '/ws': {
         target: backendHostWs,
+        changeOrigin: true,
         ws: true,
+        configure: (proxy) => {
+          proxy.on('proxyReqWs', (proxyReq, _req, socket) => {
+            proxyReq.setHeader('origin', backendOrigin)
+            socket.on('error', () => {
+              /* same Origin alignment as /api WS proxy */
+            })
+          })
+        },
       },
       '/static': {
         target: backendHost,

@@ -212,6 +212,66 @@ class LLMConfigMixin:
         """Qwen Omni transcription model"""
         return self._get_cached_value("QWEN_OMNI_TRANSCRIPTION_MODEL", "gummy-realtime-v1")
 
+    @property
+    def DASHSCOPE_API_KEY(self) -> Optional[str]:
+        """
+        DashScope API key (optional).
+
+        Aliyun realtime ASR docs recommend ``DASHSCOPE_API_KEY``; Singapore and
+        Beijing keys differ by region. When unset, ASR falls back to ``QWEN_API_KEY``.
+        """
+        raw = self._get_cached_value("DASHSCOPE_API_KEY", "")
+        if not raw or not isinstance(raw, str):
+            return None
+        stripped = raw.strip()
+        return stripped or None
+
+    @property
+    def QWEN_ASR_REALTIME_MODEL(self) -> str:
+        """
+        Qwen3 ASR Flash Realtime model id for WebSocket ``?model=``.
+
+        Stable default per product doc: ``qwen3-asr-flash-realtime`` (snapshots
+        e.g. ``qwen3-asr-flash-realtime-2026-02-10`` remain valid).
+        """
+        return self._get_cached_value(
+            "QWEN_ASR_REALTIME_MODEL",
+            "qwen3-asr-flash-realtime",
+        )
+
+    @property
+    def QWEN_LIVE_TRANSLATE_MODEL(self) -> str:
+        """
+        Qwen3 LiveTranslate Flash Realtime model id for WebSocket ``?model=``.
+
+        Stable default: ``qwen3-livetranslate-flash-realtime``.
+        Override with ``QWEN_LIVE_TRANSLATE_MODEL`` env var.
+        """
+        return self._get_cached_value(
+            "QWEN_LIVE_TRANSLATE_MODEL",
+            "qwen3-livetranslate-flash-realtime",
+        )
+
+    @property
+    def DASHSCOPE_REALTIME_WS_BASE(self) -> str:
+        """
+        DashScope realtime WebSocket origin (no path/query).
+
+        Override with ``DASHSCOPE_REALTIME_WS_BASE`` (full ``wss://...`` URL
+        without ``?model=``). Otherwise ``DASHSCOPE_REALTIME_REGION`` selects:
+        ``cn`` -> Beijing, ``intl`` -> international endpoint.
+        """
+        override = self._get_cached_value("DASHSCOPE_REALTIME_WS_BASE", "")
+        if isinstance(override, str):
+            cleaned = override.strip().rstrip("/")
+            if cleaned.lower().startswith("wss://"):
+                return cleaned
+        region_raw = self._get_cached_value("DASHSCOPE_REALTIME_REGION", "cn")
+        region = str(region_raw or "cn").strip().lower()
+        if region in ("intl", "international", "sg", "singapore"):
+            return "wss://dashscope-intl.aliyuncs.com/api-ws/v1/realtime"
+        return "wss://dashscope.aliyuncs.com/api-ws/v1/realtime"
+
     def get_qwen_headers(self) -> dict:
         """
         Get headers for Qwen API requests.

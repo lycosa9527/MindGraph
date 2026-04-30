@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.112.0] - 2026-04-30
+
+### Added
+- **Live ASR subtitles — canvas** ([`routers/api/asr_realtime_ws.py`](routers/api/asr_realtime_ws.py), [`services/features/asr_realtime_bridge.py`](services/features/asr_realtime_bridge.py), [`frontend/src/stores/liveSubtitles.ts`](frontend/src/stores/liveSubtitles.ts), [`frontend/src/components/canvas/CanvasLiveSubtitleOverlay.vue`](frontend/src/components/canvas/CanvasLiveSubtitleOverlay.vue)): WebSocket bridge `/api/ws/canvas-asr` relays browser PCM16 audio to **DashScope Qwen3 ASR Flash Realtime**; store captures interim + committed lines at max 100; film-style draggable overlay (`CanvasLiveSubtitleOverlay`) shows at most 2 committed lines + 1 forming line, Teleported to `<body>` so it floats above presentation layers; double-click grip snaps to default bottom-centre.
+
+- **Live translation — canvas (admin-only)** ([`routers/api/live_translate_ws.py`](routers/api/live_translate_ws.py), [`services/features/live_translate_bridge.py`](services/features/live_translate_bridge.py), [`frontend/src/stores/liveTranslation.ts`](frontend/src/stores/liveTranslation.ts), [`frontend/src/utils/translateLanguages.ts`](frontend/src/utils/translateLanguages.ts)): WebSocket bridge `/api/ws/canvas-translate` (403 for non-admins) relays audio to **DashScope Qwen3 LiveTranslate Flash Realtime**; auto-derives target language (zh→en, other→zh); admin Globe dropdown in `MindGraphContainer` and `InternationalLanding` lets admins toggle translation and pick a target from `TRANSLATE_LANGUAGES` (18 languages).
+
+- **WebSocket session registry + managed context** ([`utils/ws_session_registry.py`](utils/ws_session_registry.py), [`utils/ws_context.py`](utils/ws_context.py)): lock-free in-process `WsSessionRegistry` tracks every open WS across all endpoints on a worker; `ws_managed_session` async context manager enforces per-user per-endpoint limits (e.g. `max_per_user_endpoint=1` for ASR/translate), registers/unregisters sessions, and sends a proper close frame with the configured error JSON if the limit is exceeded; bulk `close_all` used on graceful shutdown.
+
+- **Admin endpoint — WS session snapshot** ([`routers/admin/realtime.py`](routers/admin/realtime.py)): `GET /admin/ws-sessions` returns the in-process `_registry.snapshot()` (session_id, user_id, endpoint, remote_addr, age_seconds, per-endpoint counts) merged with the cross-worker Redis gauge from `get_ws_metrics_snapshot()` — for live debugging of stuck sessions or cleanup verification.
+
+- **Graceful WebSocket shutdown** ([`services/infrastructure/lifecycle/lifespan.py`](services/infrastructure/lifecycle/lifespan.py)): on lifespan shutdown the registry `close_all(code=1001, reason="Server shutting down")` is awaited before stopping the fan-out listener and Redis, giving clients a proper `GOING_AWAY` close frame instead of a hard TCP reset.
+
+- **DashScope LLM config** ([`config/llm_config.py`](config/llm_config.py)): new properties `DASHSCOPE_API_KEY` (region key separate from `QWEN_API_KEY`), `QWEN_ASR_REALTIME_MODEL` (default `qwen3-asr-flash-realtime`), `QWEN_LIVE_TRANSLATE_MODEL` (default `qwen3-livetranslate-flash-realtime`), `DASHSCOPE_REALTIME_WS_BASE` (region-aware: `cn` → Beijing endpoint, `intl`/`sg` → international endpoint; or full `wss://` override via env var).
+
+- **`MindGraphLanguageSwitcher`** ([`frontend/src/components/mindgraph/MindGraphLanguageSwitcher.vue`](frontend/src/components/mindgraph/MindGraphLanguageSwitcher.vue)): reusable `header`/`floating` variant component for quick UI + prompt language switching on landing pages; integrated into `MindGraphContainer` (header variant) and `InternationalLanding` (floating variant).
+
+- **`BlackCat` mascot** ([`frontend/src/utils/mascot/blackCat.ts`](frontend/src/utils/mascot/blackCat.ts), [`frontend/src/utils/mascot/catWalk.ts`](frontend/src/utils/mascot/catWalk.ts)): SVG-based voice-agent mascot with states (`idle`, `listening`, `thinking`, `speaking`, `celebrating`, `error`) and walk animation; retained for future VoiceAgent integration.
+
+### Changed
+- **`ws_limits.py` — helper functions** ([`utils/ws_limits.py`](utils/ws_limits.py)): added `safe_websocket_send_text`, `receive_websocket_text_frame`, `text_payload_from_websocket_receive`, `inbound_text_exceeds_limit`, and `WebsocketMessageRateLimiter` (token-bucket, default 40 msg/s) shared by ASR, translate, workshop, and voice WebSocket routes.
+
+- **Workshop WebSocket** ([`routers/api/workshop_ws.py`](routers/api/workshop_ws.py), [`services/features/workshop_chat_ws_manager.py`](services/features/workshop_chat_ws_manager.py)): migrated to `ws_managed_session` context and `ws_session_registry` for unified session tracking and per-user limit enforcement.
+
+- **SSE streaming** ([`routers/api/sse_streaming.py`](routers/api/sse_streaming.py)): hardened disconnect handling; consistent use of shared `ws_limits` helpers.
+
+- **Canvas locale strings** ([`frontend/src/locales/messages/en/canvas.ts`](frontend/src/locales/messages/en/canvas.ts), [`frontend/src/locales/messages/zh/canvas.ts`](frontend/src/locales/messages/zh/canvas.ts)): added subtitle (`canvas.subtitles.*`) and translation (`canvas.translation.*`) keys.
+
+- **`translateForUiLocale`** ([`frontend/src/i18n/translateForUiLocale.ts`](frontend/src/i18n/translateForUiLocale.ts)): updated locale resolution to cover new language entries.
+
+- **`App.vue` / stores index** ([`frontend/src/App.vue`](frontend/src/App.vue), [`frontend/src/stores/index.ts`](frontend/src/stores/index.ts)): wired `liveSubtitles` and `liveTranslation` stores into the app lifecycle and barrel exports.
+
+- **`vite.config.ts`** ([`frontend/vite.config.ts`](frontend/vite.config.ts)): build and proxy config updates to support WS endpoints.
+
+- **WS metrics** ([`services/infrastructure/monitoring/ws_metrics.py`](services/infrastructure/monitoring/ws_metrics.py)): added `get_ws_metrics_snapshot()` and `record_ws_connection_delta()` for use by the registry and the admin snapshot endpoint.
+
+- **Auth helpers / phone router** ([`routers/auth/helpers.py`](routers/auth/helpers.py), [`routers/auth/phone.py`](routers/auth/phone.py)): minor improvements aligned with WS auth flow.
+
+- **VPN geo enforcement** ([`services/auth/vpn_geo_enforcement.py`](services/auth/vpn_geo_enforcement.py)): `maybe_close_websocket_for_vpn_cn_geo` used by ASR and translate WebSocket routers.
+
+- **Logging config** ([`services/infrastructure/utils/logging_config.py`](services/infrastructure/utils/logging_config.py)): noise filters for new WS endpoint log names.
+
+### Frontend package version
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.112.0).
+
 ## [5.111.0] - 2026-04-29
 
 ### Added

@@ -385,7 +385,16 @@ class UnifiedFormatter(logging.Formatter):
         message = re.sub(r" +", " ", message)  # Normalize multiple spaces to single space
         message = _colorize_leading_module_tag(message, self.MODULE_TAG_COLORS, self.COLORS["RESET"])
 
-        return f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
+        line = f"[{timestamp}] {colored_level} | {source} | [{pid}] {message}"
+
+        if record.exc_info and not record.exc_text:
+            record.exc_text = self.formatException(record.exc_info)
+        if record.exc_text:
+            line = line + "\n" + record.exc_text
+        if record.stack_info:
+            line = line + "\n" + self.formatStack(record.stack_info)
+
+        return line
 
 
 class UvicornInvalidRequestFilter(logging.Filter):

@@ -6,21 +6,26 @@
 import { nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
-import { ElAvatar, ElButton, ElIcon } from 'element-plus'
+import { ElAvatar, ElButton, ElIcon, ElTooltip } from 'element-plus'
 
 import { Loading } from '@element-plus/icons-vue'
 
-import { PanelLeftOpen } from 'lucide-vue-next'
+import { Check, Globe, PanelLeftOpen } from 'lucide-vue-next'
+
+import { storeToRefs } from 'pinia'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage, useNotifications } from '@/composables'
 import { useAuthStore, useDiagramStore, useLLMResultsStore, useUIStore } from '@/stores'
+import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import type { SavedDiagram } from '@/stores/savedDiagrams'
 import type { DiagramType } from '@/types'
 import { authFetch } from '@/utils/api'
+import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
 
 import DiagramPreviewSvg from './DiagramPreviewSvg.vue'
 import IntlDiagramDropdown from './IntlDiagramDropdown.vue'
+import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 
 const MAX_PROMPT_LENGTH = 10000
 const LANDING_LLM_MODELS = ['qwen', 'deepseek', 'kimi', 'doubao'] as const
@@ -32,6 +37,20 @@ const authStore = useAuthStore()
 const uiStore = useUIStore()
 const diagramStore = useDiagramStore()
 const notify = useNotifications()
+const liveTranslationStore = useLiveTranslationStore()
+const {
+  enabled: translationOn,
+  connecting: translationConnecting,
+  targetLanguage: translationTargetLang,
+} = storeToRefs(liveTranslationStore)
+
+function handleTranslateCommand(command: string): void {
+  if (command === '__toggle__') {
+    liveTranslationStore.toggle()
+  } else {
+    liveTranslationStore.setTargetLanguage(command)
+  }
+}
 
 const TYPE_TO_ZH_NAME: Record<DiagramType, string> = {
   circle_map: '圆圈图',
@@ -301,6 +320,55 @@ onMounted(() => {
     >
       <PanelLeftOpen class="w-[18px] h-[18px]" />
     </el-button>
+    <div class="intl-landing-chrome">
+      <MindGraphLanguageSwitcher variant="floating" />
+      <ElDropdown
+        v-if="authStore.isAdmin"
+        trigger="click"
+        placement="bottom-end"
+        popper-class="mindgraph-translate-popper"
+        class="intl-translate-btn"
+        @command="handleTranslateCommand"
+      >
+        <ElButton
+          size="small"
+          circle
+          :loading="translationConnecting"
+          :type="translationOn ? 'primary' : 'default'"
+          :aria-pressed="translationOn"
+          :aria-label="t('canvas.translation.aria')"
+          class="intl-translate-btn__trigger"
+        >
+          <Globe class="w-[17px] h-[17px]" />
+        </ElButton>
+        <template #dropdown>
+          <ElDropdownMenu class="max-h-[min(420px,70vh)] overflow-y-auto">
+            <ElDropdownItem command="__toggle__">
+              <span class="translate-lang-row">
+                <span class="translate-lang-label">
+                  {{ translationOn ? t('canvas.translation.stop') : t('canvas.translation.start') }}
+                </span>
+              </span>
+            </ElDropdownItem>
+            <ElDivider style="margin: 4px 0;" />
+            <ElDropdownItem
+              v-for="lang in TRANSLATE_LANGUAGES"
+              :key="lang.code"
+              :command="lang.code"
+            >
+              <span class="translate-lang-row">
+                <span class="translate-lang-label" dir="auto">{{ lang.label }}</span>
+                <Check
+                  v-if="translationTargetLang === lang.code"
+                  class="translate-lang-check w-4 h-4 shrink-0 opacity-70"
+                  aria-hidden="true"
+                />
+              </span>
+            </ElDropdownItem>
+          </ElDropdownMenu>
+        </template>
+      </ElDropdown>
+    </div>
     <!-- Scrollable content -->
     <div class="intl-scroll">
       <!-- Hero: logo left, title + slogan right -->
@@ -434,6 +502,55 @@ onMounted(() => {
   top: 16px;
   left: 16px;
   z-index: 20;
+}
+
+.intl-landing-chrome {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 21;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.intl-landing-chrome :deep(.mindgraph-lang-switcher-root--floating) {
+  position: static;
+  top: auto;
+  right: auto;
+}
+
+/* Translate button — white floating style when inactive */
+.intl-translate-btn__trigger.el-button--default {
+  --el-button-bg-color: #ffffff;
+  --el-button-border-color: #e7e5e4;
+  --el-button-hover-bg-color: #f5f5f4;
+  --el-button-hover-border-color: #d6d3d1;
+  --el-button-text-color: #44403c;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* Centered label with checkmark in the gutter */
+.translate-lang-row {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 5px 20px;
+  min-height: 1.35em;
+}
+
+.translate-lang-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.translate-lang-check {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
 }
 
 .intl-landing {
@@ -981,5 +1098,21 @@ onMounted(() => {
 
 .dark .intl-card:hover {
   box-shadow: 0 8px 30px rgba(0, 0, 0, 0.45);
+}
+</style>
+
+<!-- Teleported translate dropdown — width lives on popper, not scoped subtree -->
+<style>
+.mindgraph-translate-popper.el-popper {
+  max-width: min(210px, calc(100vw - 24px));
+}
+
+.mindgraph-translate-popper .el-dropdown-menu {
+  width: min(210px, calc(100vw - 24px));
+  padding: 4px 0;
+}
+
+.mindgraph-translate-popper .el-dropdown-menu__item {
+  padding: 6px 8px;
 }
 </style>

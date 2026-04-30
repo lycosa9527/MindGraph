@@ -26,10 +26,7 @@ from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS as active_connections,
     ACTIVE_EDITORS as active_editors,
 )
-from services.infrastructure.monitoring.ws_metrics import (
-    record_ws_workshop_connection_delta,
-    redis_increment_active_total,
-)
+from utils.ws_context import ws_managed_session
 from services.workshop.workshop_ws_mutation_idle import start_mutation_idle_monitor
 
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
@@ -118,27 +115,11 @@ async def canvas_collab_websocket(
     if code not in active_editors:
         active_editors[code] = {}
 
-    try:
-        record_ws_workshop_connection_delta(1)
-        await redis_increment_active_total(1)
-    except Exception as exc:
-        logger.debug("Failed to record WS connection metric: %s", exc)
-
     logger.info(
         "[WorkshopWS] User %s connected to workshop %s (diagram %s)",
         user.id,
         code,
         diagram_id,
-    )
-
-    await send_canvas_collab_join_handshake(
-        websocket,
-        code,
-        user,
-        diagram_id,
-        owner_id,
-        USER_COLORS,
-        USER_EMOJIS,
     )
 
     monitor_task = start_mutation_idle_monitor(websocket, code, user.id)
@@ -154,32 +135,49 @@ async def canvas_collab_websocket(
         user_emojis=USER_EMOJIS,
     )
 
-    try:
-        await run_canvas_collab_receive_loop(collab_ctx)
-
-    except WebSocketDisconnect:
-        logger.info(
-            "[WorkshopWS] User %s disconnected from workshop %s",
-            user.id,
+    async with ws_managed_session(
+        websocket,
+        user_id=user.id,
+        endpoint="collab",
+        code=code,
+        diagram_id=diagram_id,
+    ):
+        await send_canvas_collab_join_handshake(
+            websocket,
             code,
+            user,
+            diagram_id,
+            owner_id,
+            USER_COLORS,
+            USER_EMOJIS,
         )
-    except Exception as e:
-        logger.error(
-            "[WorkshopWS] Error in workshop WebSocket: %s",
-            e,
-            exc_info=True,
-        )
+
         try:
-            if websocket.client_state == WebSocketState.CONNECTED:
-                await websocket.send_json(
-                    {
-                        "type": "error",
-                        "message": f"Presentation mode error: {str(e)}",
-                    }
-                )
+            await run_canvas_collab_receive_loop(collab_ctx)
+
+        except WebSocketDisconnect:
+            logger.info(
+                "[WorkshopWS] User %s disconnected from workshop %s",
+                user.id,
+                code,
+            )
         except Exception as exc:
-            logger.debug("Failed to send WebSocket error message: %s", exc)
-    finally:
-        if monitor_task is not None:
-            monitor_task.cancel()
-        await finalize_canvas_collab_disconnect(code=code, user=user)
+            logger.error(
+                "[WorkshopWS] Error in workshop WebSocket: %s",
+                exc,
+                exc_info=True,
+            )
+            try:
+                if websocket.client_state == WebSocketState.CONNECTED:
+                    await websocket.send_json(
+                        {
+                            "type": "error",
+                            "message": f"Presentation mode error: {str(exc)}",
+                        }
+                    )
+            except Exception as send_exc:
+                logger.debug("Failed to send WebSocket error message: %s", send_exc)
+        finally:
+            if monitor_task is not None:
+                monitor_task.cancel()
+            await finalize_canvas_collab_disconnect(code=code, user=user)

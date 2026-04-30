@@ -34,6 +34,8 @@ from . import (
     image_proxy,
     diagrams,
     workshop_ws,
+    asr_realtime_ws,
+    live_translate_ws,
 )
 from . import config
 
@@ -79,6 +81,8 @@ router.include_router(image_proxy.router)
 router.include_router(diagrams.router)
 router.include_router(diagram_node_ops.router)
 router.include_router(workshop_ws.router)
+router.include_router(asr_realtime_ws.router)
+router.include_router(live_translate_ws.router)
 
 # Knowledge Space router (has its own prefix)
 if KNOWLEDGE_SPACE_MODULE is not None:

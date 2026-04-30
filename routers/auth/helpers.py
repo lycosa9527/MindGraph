@@ -21,8 +21,10 @@ from datetime import UTC, datetime, timedelta, timezone
 from typing import Optional, Callable, Awaitable
 
 from fastapi import HTTPException, Request, Response, status
+from sqlalchemy import inspect as sa_inspect
 from sqlalchemy.exc import IntegrityError, OperationalError
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import object_session
 
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
@@ -238,6 +240,10 @@ async def commit_user_with_retry(
     and jitter if database deadlock is detected. This handles transient deadlock errors during
     high concurrency scenarios (e.g., 500 concurrent registrations).
 
+    If ``new_user`` is not already bound to ``db`` (typical for JWT/cache-backed
+    ``get_current_user`` results or enterprise mode users from a closed session),
+    it is merged into ``db`` before commit so flush/commit/refresh behave correctly.
+
     Args:
         db: Async SQLAlchemy database session
         new_user: User object to commit
@@ -249,10 +255,14 @@ async def commit_user_with_retry(
     Raises:
         HTTPException: If commit fails after all retries or on non-lock errors
     """
+    attached_user = new_user
+    if object_session(attached_user) is not db:
+        attached_user = await db.merge(attached_user)
+
     for attempt in range(max_retries):
         try:
             await db.commit()
-            await db.refresh(new_user)
+            await db.refresh(attached_user)
             return attempt  # Return number of retries (0 = first attempt succeeded)
         except OperationalError as e:
             error_msg = str(e).lower()
@@ -264,13 +274,20 @@ async def commit_user_with_retry(
                     # re-add the object before the next commit attempt, otherwise the
                     # retry fails immediately with "session is in a failed state".
                     await db.rollback()
-                    db.add(new_user)
+                    if sa_inspect(attached_user).has_identity:
+                        attached_user = await db.merge(attached_user)
+                    else:
+                        db.add(attached_user)
 
                     # Retry with exponential backoff + jitter (prevents thundering herd)
                     base_delay = 0.1 * (2**attempt)  # 0.1s, 0.2s, 0.4s, 0.8s, 1.6s
                     jitter = random.uniform(0, 0.05)  # Random jitter up to 50ms
                     delay = base_delay + jitter
-                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
+                    phone_prefix = (
+                        attached_user.phone[:3]
+                        if attached_user.phone and len(attached_user.phone) >= 3
+                        else "***"
+                    )
                     logger.warning(
                         "[Auth] Database deadlock on user registration attempt %d/%d, "
                         "retrying after %.3fs delay (base: %.3fs + jitter: %.3fs). "
@@ -287,7 +304,11 @@ async def commit_user_with_retry(
                 else:
                     # All retries exhausted
                     await db.rollback()
-                    phone_prefix = new_user.phone[:3] if new_user.phone and len(new_user.phone) >= 3 else "***"
+                    phone_prefix = (
+                        attached_user.phone[:3]
+                        if attached_user.phone and len(attached_user.phone) >= 3
+                        else "***"
+                    )
                     logger.error(
                         "[Auth] Database deadlock persists after %d retries. Phone: %s***",
                         max_retries,
@@ -327,7 +348,13 @@ async def commit_user_with_retry(
         except Exception as e:
             # Non-OperationalError - don't retry
             await db.rollback()
-            logger.error("[Auth] Failed to create user in database: %s", e, exc_info=True)
+            extra = ""
+            if "not persistent" in str(e).lower():
+                extra = (
+                    " User ORM instance was not bound to this request's AsyncSession "
+                    "(merge/cache/JWT path) — see commit_user_with_retry docstring."
+                )
+            logger.error("[Auth] User row commit or post-commit refresh failed:%s %s", extra, e, exc_info=True)
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create user account",

@@ -6,6 +6,8 @@
 import { computed, defineAsyncComponent, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 
+import { storeToRefs } from 'pinia'
+
 import { ElConfigProvider } from 'element-plus'
 import type { Language } from 'element-plus/es/locale'
 import en from 'element-plus/es/locale/lang/en'
@@ -14,12 +16,14 @@ import { LoginModal } from '@/components/auth'
 import ChatMessageToast from '@/components/common/ChatMessageToast.vue'
 import GeoLiteNotification from '@/components/common/GeoLiteNotification.vue'
 import VersionNotification from '@/components/common/VersionNotification.vue'
+import CanvasLiveSubtitleOverlay from '@/components/canvas/CanvasLiveSubtitleOverlay.vue'
 import BrowserLocaleHintDialog from '@/components/settings/BrowserLocaleHintDialog.vue'
 import { useLanguage, useNotifications } from '@/composables'
 import { ensureFontsForLanguageCode } from '@/fonts/promptLanguageFonts'
 import { loadElementPlusLocale } from '@/i18n/elementPlusLocale'
 import { isRtlUiLocale } from '@/i18n/locales'
 import { useAuthStore, useUIStore } from '@/stores'
+import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { isMindgraphHeadlessExportSession } from '@/utils/headlessExportSession'
 
 const notify = useNotifications()
@@ -29,6 +33,26 @@ const router = useRouter()
 const uiStore = useUIStore()
 const authStore = useAuthStore()
 const { t } = useLanguage()
+const liveTranslationStore = useLiveTranslationStore()
+const {
+  enabled: translationEnabled,
+  connecting: translationConnecting,
+  committedLines: translationCommittedLines,
+  interimText: translationInterimText,
+} = storeToRefs(liveTranslationStore)
+/**
+ * Build a stable-ID window of the last 2 committed lines.
+ * The ID equals the item's global index in committedLines, so Vue's
+ * TransitionGroup can track each sentence across renders without
+ * re-entering elements that are still visible.
+ */
+const MAX_VISIBLE_COMMITTED = 2
+const translationDisplayLines = computed(() => {
+  const all = translationCommittedLines.value
+  const start = Math.max(0, all.length - MAX_VISIBLE_COMMITTED)
+  return all.slice(start).map((text, i) => ({ id: start + i, text }))
+})
+const translationLive = translationInterimText
 
 const elLocale = shallowRef<Language>(en)
 
@@ -163,6 +187,12 @@ onMounted(async () => {
     />
 
     <BrowserLocaleHintDialog v-model="showBrowserLocaleHint" />
+
+    <CanvasLiveSubtitleOverlay
+      :visible="translationEnabled || translationConnecting"
+      :lines="translationDisplayLines"
+      :live="translationLive"
+    />
   </ElConfigProvider>
 </template>
 

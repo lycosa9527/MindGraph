@@ -19,14 +19,29 @@ from services.redis.redis_async_client import get_async_redis
 logger = logging.getLogger(__name__)
 
 _local: Dict[str, int] = {
+    # Per-endpoint active connection counters (all five endpoint types)
     "ws_chat_connections": 0,
     "ws_workshop_connections": 0,
+    "ws_asr_connections": 0,
+    "ws_translate_connections": 0,
+    "ws_voice_connections": 0,
+    # Fan-out throughput
     "ws_fanout_chat_published": 0,
     "ws_fanout_chat_received": 0,
     "ws_fanout_workshop_published": 0,
     "ws_fanout_workshop_received": 0,
+    # Auth / rate-limit rejections
     "ws_auth_failures": 0,
     "ws_rate_limit_hits": 0,
+}
+
+# Map registry endpoint labels → metric counter keys
+_ENDPOINT_COUNTER: Dict[str, str] = {
+    "chat": "ws_chat_connections",
+    "collab": "ws_workshop_connections",
+    "asr": "ws_asr_connections",
+    "translate": "ws_translate_connections",
+    "voice": "ws_voice_connections",
 }
 
 
@@ -39,14 +54,16 @@ def _bump(key: str, delta: int = 1) -> None:
     _local[key] = _local.get(key, 0) + delta
 
 
-def record_ws_chat_connection_delta(delta: int) -> None:
-    """Adjust the per-process workshop chat WebSocket connection counter."""
-    _bump("ws_chat_connections", delta)
+def record_ws_connection_delta(endpoint: str, delta: int) -> None:
+    """
+    Adjust the per-process connection counter for the given endpoint label.
 
-
-def record_ws_workshop_connection_delta(delta: int) -> None:
-    """Adjust the per-process diagram workshop WebSocket connection counter."""
-    _bump("ws_workshop_connections", delta)
+    Used by ws_context.ws_managed_session for all five endpoint types.
+    Unknown endpoint labels are silently ignored (future-proof).
+    """
+    key = _ENDPOINT_COUNTER.get(endpoint)
+    if key:
+        _bump(key, delta)
 
 
 def record_ws_fanout_chat_published() -> None:

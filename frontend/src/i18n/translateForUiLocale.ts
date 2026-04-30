@@ -10,13 +10,20 @@ type GlobalTForLocale = (
 const globalTForLocale = i18n.global.t as GlobalTForLocale
 
 /**
- * Translate for a specific UI locale. `i18n.global.t` infers `locale` from static
- * `messages` keys (`zh`, `en`); lazy-loaded bundles still work at runtime.
+ * Translate for a specific UI locale without spamming missing-key warnings for
+ * lazy-loaded bundles: if that locale is not registered yet (or lacks the key),
+ * resolve via English only. Module-level helpers that iterate all locale codes
+ * run before `loadLocaleMessages` for every language; this avoids intlify noise.
  */
 export function translateForUiLocale(
   key: string,
   locale: LocaleCode,
   params?: Record<string, unknown>
 ): string {
-  return String(globalTForLocale(key, params ?? {}, { locale }))
+  const safeParams = params ?? {}
+  const bundle = i18n.global.getLocaleMessage(locale) as Record<string, unknown>
+  if (bundle && Object.prototype.hasOwnProperty.call(bundle, key)) {
+    return String(globalTForLocale(key, safeParams, { locale }))
+  }
+  return String(globalTForLocale(key, safeParams, { locale: 'en' }))
 }

@@ -296,13 +296,15 @@ async def maybe_close_websocket_for_vpn_cn_geo(websocket: WebSocket) -> bool:
     Returns:
         True if the socket was closed (caller should return).
     """
-    req = Request(websocket.scope)
-    resp = await maybe_enforce_vpn_cn_geo_async(req)
+    # WebSocket is an HTTPConnection subclass with the same headers/url/state interface
+    # as Request. Constructing Request(websocket.scope) fails because Request.__init__
+    # asserts scope["type"] == "http", but WebSocket scopes carry type="websocket".
+    resp = await maybe_enforce_vpn_cn_geo_async(websocket)  # type: ignore[arg-type]
     if resp is None:
         return False
     lang = get_request_language(
-        req.headers.get("X-Language"),
-        req.headers.get("Accept-Language"),
+        websocket.headers.get("X-Language"),
+        websocket.headers.get("Accept-Language"),
     )
     reason = _close_reason_from_geo_json_response(resp)
     if not reason:

@@ -46,6 +46,7 @@ from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_g
 _close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 from utils.auth import can_access_workshop_chat
 from utils.auth_ws import authenticate_websocket_user
+from utils.ws_context import ws_managed_session
 from utils.ws_limits import (
     DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
     DEFAULT_MAX_WS_TEXT_BYTES,
@@ -169,77 +170,68 @@ async def chat_websocket(websocket: WebSocket):
         return
 
     await websocket.accept()
-    logger.info(
-        "[ChatWS] connection accepted user_id=%s",
-        user.id,
-    )
-    await chat_ws_manager.connect(
-        websocket,
-        user.id,
-        user.name or f"User {user.id}",
-        user.avatar,
-    )
-    rate_limiter = WebsocketMessageRateLimiter(
-        DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
-    )
+    logger.info("[ChatWS] connection accepted user_id=%s", user.id)
 
-    try:
-        while True:
-            raw = await websocket.receive_text()
-            if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
-                await websocket.send_text(
-                    json.dumps(
-                        {
-                            "type": "error",
-                            "message": "Message too large",
-                        }
+    rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND)
+
+    async with ws_managed_session(websocket, user_id=user.id, endpoint="chat"):
+        await chat_ws_manager.connect(
+            websocket,
+            user.id,
+            user.name or f"User {user.id}",
+            user.avatar,
+        )
+        try:
+            while True:
+                raw = await websocket.receive_text()
+                if inbound_text_exceeds_limit(raw, DEFAULT_MAX_WS_TEXT_BYTES):
+                    await websocket.send_text(
+                        json.dumps({"type": "error", "message": "Message too large"})
                     )
-                )
-                continue
-            if not rate_limiter.allow():
+                    continue
+                if not rate_limiter.allow():
+                    try:
+                        record_ws_rate_limit_hit()
+                    except Exception as exc:
+                        logger.debug("Failed to record rate limit metric: %s", exc)
+                    await websocket.send_text(
+                        json.dumps({"type": "error", "message": "Rate limit exceeded"})
+                    )
+                    continue
                 try:
-                    record_ws_rate_limit_hit()
-                except Exception as exc:
-                    logger.debug("Failed to record rate limit metric: %s", exc)
-                await websocket.send_text(
-                    json.dumps(
-                        {
-                            "type": "error",
-                            "message": "Rate limit exceeded",
-                        }
-                    )
+                    data = json.loads(raw)
+                except json.JSONDecodeError:
+                    await websocket.send_text(json.dumps({"type": "error", "message": "Invalid JSON"}))
+                    continue
+                await _handle_message(websocket, user, data)
+        except WebSocketDisconnect:
+            logger.info("[ChatWS] User %d disconnected", user.id)
+        except Exception:
+            logger.exception("[ChatWS] Error in WS loop for user %d", user.id)
+        finally:
+            old_channels, presence_org = await chat_ws_manager.disconnect(user.id)
+            if presence_org is not None:
+                await chat_ws_manager.broadcast_org_presence(
+                    user.id,
+                    "offline",
+                    presence_org,
+                    exclude_user=user.id,
                 )
-                continue
-            try:
-                data = json.loads(raw)
-            except json.JSONDecodeError:
-                await websocket.send_text(json.dumps({"type": "error", "message": "Invalid JSON"}))
-                continue
-            await _handle_message(websocket, user, data)
-    except WebSocketDisconnect:
-        logger.info("[ChatWS] User %d disconnected", user.id)
-    except Exception:
-        logger.exception("[ChatWS] Error in WS loop for user %d", user.id)
-    finally:
-        old_channels, presence_org = await chat_ws_manager.disconnect(user.id)
-        if presence_org is not None:
-            await chat_ws_manager.broadcast_org_presence(
+            await chat_ws_manager.broadcast_presence(
                 user.id,
                 "offline",
-                presence_org,
-                exclude_user=user.id,
+                channel_ids=old_channels,
             )
-        await chat_ws_manager.broadcast_presence(
-            user.id,
-            "offline",
-            channel_ids=old_channels,
-        )
-        if presence_org is not None:
-            async with AsyncSessionLocal() as db_local:
-                row = (await db_local.execute(select(UserModel).where(UserModel.id == user.id))).scalar_one_or_none()
-                if row:
-                    row.workshop_last_seen_at = datetime.now(UTC)
-                    await db_local.commit()
+            if presence_org is not None:
+                async with AsyncSessionLocal() as db_local:
+                    row = (
+                        await db_local.execute(
+                            select(UserModel).where(UserModel.id == user.id)
+                        )
+                    ).scalar_one_or_none()
+                    if row:
+                        row.workshop_last_seen_at = datetime.now(UTC)
+                        await db_local.commit()
 
 
 async def _handle_message(websocket: WebSocket, user, data: dict):

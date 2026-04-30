@@ -6,7 +6,9 @@ from fastapi import APIRouter, Depends, HTTPException, status, Query
 from fastapi.responses import StreamingResponse
 from models.domain.auth import User
 from services.redis.redis_activity_tracker import get_activity_tracker
+from services.infrastructure.monitoring.ws_metrics import get_ws_metrics_snapshot
 from utils.auth import get_current_user, is_admin
+from utils.ws_session_registry import _registry as _ws_registry
 
 """
 Admin Realtime Monitoring Router
@@ -329,3 +331,34 @@ async def stream_realtime_updates(current_user: User = Depends(get_current_user)
             "X-Accel-Buffering": "no",  # Disable nginx buffering
         },
     )
+
+
+@router.get("/ws-sessions", dependencies=[Depends(get_current_user)])
+async def get_ws_sessions(current_user: User = Depends(get_current_user)):
+    """
+    Snapshot of all active WebSocket sessions on this worker (ADMIN ONLY).
+
+    Returns per-endpoint counts, total active connections, and per-session
+    metadata (session_id, user_id, endpoint, remote_addr, age_seconds).
+    Also includes the cross-worker Redis active-total gauge and in-process
+    per-endpoint counters from ws_metrics.
+
+    Useful for live debugging: find stuck sessions, check user connection counts,
+    or verify that sessions are being cleaned up correctly.
+    """
+    if not is_admin(current_user):
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Admin access required")
+
+    try:
+        registry_snapshot = _ws_registry.snapshot()
+        metrics_snapshot = await get_ws_metrics_snapshot()
+        return {
+            "registry": registry_snapshot,
+            "metrics": metrics_snapshot,
+        }
+    except Exception as exc:
+        logger.error("Failed to get WS session snapshot: %s", exc)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to get WS sessions: {exc}",
+        ) from exc

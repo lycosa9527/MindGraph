@@ -2,7 +2,9 @@
 
 import asyncio
 import base64
+import logging
 import random
+import time
 
 from fastapi import Depends, WebSocket, WebSocketDisconnect
 
@@ -16,6 +18,12 @@ from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_g
 _close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
 from utils.auth import get_current_user
 from utils.auth_ws import authenticate_websocket_user
+from utils.ws_limits import (
+    DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
+    WebsocketMessageRateLimiter,
+)
+from utils.ws_session_registry import _registry as _ws_registry
+from services.infrastructure.monitoring.ws_metrics import redis_increment_active_total
 
 from routers.features.voice.commands import process_voice_command
 from routers.features.voice.messaging import (
@@ -63,33 +71,50 @@ async def voice_conversation(websocket: WebSocket, diagram_session_id: str):
     - {"type": "action", "action": str, "params": {...}}
     - {"type": "error", "error": str}
     """
-    # Accept connection first (required before we can close it or use it)
-    await websocket.accept()
-
-    # Check if voice agent feature is enabled
+    # ── Auth before accept ───────────────────────────────────────────────────
     if not config.FEATURE_VOICE_AGENT:
-        await websocket.close(code=4003, reason="Voice agent feature is disabled")
         logger.warning("Voice agent WebSocket connection rejected: feature disabled")
+        await websocket.close(code=4003, reason="Voice agent feature is disabled")
         return
 
     current_user, auth_error = await authenticate_websocket_user(websocket)
     if auth_error or current_user is None:
-        await websocket.close(
-            code=4001,
-            reason=auth_error or "Authentication failed",
-        )
         logger.warning("WebSocket auth failed: %s", auth_error)
+        await websocket.close(code=4001, reason=auth_error or "Authentication failed")
         return
 
     if await _close_ws_if_vpn_cn_geo(websocket):
         logger.warning("WebSocket VPN/CN policy closed connection for user_id=%s", current_user.id)
         return
 
+    await websocket.accept()
     logger.info("WebSocket connection accepted user_id=%s", current_user.id)
+
+    # Rate limiter — audio packets arrive frequently; use a generous window.
+    # The limit prevents runaway clients, not normal audio streaming.
+    _rate_limiter = WebsocketMessageRateLimiter(DEFAULT_MAX_WS_MESSAGES_PER_SECOND * 5)
 
     voice_session_id = None
     omni_generator = None
     user_id = str(current_user.id)
+
+    # Register in central WS registry so the session is visible to close_all / metrics.
+    # register() bumps the per-endpoint counter; redis_increment_active_total
+    # updates the cross-worker gauge.
+    _voice_ws_session = await _ws_registry.register(
+        current_user.id,
+        "voice",
+        websocket,
+        diagram_session_id=diagram_session_id,
+    )
+    await redis_increment_active_total(1)
+    _ws_session_started = time.monotonic()
+    logger.info(
+        "[WSSession] OPEN  session=%s endpoint=voice user_id=%s remote=%s",
+        _voice_ws_session.session_id,
+        current_user.id,
+        _voice_ws_session.remote_addr,
+    )
 
     try:
         # CRITICAL: Close any existing WebSocket connections for this diagram_session_id
@@ -479,7 +504,7 @@ async def voice_conversation(websocket: WebSocket, diagram_session_id: str):
                             )
 
             except WebSocketDisconnect:
-                logger.debug("Client disconnected: %s", voice_session_id)
+                logger.info("Client disconnected: %s", voice_session_id)
             except (RuntimeError, ConnectionError, AttributeError) as e:
                 logger.error("Client message error: %s", e, exc_info=True)
 
@@ -721,7 +746,7 @@ async def voice_conversation(websocket: WebSocket, diagram_session_id: str):
         await asyncio.gather(handle_client_messages(), handle_omni_events())
 
     except WebSocketDisconnect:
-        logger.debug("WebSocket disconnected: %s", voice_session_id)
+        logger.info("WebSocket disconnected: %s", voice_session_id)
 
     except (RuntimeError, ConnectionError, AttributeError) as e:
         logger.error("WebSocket error: %s", e, exc_info=True)
@@ -731,6 +756,17 @@ async def voice_conversation(websocket: WebSocket, diagram_session_id: str):
             logger.debug("Failed to send WebSocket error response: %s", exc)
 
     finally:
+        # Unregister from central WS registry — guaranteed even on crash / SIGTERM.
+        # unregister() decrements the per-endpoint counter.
+        await _ws_registry.unregister(_voice_ws_session.session_id)
+        await redis_increment_active_total(-1)
+        logger.info(
+            "[WSSession] CLOSE session=%s endpoint=voice user_id=%s duration=%.1fs",
+            _voice_ws_session.session_id,
+            current_user.id,
+            time.monotonic() - _ws_session_started,
+        )
+
         # Cleanup
         if voice_session_id:
             end_voice_session(voice_session_id, reason="websocket_closed")

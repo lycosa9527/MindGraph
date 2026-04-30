@@ -875,6 +875,19 @@ async def lifespan(fastapi_app: FastAPI):
                 logger.warning("Failed to close database: %s", e)
 
         try:
+            # Gracefully close all active WebSocket sessions on this worker before
+            # stopping the fan-out listener and Redis.  Clients receive a proper
+            # GOING_AWAY close frame instead of a hard TCP reset.
+            from utils.ws_session_registry import _registry as _ws_registry  # pylint: disable=import-outside-toplevel
+            await _ws_registry.close_all(code=1001, reason="Server shutting down")
+            await asyncio.sleep(0.5)  # brief drain window for close frames to flush
+            if is_main_worker:
+                logger.info("WebSocket sessions drained")
+        except Exception as exc:  # pylint: disable=broad-except
+            if is_main_worker:
+                logger.warning("WebSocket graceful drain failed: %s", exc)
+
+        try:
             stop_ws_fanout_listener()
         except Exception as e:  # pylint: disable=broad-except
             if is_main_worker:

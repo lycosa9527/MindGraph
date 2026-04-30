@@ -7,10 +7,6 @@ from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS as active_connections,
     ACTIVE_EDITORS as active_editors,
 )
-from services.infrastructure.monitoring.ws_metrics import (
-    record_ws_workshop_connection_delta,
-    redis_increment_active_total,
-)
 from services.workshop.workshop_service import workshop_service
 from services.workshop.workshop_ws_editor_redis import (
     load_editors,
@@ -90,12 +86,6 @@ async def finalize_canvas_collab_disconnect(
     user: object,
 ) -> None:
     """Editor cleanup, connection maps, participant removal, user_left fan-out."""
-    try:
-        record_ws_workshop_connection_delta(-1)
-        await redis_increment_active_total(-1)
-    except Exception as exc:
-        logger.debug("Failed to record WS disconnect metric: %s", exc)
-
     if is_ws_fanout_enabled():
         await _finalize_editors_fanout_disconnect(code, user)
     else:

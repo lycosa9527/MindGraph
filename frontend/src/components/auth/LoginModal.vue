@@ -11,13 +11,14 @@
  * - Generous whitespace, clean geometric shapes
  * - Reference: Linear, Vercel, Stripe aesthetics
  */
-import { computed, nextTick, ref } from 'vue'
+import { computed, nextTick, onBeforeUnmount, ref, watch } from 'vue'
 
 import { Close } from '@element-plus/icons-vue'
 
 import { ArrowLeft, Eye, EyeOff, Loader2, RefreshCw } from 'lucide-vue-next'
 
 import { useLoginModal } from '@/composables/auth/useLoginModal'
+import { initCatWalk } from '@/utils/mascot/catWalk'
 
 const props = defineProps<{
   visible: boolean
@@ -90,6 +91,44 @@ const registrationEmailHint = computed(() => t('auth.modal.registrationEmailHint
 /** Focus account field for email + password sign-in on the same form. */
 const loginIdentifierRef = ref<HTMLInputElement | null>(null)
 
+const loginModalOverlayRef = ref<HTMLElement | null>(null)
+const loginModalCardRef = ref<HTMLElement | null>(null)
+const loginFormRef = ref<HTMLFormElement | null>(null)
+const loginSubmitRef = ref<HTMLButtonElement | null>(null)
+
+let disposeLoginCatWalk: (() => void) | undefined
+
+watch(
+  [isVisible, currentView],
+  async ([visible, view]) => {
+    disposeLoginCatWalk?.()
+    disposeLoginCatWalk = undefined
+    if (!visible || view !== 'login') return
+    await nextTick()
+    await nextTick()
+    const track = loginModalCardRef.value
+    const overlay = loginModalOverlayRef.value
+    const form = loginFormRef.value
+    const submitBtn = loginSubmitRef.value
+    if (!track || !overlay || !form || !submitBtn) return
+    const phone = form.querySelector('#login-phone')
+    const password = form.querySelector('#login-password')
+    if (!(phone instanceof HTMLInputElement) || !(password instanceof HTMLInputElement)) return
+    disposeLoginCatWalk = initCatWalk({
+      trackRoot: track,
+      submitButton: submitBtn,
+      typingInputs: [phone, password],
+      form,
+      mountParent: overlay,
+    })
+  },
+  { flush: 'post', immediate: true }
+)
+
+onBeforeUnmount(() => {
+  disposeLoginCatWalk?.()
+})
+
 function focusSesLogin() {
   void nextTick(() => {
     loginIdentifierRef.value?.focus()
@@ -102,6 +141,7 @@ function focusSesLogin() {
     <Transition name="modal">
       <div
         v-if="isVisible"
+        ref="loginModalOverlayRef"
         class="login-modal-overlay fixed inset-0 z-1000 overflow-y-auto overscroll-y-contain"
         :class="{ 'pointer-events-auto': authStore.showSessionExpiredModal }"
       >
@@ -123,8 +163,11 @@ function focusSesLogin() {
         >
           <!-- Modal -->
           <div class="relative w-full max-w-sm">
-            <!-- Card -->
-            <div class="bg-white rounded-xl shadow-2xl overflow-hidden relative">
+            <!-- Card (cat-walk patrol bounds) -->
+            <div
+              ref="loginModalCardRef"
+              class="bg-white rounded-xl shadow-2xl overflow-hidden relative"
+            >
               <!-- Close button -->
               <el-button
                 class="close-btn"
@@ -206,6 +249,7 @@ function focusSesLogin() {
               <!-- Login Form -->
               <form
                 v-if="currentView === 'login'"
+                ref="loginFormRef"
                 class="p-6 space-y-4"
                 @submit.prevent="handleLogin"
               >
@@ -306,6 +350,7 @@ function focusSesLogin() {
                 </div>
 
                 <button
+                  ref="loginSubmitRef"
                   type="submit"
                   :disabled="isLoading"
                   class="w-full py-3 px-4 bg-stone-900 text-white font-medium rounded-lg hover:bg-stone-800 active:bg-stone-950 focus:ring-2 focus:ring-stone-900 focus:ring-offset-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"

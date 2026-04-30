@@ -216,27 +216,28 @@ async def change_phone(
         error_msg = Messages.error("sms_code_invalid", lang)
         raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=error_msg)
 
-    # Store old phone for logging and cache invalidation
-    old_phone = current_user.phone
+    # JWT-backed user is not on this request's AsyncSession; load a session-bound row
+    # before mutating (commit_user_with_retry also merges defensively).
+    user_in_session = await db.merge(current_user)
+    old_phone = user_in_session.phone
 
-    # Update phone number in database
-    current_user.phone = new_phone
+    user_in_session.phone = new_phone
 
-    await commit_user_with_retry(db, current_user, lang=lang)
+    await commit_user_with_retry(db, user_in_session, lang=lang)
 
     # Invalidate cache for both old and new phone (and email index if present)
-    user_email = getattr(current_user, "email", None)
-    await user_cache.invalidate(current_user.id, old_phone, user_email)
-    await user_cache.invalidate(current_user.id, new_phone, user_email)
+    user_email = getattr(user_in_session, "email", None)
+    await user_cache.invalidate(user_in_session.id, old_phone, user_email)
+    await user_cache.invalidate(user_in_session.id, new_phone, user_email)
 
     # Re-cache user with new phone
-    await user_cache.cache_user(current_user)
+    await user_cache.cache_user(user_in_session)
 
     old_phone_masked = old_phone[:3] + "****" + old_phone[-4:] if old_phone and len(old_phone) >= 7 else "****"
     new_phone_masked = new_phone[:3] + "****" + new_phone[-4:]
     logger.info(
         "Phone changed for user %s: %s -> %s",
-        current_user.id,
+        user_in_session.id,
         old_phone_masked,
         new_phone_masked,
     )

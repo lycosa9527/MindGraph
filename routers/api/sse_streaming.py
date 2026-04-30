@@ -8,12 +8,12 @@ All Rights Reserved
 Proprietary License
 """
 
+from asyncio import CancelledError
 from typing import Dict, Any, Optional
 import json
 import logging
 import os
 import time
-import traceback
 
 from fastapi import APIRouter, HTTPException, Depends, Request
 from fastapi.responses import StreamingResponse
@@ -107,20 +107,43 @@ async def ai_assistant_stream(
         organization_id_for_tracking = getattr(current_user, "organization_id", None)
 
     async def generate():
-        """Async generator function for SSE streaming"""
+        """Async generator function for SSE streaming."""
         logger.debug("[GENERATOR] Async generator function called - starting execution")
-        await mindmate_streaming_begin()
-        chunk_count = 0  # Initialize outside try block for finally access
+
+        # SSE comment first so the HTTP response is established before any await.
+        # Matches node_palette_streaming: avoids ASGI/middleware issues when the
+        # client aborts during the first await. EventSource ignores ':' lines.
+        yield ": stream_open\n\n"
+
+        chunk_count = 0
+        cancelled = False
+        no_chunk_response_sent = False
+        streaming_counter_held = False
         start_time = time.time()
-        captured_usage: Dict[str, Any] = {}  # Store usage from message_end
+        captured_usage: Dict[str, Any] = {}
         captured_conversation_id: Optional[str] = None
+
+        try:
+            await mindmate_streaming_begin()
+            streaming_counter_held = True
+        except Exception:
+            logger.exception(
+                "[STREAM] mindmate_streaming_begin failed after stream_open | user=%s",
+                req.user_id,
+            )
+            err = {
+                "event": "error",
+                "error": "Internal server error",
+                "timestamp": int(time.time() * 1000),
+            }
+            yield f"data: {json.dumps(err)}\n\n"
+            return
 
         try:
             logger.debug("[STREAM] Creating AsyncDifyClient with URL: %s", api_url)
             client = AsyncDifyClient(api_key=api_key, api_url=api_url, timeout=timeout)
             logger.debug("[STREAM] AsyncDifyClient created successfully")
 
-            # Convert request files to DifyFile objects
             dify_files = None
             if req.files:
                 dify_files = [
@@ -151,11 +174,9 @@ async def ai_assistant_stream(
                 event_type = chunk.get("event", "unknown")
                 logger.debug("[STREAM] Received chunk %s: %s", chunk_count, event_type)
 
-                # Capture conversation_id from any event
                 if chunk.get("conversation_id"):
                     captured_conversation_id = chunk.get("conversation_id")
 
-                # Capture usage data from message_end event
                 if event_type == "message_end":
                     metadata = chunk.get("metadata", {})
                     usage = metadata.get("usage", {})
@@ -163,18 +184,18 @@ async def ai_assistant_stream(
                         captured_usage = usage
                         logger.debug("[STREAM] Captured Dify usage: %s", usage)
 
-                # Format as SSE
                 yield f"data: {json.dumps(chunk)}\n\n"
 
             logger.debug("[STREAM] Streaming completed. Total chunks: %s", chunk_count)
 
-            # Track token usage after streaming completes
             if captured_usage:
                 try:
                     token_tracker = get_token_tracker()
                     input_tokens = captured_usage.get("prompt_tokens", 0)
                     output_tokens = captured_usage.get("completion_tokens", 0)
-                    total_tokens = captured_usage.get("total_tokens", input_tokens + output_tokens)
+                    total_tokens = captured_usage.get(
+                        "total_tokens", input_tokens + output_tokens
+                    )
                     response_time = time.time() - start_time
 
                     await token_tracker.track_usage(
@@ -199,33 +220,56 @@ async def ai_assistant_stream(
                 except Exception as track_error:
                     logger.warning("[STREAM] Failed to track token usage: %s", track_error)
 
-            # Ensure at least one event is yielded to prevent RuntimeError
             if chunk_count == 0:
-                logger.warning("[STREAM] No chunks yielded, sending completion event")
-                yield f"data: {json.dumps({'event': 'message_complete', 'timestamp': int(time.time() * 1000)})}\n\n"
+                logger.warning(
+                    "[STREAM] No chunks from Dify, sending synthetic completion | user=%s",
+                    req.user_id,
+                )
+                complete_payload = {
+                    "event": "message_complete",
+                    "timestamp": int(time.time() * 1000),
+                }
+                yield f"data: {json.dumps(complete_payload)}\n\n"
+                no_chunk_response_sent = True
 
-        except Exception as e:
-            logger.error("[STREAM] AI assistant streaming error: %s", e, exc_info=True)
-            logger.error("[STREAM] Full traceback: %s", traceback.format_exc())
+        except CancelledError:
+            cancelled = True
+            no_chunk_response_sent = True
+            logger.info(
+                "[STREAM] Stream cancelled by client | user=%s | chunks=%s",
+                req.user_id,
+                chunk_count,
+            )
+            raise
+
+        except Exception as exc:
+            logger.error(
+                "[STREAM] AI assistant streaming error: %s",
+                exc,
+                exc_info=True,
+            )
             error_data = {
                 "event": "error",
                 "error": "Internal server error",
                 "timestamp": int(time.time() * 1000),
             }
             yield f"data: {json.dumps(error_data)}\n\n"
-            chunk_count += 1  # Count error event as a chunk
+            no_chunk_response_sent = True
+
         finally:
-            # Always ensure at least one event is yielded to prevent RuntimeError
-            if chunk_count == 0:
-                logger.warning("[STREAM] Generator completed without yielding, sending error event")
-                error_data = {
-                    "event": "error",
-                    "error": "No response returned from stream",
-                    "error_type": "NoResponse",
-                    "timestamp": int(time.time() * 1000),
-                }
-                yield f"data: {json.dumps(error_data)}\n\n"
-            await mindmate_streaming_end()
+            if streaming_counter_held:
+                await mindmate_streaming_end()
+            if (
+                streaming_counter_held
+                and chunk_count == 0
+                and not no_chunk_response_sent
+                and not cancelled
+            ):
+                logger.warning(
+                    "[STREAM] No Dify payload and no fallback SSE (after stream_open) | "
+                    "user=%s",
+                    req.user_id,
+                )
 
     logger.debug("[SETUP] Creating StreamingResponse with async generator")
     return StreamingResponse(

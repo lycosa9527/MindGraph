@@ -493,6 +493,8 @@ def setup_middleware(app: FastAPI):
             base_server_url,
             "http://localhost:3000",
             "http://127.0.0.1:9527",
+            "http://localhost:41732",
+            "http://127.0.0.1:41732",
         ]
     else:
         # Production: Restrict to specific origins
@@ -501,6 +503,12 @@ def setup_middleware(app: FastAPI):
     app.add_middleware(
         CORSMiddleware,
         allow_origins=allowed_origins,
+        allow_origin_regex=(
+            r"^http://(192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|"
+            r"172\.(1[6-9]|2\d|3[0-1])\.\d{1,3}\.\d{1,3})(:\d+)?$"
+            if config.debug
+            else None
+        ),
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

@@ -13,22 +13,28 @@ import {
   ElDropdown,
   ElDropdownItem,
   ElDropdownMenu,
+  ElTooltip,
 } from 'element-plus'
 
 import { Upload, User } from '@element-plus/icons-vue'
 
-import { PanelLeftOpen } from 'lucide-vue-next'
+import { Check, Globe, PanelLeftOpen } from 'lucide-vue-next'
+
+import { TRANSLATE_LANGUAGES } from '@/utils/translateLanguages'
+
+import { storeToRefs } from 'pinia'
 
 import mindgraphLogo from '@/assets/mindgraph-logo-md.png'
 import { useLanguage, useNotifications } from '@/composables'
 import { useDiagramImport } from '@/composables/editor/useDiagramImport'
-import { useAuthStore } from '@/stores/auth'
-import { useUIStore } from '@/stores/ui'
+import { useAuthStore, useUIStore } from '@/stores'
+import { useLiveTranslationStore } from '@/stores/liveTranslation'
 import { authFetch } from '@/utils/api'
 
 import DiagramTemplateInput from './DiagramTemplateInput.vue'
 import DiagramTypeGrid from './DiagramTypeGrid.vue'
 import DiscoveryGallery from './DiscoveryGallery.vue'
+import MindGraphLanguageSwitcher from './MindGraphLanguageSwitcher.vue'
 import InternationalLanding from './InternationalLanding.vue'
 
 const route = useRoute()
@@ -38,6 +44,21 @@ const { triggerImport } = useDiagramImport()
 const authStore = useAuthStore()
 const uiStore = useUIStore()
 const notify = useNotifications()
+const liveTranslationStore = useLiveTranslationStore()
+const {
+  enabled: translationOn,
+  connecting: translationConnecting,
+  targetLanguage: translationTargetLang,
+} = storeToRefs(liveTranslationStore)
+
+function handleTranslateCommand(command: string): void {
+  if (command === '__toggle__') {
+    liveTranslationStore.toggle()
+  } else {
+    liveTranslationStore.setTargetLanguage(command)
+  }
+}
+
 const username = computed(() => authStore.user?.username || '')
 
 // Collaboration: 校内 list + 共同 code
@@ -279,6 +300,52 @@ onMounted(() => {
             </ElDropdownMenu>
           </template>
         </ElDropdown>
+        <MindGraphLanguageSwitcher variant="header" />
+        <ElDropdown
+          v-if="authStore.isAdmin"
+          trigger="click"
+          placement="bottom-end"
+          popper-class="mindgraph-translate-popper"
+          class="mindgraph-translate-btn"
+          @command="handleTranslateCommand"
+        >
+          <ElButton
+            size="small"
+            :loading="translationConnecting"
+            :type="translationOn ? 'primary' : 'default'"
+            :aria-pressed="translationOn"
+            :aria-label="t('canvas.translation.aria')"
+            class="mindgraph-translate-btn__trigger"
+          >
+            <Globe class="w-[17px] h-[17px] shrink-0" />
+          </ElButton>
+          <template #dropdown>
+            <ElDropdownMenu class="max-h-[min(420px,70vh)] overflow-y-auto">
+              <ElDropdownItem command="__toggle__">
+                <span class="translate-lang-row">
+                  <span class="translate-lang-label">
+                    {{ translationOn ? t('canvas.translation.stop') : t('canvas.translation.start') }}
+                  </span>
+                </span>
+              </ElDropdownItem>
+              <ElDivider style="margin: 4px 0;" />
+              <ElDropdownItem
+                v-for="lang in TRANSLATE_LANGUAGES"
+                :key="lang.code"
+                :command="lang.code"
+              >
+                <span class="translate-lang-row">
+                  <span class="translate-lang-label" dir="auto">{{ lang.label }}</span>
+                  <Check
+                    v-if="translationTargetLang === lang.code"
+                    class="translate-lang-check w-4 h-4 shrink-0 opacity-70"
+                    aria-hidden="true"
+                  />
+                </span>
+              </ElDropdownItem>
+            </ElDropdownMenu>
+          </template>
+        </ElDropdown>
       </div>
     </header>
 
@@ -435,6 +502,41 @@ onMounted(() => {
 </template>
 
 <style scoped>
+/* Translate button — stone tone when inactive, primary when active */
+.mindgraph-translate-btn__trigger.el-button--default {
+  --el-button-bg-color: #e7e5e4;
+  --el-button-border-color: #d6d3d1;
+  --el-button-hover-bg-color: #d6d3d1;
+  --el-button-hover-border-color: #a8a29e;
+  --el-button-active-bg-color: #a8a29e;
+  --el-button-active-border-color: #78716c;
+  --el-button-text-color: #1c1917;
+  font-weight: 500;
+}
+
+/* Centered label with checkmark in the gutter */
+.translate-lang-row {
+  position: relative;
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  padding: 5px 20px;
+  min-height: 1.35em;
+}
+
+.translate-lang-label {
+  display: block;
+  width: 100%;
+  text-align: center;
+}
+
+.translate-lang-check {
+  position: absolute;
+  top: 50%;
+  right: 4px;
+  transform: translateY(-50%);
+}
+
 @property --rainbow-angle {
   syntax: '<angle>';
   inherits: false;
@@ -600,5 +702,21 @@ onMounted(() => {
 
 .dark .code-dash {
   color: #9ca3af;
+}
+</style>
+
+<!-- Teleported translate dropdown — width lives on popper, not scoped subtree -->
+<style>
+.mindgraph-translate-popper.el-popper {
+  max-width: min(210px, calc(100vw - 24px));
+}
+
+.mindgraph-translate-popper .el-dropdown-menu {
+  width: min(210px, calc(100vw - 24px));
+  padding: 4px 0;
+}
+
+.mindgraph-translate-popper .el-dropdown-menu__item {
+  padding: 6px 8px;
 }
 </style>

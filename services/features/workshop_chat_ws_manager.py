@@ -27,10 +27,6 @@ from fastapi.websockets import WebSocketState
 from services.features import workshop_chat_presence_store
 from services.features.ws_redis_fanout_config import is_ws_fanout_enabled
 from services.features.ws_redis_fanout_publish import publish_chat_fanout_async
-from services.infrastructure.monitoring.ws_metrics import (
-    record_ws_chat_connection_delta,
-    redis_increment_active_total,
-)
 
 
 def _dumps(obj: Any) -> str:
@@ -102,11 +98,6 @@ class ChatConnectionManager:
             avatar,
         )
         logger.info("[ChatWS] User %d (%s) connected", user_id, username)
-        try:
-            record_ws_chat_connection_delta(1)
-            await redis_increment_active_total(1)
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.debug("WebSocket connect metrics update failed: %s", exc)
 
     async def disconnect(self, user_id: int) -> tuple[Set[int], Optional[int]]:
         """Remove a connection and all its subscriptions.
@@ -127,11 +118,6 @@ class ChatConnectionManager:
         self._remove_subscriptions(user_id)
         self._connections.pop(user_id, None)
         logger.info("[ChatWS] User %d disconnected", user_id)
-        try:
-            record_ws_chat_connection_delta(-1)
-            await redis_increment_active_total(-1)
-        except Exception as exc:  # pylint: disable=broad-except
-            logger.debug("WebSocket disconnect metrics update failed: %s", exc)
         return subscribed, presence_org
 
     async def set_presence_org(self, user_id: int, org_id: int) -> None:
