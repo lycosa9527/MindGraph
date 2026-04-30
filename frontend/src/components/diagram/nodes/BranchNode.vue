@@ -230,7 +230,7 @@ function handleEditCancel() {
 }
 
 function handleBranchNodeDoubleClick(): void {
-  if (props.data.hidden === true || isEditing.value) return
+  if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
   isEditing.value = true
 }
 </script>
@@ -253,7 +253,7 @@ function handleBranchNodeDoubleClick(): void {
       :text="data.label || ''"
       :node-id="id"
       :is-editing="isEditing"
-      :readonly="data.hidden === true"
+      :readonly="data.hidden === true && diagramStore.isLearningSheet"
       :max-width="textMaxWidth"
       :text-align="data.style?.textAlign || 'center'"
       :text-decoration="data.style?.textDecoration || 'none'"

@@ -1,11 +1,31 @@
 import { computed } from 'vue'
 
+import {
+  estimateNodeWidth as estimateMindMapBranchWidth,
+  measureBranchNodeHeight as measureMindMapBranchHeight,
+} from '../specLoader/mindMap'
 import { LEARNING_SHEET_PLACEHOLDER } from '../specLoader/utils'
 import { emitEvent } from './events'
 import type { DiagramContext } from './types'
 
 export function useLearningSheetSlice(ctx: DiagramContext) {
   const { data } = ctx
+
+  function isMindMap(): boolean {
+    return ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map'
+  }
+
+  function mindMapEstimatedData(
+    existingData: Record<string, unknown> | undefined,
+    text: string
+  ): Record<string, unknown> | undefined {
+    if (!isMindMap()) return existingData
+    return {
+      ...existingData,
+      estimatedWidth: estimateMindMapBranchWidth(text),
+      estimatedHeight: measureMindMapBranchHeight(text),
+    }
+  }
 
   const isLearningSheet = computed(() => {
     const d = data.value as { isLearningSheet?: boolean; is_learning_sheet?: boolean } | null
@@ -34,7 +54,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
       ...node,
       text: LEARNING_SHEET_PLACEHOLDER,
       data: {
-        ...node.data,
+        ...mindMapEstimatedData(node.data as Record<string, unknown>, LEARNING_SHEET_PLACEHOLDER),
         hidden: true,
         hiddenAnswer: originalText,
       },
@@ -67,7 +87,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
           ...node,
           text: originalText,
           data: {
-            ...node.data,
+            ...mindMapEstimatedData(node.data as Record<string, unknown>, originalText),
             hidden: true,
             hiddenAnswer: originalText,
           },
@@ -92,7 +112,7 @@ export function useLearningSheetSlice(ctx: DiagramContext) {
           ...node,
           text: LEARNING_SHEET_PLACEHOLDER,
           data: {
-            ...node.data,
+            ...mindMapEstimatedData(node.data as Record<string, unknown>, LEARNING_SHEET_PLACEHOLDER),
             hidden: true,
             hiddenAnswer: nodeData.hiddenAnswer,
           },
