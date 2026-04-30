@@ -228,6 +228,11 @@ function handleTextSave(newText: string) {
 function handleEditCancel() {
   isEditing.value = false
 }
+
+function handleBranchNodeDoubleClick(): void {
+  if (props.data.hidden === true || isEditing.value) return
+  isEditing.value = true
+}
 </script>
 
 <template>
@@ -242,6 +247,7 @@ function handleEditCancel() {
     @mousedown.capture="handleBranchMovePointerDown"
     @mouseup.capture="handleBranchMovePointerUp"
     @touchstart.capture="handleBranchMoveTouchStart"
+    @dblclick="handleBranchNodeDoubleClick"
   >
     <InlineEditableText
       :text="data.label || ''"
