@@ -281,10 +281,8 @@ export function useBranchMoveDrag() {
         diagramStore.moveMindMapBranch(nodeId, 'topic', undefined, undefined, flowX)
       } else if (isTopLevelBranch(nodeId)) {
         diagramStore.moveMindMapBranch(nodeId, 'sibling', target.nodeId)
-      } else if (isTopLevelBranch(target.nodeId)) {
-        diagramStore.moveMindMapBranch(nodeId, 'child', target.nodeId)
       } else {
-        diagramStore.moveMindMapBranch(nodeId, 'sibling', target.nodeId)
+        diagramStore.moveMindMapBranch(nodeId, 'child', target.nodeId)
       }
     }
   }
