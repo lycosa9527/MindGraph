@@ -4,6 +4,10 @@ import type { Connection, DiagramNode, DiagramType } from '@/types'
 
 import { useConceptMapRelationshipStore } from '../conceptMapRelationship'
 import { recalculateBubbleMapLayout, recalculateMultiFlowMapLayout } from '../specLoader'
+import {
+  estimateNodeWidth as estimateMindMapBranchWidth,
+  measureBranchNodeHeight as measureMindMapBranchHeight,
+} from '../specLoader/mindMap'
 import { applyTreeMapTopicLayoutToNodes } from '../specLoader/treeMapTopicLayout'
 import { collabForeignLockBlocksAnyId, emitCollabDeleteBlocked } from './collabHelpers'
 import { emitEvent } from './events'
@@ -106,6 +110,25 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
       delete ctx.nodeDimensions.value[nodeId]
     }
 
+    if (
+      (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
+      'text' in updates &&
+      updates.text !== undefined &&
+      nodeId !== 'topic'
+    ) {
+      const newText = updates.text ?? ''
+      const freshWidth = estimateMindMapBranchWidth(newText)
+      const freshHeight = measureMindMapBranchHeight(newText)
+      ctx.data.value.nodes[nodeIndex] = {
+        ...ctx.data.value.nodes[nodeIndex],
+        data: {
+          ...ctx.data.value.nodes[nodeIndex].data,
+          estimatedWidth: freshWidth,
+          estimatedHeight: freshHeight,
+        },
+      }
+    }
+
     emitEvent('diagram:node_updated', { nodeId, updates })
     return true
   }
@@ -127,6 +150,22 @@ export function useNodeManagementSlice(ctx: DiagramContext) {
 
     if (ctx.type.value && shouldInvalidateNodeDimensionsOnTextEdit(ctx.type.value, nodeId)) {
       delete ctx.nodeDimensions.value[nodeId]
+    }
+
+    if (
+      (ctx.type.value === 'mindmap' || ctx.type.value === 'mind_map') &&
+      nodeId !== 'topic'
+    ) {
+      const freshWidth = estimateMindMapBranchWidth('')
+      const freshHeight = measureMindMapBranchHeight('')
+      ctx.data.value.nodes[nodeIndex] = {
+        ...ctx.data.value.nodes[nodeIndex],
+        data: {
+          ...ctx.data.value.nodes[nodeIndex].data,
+          estimatedWidth: freshWidth,
+          estimatedHeight: freshHeight,
+        },
+      }
     }
 
     emitEvent('diagram:node_updated', { nodeId, updates: { text: '' } })
