@@ -1,17 +1,15 @@
 """
 Workshop Cleanup Scheduler
-==========================
 
 Periodic cleanup of expired workshop sessions.
 Removes workshop codes from database when Redis keys expire.
-
-Author: lycosa9527
-Made by: MindSpring Team
 
 Copyright 2024-2025 北京思源智教科技有限公司 (Beijing Siyuan Zhijiao Technology Co., Ltd.)
 All Rights Reserved
 Proprietary License
 """
+
+from __future__ import annotations
 
 import asyncio
 import logging
@@ -22,7 +20,6 @@ from services.online_collab.core.online_collab_manager import (
 
 logger = logging.getLogger(__name__)
 
-# Cleanup interval: every 6 hours
 CLEANUP_INTERVAL_HOURS = 6
 CLEANUP_INTERVAL_SECONDS = CLEANUP_INTERVAL_HOURS * 3600
 
@@ -30,8 +27,7 @@ CLEANUP_INTERVAL_SECONDS = CLEANUP_INTERVAL_HOURS * 3600
 async def start_online_collab_cleanup_scheduler(
     interval_hours: float = CLEANUP_INTERVAL_HOURS,
 ) -> None:
-    """
-    Start periodic cleanup of expired workshop sessions.
+    """Start periodic cleanup of expired workshop sessions.
 
     Args:
         interval_hours: Hours between cleanup runs (default: 6 hours)
@@ -70,11 +66,10 @@ async def start_online_collab_cleanup_scheduler(
         except asyncio.CancelledError:
             logger.info("[OnlineCollabCleanup] Cleanup scheduler cancelled")
             break
-        except Exception as e:
+        except (OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
             logger.error(
                 "[OnlineCollabCleanup] Error in cleanup scheduler: %s",
-                e,
+                exc,
                 exc_info=True,
             )
-            # Continue running even if one cleanup fails
-            await asyncio.sleep(60)  # Wait 1 minute before retrying
+            await asyncio.sleep(60)

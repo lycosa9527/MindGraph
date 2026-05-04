@@ -31,16 +31,17 @@ logger = logging.getLogger(__name__)
 
 ONLINE_COLLAB_VISIBILITY_ORGANIZATION = "organization"
 ONLINE_COLLAB_VISIBILITY_NETWORK = "network"
+ONLINE_COLLAB_VISIBILITY_PRIVATE = "private"
 
 
 def diagram_online_collab_visibility(diagram: Diagram) -> str:
-    """Effective visibility: None/unknown defaults to organization."""
+    """Effective visibility: None/unknown defaults to private."""
     vis = getattr(diagram, "workshop_visibility", None)
-    if vis in (None, "", ONLINE_COLLAB_VISIBILITY_ORGANIZATION):
+    if vis == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
         return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
     if vis == ONLINE_COLLAB_VISIBILITY_NETWORK:
         return ONLINE_COLLAB_VISIBILITY_NETWORK
-    return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+    return ONLINE_COLLAB_VISIBILITY_PRIVATE
 
 
 async def user_may_join_diagram_online_collab(
@@ -60,6 +61,9 @@ async def user_may_join_diagram_online_collab(
     """
     if diagram.user_id == joiner_id:
         return True
+    vis = diagram_online_collab_visibility(diagram)
+    if vis == ONLINE_COLLAB_VISIBILITY_PRIVATE:
+        return False
     owner_id = diagram.user_id
     ids = {joiner_id, owner_id}
     result = await db.execute(
@@ -81,7 +85,6 @@ async def user_may_join_diagram_online_collab(
     org_owner = owner_row.organization_id
     if org_joiner is not None and org_owner is not None and org_joiner == org_owner:
         return True
-    vis = diagram_online_collab_visibility(diagram)
     if org_owner is None and org_joiner is not None and vis == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
         return True
     return False

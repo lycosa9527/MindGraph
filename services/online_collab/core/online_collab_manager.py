@@ -26,12 +26,9 @@ from datetime import datetime
 from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional, Tuple, cast
 
 from redis.exceptions import RedisError
-from sqlalchemy import select
-from sqlalchemy.exc import SQLAlchemyError
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from config.database import AsyncSessionLocal
 from models.domain.diagrams import Diagram
 
 from services.online_collab.core.online_collab_code import (
@@ -52,9 +49,6 @@ from services.online_collab.lifecycle.online_collab_expiry import (
     DURATION_TODAY,
     is_online_collab_expired,
     redis_ttl_seconds_for_expires_at,
-)
-from services.online_collab.lifecycle.online_collab_join_helpers import (
-    restore_online_collab_redis_from_db_row,
 )
 from services.online_collab.lifecycle.online_collab_session_fields import (
     backfill_online_collab_expiry_if_needed,
@@ -80,7 +74,7 @@ from services.online_collab.lifecycle.session_meta_cache import (
     invalidate_session_meta,
 )
 from services.online_collab.redis.online_collab_redis_keys import (
-    code_to_diagram_key,
+    destroy_lock_key,
     idle_scores_key,
     participants_key,
     purge_online_collab_redis_keys,
@@ -92,6 +86,13 @@ from services.online_collab.redis.online_collab_redis_keys import (
 from services.online_collab.redis.online_collab_redis_scripts import (
     JOIN_CAP_SCRIPT_NAME,
     evalsha_with_reload,
+)
+from services.online_collab.redis.online_collab_redis_locks import (
+    acquire_nx_lock,
+    release_nx_lock,
+)
+from services.online_collab.core.online_collab_org_listing import (
+    list_org_sessions_redis,
 )
 
 logger = logging.getLogger(__name__)
@@ -119,7 +120,7 @@ async def _redis_wait(redis: Any) -> None:
         return
     try:
         await redis.wait(1, 200)
-    except Exception:  # pylint: disable=broad-except
+    except (RedisError, OSError, RuntimeError, TypeError):
         pass
 
 
@@ -255,9 +256,28 @@ class OnlineCollabManager:
             return False
 
         async with lock:
+            redis = get_async_redis()
+            if not redis:
+                logger.warning(
+                    "[OnlineCollabMgr] destroy_session: Redis unavailable code=%s",
+                    code,
+                )
+                return False
+            destroy_key = destroy_lock_key(code)
+            lock_token = await acquire_nx_lock(redis, destroy_key, 30)
+            if not lock_token:
+                logger.warning(
+                    "[OnlineCollabMgr] destroy_session: cross-worker lock busy "
+                    "code=%s reason=%s",
+                    code, reason,
+                )
+                return False
             try:
-                return await self._destroy_session_inner(code, reason=reason, diagram_id=diagram_id)
+                return await self._destroy_session_inner(
+                    code, reason=reason, diagram_id=diagram_id,
+                )
             finally:
+                await release_nx_lock(redis, destroy_key, lock_token)
                 async with self._destroy_locks_mutex:
                     self._destroy_locks.pop(code, None)
 
@@ -559,34 +579,10 @@ class OnlineCollabManager:
         diagram_id: str,
     ) -> Optional[str]:
         """Return active non-expired workshop code for diagram, else None."""
-        async with AsyncSessionLocal() as db:
-            try:
-                result = await db.execute(
-                    select(
-                        Diagram.workshop_code,
-                        Diagram.workshop_expires_at,
-                    ).filter(
-                        Diagram.id == diagram_id,
-                        ~Diagram.is_deleted,
-                    ),
-                )
-                row = result.first()
-                if row is None:
-                    return None
-                active_code, active_expires = row
-                if not active_code:
-                    return None
-                if active_expires and is_online_collab_expired(active_expires):
-                    return None
-                return active_code
-            except SQLAlchemyError as exc:
-                logger.debug(
-                    "[OnlineCollabMgr] get_active_online_collab_code_for_diagram error "
-                    "diagram_id=%s: %s",
-                    diagram_id,
-                    exc,
-                )
-                return None
+        from services.online_collab.core.online_collab_join import (
+            get_active_online_collab_code_for_diagram_impl,
+        )
+        return await get_active_online_collab_code_for_diagram_impl(diagram_id)
 
     async def join_online_collab(
         self,
@@ -594,77 +590,10 @@ class OnlineCollabManager:
         user_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Join collaboration by shared code."""
-        async with AsyncSessionLocal() as db:
-            try:
-                code = code.strip()
-
-                redis = get_async_redis()
-                diagram_id = None
-                if redis:
-                    diagram_id_raw = await redis.get(code_to_diagram_key(code))
-                    if diagram_id_raw:
-                        diagram_id = (
-                            diagram_id_raw
-                            if isinstance(diagram_id_raw, str)
-                            else diagram_id_raw.decode("utf-8")
-                        )
-
-                if not diagram_id:
-                    result = await db.execute(
-                        select(Diagram).filter(
-                            Diagram.workshop_code == code,
-                            ~Diagram.is_deleted,
-                        ),
-                    )
-                    diagram = result.scalars().first()
-                    if diagram:
-                        diagram_id = diagram.id
-                        if redis:
-                            await backfill_online_collab_expiry_if_needed(
-                                diagram, db,
-                            )
-                            ttl = self._redis_ttl_seconds_for_diagram(diagram)
-                            await restore_online_collab_redis_from_db_row(
-                                redis,
-                                code,
-                                diagram_id,
-                                diagram,
-                                ttl,
-                            )
-
-                if not diagram_id:
-                    logger.warning(
-                        "[OnlineCollabMgr] Invalid workshop code: %s",
-                        code,
-                    )
-                    return None
-
-                result = await db.execute(
-                    select(Diagram).filter(
-                        Diagram.id == diagram_id,
-                        ~Diagram.is_deleted,
-                    ),
-                )
-                diagram = result.scalars().first()
-                if not diagram:
-                    return None
-
-                return await self._finalize_join_after_load(
-                    db,
-                    redis,
-                    diagram,
-                    diagram_id,
-                    code,
-                    user_id,
-                )
-
-            except (SQLAlchemyError, OSError) as exc:
-                logger.error(
-                    "[OnlineCollabMgr] Error joining workshop: %s",
-                    exc,
-                    exc_info=True,
-                )
-                return None
+        from services.online_collab.core.online_collab_join import (
+            join_online_collab_impl,
+        )
+        return await join_online_collab_impl(self, code, user_id)
 
     async def join_online_collab_by_diagram(
         self,
@@ -672,32 +601,10 @@ class OnlineCollabManager:
         user_id: int,
     ) -> Optional[Dict[str, Any]]:
         """Join organization-scoped session by diagram id."""
-        async with AsyncSessionLocal() as db:
-            result = await db.execute(
-                select(Diagram).filter(
-                    Diagram.id == diagram_id,
-                    ~Diagram.is_deleted,
-                ),
-            )
-            diagram = result.scalars().first()
-            if not diagram or not diagram.workshop_code:
-                return None
-            if (
-                diagram_online_collab_visibility(diagram)
-                != ONLINE_COLLAB_VISIBILITY_ORGANIZATION
-            ):
-                return None
-            if not await user_may_join_diagram_online_collab(
-                db, diagram, user_id,
-            ):
-                logger.warning(
-                    "[OnlineCollabMgr] Org join denied user=%s diagram=%s",
-                    user_id,
-                    diagram_id,
-                )
-                return None
-            org_code = diagram.workshop_code
-        return await self.join_online_collab(org_code, user_id)
+        from services.online_collab.core.online_collab_join import (
+            join_online_collab_by_diagram_impl,
+        )
+        return await join_online_collab_by_diagram_impl(self, diagram_id, user_id)
 
     async def get_participants(self, code: str) -> List[int]:
         """Return participant ids for ``code``."""
@@ -747,9 +654,6 @@ class OnlineCollabManager:
         Delegates to :func:`online_collab_org_listing.list_org_sessions_redis`.
         Falls back to db_fallback_fn when Redis is unavailable or registry is empty.
         """
-        from services.online_collab.core.online_collab_org_listing import (  # pylint: disable=import-outside-toplevel
-            list_org_sessions_redis,
-        )
         return await list_org_sessions_redis(org_id, db_fallback_fn)
 
     async def _idle_monitor_loop(self) -> None:

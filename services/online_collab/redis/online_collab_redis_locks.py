@@ -67,7 +67,7 @@ end)
 -- ARGV[2] = user_id (string, JSON object key)
 -- ARGV[3] = username
 -- ARGV[4] = field TTL seconds (HEXPIRE)
--- ARGV[5] = key TTL seconds (EXPIRE GT)
+-- ARGV[5] = key TTL seconds
 -- Returns 1 if claimed (node was free or already held by this user), 0 if denied.
 redis.register_function('mg_node_claim_exclusive', function(keys, args)
   local field = args[1]
@@ -99,17 +99,17 @@ redis.register_function('mg_node_claim_exclusive', function(keys, args)
     end
   end
   if key_ttl and key_ttl > 0 then
-    redis.call('EXPIRE', keys[1], key_ttl, 'GT')
+    redis.call('EXPIRE', keys[1], key_ttl)
   end
   return 1
 end)
--- mg_node_editing_set: read-modify-write merge + HSET + HEXPIRE + EXPIRE GT.
+-- mg_node_editing_set: read-modify-write merge + HSET + HEXPIRE + key EXPIRE.
 -- KEYS[1] = hash key (mg:ws:workshop:editors_h:{code})
 -- ARGV[1] = field (node_id)
 -- ARGV[2] = user_id (string, JSON object key)
 -- ARGV[3] = username
 -- ARGV[4] = field TTL seconds (HEXPIRE)
--- ARGV[5] = key TTL seconds (EXPIRE GT)
+-- ARGV[5] = key TTL seconds
 -- Returns 1 on success.
 redis.register_function('mg_node_editing_set', function(keys, args)
   local field = args[1]
@@ -134,7 +134,7 @@ redis.register_function('mg_node_editing_set', function(keys, args)
     end
   end
   if key_ttl and key_ttl > 0 then
-    redis.call('EXPIRE', keys[1], key_ttl, 'GT')
+    redis.call('EXPIRE', keys[1], key_ttl)
   end
   return 1
 end)
@@ -217,9 +217,9 @@ redis.register_function('mg_spec_granular_apply', function(keys, args)
   if chn then redis.call('SADD', ckk, 'nodes') end
   if chc then redis.call('SADD', ckk, 'connections') end
   if ttl > 0 then
-    redis.call('EXPIRE', sk,   ttl, 'GT')
-    redis.call('EXPIRE', ckk,  ttl, 'GT')
-    redis.call('EXPIRE', seqk, ttl, 'GT')
+    redis.call('EXPIRE', sk,   ttl)
+    redis.call('EXPIRE', ckk,  ttl)
+    redis.call('EXPIRE', seqk, ttl)
   end
   return {new_v, new_seq}
 end)
@@ -228,7 +228,7 @@ end)
 -- ARGV[1] = field (node_id)
 -- ARGV[2] = user_id to remove (string key in JSON object)
 -- ARGV[3] = field TTL seconds (HEXPIRE) when field remains
--- ARGV[4] = key TTL seconds (EXPIRE GT)
+-- ARGV[4] = key TTL seconds
 -- Returns 1 on success.
 redis.register_function('mg_node_editing_del', function(keys, args)
   local field = args[1]
@@ -238,7 +238,7 @@ redis.register_function('mg_node_editing_del', function(keys, args)
   local raw = redis.call('HGET', keys[1], field)
   if not raw then
     if key_ttl and key_ttl > 0 then
-      redis.call('EXPIRE', keys[1], key_ttl, 'GT')
+      redis.call('EXPIRE', keys[1], key_ttl)
     end
     return 1
   end
@@ -260,7 +260,7 @@ redis.register_function('mg_node_editing_del', function(keys, args)
     end
   end
   if key_ttl and key_ttl > 0 then
-    redis.call('EXPIRE', keys[1], key_ttl, 'GT')
+    redis.call('EXPIRE', keys[1], key_ttl)
   end
   return 1
 end)
@@ -478,8 +478,8 @@ async def fcall_node_editing_set(
     key_ttl_sec: int,
 ) -> bool:
     """
-    Atomically merge editor into HASH field + HEXPIRE (field TTL) + EXPIRE GT
-    (key TTL) via ``mg_node_editing_set`` Redis Function.
+    Atomically merge editor into HASH field + HEXPIRE (field TTL) + key EXPIRE
+    via ``mg_node_editing_set`` Redis Function.
 
     Returns True on success; False on any error or when Functions are not
     available (callers should fall back to the multi-RTT HSET path).
@@ -511,7 +511,7 @@ async def fcall_node_editing_del(
     key_ttl_sec: int,
 ) -> bool:
     """
-    Atomically remove one editor from HASH field JSON + EXPIRE GT (key TTL)
+    Atomically remove one editor from HASH field JSON + key EXPIRE
     via ``mg_node_editing_del`` Redis Function.
 
     Returns True on success; False on any error or when Functions are not

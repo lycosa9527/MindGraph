@@ -25,6 +25,8 @@ from typing import Any, Dict
 
 from redis.exceptions import RedisError, ResponseError
 
+from services.redis.redis_async_client import get_async_redis
+
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -107,13 +109,10 @@ async def load_scripts_if_available() -> None:
     to import it.  Silently returns when the client is not yet initialised.
     """
     try:
-        from services.redis.redis_async_client import (  # pylint: disable=import-outside-toplevel
-            get_async_redis,
-        )
         redis = get_async_redis()
         if redis:
             await load_scripts(redis)
-    except Exception as exc:  # pylint: disable=broad-except
+    except (RedisError, OSError, RuntimeError, TypeError, ImportError) as exc:
         logger.warning("[CollabScripts] load_scripts_if_available failed: %s", exc)
 
 

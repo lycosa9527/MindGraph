@@ -11,9 +11,16 @@ Proprietary License
 """
 from __future__ import annotations
 
+import json
 import logging
+import os
 from typing import Any, Optional
 
+from services.features.ws_redis_fanout_config import (
+    ENVELOPE_VERSION,
+    is_ws_fanout_enabled,
+)
+from services.features.ws_redis_fanout_publish import publish_workshop_fanout_async
 from services.features.workshop_ws_connection_state import (
     ACTIVE_CONNECTIONS,
     AnyHandle,
@@ -25,6 +32,38 @@ from services.features.workshop_ws_connection_state import (
 
 logger = logging.getLogger(__name__)
 
+ROLE_CONTROL_TYPE = "role_control"
+
+
+async def _publish_role_control(
+    code: str,
+    message: dict,
+) -> bool:
+    """Publish a cross-worker role mutation control frame."""
+    if not is_ws_fanout_enabled():
+        return False
+    try:
+        data_str = json.dumps(message, ensure_ascii=False)
+    except (TypeError, ValueError):
+        return False
+    envelope: dict[str, Any] = {
+        "v": ENVELOPE_VERSION,
+        "k": "ws",
+        "code": code,
+        "mode": "all",
+        "ex": None,
+        "d": data_str,
+    }
+    origin_secret = os.getenv("COLLAB_FANOUT_ORIGIN_SECRET", "")
+    if origin_secret:
+        envelope["origin"] = origin_secret
+    try:
+        await publish_workshop_fanout_async(envelope)
+        return True
+    except Exception as exc:  # pylint: disable=broad-except
+        logger.warning("[RoleChange] publish role control failed room=%s: %s", code, exc)
+        return False
+
 
 async def promote_to_editor(
     code: str,
@@ -32,6 +71,7 @@ async def promote_to_editor(
     promoted_by: int,
     *,
     diagram_owner_id: Optional[int] = None,
+    broadcast: bool = True,
 ) -> bool:
     """
     Upgrade a ViewerHandle to a ConnectionHandle in place.
@@ -74,9 +114,12 @@ async def promote_to_editor(
         "promoted_by": promoted_by,
     }
     await enqueue(new_handle, role_changed, "joined")
-    from routers.api.workshop_ws_broadcast import broadcast_to_others as _broadcast_others_promo
+    if broadcast:
+        from routers.api.workshop_ws_broadcast import (
+            broadcast_to_others as _broadcast_others_promo,
+        )
 
-    await _broadcast_others_promo(code, target_user_id, role_changed)
+        await _broadcast_others_promo(code, target_user_id, role_changed)
     logger.info(
         "[RoleChange] user=%s promoted to %s in room=%s by user=%s",
         target_user_id, new_role, code, promoted_by,
@@ -88,6 +131,8 @@ async def demote_to_viewer(
     code: str,
     target_user_id: int,
     demoted_by: int,
+    *,
+    broadcast: bool = True,
 ) -> bool:
     """
     Downgrade a ConnectionHandle (editor) to a ViewerHandle in place.
@@ -128,14 +173,46 @@ async def demote_to_viewer(
         "demoted_by": demoted_by,
     }
     await enqueue(new_handle, role_changed, "joined")
-    from routers.api.workshop_ws_broadcast import broadcast_to_others as _broadcast_others_demo
+    if broadcast:
+        from routers.api.workshop_ws_broadcast import (
+            broadcast_to_others as _broadcast_others_demo,
+        )
 
-    await _broadcast_others_demo(code, target_user_id, role_changed)
+        await _broadcast_others_demo(code, target_user_id, role_changed)
     logger.info(
         "[RoleChange] user=%s demoted to viewer in room=%s by user=%s",
         target_user_id, code, demoted_by,
     )
     return True
+
+
+async def apply_role_control_local(code: str, message: dict) -> bool:
+    """Apply a role control frame to the target connection if it is local."""
+    if message.get("type") != ROLE_CONTROL_TYPE:
+        return False
+    raw_uid = message.get("user_id")
+    raw_by = message.get("changed_by")
+    to_role = str(message.get("to", ""))
+    if not isinstance(raw_uid, int) or not isinstance(raw_by, int):
+        return False
+    if to_role == "editor":
+        owner_id = message.get("owner_id")
+        owner_id_int = owner_id if isinstance(owner_id, int) else None
+        return await promote_to_editor(
+            code,
+            raw_uid,
+            raw_by,
+            diagram_owner_id=owner_id_int,
+            broadcast=False,
+        )
+    if to_role == "viewer":
+        return await demote_to_viewer(
+            code,
+            raw_uid,
+            raw_by,
+            broadcast=False,
+        )
+    return False
 
 
 async def handle_role_change(ctx: Any, message: dict) -> None:
@@ -181,7 +258,33 @@ async def handle_role_change(ctx: Any, message: dict) -> None:
         )
         return
 
+    role_changed = {
+        "type": "role_changed",
+        "user_id": target_uid,
+        "role": to_role,
+    }
     if to_role == "editor":
+        role_changed["promoted_by"] = ctx.user.id
+    else:
+        role_changed["demoted_by"] = ctx.user.id
+
+    published_control = False
+    if is_ws_fanout_enabled():
+        control_msg = {
+            "type": ROLE_CONTROL_TYPE,
+            "user_id": target_uid,
+            "to": to_role,
+            "changed_by": ctx.user.id,
+            "owner_id": ctx.owner_id,
+        }
+        published_control = await _publish_role_control(ctx.code, control_msg)
+
+    if published_control:
+        from routers.api.workshop_ws_broadcast import broadcast_to_others
+
+        await broadcast_to_others(ctx.code, target_uid, role_changed)
+        success = True
+    elif to_role == "editor":
         success = await promote_to_editor(
             ctx.code,
             target_uid,

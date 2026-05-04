@@ -30,13 +30,14 @@ from services.features.workshop_ws_connection_state import (
     ViewerHandle,
 )
 from services.online_collab.redis.online_collab_redis_keys import (
+    live_spec_key,
     snapshot_key,
     snapshot_leader_key,
     snapshot_seq_key,
 )
 from services.online_collab.spec.online_collab_live_spec import spec_for_snapshot
-from services.online_collab.spec.online_collab_live_spec_ops import (
-    read_live_spec,
+from services.online_collab.spec.online_collab_live_spec_json import (
+    parse_json_get_bulk,
 )
 from services.redis.redis_async_client import get_async_redis
 
@@ -63,12 +64,15 @@ async def _refresh_snapshot_once(redis: Any, code: str) -> bool:
 
     Returns True on success, False if the live spec is unavailable.
     """
-    doc = await read_live_spec(redis, code)
+    async with redis.pipeline(transaction=True) as pipe:
+        pipe.execute_command("JSON.GET", live_spec_key(code), "$")
+        pipe.get(snapshot_seq_key(code))
+        raw_doc, raw_seq = await pipe.execute()
+    doc = parse_json_get_bulk(raw_doc)
     if not doc:
         return False
     snap = spec_for_snapshot(doc)
     ver = int(doc.get("v", 1))
-    raw_seq = await redis.get(snapshot_seq_key(code))
     try:
         if raw_seq is None:
             seq = 0

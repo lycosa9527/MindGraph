@@ -30,7 +30,7 @@ def _record_failure() -> None:
     """Best-effort metric increment that never raises."""
     try:
         record_ws_redisjson_failure_total()
-    except Exception:  # pylint: disable=broad-except
+    except (AttributeError, TypeError, ValueError, OSError, RuntimeError):
         pass
 
 
@@ -102,7 +102,7 @@ async def json_merge_patch(
     try:
         async with redis.pipeline(transaction=True) as pipe:
             pipe.execute_command("JSON.MERGE", key, "$", json.dumps(patch))
-            pipe.expire(key, max(1, int(ttl_sec)), gt=True)
+            pipe.expire(key, max(1, int(ttl_sec)))
             await pipe.execute()
         return True
     except RedisError as exc:
@@ -140,7 +140,7 @@ async def json_set_nodes(
     try:
         async with redis.pipeline(transaction=True) as pipe:
             pipe.execute_command("JSON.SET", key, "$.nodes", json.dumps(nodes))
-            pipe.expire(key, max(1, int(ttl_sec)), gt=True)
+            pipe.expire(key, max(1, int(ttl_sec)))
             await pipe.execute()
         return True
     except RedisError as exc:

@@ -88,8 +88,8 @@ async def schedule_live_spec_db_flush(code: str, diagram_id: str) -> None:
             pending_key, "1", nx=True, ex=int(LIVE_FLUSH_DEBOUNCE_SEC) + 2
         )
     except (RedisError, OSError, RuntimeError, TypeError) as exc:
-        logger.debug("[LiveSpec] flush NX key failed code=%s: %s", code, exc)
-        acquired = True
+        logger.warning("[LiveSpec] flush NX key failed code=%s: %s", code, exc)
+        acquired = False
 
     if not acquired:
         return

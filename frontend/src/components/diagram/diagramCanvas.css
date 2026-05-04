@@ -107,39 +107,60 @@
   border: 2px solid var(--primary-color, #3b82f6);
 }
 
-/* ── Workshop collab: marching-ants editing indicator ─────────────────────
+/* ── Workshop collab: marching ants on the remote-edited node's shape ─────
  *
- * Each side of the node is drawn as a thin repeating-gradient stripe whose
- * background-position is animated one full dash-period per frame, producing
- * a clockwise "marching ants" illusion identical to drag-and-drop previews.
+ * Ants render on the custom node root (`> *::before`) so the stroke
+ * follows pills, capsules, and circles — not the Vue Flow wrapper rectangle.
+ * The wrapper supplies `--workshop-ant-color` (sampled border/fill from the node),
+ * `--editor-color`, plus a sticker on the top border (::after, vertically centered on the edge).
  *
- * Anatomy:
- *   ::before  — colored emoji badge, top-right corner, pulses gently
- *   ::after   — pill label below the node ("Alice is editing…")
+ * While a peer is editing, suppress the selection pulse on the wrapper so only
+ * the ant border reads as activity, and block pointer interaction so others
+ * cannot select, drag, or open the inline editor (matches `isNodeLockedByOther`).
  *
- * Circle nodes (.vue-flow__node-circle) clip the background-image gradients,
- * so they fall back to an animated dashed outline instead.
+ * `collab-remote-selected`: orange dashed outline on the wrapper; when editing
+ * too, drop that outline — ants on the node replace it.
  * ──────────────────────────────────────────────────────────────────────── */
 
 .vue-flow__node.workshop-editing {
-  /* Dash geometry — change once here, everything else references these vars */
-  --_ea-d: 8px;   /* dash length  */
-  --_ea-g: 6px;   /* gap length   */
-  --_ea-p: calc(var(--_ea-d) + var(--_ea-g)); /* period = 14 px */
-  --_ea-w: 2px;   /* stroke width */
-  --_ea-c: var(--editor-color, #ff6b6b);
+  --_ea-d: 10px;
+  --_ea-g: 8px;
+  --_ea-p: calc(var(--_ea-d) + var(--_ea-g));
+  --_ea-w: 4px;
+  --_ea-c: var(--workshop-ant-color, #9ca3af);
 
-  border: none !important; /* replaced by background-image stripes below */
+  border: none !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  animation: none !important;
+  filter: none !important;
+  /* Peer is editing: observers must not select, drag, or open the inline editor. */
+  pointer-events: none !important;
+}
 
-  /*
-   * Four gradient layers — one per edge, drawn as a 2 px stripe of repeating
-   * dashes. The transparent gaps let the node's own background show through.
-   *
-   *   Layer 1 (top)    — repeats horizontally, 2 px tall,  flush to top
-   *   Layer 2 (right)  — repeats vertically,   2 px wide,  flush to right
-   *   Layer 3 (bottom) — repeats horizontally, 2 px tall,  flush to bottom
-   *   Layer 4 (left)   — repeats vertically,   2 px wide,  flush to left
-   */
+.diagram-canvas .vue-flow__node.workshop-editing.selected {
+  animation: none !important;
+  filter: none !important;
+  box-shadow: none !important;
+}
+
+:root.dark .vue-flow__node.workshop-editing {
+  --_ea-c: var(--workshop-ant-color, #94a3b8);
+}
+
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > * {
+  position: relative;
+  isolation: isolate;
+  border-color: transparent !important;
+}
+
+.vue-flow__node.workshop-editing:not(.vue-flow__node-boundary) > *::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  pointer-events: none;
+  box-sizing: border-box;
   background-image:
     repeating-linear-gradient(
       90deg,
@@ -170,17 +191,14 @@
       transparent var(--_ea-p)
     );
   background-size:
-    var(--_ea-p) var(--_ea-w),   /* top    */
-    var(--_ea-w) var(--_ea-p),   /* right  */
-    var(--_ea-p) var(--_ea-w),   /* bottom */
-    var(--_ea-w) var(--_ea-p);   /* left   */
+    var(--_ea-p) var(--_ea-w),
+    var(--_ea-w) var(--_ea-p),
+    var(--_ea-p) var(--_ea-w),
+    var(--_ea-w) var(--_ea-p);
   background-position: 0 0, 100% 0, 100% 100%, 0 100%;
   background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
   background-origin: border-box;
-
-  animation:
-    workshop-ants 0.55s linear infinite,
-    workshop-glow 2s ease-in-out infinite;
+  animation: workshop-ants 0.55s linear infinite;
 }
 
 /* Clockwise march: advance each edge's pattern by one full period per cycle */
@@ -190,128 +208,64 @@
   }
   to {
     background-position:
-      var(--_ea-p) 0,                        /* top:    → right  */
-      100% var(--_ea-p),                     /* right:  ↓ down   */
-      calc(100% - var(--_ea-p)) 100%,        /* bottom: ← left   */
-      0 calc(100% - var(--_ea-p));           /* left:   ↑ up     */
+      var(--_ea-p) 0,
+      100% var(--_ea-p),
+      calc(100% - var(--_ea-p)) 100%,
+      0 calc(100% - var(--_ea-p));
   }
 }
 
-/* Soft pulsing glow using the per-user editor color */
-@keyframes workshop-glow {
-  0%,
-  100% {
-    box-shadow:
-      0 0  8px color-mix(in srgb, var(--editor-color, #ff6b6b) 35%, transparent),
-      0 0  3px color-mix(in srgb, var(--editor-color, #ff6b6b) 20%, transparent);
-  }
-  50% {
-    box-shadow:
-      0 0 18px color-mix(in srgb, var(--editor-color, #ff6b6b) 55%, transparent),
-      0 0  7px color-mix(in srgb, var(--editor-color, #ff6b6b) 35%, transparent);
-  }
-}
-
-/* ── Emoji badge (top-right) ────────────────────────────────────────────── */
-.vue-flow__node.workshop-editing::before {
-  content: attr(data-editor-emoji);
+/* ── Peer editing: sticker straddles top border (centered on upper edge) ───── */
+.vue-flow__node.workshop-editing::after {
+  content: attr(data-editor-emoji) '\00a0\00a0' attr(data-editor-label);
   position: absolute;
-  top: -14px;
-  right: -14px;
-  width: 26px;
-  height: 26px;
-  background: var(--editor-color, #ff6b6b);
-  border-radius: 50%;
-  display: flex;
+  top: 0;
+  left: 50%;
+  transform: translate(-50%, -50%);
+
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  font-size: 14px;
-  line-height: 1;
-  z-index: 1001;
-  border: 2px solid white;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.22);
-  animation: workshop-badge-pop 2.4s ease-in-out infinite;
-}
 
-@keyframes workshop-badge-pop {
-  0%,
-  100% {
-    transform: scale(1);
-  }
-  45% {
-    transform: scale(1.15);
-  }
-  55% {
-    transform: scale(1.15);
-  }
-}
-
-/* ── "Alice is editing…" pill label (below node) ───────────────────────── */
-.vue-flow__node.workshop-editing::after {
-  content: attr(data-editor-label);
-  position: absolute;
-  bottom: -30px;
-  left: 50%;
-  transform: translateX(-50%);
-
-  /* pill */
   background: var(--editor-color, #ff6b6b);
   color: #fff;
-  font-size: 11px;
+  font-size: 12px;
   font-weight: 500;
-  line-height: 1;
-  padding: 3px 10px 4px;
+  line-height: 1.25;
+  padding: 6px 14px 7px;
   border-radius: 999px;
   white-space: nowrap;
 
   z-index: 1001;
   pointer-events: none;
-  box-shadow: 0 1px 6px rgba(0, 0, 0, 0.18);
-  max-width: 180px;
+  border: 1px solid rgba(255, 255, 255, 0.4);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.06),
+    0 4px 14px rgba(0, 0, 0, 0.18);
+  max-width: min(calc(100% - 16px), 320px);
   overflow: hidden;
   text-overflow: ellipsis;
   letter-spacing: 0.01em;
 
-  animation: workshop-label-in 0.25s ease-out both;
+  animation: workshop-sticker-in 0.32s cubic-bezier(0.34, 1.34, 0.64, 1) both;
 }
 
-@keyframes workshop-label-in {
+@keyframes workshop-sticker-in {
   from {
     opacity: 0;
-    transform: translateX(-50%) translateY(4px);
+    transform: translate(-50%, -50%) scale(0.82);
   }
   to {
     opacity: 1;
-    transform: translateX(-50%) translateY(0);
+    transform: translate(-50%, -50%) scale(1);
   }
 }
 
-/* ── Circle nodes: background-image clips to circle — use outline instead ─ */
-.vue-flow__node-circle.workshop-editing {
-  background-image: none !important;
-  border: none !important;
-  outline: 2px dashed var(--editor-color, #ff6b6b) !important;
-  outline-offset: 3px;
-  animation:
-    workshop-circle-dash 1.1s ease-in-out infinite,
-    workshop-glow 2s ease-in-out infinite;
-}
-
-@keyframes workshop-circle-dash {
-  0%,
-  100% {
-    outline-offset: 3px;
-    outline-color: var(--editor-color, #ff6b6b);
-  }
-  50% {
-    outline-offset: 5px;
-    outline-color: color-mix(in srgb, var(--editor-color, #ff6b6b) 70%, transparent);
-  }
-}
-
-/* ── Dark mode: keep the pill readable ─────────────────────────────────── */
-:root.dark .vue-flow__node.workshop-editing::before {
-  border-color: #1f2937;
+:root.dark .vue-flow__node.workshop-editing::after {
+  border-color: rgba(255, 255, 255, 0.28);
+  box-shadow:
+    0 2px 0 rgba(0, 0, 0, 0.2),
+    0 4px 16px rgba(0, 0, 0, 0.45);
 }
 
 /* ── Remote selection indicator (unchanged) ────────────────────────────── */
@@ -320,15 +274,25 @@
   outline-offset: 2px;
 }
 
-/* ── Branch-move drop-target preview: grey marching ants ───────────────── */
-.branch-move-drop-preview {
-  --_dp-d: 8px;
-  --_dp-g: 6px;
-  --_dp-p: calc(var(--_dp-d) + var(--_dp-g));
-  --_dp-w: 2px;
-  --_dp-c: #9ca3af;
+/* Editing + remote selection: ants on the node only (no second orange frame). */
+.vue-flow__node.workshop-editing.collab-remote-selected {
+  outline: none !important;
+}
 
-  border-radius: 8px;
+/* ── Branch-move drop-target preview: primary blue, thick marching ants ────
+ * Sized/shaped in JS (`getDropTargetStyle`): 1.2× target node, border-radius
+ * from Vue Flow node type (circle vs rounded rect).
+ * ──────────────────────────────────────────────────────────────────────── */
+.branch-move-drop-preview {
+  --_dp-d: 10px;
+  --_dp-g: 8px;
+  --_dp-p: calc(var(--_dp-d) + var(--_dp-g));
+  --_dp-w: 4px;
+  --_dp-c: #3b82f6;
+  /* `workshop-ants` keyframes read `--_ea-p`; alias so drop-preview marches correctly */
+  --_ea-p: var(--_dp-p);
+
+  box-sizing: border-box;
   background-image:
     repeating-linear-gradient(
       90deg,
@@ -367,6 +331,10 @@
   background-repeat: repeat-x, repeat-y, repeat-x, repeat-y;
   background-origin: border-box;
   animation: workshop-ants 0.55s linear infinite;
+}
+
+:root.dark .branch-move-drop-preview {
+  --_dp-c: #60a5fa;
 }
 
 .vue-flow__node-flow[data-id^='cause-'].selected,

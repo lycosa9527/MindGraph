@@ -29,7 +29,8 @@ export default {
   'collab.noDiagramToSave': 'No diagram to save',
   'collab.nodeLocked': 'Someone else is editing this node',
   'collab.participants': '{n} participants',
-  'collab.previousSessionsStopped': 'Ended {n} previous collaboration session(s) on your other diagrams.',
+  'collab.previousSessionsStopped':
+    'Ended {n} previous collaboration session(s) on your other diagrams.',
   'collab.saveFailed': 'Failed to save diagram',
   'collab.scanToJoin': 'Scan to join',
   'collab.schoolDescActive':
@@ -340,12 +341,18 @@ export default {
   'workshop.you': '(you)',
   'workshop.youAnd': 'You and',
   'workshopCanvas.connectFailed': 'Failed to connect to collaboration',
-  'workshopCanvas.sessionExpiredReconnect': 'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Your session has expired. Please refresh the page to re-join the collaboration.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Could not refresh your collaboration session. Please save your work and sign in again.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Collaboration is falling behind. Some unsent edits could not be kept.',
   'workshopCanvas.connectionClosed': 'Connection closed',
   'workshopCanvas.connectionClosedSlow':
     'Connection closed: your connection was too slow to keep up with the collaboration session.',
   'workshopCanvas.sessionEndedByHost': 'The host has ended the collaboration session.',
   'workshopCanvas.editingNodeLabel': '{username} is editing…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Someone',
   'workshopCanvas.connectionClosedReason': 'Collaboration connection closed: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} is editing this node',
   'workshopCanvas.errorGeneric': 'Collaboration error',

@@ -27,6 +27,8 @@ export interface WorkshopUpdate {
     | 'node_selected'
     | 'resync'
     | 'room_idle_warning'
+    | 'session_closing'
+    | 'owner_disconnected'
     | 'kicked'
     | 'role_changed'
     | 'role_change_ack'
@@ -60,6 +62,7 @@ export interface WorkshopUpdate {
   idle_deadline_unix?: number
   grace_seconds_remaining?: number
   reason?: string
+  workshop_continues?: boolean
   promoted_by?: number
   demoted_by?: number
   to?: WorkshopRole
@@ -84,6 +87,39 @@ export interface WorkshopUpdate {
   held_by_username?: string
   /** node_edit_claimed denied: user_id of the participant who holds the lock. */
   held_by_user_id?: number
+}
+
+const WORKSHOP_UPDATE_TYPES = new Set<WorkshopUpdate['type']>([
+  'update',
+  'update_ack',
+  'user_joined',
+  'user_left',
+  'joined',
+  'snapshot',
+  'error',
+  'pong',
+  'node_editing',
+  'node_editing_batch',
+  'node_editing_batch_ws',
+  'node_selected',
+  'resync',
+  'room_idle_warning',
+  'session_closing',
+  'owner_disconnected',
+  'kicked',
+  'role_changed',
+  'role_change_ack',
+  'write_locked',
+  'claim_node_edit',
+  'node_edit_claimed',
+])
+
+export function isWorkshopUpdate(value: unknown): value is WorkshopUpdate {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+  const type = (value as { type?: unknown }).type
+  return typeof type === 'string' && WORKSHOP_UPDATE_TYPES.has(type as WorkshopUpdate['type'])
 }
 
 export interface RemoteNodeSelection {

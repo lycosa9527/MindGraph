@@ -55,6 +55,7 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
     )
     redis = MagicMock()
     redis.pipeline = MagicMock(side_effect=lambda **_: fake)
+    redis.setex = AsyncMock()
 
     monkeypatch.setattr(
         "services.online_collab.spec.online_collab_live_spec_ops."
@@ -65,6 +66,14 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
         "services.online_collab.spec.online_collab_live_spec_ops.json_get_live_spec",
         new_callable=AsyncMock,
         return_value=current,
+    ), patch(
+        "services.online_collab.spec.online_collab_live_spec_ops._nodes_minus_tombstones",
+        new_callable=AsyncMock,
+        return_value=[{"id": "n1", "text": "hello"}],
+    ), patch(
+        "services.online_collab.spec.online_collab_live_spec_ops.fcall_spec_granular_apply",
+        new_callable=AsyncMock,
+        return_value=None,
     ):
         out = await mutate_live_spec_after_ws_update(
             redis,
@@ -93,6 +102,7 @@ async def test_mutate_granular_json_merge_pipeline(monkeypatch):
     assert rec[2][0] == "sadd"
     assert rec[3][0] == "expire"
     assert rec[4][0] == "incr"
+    redis.setex.assert_awaited_once()
 
 
 @pytest.mark.asyncio
@@ -101,6 +111,7 @@ async def test_mutate_full_replace_json_set_pipeline(monkeypatch):
     fake = _FakePipeline([True, True, 1, True, 99])
     redis = MagicMock()
     redis.pipeline = MagicMock(side_effect=lambda **_: fake)
+    redis.setex = AsyncMock()
 
     monkeypatch.setattr(
         "services.online_collab.spec.online_collab_live_spec_ops."
@@ -139,3 +150,4 @@ async def test_mutate_full_replace_json_set_pipeline(monkeypatch):
     assert rec[2][2] == ("__full__",)
     assert rec[3][0] == "expire"
     assert rec[4][0] == "incr"
+    redis.setex.assert_awaited_once()

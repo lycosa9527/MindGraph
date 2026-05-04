@@ -21,7 +21,7 @@ from typing import Optional, Tuple
 
 from redis.exceptions import RedisError
 from sqlalchemy import select, text as sql_text
-from sqlalchemy.exc import SQLAlchemyError
+from sqlalchemy.exc import IntegrityError, SQLAlchemyError
 
 from config.database import AsyncSessionLocal
 from models.domain.auth import User
@@ -43,7 +43,6 @@ from services.online_collab.lifecycle.online_collab_session_fields import (
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
 )
-from services.online_collab.spec.online_collab_live_spec_ops import flush_live_spec_to_db
 from services.online_collab.redis.online_collab_redis_keys import (
     code_to_diagram_key,
     purge_online_collab_redis_keys,
@@ -257,7 +256,7 @@ RETURNING t.id, s.workshop_code
                         cleaned_count,
                     )
 
-            except Exception as exc:
+            except (SQLAlchemyError, RedisError, OSError, RuntimeError, TypeError, ValueError) as exc:
                 logger.error(
                     "[OnlineCollabCleanup] Error cleaning up expired workshops: %s",
                     exc,
@@ -469,44 +468,68 @@ async def start_online_collab_impl(
                     )
                     raise
 
-            code = await allocate_unique_code(redis)
-            if not code:
-                error_msg = (
-                    "Failed to generate unique presentation code "
-                    "after multiple attempts"
+            code: Optional[str] = None
+            started_at: Optional[datetime] = None
+            expires_at: Optional[datetime] = None
+            ttl_sec = 0
+            for attempt in range(1, 6):
+                code = await allocate_unique_code(redis)
+                if not code:
+                    error_msg = (
+                        "Failed to generate unique presentation code "
+                        "after multiple attempts"
+                    )
+                    logger.error("[OnlineCollabMgr] %s", error_msg)
+                    await release_nx_lock(
+                        redis, start_lock_key(diagram_id), start_lock_token,
+                    )
+                    return None, error_msg, None, stopped_prior_sessions
+                code = code.strip().upper()
+                started_at = datetime.now(UTC)
+                expires_at = compute_online_collab_expires_at(started_at, duration)
+                ttl_sec = redis_ttl_seconds_for_expires_at(expires_at)
+                ttl_sec = min(
+                    max(ttl_sec, 1), workshop_session_ttl * 14,
                 )
+
+                if org_id is None and visibility == "organization":
+                    logger.debug(
+                        "[OnlineCollabMgr] Starting org-visibility session for "
+                        "user_id=%s who has no organization_id (admin/superuser host). "
+                        "Session code=%s will be registered in the global org registry "
+                        "and visible to all org members.",
+                        user_id, code,
+                    )
+
+                diagram.workshop_code = code
+                diagram.workshop_visibility = visibility
+                diagram.workshop_started_at = started_at
+                diagram.workshop_expires_at = expires_at
+                diagram.workshop_duration_preset = duration
+                try:
+                    await db.commit()
+                    break
+                except IntegrityError as int_exc:
+                    await db.rollback()
+                    await db.refresh(diagram)
+                    logger.warning(
+                        "[OnlineCollabMgr] workshop_code collision code=%s "
+                        "diagram=%s attempt=%s: %s",
+                        code, diagram_id, attempt, int_exc,
+                    )
+                    if attempt >= 5:
+                        raise
+                    diagram.workshop_code = None
+                except SQLAlchemyError:
+                    await db.rollback()
+                    raise
+            if code is None or started_at is None or expires_at is None:
+                error_msg = "Failed to persist collaboration session code"
                 logger.error("[OnlineCollabMgr] %s", error_msg)
                 await release_nx_lock(
                     redis, start_lock_key(diagram_id), start_lock_token,
                 )
                 return None, error_msg, None, stopped_prior_sessions
-
-            started_at = datetime.now(UTC)
-            expires_at = compute_online_collab_expires_at(started_at, duration)
-            ttl_sec = redis_ttl_seconds_for_expires_at(expires_at)
-            ttl_sec = min(
-                max(ttl_sec, 1), workshop_session_ttl * 14,
-            )
-
-            if org_id is None and visibility == "organization":
-                logger.debug(
-                    "[OnlineCollabMgr] Starting org-visibility session for "
-                    "user_id=%s who has no organization_id (admin/superuser host). "
-                    "Session code=%s will be registered in the global org registry "
-                    "and visible to all org members.",
-                    user_id, code,
-                )
-
-            diagram.workshop_code = code
-            diagram.workshop_visibility = visibility
-            diagram.workshop_started_at = started_at
-            diagram.workshop_expires_at = expires_at
-            diagram.workshop_duration_preset = duration
-            try:
-                await db.commit()
-            except SQLAlchemyError:
-                await db.rollback()
-                raise
 
             diagram_title = diagram.title or ""
             try:
@@ -577,7 +600,7 @@ async def start_online_collab_impl(
             )
             try:
                 await get_diagram_cache().invalidate_user_list(user_id)
-            except Exception as cache_exc:
+            except (AttributeError, TypeError, ValueError, OSError, RuntimeError) as cache_exc:
                 logger.debug(
                     "[OnlineCollabMgr] List cache invalidation failed "
                     "(non-fatal): %s", cache_exc,
@@ -600,190 +623,22 @@ async def start_online_collab_impl(
 
 
 async def stop_online_collab_impl(diagram_id: str, user_id: int) -> bool:
-    """
-    Owner-initiated workshop stop.
-
-    Flush 鈫?DB clear 鈫?broadcast session_ended 鈫?destroy Redis session.
-    Returns ``True`` when the diagram transitioned from active to stopped.
-    """
-    async with AsyncSessionLocal() as db:
-        try:
-            owner_row = await db.execute(
-                select(Diagram.user_id, Diagram.workshop_code).where(
-                    Diagram.id == diagram_id,
-                    ~Diagram.is_deleted,
-                )
-            )
-            row = owner_row.one_or_none()
-            if row is None:
-                return False
-            owner_id, code = row[0], row[1]
-            if owner_id != user_id:
-                return False
-            if not code or not str(code).strip():
-                logger.debug(
-                    "[OnlineCollabMgr] stop_online_collab: already inactive "
-                    "diagram=%s user=%s",
-                    diagram_id,
-                    user_id,
-                )
-                return True
-            norm = str(code).strip().upper()
-            from services.online_collab.lifecycle.online_collab_session_closing import (
-                mark_workshop_session_closing,
-            )
-            from routers.api.workshop_ws_broadcast import (
-                broadcast_workshop_session_closing,
-            )
-
-            await mark_workshop_session_closing(norm)
-            await broadcast_workshop_session_closing(norm)
-            await asyncio.sleep(0.05)
-
-            await flush_live_spec_to_db(code, diagram_id)
-
-            cleared = await clear_online_collab_session_by_id_returning(
-                db, diagram_id,
-            )
-            if cleared is None:
-                await db.rollback()
-                return False
-            try:
-                await db.commit()
-            except SQLAlchemyError:
-                await db.rollback()
-                raise
-
-            from routers.api.workshop_ws_broadcast import (
-                broadcast_workshop_session_ended,
-            )
-            await broadcast_workshop_session_ended(code)
-            await asyncio.sleep(0.08)
-
-            from services.online_collab.core.online_collab_manager import (
-                get_online_collab_manager,
-            )
-            await get_online_collab_manager().destroy_session(
-                code, reason="explicit", diagram_id=diagram_id,
-            )
-
-            logger.info(
-                "[OnlineCollabMgr] Stopped workshop %s for diagram %s",
-                code, diagram_id,
-            )
-            try:
-                await get_diagram_cache().invalidate_user_list(user_id)
-            except Exception as cache_exc:
-                logger.debug(
-                    "[OnlineCollabMgr] List cache invalidation failed "
-                    "(non-fatal): %s", cache_exc,
-                )
-            return True
-
-        except (SQLAlchemyError, OSError) as exc:
-            logger.error(
-                "[OnlineCollabMgr] Error stopping workshop: %s",
-                exc, exc_info=True,
-            )
-            await db.rollback()
-            return False
+    """Owner-initiated workshop stop."""
+    from services.online_collab.core.online_collab_stop import (
+        stop_online_collab_impl as _impl,
+    )
+    return await _impl(diagram_id, user_id)
 
 
 async def stop_online_collab_for_room_idle_impl(
     diagram_id: str,
     expected_code: str,
 ) -> bool:
-    """
-    Idle-timer initiated stop. Enforces ``expected_code`` match so a stale
-    timer can't kill a freshly-restarted session with a different code.
-    """
-    norm = expected_code.strip().upper()
-    async with AsyncSessionLocal() as db:
-        try:
-            result = await db.execute(
-                select(Diagram).filter(
-                    Diagram.id == diagram_id,
-                    ~Diagram.is_deleted,
-                )
-            )
-            diagram = result.scalars().first()
-            if not diagram or not diagram.workshop_code:
-                return False
-            row_code = diagram.workshop_code.strip().upper()
-            if row_code != norm:
-                logger.warning(
-                    "[OnlineCollabMgr] Idle stop code mismatch diagram=%s",
-                    diagram_id,
-                )
-                return False
-
-            from services.online_collab.lifecycle.online_collab_session_closing import (
-                mark_workshop_session_closing,
-            )
-            from routers.api.workshop_ws_broadcast import (
-                broadcast_workshop_session_closing,
-            )
-
-            await mark_workshop_session_closing(norm)
-            await broadcast_workshop_session_closing(norm)
-            await asyncio.sleep(0.05)
-
-            ws_code = diagram.workshop_code
-            try:
-                await flush_live_spec_to_db(ws_code, diagram_id)
-            except (RedisError, SQLAlchemyError, OSError) as flush_exc:
-                logger.warning(
-                    "[OnlineCollabMgr] Idle-stop flush failed code=%s "
-                    "diagram=%s: %s (continuing)",
-                    ws_code, diagram_id, flush_exc,
-                )
-
-            from services.online_collab.core.online_collab_manager import (
-                get_online_collab_manager,
-            )
-            redis_ok = True
-            try:
-                await get_online_collab_manager().destroy_session(
-                    ws_code, reason="idle", diagram_id=diagram_id,
-                )
-            except (RedisError, OSError, RuntimeError, TypeError) as redis_exc:
-                redis_ok = False
-                logger.error(
-                    "[OnlineCollabMgr] Idle-stop destroy_session Redis "
-                    "failure code=%s diagram=%s: %s",
-                    ws_code, diagram_id, redis_exc, exc_info=True,
-                )
-
-            if not redis_ok:
-                logger.warning(
-                    "[OnlineCollabMgr] Idle-stop aborted (Redis down); "
-                    "leaving DB session fields intact for cleanup "
-                    "compensation code=%s diagram=%s",
-                    ws_code, diagram_id,
-                )
-                await db.rollback()
-                return False
-
-            clear_online_collab_session_fields(diagram)
-            try:
-                await db.commit()
-            except SQLAlchemyError:
-                await db.rollback()
-                raise
-
-            logger.info(
-                "[OnlineCollabMgr] Idle-stop workshop %s for diagram %s",
-                ws_code, diagram_id,
-            )
-            return True
-
-        except (SQLAlchemyError, OSError, RedisError) as exc:
-            logger.error(
-                "[OnlineCollabMgr] Error idle-stopping workshop: %s",
-                exc, exc_info=True,
-            )
-            await db.rollback()
-            return False
+    """Idle-timer initiated stop with expected-code protection."""
+    from services.online_collab.core.online_collab_stop import (
+        stop_online_collab_for_room_idle_impl as _impl,
+    )
+    return await _impl(diagram_id, expected_code)
 
 
 __all__ = [

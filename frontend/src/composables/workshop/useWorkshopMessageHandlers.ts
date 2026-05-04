@@ -71,6 +71,8 @@ export interface WorkshopMessageDispatchDeps {
   schedulePendingResyncWatchdog: (sock: WebSocket) => void
   /** Replays deferred `sendUpdate` ops when WS is open and ready to flush. */
   flushOutboundQueue: () => void
+  /** Marks the initial server baseline as applied for this socket generation. */
+  markServerBaselineReady: () => void
   /** Outbound-queue ack hook for ``update_ack`` (may be legacy without id). */
   acknowledgeOutboundUpdate: (clientOpId?: string | null) => void
   /** Clears the half-open ``pong`` watchdog (call on ``pong`` message). */
@@ -115,6 +117,40 @@ function normalizeBatchEditingEvent(raw: unknown): NodeEditingEvent | null {
     return null
   }
   return raw as NodeEditingEvent
+}
+
+function looksLikePlaceholderEditorName(name: string, userId: number): boolean {
+  const trimmed = name.trim()
+  if (!trimmed) {
+    return true
+  }
+  if (trimmed === String(userId)) {
+    return true
+  }
+  if (/^\d+$/.test(trimmed)) {
+    return true
+  }
+  if (new RegExp(`^User\\s+${userId}$`, 'i').test(trimmed)) {
+    return true
+  }
+  return false
+}
+
+function resolveWorkshopEditorDisplayName(
+  deps: WorkshopMessageDispatchDeps,
+  userId: number,
+  messageUsername?: string
+): string {
+  const fromMessage = messageUsername?.trim()
+  if (fromMessage && !looksLikePlaceholderEditorName(fromMessage, userId)) {
+    return fromMessage
+  }
+  const rosterEntry = deps.participantsWithNames.value.find((p) => p.user_id === userId)
+  const fromRoster = rosterEntry?.username?.trim()
+  if (fromRoster && !looksLikePlaceholderEditorName(fromRoster, userId)) {
+    return fromRoster
+  }
+  return deps.t('workshopCanvas.collabEditorDisplayNameFallback')
 }
 
 export function dispatchWorkshopMessage(
@@ -165,8 +201,11 @@ export function dispatchWorkshopMessage(
       }
       if (message.spec && deps.onServerSnapshot) {
         deps.onServerSnapshot(message.spec, message.version ?? 1)
+        deps.markServerBaselineReady()
+        deps.flushOutboundQueue()
+      } else if (import.meta.env.DEV) {
+        console.warn('[WorkshopWS] snapshot missing spec handler or spec payload; baseline not ready')
       }
-      deps.flushOutboundQueue()
       break
     }
 
@@ -269,7 +308,7 @@ export function dispatchWorkshopMessage(
         if (message.editing && message.user_id && message.color && message.emoji) {
           const editor: ActiveEditor = {
             user_id: message.user_id,
-            username: message.username || `User ${message.user_id}`,
+            username: resolveWorkshopEditorDisplayName(deps, message.user_id, message.username),
             color: message.color,
             emoji: message.emoji,
           }
@@ -355,7 +394,7 @@ export function dispatchWorkshopMessage(
       if (message.editing && message.user_id && message.color && message.emoji) {
         const editor: ActiveEditor = {
           user_id: message.user_id,
-          username: message.username || `User ${message.user_id}`,
+          username: resolveWorkshopEditorDisplayName(deps, message.user_id, message.username),
           color: message.color,
           emoji: message.emoji,
         }
@@ -388,7 +427,7 @@ export function dispatchWorkshopMessage(
         if (evt.editing && evt.user_id && evt.color && evt.emoji) {
           const editor: ActiveEditor = {
             user_id: evt.user_id,
-            username: evt.username || `User ${evt.user_id}`,
+            username: resolveWorkshopEditorDisplayName(deps, evt.user_id, evt.username),
             color: evt.color,
             emoji: evt.emoji,
           }
@@ -408,6 +447,16 @@ export function dispatchWorkshopMessage(
 
     case 'room_idle_warning':
       deps.applyRoomIdleWarningFromServer(message)
+      break
+
+    case 'session_closing':
+      deps.notify.info(deps.t('workshopCanvas.sessionEndedByHost'))
+      break
+
+    case 'owner_disconnected':
+      if (message.workshop_continues) {
+        deps.notify.info(deps.t('workshopCanvas.connectionClosed'))
+      }
       break
 
     case 'kicked':
@@ -453,7 +502,7 @@ export function dispatchWorkshopMessage(
         deps.notify.warning(
           ids.length > 0
             ? deps.t('workshopCanvas.updatePartialFiltered', { count: ids.length })
-            : message.message || deps.t('workshopCanvas.errorGeneric'),
+            : message.message || deps.t('workshopCanvas.errorGeneric')
         )
         break
       }
@@ -555,22 +604,28 @@ export function dispatchWorkshopMessage(
       // Update activeEditors immediately so collabForeignLockedNodeIds reflects
       // the holder before the broadcast node_editing frame arrives, preventing
       // a race window where a second click could attempt another edit.
-      if (message.held_by_user_id != null && message.held_by_username) {
+      let deniedHolderLabel = message.held_by_username ?? ''
+      if (message.held_by_user_id != null) {
+        deniedHolderLabel = resolveWorkshopEditorDisplayName(
+          deps,
+          message.held_by_user_id,
+          message.held_by_username
+        )
         const existing = deps.activeEditors.value.get(claimedNodeId)
         if (!existing || existing.user_id !== message.held_by_user_id) {
           const updated = new Map(deps.activeEditors.value)
           updated.set(claimedNodeId, {
             user_id: message.held_by_user_id,
-            username: message.held_by_username,
-            color: '',
-            emoji: '',
+            username: deniedHolderLabel,
+            color: existing?.color ?? '',
+            emoji: existing?.emoji ?? '',
           })
           deps.activeEditors.value = updated
         }
       }
       eventBus.emit('workshop:node-edit-denied', {
         nodeId: claimedNodeId,
-        heldByUsername: message.held_by_username ?? '',
+        heldByUsername: deniedHolderLabel,
       })
       break
     }

@@ -233,7 +233,7 @@ async def hash_apply_node_editor_delta(
                     pipe.hset(key, field, _node_map_to_json(node_map))
                 else:
                     pipe.hdel(key, field)
-                pipe.expire(key, _KEY_TTL_SEC, gt=True)
+                pipe.expire(key, _KEY_TTL_SEC)
                 await pipe.execute()
             if editing:
                 await _call_hexpire(redis, key, _FIELD_TTL_SEC, field)
@@ -303,7 +303,7 @@ async def hash_apply_node_editor_batch_delta(
                         pipe.hset(key, field, _node_map_to_json(node_map))
                     else:
                         pipe.hdel(key, field)
-                pipe.expire(key, _KEY_TTL_SEC, gt=True)
+                pipe.expire(key, _KEY_TTL_SEC)
                 await pipe.execute()
             if editing and effective:
                 try:
@@ -368,7 +368,7 @@ async def hash_purge_user_from_all_nodes(
                     pipe.hset(key, nid, payload)
                 if deletes:
                     pipe.hdel(key, *deletes)
-                pipe.expire(key, _KEY_TTL_SEC, gt=True)
+                pipe.expire(key, _KEY_TTL_SEC)
                 await pipe.execute()
             return touched, True
         except WatchError:

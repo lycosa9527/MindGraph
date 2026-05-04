@@ -4,6 +4,7 @@ import logging
 from datetime import UTC, datetime
 from typing import Any, Optional
 
+from redis.exceptions import RedisError
 from sqlalchemy import select
 from sqlalchemy.exc import SQLAlchemyError
 
@@ -103,7 +104,7 @@ async def restore_online_collab_redis_from_db_row(
             title=resolved_title,
             owner_name=resolved_owner_name,
         )
-    except Exception as exc:
+    except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
         logger.warning(
             "[JoinHelpers] restore: session manager seed failed code=%s: %s",
             code,

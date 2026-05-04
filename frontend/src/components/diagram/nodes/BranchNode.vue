@@ -9,6 +9,7 @@ import type { CSSProperties } from 'vue'
 
 import { Handle, Position } from '@vue-flow/core'
 
+import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useTheme } from '@/composables/core/useTheme'
 import { useNodeDimensions } from '@/composables/editor/useNodeDimensions'
@@ -162,6 +163,13 @@ const nodeStyle = computed((): CSSProperties => {
 // Inline editing state
 const isEditing = ref(false)
 
+const collabCanvas = inject<{ isNodeLockedByOther?: (nodeId: string) => boolean } | undefined>(
+  'collabCanvas',
+  undefined
+)
+const notifyCollab = useNotifications()
+const { t } = useLanguage()
+
 // Branch move (mind map long-press to move branch)
 const branchMove = inject<{
   onBranchMovePointerDown: (
@@ -231,6 +239,10 @@ function handleEditCancel() {
 
 function handleBranchNodeDoubleClick(): void {
   if ((props.data.hidden === true && diagramStore.isLearningSheet) || isEditing.value) return
+  if (collabCanvas?.isNodeLockedByOther?.(props.id)) {
+    notifyCollab.warning(t('collab.nodeLocked'))
+    return
+  }
   isEditing.value = true
 }
 </script>

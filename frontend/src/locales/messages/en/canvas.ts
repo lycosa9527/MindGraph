@@ -61,6 +61,8 @@ export default {
   'canvas.toolbar.childAdded': 'Child added',
   'canvas.toolbar.collabAiBlocked':
     'Only the diagram owner can use AI generation during collaboration',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'This feature is not available while you join as a collaboration guest.',
   'canvas.toolbar.colorLabel': 'Color',
   'canvas.toolbar.conceptGeneration': 'Concept Generation',
   'canvas.toolbar.conceptMapModesDev': 'Concept map modes are in development',

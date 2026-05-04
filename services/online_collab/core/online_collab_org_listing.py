@@ -13,7 +13,7 @@ from __future__ import annotations
 import logging
 import time
 from datetime import UTC, datetime
-from typing import Any, Awaitable, Callable, Coroutine, Dict, List, Optional, cast
+from typing import Any, Callable, Coroutine, Dict, List, Optional
 
 from redis.exceptions import RedisError
 

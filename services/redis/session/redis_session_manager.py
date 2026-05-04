@@ -474,21 +474,20 @@ class RedisSessionManager:
         )
 
         if not self._use_redis():
-            # Graceful degradation: allow authentication if Redis unavailable
-            logger.info(
-                "[Session] Redis unavailable, allowing authentication (fail-open): user=%s",
+            logger.error(
+                "[Session] Redis unavailable, denying authentication: user=%s",
                 user_id,
             )
-            return True
+            return False
 
         try:
             redis = get_async_redis()
             if not redis:
-                logger.info(
-                    "[Session] Redis connection failed, allowing authentication (fail-open): user=%s",
+                logger.error(
+                    "[Session] Redis connection failed, denying authentication: user=%s",
                     user_id,
                 )
-                return True  # Fail-open
+                return False
 
             # Check multiple sessions mode first (default mode)
             session_set_key = _get_session_set_key(user_id)

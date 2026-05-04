@@ -30,12 +30,42 @@ from services.redis.redis_client import RedisStartupError, close_redis_sync, ini
 logger = logging.getLogger(__name__)
 
 
+class CollabProductionGuardError(RuntimeError):
+    """Raised when required production collab security settings are missing."""
+
+
+def _env_truthy(name: str, default: str = "0") -> bool:
+    return os.getenv(name, default).strip().lower() in ("1", "true", "yes", "on")
+
+
+def _validate_collab_production_guards() -> None:
+    if os.getenv("ENVIRONMENT", "production").strip().lower() != "production":
+        return
+
+    required = {
+        "COLLAB_WS_ALLOWED_ORIGINS": os.getenv("COLLAB_WS_ALLOWED_ORIGINS", ""),
+        "COLLAB_FANOUT_ORIGIN_SECRET": os.getenv("COLLAB_FANOUT_ORIGIN_SECRET", ""),
+    }
+    missing = [name for name, value in required.items() if not value.strip()]
+    if not missing:
+        return
+
+    message = (
+        "Missing required production collaboration settings: "
+        + ", ".join(missing)
+    )
+    logger.critical("[LIFESPAN] %s", message)
+    if _env_truthy("COLLAB_STRICT_PROD_GUARDS", "1"):
+        raise CollabProductionGuardError(message)
+
+
 async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
     """Initialize Redis and start the WS fan-out subscriber in the running loop."""
     if is_main_worker:
         logger.debug("[LIFESPAN] Initializing Redis...")
     try:
         init_redis_sync()
+        _validate_collab_production_guards()
         warm_ip_reputation_env_snapshot()
         warm_sismember_cache_ttl_snapshot()
         if is_main_worker:
@@ -67,14 +97,18 @@ async def lifespan_init_redis_phase(is_main_worker: bool) -> None:
                     "[LIFESPAN] Workshop Redis durability check skipped: %s",
                     health_exc,
                 )
-    except RedisStartupError as exc:
+    except (RedisStartupError, CollabProductionGuardError) as exc:
+        component = "CollabConfig" if isinstance(exc, CollabProductionGuardError) else "Redis"
         try:
             CriticalAlertService.send_startup_failure_alert_sync(
-                component="Redis",
-                error_message=f"Redis startup failed: {str(exc)}",
+                component=component,
+                error_message=f"{component} startup failed: {str(exc)}",
                 details=(
-                    "Application cannot start without Redis. Check Redis connection "
-                    "and configuration."
+                    "Application cannot start until required production "
+                    "configuration is present."
+                    if isinstance(exc, CollabProductionGuardError)
+                    else "Application cannot start without Redis. Check Redis "
+                    "connection and configuration."
                 ),
             )
         except Exception as alert_error:  # pylint: disable=broad-except

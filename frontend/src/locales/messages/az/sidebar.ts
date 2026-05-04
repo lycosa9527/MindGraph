@@ -9,6 +9,7 @@ export default {
   'sidebar.actions.showLess': 'Daha az göstər',
   'sidebar.actions.showMore': 'Daha çox göstər ({n})',
   'sidebar.actions.unpin': 'Sancağı çıxarın',
+  'sidebar.actions.turnOffOnlineCollab': 'Onlayn əməkdaşlığı söndür',
   'sidebar.askOnceHistory.deleteConfirm':
     'Bu söhbəti silmək istədiyinizə əminsiniz? Bu geri qaytarıla bilməz.',
   'sidebar.askOnceHistory.empty': 'Hələ söhbət yoxdur',
@@ -46,6 +47,7 @@ export default {
   'sidebar.debateverse': 'DebateVerse',
   'sidebar.diagramHistory.capacity': '{n} diaqramlarına qədər saxlaya bilər',
   'sidebar.diagramHistory.deleteFailed': 'Diaqramı silmək alınmadı',
+  'sidebar.diagramHistory.collabLive': 'Onlayn əməkdaşlıq aktivdir',
   'sidebar.diagramHistory.deleted': 'Diaqram silindi',
   'sidebar.diagramHistory.empty': 'Saxlanmış diaqram yoxdur',
   'sidebar.diagramHistory.loginPrompt': 'Diaqramlara baxmaq üçün daxil olun',

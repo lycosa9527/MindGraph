@@ -18,6 +18,7 @@ DURATION_2D = "2d"
 
 ONLINE_COLLAB_VISIBILITY_ORGANIZATION = "organization"
 ONLINE_COLLAB_VISIBILITY_NETWORK = "network"
+ONLINE_COLLAB_VISIBILITY_PRIVATE = "private"
 
 _VALID_ORG = frozenset({DURATION_1H, DURATION_TODAY, DURATION_2D})
 _VALID_NETWORK = frozenset({DURATION_TODAY, DURATION_2D})
@@ -28,6 +29,8 @@ def duration_allowed_for_visibility(visibility: str, duration: str) -> bool:
     if visibility == ONLINE_COLLAB_VISIBILITY_NETWORK:
         return duration in _VALID_NETWORK
     if visibility == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
+        return duration in _VALID_ORG
+    if visibility == ONLINE_COLLAB_VISIBILITY_PRIVATE:
         return duration in _VALID_ORG
     return False
 

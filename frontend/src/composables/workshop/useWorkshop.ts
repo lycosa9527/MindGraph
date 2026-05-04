@@ -9,18 +9,17 @@ import { useLanguage, useNotifications } from '@/composables'
 import { eventBus } from '@/composables/core/useEventBus'
 import { useAuthStore } from '@/stores'
 
-import {
-  collectNodeIdsFromOutboundPayload,
-  useCollabOutboundQueue,
-} from './useCollabOutboundQueue'
+import { collectNodeIdsFromOutboundPayload, useCollabOutboundQueue } from './useCollabOutboundQueue'
 import { useCollabSyncVersion } from './useCollabSyncVersion'
 import { useWorkshopHeartbeat } from './useWorkshopHeartbeat'
+import { useWorkshopJoin } from './useWorkshopJoin'
 import { dispatchWorkshopMessage } from './useWorkshopMessageHandlers'
 import type {
   WorkshopAuthContext,
   WorkshopMessageDispatchDeps,
   WorkshopMutableSessionState,
 } from './useWorkshopMessageHandlers'
+import { useWorkshopOutboundDispatcher } from './useWorkshopOutboundDispatcher'
 import { useWorkshopPresence } from './useWorkshopPresence'
 import {
   WORKSHOP_RECONNECT,
@@ -35,8 +34,8 @@ import type {
   ParticipantInfo,
   RemoteNodeSelection,
   WorkshopRole,
-  WorkshopUpdate,
 } from './useWorkshopTypes'
+import { isWorkshopUpdate } from './useWorkshopTypes'
 
 export type {
   ActiveEditor,
@@ -72,6 +71,7 @@ export function useWorkshop(
   const remoteSelectionsByUser = ref<Map<number, RemoteNodeSelection>>(new Map())
   const diagramOwnerId = ref<number | null>(null)
   const workshopRole = ref<WorkshopRole>('editor')
+  const serverBaselineReady = ref(false)
 
   let _sessionDiagramIdValue: string | null = null
   const sessionMutable: WorkshopMutableSessionState = {
@@ -111,7 +111,13 @@ export function useWorkshop(
       if (version.pendingResync.value) {
         return false
       }
+      if (!serverBaselineReady.value) {
+        return false
+      }
       return true
+    },
+    onOverflow: () => {
+      notify.warning(t('workshopCanvas.outboundQueueDegraded'))
     },
   })
   watch(
@@ -120,7 +126,7 @@ export function useWorkshop(
       if (!pending) {
         outboundQueue.tryFlush()
       }
-    },
+    }
   )
   const joinResumeToken = ref<string | null>(null)
   const sessionDiagramTitleRef = ref<string | null>(null)
@@ -215,17 +221,16 @@ export function useWorkshop(
     return String(diagramOwnerId.value) === String(authStore.user?.id ?? '')
   })
 
-  function getWebSocketUrl(code: string): string {
-    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:'
-    const host = window.location.host
-    let base = `${protocol}//${host}/api/ws/canvas-collab/${code}`
-    const resume = joinResumeToken.value?.trim()
-    if (resume) {
-      const sep = base.includes('?') ? '&' : '?'
-      base += `${sep}resume=${encodeURIComponent(resume)}`
-    }
-    return base
-  }
+  const { getWebSocketUrl, clearAuthRefreshReconnect, scheduleAuthRefreshReconnect } =
+    useWorkshopJoin({
+      workshopCode,
+      joinResumeToken,
+      ws,
+      authStore,
+      notify,
+      t,
+      connect,
+    })
 
   const authContext: WorkshopAuthContext = {
     getCurrentUserIdString: () => String(authStore.user?.id ?? ''),
@@ -280,15 +285,16 @@ export function useWorkshop(
     flushOutboundQueue: () => {
       outboundQueue.tryFlush()
     },
+    markServerBaselineReady: () => {
+      serverBaselineReady.value = true
+    },
     acknowledgeOutboundUpdate: (id) => {
       outboundQueue.acknowledge(id)
     },
     collectAcknowledgedNodeIds: (clientOpId) => {
       const ops = outboundQueue.snapshot()
       const op =
-        typeof clientOpId === 'string' && clientOpId
-          ? ops.find((o) => o.id === clientOpId)
-          : ops[0]
+        typeof clientOpId === 'string' && clientOpId ? ops.find((o) => o.id === clientOpId) : ops[0]
       if (!op) {
         return []
       }
@@ -304,12 +310,40 @@ export function useWorkshop(
     onGuestForcedExit: ({ reason }) => performGuestForcedExit(reason),
   }
 
+  const {
+    sendUpdate,
+    sendNodeSelected,
+    notifyNodeEditing,
+    sendClaimNodeEdit,
+    clearNodeEditingThrottles,
+  } = useWorkshopOutboundDispatcher({
+    ws,
+    diagramId,
+    pendingResync: version.pendingResync,
+    queueSize: outboundQueue.size,
+    getSessionDiagramId: () => sessionMutable.sessionDiagramId,
+    canSendRealtimeControl: () => {
+      const sock = ws.value
+      return Boolean(
+        sock &&
+          sock.readyState === WebSocket.OPEN &&
+          !version.pendingResync.value &&
+          serverBaselineReady.value
+      )
+    },
+    clearRoomIdleCountdownUi: presence.clearRoomIdleCountdownUi,
+    enqueueUpdatePayload: (payload) => outboundQueue.enqueue(payload),
+  })
+
   function connect() {
     if (!workshopCode.value) {
       return
     }
 
-    if (ws.value && ws.value.readyState <= WebSocket.CONNECTING) {
+    if (
+      ws.value &&
+      (ws.value.readyState === WebSocket.CONNECTING || ws.value.readyState === WebSocket.OPEN)
+    ) {
       // OPEN (1) or CONNECTING (0): socket is live or mid-handshake.
       return
     }
@@ -323,7 +357,6 @@ export function useWorkshop(
 
     try {
       const url = getWebSocketUrl(workshopCode.value)
-      joinResumeToken.value = null
       const socket = new WebSocket(url)
       socket.binaryType = 'arraybuffer'
       let errorNotified = false
@@ -334,7 +367,9 @@ export function useWorkshop(
         connectionStatus.value = 'connected'
         reconnectAttempts.value = 0
         clearPendingResyncWatchdog()
+        scheduleAuthRefreshReconnect()
         version.reset()
+        serverBaselineReady.value = false
 
         const joinMsg: Record<string, unknown> = { type: 'join' }
         if (diagramId.value) {
@@ -344,14 +379,8 @@ export function useWorkshop(
 
         // Server has lost prior socket context; mark every still-queued op as
         // not-in-flight so it gets re-sent.  We do NOT flush yet — the queue is
-        // gated behind pendingResync, which `version.reset()` set false above
-        // but the join handshake should land first.  The queue will flush as
-        // soon as snapshot/joined arrives (which clears pendingResync) or as
-        // soon as the next sendUpdate triggers tryFlush().
+        // gated until the server snapshot baseline lands for this socket.
         outboundQueue.resetInFlight()
-        if (outboundQueue.hasPending.value) {
-          outboundQueue.tryFlush()
-        }
       }
 
       socket.onmessage = (event) => {
@@ -364,7 +393,14 @@ export function useWorkshop(
           } else {
             return
           }
-          const message = JSON.parse(rawData) as WorkshopUpdate
+          const parsed = JSON.parse(rawData) as unknown
+          if (!isWorkshopUpdate(parsed)) {
+            if (import.meta.env.DEV) {
+              console.warn('[WorkshopWS] Ignoring malformed message', parsed)
+            }
+            return
+          }
+          const message = parsed
           dispatchWorkshopMessage(message, socket, messageDeps)
         } catch {
           notify.warning(t('workshopCanvas.wsError'))
@@ -479,6 +515,7 @@ export function useWorkshop(
     presence.clearRoomIdleCountdownUi()
     presence.clearPresenceCoalescer()
     clearNodeEditingThrottles()
+    clearAuthRefreshReconnect()
     clearPendingResyncWatchdog()
     if (reconnectTimeout) {
       clearTimeout(reconnectTimeout)
@@ -507,192 +544,13 @@ export function useWorkshop(
     diagramOwnerId.value = null
     sessionMutable.sessionDiagramId = null
     sessionDiagramIdRef.value = null
+    serverBaselineReady.value = false
     version.reset()
     outboundQueue.clear()
     joinResumeToken.value = null
     sessionDiagramTitleRef.value = null
 
     stopHeartbeat()
-  }
-
-  /**
-   * Build the wire payload for an update.  Returns `null` if there is no
-   * granular content and no full spec — the caller should treat this as a
-   * no-op.
-   */
-  function buildUpdatePayload(
-    spec?: Record<string, unknown>,
-    nodes?: Array<Record<string, unknown>>,
-    connections?: Array<Record<string, unknown>>,
-    deletedNodeIds?: string[],
-    deletedConnectionIds?: string[],
-  ): Record<string, unknown> | null {
-    const hasGranular =
-      nodes !== undefined ||
-      connections !== undefined ||
-      (deletedNodeIds && deletedNodeIds.length > 0) ||
-      (deletedConnectionIds && deletedConnectionIds.length > 0)
-
-    if (!hasGranular && !spec) {
-      return null
-    }
-
-    const updateMessage: Record<string, unknown> = {
-      type: 'update',
-      diagram_id: sessionMutable.sessionDiagramId ?? diagramId.value,
-      timestamp: new Date().toISOString(),
-    }
-
-    if (hasGranular) {
-      if (nodes !== undefined) {
-        updateMessage.nodes = nodes
-      }
-      if (connections !== undefined) {
-        updateMessage.connections = connections
-      }
-      if (deletedNodeIds && deletedNodeIds.length > 0) {
-        updateMessage.deleted_node_ids = deletedNodeIds
-      }
-      if (deletedConnectionIds && deletedConnectionIds.length > 0) {
-        updateMessage.deleted_connection_ids = deletedConnectionIds
-      }
-    } else if (spec) {
-      updateMessage.spec = spec
-    }
-
-    return updateMessage
-  }
-
-  function sendUpdate(
-    spec?: Record<string, unknown>,
-    nodes?: Array<Record<string, unknown>>,
-    connections?: Array<Record<string, unknown>>,
-    deletedNodeIds?: string[],
-    deletedConnectionIds?: string[]
-  ): string | null {
-    const payload = buildUpdatePayload(
-      spec,
-      nodes,
-      connections,
-      deletedNodeIds,
-      deletedConnectionIds,
-    )
-    if (!payload) {
-      if (import.meta.env.DEV) {
-        console.warn(
-          '[WorkshopWS] sendUpdate called without spec, nodes, connections, or deletions',
-        )
-      }
-      return null
-    }
-
-    presence.clearRoomIdleCountdownUi()
-
-    if (import.meta.env.DEV) {
-      console.log('[CollabSync] sendUpdate enqueue', {
-        wsReady: ws.value?.readyState,
-        pendingResync: version.pendingResync.value,
-        hasGranular:
-          nodes !== undefined ||
-          connections !== undefined ||
-          (deletedNodeIds?.length ?? 0) > 0 ||
-          (deletedConnectionIds?.length ?? 0) > 0,
-        nodes: nodes?.length ?? 0,
-        conns: connections?.length ?? 0,
-        delNodes: deletedNodeIds?.length ?? 0,
-        delConns: deletedConnectionIds?.length ?? 0,
-        queueDepth: outboundQueue.size.value,
-      })
-    }
-
-    return outboundQueue.enqueue(payload as Record<string, unknown> & { type: string })
-  }
-
-  function sendNodeSelected(nodeId: string | null, selected: boolean) {
-    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      return
-    }
-    if (!nodeId) {
-      return
-    }
-    try {
-      ws.value.send(
-        JSON.stringify({
-          type: 'node_selected',
-          node_id: nodeId,
-          selected,
-        })
-      )
-    } catch (error) {
-      console.error('[WorkshopWS] Failed to send node_selected:', error)
-    }
-  }
-
-  const nodeEditingThrottleMap = new Map<
-    string,
-    { timer: ReturnType<typeof setTimeout> | null; lastEditing: boolean }
-  >()
-  const NODE_EDITING_THROTTLE_MS = 100
-
-  function sendNodeEditingRaw(nodeId: string, editing: boolean): void {
-    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      return
-    }
-    try {
-      ws.value.send(JSON.stringify({ type: 'node_editing', node_id: nodeId, editing }))
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[WorkshopWS] Failed to send node_editing:', error)
-      }
-    }
-  }
-
-  function notifyNodeEditing(nodeId: string, editing: boolean) {
-    let state = nodeEditingThrottleMap.get(nodeId)
-    if (!state) {
-      state = { timer: null, lastEditing: editing }
-      nodeEditingThrottleMap.set(nodeId, state)
-    }
-    state.lastEditing = editing
-    if (state.timer === null) {
-      sendNodeEditingRaw(nodeId, editing)
-      state.timer = setTimeout(() => {
-        const s = nodeEditingThrottleMap.get(nodeId)
-        if (s) {
-          s.timer = null
-          sendNodeEditingRaw(nodeId, s.lastEditing)
-        }
-      }, NODE_EDITING_THROTTLE_MS)
-    }
-  }
-
-  /**
-   * Send a claim_node_edit request before entering edit mode.
-   * The server responds with node_edit_claimed{granted:true/false}.
-   * On grant the server also broadcasts node_editing{editing:true} to all participants.
-   * This replaces sending node_editing{editing:true} from the client on the open path.
-   */
-  function sendClaimNodeEdit(nodeId: string): void {
-    if (!ws.value || ws.value.readyState !== WebSocket.OPEN) {
-      return
-    }
-    try {
-      ws.value.send(JSON.stringify({ type: 'claim_node_edit', node_id: nodeId }))
-    } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error('[WorkshopWS] Failed to send claim_node_edit:', error)
-      }
-    }
-  }
-
-  function clearNodeEditingThrottles(): void {
-    nodeEditingThrottleMap.forEach((state) => {
-      if (state.timer !== null) {
-        clearTimeout(state.timer)
-        state.timer = null
-      }
-    })
-    nodeEditingThrottleMap.clear()
   }
 
   let codeWatcher: (() => void) | null = null
@@ -747,6 +605,10 @@ export function useWorkshop(
     diagramOwnerId.value = userId
   }
 
+  function refreshActiveEditorsRef(): void {
+    activeEditors.value = new Map(activeEditors.value)
+  }
+
   return {
     isConnected,
     connectionStatus: computed(() => connectionStatus.value),
@@ -770,6 +632,7 @@ export function useWorkshop(
     notifyNodeEditing,
     sendClaimNodeEdit,
     setOwnerIdOptimistic,
+    refreshActiveEditorsRef,
     watchCode,
   }
 }

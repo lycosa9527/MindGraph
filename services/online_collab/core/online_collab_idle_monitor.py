@@ -319,7 +319,7 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
                 async with sem:
                     try:
                         await evaluate_stale_code(manager, c, now)
-                    except Exception as exc:
+                    except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
                         logger.warning(
                             "[OnlineCollabMgr] _evaluate_stale_code failed "
                             "code=%s: %s",
@@ -339,7 +339,7 @@ async def idle_monitor_loop(manager: _IdleKickTarget) -> None:
                 "[OnlineCollabMgr] Idle monitor task cancelled, shutting down"
             )
             raise
-        except Exception as exc:
+        except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
             logger.error(
                 "[OnlineCollabMgr] Idle monitor unexpected error: %s",
                 exc,

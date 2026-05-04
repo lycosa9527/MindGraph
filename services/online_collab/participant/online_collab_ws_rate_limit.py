@@ -36,10 +36,9 @@ _WINDOW_SECONDS = 60
 
 _RATE_PREFIX = "rate:"
 
-# When True (default), a Redis error during the join rate-limit check silently
-# allows the join to proceed.  Set to False in production to deny joins during
-# Redis outages and prevent brute-force spikes.
-_FAIL_OPEN: bool = os.environ.get("COLLAB_JOIN_RL_FAIL_OPEN", "true").lower() in (
+# When True, a Redis error during the join rate-limit check allows the join to
+# proceed. The production default is fail-closed.
+_FAIL_OPEN: bool = os.environ.get("COLLAB_JOIN_RL_FAIL_OPEN", "false").lower() in (
     "1", "true", "yes",
 )
 
@@ -66,7 +65,6 @@ async def check_canvas_collab_join_rate_limits(
 
     Evaluates the per-user bucket (20/min) and per-IP aggregate bucket
     (120/min) in a single atomic Redis round-trip via the combined Lua script.
-    Falls back to the sequential two-call path when Redis is unavailable.
 
     Returns:
         Human-readable refusal message when limited, otherwise None.

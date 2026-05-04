@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+
 import pytest
 
 from services.online_collab.participant import workshop_join_resume_tokens as tokens
@@ -17,6 +19,20 @@ class _FakeRedis:
 
     async def get(self, key: str) -> str | None:
         return self.data.get(key)
+
+    async def eval(self, _script: str, _num_keys: int, key: str, *args: str) -> int:
+        raw = self.data.get(key)
+        if raw is None:
+            return 0
+        decoded = json.loads(raw)
+        if (
+            str(decoded.get('u')) == args[0]
+            and str(decoded.get('c')) == args[1]
+            and str(decoded.get('d')) == args[2]
+        ):
+            self.data.pop(key, None)
+            return 1
+        return 0
 
     async def delete(self, key: str) -> int:
         if key in self.data:
@@ -46,7 +62,7 @@ async def test_resume_mint_then_consume_deletes(monkeypatch):
 
 
 @pytest.mark.asyncio
-async def test_resume_wrong_user_leaves_blob(monkeypatch):
+async def test_resume_wrong_user_does_not_burn_token(monkeypatch):
     fake = _FakeRedis()
     monkeypatch.setattr(tokens, 'get_async_redis', lambda: fake)
 

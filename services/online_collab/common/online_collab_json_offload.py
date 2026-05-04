@@ -44,7 +44,7 @@ async def dumps_maybe_offload(
     if isinstance(obj, (dict, list)) and _should_offload_dict(obj):
         try:
             return await asyncio.to_thread(json.dumps, obj, ensure_ascii=ensure_ascii)
-        except Exception:
+        except (TypeError, ValueError, OSError, RuntimeError):
             pass
     return json.dumps(obj, ensure_ascii=ensure_ascii)
 
@@ -59,7 +59,7 @@ async def loads_maybe_offload(raw: str) -> Any:
     if len(raw) > _OFFLOAD_THRESHOLD:
         try:
             return await asyncio.to_thread(json.loads, raw)
-        except Exception:
+        except (TypeError, ValueError, OSError, RuntimeError):
             pass
     return json.loads(raw)
 
@@ -74,12 +74,12 @@ async def deepcopy_maybe_offload(obj: Any, estimated_bytes: Optional[int] = None
     if estimated_bytes is not None and estimated_bytes > _OFFLOAD_THRESHOLD:
         try:
             return await asyncio.to_thread(copy.deepcopy, obj)
-        except Exception:
+        except (TypeError, OSError, RuntimeError, MemoryError):
             pass
     elif isinstance(obj, (dict, list)) and _should_offload_dict(obj):
         try:
             return await asyncio.to_thread(copy.deepcopy, obj)
-        except Exception:
+        except (TypeError, OSError, RuntimeError, MemoryError):
             pass
     return copy.deepcopy(obj)
 
@@ -100,7 +100,7 @@ def _should_offload_dict(obj: Any) -> bool:
         else:
             return False
         return total > _OFFLOAD_THRESHOLD
-    except Exception:
+    except (TypeError, ValueError, AttributeError):
         return False
 
 

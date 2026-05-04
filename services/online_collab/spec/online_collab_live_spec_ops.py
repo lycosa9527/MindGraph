@@ -16,6 +16,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from redis.exceptions import RedisError, WatchError
 from sqlalchemy import text as sql_text
+from sqlalchemy.exc import SQLAlchemyError
 
 from config.database import AsyncSessionLocal
 from services.online_collab.common.online_collab_json_offload import dumps_maybe_offload
@@ -42,6 +43,7 @@ from services.online_collab.redis.online_collab_redis_keys import (
     live_last_db_flush_key,
     live_spec_key,
     participants_key,
+    room_last_collab_activity_key,
     snapshot_seq_key,
     tombstones_key,
 )
@@ -134,7 +136,7 @@ async def mutate_live_spec_after_ws_update(
     for the caller to pop before broadcasting.
     """
     ttl_clamped = max(1, min(int(ttl_sec), 86400 * 14))
-    return await _mutate_live_spec_json(
+    result = await _mutate_live_spec_json(
         redis,
         code,
         diagram_id,
@@ -145,6 +147,28 @@ async def mutate_live_spec_after_ws_update(
         deleted_node_ids,
         deleted_connection_ids,
     )
+    if result is not None:
+        await mark_live_spec_collab_activity(redis, code, ttl_clamped)
+    return result
+
+
+async def mark_live_spec_collab_activity(redis: Any, code: str, ttl_sec: int) -> None:
+    """Record the latest successful Redis live-spec mutation for health alerts."""
+    if redis is None:
+        return
+    ttl_clamped = max(_FLUSH_TS_MIN_TTL_SEC, min(int(ttl_sec), 86400 * 14))
+    try:
+        await redis.setex(
+            room_last_collab_activity_key(code),
+            ttl_clamped,
+            str(int(time.time())),
+        )
+    except (RedisError, OSError, RuntimeError, TypeError) as exc:
+        logger.debug(
+            "[LiveSpec] collab activity timestamp write failed code=%s: %s",
+            code,
+            exc,
+        )
 
 
 async def _mutate_live_spec_json(
@@ -226,10 +250,10 @@ async def _mutate_live_spec_json(
                 patch = {k: merged.get(k) for k in changed}
                 patch["v"] = _ver
                 pipe.execute_command("JSON.MERGE", key, "$", json.dumps(patch))
-            pipe.expire(key, ttl_clamped, gt=True)
+            pipe.expire(key, ttl_clamped)
             if changed:
                 pipe.sadd(ck_key, *changed)
-            pipe.expire(ck_key, ttl_clamped, gt=True)
+            pipe.expire(ck_key, ttl_clamped)
             pipe.incr(seq_key)
             if deleted_node_ids:
                 tomb_ids = [str(n) for n in deleted_node_ids if n]
@@ -241,7 +265,7 @@ async def _mutate_live_spec_json(
         logger.warning("[LiveSpec] Redis pipeline failed code=%s: %s", code, exc)
         try:
             record_ws_redisjson_failure_total()
-        except Exception:
+        except (AttributeError, TypeError, RuntimeError, OSError):
             pass
         return None
 
@@ -264,15 +288,16 @@ async def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
     workers when all participants disconnect simultaneously — only one worker
     runs the actual DB flush.
 
-    ``hlen`` and ``get`` are pipelined into one round-trip so the leave-last-user
-    hot path does not pay two sequential Redis latencies.
+    Independent Redis reads are issued concurrently. After acquiring the flush
+    guard, participant count is rechecked so a reconnect between the first read
+    and the guard does not trigger an empty-room flush for an active room.
     """
     try:
-        async with redis.pipeline(transaction=False) as pipe:
-            pipe.hlen(participants_key(code))
-            pipe.get(code_to_diagram_key(code))
-            remaining, raw_did = await pipe.execute()
-    except (TypeError, AttributeError, RuntimeError, Exception):
+        remaining, raw_did = await asyncio.gather(
+            redis.hlen(participants_key(code)),
+            redis.get(code_to_diagram_key(code)),
+        )
+    except (RedisError, OSError, TypeError, AttributeError, RuntimeError):
         return
     if remaining != 0:
         return
@@ -285,9 +310,18 @@ async def maybe_flush_live_spec_when_room_empty(redis: Any, code: str) -> None:
     try:
         acquired = await redis.set(live_flush_pending_key(code), "1", nx=True, ex=15)
     except (TypeError, AttributeError, RuntimeError):
-        acquired = True
+        logger.warning("[LiveSpec] empty-room flush NX failed code=%s", code)
+        acquired = False
 
     if not acquired:
+        return
+
+    try:
+        remaining_after_guard = await redis.hlen(participants_key(code))
+    except (RedisError, OSError, TypeError, AttributeError, RuntimeError) as exc:
+        logger.debug("[LiveSpec] empty-room flush recheck failed code=%s: %s", code, exc)
+        return
+    if remaining_after_guard != 0:
         return
 
     await flush_live_spec_to_db(code, diagram_id_val)
@@ -335,9 +369,29 @@ async def _read_changed_keys(redis: Any, code: str) -> frozenset:
         return frozenset()
 
 
-async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
+async def mark_live_spec_db_flushed(redis: Any, code: str) -> None:
+    """Record the successful DB flush timestamp with the live-spec TTL."""
+    try:
+        live_ttl = await redis.ttl(live_spec_key(code))
+    except (RedisError, OSError, RuntimeError, TypeError):
+        live_ttl = None
+    if not isinstance(live_ttl, int) or live_ttl <= 0:
+        live_ttl = _FLUSH_TS_FALLBACK_TTL_SEC
+    await redis.setex(
+        live_last_db_flush_key(code),
+        max(live_ttl, _FLUSH_TS_MIN_TTL_SEC),
+        str(int(time.time())),
+    )
+
+
+async def flush_live_spec_to_db_in_session(
+    db: Any,
+    redis: Any,
+    code: str,
+    diagram_id: str,
+) -> bool:
     """
-    Write Redis live spec to ``Diagram.spec``.
+    Write Redis live spec to ``Diagram.spec`` using the caller's DB transaction.
 
     Uses partial ``jsonb_set`` when only ``nodes`` and/or ``connections``
     changed (tracked in ``workshop:live_changed_keys:{code}``), cutting wire
@@ -345,8 +399,7 @@ async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
     when ``__full__`` sentinel is present (structural rewrite or any deletions)
     or when the tracking key is missing.
     """
-    redis = get_async_redis()
-    if not redis:
+    if redis is None:
         return False
     doc = await read_live_spec(redis, code)
     if not doc:
@@ -362,64 +415,66 @@ async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
     )
 
     snapshot = spec_for_snapshot(doc)
+    # PG 18: set lock_timeout so UPDATE cannot wait indefinitely for a row
+    # lock held by a concurrent request; fail fast and let the next flush try.
+    await db.execute(sql_text("SET LOCAL lock_timeout = '3000ms'"))
+    lock_key = f"flush:{diagram_id}"
+    lock_row = await db.execute(
+        sql_text("SELECT pg_try_advisory_xact_lock(hashtext(:k))")
+        .bindparams(k=lock_key)
+    )
+    acquired = bool(lock_row.scalar())
+    if not acquired:
+        logger.debug(
+            "[LiveSpec] skip flush diagram=%s code=%s (advisory lock held)",
+            diagram_id, code,
+        )
+        return False
+
+    if use_partial:
+        updated_id = await _partial_jsonb_flush(
+            db, diagram_id, snapshot, changed_keys
+        )
+    else:
+        try:
+            serialised_spec = await dumps_maybe_offload(snapshot)
+        except (TypeError, ValueError):
+            logger.warning(
+                "[LiveSpec] flush: JSON serialize failed diagram=%s", diagram_id
+            )
+            return False
+        upd_result = await db.execute(
+            STMT_DIAGRAM_UPDATE_SPEC,
+            {"p_id": diagram_id, "p_spec": serialised_spec},
+        )
+        updated_id = upd_result.scalar_one_or_none()
+
+    if updated_id is None:
+        return False
+    logger.debug(
+        "[LiveSpec] Flushed diagram=%s workshop=%s partial=%s",
+        diagram_id, code, use_partial,
+    )
+    return True
+
+
+async def _flush_live_spec_to_db_impl(code: str, diagram_id: str) -> bool:
+    """Own a DB session, flush Redis live spec, and commit the spec update."""
+    redis = get_async_redis()
+    if not redis:
+        return False
     async with AsyncSessionLocal() as db:
         try:
-            # PG 18: set lock_timeout so UPDATE cannot wait indefinitely for a
-            # row lock held by a concurrent request; fail fast and let the next
-            # debounce flush pick it up.
-            await db.execute(sql_text("SET LOCAL lock_timeout = '3000ms'"))
-            lock_key = f"flush:{diagram_id}"
-            lock_row = await db.execute(
-                sql_text("SELECT pg_try_advisory_xact_lock(hashtext(:k))")
-                .bindparams(k=lock_key)
+            flushed = await flush_live_spec_to_db_in_session(
+                db, redis, code, diagram_id,
             )
-            acquired = bool(lock_row.scalar())
-            if not acquired:
-                logger.debug(
-                    "[LiveSpec] skip flush diagram=%s code=%s (advisory lock held)",
-                    diagram_id, code,
-                )
-                await db.rollback()
-                return False
-
-            if use_partial:
-                updated_id = await _partial_jsonb_flush(db, diagram_id, snapshot, changed_keys)
-            else:
-                try:
-                    serialised_spec = await dumps_maybe_offload(snapshot)
-                except (TypeError, ValueError):
-                    logger.warning(
-                        "[LiveSpec] flush: JSON serialize failed diagram=%s", diagram_id
-                    )
-                    await db.rollback()
-                    return False
-                upd_result = await db.execute(
-                    STMT_DIAGRAM_UPDATE_SPEC,
-                    {"p_id": diagram_id, "p_spec": serialised_spec},
-                )
-                updated_id = upd_result.scalar_one_or_none()
-
-            if updated_id is None:
+            if not flushed:
                 await db.rollback()
                 return False
             await db.commit()
-            try:
-                live_ttl = await redis.ttl(live_spec_key(code))
-            except (RedisError, OSError, RuntimeError, TypeError):
-                live_ttl = None
-            if not isinstance(live_ttl, int) or live_ttl <= 0:
-                live_ttl = _FLUSH_TS_FALLBACK_TTL_SEC
-            await redis.setex(
-                live_last_db_flush_key(code),
-                max(live_ttl, _FLUSH_TS_MIN_TTL_SEC),
-                str(int(time.time())),
-            )
-            logger.debug(
-                "[LiveSpec] Flushed diagram=%s workshop=%s partial=%s",
-                diagram_id, code, use_partial,
-            )
+            await mark_live_spec_db_flushed(redis, code)
             return True
-        except Exception as exc:
+        except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError, SQLAlchemyError) as exc:
             logger.error("[LiveSpec] flush failed: %s", exc, exc_info=True)
             await db.rollback()
             return False
@@ -459,6 +514,6 @@ async def _partial_jsonb_flush(
         ).bindparams(**params)
         result = await db.execute(raw_sql)
         return result.scalar_one_or_none()
-    except Exception as exc:
+    except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError, SQLAlchemyError) as exc:
         logger.debug("[LiveSpec] partial jsonb_set failed diagram=%s: %s — full fallback", diagram_id, exc)
         return None

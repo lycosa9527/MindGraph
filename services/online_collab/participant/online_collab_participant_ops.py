@@ -45,7 +45,7 @@ async def _hexpire_field(redis: Any, key: str, ttl: int, field: str) -> None:
     except (ResponseError, AttributeError, TypeError):
         try:
             record_ws_hexpire_downgrade()
-        except Exception:
+        except (AttributeError, TypeError, RuntimeError, OSError):
             pass
         try:
             await cast(Awaitable[Any], redis.expire(key, ttl))

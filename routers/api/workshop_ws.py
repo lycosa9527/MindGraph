@@ -34,7 +34,6 @@ from services.features.workshop_ws_connection_state import (
     create_connection_handle,
     enqueue,
     finalize_handle_writer_shutdown,
-    register_connection,
     teardown_superseded_connection,
 )
 from utils.collab_ws_origin import (
@@ -48,7 +47,11 @@ from services.online_collab.core.online_collab_manager import (
 from services.auth.vpn_geo_enforcement import maybe_close_websocket_for_vpn_cn_geo
 
 _close_ws_if_vpn_cn_geo = maybe_close_websocket_for_vpn_cn_geo
-from routers.api.workshop_ws_auth import authenticate_and_resolve_canvas_workshop
+from routers.api.workshop_ws_auth import (
+    authenticate_canvas_collab_user,
+    normalize_canvas_collab_code,
+    resolve_canvas_collab_join,
+)
 from routers.api.workshop_ws_connect import send_canvas_collab_join_handshake
 from routers.api.workshop_ws_disconnect import (
     clear_editor_state_for_superseded_session,
@@ -145,26 +148,21 @@ async def canvas_collab_websocket(
             logger.debug("[WorkshopWS] Close on collab-disabled: %s", exc)
         return
 
-    resolved = await authenticate_and_resolve_canvas_workshop(websocket, code)
-    if not resolved:
-        return
-    user, code, diagram_id, owner_id = resolved
-
-    if await _close_ws_if_vpn_cn_geo(websocket):
-        logger.warning("[WorkshopWS] VPN/CN policy closed connection for user_id=%s", user.id)
+    user, auth_err = await authenticate_canvas_collab_user(websocket)
+    if auth_err or user is None:
         return
 
-    room = active_connections.get(code, {})
-    previous_handle: AnyHandle | None = room.get(user.id)
-    if previous_handle is not None and previous_handle.websocket is not websocket:
-        try:
-            await previous_handle.websocket.close(
-                code=4003, reason="replaced_by_new_session"
-            )
-        except Exception as exc:
-            logger.debug("[WorkshopWS] Close superseded socket failed: %s", exc)
-        await teardown_superseded_connection(code, user.id, previous_handle)
-        await clear_editor_state_for_superseded_session(code, user)
+    norm_code = normalize_canvas_collab_code(code)
+    if norm_code is None:
+        await websocket.close(
+            code=1008,
+            reason="Invalid presentation code format",
+        )
+        logger.warning(
+            "[WorkshopWS] Invalid presentation code format: %s",
+            code.strip().upper(),
+        )
+        return
 
     allowed_origins = load_collab_ws_allowed_origins_env()
     if not canvas_collab_websocket_origin_is_allowed(
@@ -181,7 +179,14 @@ async def canvas_collab_websocket(
         )
         return
 
-    await websocket.accept()
+    if await _close_ws_if_vpn_cn_geo(websocket):
+        logger.warning("[WorkshopWS] VPN/CN policy closed connection for user_id=%s", user.id)
+        return
+
+    resolved = await resolve_canvas_collab_join(websocket, user, norm_code)
+    if not resolved:
+        return
+    user, code, diagram_id, owner_id = resolved
 
     rate_limiter = WebsocketMessageRateLimiter(
         DEFAULT_MAX_WS_MESSAGES_PER_SECOND,
@@ -191,17 +196,11 @@ async def canvas_collab_websocket(
 
     role = "host" if (owner_id is not None and user.id == owner_id) else "editor"
     handle = create_connection_handle(code, user.id, websocket, role=role)
-    if handle.role == "viewer":
-        record_ws_viewer_connection_delta(1)
-    else:
-        record_ws_editor_connection_delta(1)
 
     logger.info(
         "[WorkshopWS] User %s connected to workshop %s (diagram %s)",
         user.id, code, diagram_id,
     )
-
-    await get_online_collab_manager().on_join(code, user.id)
 
     collab_ctx = CollabWsContext(
         code=code,
@@ -216,7 +215,12 @@ async def canvas_collab_websocket(
         jwt_last_revalidated_monotonic=time.monotonic(),
     )
 
+    join_committed = False
     try:
+        await websocket.accept()
+
+        await get_online_collab_manager().on_join(code, user.id)
+
         async with ws_managed_session(
             websocket,
             user_id=user.id,
@@ -227,6 +231,18 @@ async def canvas_collab_websocket(
             max_per_user_global=_COLLAB_WS_MAX_PER_USER_GLOBAL,
             redis_collab_cap=True,
         ):
+            room = active_connections.get(code, {})
+            previous_handle: AnyHandle | None = room.get(user.id)
+            if previous_handle is not None and previous_handle.websocket is not websocket:
+                try:
+                    await previous_handle.websocket.close(
+                        code=4003, reason="replaced_by_new_session"
+                    )
+                except Exception as exc:
+                    logger.debug("[WorkshopWS] Close superseded socket failed: %s", exc)
+                await teardown_superseded_connection(code, user.id, previous_handle)
+                await clear_editor_state_for_superseded_session(code, user)
+
             try:
                 await send_canvas_collab_join_handshake(
                     handle,
@@ -249,6 +265,11 @@ async def canvas_collab_websocket(
                 raise
 
             await activate_connection(code, user.id, handle)
+            if handle.role == "viewer":
+                record_ws_viewer_connection_delta(1)
+            else:
+                record_ws_editor_connection_delta(1)
+            join_committed = True
 
             try:
                 await run_canvas_collab_receive_loop(collab_ctx)
@@ -284,6 +305,16 @@ async def canvas_collab_websocket(
                     handle=handle,
                     workshop_owner_id=owner_id,
                 )
+    except BaseException:
+        if not join_committed:
+            try:
+                await get_online_collab_manager().remove_participant(code, user.id)
+            except Exception as cleanup_exc:
+                logger.warning(
+                    "[WorkshopWS] remove_participant after failed join user=%s code=%s: %s",
+                    user.id, code, cleanup_exc,
+                )
+        raise
     finally:
         # Ensure the writer task is stopped even when ws_managed_session raised
         # on entry (cap hit) or the handshake failed before activate_connection.

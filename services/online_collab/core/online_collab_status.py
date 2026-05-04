@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from datetime import UTC, datetime
-from typing import Any, Awaitable, Dict, List, Optional, Tuple, cast
+from typing import Any, Dict, List, Optional, Tuple
 
 from redis.exceptions import RedisError
 from sqlalchemy import or_, select
@@ -31,6 +31,7 @@ from services.online_collab.lifecycle.online_collab_session_fields import backfi
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
+    ONLINE_COLLAB_VISIBILITY_PRIVATE,
     clear_expired_online_collab_session,
     diagram_online_collab_visibility,
     viewer_may_see_online_collab_code,
@@ -39,22 +40,20 @@ from services.online_collab.lifecycle.online_collab_visibility_helpers import (
 logger = logging.getLogger(__name__)
 
 
-async def _redis_participant_count(code: str) -> int | None:
-    """
-    Return live participant count from Redis, or ``None`` when Redis is
-    unavailable so callers can distinguish "0 participants" from "unknown".
-
-    The participants key is a HASH (field=user_id, value=join timestamp) so
-    HLEN is correct; SCARD would raise WRONGTYPE and silently return None.
-    """
+async def _redis_participant_counts(codes: List[str]) -> Dict[str, int] | None:
+    """Pipeline HLEN participant counts for SQL fallback rows."""
     redis = get_async_redis()
     if not redis:
         return None
     try:
-        return await cast(
-            Awaitable[int],
-            redis.hlen(participants_key(code)),
-        )
+        async with redis.pipeline(transaction=False) as pipe:
+            for code in codes:
+                pipe.hlen(participants_key(code))
+            values = await pipe.execute()
+        return {
+            code: int(values[idx])
+            for idx, code in enumerate(codes)
+        }
     except (RedisError, OSError, TypeError, ValueError):
         return None
 
@@ -93,11 +92,18 @@ async def _sql_list_org_sessions_by_org_id(
             )
             rows = result.all()
             out: List[Dict[str, Any]] = []
+            codes = [
+                str(diagram.workshop_code).strip().upper()
+                for diagram, _owner in rows
+                if diagram.workshop_code
+            ]
+            counts = await _redis_participant_counts(codes)
             for diagram, owner in rows:
                 code = diagram.workshop_code
                 if not code:
                     continue
-                count = await _redis_participant_count(code)
+                norm_code = code.strip().upper()
+                count = counts.get(norm_code) if counts is not None else None
                 if count is not None and count == 0:
                     continue
                 rem = remaining_seconds(diagram.workshop_expires_at)
@@ -181,6 +187,8 @@ async def _redis_visibility_for_code(code: str) -> Optional[str]:
         return ONLINE_COLLAB_VISIBILITY_NETWORK
     if vis == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
         return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+    if vis == ONLINE_COLLAB_VISIBILITY_PRIVATE:
+        return ONLINE_COLLAB_VISIBILITY_PRIVATE
     return None
 
 
@@ -211,17 +219,19 @@ async def online_collab_visibility_for_diagram_id(
             )
             row = result.first()
             if row is None:
-                return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+                return ONLINE_COLLAB_VISIBILITY_PRIVATE
             vis = row[0]
             if vis == ONLINE_COLLAB_VISIBILITY_NETWORK:
                 return ONLINE_COLLAB_VISIBILITY_NETWORK
-            return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+            if vis == ONLINE_COLLAB_VISIBILITY_ORGANIZATION:
+                return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+            return ONLINE_COLLAB_VISIBILITY_PRIVATE
         except (SQLAlchemyError, OSError) as exc:
             logger.warning(
                 "[OnlineCollabStatusOps] online_collab_visibility_for_diagram_id: %s",
                 exc,
             )
-            return ONLINE_COLLAB_VISIBILITY_ORGANIZATION
+            return ONLINE_COLLAB_VISIBILITY_PRIVATE
 
 
 async def _compute_online_collab_status_for_viewer(

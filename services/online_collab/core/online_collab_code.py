@@ -20,6 +20,7 @@ from services.online_collab.lifecycle.online_collab_expiry import (
 from services.online_collab.lifecycle.online_collab_visibility_helpers import (
     ONLINE_COLLAB_VISIBILITY_NETWORK,
     ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
+    ONLINE_COLLAB_VISIBILITY_PRIVATE,
 )
 from services.online_collab.redis.online_collab_redis_keys import code_to_diagram_key
 from services.online_collab.redis.redis8_features import (
@@ -63,6 +64,7 @@ def _online_collab_start_validation_error(
     if visibility not in (
         ONLINE_COLLAB_VISIBILITY_ORGANIZATION,
         ONLINE_COLLAB_VISIBILITY_NETWORK,
+        ONLINE_COLLAB_VISIBILITY_PRIVATE,
     ):
         return "Invalid workshop visibility"
     if not duration_allowed_for_visibility(visibility, duration):

@@ -1,0 +1,52 @@
+{
+  "title": "MindGraph Online Collaboration",
+  "tags": ["mindgraph", "online-collab"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Active Collab Sockets",
+      "targets": [{ "expr": "collab_active_sockets" }],
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "type": "stat",
+      "title": "Active Collab Rooms",
+      "targets": [{ "expr": "collab_active_rooms" }],
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Join Rate Limits",
+      "targets": [{ "expr": "rate(collab_join_rate_limited_total[5m])" }],
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 6 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Origin Rejects",
+      "targets": [{ "expr": "rate(collab_origin_reject_total[5m])" }],
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 6 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Dropped Fanout / Slow Consumers",
+      "targets": [
+        { "expr": "rate(collab_fanout_dropped_total[5m])" },
+        { "expr": "rate(collab_disconnect_slow_consumer_total[5m])" }
+      ],
+      "gridPos": { "x": 0, "y": 10, "w": 12, "h": 6 }
+    },
+    {
+      "type": "timeseries",
+      "title": "Update Rejects / Snapshot Oversize",
+      "targets": [
+        { "expr": "rate(collab_update_schema_reject_total[5m])" },
+        { "expr": "rate(collab_snapshot_oversize_total[5m])" }
+      ],
+      "gridPos": { "x": 12, "y": 10, "w": 12, "h": 6 }
+    }
+  ]
+}

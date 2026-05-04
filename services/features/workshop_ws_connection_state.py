@@ -27,6 +27,7 @@ import json
 import logging
 import os
 from dataclasses import dataclass, field
+from types import SimpleNamespace
 from typing import Callable, Dict, Literal, Optional, Tuple, Union
 
 from fastapi import WebSocket
@@ -245,16 +246,23 @@ async def _evict_slow_consumer(handle: AnyHandle, reason: str) -> None:
             await handle.websocket.close(code=4014, reason="slow consumer evicted")
     except Exception:
         pass
-    await unregister_connection(handle.code, handle.user_id)
     try:
-        from services.online_collab.core.online_collab_manager import (
-            get_online_collab_manager,
+        from routers.api.workshop_ws_disconnect import (
+            finalize_canvas_collab_disconnect,
         )
-        await get_online_collab_manager().remove_participant(
-            handle.code, handle.user_id
+        user_stub = SimpleNamespace(id=handle.user_id)
+        owner_id = handle.user_id if handle.role == "host" else None
+        await finalize_canvas_collab_disconnect(
+            code=handle.code,
+            user=user_stub,
+            handle=handle,
+            workshop_owner_id=owner_id,
         )
-    except Exception:
-        pass
+    except Exception as exc:
+        logger.warning(
+            "[ConnectionHandle] slow-consumer cleanup failed code=%s user=%s: %s",
+            handle.code, handle.user_id, exc,
+        )
 
 
 async def enqueue(handle: AnyHandle, payload: dict, msg_type: str) -> None:

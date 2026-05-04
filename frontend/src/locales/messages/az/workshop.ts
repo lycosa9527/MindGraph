@@ -4,7 +4,7 @@
 
 export default {
   'collab.codeCopied': 'Kod kopyalandı',
-  'collab.codeGenerated': 'Əməkdaşlıq kodu yaradıldı paylaşın.',
+  'collab.codeGenerated': 'Əməkdaşlıq kodu yaradıldı — birlikdə redaktə etmək üçün paylaşın.',
   'collab.copy': 'Kopyala',
   'collab.copyFailed': 'Kopyalanmadı',
   'collab.copyLink': 'Linki kopyala',
@@ -20,8 +20,7 @@ export default {
   'collab.ended': 'Əməkdaşlıq bitdi',
   'collab.galleryFull': 'Qalereya doludur; əvvəlcə bir diaqramı silin',
   'collab.hintNetworkInactive': 'Kod yaradın ki, digərləri qoşulsun və birlikdə redaktə etsin.',
-  'collab.hintSchoolInactive':
-    'Aktivləşdikdən sonra eyni məktəb həmkarları əsas səhifədən qoşula bilər.',
+  'collab.hintSchoolInactive': 'Həmkarlar əsas səhifədə Əməkdaşlıq → Məktəb bölməsindən qoşulur.',
   'collab.invalidDiagramData': 'Diaqram məlumatı etibarsızdır',
   'collab.linkCopied': 'Link kopyalandı',
   'collab.networkError': 'Şəbəkə xətası',
@@ -30,18 +29,20 @@ export default {
   'collab.noDiagramToSave': 'Saxlanacaq diaqram yoxdur',
   'collab.nodeLocked': 'Başqa istifadəçi bu düyünü redaktə edir',
   'collab.participants': '{n} iştirakçı',
+  'collab.previousSessionsStopped':
+    'Digər diaqramlarınızdakı {n} əvvəlki əməkdaşlıq sessiyası bitirildi.',
   'collab.saveFailed': 'Saxlama uğursuz oldu',
   'collab.scanToJoin': 'Qoşulmaq üçün skan edin',
   'collab.schoolDescActive':
-    'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq Məktəb və bu diaqramı seçin kod lazım deyil.',
+    'Məktəb əməkdaşlığı aktivdir. Həmkarlar: əsas səhifədə Əməkdaşlıq → Məktəb keçidindən bu diaqramı seçin — kod lazım deyil.',
   'collab.schoolStarted':
-    'Məktəb əməkdaşlığı aktivdir həmkarlar Əməkdaşlıq Məktəb-dən qoşula bilər.',
+    'Məktəb əməkdaşlığı aktivdir — həmkarlar Əməkdaşlıq → Məktəb bölməsindən qoşula bilər.',
   'collab.sectionNetwork': 'Ümumi əməkdaşlıq (kod)',
   'collab.sectionSchool': 'Məktəb daxilində əməkdaşlıq',
   'collab.sessionDuration': 'Sessiya müddəti',
   'collab.sessionRemaining': 'Sessiyanın bitməsinə qalan',
   'collab.shareDescNetwork':
-    'Kodu və ya linki paylaşın digərləri Əməkdaşlıq Ümumi altında daxil edə bilər.',
+    'Kodu və ya linki paylaşın — digərləri əsas səhifədə Əməkdaşlıq → Ümumi altında daxil edə bilər.',
   'collab.start': 'Başlat',
   'collab.startFailed': 'Başlatmaq alınmadı: {msg}',
   'collab.title': 'Onlayn əməkdaşlıq',
@@ -344,22 +345,38 @@ export default {
   'workshop.you': '(siz)',
   'workshop.youAnd': 'Siz və',
   'workshopCanvas.connectFailed': 'Əməkdaşlığa qoşulmaq alınmadı',
+  'workshopCanvas.sessionExpiredReconnect':
+    'Sessiyanızın müddəti bitdi. Əməkdaşlığa yenidən qoşulmaq üçün səhifəni yeniləyin.',
+  'workshopCanvas.sessionRefreshFailed':
+    'Əməkdaşlıq sessiyasını yeniləmək alınmadı. Zəhmət olmasa işi saxlayın və yenidən daxil olun.',
+  'workshopCanvas.outboundQueueDegraded':
+    'Əməkdaşlıq sinxronizasiyası geri qalır. Bəzi göndərilməmiş redaktələr saxlanıla bilmədi.',
   'workshopCanvas.connectionClosed': 'Bağlantı kəsildi',
+  'workshopCanvas.connectionClosedSlow':
+    'Bağlantı kəsildi: əlaqəniz əməkdaşlıq sessiyasına uyğun gəlmək üçün çox yavaş idi.',
+  'workshopCanvas.sessionEndedByHost': 'Ev sahibi əməkdaşlıq sessiyasını bitirdi.',
+  'workshopCanvas.editingNodeLabel': '{username} redaktə edir…',
+  'workshopCanvas.collabEditorDisplayNameFallback': 'Başqa iştirakçı',
   'workshopCanvas.connectionClosedReason': 'Əməkdaşlıq bağlantısı kəsildi: {reason}',
   'workshopCanvas.editingNode': '{username} {emoji} bu düyünü redaktə edir',
   'workshopCanvas.errorGeneric': 'Əməkdaşlıq xətası',
-  'workshopCanvas.reconnectFailed': 'Yenidən qoşulmaq alınmadı, səhifəni yeniləyin',
-  'workshopCanvas.returnedHomeIdle': 'Diaqram redaktəsi olmadığı üçün ana səhifəyə qayıdıldı.',
+  'workshopCanvas.updatePartialFiltered':
+    'Bəzi redaktələr atlandı ({count} düyün), çünki başqa iştirakçı həmin düyünləri redaktə edir.',
+  'workshopCanvas.reconnectFailed': 'Əməkdaşlığa yenidən qoşulmaq alınmadı, səhifəni yeniləyin',
+  'workshopCanvas.resyncWaiting':
+    'Canlı diaqram sinxronizasiyası gözləniləndən uzun çəkir. Yenidən cəhd edilir; redaktə ilişibsə səhifəni yeniləyə bilərsiniz.',
+  'workshopCanvas.returnedHomeIdle':
+    'Uzun müddət işləmədiyiniz üçün bağlantı kəsildi və əsas səhifəyə qayıdıldı.',
   'workshopCanvas.userJoined': 'İstifadəçi {username} qoşuldu',
-  'workshopCanvas.usersJoined': '{count} users joined',
+  'workshopCanvas.usersJoined': '{count} istifadəçi qoşuldu',
   'workshopCanvas.userLeft': 'İstifadəçi {username} ayrıldı',
-  'workshopCanvas.usersLeft': '{count} users left',
+  'workshopCanvas.usersLeft': '{count} istifadəçi ayrıldı',
   'workshopCanvas.wsError': 'Əməkdaşlıq bağlantısı xətası, şəbəkəni yoxlayın',
   'workshopCanvas.returnedHomeRoomIdle':
-    'Collaboration ended: no diagram edits in this session for a while.',
+    'Əməkdaşlıq bitdi: bu sessiyada bir müddətdir diaqramda redaktə olunmayıb.',
   'workshopCanvas.roomIdleWarningToast':
-    'No diagram edits lately collaboration ends when the countdown hits zero unless someone edits.',
+    'Son vaxtlar diaqramda redaktə yoxdur — kim redaktə etməsə, geri sayım sıfıra çatanda əməkdaşlıq bitər.',
   'workshopCanvas.otherTabCollaborationActive':
-    'Collaboration continues in another tab or window for this account.',
-  'workshopCanvas.joinQrAlt': 'Join collaboration QR code',
+    'Əməkdaşlıq bu hesab üçün başqa vərəqədə və ya pəncərədə davam edir.',
+  'workshopCanvas.joinQrAlt': 'Əməkdaşlığa qoşulmaq üçün QR kodu',
 }

@@ -62,7 +62,7 @@ class Diagram(Base):
     is_pinned: Mapped[bool] = mapped_column(Boolean, default=False)
 
     # Workshop support - shareable code for collaborative editing
-    workshop_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True, index=True)
+    workshop_code: Mapped[Optional[str]] = mapped_column(String(20), nullable=True)
     # organization = 校内 (same-org / list join); network = 共同 (code + any authenticated user)
     workshop_visibility: Mapped[Optional[str]] = mapped_column(String(32), nullable=True, index=True)
     # Collaborative session window (naive UTC); None = legacy row before migration / backfill
@@ -86,7 +86,15 @@ class Diagram(Base):
     )
 
     # Composite index for efficient queries
-    __table_args__ = (Index("ix_diagrams_user_updated", "user_id", "updated_at", "is_deleted"),)
+    __table_args__ = (
+        Index("ix_diagrams_user_updated", "user_id", "updated_at", "is_deleted"),
+        Index(
+            "ix_diagrams_workshop_code_unique_active",
+            "workshop_code",
+            unique=True,
+            postgresql_where=workshop_code.isnot(None) & (is_deleted.is_(False)),
+        ),
+    )
 
     def __repr__(self) -> str:
         return f"<Diagram {self.id}: {self.title} ({self.diagram_type})>"

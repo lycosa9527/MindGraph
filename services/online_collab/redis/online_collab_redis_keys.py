@@ -21,6 +21,8 @@ import logging
 import os
 from typing import Any
 
+from redis.exceptions import RedisError
+
 logger = logging.getLogger(__name__)
 
 
@@ -62,6 +64,7 @@ ONLINE_COLLAB_LIVE_CHANGED_KEYS_KEY = "workshop:live_changed_keys:{code}"
 ONLINE_COLLAB_ROOM_LAST_COLLAB_TS_KEY = "workshop:room_last_collab_ts:{code}"
 ONLINE_COLLAB_ROOM_IDLE_WARN_SENT_KEY = "workshop:room_idle_warn_sent:{code}"
 ONLINE_COLLAB_ROOM_IDLE_KICK_LOCK_KEY = "workshop:room_idle_kick_lock:{code}"
+ONLINE_COLLAB_DESTROY_LOCK_KEY = "workshop:destroy_lock:{code}"
 ONLINE_COLLAB_START_LOCK_KEY = "workshop:start_lock:{diagram_id}"
 ONLINE_COLLAB_SESSION_CLOSING_KEY = "workshop:closing:{code}"
 ONLINE_COLLAB_LIVE_WRITE_LOCK_KEY = "workshop:write_lock:{code}"
@@ -179,6 +182,11 @@ def room_idle_kick_lock_key(code: str) -> str:
     return ONLINE_COLLAB_ROOM_IDLE_KICK_LOCK_KEY.format(code=_tag(code))
 
 
+def destroy_lock_key(code: str) -> str:
+    """NX guard so only one worker destroys a workshop session."""
+    return ONLINE_COLLAB_DESTROY_LOCK_KEY.format(code=_tag(code))
+
+
 def start_lock_key(diagram_id: str) -> str:
     """NX lock that serialises concurrent start_online_collab calls for the same diagram."""
     return ONLINE_COLLAB_START_LOCK_KEY.format(diagram_id=_tag(diagram_id))
@@ -248,12 +256,15 @@ def _decode_bytes(val: Any) -> str:
 
 async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
     """
-    Remove all Redis keys for a workshop code atomically via pipeline.
+    Remove all Redis keys for a workshop code.
 
     Steps:
       1. Read the session-meta hash (1 round-trip) to resolve org_id / visibility
          so the correct registry SET entry can be removed.
-      2. Pipeline-delete every known key + ZREM idle_scores + SREM registries.
+      2. Pipeline-delete same-slot per-code keys.
+      3. Separately clean global indexes (ZSET/registry SETs). Those keys do not
+         share the room hash slot on Redis Cluster, so they must not be included
+         in the same MULTI/EXEC as tagged room keys.
       3. Scan-delete per-user mutation_idle keys (requires scan; not pipelinable).
     """
     if not redis:
@@ -262,7 +273,7 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
     meta: dict = {}
     try:
         meta = await redis.hgetall(session_meta_key(code)) or {}
-    except Exception as exc:
+    except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as exc:
         logger.debug(
             "[OnlineCollabRedisKeys] purge: hgetall meta failed code=%s: %s", code, exc
         )
@@ -283,6 +294,7 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
         room_last_collab_activity_key(code),
         room_idle_warning_sent_key(code),
         room_idle_kick_lock_key(code),
+        destroy_lock_key(code),
         snapshot_key(code),
         snapshot_seq_key(code),
         snapshot_leader_key(code),
@@ -292,27 +304,18 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
         f"mg:ws:workshop:editors:{_tag(code)}",
         f"mg:ws:workshop:editors_h:{_tag(code)}",
     ]
-    use_transaction = _use_cluster_hash_tags()
     try:
-        async with redis.pipeline(transaction=use_transaction) as pipe:
+        async with redis.pipeline(transaction=_use_cluster_hash_tags()) as pipe:
             pipe.delete(*per_code_keys)
-            pipe.zrem(idle_scores_key(), code)
-            if org_id_str:
-                try:
-                    pipe.srem(registry_org_key(int(org_id_str)), code)
-                except ValueError:
-                    pass
-            elif visibility == "organization":
-                pipe.srem(registry_global_org_key(), code)
-            if visibility == "network":
-                pipe.srem(registry_network_key(), code)
             await pipe.execute()
-    except Exception as exc:
+    except (RedisError, OSError, RuntimeError, TypeError) as exc:
         logger.warning(
             "[OnlineCollabRedisKeys] purge pipeline error code=%s: %s — per-key fallback",
             code, exc,
         )
         await _purge_keys_per_key_fallback(redis, per_code_keys)
+
+    await _purge_global_indexes(redis, code, org_id_str, visibility)
 
     try:
         batch: list = []
@@ -327,8 +330,77 @@ async def purge_online_collab_redis_keys(redis: Any, code: str) -> None:
                 batch = []
         if batch:
             await _pipelined_unlink(redis, batch)
-    except (TypeError, AttributeError, RuntimeError):
-        pass
+    except (RedisError, OSError, TypeError, AttributeError, RuntimeError) as exc:
+        logger.warning(
+            "[OnlineCollabRedisKeys] purge scan_iter mutation_idle failed "
+            "code=%s: %s",
+            code, exc,
+        )
+
+
+async def _purge_global_indexes(
+    redis: Any,
+    code: str,
+    org_id_str: str,
+    visibility: str,
+) -> None:
+    """Best-effort cleanup for indexes that are not in the room hash slot."""
+    try:
+        await redis.zrem(idle_scores_key(), code)
+    except (RedisError, OSError, RuntimeError, TypeError) as exc:
+        logger.debug("[OnlineCollabRedisKeys] idle_scores zrem failed: %s", exc)
+
+    candidate_registry_keys = {registry_global_org_key(), registry_network_key()}
+    if org_id_str:
+        try:
+            candidate_registry_keys.add(registry_org_key(int(org_id_str)))
+        except ValueError:
+            logger.debug(
+                "[OnlineCollabRedisKeys] invalid org_id in meta code=%s org_id=%s",
+                code,
+                org_id_str,
+            )
+    elif visibility == "organization":
+        candidate_registry_keys.add(registry_global_org_key())
+    elif visibility == "network":
+        candidate_registry_keys.add(registry_network_key())
+    else:
+        await _purge_unknown_org_registries(redis, code, candidate_registry_keys)
+
+    for registry_key in candidate_registry_keys:
+        try:
+            await redis.srem(registry_key, code)
+        except (RedisError, OSError, RuntimeError, TypeError) as exc:
+            logger.debug(
+                "[OnlineCollabRedisKeys] registry srem failed key=%s code=%s: %s",
+                registry_key,
+                code,
+                exc,
+            )
+
+
+async def _purge_unknown_org_registries(
+    redis: Any,
+    code: str,
+    candidate_registry_keys: set[str],
+) -> None:
+    """
+    Recover from missing session_meta by scanning org registry keys.
+
+    This path is intentionally best-effort and only used when the reverse mapping
+    needed for a precise SREM is unavailable.
+    """
+    try:
+        async for key in redis.scan_iter(match="workshop:registry:org:*", count=100):
+            decoded = _decode_bytes(key)
+            if decoded:
+                candidate_registry_keys.add(decoded)
+    except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as exc:
+        logger.debug(
+            "[OnlineCollabRedisKeys] registry scan failed code=%s: %s",
+            code,
+            exc,
+        )
 
 
 async def _purge_keys_per_key_fallback(redis: Any, keys: list) -> None:
@@ -341,13 +413,13 @@ async def _purge_keys_per_key_fallback(redis: Any, keys: list) -> None:
     for key in keys:
         try:
             await redis.unlink(key)
-        except Exception as exc:
+        except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as exc:
             logger.debug(
                 "[OnlineCollabRedisKeys] per-key UNLINK failed key=%s: %s", key, exc
             )
             try:
                 await redis.delete(key)
-            except Exception:
+            except (RedisError, OSError, RuntimeError, TypeError, AttributeError):
                 pass
 
 
@@ -367,7 +439,7 @@ async def _pipelined_unlink(redis: Any, keys: list) -> None:
             for k in keys:
                 pipe.unlink(k)
             await pipe.execute()
-    except Exception as exc:
+    except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as exc:
         logger.debug(
             "[OnlineCollabRedisKeys] UNLINK batch failed (falling back to DEL): %s",
             exc,
@@ -377,7 +449,7 @@ async def _pipelined_unlink(redis: Any, keys: list) -> None:
                 for k in keys:
                     pipe.delete(k)
                 await pipe.execute()
-        except Exception as del_exc:
+        except (RedisError, OSError, RuntimeError, TypeError, AttributeError) as del_exc:
             logger.debug(
                 "[OnlineCollabRedisKeys] DEL batch fallback failed: %s", del_exc,
             )

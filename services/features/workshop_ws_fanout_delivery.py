@@ -223,6 +223,13 @@ async def deliver_local_workshop_broadcast(
             )
             await force_disconnect_local_workshop_session_ended(code)
             return
+        if msg_type == "role_control":
+            from services.features.workshop_ws_role_change import (
+                apply_role_control_local,
+            )
+
+            await apply_role_control_local(code, message)
+            return
     if code not in ACTIVE_CONNECTIONS:
         logger.debug(
             "[WSFanout] deliver_drop code=%s — no local participants",

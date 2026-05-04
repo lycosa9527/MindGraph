@@ -16,7 +16,7 @@ from typing import Any, Awaitable, Dict, cast
 
 import psutil
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 from sqlalchemy import text
 
 from config.settings import config
@@ -26,6 +26,7 @@ from models.responses import DatabaseHealthResponse
 from services.infrastructure.monitoring.ws_metrics import (
     collab_ws_metrics_alerts,
     get_ws_metrics_snapshot,
+    ws_metrics_prometheus_text,
 )
 from services.online_collab.spec.online_collab_live_spec_shutdown import (
     collab_live_spec_durability_alerts,
@@ -410,6 +411,16 @@ async def websocket_metrics_check(_current_user: User = Depends(get_current_user
         logger.warning("[WSMetrics][collab_alert] %s", token)
     snap["collab_alerts"] = alerts
     return snap
+
+
+@router.get("/metrics")
+async def prometheus_metrics(_current_user: User = Depends(get_current_user)):
+    """Authenticated Prometheus text-format metrics for collaboration SLOs."""
+    snap = await get_ws_metrics_snapshot()
+    return Response(
+        content=ws_metrics_prometheus_text(snap),
+        media_type="text/plain; version=0.0.4; charset=utf-8",
+    )
 
 
 @router.get("/health/redis")

@@ -478,6 +478,32 @@ async def get_ws_metrics_snapshot() -> Dict[str, Any]:
     return snap
 
 
+def ws_metrics_prometheus_text(snap: Dict[str, Any]) -> str:
+    """Render selected WebSocket/collab counters in Prometheus text format."""
+    lines = [
+        "# HELP collab_active_sockets Active canvas collaboration sockets.",
+        "# TYPE collab_active_sockets gauge",
+        f"collab_active_sockets {int(snap.get('ws_workshop_connections', 0) or 0)}",
+        "# HELP collab_active_rooms Active canvas collaboration rooms on this worker.",
+        "# TYPE collab_active_rooms gauge",
+        f"collab_active_rooms {int(snap.get('ws_rooms_total', 0) or 0)}",
+    ]
+    counter_map = {
+        "collab_join_rate_limited_total": "ws_canvas_collab_join_rate_limited",
+        "collab_auth_failures_total": "ws_auth_failures",
+        "collab_disconnect_slow_consumer_total": "ws_slow_consumer_total",
+        "collab_fanout_dropped_total": "ws_fanout_delivery_queue_drop_total",
+        "collab_update_schema_reject_total": "ws_collab_update_schema_reject_total",
+        "collab_snapshot_oversize_total": "ws_collab_snapshot_oversize_total",
+        "collab_origin_reject_total": "ws_collab_origin_reject_total",
+        "collab_resync_total": "ws_collab_resync_total",
+    }
+    for metric_name, snap_key in counter_map.items():
+        lines.append(f"# TYPE {metric_name} counter")
+        lines.append(f"{metric_name} {int(snap.get(snap_key, 0) or 0)}")
+    return "\n".join(lines) + "\n"
+
+
 def collab_ws_metrics_alerts(snap: Dict[str, Any]) -> list[str]:
     """
     Return human-readable alert tokens when counters cross operational thresholds.

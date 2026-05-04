@@ -97,7 +97,7 @@ async def flush_all_live_specs_on_shutdown(
                 attempts += 1
             try:
                 await flush_live_spec_to_db(code, diagram_id)
-            except Exception as exc:  # pylint: disable=broad-except
+            except (RedisError, OSError, RuntimeError, TypeError, ValueError, AttributeError) as exc:
                 logger.warning(
                     "[LiveSpec] shutdown flush failed code=%s diagram=%s: %s",
                     code,
@@ -169,10 +169,10 @@ async def collab_live_spec_durability_alerts() -> list[str]:
                 continue
             examined += 1
             try:
-                async with redis.pipeline(transaction=False) as pipe:
-                    pipe.get(room_last_collab_activity_key(code))
-                    pipe.get(live_last_db_flush_key(code))
-                    collab_raw, flush_raw = await pipe.execute()
+                collab_raw, flush_raw = await asyncio.gather(
+                    redis.get(room_last_collab_activity_key(code)),
+                    redis.get(live_last_db_flush_key(code)),
+                )
             except (RedisError, OSError, RuntimeError, TypeError) as exc:
                 logger.debug("[LiveSpec] health stale sample failed code=%s: %s", code, exc)
                 continue
@@ -193,7 +193,7 @@ async def collab_live_spec_durability_alerts() -> list[str]:
                     )
                 except (TypeError, ValueError):
                     flush_ts = 0.0
-            if collab_ts > flush_ts and (time.time() - flush_ts) > lag_seconds:
+            if collab_ts > flush_ts and (time.time() - collab_ts) > lag_seconds:
                 return ["live_spec_db_flush_lag_detected"]
     except (RedisError, OSError, RuntimeError, TypeError) as exc:
         logger.debug("[LiveSpec] durability alert scan failed: %s", exc)

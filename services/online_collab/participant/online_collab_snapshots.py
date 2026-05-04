@@ -107,7 +107,7 @@ async def _enqueue_snapshot_or_oversize(
                 record_ws_collab_snapshot_oversize,
             )
             record_ws_collab_snapshot_oversize()
-        except Exception:
+        except (AttributeError, TypeError, RuntimeError, OSError, ImportError):
             pass
         logger.warning(
             "[CollabSnapshot] oversize diagram_id=%s bytes>%s",
@@ -153,7 +153,7 @@ async def websocket_send_live_spec_snapshot(
                     record_ws_viewer_snapshot_hit,
                 )
                 record_ws_viewer_snapshot_hit()
-            except Exception:
+            except (AttributeError, TypeError, RuntimeError, OSError, ImportError):
                 pass
             raw_seq = cached.get("seq")
             viewer_seq: Optional[int] = (

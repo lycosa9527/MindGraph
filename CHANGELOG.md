@@ -5,6 +5,41 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.117.0] - 2026-05-05
+
+### Added
+
+- **`services/online_collab/core/online_collab_stop.py`** — extracted owner-initiated and idle-stop flows from `online_collab_lifecycle.py` into a dedicated module; `lifecycle.py` now delegates via thin forwarding stubs.
+- **`services/online_collab/core/online_collab_join.py`** — extracted join-flow logic into its own module.
+- **`routers/api/diagrams_workshop_routes.py`** — workshop-specific diagram REST endpoints separated from the general diagrams router.
+- **`routers/api/workshop_ws_handlers_core.py`**, **`workshop_ws_handlers_presence.py`**, **`workshop_ws_handlers_update_validate.py`** — WebSocket handler decomposition; `workshop_ws_handlers.py` now delegates to focused sub-handlers.
+- **`frontend/src/composables/canvasPage/useCanvasPageCollabBus.ts`**, **`useCanvasPageCollabDiff.ts`**, **`useCanvasPageCollabIndicators.ts`** — canvas-page collab concerns split from the monolithic `useCanvasPageWorkshopCollab.ts`.
+- **`frontend/src/composables/workshop/useWorkshopJoin.ts`**, **`useWorkshopOutboundDispatcher.ts`** — workshop join flow and outbound dispatch extracted from `useWorkshop.ts`.
+- **`alembic/versions/rev_0028_unique_active_workshop_code.py`** — migration adding a partial unique index on `diagrams.workshop_code` for active (non-null) sessions, preventing duplicate active codes at the DB level.
+- **`tests/test_online_collab_hardening.py`** — new hardening tests covering edge cases in the online collab module.
+
+### Changed
+
+- **`services/online_collab/` — production hardening sweep** (Pylint 10.00/10):
+  - All `except Exception` broad-catches replaced with typed exception tuples throughout the module (`online_collab_lifecycle`, `online_collab_manager`, `online_collab_idle_monitor`, `online_collab_stop`, `online_collab_cleanup`, `online_collab_join_helpers`, `online_collab_participant_ops`, `online_collab_snapshots`, `online_collab_redis_health`, `online_collab_redis_keys`, `online_collab_redis_scripts`, `online_collab_live_spec_json`, `online_collab_live_spec_ops`, `online_collab_live_spec_shutdown`, `online_collab_json_offload`).
+  - Dead code removed: orphaned `_extend_room_ttl_after_flush_failure` definition and its associated constant `_FAILED_FLUSH_RETRY_TTL_SEC` eliminated from `online_collab_lifecycle.py` (live copy remains in `online_collab_stop.py`).
+  - All unused imports removed across the module; `os._exit(1)` replaced with `raise SystemExit(1)` in `online_collab_redis_health.py`.
+  - All `pylint: disable` suppression comments removed; `SQLAlchemyError` import added to `online_collab_live_spec_ops.py`.
+- **`routers/api/workshop_ws_handlers.py`**, **`workshop_ws_handlers_update.py`** — refactored to delegate to the new focused handler modules; substantially reduced line counts.
+- **`routers/api/workshop_ws_auth.py`** — auth flow expanded.
+- **`frontend/src/composables/canvasPage/useCanvasPageWorkshopCollab.ts`**, **`useWorkshop.ts`** — refactored to delegate to the new extracted composables; large line-count reduction.
+- **`services/features/workshop_ws_role_change.py`** — role-change handling expanded.
+- **`services/infrastructure/lifecycle/lifespan_redis_integration.py`** — updated for the new collab lifespan hooks.
+- **`services/infrastructure/monitoring/ws_metrics.py`** — added metrics for snapshot oversize, viewer cache hit, and HEXPIRE downgrade events.
+- **`models/domain/diagrams.py`** — workshop field adjustments aligned with the new unique-code constraint.
+- **`tests/test_online_collab_redis_key_helpers.py`** — fixed `if False: yield` constant-test anti-pattern; expanded purge/key helper coverage.
+- **`scripts/collab_synthetic_probe.py`** — probe script updated for new collab API surface.
+- **Frontend locale bundles** (`az`, `en`, `zh`, `zh-tw`) — new and updated canvas/workshop/sidebar strings.
+
+### Frontend package version
+
+- ([`frontend/package.json`](frontend/package.json)): aligned with root **`VERSION`** (5.117.0).
+
 ## [5.116.0] - 2026-05-04
 
 ### Added

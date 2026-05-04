@@ -65,12 +65,12 @@ export interface CollabOutboundQueueOptions {
   generateId?: () => string
   /** Optional max size override. */
   maxSize?: number
+  /** Called when the queue must evict because coalescing cannot preserve intent. */
+  onOverflow?: (dropped: CollabQueuedOp, maxSize: number) => void
 }
 
 /** Extract node IDs referenced by an outbound ``update`` payload (nodes + deletions). */
-export function collectNodeIdsFromOutboundPayload(
-  payload: CollabOutboundPayload,
-): string[] {
+export function collectNodeIdsFromOutboundPayload(payload: CollabOutboundPayload): string[] {
   const ids: string[] = []
   const nodesRaw = payload.nodes
   if (Array.isArray(nodesRaw)) {
@@ -143,9 +143,7 @@ function defaultGenerateId(): string {
 // Implementation
 // ---------------------------------------------------------------------------
 
-export function useCollabOutboundQueue(
-  options: CollabOutboundQueueOptions,
-): CollabOutboundQueue {
+export function useCollabOutboundQueue(options: CollabOutboundQueueOptions): CollabOutboundQueue {
   const queue = ref<CollabQueuedOp[]>([])
   // Set of ids that are currently considered "in flight" — i.e. handed off
   // to the WebSocket but not yet acknowledged.  We do not currently distinguish
@@ -159,16 +157,62 @@ export function useCollabOutboundQueue(
   const size = computed(() => queue.value.length)
   const hasPending = computed(() => queue.value.length > 0)
 
+  function canCoalesceGranularNodeUpdate(payload: CollabOutboundPayload): boolean {
+    return (
+      payload.type === 'update' &&
+      Array.isArray(payload.nodes) &&
+      payload.nodes.length === 1 &&
+      payload.connections === undefined &&
+      payload.deleted_node_ids === undefined &&
+      payload.deleted_connection_ids === undefined
+    )
+  }
+
+  function singleNodeId(payload: CollabOutboundPayload): string | null {
+    if (!canCoalesceGranularNodeUpdate(payload)) {
+      return null
+    }
+    const node = (payload.nodes as unknown[])[0]
+    if (!node || typeof node !== 'object') {
+      return null
+    }
+    const id = (node as { id?: unknown }).id
+    return typeof id === 'string' && id ? id : null
+  }
+
+  function coalesceQueuedUpdate(payload: CollabOutboundPayload): string | null {
+    const nodeId = singleNodeId(payload)
+    if (!nodeId) {
+      return null
+    }
+    for (let i = queue.value.length - 1; i >= 0; i -= 1) {
+      const op = queue.value[i]
+      if (inFlight.has(op.id)) {
+        continue
+      }
+      if (singleNodeId(op.payload) === nodeId) {
+        queue.value.splice(i, 1, {
+          ...op,
+          payload,
+          enqueuedAt: Date.now(),
+        })
+        return op.id
+      }
+    }
+    return null
+  }
+
   function evictOldestIfFull(): void {
     while (queue.value.length >= maxSize) {
       const dropped = queue.value.shift()
       if (dropped) {
         inFlight.delete(dropped.id)
+        options.onOverflow?.(dropped, maxSize)
         if (import.meta.env.DEV) {
           console.warn(
             '[CollabOutboundQueue] queue at cap (%d) — dropping oldest op id=%s',
             maxSize,
-            dropped.id,
+            dropped.id
           )
         }
       }
@@ -176,6 +220,11 @@ export function useCollabOutboundQueue(
   }
 
   function enqueue(payload: CollabOutboundPayload): string {
+    const coalescedId = coalesceQueuedUpdate(payload)
+    if (coalescedId) {
+      tryFlush()
+      return coalescedId
+    }
     evictOldestIfFull()
     const id = generateId()
     queue.value.push({
@@ -214,11 +263,7 @@ export function useCollabOutboundQueue(
     queue.value.splice(idx, 1)
     inFlight.delete(targetId)
     if (import.meta.env.DEV) {
-      console.debug(
-        '[CollabOutboundQueue] ack id=%s remaining=%d',
-        targetId,
-        queue.value.length,
-      )
+      console.debug('[CollabOutboundQueue] ack id=%s remaining=%d', targetId, queue.value.length)
     }
     tryFlush()
     return true
@@ -243,7 +288,7 @@ export function useCollabOutboundQueue(
           console.warn(
             '[CollabOutboundQueue] send threw for id=%s — leaving in queue',
             head.id,
-            err,
+            err
           )
         }
         break
@@ -254,10 +299,7 @@ export function useCollabOutboundQueue(
 
   function clear(): void {
     if (import.meta.env.DEV && queue.value.length > 0) {
-      console.debug(
-        '[CollabOutboundQueue] clear (dropping %d queued op(s))',
-        queue.value.length,
-      )
+      console.debug('[CollabOutboundQueue] clear (dropping %d queued op(s))', queue.value.length)
     }
     queue.value = []
     inFlight.clear()

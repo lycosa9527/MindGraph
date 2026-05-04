@@ -60,6 +60,8 @@ export default {
   'canvas.toolbar.causeAdded': 'Səbəb düyünü əlavə olundu',
   'canvas.toolbar.childAdded': 'Alt element əlavə olundu',
   'canvas.toolbar.collabAiBlocked': 'Əməkdaşlıqda yalnız diaqram sahibi AI yarada bilər',
+  'canvas.toolbar.collabGuestFeatureBlocked':
+    'Əməkdaşlıq qonağı kimi qoşulduğunuzda bu funksiya əlçatan deyil.',
   'canvas.toolbar.colorLabel': 'Rəng',
   'canvas.toolbar.conceptGeneration': 'Konsept yaradılması',
   'canvas.toolbar.conceptMapModesDev': 'Konsept xəritəsi rejimləri hazırlanır',
@@ -339,7 +341,28 @@ export default {
   'canvas.zoomControls.showPresentationTools': 'Təqdimat alətlərini göstərin',
   'canvas.zoomControls.hidePresentationTools': 'Təqdimat alətlərini gizlədin',
   'canvas.zoomControls.hand': 'Əl aləti',
+  'canvas.zoomControls.collaborate': 'Əməkdaşlıq',
+  'canvas.zoomControls.collabWithinOrg': 'Məktəb daxilində əməkdaşlıq',
+  'canvas.zoomControls.collabCrossOrg': 'Ümumi kodla əməkdaşlıq',
+  'canvas.zoomControls.collabTurnOff': 'Onlayn əməkdaşlığı söndür',
   'canvasPage.collaborationFooter': 'Əməkdaşlıq',
+  'canvasPage.collaborationFooterOwner': '{username} əməkdaşlığı',
+  'canvasPage.collaborationFooterOwnerDiagram':
+    '{username} diaqramı «{diagramTitle}» — əməkdaşlıq',
+  'canvasPage.collaborationFooterNetworkDiagramTitle': '«{diagramTitle}» birgə diaqramı',
+  'canvasPage.collaborationFooterSchool':
+    'Məktəb əməkdaşlığı davam edir — məktəb siyahısından qoşulun.',
+  'canvasPage.collaborationFooterSchoolDiagram':
+    '«{diagramTitle}» üzrə məktəb əməkdaşlığı — məktəb sessiya siyahısından qoşulun.',
+  'canvasPage.collabRoomIdleEnding':
+    'Sessiya boşdayanır — təxminən {seconds} saniyə sonra əməkdaşlıq bitəcək (davam etdirmək üçün redaktə edin)',
+  'canvasPage.collabReconnecting': 'Əməkdaşlığa yenidən qoşulunur…',
+  'canvasPage.collabConnectionFailed': 'Əməkdaşlıq əlaqəsi kəsildi.',
+  'canvasPage.collabRetryConnection': 'Yenidən cəhd et',
+  'canvasPage.collabParticipantsAria': 'Əməkdaşlıq iştirakçıları',
+  'canvasPage.collabConnected': 'Qoşuldu',
+  'canvas.topBar.viewOnly': 'Yalnız baxış',
+  'canvasPage.collabParticipantsMore': 'daha çox',
   'conceptMap.focus.noResult': 'Nəticə yoxdur',
   'conceptMap.focus.validationRequestFailed': 'Yoxlama sorğusu uğursuz oldu',
   'diagram.aiGenerating': 'AI...',
@@ -530,15 +553,6 @@ export default {
   'mindgraphLanding.sharedCodeHint':
     'Dəvət kodunu (xxx-xxx) daxil edin ki, onların sessiyasına qoşulasınız.',
   'mindgraphLanding.sharedCollab': 'Ümumi əməkdaşlıq',
-  'mindgraphLanding.joinDiagramEdit': 'Join diagram editing',
+  'mindgraphLanding.joinDiagramEdit': 'Diaqram redaktəsinə qoşul',
   'mindgraphLanding.welcome': 'Salam {username}, mən sənin AI vizual düşüncə köməkçinəm',
-  'canvasPage.collabRoomIdleEnding':
-    'Session idle — collaboration ends in about {seconds}s (edit to keep it)',
-  'canvasPage.collabReconnecting': 'Reconnecting to collaboration…',
-  'canvasPage.collabConnectionFailed': 'Collaboration connection lost.',
-  'canvasPage.collabRetryConnection': 'Retry',
-  'canvasPage.collabParticipantsAria': 'Collaboration participants',
-  'canvasPage.collabConnected': 'Connected',
-  'canvas.topBar.viewOnly': 'View only',
-  'canvasPage.collabParticipantsMore': 'more',
 }

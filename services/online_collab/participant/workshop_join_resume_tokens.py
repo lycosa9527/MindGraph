@@ -18,6 +18,27 @@ _REDIS_NS = 'collab:ws:jresume:'
 _TOKEN_HEX_BYTES = 16
 _MAX_RESUME_QUERY_LEN = 96
 _DEFAULT_RECONNECT_TTL_SEC = 900
+_CONSUME_RESUME_TOKEN_SCRIPT = """
+local payload = redis.call('GET', KEYS[1])
+if not payload then
+    return 0
+end
+local ok, decoded = pcall(cjson.decode, payload)
+if not ok or type(decoded) ~= 'table' then
+    return 0
+end
+if tostring(decoded['u']) ~= ARGV[1] then
+    return 0
+end
+if tostring(decoded['c']) ~= ARGV[2] then
+    return 0
+end
+if tostring(decoded['d']) ~= ARGV[3] then
+    return 0
+end
+redis.call('DEL', KEYS[1])
+return 1
+"""
 
 
 async def peek_join_resume_claims_async(
@@ -26,7 +47,7 @@ async def peek_join_resume_claims_async(
     """
     Return parsed resume payload from Redis WITHOUT deleting.
 
-    Tokens are hashed server-side keys; guesses do not degrade security.
+    Tokens are high-entropy Redis key suffixes; guesses do not degrade security.
     """
     trimmed = raw_query_token.strip()
     if not trimmed or len(trimmed) > _MAX_RESUME_QUERY_LEN:
@@ -134,40 +155,15 @@ async def try_consume_join_resume_token_async(
         return False
     key = _REDIS_NS + trimmed
     try:
-        body = await redis.get(key)
+        consumed = await redis.eval(
+            _CONSUME_RESUME_TOKEN_SCRIPT,
+            1,
+            key,
+            str(int(user_id)),
+            workshop_code_upper.strip().upper(),
+            diagram_id.strip(),
+        )
     except (RedisError, OSError, TypeError) as exc:
-        logger.debug('[collab:jresume] get failed user=%s: %s', user_id, exc)
+        logger.debug('[collab:jresume] atomic consume failed user=%s: %s', user_id, exc)
         return False
-    if body is None:
-        return False
-    if isinstance(body, (bytes, bytearray)):
-        try:
-            text = body.decode('utf-8')
-        except UnicodeDecodeError:
-            return False
-    else:
-        text = str(body)
-    try:
-        decoded = json.loads(text)
-    except (json.JSONDecodeError, TypeError, ValueError):
-        return False
-    if not isinstance(decoded, dict):
-        return False
-    try:
-        record_uid = int(decoded.get('u'))
-    except (TypeError, ValueError):
-        return False
-    code_val = decoded.get('c')
-    diagram_val = decoded.get('d')
-    if (
-        record_uid != int(user_id)
-        or code_val != workshop_code_upper.strip().upper()
-        or diagram_val != diagram_id.strip()
-    ):
-        return False
-    try:
-        await redis.delete(key)
-    except (RedisError, OSError, TypeError):
-        logger.debug('[collab:jresume] delete failed — allowing rate limit reuse')
-        return False
-    return True
+    return bool(consumed)

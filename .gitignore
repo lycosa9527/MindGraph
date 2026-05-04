@@ -209,7 +209,11 @@ static/
 storage/library/
 
 # Documentation
-docs/
+docs/*
+!docs/operations/
+docs/operations/*
+!docs/operations/online-collab-runbook.md
+!docs/operations/online-collab-grafana-dashboard.json
 # ruff
 .ruff_cache/
 
